@@ -12,6 +12,7 @@ export default defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:8897', browserName: 'chromium',
     trace: 'off', screenshot: 'off', video: 'off',
+    ...(process.env.M1_TEST_CHROMIUM_PATH ? { launchOptions: { executablePath: process.env.M1_TEST_CHROMIUM_PATH } } : {}),
   },
   projects: [
     { name: 'desktop', use: { viewport: { width: 1440, height: 1000 } } },
