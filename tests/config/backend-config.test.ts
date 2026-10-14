@@ -53,3 +53,14 @@ test('does not invent new identity metadata beside an existing database', () => 
     assert.throws(() => readFileSync(join(cwd, 'existing.sqlite.identity.json')), { code: 'ENOENT' });
   } finally { rmSync(cwd, { recursive: true, force: true }); }
 });
+
+test('proxy trust requires explicit opt-in and never permits a public bind', () => {
+  const env = { M1_DATABASE_PATH: ':memory:' };
+  assert.equal(loadBackendConfig(env).trustProxyLoopback, false);
+  assert.equal(loadBackendConfig({ ...env, M1_TRUST_PROXY_LOOPBACK: '0' }).trustProxyLoopback, false);
+  assert.equal(loadBackendConfig({ ...env, M1_TRUST_PROXY_LOOPBACK: '1' }).trustProxyLoopback, true);
+  for (const value of ['true', 'false', 'yes', '', ' 1', '2']) {
+    assert.throws(() => loadBackendConfig({ ...env, M1_TRUST_PROXY_LOOPBACK: value }), /M1_TRUST_PROXY_LOOPBACK/);
+  }
+  assert.throws(() => loadBackendConfig({ ...env, M1_HOST: '0.0.0.0', M1_TRUST_PROXY_LOOPBACK: '1' }), /loopback/);
+});

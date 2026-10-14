@@ -5,6 +5,7 @@ import { dirname, resolve } from 'node:path';
 export interface BackendConfig {
   host: string;
   port: number;
+  trustProxyLoopback: boolean;
   databasePath: string;
   identityPath: string | null;
   instanceId: string;
@@ -24,6 +25,11 @@ export function loadBackendConfig(
   if (!['127.0.0.1', '::1', 'localhost'].includes(host)) {
     throw new Error('M1_HOST must be a loopback address for this local candidate');
   }
+  const proxyText = env.M1_TRUST_PROXY_LOOPBACK ?? '0';
+  if (proxyText !== '0' && proxyText !== '1') {
+    throw new Error('M1_TRUST_PROXY_LOOPBACK must be 0 or 1');
+  }
+  const trustProxyLoopback = proxyText === '1';
   const portText = env.M1_PORT ?? '8787';
   const port = Number(portText);
   if (!/^\d+$/.test(portText) || !Number.isSafeInteger(port) || port < 0 || port > 65535) {
@@ -39,7 +45,7 @@ export function loadBackendConfig(
   }
   if (databasePath === ':memory:') {
     return {
-      host, port, databasePath, identityPath: null,
+      host, port, trustProxyLoopback, databasePath, identityPath: null,
       instanceId: env.M1_INSTANCE_ID ?? `instance_${randomUUID()}`,
       recoveryEpoch: env.M1_RECOVERY_EPOCH ?? `epoch_${randomUUID()}`,
     };
@@ -84,5 +90,5 @@ export function loadBackendConfig(
       || (env.M1_RECOVERY_EPOCH && env.M1_RECOVERY_EPOCH !== saved.recoveryEpoch)) {
     throw new Error('Environment identity conflicts with saved metadata; resolve it explicitly');
   }
-  return { host, port, databasePath, identityPath, instanceId: saved.instanceId, recoveryEpoch: saved.recoveryEpoch };
+  return { host, port, trustProxyLoopback, databasePath, identityPath, instanceId: saved.instanceId, recoveryEpoch: saved.recoveryEpoch };
 }

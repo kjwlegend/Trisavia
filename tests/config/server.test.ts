@@ -8,11 +8,12 @@ import { test } from 'node:test';
 
 const entry = fileURLToPath(new URL('../../apps/platform/server.ts', import.meta.url));
 
-async function launch(directory: string): Promise<{ child: ChildProcessWithoutNullStreams; address: string }> {
+async function launch(directory: string, trustProxyLoopback = false): Promise<{ child: ChildProcessWithoutNullStreams; address: string }> {
   const child = spawn(process.execPath, [entry], {
     cwd: directory,
     env: {
       ...process.env, M1_HOST: '127.0.0.1', M1_PORT: '0',
+      M1_TRUST_PROXY_LOOPBACK: trustProxyLoopback ? '1' : '0',
       M1_DATABASE_PATH: join(directory, 'smoke.sqlite'),
       M1_IDENTITY_PATH: join(directory, 'smoke.identity.json'),
       M1_INSTANCE_ID: 'smoke-instance', M1_RECOVERY_EPOCH: 'smoke-epoch',
@@ -73,6 +74,27 @@ test('CLI serves real loopback HTTP, shuts down and reopens the same local datab
       assert.equal(active.exitCode, 0);
       active = undefined;
     }
+  } finally {
+    if (active) await stop(active);
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('CLI passes explicit proxy opt-in to real loopback HTTP client quotas', { timeout: 20_000 }, async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'm1-cli-proxy-'));
+  let active: ChildProcessWithoutNullStreams | undefined;
+  try {
+    const started = await launch(directory, true); active = started.child;
+    const status = async (forwarded: string) => {
+      const response = await fetch(`${started.address}/v1/capabilities`, {
+        headers: { 'x-forwarded-for': forwarded }, signal: AbortSignal.timeout(3000),
+      });
+      await response.arrayBuffer();
+      return response.status;
+    };
+    for (let count = 0; count < 240; count++) assert.equal(await status(`203.0.113.${count % 250 + 1}, 198.51.100.10`), 200);
+    assert.equal(await status('192.0.2.99, 198.51.100.10'), 429);
+    assert.equal(await status('192.0.2.99, 198.51.100.20'), 200);
   } finally {
     if (active) await stop(active);
     rmSync(directory, { recursive: true, force: true });

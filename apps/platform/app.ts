@@ -10,6 +10,7 @@ export interface BuildAppOptions {
   instanceId?: string;
   recoveryEpoch?: string;
   clock?: () => number;
+  trustProxyLoopback?: boolean;
 }
 
 /** Build without listening. Persistent callers must supply their saved instance identity. */
@@ -24,7 +25,13 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     recoveryEpoch: options.recoveryEpoch ?? `epoch_${randomUUID()}`,
   });
   try {
-    const app = Fastify({ logger: false, bodyLimit: 16 * 1024 });
+    const app = Fastify({
+      logger: false, bodyLimit: 16 * 1024,
+      // Only the directly connected local reverse proxy may supply the client hop.
+      trustProxy: options.trustProxyLoopback === true
+        ? (address, hop) => hop === 0 && ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(address)
+        : false,
+    });
     app.addHook('onClose', async () => { store.close(); });
     app.setNotFoundHandler((_request, reply) => {
       reply.code(404).send({ error: { code: 'not_found', message: 'Route not found' } });
