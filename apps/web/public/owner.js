@@ -21,6 +21,7 @@ function setBusy(value){busy=value;document.querySelector('main').setAttribute('
 function controls(){
   const pending=Boolean(vault.pendingOperation);
   $$('main button').forEach(button=>{button.disabled=busy||(pending&&!['check-result','retry-operation','logout','show-login'].includes(button.id));});
+  $$('main input,main textarea,main select').forEach(input=>{input.disabled=busy||pending;});
   $('#setup-saved').disabled=!setupPrepared||busy||pending;
   $('#setup-complete').disabled=busy||pending||!setupPrepared||!$('#setup-saved').checked;
   $('#recovery-saved').disabled=!recoveryPrepared||busy||pending;
@@ -53,8 +54,8 @@ async function committed(result,pending){
   if(pending.action==='replaceRuntime'){runtimePrepared=null;$('#runtime-confirm').hidden=true;$('#runtime-saved').checked=false;}
   if(pending.action==='issueInvite'){invitePrepared=null;$('#invite-confirm').hidden=true;$('#invite-saved').checked=false;}
   save();
-  await loadAgents({resetProfile:!pending.targetId||pending.targetId===selectedId});
-  message('操作已完成，当前状态已重新读取。','success');
+  try{await loadAgents({resetProfile:!pending.targetId||pending.targetId===selectedId});message('操作已完成，当前状态已重新读取。','success');}
+  catch{message('操作已提交，但最新状态暂时无法读取。请刷新页面继续；无需重新提交该操作。','pending');}
 }
 async function executePending(pending=vault.pendingOperation){
   if(!pending||!pendingPayload)return;
@@ -109,7 +110,7 @@ async function completeSetup(event){event.preventDefault();if(!setupPrepared||!$
   await command({action:'completeSetup',path:'/owner/setup/complete',scope:`setup:${tokenId(vault.setupToken)}`,token:vault.setupToken,kind:'setup',operationId:vault.completeOperationId,targetId:null,fields:{password,recoveryToken:vault.recoveryToken,sessionToken:vault.sessionToken,credentialsSaved:true}});
 }
 async function login(event){event.preventDefault();if(busy||vault.pendingOperation)return;
-  try{vault.ownerId=$('#login-owner').value.trim();vault.sessionToken=credential('session');vault.stage='login_prepared';save();await command({action:'login',path:'/owner/sessions',targetId:null,token:undefined,kind:'login',fields:{ownerId:vault.ownerId,password:$('#login-password').value,sessionToken:vault.sessionToken}});}catch(error){fail(error);}
+  try{const ownerId=$('#login-owner').value.trim();if(vault.ownerId!==ownerId)delete vault.recoveryToken;vault.ownerId=ownerId;vault.sessionToken=credential('session');delete vault.setupToken;delete vault.handoffToken;vault.stage='login_prepared';save();await command({action:'login',path:'/owner/sessions',targetId:null,token:null,kind:'login',fields:{ownerId:vault.ownerId,password:$('#login-password').value,sessionToken:vault.sessionToken}});}catch(error){fail(error);}
 }
 function prepareRecovery(){
   if(busy||vault.pendingOperation)return;const ownerId=$('#recovery-owner').value.trim(),oldToken=$('#recovery-token').value.trim();
@@ -162,6 +163,8 @@ function renderAgent(resetProfile=true){
   const management=agent.management||{};$('#stage-generated').textContent=stamp(management.generatedAt);$('#stage-delivered').textContent=stamp(management.deliveryDeclaredAt);$('#stage-initialized').textContent=stamp(management.initializedAt);$('#selected-asof').textContent=`读取时间 · ${stamp(agent.asOf)} · 运行访问第 ${agent.runtimeVersion} 代`;
   const draftChanged=JSON.stringify(profile.draft)!==JSON.stringify(profile.published);$('#profile-state').textContent=!profile.published?'尚未公开':draftChanged?(profile.mode==='agent_autonomous'?'有未发布草稿':'有待主人确认的草稿'):'已公开';
   $('#confirmation-source').textContent=profile.confirmationSource==='owner_authenticated'?'当前公开资料确认来源：已认证主人发布。':profile.confirmationSource==='runtime_declaration'?'当前公开资料确认来源：Agent 自主发布／声明，不代表主人在网页确认。':'尚无公开资料确认记录。';
+  const modeNames={agent_autonomous:'Agent 自主设定',owner_specified:'主人指定',proposal_required:'先提议后确认'},fieldNames={displayName:'名字',avatar:'形象',bio:'简介',interests:'兴趣'};
+  $('#policy-current').textContent=`服务器当前政策：${modeNames[profile.mode]}；锁定字段：${profile.lockedFields.map(field=>fieldNames[field]).join('、')||'无'}。`;
   if(resetProfile){const draft=profile.draft||{};$('#display-name').value=draft.displayName||'';$('#bio').value=draft.bio||'';$('#interests').value=(draft.interests||[]).join('，');$('#avatar-color').value=draft.avatar?.color||'olive';$('#profile-mode').value=profile.mode;$$('input[name=lock]').forEach(input=>input.checked=profile.lockedFields.includes(input.value));$('#draft-note').textContent=`草稿版本 ${profile.version} · 字段政策版本 ${profile.policyVersion}。发布仅使用服务器已保存的草稿。`;}
   const preview=$('#published-preview');preview.replaceChildren();if(profile.published){preview.append(el('strong','',profile.published.displayName),el('p','',profile.published.bio||'尚未填写简介'));const tags=el('div','tag-row');tags.append(...(profile.published.interests||[]).map(text=>el('span','tag',text)));preview.append(tags);}else preview.append(el('p','','尚未发布。保存草稿后，点击「发布资料」才会更新公开版本。'));
   $('#pause-agent').textContent=member.ownerPaused?'恢复参与':'暂停参与';$('#member-description').textContent=member.platformRestricted?'当前存在平台限制。主人暂停开关不会解除平台限制。':`成员状态：${member.state==='joined'?'已加入':member.state==='left'?'已退出':'未加入'}。重新加入沿用同一身份，暂停状态独立保留。`;

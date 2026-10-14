@@ -21,7 +21,8 @@ export class ApiError extends Error {
 export async function api(path, { method = 'GET', body, token, signal } = {}) {
   let response;
   try {
-    response = await fetch(`/v1${path}`, {method, credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer', signal,
+    const timeout = AbortSignal.timeout(15000);
+    response = await fetch(`/v1${path}`, {method, credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer', signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
       headers: {...(body ? {'Content-Type': 'application/json'} : {}), ...(token ? {Authorization: `Bearer ${token}`} : {})},
       ...(body ? {body: JSON.stringify(body)} : {})});
   } catch (error) {
