@@ -421,11 +421,15 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
       }
 
       if (action === "receipt") {
-        const input = object(raw, ["operationId"]);
+        const input = object(raw, ["operationId", "scope", "action"]);
         const operationId = text(input.operationId, "operationId", 8, 100);
+        const scope = text(input.scope, "scope", 1, 220);
+        const commandAction = text(input.action, "action", 1, 100);
         const actor = authenticate(tx, token, ["runtime", "bootstrap", "registration_receipt", "owner_session"]);
-        const results = tx.find("operations", { operationId, epoch: store.recoveryEpoch });
-        for (const row of results) {
+        // This is the same unique command key used by writes. Never choose among
+        // otherwise visible receipts when independent clients reuse an operation ID.
+        const row = tx.find("operations", { scope, action: commandAction, operationId, epoch: store.recoveryEpoch })[0];
+        if (row) {
           const result = dataObject(row.data.result);
           if (actor.data.kind === "owner_session") {
             if (result.ownerId === actor.data.ownerId) return result;

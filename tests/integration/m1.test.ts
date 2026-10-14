@@ -33,6 +33,10 @@ interface Owner {
 }
 interface Result<T> { status: number; body: T }
 
+function receiptUrl(operationId: string, scope: string, action: string): string {
+  return `/v1/operations/${encodeURIComponent(operationId)}?${new URLSearchParams({ scope, action })}`;
+}
+
 function fixture(t: TestContext) {
   let now = Date.UTC(2026, 9, 14, 12);
   const app = buildApp({ instanceId: 'm1-integration', recoveryEpoch: 'epoch-1', clock: () => now });
@@ -242,7 +246,7 @@ test('INT-05: setup is restricted; complete response can be lost after independe
   const payload = { operationId: newOperationId(), password: newCredential('password'), recoveryToken: newCredential('recovery'), sessionToken, credentialsSaved: true };
   await ok(app, 'POST', '/v1/owner/setup/complete', payload, setupToken); // Discard completion response.
   await ok(app, 'GET', '/v1/owner/agents', undefined, sessionToken);
-  await ok(app, 'GET', `/v1/operations/${payload.operationId}`, undefined, sessionToken);
+  await ok(app, 'GET', receiptUrl(payload.operationId, `setup:${setupToken.split('.')[0]}`, 'completeSetup'), undefined, sessionToken);
   await rejected(app, 'POST', '/v1/owner/setup/complete', { ...payload, operationId: newOperationId(), sessionToken: newCredential('session') }, setupToken);
   await rejected(app, 'POST', '/v1/agent/self/handoffs', { operationId: newOperationId(), expectedGeneration: 1, handoffToken: newCredential('handoff') }, agent.continuationToken);
 });
@@ -261,7 +265,7 @@ test('INT-06: later login and lost recovery response use saved next-generation p
   const recoveryPayload = { operationId: newOperationId(), password: newCredential('password'),
     recoveryToken: newCredential('recovery'), sessionToken: newCredential('session'), credentialsSaved: true };
   await ok(app, 'POST', '/v1/owner/recoveries', recoveryPayload, owner.recoveryToken); // Deliberately discard response.
-  await ok(app, 'GET', `/v1/operations/${recoveryPayload.operationId}`, undefined, recoveryPayload.sessionToken);
+  await ok(app, 'GET', receiptUrl(recoveryPayload.operationId, `owner:${owner.ownerId}`, 'recover'), undefined, recoveryPayload.sessionToken);
   await rejected(app, 'POST', '/v1/owner/recoveries', recoveryPayload, owner.recoveryToken);
   await rejected(app, 'GET', '/v1/owner/agents', undefined, freshSession);
   await rejected(app, 'POST', '/v1/registrations', { operationId: newOperationId(), ...newAgentMaterial(), inviteToken: unusedInvite });
@@ -445,6 +449,79 @@ test('INT-14: locked fields and stale profile versions do not overwrite the publ
     fields: { displayName: 'Original', avatar: { template: 'basic', color: 'blue' } },
   }, agent.runtimeToken);
   assert.equal((await profile(app, agent)).published?.displayName, 'Original');
+});
+
+test('INT-16: receipt queries distinguish shared operation IDs across Agents, actions and actor scopes', async t => {
+  const { app } = fixture(t);
+  const a1 = await register(app); const owner = await manage(app, a1);
+  const inviteToken = newCredential('invite');
+  await ok(app, 'POST', '/v1/owner/agent-invites', { operationId: newOperationId(), inviteToken }, owner.sessionToken);
+  const a2 = await register(app, inviteToken);
+  const foreign = await manage(app, await register(app));
+  const sharedId = newOperationId();
+  const drafts: Profile[] = [];
+  for (const agent of [a1, a2]) {
+    drafts.push(await ok<Profile>(app, 'PUT', `/v1/agents/${agent.agentId}/profile/draft`, {
+      operationId: sharedId, expectedVersion: 1, expectedPolicyVersion: 1,
+      fields: { displayName: agent.agentId, avatar: { template: 'basic', color: 'olive' } },
+    }, agent.runtimeToken));
+  }
+  const published = await ok<Profile>(app, 'POST', `/v1/agents/${a1.agentId}/profile/publish`, {
+    operationId: sharedId, expectedVersion: drafts[0]!.version, expectedPolicyVersion: 1,
+  }, a1.runtimeToken);
+  const ownerDraft = await ok<Profile>(app, 'PUT', `/v1/agents/${a1.agentId}/profile/draft`, {
+    operationId: sharedId, expectedVersion: published.version, expectedPolicyVersion: 1, fields: { bio: 'Owner edit' },
+  }, owner.sessionToken);
+  const cases = [
+    { scope: `agent:${a1.agentId}`, action: 'saveDraft', result: drafts[0]! },
+    { scope: `agent:${a2.agentId}`, action: 'saveDraft', result: drafts[1]! },
+    { scope: `agent:${a1.agentId}`, action: 'publishProfile', result: published },
+    { scope: `owner:${owner.ownerId}`, action: 'saveDraft', result: ownerDraft },
+  ];
+  for (const { scope, action, result } of cases) {
+    assert.deepEqual(await ok(app, 'GET', receiptUrl(sharedId, scope, action), undefined, owner.sessionToken), result);
+  }
+  const a1Url = receiptUrl(sharedId, `agent:${a1.agentId}`, 'saveDraft');
+  assert.deepEqual(await ok(app, 'GET', a1Url, undefined, a1.runtimeToken), drafts[0]);
+  for (const bearer of [foreign.sessionToken, a2.runtimeToken]) {
+    const response = await request<{ error: { code: string } }>(app, 'GET', a1Url, undefined, bearer);
+    assert.equal(response.status, 404); assert.equal(response.body.error.code, 'target_not_accessible');
+  }
+  for (const [url, bearer] of [
+    [receiptUrl(sharedId, `owner:${owner.ownerId}`, 'saveDraft'), a1.runtimeToken],
+    [receiptUrl(sharedId, `agent:${a2.agentId}`, 'publishProfile'), owner.sessionToken],
+  ]) {
+    const response = await request<{ error: { code: string } }>(app, 'GET', url!, undefined, bearer);
+    assert.equal(response.status, 404); assert.equal(response.body.error.code, 'target_not_accessible');
+  }
+});
+
+test('INT-17: unscoped or ambiguous receipt queries fail safely without changing other routes', async t => {
+  const { app } = fixture(t);
+  const agent = await register(app); const owner = await manage(app, agent);
+  const path = `/v1/operations/${agent.operationId}`;
+  const selectors = new URLSearchParams({ scope: `registration:${agent.attemptId}`, action: 'register' });
+  assert.equal((await ok<Registration>(app, 'GET', `${path}?${selectors}`, undefined, owner.sessionToken)).agentId, agent.agentId);
+  for (const url of [
+    path,
+    `${path}?action=register`,
+    `${path}?scope=registration%3A${agent.attemptId}`,
+    `${path}?scope=&action=register`,
+    `${path}?${selectors}&scope=agent%3A${agent.agentId}`,
+    `${path}?${selectors}&action=saveDraft`,
+    `${path}?${selectors}&agentId=${agent.agentId}`,
+    `${path}?${selectors}&operationId=${newOperationId()}`,
+    `/v1/agent/self?${selectors}`,
+  ]) {
+    const response = await request<{ error: { code: string } }>(app, 'GET', url, undefined, owner.sessionToken);
+    assert.equal(response.status, 400); assert.equal(response.body.error.code, 'invalid_request');
+  }
+  const anonymous = await request<{ error: { code: string } }>(app, 'GET', `${path}?${selectors}`);
+  assert.equal(anonymous.status, 401); assert.equal(anonymous.body.error.code, 'authentication_failed');
+  const locator = await request<{ error: { code: string } }>(app, 'GET', `${path}?${selectors}`, undefined, agent.agentId);
+  assert.equal(locator.status, 401); assert.equal(locator.body.error.code, 'authentication_failed');
+  const bodySelectors = await request<{ error: { code: string } }>(app, 'GET', `${path}?${selectors}`, { scope: 'other', action: 'register' }, owner.sessionToken);
+  assert.equal(bodySelectors.status, 400); assert.equal(bodySelectors.body.error.code, 'invalid_request');
 });
 
 test('INT-15: joined, owner-paused and left states remain independent and rejoin preserves identity', async t => {

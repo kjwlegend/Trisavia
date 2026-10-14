@@ -103,9 +103,10 @@ test("preview is non-consuming; refresh supersedes expired handoff and setup; bi
   const sessionToken = token();
   const completeId = operationId();
   const complete = f.service.invoke("completeSetup", { operationId: completeId, password: "independent-owner-password", recoveryToken: token(), sessionToken, credentialsSaved: true }, setupToken);
-  for (const proof of [first, second, third, oldSetup, setupToken, agent.input.continuationToken]) error("authentication_failed", () => f.service.invoke("receipt", { operationId: completeId }, proof));
-  assert.deepEqual(f.service.invoke("receipt", { operationId: completeId }, sessionToken), complete);
-  error("target_not_accessible", () => f.service.invoke("receipt", { operationId: completeId }, agent.input.runtimeToken));
+  const completeQuery = { operationId: completeId, scope: `setup:${setupToken.split(".")[0]}`, action: "completeSetup" };
+  for (const proof of [first, second, third, oldSetup, setupToken, agent.input.continuationToken]) error("authentication_failed", () => f.service.invoke("receipt", completeQuery, proof));
+  assert.deepEqual(f.service.invoke("receipt", completeQuery, sessionToken), complete);
+  error("target_not_accessible", () => f.service.invoke("receipt", completeQuery, agent.input.runtimeToken));
   assert.equal(f.service.invoke("registrationResult", { attemptId: agent.input.attemptId }, agent.input.runtimeToken).managementStatus, "managed");
   assert.equal(f.store.read((tx) => tx.find("bindings", { agentId: agent.agentId, active: true }).length), 1);
 });
@@ -131,6 +132,46 @@ test("one-use invite creates A2 under O1, response loss resumes A2 and another o
   const count = f.store.read((tx) => tx.find("agents").length);
   error("authentication_failed", () => registration(f, revoked));
   assert.equal(f.store.read((tx) => tx.find("agents").length), count);
+});
+
+test("receipt lookup separates shared operation IDs by Agent, actor scope and action without widening access", (t) => {
+  const f = fixture(); t.after(() => f.store.close());
+  const a1 = registration(f); const owner = setup(f, a1);
+  const inviteToken = token();
+  f.service.invoke("issueInvite", { operationId: operationId(), inviteToken }, owner.sessionToken);
+  const a2 = registration(f, inviteToken);
+  const foreign = setup(f, registration(f));
+  const sharedId = operationId();
+  const drafts = [a1, a2].map((agent) => f.service.invoke("saveDraft", {
+    operationId: sharedId, agentId: agent.agentId, expectedVersion: 1, expectedPolicyVersion: 1,
+    fields: { displayName: agent.agentId, avatar: { template: "basic", color: "olive" } },
+  }, agent.input.runtimeToken));
+  assert.notEqual(drafts[0]!.receiptId, drafts[1]!.receiptId);
+  const published = f.service.invoke("publishProfile", {
+    operationId: sharedId, agentId: a1.agentId, expectedVersion: drafts[0]!.version, expectedPolicyVersion: 1,
+  }, a1.input.runtimeToken);
+  const ownerDraft = f.service.invoke("saveDraft", {
+    operationId: sharedId, agentId: a1.agentId, expectedVersion: published.version, expectedPolicyVersion: 1,
+    fields: { bio: "Owner edit" },
+  }, owner.sessionToken);
+  const cases = [
+    { scope: `agent:${a1.agentId}`, action: "saveDraft", result: drafts[0]! },
+    { scope: `agent:${a2.agentId}`, action: "saveDraft", result: drafts[1]! },
+    { scope: `agent:${a1.agentId}`, action: "publishProfile", result: published },
+    { scope: `owner:${a1.ownerId}`, action: "saveDraft", result: ownerDraft },
+  ];
+  for (const { scope, action, result } of cases) {
+    assert.deepEqual(f.service.invoke("receipt", { operationId: sharedId, scope, action }, owner.sessionToken), result);
+  }
+  const a1Query = { operationId: sharedId, scope: `agent:${a1.agentId}`, action: "saveDraft" };
+  assert.deepEqual(f.service.invoke("receipt", a1Query, a1.input.runtimeToken), drafts[0]);
+  error("target_not_accessible", () => f.service.invoke("receipt", a1Query, foreign.sessionToken));
+  error("target_not_accessible", () => f.service.invoke("receipt", a1Query, a2.input.runtimeToken));
+  error("target_not_accessible", () => f.service.invoke("receipt", { ...a1Query, scope: `owner:${a1.ownerId}` }, a1.input.runtimeToken));
+  error("target_not_accessible", () => f.service.invoke("receipt", { ...a1Query, scope: `agent:${a2.agentId}`, action: "publishProfile" }, owner.sessionToken));
+  error("invalid_request", () => f.service.invoke("receipt", { operationId: sharedId }, owner.sessionToken));
+  error("invalid_request", () => f.service.invoke("receipt", { operationId: sharedId, scope: a1Query.scope }, owner.sessionToken));
+  error("invalid_request", () => f.service.invoke("receipt", { operationId: sharedId, action: a1Query.action }, owner.sessionToken));
 });
 
 test("profile versions and owner field locks block stale drafts and publication", (t) => {
@@ -172,7 +213,7 @@ test("recovery activates pre-saved successors, closes old management and invites
   const inviteToken = token(); f.service.invoke("issueInvite", { operationId: operationId(), inviteToken }, owner.sessionToken);
   const nextSession = token(); const nextRecovery = token(); const recoveryOperation = operationId();
   const result = f.service.invoke("recover", { operationId: recoveryOperation, password: "next-password-for-owner", recoveryToken: nextRecovery, sessionToken: nextSession, credentialsSaved: true }, owner.recoveryToken);
-  assert.deepEqual(f.service.invoke("receipt", { operationId: recoveryOperation }, nextSession), result);
+  assert.deepEqual(f.service.invoke("receipt", { operationId: recoveryOperation, scope: `owner:${agent.ownerId}`, action: "recover" }, nextSession), result);
   error("authentication_failed", () => f.service.invoke("listAgents", {}, owner.sessionToken));
   error("authentication_failed", () => f.service.invoke("recover", { operationId: operationId() }, owner.recoveryToken));
   error("authentication_failed", () => registration(f, inviteToken));

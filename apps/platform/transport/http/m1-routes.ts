@@ -76,11 +76,19 @@ export function registerM1Routes(app: FastifyInstance, service: M1Service): void
         if ((!window && windows.size >= 10_000) || (window && window.count >= 240 && stamp - window.start < 60_000)) fail("quota_exceeded", 429, "Request limit reached; retry later");
         if (!window || stamp - window.start >= 60_000) windows.set(request.ip, { start: stamp, count: 1 });
         else window.count++;
-        if (Object.keys(request.query as object).length > 0) fail("invalid_request", 400, "Query parameters are not supported");
+        const query = request.query as Record<string, unknown>;
+        if (definition.action !== "receipt" && Object.keys(query).length > 0) fail("invalid_request", 400, "Query parameters are not supported");
         const params = request.params as Record<string, string>;
         const body = request.body === undefined ? {} : request.body;
         if (body === null || typeof body !== "object" || Array.isArray(body)) fail("invalid_request", 400, "Expected a JSON object");
         if (Object.keys(params).some((key) => key in body)) fail("invalid_request", 400, "Resource identifiers belong in the path");
+        if (definition.action === "receipt") {
+          // GET payloads are not parsed by Fastify, so inspect framing as well.
+          const hasBody = request.body !== undefined || request.headers["transfer-encoding"] !== undefined
+            || (request.headers["content-length"] !== undefined && request.headers["content-length"] !== "0");
+          if (hasBody || Object.keys(params).some((key) => key in query)) fail("invalid_request", 400, "Receipt selectors belong in the query; operation ID belongs in the path");
+          return service.invoke("receipt", { ...query, ...params }, headerToken(request));
+        }
         return service.invoke(definition.action, { ...body, ...params }, headerToken(request));
       },
     });
