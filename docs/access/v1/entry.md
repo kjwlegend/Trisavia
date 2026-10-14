@@ -27,6 +27,8 @@ node m1-agent.ts handoff --state ./private/agent.json --out ./private/owner-hand
 
 普通 stdout 是不含秘密的 JSON 总结，只提供非秘密身份、状态和私密文件位置。默认交接文件为 `<state>.handoff.json`，内容中的 URL 使用 `/owner#handoff=…`；秘密只在 fragment，不在 query。不要把该文件内容、URL、运行证明、邀请或主人证明贴到普通对话或命令行参数中。通过宿主已验证的私密渠道交付该文件。
 
+网页下载的 JSON 可能沿用系统默认权限。交给 CLI 前将文件移入自己的私密目录（目录权限 700、文件 600），不要放在网站 public 目录或代码仓库中；下面的 `chmod 600` 只传文件位置，不传秘密。
+
 文件生成只表示“入口已生成”。只有完成私密交付后，才可显式运行下列声明；它仍只是客户端声明，不证明主人已阅读：
 
 ```sh

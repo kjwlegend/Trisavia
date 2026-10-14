@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { once } from 'node:events';
 import test from 'node:test';
-import { newCredential, newOperationId } from '../../scripts/m1-client.ts';
+import { newAgentMaterial, newCredential, newOperationId } from '../../scripts/m1-client.ts';
 
 type Json = Record<string, any>;
 const serverEntry = fileURLToPath(new URL('../../apps/platform/server.ts', import.meta.url));
@@ -256,6 +256,22 @@ test('corrupt, public or symlink client state never turns into a new registratio
   assert.equal(result.code, 1); assert.equal(await readFile(corrupt, 'utf8'), '{incomplete');
   const linked = join(directory, 'linked.json'); await symlink(corrupt, linked);
   assert.equal((await cli(directory, ['status', '--state', linked])).code, 1);
+  const publicState = join(directory, 'public-state.json');
+  await writeFile(publicState, '{}', { mode: 0o644 });
+  assert.equal((await cli(directory, ['status', '--state', publicState])).code, 1);
+  assert.equal(await readFile(publicState, 'utf8'), '{}');
+  const material = newAgentMaterial();
+  const malformedPath = join(directory, 'malformed-state.json');
+  const malformed = { format: 'connet-agent-v1', apiVersion: 'v1', documentationVersion: 'v1',
+    instanceId: 'agent-process-test', origin: running.address, runtimeToken: material.runtimeToken,
+    continuationToken: material.continuationToken, commands: { registration: { method: 'POST', path: '/v1/registrations',
+      scope: `registration:${material.attemptId}`, action: 'register', status: 'pending',
+      body: { operationId: newOperationId(), ...material } } } }; // Missing role intent must not register.
+  const original = JSON.stringify(malformed);
+  await writeFile(malformedPath, original, { mode: 0o600 });
+  assert.equal((await cli(directory, ['status', '--state', malformedPath])).code, 1);
+  assert((await readFile(malformedPath, 'utf8')) === original, 'A malformed state must remain untouched');
+  assert.equal((await fetch(`${running.address}/v1/agent/self`, { headers: { authorization: `Bearer ${material.runtimeToken}` } })).status, 401);
   const unsafe = await cli(directory, ['onboard', '--url', `${running.address}/?handoff=not-allowed`, '--state', join(directory, 'new.json'), '--name', 'Invalid origin']);
   assert.equal(unsafe.code, 1); assert(!unsafe.stderr.includes('not-allowed'));
 });

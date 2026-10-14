@@ -1,6 +1,6 @@
 # M1 HTTP 操作表 v1
 
-状态：已按实际 `/v1` 服务和合成 HTTP 集成验收复核，范围见[证据](../../acceptance/m1/evidence.md)。当前没有公开服务地址。
+状态：已按实际 `/v1` 服务复核，原后端范围见[证据](../../acceptance/m1/evidence.md)，下载客户端和公开入口增量见 [CLI](../../acceptance/m1-mvp/cli.md) 与[浏览器入口](../../acceptance/m1-mvp/entry.md)。当前没有公开部署地址。
 
 本页将逐项对照 `apps/platform/app.ts` 与同版共同契约维护；MD、合成客户端与测试均消费这份实际接口，不能自行猜测字段或把候选操作名当作已开放路径。
 

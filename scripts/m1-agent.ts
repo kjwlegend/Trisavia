@@ -86,6 +86,28 @@ interface State {
 }
 
 function object(value: unknown): Json { return value && typeof value === 'object' && !Array.isArray(value) ? value as Json : {}; }
+function validateState(state: State) {
+  const proof = /^[A-Za-z0-9_-]{8,100}\.[A-Za-z0-9_-]{43,128}$/;
+  const fields = object(state.fields), avatar = object(fields.avatar), registered = state.commands?.registration;
+  if (state.format !== 'connet-agent-v1' || state.apiVersion !== 'v1' || state.documentationVersion !== 'v1'
+    || typeof state.origin !== 'string' || origin(state.origin) !== state.origin || typeof state.instanceId !== 'string'
+    || !proof.test(state.runtimeToken ?? '') || !proof.test(state.continuationToken ?? '')
+    || typeof fields.displayName !== 'string' || !fields.displayName.trim() || fields.displayName.length > 60
+    || typeof fields.bio !== 'string' || fields.bio.length > 500 || /[\u0000-\u001f\u007f]/u.test(fields.displayName + fields.bio)
+    || avatar.template !== 'basic' || !['olive', 'cream', 'blue', 'coral'].includes(String(avatar.color))
+    || !registered || registered.method !== 'POST' || registered.path !== '/v1/registrations'
+    || registered.action !== 'register' || !registered.body || typeof registered.body.attemptId !== 'string'
+    || registered.scope !== `registration:${registered.body.attemptId}`
+    || !proof.test(String(registered.body.runtimeToken)) || !proof.test(String(registered.body.continuationToken))) throw new AgentError('state_invalid');
+  for (const command of Object.values(state.commands)) {
+    if (!command || !['POST', 'PUT'].includes(command.method) || typeof command.path !== 'string'
+      || !command.path.startsWith('/v1/') || /[?#]/.test(command.path) || typeof command.scope !== 'string'
+      || typeof command.action !== 'string' || !command.body || typeof command.body.operationId !== 'string'
+      || !['pending', 'committed'].includes(command.status)
+      || (command.bearer !== undefined && !proof.test(command.bearer))
+      || (command.status === 'committed' && command.result?.outcome !== 'committed')) throw new AgentError('state_invalid');
+  }
+}
 function origin(value: string): string {
   let url: URL;
   try { url = new URL(value); } catch { throw new AgentError('invalid_origin'); }
@@ -275,8 +297,7 @@ export async function runAgent(args: string[]): Promise<Json> {
           status: 'pending', body: { operationId: newOperationId(), ...material, ...(inviteToken ? { inviteToken } : {}) } } } };
       await writePrivateJson(path, state, true);
     }
-    if (state.format !== 'connet-agent-v1' || state.apiVersion !== 'v1' || state.documentationVersion !== 'v1'
-      || !state.commands?.registration || typeof state.origin !== 'string' || origin(state.origin) !== state.origin) throw new AgentError('state_invalid');
+    validateState(state);
     if ((options['--url'] && origin(options['--url']) !== state.origin)
       || (options['--name'] && options['--name'] !== state.fields.displayName)
       || (options['--bio'] && options['--bio'] !== state.fields.bio)
