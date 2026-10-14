@@ -28,14 +28,13 @@ install -m 600 "$source_dir/privkey.pem" "$target/versions/$version/privkey.pem"
 previous=$(readlink "$target/current" || true)
 ln -s "versions/$version" "$target/current.next"
 mv -Tf "$target/current.next" "$target/current"
-if ! docker exec "$proxy" nginx -t; then
+if ! docker exec "$proxy" nginx -t || ! docker exec "$proxy" nginx -s reload; then
     if [[ -n "$previous" ]]; then
         ln -s "$previous" "$target/current.rollback"
         mv -Tf "$target/current.rollback" "$target/current"
     else
         rm -- "$target/current"
     fi
-    echo 'Proxy validation failed; certificate pointer restored.' >&2
+    echo 'Proxy validation or reload failed; certificate pointer restored for retry.' >&2
     exit 1
 fi
-docker exec "$proxy" nginx -s reload

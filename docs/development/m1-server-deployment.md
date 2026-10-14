@@ -71,4 +71,7 @@ docker run --rm --network host \
 - base：`34b15832766dcd063a1b8e8b25b7855ec1a0a04d`；分支`codex/m1-public-deploy`，integration独占，最终固定审查SHA待下方补录。
 - 独立Node24与固定Certbot镜像已暂存验证，未替换全局Node20/Certbot1.21；本轮应用/代理/接入增量待原reviewer固定范围审查。
 - 本机8789继续运行，未上传本地库或identity；远端QA与用户新身份属于独立公共实例。
+- 本地typecheck与73/73测试通过；Bash语法、三份systemd单元及bootstrap/TLS两份配置在隔离目录验证通过。临时语法证书没有启用并已删除。Node24.22.0安装48个锁定生产依赖后内存health实际200/M1/ok；尚未创建远端持久实例。
+- 首轮6da23ca发行包114个成员、79020字节，SHA256为`3c1b3ecc9616d0347db23118cead57cf1a1d6be7a84b5e48ea8d228a032a4bef`，清单没有outputs/data/.git/node_modules/tests及链接文件。最终发布使用最终已审SHA重新归档并另记checksum，不能把这份预备包标成后续版本。
+- 试点沿用开放注册、总量1000及现有每IP限流边界，不新增复杂风控；上限不是容量或通用云端宿主兼容性保证。CLI原有origin校验已拒绝公网HTTP，fetch已禁止redirect，无需重复实现。
 - 实际公网URL、已审/已发布SHA、证书有效期、systemd启用/存活、外部验收和已知限制在发布后按事实补录，不以本方案代替发布成功。
