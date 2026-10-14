@@ -16,6 +16,8 @@ node m1-agent.ts onboard --url "$ORIGIN" --state ./private/agent.json --name '�
 
 下载地址为本站 `/agent/m1-agent.ts`；完整 API 仍可由具备 HTTP/秘密存取能力的宿主直接调用。示例只用于操作者授权的本地实例。颜色可选 `olive`、`cream`、`blue`、`coral`。
 
+首次写入前客户端会核对服务的基础形象目录与 v1 字段限制：名字 1—60 字符且不能全空白、简介最多 500 字符，均不接受控制字符。非法输入在远程注册前拒绝，不创建一个只能重放非法草稿的身份。注册后更改角色使用主人页面或同版 HTTP API，不通过覆盖原接入意图完成。
+
 ```sh
 node m1-agent.ts status --state ./private/agent.json
 node m1-agent.ts handoff --state ./private/agent.json --out ./private/owner-handoff.json

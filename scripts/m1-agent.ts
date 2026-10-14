@@ -254,6 +254,12 @@ export async function runAgent(args: string[]): Promise<Json> {
       const base = origin(options['--url']);
       const capabilities = await http(base, 'GET', '/v1/capabilities');
       if (capabilities.apiVersion !== 'v1' || typeof capabilities.instanceId !== 'string') throw new AgentError('unsupported_instance');
+      const catalog = await http(base, 'GET', '/v1/avatar-catalog');
+      const templates = Array.isArray(catalog.templates) ? catalog.templates.map(object) : [];
+      const basic = templates.find(template => template.id === 'basic');
+      const name = options['--name'], bio = options['--bio'] ?? '', color = options['--color'] ?? 'blue';
+      if (name.length > 60 || !name.trim() || bio.length > 500 || /[\u0000-\u001f\u007f]/u.test(name + bio)
+        || !Array.isArray(basic?.colors) || !basic.colors.includes(color)) throw new AgentError('invalid_profile_input');
       const material = newAgentMaterial();
       let inviteToken: string | undefined;
       if (options['--invite-file']) {
@@ -264,7 +270,7 @@ export async function runAgent(args: string[]): Promise<Json> {
       }
       state = { format: 'connet-agent-v1', origin: base, instanceId: capabilities.instanceId, apiVersion: 'v1', documentationVersion: 'v1',
         runtimeToken: material.runtimeToken, continuationToken: material.continuationToken,
-        fields: { displayName: options['--name'], bio: options['--bio'] ?? '', avatar: { template: 'basic', color: options['--color'] ?? 'blue' } },
+        fields: { displayName: name, bio, avatar: { template: 'basic', color } },
         commands: { registration: { method: 'POST', path: '/v1/registrations', scope: `registration:${material.attemptId}`, action: 'register',
           status: 'pending', body: { operationId: newOperationId(), ...material, ...(inviteToken ? { inviteToken } : {}) } } } };
       await writePrivateJson(path, state, true);

@@ -17,10 +17,10 @@ async function stop(child: ChildProcessWithoutNullStreams) {
   const timer = setTimeout(() => child.kill('SIGKILL'), 3000);
   try { await exited; } finally { clearTimeout(timer); }
 }
-async function server(directory: string) {
+async function server(directory: string, instanceId = 'agent-process-test') {
   const child = spawn(process.execPath, [serverEntry], { cwd: directory, env: { ...process.env,
     M1_HOST: '127.0.0.1', M1_PORT: '0', M1_DATABASE_PATH: join(directory, 'test.sqlite'),
-    M1_IDENTITY_PATH: join(directory, 'identity.json'), M1_INSTANCE_ID: 'agent-process-test', M1_RECOVERY_EPOCH: 'agent-test-epoch',
+    M1_IDENTITY_PATH: join(directory, 'identity.json'), M1_INSTANCE_ID: instanceId, M1_RECOVERY_EPOCH: 'agent-test-epoch',
   }, stdio: 'pipe' });
   let address = '';
   try {
@@ -181,6 +181,69 @@ test('registration, draft and handoff response loss plus backend restart resume 
   assert.equal(drafts, 1, 'Draft continuation must query the original command');
   assert.equal(handoffs, 1, 'Handoff continuation must not mint another generation');
   assert.equal((await json(statePath)).commands.registration.body.operationId, before.commands.registration.body.operationId);
+  const otherDirectory = await mkdtemp(join(tmpdir(), 'm1-different-instance-'));
+  t.after(() => rm(otherDirectory, { recursive: true, force: true }));
+  const other = await server(otherDirectory, 'different-agent-instance'); t.after(() => stop(other.child));
+  const stableState = await readFile(statePath, 'utf8');
+  upstream = other.address;
+  assert.equal((await cli(directory, ['status', '--state', statePath])).code, 1);
+  assert((await readFile(statePath, 'utf8')) === stableState, 'A different instance must not replace the original state');
+  assert.equal(registrations, 1, 'Instance mismatch must not create a new identity');
+  for (const [index, invalid] of [['--color', 'invalid'], ['--bio', 'x'.repeat(501)], ['--name', 'x'.repeat(61)]].entries()) {
+    const invalidState = join(directory, `invalid-${index}.json`);
+    const baseArgs = ['onboard', '--url', origin, '--state', invalidState];
+    if (invalid[0] !== '--name') baseArgs.push('--name', 'Invalid preflight');
+    const invalidRun = await cli(directory, [...baseArgs, ...invalid]);
+    assert.equal(invalidRun.code, 1);
+    await assert.rejects(stat(invalidState), { code: 'ENOENT' });
+    assert.equal(registrations, 1, 'Invalid profile input must be rejected before any registration POST');
+  }
+});
+
+test('owner-required publication remains pending and resumes joining only after authenticated owner publication', { timeout: 20_000 }, async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'm1-agent-proposal-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const running = await server(directory); t.after(() => stop(running.child));
+  let ownerSession = '';
+  const proxy = createServer(async (request, response) => {
+    const chunks: Buffer[] = []; for await (const chunk of request) chunks.push(Buffer.from(chunk));
+    const body = Buffer.concat(chunks);
+    try {
+      const forwarded = await fetch(`${running.address}${request.url}`, { method: request.method!, headers: {
+        ...(request.headers.authorization ? { authorization: request.headers.authorization } : {}),
+        ...(body.length ? { 'content-type': 'application/json' } : {}),
+      }, ...(body.length ? { body } : {}) });
+      const payload = await forwarded.text();
+      if (request.method === 'POST' && request.url === '/v1/registrations' && forwarded.status === 200) {
+        const material = JSON.parse(body.toString()), registered = JSON.parse(payload);
+        const handoffToken = newCredential('handoff');
+        await api(running.address, 'POST', '/v1/agent/self/handoffs', { operationId: newOperationId(), expectedGeneration: 0, handoffToken }, material.continuationToken);
+        ownerSession = await initializeOwner(running.address, { handoff: { token: handoffToken } });
+        await api(running.address, 'PUT', `/v1/owner/agents/${registered.agentId}/profile-policy`, {
+          operationId: newOperationId(), expectedVersion: 1, expectedPolicyVersion: 1, mode: 'proposal_required', lockedFields: [],
+        }, ownerSession);
+      }
+      response.writeHead(forwarded.status, { 'content-type': forwarded.headers.get('content-type') ?? 'text/plain' }); response.end(payload);
+    } catch { response.writeHead(503); response.end('{}'); }
+  });
+  await new Promise<void>(resolve => proxy.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise<void>(resolve => proxy.close(() => resolve())));
+  const address = proxy.address(); assert(address && typeof address !== 'string');
+  const origin = `http://127.0.0.1:${address.port}`;
+  await download(directory, origin);
+  const statePath = join(directory, 'state.json');
+  const pending = await cli(directory, ['onboard', '--url', origin, '--state', statePath, '--name', 'Proposal']);
+  assert.equal(pending.code, 0);
+  const pendingSummary = JSON.parse(pending.stdout), state = await json(statePath);
+  assert.equal(pendingSummary.registration, 'completed'); assert.equal(pendingSummary.profile, 'pending');
+  assert.equal(pendingSummary.membership, 'not_joined'); assert.equal(pendingSummary.pendingReason, 'owner_confirmation_required');
+  assert.equal(state.profile.published, null);
+  await api(running.address, 'POST', `/v1/agents/${state.agentId}/profile/publish`, {
+    operationId: newOperationId(), expectedVersion: state.profile.version, expectedPolicyVersion: state.profile.policyVersion,
+  }, ownerSession);
+  const continued = await cli(directory, ['status', '--state', statePath]);
+  assert.equal(continued.code, 0); assert.equal(JSON.parse(continued.stdout).membership, 'joined');
+  assert.equal((await json(statePath)).profile.confirmationSource, 'owner_authenticated');
 });
 
 test('corrupt, public or symlink client state never turns into a new registration', { timeout: 20_000 }, async t => {
