@@ -5,7 +5,7 @@ import { boolean, fail, object, text, version } from "../domains/common/errors.t
 import { AVATAR_COLORS, PROFILE_FIELDS, validateFields, validatePublication } from "../domains/profile/profile-rules.ts";
 
 export type M1Action =
-  | "capabilities" | "catalog" | "register" | "registrationResult" | "self"
+  | "capabilities" | "catalog" | "register" | "registrationResult" | "self" | "publicProfile"
   | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup"
   | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites"
   | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveDraft" | "publishProfile" | "profilePolicy"
@@ -148,11 +148,16 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
   }
 
   function registrationView(row: StoredRow): JsonObject {
-    return { registrationAttemptId: row.id, agentId: row.data.agentId!, ownerId: row.data.ownerId!, managementStatus: row.data.managementStatus! };
+    return { registrationAttemptId: row.id, agentId: row.data.agentId!, ownerId: row.data.ownerId!, managementStatus: row.data.managementStatus!, profileUrl: profileUrl(scalarString(row, "agentId")) };
+  }
+
+  function profileUrl(agentId: string): string {
+    return `/residents/${encodeURIComponent(agentId)}`;
   }
 
   function profileView(row: StoredRow): JsonObject {
-    return { agentId: row.data.agentId!, version: row.version, policyVersion: row.data.policyVersion!, mode: row.data.mode!, lockedFields: row.data.lockedFields!, draft: row.data.draft!, published: row.data.published!, publishedVersion: row.data.publishedVersion! };
+    const confirmationSource = row.data.published !== null && ["runtime_declaration", "owner_authenticated"].includes(row.data.confirmationSource as string) ? row.data.confirmationSource! : null;
+    return { agentId: row.data.agentId!, version: row.version, policyVersion: row.data.policyVersion!, mode: row.data.mode!, lockedFields: row.data.lockedFields!, draft: row.data.draft!, published: row.data.published!, publishedVersion: row.data.publishedVersion!, confirmationSource };
   }
 
   function membershipView(row: StoredRow): JsonObject {
@@ -174,15 +179,56 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     if (member.data.platformRestricted) fail("platform_restricted", 403, "Platform participation is restricted");
   }
 
-  function ownerView(tx: M1ReadSession, actor: CredentialRow, agentId: string): JsonObject {
+  function managementView(tx: M1ReadSession, agent: StoredRow): JsonObject {
+    const registration = tx.find("registrations", { agentId: agent.id })[0];
+    const owner = registration ? tx.get("owners", scalarString(registration, "ownerId")) : undefined;
+    const continuation = registration && typeof registration.data.continuationCredentialId === "string" ? tx.get("credentials", registration.data.continuationCredentialId) : undefined;
+    const initial = agent.data.managementKind === "initial" || continuation?.data.kind === "bootstrap";
+    const generation = initial && typeof owner?.data.handoffGeneration === "number" ? owner.data.handoffGeneration : null;
+    const timestamp = (value: JsonValue | undefined): number | null => typeof value === "number" && Number.isFinite(value) ? value : null;
+    return {
+      generation,
+      generatedAt: initial ? timestamp(owner?.data.handoffGeneratedAt) : null,
+      deliveryDeclaredAt: initial && generation !== null && agent.data.deliveryDeclaredGeneration === generation ? timestamp(agent.data.deliveryDeclaredAt) : null,
+      initializedAt: timestamp(agent.data.managementInitializedAt) ?? (initial ? timestamp(owner?.data.initializedAt) : null),
+      managementStatus: registration?.data.managementStatus === "managed" ? "managed" : "pending_setup",
+    };
+  }
+
+  function ownerView(tx: M1ReadSession, actor: CredentialRow, agentId: string, asOf: number): JsonObject {
     const agent = target(tx, actor, agentId);
-    return { agentId, ownerId: actor.data.ownerId!, runtimeVersion: agent.data.runtimeVersion!, runtimeActive: agent.data.runtimeActive!, profile: profileView(required(tx, "profiles", agentId)), membership: membershipView(required(tx, "memberships", agentId)) };
+    return { agentId, ownerId: actor.data.ownerId!, runtimeVersion: agent.data.runtimeVersion!, runtimeActive: agent.data.runtimeActive!, profile: profileView(required(tx, "profiles", agentId)), membership: membershipView(required(tx, "memberships", agentId)), profileUrl: profileUrl(agentId), management: managementView(tx, agent), asOf };
   }
 
   function invoke(action: M1Action, raw: unknown = {}, token?: string): JsonObject {
     if (action === "capabilities") return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, runtimeReplacement: true, scheduling: false, perception: false, interaction: false };
     if (action === "catalog") return { version: 1, templates: [{ id: "basic", colors: [...AVATAR_COLORS] }], requiredFields: ["displayName", "avatar"] };
     return store.transaction((tx) => {
+      // This is the server's state-read time, never evidence that a local Agent is online.
+      const asOf = now();
+      if (action === "publicProfile") {
+        const input = object(raw, ["agentId"]);
+        const agentId = text(input.agentId, "agentId", 8, 100);
+        const agent = tx.get("agents", agentId);
+        const profile = tx.get("profiles", agentId);
+        const member = tx.get("memberships", agentId);
+        if (!agent || !profile || !member || profile.data.published === null || member.data.state !== "joined" || member.data.platformRestricted !== false) {
+          fail("target_not_accessible", 404, "Target is not accessible");
+        }
+        const published = dataObject(profile.data.published);
+        const avatar = dataObject(published.avatar);
+        if (typeof published.displayName !== "string" || published.displayName.trim().length === 0 || avatar.template !== "basic" || !AVATAR_COLORS.includes(avatar.color as typeof AVATAR_COLORS[number])) {
+          fail("target_not_accessible", 404, "Target is not accessible");
+        }
+        // Build an allowlisted projection. Never return a profile aggregate to an anonymous caller.
+        const publicFields: JsonObject = {
+          displayName: published.displayName!,
+          avatar: { template: avatar.template!, color: avatar.color! },
+        };
+        if (typeof published.bio === "string") publicFields.bio = published.bio;
+        if (Array.isArray(published.interests)) publicFields.interests = published.interests.filter((value): value is string => typeof value === "string");
+        return { agentId, profileUrl: profileUrl(agentId), profile: publicFields, membership: { state: "joined" }, asOf };
+      }
       if (action === "register") {
         const input = object(raw, ["operationId", "attemptId", "runtimeToken", "continuationToken", "inviteToken"]);
         const attemptId = text(input.attemptId, "attemptId", 8, 100);
@@ -203,7 +249,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
           const ownerId = invite?.data.ownerId ?? randomUUID();
           const stamp = now();
           if (!invite) tx.insert("owners", { id: ownerId, version: 1, data: { status: "pending_setup", epoch: store.recoveryEpoch, authVersion: 1, handoffGeneration: 0, createdAt: stamp } });
-          tx.insert("agents", { id: agentId, version: 1, data: { runtimeVersion: 1, runtimeActive: true, createdAt: stamp } });
+          tx.insert("agents", { id: agentId, version: 1, data: { runtimeVersion: 1, runtimeActive: true, createdAt: stamp, managementKind: invite ? "invited" : "initial", managementInitializedAt: invite ? stamp : null } });
           newCredential(tx, input.runtimeToken, "runtime", { agentId, runtimeVersion: 1 });
           newCredential(tx, input.continuationToken, invite ? "registration_receipt" : "bootstrap", { agentId, ownerId, attemptId });
           if (invite) {
@@ -232,7 +278,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         object(raw, []);
         const actor = authenticate(tx, token, ["runtime"]);
         const agentId = actor.data.agentId!;
-        return { agentId, instanceId: store.instanceId, runtimeVersion: actor.data.runtimeVersion!, profile: profileView(required(tx, "profiles", agentId)), membership: membershipView(required(tx, "memberships", agentId)) };
+        return { agentId, instanceId: store.instanceId, runtimeVersion: actor.data.runtimeVersion!, profile: profileView(required(tx, "profiles", agentId)), membership: membershipView(required(tx, "memberships", agentId)), profileUrl: profileUrl(agentId), management: managementView(tx, required(tx, "agents", agentId)), asOf };
       }
 
       if (action === "issueHandoff") {
@@ -244,7 +290,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
           const generation = numberValue(owner, "handoffGeneration") + 1;
           revokeCredentials(tx, { ownerId: owner.id }, ["handoff", "setup"]);
           const handoff = newCredential(tx, input.handoffToken, "handoff", { agentId: actor.data.agentId, ownerId: owner.id, handoffGeneration: generation, expiresAt: now() + limits.handoff });
-          update(tx, "owners", owner, { handoffGeneration: generation });
+          update(tx, "owners", owner, { handoffGeneration: generation, handoffGeneratedAt: now() });
           return { agentId: actor.data.agentId!, ownerId: owner.id, handoffId: handoff.id, generation, expiresAt: handoff.data.expiresAt! };
         });
       }
@@ -256,7 +302,9 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         const registration = tx.find("registrations", { agentId: agent.id })[0]!;
         const owner = required(tx, "owners", scalarString(registration, "ownerId"));
         return command(tx, `agent:${agent.id}`, action, input, () => {
-          if (input.generation !== owner.data.handoffGeneration) fail("generation_conflict", 409, "Handoff generation changed");
+          const continuation = required(tx, "credentials", scalarString(registration, "continuationCredentialId"));
+          if (continuation.data.kind !== "bootstrap") fail("insufficient_scope", 403, "This Agent has no initial handoff");
+          if (input.generation !== owner.data.handoffGeneration || !Number.isSafeInteger(input.generation) || (input.generation as number) < 1) fail("generation_conflict", 409, "Handoff generation changed");
           update(tx, "agents", agent, { deliveryDeclaredAt: now(), deliveryDeclaredGeneration: input.generation as number });
           return { agentId: agent.id, deliveryStatus: "client_declared_delivered" };
         });
@@ -285,6 +333,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
           const session = newCredential(tx, input.sessionToken, "owner_session", { ownerId: owner.id, ownerAuthVersion, expiresAt: now() + limits.session });
           tx.insert("bindings", { id: randomUUID(), version: 1, data: { agentId: actor.data.agentId!, ownerId: owner.id, active: true } });
           update(tx, "owners", owner, { status: "active", passwordSalt: password.salt, passwordHash: password.hash, initializedAt: now() });
+          update(tx, "agents", required(tx, "agents", actor.data.agentId!), { managementInitializedAt: now() });
           const registration = tx.find("registrations", { agentId: actor.data.agentId })[0]!;
           update(tx, "registrations", registration, { managementStatus: "managed" });
           revokeCredentials(tx, { ownerId: owner.id }, ["bootstrap", "handoff", "setup"]);
@@ -325,8 +374,8 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
       if (action === "listAgents" || action === "managedAgent") {
         const input = object(raw, action === "managedAgent" ? ["agentId"] : []);
         const actor = authenticate(tx, token, ["owner_session"]);
-        if (action === "managedAgent") return ownerView(tx, actor, text(input.agentId, "agentId", 8, 100));
-        return { ownerId: actor.data.ownerId!, agents: tx.find("bindings", { ownerId: actor.data.ownerId, active: true }).map((binding) => ownerView(tx, actor, scalarString(binding, "agentId"))) };
+        if (action === "managedAgent") return ownerView(tx, actor, text(input.agentId, "agentId", 8, 100), asOf);
+        return { ownerId: actor.data.ownerId!, agents: tx.find("bindings", { ownerId: actor.data.ownerId, active: true }).map((binding) => ownerView(tx, actor, scalarString(binding, "agentId"), asOf)), asOf };
       }
 
       if (action === "issueInvite" || action === "revokeInvite" || action === "listInvites") {

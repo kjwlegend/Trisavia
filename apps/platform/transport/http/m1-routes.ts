@@ -7,6 +7,7 @@ type Definition = { method: "GET" | "POST" | "PUT"; url: string; action: M1Actio
 const routes: Definition[] = [
   { method: "GET", url: "/v1/capabilities", action: "capabilities" },
   { method: "GET", url: "/v1/avatar-catalog", action: "catalog" },
+  { method: "GET", url: "/v1/public/agents/:agentId", action: "publicProfile" },
   { method: "POST", url: "/v1/registrations", action: "register" },
   { method: "GET", url: "/v1/registration-attempts/:attemptId", action: "registrationResult" },
   { method: "GET", url: "/v1/agent/self", action: "self" },
@@ -66,7 +67,8 @@ export function registerM1Routes(app: FastifyInstance, service: M1Service): void
   for (const definition of routes) {
     app.route({
       method: definition.method, url: definition.url, bodyLimit: 16 * 1024,
-      handler(request) {
+      handler(request, reply) {
+        reply.header("Cache-Control", "no-store");
         const stamp = Date.now();
         if (stamp - lastCleanup >= 60_000) {
           for (const [key, window] of windows) if (stamp - window.start >= 60_000) windows.delete(key);
