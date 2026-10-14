@@ -233,10 +233,10 @@ function summary(path: string, state: State) {
 
 export async function runAgent(args: string[]): Promise<Json> {
   const command = args[0];
-  if (!['onboard', 'status', 'handoff'].includes(command ?? '')) throw new AgentError('invalid_command');
+  if (!['onboard', 'status', 'handoff', 'import-runtime'].includes(command ?? '')) throw new AgentError('invalid_command');
   const options: Record<string, string> = {};
   let declareDelivered = false;
-  const allowed = ['--url', '--state', '--name', '--bio', '--color', '--invite-file', '--out'];
+  const allowed = ['--url', '--state', '--name', '--bio', '--color', '--invite-file', '--runtime-file', '--out'];
   for (let i = 1; i < args.length; i++) {
     const key = args[i]!;
     if (key === '--declare-delivered') { declareDelivered = true; continue; }
@@ -277,6 +277,21 @@ export async function runAgent(args: string[]): Promise<Json> {
       || (options['--color'] && options['--color'] !== object(state.fields.avatar).color)) throw new AgentError('configuration_mismatch');
     const capabilities = await http(state.origin, 'GET', '/v1/capabilities');
     if (capabilities.instanceId !== state.instanceId || capabilities.apiVersion !== 'v1') throw new AgentError('instance_or_identity_mismatch');
+    if (command === 'import-runtime') {
+      if (!options['--runtime-file'] || !state.agentId) throw new AgentError('runtime_file_required');
+      const replacement = await readPrivateJson(resolve(options['--runtime-file']));
+      if (replacement.format !== 'connet-runtime-v1' || replacement.origin !== state.origin
+        || replacement.agentId !== state.agentId || typeof replacement.runtimeToken !== 'string') throw new AgentError('instance_or_identity_mismatch');
+      const self = await http(state.origin, 'GET', '/v1/agent/self', undefined, replacement.runtimeToken);
+      if (self.instanceId !== state.instanceId || self.agentId !== state.agentId) throw new AgentError('instance_or_identity_mismatch');
+      const previous = state.runtimeToken;
+      state.runtimeToken = replacement.runtimeToken;
+      for (const saved of Object.values(state.commands)) if (saved.bearer === previous) saved.bearer = state.runtimeToken;
+      state.profile = object(self.profile); state.membership = object(self.membership); state.management = object(self.management);
+      state.profileUrl = typeof self.profileUrl === 'string' ? self.profileUrl : `/residents/${state.agentId}`;
+      await save(path, state);
+      return summary(path, state);
+    }
     await initialize(path, state);
     await handoff(path, state, resolve(options['--out'] ?? state.handoff?.privateFile ?? `${path}.handoff.json`), declareDelivered);
     return summary(path, state);

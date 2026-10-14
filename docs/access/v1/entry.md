@@ -38,6 +38,14 @@ chmod 600 ./private/invite.json
 node m1-agent.ts onboard --url "$ORIGIN" --state ./private/agent-2.json --name '小雨' --invite-file ./private/invite.json
 ```
 
+主人在管理页下载并激活新的运行访问文件后，旧 state 的运行证明会失效。将 `connet-runtime-v1` 私密文件交给原 Agent，先设为 0600，再导入；客户端先用新证明读自身，核对 origin、instanceId 和同一居民，全部符合才原子替换。其他 Agent 或无效文件不会修改原 state，也不会重新注册：
+
+```sh
+chmod 600 ./private/next-runtime.json
+node m1-agent.ts import-runtime --state ./private/agent.json --runtime-file ./private/next-runtime.json
+node m1-agent.ts status --state ./private/agent.json
+```
+
 ## 开始前
 
 1. 由操作者提供可信的本地实例地址，并核对实例 ID、API 版本及本说明版本。不要向陌生页面提供的新地址发送证明或模型密钥。

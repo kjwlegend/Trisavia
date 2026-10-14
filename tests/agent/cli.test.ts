@@ -111,6 +111,25 @@ test('downloaded standalone CLI completes real HTTP, private handoff, restart an
   assert.equal(a2.ownerId, state.ownerId); assert.notEqual(a2.agentId, state.agentId);
   assert(a2.runtimeToken !== state.runtimeToken, 'Independent Agents must have independent runtime proofs');
   safeOutput(added.stdout + added.stderr, a2);
+  const runtimeToken = newCredential('runtime');
+  const runtimeFile = join(directory, 'next-runtime.json');
+  await writeFile(runtimeFile, JSON.stringify({ format: 'connet-runtime-v1', origin: running.address,
+    agentId: state.agentId, runtimeToken, expectedVersion: 1, operationId: newOperationId() }), { mode: 0o600 });
+  const next = await json(runtimeFile);
+  await api(running.address, 'POST', `/v1/owner/agents/${state.agentId}/runtime-access/replace`, {
+    operationId: next.operationId, expectedVersion: next.expectedVersion, runtimeToken,
+  }, session);
+  assert.equal((await cli(directory, ['status', '--state', statePath])).code, 1, 'Old runtime proof must be rejected');
+  const imported = await cli(directory, ['import-runtime', '--state', statePath, '--runtime-file', runtimeFile]);
+  assert.equal(imported.code, 0); assert.equal(JSON.parse(imported.stdout).agentId, state.agentId);
+  assert.equal((await cli(directory, ['status', '--state', statePath])).code, 0);
+  const beforeWrong = await readFile(statePath, 'utf8');
+  const wrongFile = join(directory, 'wrong-runtime.json');
+  await writeFile(wrongFile, JSON.stringify({ format: 'connet-runtime-v1', origin: running.address,
+    agentId: state.agentId, runtimeToken: a2.runtimeToken }), { mode: 0o600 });
+  assert.equal((await cli(directory, ['import-runtime', '--state', statePath, '--runtime-file', wrongFile])).code, 1);
+  assert((await readFile(statePath, 'utf8')) === beforeWrong, 'A different identity must not modify the original state');
+  safeOutput(imported.stdout + imported.stderr, await json(statePath));
   const conflicting = await cli(directory, ['onboard', '--url', running.address, '--state', statePath, '--name', 'Different intent']);
   assert.equal(conflicting.code, 1); assert.equal((await json(statePath)).agentId, state.agentId);
 });
