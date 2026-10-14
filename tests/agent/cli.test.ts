@@ -38,8 +38,8 @@ async function server(directory: string, instanceId = 'agent-process-test') {
     return { child, address };
   } catch (error) { await stop(child); throw error; }
 }
-async function cli(directory: string, args: string[]) {
-  const child = spawn(process.execPath, [join(directory, 'downloaded-agent.ts'), ...args], { cwd: directory, stdio: 'pipe' });
+async function cli(directory: string, args: string[], preload?: string) {
+  const child = spawn(process.execPath, [...(preload ? ['--import', preload] : []), join(directory, 'downloaded-agent.ts'), ...args], { cwd: directory, stdio: 'pipe' });
   let stdout = '', stderr = '';
   child.stdout.on('data', chunk => { stdout += String(chunk); });
   child.stderr.on('data', chunk => { stderr += String(chunk); });
@@ -274,4 +274,61 @@ test('corrupt, public or symlink client state never turns into a new registratio
   assert.equal((await fetch(`${running.address}/v1/agent/self`, { headers: { authorization: `Bearer ${material.runtimeToken}` } })).status, 401);
   const unsafe = await cli(directory, ['onboard', '--url', `${running.address}/?handoff=not-allowed`, '--state', join(directory, 'new.json'), '--name', 'Invalid origin']);
   assert.equal(unsafe.code, 1); assert(!unsafe.stderr.includes('not-allowed'));
+});
+
+test('all CLI origin boundaries reject public HTTP before network access and retain HTTPS parsing', { timeout: 20_000 }, async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'm1-agent-origin-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const running = await server(directory); t.after(() => stop(running.child));
+  await download(directory, running.address);
+  const audit = join(directory, 'fetch-audit.jsonl');
+  const preload = join(directory, 'origin-network-tripwire.mjs');
+  // This child-only transport tripwire prevents any public connection or identity creation.
+  // It records only method/protocol/path/redirect, never proofs, headers, body or full URLs.
+  await writeFile(preload, `import {appendFileSync} from 'node:fs';
+globalThis.fetch = async (input, options = {}) => {
+  const url = new URL(String(input));
+  appendFileSync(${JSON.stringify(audit)}, JSON.stringify({method:options.method || 'GET',protocol:url.protocol,path:url.pathname,redirect:options.redirect}) + '\\n', {mode:0o600});
+  throw new Error('Network disabled by the origin test');
+};\n`, { mode: 0o600 });
+  const probe = async (args: string[]) => {
+    await writeFile(audit, '', { mode: 0o600 });
+    const result = await cli(directory, args, preload);
+    const attempts = (await readFile(audit, 'utf8')).trim().split('\n').filter(Boolean).map(line => JSON.parse(line) as Json);
+    return { ...result, attempts };
+  };
+  for (const base of ['http://example.test', 'http://203.0.113.10:8080', 'http://localhost.example.test',
+    'http://127.0.0.2', 'http://[::ffff:127.0.0.1]', 'https://user:dummy@example.test',
+    'https://example.test/other', 'https://example.test/?private=invalid', 'https://example.test/#invalid']) {
+    const path = join(directory, 'not-created.json');
+    const result = await probe(['onboard', '--url', base, '--state', path, '--name', 'Origin test']);
+    assert.equal(result.code, 1); assert(result.stderr.startsWith('invalid_origin;'));
+    assert.equal(result.attempts.length, 0, 'Invalid origins must fail before a read or write request');
+    await assert.rejects(stat(path), { code: 'ENOENT' });
+  }
+  for (const base of ['https://example.test', 'https://203.0.113.10:8443', 'http://localhost:8787',
+    'http://127.0.0.1:8787', 'http://[::1]:8787']) {
+    const result = await probe(['onboard', '--url', base, '--state', join(directory, 'not-created.json'), '--name', 'Origin test']);
+    assert.equal(result.code, 1); // The tripwire deliberately stops the first capability read.
+    assert.equal(result.attempts.length, 1, 'Allowed HTTPS and explicit loopback origins reach the transport boundary');
+    assert.equal(result.attempts[0]!.protocol, new URL(base).protocol);
+    assert.equal(result.attempts[0]!.method, 'GET'); assert.equal(result.attempts[0]!.path, '/v1/capabilities');
+    assert.equal(result.attempts[0]!.redirect, 'error', 'Redirects must not forward proofs to another origin or downgrade HTTPS');
+  }
+  const material = newAgentMaterial();
+  const state = { format: 'connet-agent-v1', apiVersion: 'v1', documentationVersion: 'v1', instanceId: 'origin-probe',
+    origin: 'http://example.test', runtimeToken: material.runtimeToken, continuationToken: material.continuationToken,
+    agentId: 'origin_probe_agent', fields: { displayName: 'Origin test', bio: '', avatar: { template: 'basic', color: 'blue' } },
+    commands: { registration: { method: 'POST', path: '/v1/registrations', action: 'register',
+      scope: `registration:${material.attemptId}`, status: 'pending', body: { operationId: newOperationId(), ...material } } } };
+  const path = join(directory, 'existing.json'), original = JSON.stringify(state);
+  await writeFile(path, original, { mode: 0o600 });
+  for (const command of ['onboard', 'status', 'handoff', 'import-runtime']) {
+    const result = await probe([command, '--state', path]);
+    assert.equal(result.code, 1); assert(result.stderr.startsWith('invalid_origin;'));
+    assert.equal(result.attempts.length, 0, 'Saved public HTTP must be rejected for every command before transport');
+    assert((await readFile(path, 'utf8')) === original, 'Rejected state origin must not rewrite identity or pending commands');
+  }
+  const bypass = await probe(['onboard', '--url', 'https://example.test', '--state', join(directory, 'not-created.json'), '--name', 'Origin test', '--insecure']);
+  assert.equal(bypass.code, 1); assert(bypass.stderr.startsWith('invalid_arguments;')); assert.equal(bypass.attempts.length, 0);
 });
