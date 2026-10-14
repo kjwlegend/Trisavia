@@ -23,7 +23,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     recoveryEpoch: options.recoveryEpoch ?? `epoch_${randomUUID()}`,
   });
   try {
-    const app = Fastify({ logger: false, disableRequestLogging: true, bodyLimit: 16 * 1024 });
+    const app = Fastify({ logger: false, bodyLimit: 16 * 1024 });
     app.addHook('onClose', async () => { store.close(); });
     app.setNotFoundHandler((_request, reply) => {
       reply.code(404).send({ error: { code: 'not_found', message: 'Route not found' } });
