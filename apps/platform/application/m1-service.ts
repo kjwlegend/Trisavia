@@ -1,0 +1,445 @@
+import { randomUUID } from "node:crypto";
+import type { JsonObject, JsonValue, M1ReadSession, M1Store, M1Table, M1Transaction, StoredRow } from "../contracts/store.ts";
+import { checkPassword, equalDigest, hashPassword, parseToken, payloadHash, verifier } from "../domains/access/credentials.ts";
+import { boolean, fail, object, text, version } from "../domains/common/errors.ts";
+import { AVATAR_COLORS, PROFILE_FIELDS, validateFields, validatePublication } from "../domains/profile/profile-rules.ts";
+
+export type M1Action =
+  | "capabilities" | "catalog" | "register" | "registrationResult" | "self"
+  | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup"
+  | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites"
+  | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveDraft" | "publishProfile" | "profilePolicy"
+  | "readMembership" | "join" | "leave" | "participation" | "receipt";
+
+export interface M1Options {
+  now?: () => number;
+  handoffTtlMs?: number;
+  setupTtlMs?: number;
+  sessionTtlMs?: number;
+  inviteTtlMs?: number;
+  registrationLimit?: number;
+  maxAgentsPerOwner?: number;
+  maxActiveInvitesPerOwner?: number;
+}
+
+export interface M1Service {
+  invoke(action: M1Action, input?: unknown, token?: string): JsonObject;
+}
+
+interface Credential extends JsonObject {
+  kind: string; fingerprint: string; verifier: string; epoch: string; active: boolean;
+  agentId: string | null; ownerId: string | null; expiresAt: number | null;
+}
+type CredentialRow = StoredRow<Credential>;
+
+function dataObject(value: JsonValue | undefined): JsonObject {
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? value : {};
+}
+
+function scalarString(row: StoredRow, key: string): string {
+  const value = row.data[key];
+  if (typeof value !== "string") throw new Error("Stored state is invalid");
+  return value;
+}
+
+function numberValue(row: StoredRow, key: string): number {
+  const value = row.data[key];
+  if (typeof value !== "number") throw new Error("Stored state is invalid");
+  return value;
+}
+
+function required(session: M1ReadSession, table: M1Table, id: string): StoredRow {
+  const row = session.get(table, id);
+  if (!row) fail("target_not_accessible", 404, "Target is not accessible");
+  return row;
+}
+
+function update(tx: M1Transaction, table: M1Table, row: StoredRow, patch: JsonObject): StoredRow {
+  const next = { id: row.id, version: row.version + 1, data: { ...row.data, ...patch } };
+  if (!tx.update(table, next, row.version)) fail("version_conflict", 409, "State changed; read the current version");
+  return next;
+}
+
+function expected(row: StoredRow, input: Record<string, unknown>, key = "expectedVersion"): void {
+  if (version(input[key], key) !== row.version) fail("version_conflict", 409, "State changed; read the current version", { version: row.version });
+}
+
+export function createM1Service(store: M1Store, options: M1Options = {}): M1Service {
+  const now = options.now ?? Date.now;
+  const limits = {
+    handoff: options.handoffTtlMs ?? 15 * 60_000,
+    setup: options.setupTtlMs ?? 15 * 60_000,
+    session: options.sessionTtlMs ?? 12 * 60 * 60_000,
+    invite: options.inviteTtlMs ?? 24 * 60 * 60_000,
+    registrations: options.registrationLimit ?? 1000,
+    agentsPerOwner: options.maxAgentsPerOwner ?? 20,
+    invitesPerOwner: options.maxActiveInvitesPerOwner ?? 20,
+  };
+  if (Object.values(limits).some((value) => !Number.isSafeInteger(value) || value < 1)) throw new Error("Invalid M1 configuration");
+
+  function newCredential(tx: M1Transaction, raw: unknown, kind: string, metadata: JsonObject): CredentialRow {
+    const parsed = parseToken(raw, true);
+    if (tx.get("credentials", parsed.id) || tx.find("credentials", { fingerprint: parsed.fingerprint }).length > 0) {
+      fail("credential_conflict", 409, "Use independent, unused credential material");
+    }
+    const row: CredentialRow = {
+      id: parsed.id, version: 1,
+      data: {
+        kind, fingerprint: parsed.fingerprint, verifier: verifier(kind, parsed), epoch: store.recoveryEpoch,
+        active: true, agentId: null, ownerId: null, expiresAt: null, ...metadata,
+      },
+    };
+    tx.insert("credentials", row);
+    return row;
+  }
+
+  function authenticate(tx: M1ReadSession, raw: unknown, kinds: readonly string[]): CredentialRow {
+    const parsed = parseToken(raw);
+    const credential = tx.get<Credential>("credentials", parsed.id);
+    if (!credential || !equalDigest(credential.data.verifier, verifier(credential.data.kind, parsed)) || !credential.data.active) {
+      fail("authentication_failed", 401, "Authentication failed");
+    }
+    if (credential.data.epoch !== store.recoveryEpoch) fail("restore_access_unsupported", 403, "Identity is retained; access cannot be restored from old credentials");
+    if (credential.data.expiresAt !== null && credential.data.expiresAt <= now()) fail("authentication_failed", 401, "Authentication failed");
+    if (!kinds.includes(credential.data.kind)) fail("insufficient_scope", 403, "Credential does not permit this action");
+    if (["owner_session", "owner_recovery", "invite"].includes(credential.data.kind)) {
+      const owner = tx.get("owners", credential.data.ownerId ?? "");
+      if (!owner || owner.data.status !== "active" || owner.data.epoch !== store.recoveryEpoch || owner.data.authVersion !== credential.data.ownerAuthVersion) {
+        fail("authentication_failed", 401, "Authentication failed");
+      }
+    }
+    if (credential.data.kind === "runtime") {
+      const agent = tx.get("agents", credential.data.agentId ?? "");
+      if (!agent || agent.data.runtimeVersion !== credential.data.runtimeVersion) fail("authentication_failed", 401, "Authentication failed");
+    }
+    if (["bootstrap", "handoff", "setup"].includes(credential.data.kind)) {
+      const owner = tx.get("owners", credential.data.ownerId ?? "");
+      if (!owner || owner.data.status !== "pending_setup") fail("authentication_failed", 401, "Authentication failed");
+      if (credential.data.kind !== "bootstrap" && owner.data.handoffGeneration !== credential.data.handoffGeneration) {
+        fail("authentication_failed", 401, "Authentication failed");
+      }
+    }
+    return credential;
+  }
+
+  function revokeCredentials(tx: M1Transaction, filters: Record<string, string | boolean>, kinds: readonly string[]): void {
+    for (const row of tx.find("credentials", filters)) {
+      if (kinds.includes(scalarString(row, "kind")) && row.data.active) update(tx, "credentials", row, { active: false });
+    }
+  }
+
+  function command(tx: M1Transaction, scope: string, action: string, input: Record<string, unknown>, work: () => JsonObject): JsonObject {
+    const operationId = text(input.operationId, "operationId", 8, 100);
+    const digest = payloadHash(input);
+    const existing = tx.find("operations", { scope, action, operationId, epoch: store.recoveryEpoch })[0];
+    if (existing) {
+      if (existing.data.payloadHash !== digest) fail("idempotency_payload_mismatch", 409, "Operation was already used with different content");
+      return dataObject(existing.data.result);
+    }
+    const result: JsonObject = {
+      ...work(), operationId, outcome: "committed", receiptId: randomUUID(), serverTime: now(),
+    };
+    tx.insert("operations", { id: randomUUID(), version: 1, data: { scope, action, operationId, epoch: store.recoveryEpoch, payloadHash: digest, result } });
+    tx.insert("facts", { id: randomUUID(), version: 1, data: {
+      action, operationId, receiptId: result.receiptId!, epoch: store.recoveryEpoch,
+      agentId: result.agentId ?? null, ownerId: result.ownerId ?? null, time: result.serverTime!, visibility: "private",
+    } });
+    return result;
+  }
+
+  function registrationView(row: StoredRow): JsonObject {
+    return { registrationAttemptId: row.id, agentId: row.data.agentId!, ownerId: row.data.ownerId!, managementStatus: row.data.managementStatus! };
+  }
+
+  function profileView(row: StoredRow): JsonObject {
+    return { agentId: row.data.agentId!, version: row.version, policyVersion: row.data.policyVersion!, mode: row.data.mode!, lockedFields: row.data.lockedFields!, draft: row.data.draft!, published: row.data.published!, publishedVersion: row.data.publishedVersion! };
+  }
+
+  function membershipView(row: StoredRow): JsonObject {
+    return { agentId: row.data.agentId!, worldId: row.data.worldId!, version: row.version, state: row.data.state!, ownerPaused: row.data.ownerPaused!, ownerPauseVersion: row.data.ownerPauseVersion!, platformRestricted: row.data.platformRestricted!, platformVersion: row.data.platformVersion! };
+  }
+
+  function target(tx: M1ReadSession, credential: CredentialRow, agentId: string): StoredRow {
+    if (credential.data.kind === "runtime") {
+      if (credential.data.agentId !== agentId) fail("target_not_accessible", 404, "Target is not accessible");
+    } else if (credential.data.kind === "owner_session") {
+      if (!tx.find("bindings", { agentId, ownerId: credential.data.ownerId, active: true }).length) fail("target_not_accessible", 404, "Target is not accessible");
+    } else fail("insufficient_scope", 403, "Credential does not permit this action");
+    return required(tx, "agents", agentId);
+  }
+
+  function businessWrite(tx: M1ReadSession, actor: CredentialRow, agentId: string): void {
+    const member = required(tx, "memberships", agentId);
+    if (actor.data.kind === "runtime" && member.data.ownerPaused) fail("participation_paused", 403, "Owner paused platform participation");
+    if (member.data.platformRestricted) fail("platform_restricted", 403, "Platform participation is restricted");
+  }
+
+  function ownerView(tx: M1ReadSession, actor: CredentialRow, agentId: string): JsonObject {
+    const agent = target(tx, actor, agentId);
+    return { agentId, ownerId: actor.data.ownerId!, runtimeVersion: agent.data.runtimeVersion!, runtimeActive: agent.data.runtimeActive!, profile: profileView(required(tx, "profiles", agentId)), membership: membershipView(required(tx, "memberships", agentId)) };
+  }
+
+  function invoke(action: M1Action, raw: unknown = {}, token?: string): JsonObject {
+    if (action === "capabilities") return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, runtimeReplacement: true, scheduling: false, perception: false, interaction: false };
+    if (action === "catalog") return { version: 1, templates: [{ id: "basic", colors: [...AVATAR_COLORS] }], requiredFields: ["displayName", "avatar"] };
+    return store.transaction((tx) => {
+      if (action === "register") {
+        const input = object(raw, ["operationId", "attemptId", "runtimeToken", "continuationToken", "inviteToken"]);
+        const attemptId = text(input.attemptId, "attemptId", 8, 100);
+        const continuation = parseToken(input.continuationToken, true);
+        parseToken(input.runtimeToken, true);
+        const prior = tx.get("registrations", attemptId);
+        if (prior) {
+          const proof = authenticate(tx, input.continuationToken, ["bootstrap", "registration_receipt"]);
+          if (proof.data.attemptId !== attemptId || prior.data.continuationCredentialId !== continuation.id) fail("authentication_failed", 401, "Authentication failed");
+          if (prior.data.requestHash !== payloadHash(input)) fail("idempotency_payload_mismatch", 409, "Registration attempt was already used with different content");
+          return command(tx, `registration:${attemptId}`, action, input, () => registrationView(prior));
+        }
+        const invite = input.inviteToken === undefined ? undefined : authenticate(tx, input.inviteToken, ["invite"]);
+        if (tx.find("agents").length >= limits.registrations) fail("quota_exceeded", 429, "Registration limit reached");
+        if (invite && tx.find("bindings", { ownerId: invite.data.ownerId, active: true }).length >= limits.agentsPerOwner) fail("quota_exceeded", 429, "Owner Agent limit reached");
+        return command(tx, `registration:${attemptId}`, action, input, () => {
+          const agentId = randomUUID();
+          const ownerId = invite?.data.ownerId ?? randomUUID();
+          const stamp = now();
+          if (!invite) tx.insert("owners", { id: ownerId, version: 1, data: { status: "pending_setup", epoch: store.recoveryEpoch, authVersion: 1, handoffGeneration: 0, createdAt: stamp } });
+          tx.insert("agents", { id: agentId, version: 1, data: { runtimeVersion: 1, runtimeActive: true, createdAt: stamp } });
+          newCredential(tx, input.runtimeToken, "runtime", { agentId, runtimeVersion: 1 });
+          newCredential(tx, input.continuationToken, invite ? "registration_receipt" : "bootstrap", { agentId, ownerId, attemptId });
+          if (invite) {
+            update(tx, "credentials", invite, { active: false, consumedByAttemptId: attemptId });
+            tx.insert("bindings", { id: randomUUID(), version: 1, data: { agentId, ownerId, active: true } });
+          }
+          const registration: StoredRow = { id: attemptId, version: 1, data: { agentId, ownerId, continuationCredentialId: continuation.id, managementStatus: invite ? "managed" : "pending_setup", requestHash: payloadHash(input) } };
+          tx.insert("registrations", registration);
+          tx.insert("profiles", { id: agentId, version: 1, data: { agentId, policyVersion: 1, mode: "agent_autonomous", lockedFields: [], draft: {}, published: null, publishedVersion: 0 } });
+          tx.insert("memberships", { id: agentId, version: 1, data: { agentId, worldId: "default", state: "not_joined", ownerPaused: false, ownerPauseVersion: 1, platformRestricted: false, platformVersion: 1 } });
+          return registrationView(registration);
+        });
+      }
+
+      if (action === "registrationResult") {
+        const input = object(raw, ["attemptId"]);
+        const attemptId = text(input.attemptId, "attemptId", 8, 100);
+        const actor = authenticate(tx, token, ["runtime", "bootstrap", "registration_receipt", "owner_session"]);
+        const row = required(tx, "registrations", attemptId);
+        if (actor.data.kind === "owner_session") target(tx, actor, scalarString(row, "agentId"));
+        else if (actor.data.agentId !== row.data.agentId || (actor.data.kind !== "runtime" && actor.data.attemptId !== attemptId)) fail("target_not_accessible", 404, "Target is not accessible");
+        return registrationView(row);
+      }
+
+      if (action === "self") {
+        object(raw, []);
+        const actor = authenticate(tx, token, ["runtime"]);
+        const agentId = actor.data.agentId!;
+        return { agentId, instanceId: store.instanceId, runtimeVersion: actor.data.runtimeVersion!, profile: profileView(required(tx, "profiles", agentId)), membership: membershipView(required(tx, "memberships", agentId)) };
+      }
+
+      if (action === "issueHandoff") {
+        const input = object(raw, ["operationId", "expectedGeneration", "handoffToken"]);
+        const actor = authenticate(tx, token, ["bootstrap"]);
+        const owner = required(tx, "owners", actor.data.ownerId!);
+        return command(tx, `bootstrap:${actor.id}`, action, input, () => {
+          if (!Number.isSafeInteger(input.expectedGeneration) || input.expectedGeneration !== owner.data.handoffGeneration) fail("generation_conflict", 409, "Read the current handoff generation", { generation: owner.data.handoffGeneration });
+          const generation = numberValue(owner, "handoffGeneration") + 1;
+          revokeCredentials(tx, { ownerId: owner.id }, ["handoff", "setup"]);
+          const handoff = newCredential(tx, input.handoffToken, "handoff", { agentId: actor.data.agentId, ownerId: owner.id, handoffGeneration: generation, expiresAt: now() + limits.handoff });
+          update(tx, "owners", owner, { handoffGeneration: generation });
+          return { agentId: actor.data.agentId!, ownerId: owner.id, handoffId: handoff.id, generation, expiresAt: handoff.data.expiresAt! };
+        });
+      }
+
+      if (action === "declareDelivery") {
+        const input = object(raw, ["operationId", "generation"]);
+        const actor = authenticate(tx, token, ["runtime", "bootstrap"]);
+        const agent = required(tx, "agents", actor.data.agentId!);
+        const registration = tx.find("registrations", { agentId: agent.id })[0]!;
+        const owner = required(tx, "owners", scalarString(registration, "ownerId"));
+        return command(tx, `agent:${agent.id}`, action, input, () => {
+          if (input.generation !== owner.data.handoffGeneration) fail("generation_conflict", 409, "Handoff generation changed");
+          update(tx, "agents", agent, { deliveryDeclaredAt: now(), deliveryDeclaredGeneration: input.generation as number });
+          return { agentId: agent.id, deliveryStatus: "client_declared_delivered" };
+        });
+      }
+
+      if (action === "previewHandoff" || action === "exchangeSetup" || action === "readSetup" || action === "completeSetup") {
+        const keys = action === "previewHandoff" ? ["handoffId"] : action === "exchangeSetup" ? ["operationId", "setupToken"] : action === "completeSetup" ? ["operationId", "password", "recoveryToken", "sessionToken", "credentialsSaved"] : [];
+        const input = object(raw, keys);
+        const actor = authenticate(tx, token, action === "previewHandoff" || action === "exchangeSetup" ? ["handoff"] : ["setup"]);
+        if (action === "previewHandoff") {
+          if (text(input.handoffId, "handoffId", 8, 100) !== actor.id) fail("target_not_accessible", 404, "Target is not accessible");
+          return { agentId: actor.data.agentId!, ownerId: actor.data.ownerId!, generation: actor.data.handoffGeneration!, expiresAt: actor.data.expiresAt!, status: "confirmation_required" };
+        }
+        if (action === "readSetup") return { agentId: actor.data.agentId!, ownerId: actor.data.ownerId!, generation: actor.data.handoffGeneration!, expiresAt: actor.data.expiresAt!, status: "restricted_setup" };
+        if (action === "exchangeSetup") return command(tx, `handoff:${actor.id}`, action, input, () => {
+          const setup = newCredential(tx, input.setupToken, "setup", { agentId: actor.data.agentId, ownerId: actor.data.ownerId, handoffGeneration: actor.data.handoffGeneration!, expiresAt: now() + limits.setup });
+          update(tx, "credentials", actor, { active: false });
+          return { agentId: actor.data.agentId!, ownerId: actor.data.ownerId!, setupId: setup.id, generation: actor.data.handoffGeneration!, expiresAt: setup.data.expiresAt! };
+        });
+        return command(tx, `setup:${actor.id}`, action, input, () => {
+          if (input.credentialsSaved !== true) fail("invalid_request", 400, "Save the independent credentials before completing setup");
+          const password = hashPassword(input.password);
+          const owner = required(tx, "owners", actor.data.ownerId!);
+          const ownerAuthVersion = numberValue(owner, "authVersion");
+          newCredential(tx, input.recoveryToken, "owner_recovery", { ownerId: owner.id, ownerAuthVersion });
+          const session = newCredential(tx, input.sessionToken, "owner_session", { ownerId: owner.id, ownerAuthVersion, expiresAt: now() + limits.session });
+          tx.insert("bindings", { id: randomUUID(), version: 1, data: { agentId: actor.data.agentId!, ownerId: owner.id, active: true } });
+          update(tx, "owners", owner, { status: "active", passwordSalt: password.salt, passwordHash: password.hash, initializedAt: now() });
+          const registration = tx.find("registrations", { agentId: actor.data.agentId })[0]!;
+          update(tx, "registrations", registration, { managementStatus: "managed" });
+          revokeCredentials(tx, { ownerId: owner.id }, ["bootstrap", "handoff", "setup"]);
+          return { agentId: actor.data.agentId!, ownerId: owner.id, managementStatus: "managed", sessionId: session.id, expiresAt: session.data.expiresAt!, invalidated: ["bootstrap", "handoff", "setup"] };
+        });
+      }
+
+      if (action === "login") {
+        const input = object(raw, ["operationId", "ownerId", "password", "sessionToken"]);
+        const ownerId = text(input.ownerId, "ownerId", 8, 100);
+        const owner = tx.get("owners", ownerId);
+        if (!owner || owner.data.status !== "active" || !checkPassword(input.password, scalarString(owner, "passwordSalt"), scalarString(owner, "passwordHash"))) fail("authentication_failed", 401, "Authentication failed");
+        if (owner.data.epoch !== store.recoveryEpoch) fail("restore_access_unsupported", 403, "Identity is retained; access cannot be restored from old credentials");
+        return command(tx, `owner:${ownerId}`, action, input, () => {
+          const session = newCredential(tx, input.sessionToken, "owner_session", { ownerId, ownerAuthVersion: owner.data.authVersion!, expiresAt: now() + limits.session });
+          return { ownerId, sessionId: session.id, expiresAt: session.data.expiresAt! };
+        });
+      }
+
+      if (action === "recover") {
+        const input = object(raw, ["operationId", "password", "recoveryToken", "sessionToken", "credentialsSaved"]);
+        const actor = authenticate(tx, token, ["owner_recovery"]);
+        return command(tx, `owner:${actor.data.ownerId!}`, action, input, () => {
+          if (input.credentialsSaved !== true) fail("invalid_request", 400, "Save the next independent credentials before recovery");
+          const password = hashPassword(input.password);
+          const owner = required(tx, "owners", actor.data.ownerId!);
+          const ownerAuthVersion = numberValue(owner, "authVersion") + 1;
+          const recovery = newCredential(tx, input.recoveryToken, "owner_recovery", { ownerId: owner.id, ownerAuthVersion });
+          const session = newCredential(tx, input.sessionToken, "owner_session", { ownerId: owner.id, ownerAuthVersion, expiresAt: now() + limits.session });
+          for (const old of tx.find("credentials", { ownerId: owner.id })) {
+            if (old.id !== recovery.id && old.id !== session.id && ["owner_session", "owner_recovery", "invite"].includes(scalarString(old, "kind")) && old.data.active) update(tx, "credentials", old, { active: false });
+          }
+          update(tx, "owners", owner, { authVersion: ownerAuthVersion, passwordSalt: password.salt, passwordHash: password.hash });
+          return { ownerId: owner.id, sessionId: session.id, ownerAuthVersion, expiresAt: session.data.expiresAt!, invalidated: ["owner_session", "owner_recovery", "invite"] };
+        });
+      }
+
+      if (action === "listAgents" || action === "managedAgent") {
+        const input = object(raw, action === "managedAgent" ? ["agentId"] : []);
+        const actor = authenticate(tx, token, ["owner_session"]);
+        if (action === "managedAgent") return ownerView(tx, actor, text(input.agentId, "agentId", 8, 100));
+        return { ownerId: actor.data.ownerId!, agents: tx.find("bindings", { ownerId: actor.data.ownerId, active: true }).map((binding) => ownerView(tx, actor, scalarString(binding, "agentId"))) };
+      }
+
+      if (action === "issueInvite" || action === "revokeInvite" || action === "listInvites") {
+        const input = object(raw, action === "issueInvite" ? ["operationId", "inviteToken"] : action === "revokeInvite" ? ["operationId", "inviteId", "expectedVersion"] : []);
+        const actor = authenticate(tx, token, ["owner_session"]);
+        const ownerId = actor.data.ownerId!;
+        const inviteView = (row: StoredRow): JsonObject => ({ inviteId: row.id, version: row.version, active: row.data.active!, expiresAt: row.data.expiresAt!, consumed: Boolean(row.data.consumedByAttemptId) });
+        if (action === "listInvites") return { invites: tx.find("credentials", { ownerId, kind: "invite" }).map(inviteView) };
+        return command(tx, `owner:${ownerId}`, action, input, () => {
+          if (action === "issueInvite") {
+            if (tx.find("credentials", { ownerId, kind: "invite", active: true }).filter((row) => (row.data.expiresAt as number) > now()).length >= limits.invitesPerOwner) fail("quota_exceeded", 429, "Active invite limit reached");
+            const invite = newCredential(tx, input.inviteToken, "invite", { ownerId, ownerAuthVersion: actor.data.ownerAuthVersion!, expiresAt: now() + limits.invite });
+            return { ownerId, ...inviteView(invite), limit: 1 };
+          }
+          const invite = tx.get("credentials", text(input.inviteId, "inviteId", 8, 100));
+          if (!invite || invite.data.kind !== "invite" || invite.data.ownerId !== ownerId) fail("target_not_accessible", 404, "Target is not accessible");
+          expected(invite, input);
+          return { ownerId, ...inviteView(update(tx, "credentials", invite, { active: false })) };
+        });
+      }
+
+      if (action === "revokeRuntime" || action === "replaceRuntime") {
+        const input = object(raw, ["operationId", "agentId", "expectedVersion", ...(action === "replaceRuntime" ? ["runtimeToken"] : [])]);
+        const actor = authenticate(tx, token, ["owner_session"]);
+        const agentId = text(input.agentId, "agentId", 8, 100);
+        const agent = target(tx, actor, agentId);
+        return command(tx, `owner:${actor.data.ownerId!}`, action, input, () => {
+          if (version(input.expectedVersion) !== agent.data.runtimeVersion) fail("version_conflict", 409, "Runtime generation changed", { version: agent.data.runtimeVersion });
+          const runtimeVersion = numberValue(agent, "runtimeVersion") + 1;
+          revokeCredentials(tx, { agentId }, ["runtime", "bootstrap", "registration_receipt", "handoff", "setup"]);
+          if (action === "replaceRuntime") newCredential(tx, input.runtimeToken, "runtime", { agentId, runtimeVersion });
+          update(tx, "agents", agent, { runtimeVersion, runtimeActive: action === "replaceRuntime" });
+          return { agentId, runtimeVersion, runtimeActive: action === "replaceRuntime" };
+        });
+      }
+
+      if (["readProfile", "saveDraft", "publishProfile", "profilePolicy"].includes(action)) {
+        const keys = action === "readProfile" ? ["agentId"] : action === "saveDraft" ? ["operationId", "agentId", "expectedVersion", "expectedPolicyVersion", "fields"] : action === "profilePolicy" ? ["operationId", "agentId", "expectedVersion", "expectedPolicyVersion", "mode", "lockedFields"] : ["operationId", "agentId", "expectedVersion", "expectedPolicyVersion"];
+        const input = object(raw, keys);
+        const actor = authenticate(tx, token, action === "profilePolicy" ? ["owner_session"] : ["runtime", "owner_session"]);
+        const agentId = text(input.agentId, "agentId", 8, 100);
+        target(tx, actor, agentId);
+        const profile = required(tx, "profiles", agentId);
+        if (action === "readProfile") return profileView(profile);
+        return command(tx, `${actor.data.kind === "runtime" ? "agent" : "owner"}:${actor.data.kind === "runtime" ? agentId : actor.data.ownerId!}`, action, input, () => {
+          expected(profile, input);
+          if (version(input.expectedPolicyVersion, "expectedPolicyVersion") !== profile.data.policyVersion) fail("version_conflict", 409, "Profile policy changed", { policyVersion: profile.data.policyVersion });
+          if (action === "profilePolicy") {
+            if (!["agent_autonomous", "owner_specified", "proposal_required"].includes(input.mode as string) || !Array.isArray(input.lockedFields) || input.lockedFields.length > PROFILE_FIELDS.length || input.lockedFields.some((field) => !PROFILE_FIELDS.includes(field as typeof PROFILE_FIELDS[number])) || new Set(input.lockedFields).size !== input.lockedFields.length) fail("invalid_request", 400, "Invalid profile policy");
+            return profileView(update(tx, "profiles", profile, { mode: input.mode as string, lockedFields: input.lockedFields as string[], policyVersion: numberValue(profile, "policyVersion") + 1 }));
+          }
+          businessWrite(tx, actor, agentId);
+          if (action === "saveDraft") {
+            const fields = validateFields(input.fields) as JsonObject;
+            const locked = profile.data.lockedFields as string[];
+            if (actor.data.kind === "runtime" && Object.keys(fields).some((field) => locked.includes(field))) fail("field_locked", 403, "Owner locked a requested field");
+            const draft = { ...dataObject(profile.data.draft), ...fields };
+            return profileView(update(tx, "profiles", profile, { draft }));
+          }
+          if (actor.data.kind === "runtime" && profile.data.mode !== "agent_autonomous") fail("confirmation_required", 403, "Owner confirmation is required for publication");
+          const draft = dataObject(profile.data.draft);
+          validatePublication(draft);
+          // An older draft must not publish a locked field over the owner's current public value.
+          if (actor.data.kind === "runtime") {
+            const published = dataObject(profile.data.published);
+            for (const field of profile.data.lockedFields as string[]) {
+              if (JSON.stringify(draft[field]) !== JSON.stringify(published[field])) fail("field_locked", 403, "Owner locked a field changed in this draft");
+            }
+          }
+          return profileView(update(tx, "profiles", profile, { published: draft, publishedVersion: numberValue(profile, "publishedVersion") + 1, confirmationSource: actor.data.kind === "runtime" ? "runtime_declaration" : "owner_authenticated" }));
+        });
+      }
+
+      if (["readMembership", "join", "leave", "participation"].includes(action)) {
+        const input = object(raw, action === "readMembership" ? ["agentId"] : ["operationId", "agentId", "expectedVersion", ...(action === "join" ? ["expectedProfileVersion"] : action === "participation" ? ["paused"] : [])]);
+        const actor = authenticate(tx, token, action === "participation" ? ["owner_session"] : ["runtime", "owner_session"]);
+        const agentId = text(input.agentId, "agentId", 8, 100);
+        target(tx, actor, agentId);
+        const member = required(tx, "memberships", agentId);
+        if (action === "readMembership") return membershipView(member);
+        return command(tx, `${actor.data.kind === "runtime" ? "agent" : "owner"}:${actor.data.kind === "runtime" ? agentId : actor.data.ownerId!}`, action, input, () => {
+          expected(member, input);
+          if (action === "participation") return membershipView(update(tx, "memberships", member, { ownerPaused: boolean(input.paused, "paused"), ownerPauseVersion: numberValue(member, "ownerPauseVersion") + 1 }));
+          if (action === "leave") return membershipView(member.data.state === "left" ? member : update(tx, "memberships", member, { state: "left" }));
+          businessWrite(tx, actor, agentId);
+          const profile = required(tx, "profiles", agentId);
+          if (version(input.expectedProfileVersion, "expectedProfileVersion") !== profile.version) fail("version_conflict", 409, "Profile changed", { version: profile.version });
+          if (profile.data.published === null) fail("admission_requirements_unmet", 422, "Publish a valid profile before joining");
+          validatePublication(dataObject(profile.data.published));
+          return membershipView(member.data.state === "joined" ? member : update(tx, "memberships", member, { state: "joined" }));
+        });
+      }
+
+      if (action === "receipt") {
+        const input = object(raw, ["operationId"]);
+        const operationId = text(input.operationId, "operationId", 8, 100);
+        const actor = authenticate(tx, token, ["runtime", "bootstrap", "registration_receipt", "owner_session"]);
+        const results = tx.find("operations", { operationId, epoch: store.recoveryEpoch });
+        for (const row of results) {
+          const result = dataObject(row.data.result);
+          if (actor.data.kind === "owner_session") {
+            if (result.ownerId === actor.data.ownerId) return result;
+            if (typeof result.agentId === "string" && tx.find("bindings", { agentId: result.agentId, ownerId: actor.data.ownerId, active: true }).length) return result;
+          } else if (result.agentId === actor.data.agentId) {
+            const registration = tx.find("registrations", { agentId: actor.data.agentId })[0];
+            const registrationScope = `registration:${registration?.id ?? ""}`;
+            if ((actor.data.kind === "runtime" && (row.data.scope === `agent:${actor.data.agentId}` || row.data.scope === registrationScope)) || row.data.scope === `registration:${actor.data.attemptId}` || row.data.scope === `bootstrap:${actor.id}`) return result;
+          }
+        }
+        fail("target_not_accessible", 404, "Operation is not accessible");
+      }
+      fail("invalid_request", 400, "Unsupported M1 action");
+    });
+  }
+  return { invoke };
+}
