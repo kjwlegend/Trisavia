@@ -1,6 +1,6 @@
 # M1 MVP 候选交付与固定验收证据
 
-日期：2026-10-14。状态：本轮MVP已实施并完成作者整合检查；原独立reviewer及设计总监正在做最终定点复核，尚未合入本地主线或启动最终用户实例。本页不以作者测试代替独立通过。
+更新：2026-10-15。状态：本轮MVP已实施，T1视觉验收通过；独立reviewer已关闭R2，完整增量仅余R3/P2。R3作者修复及整合回归已通过，正在等原reviewer定点复核；尚未合入本地主线或启动最终用户实例。本页不以作者测试代替独立通过。
 
 ## 固定范围
 
@@ -8,11 +8,12 @@
 | --- | --- |
 | 规划/后端主线基准 | `ebcdc764a958fc90769a6603bf8f6b476c1d6549` |
 | 第一轮MVP固定审查目标 | `2db916b6463152cebbea73948c992daa3d13a017`，独立初审唯一阻断R2/P2 |
-| 最终应用及运行脚本目标 | `8d1dad4f25b0c4a8bcbaaab704ec404702d90f4a` |
-| 最终代码与测试目标 | `c87bd60f654d5b106324ab286f3fa5c0623c0add`；相对上一行只追加owner.spec.ts专项测试 |
+| 前轮完整增量目标 | `c87bd60f654d5b106324ab286f3fa5c0623c0add`；独立复核R2关闭，唯一阻断R3/P2 |
+| 最终应用及运行脚本目标 | `dc7e35b7815cb0c2fd79ed9912cbaec79b4adb71`；R3续接补丁62b10af及保全后主动退出补丁dc7e35b |
+| 最终代码与测试目标 | `079995cb4b7696aa457b1cd5cfd6073322a17c8c`；相对上一行只追加owner.spec.ts出口专项测试 |
 | 后续本页及旧交付入口同步 | 纯文档，不改变上述已测源码；最终HEAD由交接给出 |
 | worktree / branch | `/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration`，`codex/m1-mvp-integration` |
-| 独立reviewer | `01a13916-02fe-7e90-8881-972aba227d8d`；API固定增量71aad73已PASS，其后完整差异以新复核结论为准 |
+| 独立reviewer | `01a13916-02fe-7e90-8881-972aba227d8d`；c87完整增量除R3外无阻断，R3最小增量待定点复核 |
 
 ## 当前可用闭环
 
@@ -34,7 +35,11 @@
 
 两条在桌面与手机均通过。秘密只在测试RAM/临时0600文件中，比较时使用布尔值避免失败日志泄露原文。预期的注入网络失败与未生效新session探测错误单独限定；无其他pageerror或console错误。
 
-设计定点反馈已在源码修订：顶部导航、字段锁label和庭院居民chip均≥44px；320/390无整页溢出。Enter切换居民后仍聚焦同目标data-agent-id控件，aria-pressed=true、focus-visible=true、轮廓实际3px。摘要改用中性阶段名称，仅独立记录存在才显示完成；A1已生成未声明、A2无初始交接但已邀请绑定分别核对，不把绑定时间冒充主人当前访问。
+R3是同根因的密码登录提交前断网刷新锁死。修复将login、completeSetup、recover三类认证统一保留原完整键和预存证明；待核对时提供可见的续接表单与回执入口，仅重新输入必要秘密。首次设置不再因为受限设置读取成功就删除原pending。自动化新增登录及首次设置各两条真实刷新路径，已提交丢响应时均查原回执且没有第二次POST。
+
+填错主人ID或原证明永久失效时，沿原键重试无法成功，因此另加明确出口：先下载含原键与预存证明的私密记录、确认保存，再主动退出当前标签页认证；原操作结果仍待核对，不撤销服务端或注册新身份。可重新导入原记录继续核对。作者实际验证未知主人和已真实轮换失效的恢复证明；自动化另验未知主人401、下载保存门槛、退出及导入同键/同证明且无新POST。
+
+设计定点反馈已在源码修订并获设计总监R3复验通过：顶部导航、字段锁label和庭院居民chip均≥44px；320/390无整页溢出。Enter切换居民后仍聚焦同目标data-agent-id控件，aria-pressed=true、focus-visible=true、轮廓实际3px。摘要改用中性阶段名称，仅独立记录存在才显示完成；A1已生成未声明、A2无初始交接但已邀请绑定分别核对，不把绑定时间冒充主人当前访问。设计结论见主目录docs/design/m1-t1-visual-review.md；未把作者测试作为设计通过。
 
 ## 最终整合检查
 
@@ -42,15 +47,15 @@
 
 | 命令 / 证据 | 实际结果 |
 | --- | --- |
-| `npm run check` | 类型检查和64/64通过；无失败、取消、跳过或待办；保留54基线，新增4项API、4项独立CLI、2项站点边界 |
-| `npm run test:e2e` | 桌面8/8、390px手机8/8，共16/16，无重试；包含320px、减少动态、HTTP下载、公开泄密、完整主人流程、R2刷新及焦点 |
+| c87完整检查及原独立复核 | 类型检查和64/64通过；桌面8/8、390px手机8/8通过。保留54基线，新增4项API、4项独立CLI、2项站点边界；独立结论仅R3/P2未关 |
+| 最终R3整合检查 | 在079995c运行typecheck及owner.spec.ts：桌面10/10、手机10/10，共20/20，无重试。覆盖三类认证六条真实刷新路径、主动保存退出与导入、既有主人管理及焦点；入口6项沿用此前独立通过，不重复运行无关流程 |
 | 测试隔离 | 桌面/手机分别重开临时服务和库，保留生产240次/分钟单IP限流；无等待绕过，不接触最终用户库 |
 | 同源实际HTTP | `/`、`/owner`、`/health`、`/agent/entry.md`、`/agent/http-api.md`、`/agent/m1-agent.ts`、`/v1/capabilities`均实际可读，正确MIME |
 | 根浏览器检查 | 桌面/手机首页和管理无意外脚本/请求失败，公开页真实读取；触控与键盘如上 |
 | diff / 文档 | 固定增量diff检查及本地文档链接检查通过；证据追加不改应用代码 |
 
-日志位于integration忽略目录 `outputs/m1-mvp-evidence/check-final.log`、`e2e-final.log`。公开/无秘密管理截图在同目录的 `home-desktop.png`、`home-mobile.png`、`owner-one-desktop.png`、`owner-multi-desktop.png`、`owner-multi-mobile.png`、`owner-multi-mobile-320.png`、`owner-login-mobile.png`、`resident-mobile.png`；源阶段各自记录，最终设计通过以设计总监的定点复验为准。
+日志位于integration忽略目录 `outputs/m1-mvp-evidence/check-final.log`、`e2e-final.log`，最终R3整合日志为 `r3-owner-final.log`。公开/无秘密管理截图在同目录的 `home-desktop.png`、`home-mobile.png`、`owner-one-desktop.png`、`owner-multi-desktop.png`、`owner-multi-mobile.png`、`owner-multi-mobile-320.png`、`owner-login-mobile.png`、`resident-mobile.png`；源阶段各自记录，最终设计通过以设计总监的定点复验为准。
 
-候选 `http://127.0.0.1:8788` 使用integration的独立 `outputs/m1-mvp-preview/m1.sqlite`，合成fixture供设计验证，不是用户主库。最终用户实例待审查通过后在主目录启动，实际URL/数据路径/进程见最终交接及[本地运行说明](m1-mvp-runbook.md)。四处MVP worktree及旧storage都保留，未推送、未公开部署。
+候选 `http://127.0.0.1:8788` 使用integration的独立 `outputs/m1-mvp-preview/m1.sqlite`，合成fixture供设计验证，不是用户主库。最终用户实例待审查通过后在主目录启动；8787属于其他项目，本轮拟通过运行参数使用8789，启动前重新核查空闲，不改默认产品配置。实际URL/数据路径/进程见最终交接及[本地运行说明](m1-mvp-runbook.md)。四处MVP worktree及旧storage都保留，未推送、未公开部署。
 
 真实用户自己的Agent宿主尚待其调试；本轮仅证明下载客户端/合成外部进程和浏览器可用。没有真实排程、轮询、成长、互动或交易；专项容量、完整治理、逐字段冲突差异、保留删除和灾备再授权不在本轮已验证承诺内。
