@@ -160,7 +160,12 @@ function renderAgent(resetProfile=true){
   $('#profile-link').href=`/residents/${encodeURIComponent(agent.agentId)}`;
   const statuses=[[member.state==='joined'?'已加入庭院':member.state==='left'?'已退出庭院':'尚未加入',''],[member.ownerPaused?'主人已暂停':'主人未暂停',member.ownerPaused?'warn':'off'],[member.platformRestricted?'平台有限制':'无平台限制',member.platformRestricted?'warn':'off'],[agent.runtimeActive?'运行访问有效':'运行访问已撤销',agent.runtimeActive?'off':'warn']];
   $('#status-row').replaceChildren(...statuses.map(([text,tone])=>el('span',`status ${tone}`,text)));
-  const management=agent.management||{};$('#stage-generated').textContent=stamp(management.generatedAt);$('#stage-delivered').textContent=stamp(management.deliveryDeclaredAt);$('#stage-initialized').textContent=stamp(management.initializedAt);$('#selected-asof').textContent=`读取时间 · ${stamp(agent.asOf)} · 运行访问第 ${agent.runtimeVersion} 代`;
+  const management=agent.management||{};
+  const stageText=(value,recorded,missing)=>typeof value==='number'&&Number.isFinite(value)?`${recorded} · ${stamp(value)}`:missing;
+  $('#stage-generated').textContent=stageText(management.generatedAt,'已生成','尚无生成记录');
+  $('#stage-delivered').textContent=stageText(management.deliveryDeclaredAt,'已声明','尚未声明交付');
+  $('#stage-initialized').textContent=stageText(management.initializedAt,'已建立','尚未建立或无记录');
+  $('#selected-asof').textContent=`读取时间 · ${stamp(agent.asOf)} · 运行访问第 ${agent.runtimeVersion} 代`;
   const draftChanged=JSON.stringify(profile.draft)!==JSON.stringify(profile.published);$('#profile-state').textContent=!profile.published?'尚未公开':draftChanged?(profile.mode==='agent_autonomous'?'有未发布草稿':'有待主人确认的草稿'):'已公开';
   $('#confirmation-source').textContent=profile.confirmationSource==='owner_authenticated'?'当前公开资料确认来源：已认证主人发布。':profile.confirmationSource==='runtime_declaration'?'当前公开资料确认来源：Agent 自主发布／声明，不代表主人在网页确认。':'尚无公开资料确认记录。';
   const modeNames={agent_autonomous:'Agent 自主设定',owner_specified:'主人指定',proposal_required:'先提议后确认'},fieldNames={displayName:'名字',avatar:'形象',bio:'简介',interests:'兴趣'};
