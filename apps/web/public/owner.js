@@ -19,13 +19,23 @@ function message(text,tone=''){notice(globalNotice,text,tone);}
 function fail(error){message(error.code==='private_storage_unavailable'?'浏览器无法保存当前标签页的私密续接材料。请启用会话存储后再继续。':errorText(error),isUnknown(error)?'pending':'error');}
 function setBusy(value){busy=value;document.querySelector('main').setAttribute('aria-busy',String(value));controls();}
 function pendingRecovery(){return vault.pendingOperation?.action==='recover';}
+function pendingLogin(){return vault.pendingOperation?.action==='login';}
+function pendingSetup(){return vault.pendingOperation?.action==='completeSetup';}
+function pendingAuthentication(){return pendingRecovery()||pendingLogin()||pendingSetup();}
 function recoveryProofsReady(){return pendingRecovery()&&vault.pendingOperation.scope===`owner:${vault.ownerId}`&&validToken(vault.sessionToken)&&validToken(vault.recoveryToken);}
+function loginProofReady(){return pendingLogin()&&vault.pendingOperation.scope===`owner:${vault.ownerId}`&&validToken(vault.sessionToken);}
+function setupProofsReady(){return pendingSetup()&&validToken(vault.setupToken)&&vault.pendingOperation.scope===`setup:${tokenId(vault.setupToken)}`&&validToken(vault.sessionToken)&&validToken(vault.recoveryToken);}
 function controls(){
   const pending=Boolean(vault.pendingOperation);
   $$('main button').forEach(button=>{button.disabled=busy||(pending&&!['check-result','retry-operation','logout','show-login'].includes(button.id));});
   $$('main input,main textarea,main select').forEach(input=>{input.disabled=busy||pending;});
   $('#setup-saved').disabled=!setupPrepared||busy||pending;
   $('#setup-complete').disabled=busy||pending||!setupPrepared||!$('#setup-saved').checked;
+  if(pendingSetup()){
+    const ready=setupProofsReady();$('#setup-password').disabled=busy||!ready;$('#credentials-download').disabled=busy||!ready;
+    $('#setup-saved').disabled=busy||!ready;$('#setup-complete').disabled=busy||!ready||!$('#setup-saved').checked;
+  }
+  if(pendingLogin()){$('#login-password').disabled=busy||!loginProofReady();$('#login-submit').disabled=busy||!loginProofReady();}
   $('#recovery-saved').disabled=!recoveryPrepared||busy||pending;
   $('#recovery-submit').disabled=busy||pending||!recoveryPrepared||!$('#recovery-saved').checked;
   if(pendingRecovery()){
@@ -42,11 +52,20 @@ function controls(){
   if(selectedId){const agent=current();if(agent){$('#join-agent').disabled||=agent.membership.state==='joined';$('#leave-agent').disabled||=agent.membership.state==='left';$('#revoke-runtime').disabled||=!agent.runtimeActive;}}
 }
 function showAuth(){view='auth';$('#auth-view').hidden=false;$('#manage-view').hidden=true;$('#session-actions').hidden=true;$('#page-title').textContent='主人管理';$('#page-description').textContent='独立管理你的居民，Agent 无需保持在线。';}
-function showSignIn(){showAuth();$('#setup-view').hidden=true;$('#sign-in-view').hidden=false;$('#login-owner').value=vault.ownerId||'';$('#recovery-owner').value=vault.ownerId||'';if(vault.recoveryToken&&!pendingRecovery())$('#recovery-token').value=vault.recoveryToken;$('#recovery-resume-info').hidden=!pendingRecovery();$('#recovery-download').textContent=pendingRecovery()?'重新下载已保存的下一代恢复文件':'下载下一代恢复文件';$('#recovery-submit').textContent=pendingRecovery()?'继续原恢复':'恢复管理访问';controls();}
+function showSignIn(){showAuth();$('#setup-view').hidden=true;$('#sign-in-view').hidden=false;$('#login-owner').value=vault.ownerId||'';$('#recovery-owner').value=vault.ownerId||'';if(vault.recoveryToken&&!pendingRecovery())$('#recovery-token').value=vault.recoveryToken;$('#login-resume-info').hidden=!pendingLogin();$('#login-submit').textContent=pendingLogin()?'继续原登录':'登录';$('#recovery-resume-info').hidden=!pendingRecovery();$('#recovery-download').textContent=pendingRecovery()?'重新下载已保存的下一代恢复文件':'下载下一代恢复文件';$('#recovery-submit').textContent=pendingRecovery()?'继续原恢复':'恢复管理访问';controls();}
 function showPendingRecovery(preserveInputs=false){
   showSignIn();tab('recovery');recoveryPrepared=null;
   if(!preserveInputs){$('#recovery-token').value='';$('#recovery-password').value='';$('#recovery-saved').checked=false;}
   controls();
+}
+function showPendingAuthentication(preserveInputs=false){
+  if(pendingRecovery()){showPendingRecovery(preserveInputs);return;}
+  if(pendingSetup()){renderSetup(true);if(!preserveInputs){$('#setup-password').value='';$('#setup-saved').checked=false;}}
+  else if(pendingLogin()){showSignIn();tab('login');if(!preserveInputs)$('#login-password').value='';}
+  controls();
+}
+function authenticationPendingMessage(){
+  return pendingRecovery()?'尚未核对到原恢复回执。原操作和下一代证明已保留，请重新输入旧恢复证明与原请求的新密码，继续原恢复；也可稍后再次核对。':pendingSetup()?'尚未核对到原设置回执。原操作和管理证明已保留，请重新输入原请求的管理密码，确认文件已保存后继续原设置；也可再次核对。':'尚未核对到原登录回执。原操作和会话证明已保留，请重新输入原请求的管理密码，继续原登录；也可再次核对。';
 }
 function tab(mode){$('#login-form').hidden=mode!=='login';$('#recovery-form').hidden=mode!=='recovery';$('#login-tab').setAttribute('aria-selected',String(mode==='login'));$('#recovery-tab').setAttribute('aria-selected',String(mode==='recovery'));}
 function current(){return agents.find(agent=>agent.agentId===selectedId);}
@@ -73,15 +92,16 @@ async function committed(result,pending){
 async function executePending(pending=vault.pendingOperation){
   if(!pending||!pendingPayload)return;
   setBusy(true);
-  try{const result=await api(pending.action==='recover'?'/owner/recoveries':pending.path,{method:pending.action==='recover'?'POST':pending.method,body:pendingPayload.body,token:pendingPayload.token});await committed(result,pending);}
+  const authenticationPath={login:'/owner/sessions',completeSetup:'/owner/setup/complete',recover:'/owner/recoveries'}[pending.action];
+  try{const result=await api(authenticationPath||pending.path,{method:authenticationPath?'POST':pending.method,body:pendingPayload.body,token:pendingPayload.token});await committed(result,pending);}
   catch(error){
     if(isUnknown(error))fail(error);
     else{
-      // A consumed setup/recovery token can mean the original commit succeeded.
-      if(pending.action==='recover'||(['completeSetup','login'].includes(pending.action)&&error.status===401)){try{const result=await receipt(pending);await committed(result,pending);return;}catch{}}
-      if(pending.action==='recover'){
-        pendingPayload=null;showPendingRecovery(true);
-        message(`原恢复仍待核对。${errorText(error)} 请核对旧恢复证明和原请求的新密码，再继续原恢复。`,'pending');return;
+      // Preserve every authentication command until its exact result is known.
+      if(pendingAuthentication()){
+        try{const result=await receipt(pending);await committed(result,pending);return;}catch{}
+        pendingPayload=null;showPendingAuthentication(true);
+        message(`${pendingRecovery()?'原恢复仍待核对。 ':''}${errorText(error)} ${authenticationPendingMessage()}`,'pending');return;
       }
       clearPending();fail(error);
       if(['version_conflict','state_conflict'].includes(error.code))$('#draft-note').textContent='有版本冲突。当前输入已保留；点击「读取最新状态」检查服务器版本后，再确认保存。';
@@ -95,7 +115,7 @@ async function command({action,path,method='POST',fields={},targetId=selectedId,
 async function checkResult(){
   if(busy||!vault.pendingOperation)return;setBusy(true);const pending=vault.pendingOperation;
   try{const result=await receipt(pending);await committed(result,pending);}
-  catch(error){if(pending.action==='recover'){showPendingRecovery(true);message('尚未核对到原恢复回执。原操作和下一代证明已保留，请重新输入旧恢复证明与原请求的新密码，继续原恢复；也可稍后再次核对。','pending');}else message(error.status===404?'尚未查到原操作回执，结果仍未知。保留原操作；可在此标签页重试原操作，或稍后再核对。':errorText(error),'pending');}
+  catch(error){if(pendingAuthentication()){showPendingAuthentication(true);message(authenticationPendingMessage(),'pending');}else message(error.status===404?'尚未查到原操作回执，结果仍未知。保留原操作；可在此标签页重试原操作，或稍后再核对。':errorText(error),'pending');}
   finally{setBusy(false);}
 }
 
@@ -105,7 +125,7 @@ async function previewHandoff(){
   try{setupInfo=await api(`/owner-handoffs/${encodeURIComponent(tokenId(vault.handoffToken))}`,{token:vault.handoffToken});vault.ownerId=setupInfo.ownerId;save();renderSetup(false);message('这是交接预览。点击「开始设置」后才会兑换受限设置。');}
   catch(error){showSignIn();fail(error);}finally{setBusy(false);}
 }
-function renderSetup(restricted){showAuth();$('#setup-view').hidden=false;$('#sign-in-view').hidden=true;$('#setup-agent-id').textContent=setupInfo.agentId;$('#setup-owner-id').textContent=setupInfo.ownerId;$('#setup-expiry').textContent=stamp(setupInfo.expiresAt);$('#setup-preview').hidden=restricted;$('#setup-form').hidden=!restricted;controls();}
+function renderSetup(restricted){showAuth();$('#setup-view').hidden=false;$('#sign-in-view').hidden=true;$('#setup-agent-id').textContent=setupInfo?.agentId||'待核对';$('#setup-owner-id').textContent=setupInfo?.ownerId||vault.ownerId||'待核对';$('#setup-expiry').textContent=stamp(setupInfo?.expiresAt);$('#setup-preview').hidden=restricted;$('#setup-form').hidden=!restricted;$('#setup-resume-info').hidden=!pendingSetup();$('#credentials-download').textContent=pendingSetup()?'重新下载已保存的管理文件':'下载私密管理文件';$('#setup-complete').textContent=pendingSetup()?'继续原设置':'完成设置';controls();}
 async function readSetup(){setupInfo=await api('/owner/setup',{token:vault.setupToken});vault.ownerId=setupInfo.ownerId;save();renderSetup(true);}
 async function startSetup(){
   if(busy||vault.pendingOperation)return;setBusy(true);
@@ -116,17 +136,31 @@ async function startSetup(){
   }catch(error){fail(error);}finally{setBusy(false);}
 }
 function prepareSetup(){
-  if(busy||vault.pendingOperation)return;
+  if(busy)return;
+  if(pendingSetup()){if(!setupProofsReady())return;downloadPrivate('connet-owner.private.json',privateFile());message('已重新准备原管理文件下载，原操作与预存证明均未变化。请确认文件已保存。','pending');controls();return;}
+  if(vault.pendingOperation)return;
   try{if(!setupPrepared){vault.sessionToken=credential('session');vault.recoveryToken=credential('recovery');vault.completeOperationId=id();vault.stage='setup_prepared';save();setupPrepared=true;}
     // This exact key is available if completing setup commits but loses its response.
     const file={...privateFile(),pendingOperation:{operationId:vault.completeOperationId,scope:`setup:${tokenId(vault.setupToken)}`,action:'completeSetup',kind:'setup'}};
     downloadPrivate('connet-owner.private.json',file);$('#setup-saved').disabled=false;message('已准备私密下载。请确认文件保存成功，再勾选确认。');controls();
   }catch(error){fail(error);}
 }
-async function completeSetup(event){event.preventDefault();if(!setupPrepared||!$('#setup-saved').checked)return;const password=$('#setup-password').value;if(password.length<12)return;
+async function completeSetup(event){event.preventDefault();if(busy||!$('#setup-saved').checked)return;const password=$('#setup-password').value;if(password.length<12)return;
+  if(pendingSetup()){
+    if(!setupProofsReady())return;const pending=vault.pendingOperation;
+    pendingPayload={token:vault.setupToken,body:{operationId:pending.operationId,password,recoveryToken:vault.recoveryToken,sessionToken:vault.sessionToken,credentialsSaved:true}};
+    await executePending();return;
+  }
+  if(!setupPrepared)return;
   await command({action:'completeSetup',path:'/owner/setup/complete',scope:`setup:${tokenId(vault.setupToken)}`,token:vault.setupToken,kind:'setup',operationId:vault.completeOperationId,targetId:null,fields:{password,recoveryToken:vault.recoveryToken,sessionToken:vault.sessionToken,credentialsSaved:true}});
 }
-async function login(event){event.preventDefault();if(busy||vault.pendingOperation)return;
+async function login(event){event.preventDefault();if(busy)return;
+  if(pendingLogin()){
+    if(!loginProofReady())return;const password=$('#login-password').value;if(password.length<12)return;
+    pendingPayload={token:null,body:{operationId:vault.pendingOperation.operationId,ownerId:vault.ownerId,password,sessionToken:vault.sessionToken}};
+    await executePending();return;
+  }
+  if(vault.pendingOperation)return;
   try{const ownerId=$('#login-owner').value.trim();if(vault.ownerId!==ownerId)delete vault.recoveryToken;vault.ownerId=ownerId;vault.sessionToken=credential('session');delete vault.setupToken;delete vault.handoffToken;vault.stage='login_prepared';save();await command({action:'login',path:'/owner/sessions',targetId:null,token:null,kind:'login',fields:{ownerId:vault.ownerId,password:$('#login-password').value,sessionToken:vault.sessionToken}});}catch(error){fail(error);}
 }
 function prepareRecovery(){
@@ -237,7 +271,15 @@ async function importCredentials(event){const file=event.target.files?.[0];if(!f
   }catch(error){showSignIn();message(error instanceof ApiError?errorText(error):'文件不符合当前服务的私密管理格式。请使用由此服务下载的正确文件。','error');}finally{event.target.value='';setBusy(false);}}
 function logout(){readGeneration++;selectionGeneration++;readAbort?.abort();agents=[];selectedId='';pendingPayload=null;setupInfo=null;setupPrepared=false;recoveryPrepared=null;runtimePrepared=null;invitePrepared=null;vault={format:'connet-owner-v1',origin:location.origin};try{sessionStorage.removeItem(storageKey);}catch{}$$('input[type=password]').forEach(input=>input.value='');$('#login-owner').value='';$('#recovery-owner').value='';showSignIn();message('已退出当前标签页的管理访问。已下载的私密文件请继续妥善保存。');controls();}
 async function resume(){
-  if(vault.pendingOperation){showSignIn();message('检测到待核对的原操作。请先核对回执，避免重复提交。','pending');controls();try{const result=await receipt(vault.pendingOperation);await committed(result,vault.pendingOperation);return;}catch{if(pendingRecovery()){showPendingRecovery();message('尚未核对到原恢复回执。原操作和下一代证明已保留，请重新输入旧恢复证明与原请求的新密码，继续原恢复；也可稍后再次核对。','pending');}else if(vault.pendingOperation.action==='completeSetup'&&vault.setupToken){try{await readSetup();vault.completeOperationId=vault.pendingOperation.operationId;clearPending();setupPrepared=true;$('#setup-saved').checked=false;message('首次设置尚未完成。原操作与预存凭据已保留，请保存文件、填写密码后继续。');controls();}catch{}}}return;}
+  if(vault.pendingOperation){
+    showSignIn();message('检测到待核对的原操作。请先核对回执，避免重复提交。','pending');controls();
+    try{const result=await receipt(vault.pendingOperation);await committed(result,vault.pendingOperation);return;}
+    catch{
+      if(pendingSetup()&&vault.setupToken){try{await readSetup();}catch{}}
+      if(pendingAuthentication()){showPendingAuthentication();message(authenticationPendingMessage(),'pending');}
+    }
+    return;
+  }
   if(vault.sessionToken){try{await loadAgents();return;}catch(error){if(![401,403].includes(error.status))throw error;}}
   if(vault.setupToken){try{await readSetup();message('已恢复受限设置。请重新下载管理文件并确认保存，再完成设置。');return;}catch(error){if(![401,403].includes(error.status))throw error;}}
   if(vault.handoffToken){await previewHandoff();return;}showSignIn();
