@@ -1,0 +1,41 @@
+[Unit]
+Description=agents-era M1 single-instance service
+After=network.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=agents-era
+Group=agents-era
+WorkingDirectory=/opt/agents-era/current
+ExecStart=/opt/agents-era/tools/node-v24.22.0-linux-x64/bin/node --max-old-space-size=384 apps/platform/server.ts
+Environment=M1_HOST=127.0.0.1
+Environment=M1_PORT=8790
+Environment=M1_DATABASE_PATH=/var/lib/agents-era/m1.sqlite
+Environment=M1_IDENTITY_PATH=/var/lib/agents-era/m1.sqlite.identity.json
+Environment=M1_TRUST_PROXY_LOOPBACK=1
+UMask=0077
+StateDirectory=agents-era
+StateDirectoryMode=0700
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=15
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ReadWritePaths=/var/lib/agents-era
+MemoryMax=768M
+TasksMax=64
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,12 @@
+[Unit]
+Description=Check agents-era IP certificate renewal every six hours
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=6h
+RandomizedDelaySec=10min
+Persistent=true
+Unit=agents-era-certificate.service
+
+[Install]
+WantedBy=timers.target
