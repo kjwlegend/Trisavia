@@ -639,3 +639,56 @@ test('首次设置已提交但响应丢失时刷新，新会话精确核对原�
     await expect(page.locator('#selected-id')).toContainText(agent.agentId);
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
+
+test('主人 ID 错误的待核对登录可先保存原记录再退出，并导入同键继续核对', async ({ page }) => {
+  const directory = await mkdtemp(join(tmpdir(), 'm1-owner-login-exit-'));
+  try {
+    const ownerId = randomUUID(), password = 'synthetic unmatched owner password';
+    track(page, password);
+    let posts = 0;
+    page.on('request', (request) => { if (new URL(request.url()).pathname.startsWith('/v1/') && request.method() === 'POST') posts++; });
+    await page.goto('/owner');
+    await page.getByLabel('主人 ID', { exact: true }).fill(ownerId);
+    await page.getByLabel('管理密码', { exact: true }).fill(password);
+    plannedFailure(page, '/v1/owner/sessions', '401');
+    await page.route('**/v1/owner/sessions', async (route) => {
+      const command = route.request().postDataJSON() as Json;
+      track(page, command.sessionToken as string);
+      plannedFailure(page, `/v1/operations/${command.operationId}`, '401'); // The rejected login probes its exact receipt once.
+      await route.continue();
+    }, { times: 1 });
+    const rejected = page.waitForResponse((response) => new URL(response.url()).pathname === '/v1/owner/sessions');
+    await page.getByRole('button', { name: '登录', exact: true }).click();
+    expect((await rejected).status(), 'An unknown owner does not acquire a session').toBe(401);
+    await idle(page);
+    const pending = await pendingVault(page, directory, password);
+    expect(pending.pendingOperation.scope).toBe(`owner:${ownerId}`); expect(pending.pendingOperation.action).toBe('login');
+    plannedFailure(page, `/v1/operations/${pending.pendingOperation.operationId}`, '401');
+    await page.reload();
+    await expect(page.getByRole('heading', { name: '继续原登录操作', exact: true })).toBeVisible();
+    const saved = await downloaded(page, page.getByRole('button', { name: '保存原认证记录并准备退出', exact: true }), directory);
+    sameFields(saved, pending, ['ownerId', 'sessionToken']);
+    sameFields(saved.pendingOperation, pending.pendingOperation, ['operationId', 'scope', 'action']);
+    expect(!JSON.stringify(saved).includes(password), 'The archived authentication record excludes the plaintext password').toBe(true);
+    const archive = await privateFile(directory, 'original-pending-login', saved);
+    const exit = page.getByRole('button', { name: '退出本次待核对认证', exact: true });
+    await expect(exit).toBeDisabled();
+    await page.getByRole('checkbox', { name: '我已保存原认证记录，理解结果仍待核对', exact: true }).check();
+    await exit.click(); await idle(page);
+    await expect(page.getByRole('button', { name: '登录', exact: true })).toBeEnabled();
+    await expect(page.getByLabel('导入私密管理文件', { exact: true })).toBeEnabled();
+    expect(await page.evaluate(() => sessionStorage.getItem('connet.owner.v1') === null), 'Exiting only clears the current tab continuation').toBe(true);
+    expect(posts, 'Saving and exiting must not create a new authentication or registration request').toBe(1);
+    plannedFailure(page, `/v1/operations/${pending.pendingOperation.operationId}`, '401');
+    const recheck = page.waitForRequest((request) => new URL(request.url()).pathname === `/v1/operations/${pending.pendingOperation.operationId}`);
+    await page.getByLabel('导入私密管理文件', { exact: true }).setInputFiles(archive);
+    const recheckUrl = new URL((await recheck).url());
+    expect(recheckUrl.searchParams.get('scope')).toBe(`owner:${ownerId}`); expect(recheckUrl.searchParams.get('action')).toBe('login');
+    await expect(page.getByRole('heading', { name: '继续原登录操作', exact: true })).toBeVisible(); await idle(page);
+    await expect(page.getByRole('button', { name: '核对原操作结果', exact: true })).toBeEnabled();
+    const restored = await pendingVault(page, directory, password);
+    sameFields(restored, pending, ['ownerId', 'sessionToken']);
+    sameFields(restored.pendingOperation, pending.pendingOperation, ['operationId', 'scope', 'action']);
+    expect(posts, 'Importing the original record only checks its receipt without a new POST').toBe(1);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
