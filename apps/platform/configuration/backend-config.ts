@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
 export interface BackendConfig {
@@ -54,6 +54,9 @@ export function loadBackendConfig(
   } catch (error) {
     if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) {
       throw new Error('Identity metadata is unreadable or invalid; refusing to regenerate it');
+    }
+    if (existsSync(databasePath)) {
+      throw new Error('Identity metadata is missing for an existing database; explicit recovery is required');
     }
     const created = {
       version: 1,

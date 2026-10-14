@@ -44,3 +44,12 @@ test('memory databases require no identity file and accept explicit test identit
   assert.equal(result.recoveryEpoch, 'test-epoch');
   assert.equal(result.port, 0);
 });
+
+test('does not invent new identity metadata beside an existing database', () => {
+  const cwd = mkdtempSync(join(tmpdir(), 'm1-config-'));
+  try {
+    writeFileSync(join(cwd, 'existing.sqlite'), 'existing database stand-in');
+    assert.throws(() => loadBackendConfig({ M1_DATABASE_PATH: 'existing.sqlite' }, cwd), /explicit recovery/);
+    assert.throws(() => readFileSync(join(cwd, 'existing.sqlite.identity.json')), { code: 'ENOENT' });
+  } finally { rmSync(cwd, { recursive: true, force: true }); }
+});
