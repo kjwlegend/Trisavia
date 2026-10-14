@@ -66,5 +66,5 @@ export function courtyard(root,{agents=[],selectedId='',onSelect,compact=false}=
   });
   root.append(el('p','scene-caption',`庭院布局示意 · 非实时活动${agents.length>6?' · 场景显示前 6 位居民，完整名单见列表':''}`));
   if(!compact){root.append(buttons,details);}else{root.append(buttons,details);root.classList.add('compact-scene');}
-  if(onSelect&&agents.length){const residents=el('div','scene-residents');agents.slice(0,6).forEach(agent=>{const p=agent.profile?.published||agent.profile?.draft||{};const b=el('button','chip',p.displayName||'未命名居民');b.type='button';b.setAttribute('aria-pressed',String(selectedId===agent.agentId));b.addEventListener('click',()=>onSelect(agent.agentId));residents.append(b);});root.append(residents);}
+  if(onSelect&&agents.length){const residents=el('div','scene-residents');agents.slice(0,6).forEach(agent=>{const p=agent.profile?.published||agent.profile?.draft||{};const b=el('button','chip',p.displayName||'未命名居民');b.type='button';b.dataset.agentId=agent.agentId;b.setAttribute('aria-pressed',String(selectedId===agent.agentId));b.addEventListener('click',()=>onSelect(agent.agentId));residents.append(b);});root.append(residents);}
 }
