@@ -7,9 +7,9 @@
 | 作者 | 可写范围 / 实际目录 |
 | --- | --- |
 | 技术总监本人 | 根package/锁文件/Playwright配置、app.ts/server.ts、site-routes.ts、tests/site、交付/合同文档；m1-integration，codex/m1-mvp-integration |
-| m1_api | application/domain/API路由、tests/api及新API测试；m1-api，codex/m1-mvp-api |
+| m1_api | application/domain/API路由、tests/api及新API测试；后续唯一负责tests/e2e/owner.spec.ts主人浏览器验收；m1-api，codex/m1-mvp-api |
 | m1_web | apps/web/public/**；m1-web，codex/m1-mvp-web |
-| m1_acceptance | scripts/m1-agent.ts及私密客户端辅助、docs/access/v1、tests/agent、tests/e2e、docs/acceptance；m1-acceptance，codex/m1-mvp-acceptance |
+| m1_acceptance | scripts/m1-agent.ts及私密客户端辅助、docs/access/v1、tests/agent、tests/e2e/entry.spec.ts公开入口验收、docs/acceptance；m1-acceptance，codex/m1-mvp-acceptance |
 
 各目录位于 `/Users/kjw/Workspace/Codes/agents-era-worktrees/`。不得在他人工作区写入，不回退他人修改。API作者维护全部业务HTTP路由；根作者只注册独立站点路由。共享治理和设计文档由现有所有者维护。
 
