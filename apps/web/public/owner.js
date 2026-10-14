@@ -11,7 +11,7 @@ let storageAvailable=true;
 try{const saved=JSON.parse(sessionStorage.getItem(storageKey)||'null');if(saved?.format===vault.format&&saved.origin===location.origin)vault=saved;}catch{storageAvailable=false;}
 let agents=[],selectedId='',busy=false,selectionGeneration=0,readGeneration=0;
 let setupInfo=null,setupPrepared=false,recoveryPrepared=null,runtimePrepared=null,invitePrepared=null;
-let pendingPayload=null,view='auth',readAbort=null;
+let pendingPayload=null,view='auth',readAbort=null,authExitPrepared=null;
 const globalNotice=$('#global-notice');
 brandHeader('owner');courtyard($('#auth-courtyard'));
 function save(){try{sessionStorage.setItem(storageKey,JSON.stringify(vault));}catch{storageAvailable=false;throw new ApiError('private_storage_unavailable',400);}}
@@ -48,6 +48,9 @@ function controls(){
   $('#invite-saved').disabled=busy||pending;$('#issue-invite').disabled=busy||pending||!invitePrepared||!$('#invite-saved').checked;
   $('#check-result').disabled=busy;$('#retry-operation').disabled=busy||!pendingPayload;
   $('#unknown-controls').hidden=!pending;$('#retry-operation').hidden=!pendingPayload;
+  $('#prepare-auth-exit').hidden=!pendingAuthentication();$('#prepare-auth-exit').disabled=busy;
+  $('#auth-exit-saved').disabled=busy||!authExitPrepared;
+  $('#confirm-auth-exit').disabled=busy||!pendingAuthentication()||authExitPrepared!==authenticationExitKey()||!$('#auth-exit-saved').checked;
   $('#agent-select').disabled=busy;$('#credentials-import').disabled=busy||pending;
   if(selectedId){const agent=current();if(agent){$('#join-agent').disabled||=agent.membership.state==='joined';$('#leave-agent').disabled||=agent.membership.state==='left';$('#revoke-runtime').disabled||=!agent.runtimeActive;}}
 }
@@ -71,11 +74,23 @@ function tab(mode){$('#login-form').hidden=mode!=='login';$('#recovery-form').hi
 function current(){return agents.find(agent=>agent.agentId===selectedId);}
 function privateFile(){const result={format:'connet-owner-v1',origin:location.origin,ownerId:vault.ownerId};for(const key of ['sessionToken','recoveryToken','setupToken','pendingOperation'])if(vault[key])result[key]=vault[key];return result;}
 function downloadVault(){downloadPrivate('connet-owner.private.json',privateFile());}
+function authenticationExitKey(){const pending=vault.pendingOperation;return pendingAuthentication()?JSON.stringify([pending.scope,pending.action,pending.operationId,vault.sessionToken,vault.recoveryToken,vault.setupToken]):null;}
+function resetAuthenticationExit(){authExitPrepared=null;$('#auth-exit-confirm').hidden=true;$('#auth-exit-saved').checked=false;}
+function prepareAuthenticationExit(){
+  if(busy||!pendingAuthentication())return;
+  downloadPrivate('connet-auth-pending.private.json',privateFile());authExitPrepared=authenticationExitKey();
+  $('#auth-exit-saved').checked=false;$('#auth-exit-confirm').hidden=false;
+  message('请先保存原认证记录，再确认退出。原操作结果仍待核对，预存证明不会在退出前被替换。','pending');controls();
+}
+function exitPendingAuthentication(){
+  if(busy||!pendingAuthentication()||authExitPrepared!==authenticationExitKey()||!$('#auth-exit-saved').checked)return;
+  logout();tab('login');message('已退出本次待核对认证。原操作结果仍待核对，可用刚保存的私密记录重新导入继续；现在可使用正确的管理方式登录。','pending');
+}
 function beginPending({action,scope,path,method='POST',body,token,kind='owner',targetId}){
   const pending={operationId:body.operationId,scope,action,path,method,kind,...(targetId?{targetId}:{})};
   vault.pendingOperation=pending;save();pendingPayload={body,token};controls();return pending;
 }
-function clearPending(){delete vault.pendingOperation;pendingPayload=null;save();controls();}
+function clearPending(){delete vault.pendingOperation;pendingPayload=null;resetAuthenticationExit();save();controls();}
 async function receipt(pending){return api(`/operations/${encodeURIComponent(pending.operationId)}?scope=${encodeURIComponent(pending.scope)}&action=${encodeURIComponent(pending.action)}`,{token:vault.sessionToken});}
 async function committed(result,pending){
   if(['completeSetup','recover','login'].includes(pending.action)){
@@ -266,10 +281,10 @@ function issueInvite(){if(!invitePrepared||!$('#invite-saved').checked)return;re
 
 async function importCredentials(event){const file=event.target.files?.[0];if(!file)return;setBusy(true);try{if(file.size>32_768)throw new Error('invalid');const saved=JSON.parse(await file.text());if(saved.format!=='connet-owner-v1'||saved.origin!==location.origin||typeof saved.ownerId!=='string')throw new Error('invalid');for(const key of ['sessionToken','recoveryToken','setupToken'])if(saved[key]!==undefined&&!validToken(saved[key]))throw new Error('invalid');
     const next={format:saved.format,origin:saved.origin,ownerId:saved.ownerId};for(const key of ['sessionToken','recoveryToken','setupToken'])if(saved[key])next[key]=saved[key];
-    if(saved.pendingOperation){const p=saved.pendingOperation;if(!['completeSetup','recover'].includes(p.action)||typeof p.operationId!=='string'||!((p.action==='recover'&&p.scope===`owner:${saved.ownerId}`)||(p.action==='completeSetup'&&saved.setupToken&&p.scope===`setup:${tokenId(saved.setupToken)}`)))throw new Error('invalid');next.pendingOperation={operationId:p.operationId,scope:p.scope,action:p.action,kind:p.kind};}
+    if(saved.pendingOperation){const p=saved.pendingOperation;if(!['login','completeSetup','recover'].includes(p.action)||typeof p.operationId!=='string'||!((['login','recover'].includes(p.action)&&p.scope===`owner:${saved.ownerId}`)||(p.action==='completeSetup'&&saved.setupToken&&p.scope===`setup:${tokenId(saved.setupToken)}`)))throw new Error('invalid');next.pendingOperation={operationId:p.operationId,scope:p.scope,action:p.action,kind:p.kind};}
     vault=next;pendingPayload=null;save();setupPrepared=false;recoveryPrepared=null;await resume();
   }catch(error){showSignIn();message(error instanceof ApiError?errorText(error):'文件不符合当前服务的私密管理格式。请使用由此服务下载的正确文件。','error');}finally{event.target.value='';setBusy(false);}}
-function logout(){readGeneration++;selectionGeneration++;readAbort?.abort();agents=[];selectedId='';pendingPayload=null;setupInfo=null;setupPrepared=false;recoveryPrepared=null;runtimePrepared=null;invitePrepared=null;vault={format:'connet-owner-v1',origin:location.origin};try{sessionStorage.removeItem(storageKey);}catch{}$$('input[type=password]').forEach(input=>input.value='');$('#login-owner').value='';$('#recovery-owner').value='';showSignIn();message('已退出当前标签页的管理访问。已下载的私密文件请继续妥善保存。');controls();}
+function logout(){readGeneration++;selectionGeneration++;readAbort?.abort();agents=[];selectedId='';pendingPayload=null;setupInfo=null;setupPrepared=false;recoveryPrepared=null;runtimePrepared=null;invitePrepared=null;resetAuthenticationExit();vault={format:'connet-owner-v1',origin:location.origin};try{sessionStorage.removeItem(storageKey);}catch{}$$('input[type=password]').forEach(input=>input.value='');$('#login-owner').value='';$('#recovery-owner').value='';showSignIn();message('已退出当前标签页的管理访问。已下载的私密文件请继续妥善保存。');controls();}
 async function resume(){
   if(vault.pendingOperation){
     showSignIn();message('检测到待核对的原操作。请先核对回执，避免重复提交。','pending');controls();
@@ -287,6 +302,7 @@ async function resume(){
 $('#setup-start').addEventListener('click',startSetup);$('#credentials-download').addEventListener('click',prepareSetup);$('#setup-form').addEventListener('submit',completeSetup);$('#setup-saved').addEventListener('change',controls);
 $('#login-form').addEventListener('submit',login);$('#recovery-form').addEventListener('submit',recover);$('#recovery-download').addEventListener('click',prepareRecovery);$('#recovery-saved').addEventListener('change',controls);$('#login-tab').addEventListener('click',()=>tab('login'));$('#recovery-tab').addEventListener('click',()=>tab('recovery'));$('#show-login').addEventListener('click',()=>{showSignIn();tab('login');});$('#credentials-import').addEventListener('change',importCredentials);
 $('#check-result').addEventListener('click',checkResult);$('#retry-operation').addEventListener('click',()=>executePending());$('#refresh-agents').addEventListener('click',()=>refresh());$('#logout').addEventListener('click',logout);$('#download-current').addEventListener('click',downloadVault);$('#agent-select').addEventListener('change',event=>selectAgent(event.target.value));
+$('#prepare-auth-exit').addEventListener('click',prepareAuthenticationExit);$('#auth-exit-saved').addEventListener('change',controls);$('#confirm-auth-exit').addEventListener('click',exitPendingAuthentication);
 $('#profile-form').addEventListener('submit',submitProfile);$('#publish-profile').addEventListener('click',publish);$('#reload-profile').addEventListener('click',()=>refresh(false));$('#policy-form').addEventListener('submit',policy);$('#join-agent').addEventListener('click',()=>membership('join'));$('#leave-agent').addEventListener('click',()=>membership('leave'));$('#pause-agent').addEventListener('click',pause);
 $('#prepare-runtime').addEventListener('click',prepareRuntime);$('#runtime-saved').addEventListener('change',controls);$('#replace-runtime').addEventListener('click',replaceRuntime);$('#revoke-runtime').addEventListener('click',revokeRuntime);$('#prepare-invite').addEventListener('click',prepareInvite);$('#invite-saved').addEventListener('change',controls);$('#issue-invite').addEventListener('click',issueInvite);
 if(incomingHandoff){vault={format:'connet-owner-v1',origin:location.origin,handoffToken:incomingHandoff};try{save();}catch(error){fail(error);}}
