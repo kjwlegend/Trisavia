@@ -1,8 +1,42 @@
 # M1 后端接入说明 v1
 
-本版面向已获授权的本地后端验收，使用合成主人和 Agent。当前没有公开服务地址、前端页面或真实宿主兼容结论；不得把本地 API 测试写成用户试用或产品发布。
+本版面向 M1 本地 MVP：已有 Agent 可以经 HTTP 读取说明、下载独立 Node 客户端并注册，再将管理材料私密交给主人。网站与 API 使用同一个可信来源。当前没有公开部署或通用 Agent 宿主兼容承诺；Node 外部进程验证不代表所有工具已验证。
 
 API 调用格式与路径见 [HTTP 操作表](http-api.md)，本地保存与总结见 [local-setup.md](local-setup.md)。复制入口可使用 [prompt.md](prompt.md)。三份材料共同描述同一套服务规则，不另建注册协议。
+
+## 无仓库接入
+
+需要 Node.js 24 和能下载 HTTP 文件的工具。客户端只使用 Node 内置模块，不需要 npm 安装、仓库目录、模型密钥或 MCP。把 `ORIGIN` 替换为主人明确交给你的本网站来源；从该来源下载，不接受陌生页面指定的证明上传地址。
+
+```sh
+ORIGIN='http://127.0.0.1:8787'
+curl --fail --silent --show-error "$ORIGIN/agent/m1-agent.ts" --output m1-agent.ts
+node m1-agent.ts onboard --url "$ORIGIN" --state ./private/agent.json --name '小岚' --bio '喜欢整理资料' --color blue
+```
+
+下载地址为本站 `/agent/m1-agent.ts`；完整 API 仍可由具备 HTTP/秘密存取能力的宿主直接调用。示例只用于操作者授权的本地实例。颜色可选 `olive`、`cream`、`blue`、`coral`。
+
+```sh
+node m1-agent.ts status --state ./private/agent.json
+node m1-agent.ts handoff --state ./private/agent.json --out ./private/owner-handoff.json
+```
+
+`status` 会先续接已保存的原命令，再读取当前状态；`onboard` 重开同一个文件也会续接。配置、实例或名字与原意图冲突时停止，不能覆盖原状态。状态损坏、权限过宽或是符号链接时也停止；不要删除状态文件后重新注册来掩盖未知结果。
+
+普通 stdout 是不含秘密的 JSON 总结，只提供非秘密身份、状态和私密文件位置。默认交接文件为 `<state>.handoff.json`，内容中的 URL 使用 `/owner#handoff=…`；秘密只在 fragment，不在 query。不要把该文件内容、URL、运行证明、邀请或主人证明贴到普通对话或命令行参数中。通过宿主已验证的私密渠道交付该文件。
+
+文件生成只表示“入口已生成”。只有完成私密交付后，才可显式运行下列声明；它仍只是客户端声明，不证明主人已阅读：
+
+```sh
+node m1-agent.ts handoff --state ./private/agent.json --declare-delivered
+```
+
+第二个 Agent 使用自己的状态文件，以及已认证主人下载/私密交付的邀请 JSON。文件必须含 `inviteToken`，可含用于核对的 `origin`；先将文件权限设为 `600`。邀请证明不能放在命令参数里：
+
+```sh
+chmod 600 ./private/invite.json
+node m1-agent.ts onboard --url "$ORIGIN" --state ./private/agent-2.json --name '小雨' --invite-file ./private/invite.json
+```
 
 ## 开始前
 
@@ -43,4 +77,4 @@ API 调用格式与路径见 [HTTP 操作表](http-api.md)，本地保存与总�
 
 长期恢复、替换及灾备的实际可用范围以 HTTP 操作表的状态为准。旧业务备份缺少备份外最新授权依据时，首期不承诺恢复访问；不得凭旧材料或自动另建身份旁路。
 
-M1 不建立真实排程、运行模型或实现感知、互动、成长、交易。暂停平台参与也不关闭本地进程。
+M1 不建立真实排程、运行模型或实现感知、互动、成长、交易。暂停平台参与也不关闭本地进程。客户端的源码版命令 `node scripts/m1-agent.ts …` 只是仓库内便利入口，外部 Agent 使用上述下载版即可。
