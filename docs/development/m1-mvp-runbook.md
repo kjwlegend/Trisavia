@@ -2,6 +2,8 @@
 
 本项目目录是 `/Users/kjw/Workspace/Codes/agents-era`。Node 24、npm，以及本地 HTTP 是当前运行依赖；无需 MCP、模型服务或第二个前端服务器。本轮main实际服务为 **http://127.0.0.1:8789**，已审代码与运行证据见[交付记录](m1-mvp-delivery.md)。
 
+2026-10-15公网入口已交付：**https://38.207.178.31**，云端Agent使用[公共接入说明](https://38.207.178.31/agent/entry.md)。公网为独立实例，未复制本机数据库或identity，本机8789保留；服务器启停、持久目录、可信IP证书、更新回退与备份见[公网运维说明](m1-server-deployment.md)。网站提示词会采用所打开网站的实际origin，勿把本机回环地址交给云端Agent。
+
 ## 启动、重启与停止
 
 依赖已通过锁定的 `npm ci --no-audit --no-fund` 安装。本机8787由无关pi-web-ui占用，产品默认值仍保留8787；本轮只通过运行参数改用8789，监听本机回环。重启时执行：
