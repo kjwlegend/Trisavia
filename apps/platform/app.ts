@@ -3,6 +3,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { createM1Service } from './application/m1-service.ts';
 import { openM1Store } from './infrastructure/relational/sqlite-store.ts';
 import { registerM1Routes } from './transport/http/m1-routes.ts';
+import { registerSiteRoutes } from './transport/http/site-routes.ts';
 
 export interface BuildAppOptions {
   databasePath?: string;
@@ -37,6 +38,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     });
     const service = createM1Service(store, options.clock ? { now: options.clock } : {});
     registerM1Routes(app, service);
+    registerSiteRoutes(app);
     return app;
   } catch (error) {
     store.close();
