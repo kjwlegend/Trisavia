@@ -207,6 +207,10 @@ export class SqliteStore implements M1Store {
     };
     try {
       this.#database.exec(write ? 'BEGIN IMMEDIATE' : 'BEGIN');
+      const instance = this.#get('SELECT instance_id, recovery_epoch FROM instance_state WHERE singleton = 1');
+      if (!instance || instance.instance_id !== this.instanceId || instance.recovery_epoch !== this.recoveryEpoch) {
+        throw new StorageError('conflict', 'Store instance or recovery epoch changed; reopen with current configuration');
+      }
       const exposed = write ? session : { get: session.get, find: session.find };
       const result = assertSynchronous(work(exposed as M1Transaction));
       this.#database.exec('COMMIT');

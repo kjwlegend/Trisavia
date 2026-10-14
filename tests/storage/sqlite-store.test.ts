@@ -47,6 +47,24 @@ test('disk restart keeps identity, facts and receipts; instance identity is pinn
   assert.throws(() => openM1Store({ ...options, databasePath, instanceId: 'other-instance' }), /another instance/);
 });
 
+test('epoch changes fence both read and write scopes on an already open connection', (t) => {
+  const databasePath = diskPath(t);
+  const original = openM1Store({ ...options, databasePath });
+  original.transaction((tx) => tx.insert('agents', row('existing')));
+  const current = openM1Store({ ...options, databasePath, recoveryEpoch: 'epoch-next' });
+  t.after(() => { original.close(); current.close(); });
+  let callbackInvoked = false;
+  assert.throws(() => original.read(() => { callbackInvoked = true; }), storageCode('conflict'));
+  assert.throws(() => original.transaction((tx) => {
+    callbackInvoked = true;
+    tx.insert('agents', row('stale-write'));
+  }), storageCode('conflict'));
+  assert.equal(callbackInvoked, false);
+  assert.equal(current.read((tx) => tx.get('agents', 'existing'))?.id, 'existing');
+  current.transaction((tx) => tx.insert('agents', row('current-write')));
+  assert.deepEqual(current.read((tx) => tx.find('agents')).map((value) => value.id), ['current-write', 'existing']);
+});
+
 test('throwing a transaction callback rolls back every table', (t) => {
   const store = memoryStore(t);
   assert.throws(() => store.transaction((tx) => {
