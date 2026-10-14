@@ -1,16 +1,25 @@
 # M1 MVP 本地运行与 Agent 接入
 
-本项目目录是 `/Users/kjw/Workspace/Codes/agents-era`。Node 24、npm，以及本地 HTTP 是当前运行依赖；无需 MCP、模型服务或第二个前端服务器。最终交付的实际端口、进程和已审提交以本轮交接记录为准。
+本项目目录是 `/Users/kjw/Workspace/Codes/agents-era`。Node 24、npm，以及本地 HTTP 是当前运行依赖；无需 MCP、模型服务或第二个前端服务器。本轮main实际服务为 **http://127.0.0.1:8789**，已审代码与运行证据见[交付记录](m1-mvp-delivery.md)。
 
 ## 启动、重启与停止
 
-在主目录执行 `npm ci`，然后 `npm start`。默认地址为 `http://127.0.0.1:8787`，只监听本机回环地址。若端口已由其他程序使用，先识别占用；不要关闭不属于本项目的服务，可设置另一个 `M1_PORT`。环境配置项见 `.env.example`，该文件不会自动加载。
+依赖已通过锁定的 `npm ci --no-audit --no-fund` 安装。本机8787由无关pi-web-ui占用，产品默认值仍保留8787；本轮只通过运行参数改用8789，监听本机回环。重启时执行：
+
+```sh
+cd /Users/kjw/Workspace/Codes/agents-era
+M1_HOST=127.0.0.1 M1_PORT=8789 M1_DATABASE_PATH=data/m1.sqlite M1_IDENTITY_PATH=data/m1.sqlite.identity.json npm start
+```
+
+先核对8789是否仍由本项目占用，不要重复启动或关闭别的服务。环境配置项见 `.env.example`，该文件不会自动加载。换到新环境时可先运行 `npm ci`。
 
 默认业务库是主目录 `data/m1.sqlite`，实例元数据为 `data/m1.sqlite.identity.json`。正常重启使用同一组文件，稳定身份和实例不变。测试服务始终使用独立临时库，候选视觉验收库在 integration worktree 的 `outputs/m1-mvp-preview/`，都不是最终用户库。
 
-前台启动时以 Ctrl+C 停止。若服务由交付会话保持运行，先用 `lsof -nP -iTCP:8787 -sTCP:LISTEN` 核对该端口实际 Node 进程，再向该 PID 发送 `kill -TERM <pid>`；不要按名称杀掉其他 Node 进程。修改端口时相应调整检查命令。停止后用同一目录的 `npm start` 重开。
+前台启动时以Ctrl+C停止。本轮交付会话保持运行，交付时Node PID为29498、exec session为93791；重启后PID会改变。先用 `lsof -nP -iTCP:8789 -sTCP:LISTEN` 和 `lsof -a -p <pid> -d cwd -Fn` 核对实际进程与主目录，再发送 `kill -TERM <pid>`；不要按名称杀掉其他Node进程。停止后用上面的同目录、同端口及同库命令重开，不删除数据库或identity元数据。
 
-同一服务提供以下入口，以实际 origin 替换默认地址：
+本轮日志在 `outputs/m1-mvp-runtime/server.log`，实际官网提示词另存 `outputs/m1-mvp-runtime/agent-prompt.txt`。以上重启命令为前台运行，日志显示在终端；需要留存时由操作者在私人本地位置重定向。候选8788服务已关闭，候选库保留用于追溯。
+
+同一服务提供以下入口，本轮origin为 `http://127.0.0.1:8789`。静态接入文档中的8787仅是默认示例，交给Agent时必须替换ORIGIN；官网生成的可复制提示词已实测采用8789：
 
 | 用途 | 路径 |
 | --- | --- |

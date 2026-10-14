@@ -1,6 +1,6 @@
-# M1 MVP 候选交付与固定验收证据
+# M1 MVP 本地交付与固定验收证据
 
-更新：2026-10-15。状态：本轮MVP已实施，T1视觉验收通过；独立reviewer已关闭R2，完整增量仅余R3/P2。R3作者修复及整合回归已通过，正在等原reviewer定点复核；尚未合入本地主线或启动最终用户实例。本页不以作者测试代替独立通过。
+更新：2026-10-15。状态：本轮MVP已实施，T1视觉验收与独立代码审查均通过，R2/R3 fixed/verified；候选已快进合入main，并从主目录启动本机用户实例 `http://127.0.0.1:8789`。真实用户Agent宿主仍待用户接入调试。
 
 ## 固定范围
 
@@ -13,7 +13,8 @@
 | 最终代码与测试目标 | `079995cb4b7696aa457b1cd5cfd6073322a17c8c`；相对上一行只追加owner.spec.ts出口专项测试 |
 | 后续本页及旧交付入口同步 | 纯文档，不改变上述已测源码；最终HEAD由交接给出 |
 | worktree / branch | `/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration`，`codex/m1-mvp-integration` |
-| 独立reviewer | `01a13916-02fe-7e90-8881-972aba227d8d`；c87完整增量除R3外无阻断，R3最小增量待定点复核 |
+| 独立reviewer | `01a13916-02fe-7e90-8881-972aba227d8d`；最终079995c相对c87的R3定点复核PASS，结合前轮完整审查无未关闭阻断 |
+| main快进目标 | `19e1bf9466ee03e0887559b901dcee77ebb06663`，相对已审079995c仅补交付证据文档；此后本地运行记录仍为纯文档 |
 
 ## 当前可用闭环
 
@@ -49,6 +50,7 @@ R3是同根因的密码登录提交前断网刷新锁死。修复将login、comp
 | --- | --- |
 | c87完整检查及原独立复核 | 类型检查和64/64通过；桌面8/8、390px手机8/8通过。保留54基线，新增4项API、4项独立CLI、2项站点边界；独立结论仅R3/P2未关 |
 | 最终R3整合检查 | 在079995c运行typecheck及owner.spec.ts：桌面10/10、手机10/10，共20/20，无重试。覆盖三类认证六条真实刷新路径、主动保存退出与导入、既有主人管理及焦点；入口6项沿用此前独立通过，不重复运行无关流程 |
+| 最终独立复核 | reviewer在固定079995c验证认证六条刷新路径桌面+手机12/12、安全出口2/2，并另行实际核对无效主人ID/失效恢复证明、同键回导与有效方式管理同居民；typecheck和固定diff通过，R3关闭、PASS |
 | 测试隔离 | 桌面/手机分别重开临时服务和库，保留生产240次/分钟单IP限流；无等待绕过，不接触最终用户库 |
 | 同源实际HTTP | `/`、`/owner`、`/health`、`/agent/entry.md`、`/agent/http-api.md`、`/agent/m1-agent.ts`、`/v1/capabilities`均实际可读，正确MIME |
 | 根浏览器检查 | 桌面/手机首页和管理无意外脚本/请求失败，公开页真实读取；触控与键盘如上 |
@@ -56,6 +58,26 @@ R3是同根因的密码登录提交前断网刷新锁死。修复将login、comp
 
 日志位于integration忽略目录 `outputs/m1-mvp-evidence/check-final.log`、`e2e-final.log`，最终R3整合日志为 `r3-owner-final.log`。公开/无秘密管理截图在同目录的 `home-desktop.png`、`home-mobile.png`、`owner-one-desktop.png`、`owner-multi-desktop.png`、`owner-multi-mobile.png`、`owner-multi-mobile-320.png`、`owner-login-mobile.png`、`resident-mobile.png`；源阶段各自记录，最终设计通过以设计总监的定点复验为准。
 
-候选 `http://127.0.0.1:8788` 使用integration的独立 `outputs/m1-mvp-preview/m1.sqlite`，合成fixture供设计验证，不是用户主库。最终用户实例待审查通过后在主目录启动；8787属于其他项目，本轮拟通过运行参数使用8789，启动前重新核查空闲，不改默认产品配置。实际URL/数据路径/进程见最终交接及[本地运行说明](m1-mvp-runbook.md)。四处MVP worktree及旧storage都保留，未推送、未公开部署。
+## main整合与实际运行
+
+从main原基准快进到19e1bf9前，逐项保存88个既有未提交路径的内容哈希和权限；与候选变更重叠为0，合入后88项全部一致。快照在本机临时目录 `/var/folders/mg/cwg4dt857s71xp6963cn22780000gn/T/agents-era-main-preservation-kuu2hjct.json`，只含路径、哈希和权限。设计/治理并发改动仍留各自所有者，未reset/stash/clean或混入本次提交。
+
+main的应用、脚本、配置及测试字节与079995c完全一致。依赖使用锁定的 `npm ci --no-audit --no-fund` 安装（55包）；按统筹收尾约束沿用以上固定测试证据，不在无源码变化的main重跑整套。
+
+| 实际运行项 | 2026-10-15交付核验 |
+| --- | --- |
+| 工作目录 / 分支 | `/Users/kjw/Workspace/Codes/agents-era` / `main` |
+| 用户URL / API | `http://127.0.0.1:8789` / 同源`/v1`，仅监听本机回环 |
+| Node进程 / 持久执行会话 | PID `29498`，exec session `93791`；lsof核对cwd为主目录，进程随本轮结束继续运行 |
+| 用户数据库 / 实例元数据 | `data/m1.sqlite` / `data/m1.sqlite.identity.json`，均为0600，父目录0700；启动前均不存在，未使用候选fixture |
+| 日志 / 提示词 | `outputs/m1-mvp-runtime/server.log` / `agent-prompt.txt`，均为本机文件；日志为0600 |
+| HTTP冒烟 | `/`、`/owner`、`/health`、四份`/agent/*.md`、`/agent/m1-agent.ts`、`/v1/capabilities`均200且MIME正确 |
+| 实际浏览器冒烟 | 首页生成的入口与客户端下载均为8789，主人登录可见；pageerror=[]、failedRequests=[]；未执行私密写操作 |
+| 私密路径隔离 | 数据库、identity、运行日志、`.git/config`、平台源码路径全部HTTP404 |
+| 用户数据空白 | 只读SQL核对agents=0、owners=0、operations=0；没有创建用户Agent或定时任务 |
+
+HTTP Markdown是通用静态接入材料，其中8787为默认示例；实际官网提示词采用浏览器当前origin。用户Agent应将文档中的ORIGIN替换为本轮8789，不能请求8787的无关项目。
+
+候选8788原Node PID95830的cwd已核对为integration；在8789可用且设计/审查结束后已向其发送SIGTERM。合成fixture仍保存在integration的 `outputs/m1-mvp-preview/`，不是用户库。8787无关pi-web-ui进程PID72715未关闭或替换。四处MVP worktree及旧storage都保留，未推送、未公开部署。启动、停止及同库重启见[本地运行说明](m1-mvp-runbook.md)。
 
 真实用户自己的Agent宿主尚待其调试；本轮仅证明下载客户端/合成外部进程和浏览器可用。没有真实排程、轮询、成长、互动或交易；专项容量、完整治理、逐字段冲突差异、保留删除和灾备再授权不在本轮已验证承诺内。
