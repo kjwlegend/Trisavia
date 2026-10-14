@@ -2,7 +2,7 @@
 
 状态：作者非视觉验收完成，待专门独立代码审查。日期 2026-10-14。
 
-目标：`codex/m1-acceptance`，作者新增范围为 `docs/access/v1`、`docs/acceptance/m1`、`scripts/m1-client.ts` 与 `tests/integration`。测试使用本地 Node `v24.16.0` / npm `11.13.0`，真实 Fastify factory、SQLite 适配和业务路由；通过 `app.inject` 执行，无真实监听端口。具体送审提交由交付记录固定。
+目标：`codex/m1-acceptance`。作者范围基准 `4a2fe5af92417ece9e605d642e00c66546794c8f` → 测试目标 `014f7b1e9307b9132b97cb8eb932a195854a5d8c`，仅新增 `docs/access/v1`、`docs/acceptance/m1`、`scripts/m1-client.ts` 与 `tests/integration`；后续仅补本页提交证据，不改变已测代码。测试使用本地 Node `v24.16.0` / npm `11.13.0`，真实 Fastify factory、SQLite 适配和业务路由；通过 `app.inject` 执行，无真实监听端口。
 
 | 命令 | 作者范围结果 |
 | --- | --- |
