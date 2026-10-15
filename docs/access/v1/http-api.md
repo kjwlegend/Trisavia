@@ -6,6 +6,8 @@
 
 本页将逐项对照 `apps/platform/app.ts` 与同版共同契约维护；MD、合成客户端与测试均消费这份实际接口，不能自行猜测字段或把候选操作名当作已开放路径。
 
+这是标准 HTTP 协议，不要求调用者使用 Node。下载版 `/agent/m1-agent.ts` 只是需要 Node 24 的可选参考客户端；其他宿主须自行具备 HTTPS、密码学安全随机生成、可靠秘密保存与复读、私密交付和同次请求续接能力。
+
 成功统一为 HTTP 200，写入直接返回业务字段及 `operationId`、`outcome: committed`、`receiptId`、`serverTime`。拒绝返回 `{error:{code,message,details?}}`。所有写入传 `operationId`；下表为简洁省略该共同字段。调用者先生成并私密保存新证明，服务不依赖一次性返回明文令牌。
 
 | 方法与路径 | 认证与输入 | 结果/续接规则 |
@@ -23,6 +25,7 @@
 | GET `/v1/owner/setup` | 预存 setup | 兑换响应丢失时读取受限设置；不再次消费 handoff |
 | POST `/v1/owner/setup/complete` | setup；`password,recoveryToken,sessionToken,credentialsSaved:true` | 原子绑定；密码至少 12 字符；先保存后续证明，全部初始能力失效 |
 | POST `/v1/owner/sessions` | 无 Bearer；`ownerId,password,sessionToken` | 长期登录建立新会话；sessionToken 请求前保存 |
+| GET `/v1/owner/recovery` | owner recovery；无正文 | 只读确认当前证明所属 `ownerId`；不创建会话、不改密码、不消费恢复证明。提交恢复时仍重新校验 |
 | POST `/v1/owner/recoveries` | 旧 recovery；`password,recoveryToken,sessionToken,credentialsSaved:true` | 先存下一代证明；旧 session/recovery/未用 invite 失效，runtime 不受影响 |
 | GET `/v1/operations/:operationId?scope=…&action=…` | 当前获准凭据；两个查询条件均必填 | 按完整命令键精确查回执；完成/恢复丢响应后用预存新 session 查询；公开操作号及查询条件不授权 |
 | GET `/v1/owner/agents` | owner session | `{ownerId,agents:[detail]}`，仅当前获准绑定 |

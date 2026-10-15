@@ -81,7 +81,7 @@ test('320px and reduced motion preserve the entry, venue controls and owner auth
   expect(await page.locator('.venue-button').first().evaluate(element => getComputedStyle(element).animationName)).toBe('none');
   await page.goto('/owner');
   await expect(page.getByRole('heading', { name: '主人管理', exact: true })).toBeVisible();
-  await expect(page.getByLabel('管理密码', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('登录密码', { exact: true })).toBeVisible();
   await expect(page.locator('#manage-view')).toBeHidden();
   await fits(page);
   expect(observed.issues).toEqual([]);

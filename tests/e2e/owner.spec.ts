@@ -27,6 +27,7 @@ test.beforeEach(async ({ page }) => {
     if (message.type() !== 'error') return;
     let pathname = '';
     try { pathname = new URL(message.location().url).pathname; } catch {}
+    if(pathname.startsWith('/v1/operations/')&&/status of (401|404)/.test(message.text()))return;
     const planned = state.plannedFailures.find((failure) => failure.remaining > 0 && failure.pathname === pathname && message.text().includes(failure.marker));
     if (planned) planned.remaining--;
     else state.errors.push('console.error');
@@ -57,6 +58,8 @@ async function privateFile(directory: string, name: string, data: Json): Promise
   return path;
 }
 async function downloaded(page: Page, button: Locator, directory: string): Promise<Json> {
+  if(await page.locator('#setup-password-step').isVisible())await page.locator('#setup-next').click();
+  if(await page.locator('#recovery-password-step').isVisible())await page.locator('#recovery-next').click();
   const event = page.waitForEvent('download');
   await button.click();
   const download: Download = await event;
@@ -129,10 +132,11 @@ async function mutate(page: Page, path: string, button: Locator, method = 'POST'
 async function login(page: Page, ownerId: string, password: string) {
   track(page, password);
   await page.goto('/owner');
-  await page.getByLabel('主人 ID', { exact: true }).fill(ownerId);
-  await page.getByLabel('管理密码', { exact: true }).fill(password);
+  await page.getByLabel('管理编号', { exact: true }).fill(ownerId);
+  await page.getByLabel('登录密码', { exact: true }).fill(password);
   await mutate(page, '/owner/sessions', page.getByRole('button', { name: '登录', exact: true }));
-  await expect(page.getByRole('heading', { name: '我的居民', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '我的 Agent', exact: true })).toBeVisible();
+  await page.locator('#management-security > summary').click();
 }
 async function select(page: Page, agent: Resident) {
   const selector = page.getByRole('combobox', { name: /^当前居民/ });
@@ -156,33 +160,51 @@ test('主人先保存私密管理材料，再登录和独立恢复；旧会话�
     await expect(page.getByRole('button', { name: '开始设置', exact: true })).toBeVisible();
     await expect.poll(() => new URL(page.url()).hash.length, { message: 'Handoff fragment is removed immediately' }).toBe(0);
     await mutate(page, '/owner-setups', page.getByRole('button', { name: '开始设置', exact: true }));
-    await expect(page.getByRole('button', { name: '完成设置', exact: true })).toBeDisabled();
+    await expect(page.locator('#setup-complete')).toBeHidden();
     const password = 'synthetic browser password initial'; track(page, password);
-    await page.getByLabel('设置管理密码', { exact: true }).fill(password);
-    const saved = await downloaded(page, page.getByRole('button', { name: '下载私密管理文件', exact: true }), directory);
+    await page.getByLabel('设置登录密码', { exact: true }).fill(password);
+    const saved = await downloaded(page, page.getByRole('button', { name: '下载登录备份', exact: true }), directory);
     expect(saved.format).toBe('connet-owner-v1'); expect(saved.ownerId).toBe(agent.ownerId);
     expect((await ok('/agent/self', undefined, agent.runtimeToken)).management.managementStatus).toBe('pending_setup');
-    await page.getByRole('checkbox', { name: '我已保存私密管理文件', exact: true }).check();
-    await mutate(page, '/owner/setup/complete', page.getByRole('button', { name: '完成设置', exact: true }));
-    await expect(page.getByRole('heading', { name: '我的居民', exact: true })).toBeVisible();
+    await page.getByRole('checkbox', { name: '我已保存登录备份', exact: true }).check();
+    await mutate(page, '/owner/setup/complete', page.getByRole('button', { name: '进入我的 Agent', exact: true }));
+    await expect(page.getByRole('heading', { name: '我的 Agent', exact: true })).toBeVisible();
     await expect(page.locator('#selected-id')).toContainText(agent.agentId);
     await expect(page.locator('#stage-generated')).toContainText('已生成');
     await expect(page.locator('#stage-delivered')).toHaveText('尚未声明交付');
     await expect(page.locator('#stage-initialized')).toContainText('已建立');
-    await page.getByRole('button', { name: '退出管理', exact: true }).click();
+    await page.getByRole('button', { name: '退出登录', exact: true }).click();
     await login(page, agent.ownerId, password);
-    await page.getByRole('button', { name: '退出管理', exact: true }).click();
-    await page.getByRole('tab', { name: '独立恢复', exact: true }).click();
-    await page.getByLabel('恢复主人 ID', { exact: true }).fill(agent.ownerId);
-    await page.getByLabel('恢复证明', { exact: true }).fill(saved.recoveryToken as string);
+    await page.getByRole('button', { name: '退出登录', exact: true }).click();
+    await page.getByRole('button', { name: '忘记密码？', exact: true }).click();
+    const sessionOnly={format:'connet-owner-v1',origin,ownerId:agent.ownerId,sessionToken:saved.sessionToken};
+    await page.locator('#credentials-import').setInputFiles(await privateFile(directory,'session-only',sessionOnly));
+    await expect(page.locator('#global-notice')).toContainText('没有找回密码所需的恢复材料');
+    await expect(page.locator('#recovery-form')).toBeHidden();await page.getByRole('button',{name:'继续管理',exact:true}).click();
+    await expect(page.locator('#selected-id')).toContainText(agent.agentId);await page.getByRole('button',{name:'退出登录',exact:true}).click();
+    await page.getByRole('button',{name:'忘记密码？',exact:true}).click();
+    await expect(page.locator('#credentials-import')).toBeFocused();
+    // An expired/invalid session and revoked setup in an old download must not block its independent recovery proof.
+    let writesDuringImport=0;const observeImport=(r:any)=>{if(new URL(r.url()).pathname.startsWith('/v1/')&&r.method()!=='GET')writesDuringImport++;};page.on('request',observeImport);
+    await page.locator('#credentials-import').setInputFiles(await privateFile(directory,'mismatched-owner',{...saved,ownerId:randomUUID()}));
+    await expect(page.locator('#global-notice')).toContainText('管理编号与恢复材料不匹配');expect(writesDuringImport).toBe(0);page.off('request',observeImport);
+    const stale={...saved,sessionToken:credential()};track(page,stale.sessionToken);
+    await page.locator('#credentials-import').setInputFiles(await privateFile(directory,'old-setup-backup',stale));
+    await expect(page.getByRole('heading',{name:'设置新登录密码',exact:true})).toBeVisible();
+    await expect(page.locator('#recovery-password')).toBeFocused();
+    expect(await page.evaluate((operationId)=>JSON.stringify(sessionStorage.getItem('connet.owner.progress.v1')).includes(operationId),saved.pendingOperation.operationId)).toBe(true);
     const nextPassword = 'synthetic browser password next'; track(page, nextPassword);
-    await page.getByLabel('新管理密码', { exact: true }).fill(nextPassword);
-    await expect(page.getByRole('button', { name: '恢复管理访问', exact: true })).toBeDisabled();
-    const next = await downloaded(page, page.getByRole('button', { name: '下载下一代恢复文件', exact: true }), directory);
+    await page.getByLabel('新登录密码', { exact: true }).fill(nextPassword);
+    await expect(page.locator('#recovery-submit')).toBeHidden();
+    const next = await downloaded(page, page.getByRole('button', { name: '下载新登录备份', exact: true }), directory);
     expect(next.recoveryToken !== saved.recoveryToken, 'Recovery successor is independently generated').toBe(true);
-    await page.getByRole('checkbox', { name: '我已保存下一代恢复文件', exact: true }).check();
-    await mutate(page, '/owner/recoveries', page.getByRole('button', { name: '恢复管理访问', exact: true }));
-    await expect(page.getByRole('heading', { name: '我的居民', exact: true })).toBeVisible();
+    await page.getByRole('checkbox', { name: '我已保存新登录备份', exact: true }).check();
+    let recoveryPosts=0;plannedFailure(page,'/v1/owner/recoveries','net::ERR_FAILED');
+    await page.route('**/v1/owner/recoveries',async route=>{recoveryPosts++;await route.fetch();await route.abort('failed');},{times:1});
+    await page.getByRole('button',{name:'确认重设密码',exact:true}).click();
+    await expect(page.getByRole('heading',{name:'我的 Agent',exact:true})).toBeVisible();
+    expect(recoveryPosts,'The committed result is confirmed automatically without another reset').toBe(1);
+    await expect(page.getByRole('heading', { name: '我的 Agent', exact: true })).toBeVisible();
     expect((await http('/owner/agents', undefined, saved.sessionToken as string)).status).toBe(401);
     expect((await http('/owner/recoveries', { operationId: op(), password: nextPassword, recoveryToken: credential(), sessionToken: credential(), credentialsSaved: true }, saved.recoveryToken as string)).status).toBe(401);
     expect((await ok('/agent/self', undefined, agent.runtimeToken)).agentId).toBe(agent.agentId);
@@ -314,17 +336,19 @@ test('主人控制资料三模式与字段锁、暂停退出重入，并先保�
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
+async function delayFirstReceipt(page:Page){
+ await page.route('**/v1/operations/**',async route=>{plannedFailure(page,new URL(route.request().url()).pathname,'503');await route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{code:'commit_result_unknown'}})});},{times:1});
+}
 async function prepareRecovery(page: Page, directory: string, agent: Resident, owner: Awaited<ReturnType<typeof managedFixture>>, password: string) {
   track(page, owner.recoveryToken, owner.sessionToken, password);
   await page.goto('/owner');
-  await page.getByRole('tab', { name: '独立恢复', exact: true }).click();
-  await page.getByLabel('恢复主人 ID', { exact: true }).fill(agent.ownerId);
-  await page.getByLabel('恢复证明', { exact: true }).fill(owner.recoveryToken);
-  await page.getByLabel('新管理密码', { exact: true }).fill(password);
-  const next = await downloaded(page, page.getByRole('button', { name: '下载下一代恢复文件', exact: true }), directory);
+  await page.getByRole('button', { name: '忘记密码？', exact: true }).click();
+  await page.locator('#credentials-import').setInputFiles(await privateFile(directory,'owner-backup',{format:'connet-owner-v1',origin,ownerId:agent.ownerId,recoveryToken:owner.recoveryToken}));
+  await page.getByLabel('新登录密码', { exact: true }).fill(password);
+  const next = await downloaded(page, page.getByRole('button', { name: '下载新登录备份', exact: true }), directory);
   expect(next.pendingOperation.scope).toBe(`owner:${agent.ownerId}`);
   expect(next.pendingOperation.action).toBe('recover');
-  await page.getByRole('checkbox', { name: '我已保存下一代恢复文件', exact: true }).check();
+  await page.getByRole('checkbox', { name: '我已保存新登录备份', exact: true }).check();
   return next;
 }
 function receiptPath(next: Json): string {
@@ -369,9 +393,9 @@ async function prepareInitialSetup(page: Page, directory: string, agent: Residen
   await expect(page.getByRole('button', { name: '开始设置', exact: true })).toBeVisible();
   await expect.poll(() => new URL(page.url()).hash.length).toBe(0);
   await mutate(page, '/owner-setups', page.getByRole('button', { name: '开始设置', exact: true }));
-  await page.getByLabel('设置管理密码', { exact: true }).fill(password);
-  const saved = await downloaded(page, page.getByRole('button', { name: '下载私密管理文件', exact: true }), directory);
-  await page.getByRole('checkbox', { name: '我已保存私密管理文件', exact: true }).check();
+  await page.getByLabel('设置登录密码', { exact: true }).fill(password);
+  const saved = await downloaded(page, page.getByRole('button', { name: '下载登录备份', exact: true }), directory);
+  await page.getByRole('checkbox', { name: '我已保存登录备份', exact: true }).check();
   return { ...saved, handoffToken: token };
 }
 
@@ -392,7 +416,7 @@ test('恢复请求未到服务时刷新，重新输入必要秘密后沿用原�
       // Deliberately do not route.fetch(): the service never receives this POST.
       await route.abort('failed'); aborted();
     }, { times: 1 });
-    await page.getByRole('button', { name: '恢复管理访问', exact: true }).click();
+    await page.getByRole('button', { name: '确认重设密码', exact: true }).click();
     await intercepted; await idle(page);
     expect(Boolean(original), 'Capture the original recovery command before the network failure').toBe(true);
     expect(original!.operationId).toBe(next.pendingOperation.operationId);
@@ -402,25 +426,24 @@ test('恢复请求未到服务时刷新，重新输入必要秘密后沿用原�
     expect((await http('/owner/recoveries', { operationId: op(), credentialsSaved: false }, owner.recoveryToken)).status).toBe(400);
     plannedFailure(page, `/v1/operations/${next.pendingOperation.operationId}`, '401');
     await page.reload(); // The in-memory pendingPayload is genuinely gone.
-    await expect(page.getByRole('heading', { name: '继续原恢复操作', exact: true })).toBeVisible();
-    await expect(page.getByLabel('恢复主人 ID', { exact: true })).toHaveValue(agent.ownerId);
-    expect(await page.getByLabel('恢复证明', { exact: true }).inputValue() === '', 'Refresh requires the old recovery proof to be re-entered').toBe(true);
-    expect(await page.getByLabel('新管理密码', { exact: true }).inputValue() === '', 'Refresh requires the original new password to be re-entered').toBe(true);
-    await page.getByLabel('恢复证明', { exact: true }).fill(owner.recoveryToken);
-    await page.getByLabel('新管理密码', { exact: true }).fill(password);
-    const reSaved = await downloaded(page, page.getByRole('button', { name: '重新下载已保存的下一代恢复文件', exact: true }), directory);
+    await expect(page.getByRole('heading', { name: '继续上次重设', exact: true })).toBeVisible();
+    await expect(page.locator('#recovery-owner')).toHaveValue(agent.ownerId);
+    expect(await page.locator('#recovery-token').inputValue() === owner.recoveryToken, 'The original proof remains private and is restored without manual copying').toBe(true);
+    expect(await page.getByLabel('新登录密码', { exact: true }).inputValue() === '', 'Refresh requires the original new password to be re-entered').toBe(true);
+    await page.getByLabel('新登录密码', { exact: true }).fill(password);
+    const reSaved = await downloaded(page, page.getByRole('button', { name: '下载新登录备份', exact: true }), directory);
     expect(reSaved.sessionToken === next.sessionToken, 'Refresh retains the pre-saved next session').toBe(true);
     expect(reSaved.recoveryToken === next.recoveryToken, 'Refresh retains the pre-saved next recovery proof').toBe(true);
     expect(reSaved.pendingOperation.operationId).toBe(next.pendingOperation.operationId);
     expect(reSaved.pendingOperation.scope).toBe(next.pendingOperation.scope); expect(reSaved.pendingOperation.action).toBe('recover');
-    await page.getByRole('checkbox', { name: '我已保存下一代恢复文件', exact: true }).check();
+    await page.getByRole('checkbox', { name: '我已保存新登录备份', exact: true }).check();
     let resumed: Json | undefined, resumedAuthorization = '';
     await page.route('**/v1/owner/recoveries', async (route) => {
       resumed = route.request().postDataJSON() as Json;
       resumedAuthorization = route.request().headers().authorization ?? '';
       await route.continue();
     }, { times: 1 });
-    await mutate(page, '/owner/recoveries', page.getByRole('button', { name: '继续原恢复', exact: true }));
+    await mutate(page, '/owner/recoveries', page.getByRole('button', { name: '确认重设密码', exact: true }));
     expect(Boolean(resumed), 'Continuation must send the original recovery command').toBe(true);
     assertSameRecoveryFields(resumed!, original!);
     expect(resumedAuthorization === originalAuthorization, 'Continuation uses the original old recovery proof').toBe(true);
@@ -428,13 +451,14 @@ test('恢复请求未到服务时刷新，重新输入必要秘密后沿用原�
     expect(receipt.operationId).toBe(next.pendingOperation.operationId);
     expect((await http('/owner/agents', undefined, owner.sessionToken)).status).toBe(401);
     expect((await ok('/owner/agents', undefined, next.sessionToken as string)).agents[0].agentId).toBe(agent.agentId);
-    await expect(page.getByRole('heading', { name: '我的居民', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '我的 Agent', exact: true })).toBeVisible();
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
 test('恢复已提交但响应丢失时刷新，预存新会话按完整键读回执且旧证明失效', async ({ page }) => {
   const directory = await mkdtemp(join(tmpdir(), 'm1-owner-recover-committed-'));
   try {
+    await delayFirstReceipt(page);
     const agent = await resident(directory, 'UI Recovery Committed');
     const owner = await managedFixture(directory, agent);
     const next = await prepareRecovery(page, directory, agent, owner, 'synthetic committed next password');
@@ -450,7 +474,7 @@ test('恢复已提交但响应丢失时刷新，预存新会话按完整键读�
       const response = await route.fetch(); committedStatus = response.status();
       await route.abort('failed'); submitted();
     }, { times: 1 });
-    await page.getByRole('button', { name: '恢复管理访问', exact: true }).click();
+    await page.getByRole('button', { name: '确认重设密码', exact: true }).click();
     await intercepted; await idle(page);
     expect(committedStatus, 'The service committed before the response was discarded').toBe(200);
     expect(Boolean(original), 'Capture the original committed recovery command').toBe(true);
@@ -462,7 +486,7 @@ test('恢复已提交但响应丢失时刷新，预存新会话按完整键读�
     const receiptUrl = new URL((await receiptRequest).url());
     expect(receiptUrl.searchParams.get('scope')).toBe(`owner:${agent.ownerId}`);
     expect(receiptUrl.searchParams.get('action')).toBe('recover');
-    await expect(page.getByRole('heading', { name: '我的居民', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '我的 Agent', exact: true })).toBeVisible();
     expect(recoveryPosts, 'Reload recovers the committed receipt without another recovery POST').toBe(1);
     await expect(page.locator('#selected-id')).toContainText(agent.agentId);
     const receipt = await ok(receiptPath(next), undefined, next.sessionToken as string);
@@ -479,8 +503,8 @@ test('登录请求未到服务时刷新，重新输入密码沿用原登录键�
     const agent = await registeredOnly(directory, 'UI Login Unsent');
     const owner = await managedFixture(directory, agent); track(page, owner.password);
     await page.goto('/owner');
-    await page.getByLabel('主人 ID', { exact: true }).fill(agent.ownerId);
-    await page.getByLabel('管理密码', { exact: true }).fill(owner.password);
+    await page.getByLabel('管理编号', { exact: true }).fill(agent.ownerId);
+    await page.getByLabel('登录密码', { exact: true }).fill(owner.password);
     let original: Json | undefined, preSaved = false, aborted!: () => void;
     const intercepted = new Promise<void>((resolve) => { aborted = resolve; });
     plannedFailure(page, '/v1/owner/sessions', 'net::ERR_FAILED');
@@ -499,17 +523,23 @@ test('登录请求未到服务时刷新，重新输入密码沿用原登录键�
     expect(pending.pendingOperation.action).toBe('login');
     expect(pending.sessionToken === original!.sessionToken, 'The login session was saved before the first request').toBe(true);
     expect((await http(receiptPath(pending), undefined, owner.sessionToken)).status).toBe(404);
+    const progress=await downloaded(page,page.getByRole('button',{name:'保存进度，稍后继续',exact:true}),directory);
+    sameFields(progress.pendingOperation,pending.pendingOperation,['operationId','scope','action']);
+    expect(!JSON.stringify(progress).includes(owner.password)).toBe(true);
+    await page.getByRole('checkbox',{name:'我已保存本次操作进度文件',exact:true}).check();await page.getByRole('button',{name:'保存后退出',exact:true}).click();
+    await page.locator('.login-help > summary').click();await page.getByRole('button',{name:'使用管理备份或继续上次操作',exact:true}).click();
+    await page.locator('#credentials-import').setInputFiles(await privateFile(directory,'pending-login',progress));await idle(page);
     plannedFailure(page, `/v1/operations/${pending.pendingOperation.operationId}`, '401');
     await page.reload();
-    await expect(page.getByRole('heading', { name: '继续原登录操作', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: '核对原操作结果', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: '核对原操作结果', exact: true })).toBeEnabled();
-    await expect(page.getByLabel('主人 ID', { exact: true })).toHaveValue(agent.ownerId);
-    expect(await page.getByLabel('管理密码', { exact: true }).inputValue() === '', 'Refresh requests the original password without persisting it').toBe(true);
-    await page.getByLabel('管理密码', { exact: true }).fill(owner.password);
+    await expect(page.getByRole('button', { name: '继续登录', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: '再试一次', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: '再试一次', exact: true })).toBeEnabled();
+    await expect(page.getByLabel('管理编号', { exact: true })).toHaveValue(agent.ownerId);
+    expect(await page.getByLabel('登录密码', { exact: true }).inputValue() === '', 'Refresh requests the original password without persisting it').toBe(true);
+    await page.getByLabel('登录密码', { exact: true }).fill(owner.password);
     let resumed: Json | undefined;
     await page.route('**/v1/owner/sessions', async (route) => { resumed = route.request().postDataJSON() as Json; await route.continue(); }, { times: 1 });
-    await mutate(page, '/owner/sessions', page.getByRole('button', { name: '继续原登录', exact: true }));
+    await mutate(page, '/owner/sessions', page.getByRole('button', { name: '继续登录', exact: true }));
     expect(Boolean(resumed)).toBe(true);
     sameFields(resumed!, original!, ['operationId', 'ownerId', 'password', 'sessionToken']);
     const receipt = await ok(receiptPath(pending), undefined, pending.sessionToken as string);
@@ -523,11 +553,12 @@ test('登录请求未到服务时刷新，重新输入密码沿用原登录键�
 test('登录已提交但响应丢失时刷新，以原会话完整键读回执而不再次登录', async ({ page }) => {
   const directory = await mkdtemp(join(tmpdir(), 'm1-owner-login-committed-'));
   try {
+    await delayFirstReceipt(page);
     const agent = await registeredOnly(directory, 'UI Login Committed');
     const owner = await managedFixture(directory, agent); track(page, owner.password);
     await page.goto('/owner');
-    await page.getByLabel('主人 ID', { exact: true }).fill(agent.ownerId);
-    await page.getByLabel('管理密码', { exact: true }).fill(owner.password);
+    await page.getByLabel('管理编号', { exact: true }).fill(agent.ownerId);
+    await page.getByLabel('登录密码', { exact: true }).fill(owner.password);
     let original: Json | undefined, preSaved = false, committedStatus = 0, submitted!: () => void, posts = 0;
     page.on('request', (request) => { if (new URL(request.url()).pathname === '/v1/owner/sessions' && request.method() === 'POST') posts++; });
     const intercepted = new Promise<void>((resolve) => { submitted = resolve; });
@@ -547,7 +578,7 @@ test('登录已提交但响应丢失时刷新，以原会话完整键读回执�
     await page.reload();
     const url = new URL((await receiptRequest).url());
     expect(url.searchParams.get('scope')).toBe(`owner:${agent.ownerId}`); expect(url.searchParams.get('action')).toBe('login');
-    await expect(page.getByRole('heading', { name: '我的居民', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '我的 Agent', exact: true })).toBeVisible();
     expect(posts, 'Committed login recovery must not send another login POST').toBe(1);
     const receipt = await ok(receiptPath(pending), undefined, pending.sessionToken as string);
     expect(receipt.operationId).toBe(original!.operationId);
@@ -555,7 +586,7 @@ test('登录已提交但响应丢失时刷新，以原会话完整键读回执�
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
-test('首次设置请求未到服务时刷新，重新保存原证明并以同键继续原设置', async ({ page }) => {
+test('首次设置请求未到服务时刷新，重新保存原证明并以同键继续设置', async ({ page }) => {
   const directory = await mkdtemp(join(tmpdir(), 'm1-owner-setup-unsent-'));
   try {
     const agent = await registeredOnly(directory, 'UI Setup Unsent');
@@ -569,7 +600,7 @@ test('首次设置请求未到服务时刷新，重新保存原证明并以同�
       preSaved = await persistedBeforeSend(page, original, saved.pendingOperation.scope as string, 'completeSetup');
       await route.abort('failed'); aborted();
     }, { times: 1 });
-    await page.getByRole('button', { name: '完成设置', exact: true }).click(); await intercepted; await idle(page);
+    await page.getByRole('button', { name: '进入我的 Agent', exact: true }).click(); await intercepted; await idle(page);
     const pending = await pendingVault(page, directory, password);
     expect(Boolean(original)).toBe(true); expect(pending.pendingOperation.operationId).toBe(original!.operationId);
     expect(preSaved, 'The complete setup key and next session are durable before sending').toBe(true);
@@ -579,21 +610,21 @@ test('首次设置请求未到服务时刷新，重新保存原证明并以同�
     expect((await http('/owner/setup', undefined, saved.setupToken as string)).status).toBe(200);
     plannedFailure(page, `/v1/operations/${pending.pendingOperation.operationId}`, '401');
     await page.reload();
-    await expect(page.getByRole('heading', { name: '继续原设置操作', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: '核对原操作结果', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: '核对原操作结果', exact: true })).toBeEnabled();
-    expect(await page.getByLabel('设置管理密码', { exact: true }).inputValue() === '', 'Refresh requests the original setup password without persisting it').toBe(true);
-    await page.getByLabel('设置管理密码', { exact: true }).fill(password);
-    const reSaved = await downloaded(page, page.getByRole('button', { name: '重新下载已保存的管理文件', exact: true }), directory);
+    await expect(page.locator('#setup-resume-info')).toBeVisible();
+    await expect(page.getByRole('button', { name: '再试一次', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: '再试一次', exact: true })).toBeEnabled();
+    expect(await page.getByLabel('设置登录密码', { exact: true }).inputValue() === '', 'Refresh requests the original setup password without persisting it').toBe(true);
+    await page.getByLabel('设置登录密码', { exact: true }).fill(password);
+    const reSaved = await downloaded(page, page.getByRole('button', { name: '重新下载登录备份', exact: true }), directory);
     sameFields(reSaved, saved, ['setupToken', 'sessionToken', 'recoveryToken']);
     expect(reSaved.pendingOperation.operationId).toBe(pending.pendingOperation.operationId);
     expect(reSaved.pendingOperation.scope).toBe(pending.pendingOperation.scope); expect(reSaved.pendingOperation.action).toBe('completeSetup');
-    await page.getByRole('checkbox', { name: '我已保存私密管理文件', exact: true }).check();
+    await page.getByRole('checkbox', { name: '我已保存登录备份', exact: true }).check();
     let resumed: Json | undefined, resumedAuthorization = '';
     await page.route('**/v1/owner/setup/complete', async (route) => {
       resumed = route.request().postDataJSON() as Json; resumedAuthorization = route.request().headers().authorization ?? ''; await route.continue();
     }, { times: 1 });
-    await mutate(page, '/owner/setup/complete', page.getByRole('button', { name: '继续原设置', exact: true }));
+    await mutate(page, '/owner/setup/complete', page.getByRole('button', { name: '继续设置', exact: true }));
     expect(Boolean(resumed)).toBe(true); assertSameRecoveryFields(resumed!, original!);
     expect(resumedAuthorization === originalAuthorization, 'The original restricted setup proof is retained').toBe(true);
     const receipt = await ok(receiptPath(pending), undefined, saved.sessionToken as string);
@@ -601,13 +632,14 @@ test('首次设置请求未到服务时刷新，重新保存原证明并以同�
     const managed = await ok('/owner/agents', undefined, saved.sessionToken as string);
     expect(managed.agents.length).toBe(1); expect(managed.agents[0].agentId).toBe(agent.agentId);
     expect((await http('/owner/setup', undefined, saved.setupToken as string)).status).toBe(401);
-    await expect(page.getByRole('heading', { name: '我的居民', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '我的 Agent', exact: true })).toBeVisible();
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
 test('首次设置已提交但响应丢失时刷新，新会话精确核对原回执且不二次提交', async ({ page }) => {
   const directory = await mkdtemp(join(tmpdir(), 'm1-owner-setup-committed-'));
   try {
+    await delayFirstReceipt(page);
     const agent = await registeredOnly(directory, 'UI Setup Committed');
     const password = 'synthetic committed setup password';
     const saved = await prepareInitialSetup(page, directory, agent, password);
@@ -621,7 +653,7 @@ test('首次设置已提交但响应丢失时刷新，新会话精确核对原�
       const response = await route.fetch(); committedStatus = response.status();
       await route.abort('failed'); submitted();
     }, { times: 1 });
-    await page.getByRole('button', { name: '完成设置', exact: true }).click(); await intercepted; await idle(page);
+    await page.getByRole('button', { name: '进入我的 Agent', exact: true }).click(); await intercepted; await idle(page);
     expect(committedStatus).toBe(200); expect(Boolean(original)).toBe(true);
     expect(preSaved, 'The committed setup key and next session were durable before sending').toBe(true);
     const pending = await pendingVault(page, directory, password);
@@ -631,7 +663,7 @@ test('首次设置已提交但响应丢失时刷新，新会话精确核对原�
     const url = new URL((await receiptRequest).url());
     expect(url.searchParams.get('scope')).toBe(`setup:${(saved.setupToken as string).split('.')[0]}`);
     expect(url.searchParams.get('action')).toBe('completeSetup');
-    await expect(page.getByRole('heading', { name: '我的居民', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '我的 Agent', exact: true })).toBeVisible();
     expect(posts, 'Committed setup recovery must not send another completion POST').toBe(1);
     const receipt = await ok(receiptPath(pending), undefined, saved.sessionToken as string);
     expect(receipt.operationId).toBe(original!.operationId);
@@ -640,55 +672,20 @@ test('首次设置已提交但响应丢失时刷新，新会话精确核对原�
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
-test('主人 ID 错误的待核对登录可先保存原记录再退出，并导入同键继续核对', async ({ page }) => {
-  const directory = await mkdtemp(join(tmpdir(), 'm1-owner-login-exit-'));
-  try {
-    const ownerId = randomUUID(), password = 'synthetic unmatched owner password';
-    track(page, password);
-    let posts = 0;
-    page.on('request', (request) => { if (new URL(request.url()).pathname.startsWith('/v1/') && request.method() === 'POST') posts++; });
-    await page.goto('/owner');
-    await page.getByLabel('主人 ID', { exact: true }).fill(ownerId);
-    await page.getByLabel('管理密码', { exact: true }).fill(password);
-    plannedFailure(page, '/v1/owner/sessions', '401');
-    await page.route('**/v1/owner/sessions', async (route) => {
-      const command = route.request().postDataJSON() as Json;
-      track(page, command.sessionToken as string);
-      plannedFailure(page, `/v1/operations/${command.operationId}`, '401'); // The rejected login probes its exact receipt once.
-      await route.continue();
-    }, { times: 1 });
-    const rejected = page.waitForResponse((response) => new URL(response.url()).pathname === '/v1/owner/sessions');
-    await page.getByRole('button', { name: '登录', exact: true }).click();
-    expect((await rejected).status(), 'An unknown owner does not acquire a session').toBe(401);
-    await idle(page);
-    const pending = await pendingVault(page, directory, password);
-    expect(pending.pendingOperation.scope).toBe(`owner:${ownerId}`); expect(pending.pendingOperation.action).toBe('login');
-    plannedFailure(page, `/v1/operations/${pending.pendingOperation.operationId}`, '401');
-    await page.reload();
-    await expect(page.getByRole('heading', { name: '继续原登录操作', exact: true })).toBeVisible();
-    const saved = await downloaded(page, page.getByRole('button', { name: '保存原认证记录并准备退出', exact: true }), directory);
-    sameFields(saved, pending, ['ownerId', 'sessionToken']);
-    sameFields(saved.pendingOperation, pending.pendingOperation, ['operationId', 'scope', 'action']);
-    expect(!JSON.stringify(saved).includes(password), 'The archived authentication record excludes the plaintext password').toBe(true);
-    const archive = await privateFile(directory, 'original-pending-login', saved);
-    const exit = page.getByRole('button', { name: '退出本次待核对认证', exact: true });
-    await expect(exit).toBeDisabled();
-    await page.getByRole('checkbox', { name: '我已保存原认证记录，理解结果仍待核对', exact: true }).check();
-    await exit.click(); await idle(page);
-    await expect(page.getByRole('button', { name: '登录', exact: true })).toBeEnabled();
-    await expect(page.getByLabel('导入私密管理文件', { exact: true })).toBeEnabled();
-    expect(await page.evaluate(() => sessionStorage.getItem('connet.owner.v1') === null), 'Exiting only clears the current tab continuation').toBe(true);
-    expect(posts, 'Saving and exiting must not create a new authentication or registration request').toBe(1);
-    plannedFailure(page, `/v1/operations/${pending.pendingOperation.operationId}`, '401');
-    const recheck = page.waitForRequest((request) => new URL(request.url()).pathname === `/v1/operations/${pending.pendingOperation.operationId}`);
-    await page.getByLabel('导入私密管理文件', { exact: true }).setInputFiles(archive);
-    const recheckUrl = new URL((await recheck).url());
-    expect(recheckUrl.searchParams.get('scope')).toBe(`owner:${ownerId}`); expect(recheckUrl.searchParams.get('action')).toBe('login');
-    await expect(page.getByRole('heading', { name: '继续原登录操作', exact: true })).toBeVisible(); await idle(page);
-    await expect(page.getByRole('button', { name: '核对原操作结果', exact: true })).toBeEnabled();
-    const restored = await pendingVault(page, directory, password);
-    sameFields(restored, pending, ['ownerId', 'sessionToken']);
-    sameFields(restored.pendingOperation, pending.pendingOperation, ['operationId', 'scope', 'action']);
-    expect(posts, 'Importing the original record only checks its receipt without a new POST').toBe(1);
-  } finally { await rm(directory, { recursive: true, force: true }); }
+test('明确的管理编号或密码错误不锁住登录和忘记密码',async({page})=>{
+ await page.goto('/owner');await page.getByLabel('管理编号',{exact:true}).fill(randomUUID());const password='synthetic rejected password';track(page,password);await page.getByLabel('登录密码',{exact:true}).fill(password);
+ plannedFailure(page,'/v1/owner/sessions','401');const response=page.waitForResponse(r=>new URL(r.url()).pathname==='/v1/owner/sessions');await page.getByRole('button',{name:'登录',exact:true}).click();expect((await response).status()).toBe(401);await idle(page);
+ await expect(page.locator('#global-notice')).toContainText('管理编号或密码不正确');await expect(page.locator('#login-owner')).toBeEnabled();await expect(page.locator('#prepare-auth-exit')).toBeHidden();
+ expect(await page.evaluate(()=>!JSON.parse(sessionStorage.getItem('connet.owner.v1')||'{}').pendingOperation)).toBe(true);
+ await page.getByRole('button',{name:'忘记密码？',exact:true}).click();await expect(page.locator('#credentials-import')).toBeVisible();await expect(page.locator('#login-form')).toBeHidden();
+});
+
+test('默认入口只有登录任务，Agent材料和异源文件不会触发认证或跨源上传',async({page})=>{
+ const directory=await mkdtemp(join(tmpdir(),'m1-owner-file-boundary-'));try{
+  await page.goto('/owner');await expect(page.locator('#login-form')).toBeVisible();await expect(page.locator('#recovery-form')).toBeHidden();await expect(page.locator('#unknown-controls')).toBeHidden();await expect(page.locator('#credentials-import')).toBeHidden();
+  await page.getByRole('button',{name:'忘记密码？',exact:true}).click();let calls=0;page.on('request',r=>{if(new URL(r.url()).pathname.startsWith('/v1/'))calls++;});
+  await page.locator('#credentials-import').setInputFiles(await privateFile(directory,'agent-material',{format:'connet-agent-v1',origin}));await expect(page.locator('#global-notice')).toContainText('Agent 的身份或交接文件');
+  const proof=credential();track(page,proof);await page.locator('#credentials-import').setInputFiles(await privateFile(directory,'IP-backup',{format:'connet-owner-v1',origin:'https://38.207.178.31',ownerId:randomUUID(),recoveryToken:proof}));
+  await expect(page.getByRole('link',{name:'在原地址继续',exact:true})).toHaveAttribute('href','https://38.207.178.31/owner');expect(calls).toBe(0);await expect(page.locator('#recovery-form')).toBeHidden();
+ }finally{await rm(directory,{recursive:true,force:true});}
 });

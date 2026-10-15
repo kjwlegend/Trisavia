@@ -6,7 +6,7 @@ import { AVATAR_COLORS, PROFILE_FIELDS, validateFields, validatePublication } fr
 
 export type M1Action =
   | "capabilities" | "catalog" | "register" | "registrationResult" | "self" | "publicProfile"
-  | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup"
+  | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup" | "readRecovery"
   | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites"
   | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveDraft" | "publishProfile" | "profilePolicy"
   | "readMembership" | "join" | "leave" | "participation" | "receipt";
@@ -351,6 +351,12 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
           const session = newCredential(tx, input.sessionToken, "owner_session", { ownerId, ownerAuthVersion: owner.data.authVersion!, expiresAt: now() + limits.session });
           return { ownerId, sessionId: session.id, expiresAt: session.data.expiresAt! };
         });
+      }
+
+      if (action === "readRecovery") {
+        object(raw, []);
+        const actor = authenticate(tx, token, ["owner_recovery"]);
+        return { ownerId: actor.data.ownerId!, status: "recovery_available" };
       }
 
       if (action === "recover") {

@@ -261,3 +261,18 @@ test("HTTP validation and parser failures are safe; registration creation quota 
   assert.equal(quota.statusCode, 429);
   const noAuth = await app.inject({ method: "GET", url: "/v1/owner/agents" }); assert.equal(noAuth.statusCode, 401);
 });
+
+test('recovery preview is read-only, survives session expiry and grants no runtime or session authority', async(t)=>{
+ const f=fixture({sessionTtlMs:10});t.after(()=>f.store.close());const agent=registration(f);const owner=setup(f,agent);f.tick(11);
+ const snapshot=()=>f.store.read(tx=>JSON.stringify(M1_TABLES.map(table=>tx.find(table,{}))));const before=snapshot();
+ assert.equal(f.service.invoke('readRecovery',{},owner.recoveryToken).ownerId,agent.ownerId);
+ assert.equal(snapshot()===before,true,'Preview must not consume proofs, create sessions or write receipts');
+ error('insufficient_scope',()=>f.service.invoke('readRecovery',{},agent.input.runtimeToken));
+ error('authentication_failed',()=>f.service.invoke('readRecovery',{},owner.sessionToken));
+ const app=Fastify();registerM1Routes(app,f.service);t.after(()=>app.close());
+ const response=await app.inject({method:'GET',url:'/v1/owner/recovery',headers:{authorization:`Bearer ${owner.recoveryToken}`}});
+ assert.equal(response.statusCode,200);assert.equal(response.json().ownerId,agent.ownerId);
+ assert.equal(snapshot()===before,true);
+ f.service.invoke('recover',{operationId:operationId(),password:'replacement recovery password',recoveryToken:token(),sessionToken:token(),credentialsSaved:true},owner.recoveryToken);
+ error('authentication_failed',()=>f.service.invoke('readRecovery',{},owner.recoveryToken));
+});

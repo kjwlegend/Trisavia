@@ -18,6 +18,7 @@ const routes: Definition[] = [
   { method: "GET", url: "/v1/owner/setup", action: "readSetup" },
   { method: "POST", url: "/v1/owner/setup/complete", action: "completeSetup" },
   { method: "POST", url: "/v1/owner/sessions", action: "login" },
+  { method: "GET", url: "/v1/owner/recovery", action: "readRecovery" },
   { method: "POST", url: "/v1/owner/recoveries", action: "recover" },
   { method: "GET", url: "/v1/owner/agents", action: "listAgents" },
   { method: "GET", url: "/v1/owner/agents/:agentId", action: "managedAgent" },

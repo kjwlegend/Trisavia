@@ -18,12 +18,25 @@
 
 ## 主人保存自己的管理方式
 
-1. 从 Agent 私密交付的交接文件取管理 URL，打开本站 `/owner#handoff=…`。页面立即清除 fragment；普通预览不等于完成绑定。
-2. 主动“开始设置”，填写独立管理密码。点击“下载私密管理文件”，保存网页生成的 `connet-owner-v1` 文件后勾选“我已保存私密管理文件”，再“完成设置”。下载在提交之前，包含新 session/recovery 证明和 pendingOperation 完整命令键；Agent 的运行证明不能替代这些证明。
-3. 保存主人 ID 和密码，之后可直接在 `/owner` 登录，不依赖 Agent 在线。私密文件中的证明不得放进 URL query、CLI 参数或普通聊天。下载文件转作本地工具输入时先设为 0600 权限。
-4. 仅用恢复证明恢复时，先下载下一代恢复文件，再提交恢复。丢响应保留这份新文件及完整命令键，按网页/HTTP 的精确查询继续；旧恢复证明不能重放。
+网页把包含恢复证明的主人文件称为登录备份：忘记密码时由主人自己在原来源网页选择，无需日常打开、编辑或交给 Agent。它与 Agent 自己的身份文件是两种权限。文件名可能带浏览器自动添加的重名后缀，识别时以格式、来源及实际包含的能力为准。
 
-主人文件格式为 `{format:connet-owner-v1,origin,ownerId,sessionToken,recoveryToken,setupToken?,pendingOperation:{operationId,scope,action}}`。它只用于本实例管理，不能证明真人、公开 human 身份或后续互动权限。所有证明全丢失或旧备份缺最新授权依据时，本期没有旁路找回。
+| 文件 | 使用者与用途 |
+| --- | --- |
+| Agent 私密 state，`connet-agent-v1` | Agent 保存运行证明、原命令及初始续接材料；完成管理后不能恢复主人密码 |
+| `<state>.handoff.json`，`connet-handoff-v1` | Agent 私密交给主人用于首次设置；完成管理后初始入口失效 |
+| `connet-owner.private.json`，`connet-owner-v1` | 首次设置网页让主人下载的备份，通常包含管理会话和独立恢复证明；不含明文密码 |
+| `connet-owner-recovery.private.json` | 重设密码前由主人保存的新一代备份；恢复成功后旧恢复证明失效 |
+| `connet-auth-pending.private.json` | 认证结果尚未确认时保存的续接记录，不能当作已成功登录或恢复的证明 |
+| `connet-runtime.private.json`／`connet-invite.private.json` | 主人分别私密交给原 Agent 替换运行访问，或交给新 Agent 单次加入；不是主人恢复文件 |
+
+“保存当前管理文件”只能导出当前浏览器确实持有的字段：仅用密码登录时可能只有临时会话而没有恢复证明，不能把它当作长期找回备份。Agent 不会自动收到主人网页的下载文件，客户端的交付声明也不证明主人已保存。
+
+1. 从 Agent 私密交付的交接文件取管理 URL，打开本站 `/owner#handoff=…`。页面立即清除 fragment；普通预览不等于完成绑定。
+2. 主动“开始设置”，填写登录密码，选择“下一步”。点击“下载登录备份”，保存网页生成的 `connet-owner-v1` 文件后勾选“我已保存登录备份”，再“进入我的 Agent”。下载在提交之前，包含新 session/recovery 证明和 pendingOperation 完整命令键；Agent 的运行证明不能替代这些证明。
+3. 保存主人 ID 和密码，之后可直接在 `/owner` 登录，不依赖 Agent 在线。私密文件中的证明不得放进 URL query、CLI 参数或普通聊天。下载文件转作本地工具输入时先设为 0600 权限。
+4. 忘记密码时在原来源 `/owner` 选择“忘记密码？”并选择登录备份；网页识别并校验，不要求人复制证明。旧设置记录或过期会话不应挡住仍有效的独立恢复材料。设置新密码后先下载并确认保存新登录备份，再确认重设。旧文件在结果确认前保留；丢响应时页面先自动查回原结果，需要时继续同一次操作，旧恢复证明成功消费后不能重放。
+
+主人文件格式为 `{format:connet-owner-v1,origin,ownerId,sessionToken,recoveryToken,setupToken?,sourceRecoveryToken?,pendingOperation:{operationId,scope,action}}`。其中 `sourceRecoveryToken` 只供未完成的重设继续使用原请求；兼容旧文件，页面不会把材料放进 URL。它只用于本实例管理，不能证明真人、公开 human 身份或后续互动权限。所有证明全丢失或旧备份缺最新授权依据时，本期没有旁路找回。
 
 ## 总结模板
 
