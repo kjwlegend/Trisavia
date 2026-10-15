@@ -69,7 +69,7 @@ function showForgot(purpose='recover'){
   recoveryIntent=purpose==='recover';sessionOnlyBackup=null;showAuth();
   $('#setup-view').hidden=true;$('#sign-in-view').hidden=true;$('#forgot-view').hidden=false;
   $('#recovery-pick-step').hidden=false;$('#recovery-form').hidden=true;$('#origin-help').hidden=true;
-  $('#continue-management').hidden=true;$('#recovery-title').textContent=purpose==='manage'?'使用管理备份或继续进度':'选择登录备份';controls();requestFocus('#credentials-import');
+  $('#continue-management').hidden=true;$('#recovery-title').textContent=purpose==='manage'?'使用登录备份或继续进度':'选择登录备份';controls();requestFocus('#credentials-import');
 }
 function recoveryForm(resuming=false){
   showAuth();$('#setup-view').hidden=true;$('#sign-in-view').hidden=true;$('#forgot-view').hidden=false;

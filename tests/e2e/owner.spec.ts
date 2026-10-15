@@ -201,7 +201,7 @@ test('主人先保存私密管理材料，再登录和独立恢复；旧会话�
     await page.getByRole('checkbox', { name: '我已保存新登录备份', exact: true }).check();
     let recoveryPosts=0;plannedFailure(page,'/v1/owner/recoveries','net::ERR_FAILED');
     await page.route('**/v1/owner/recoveries',async route=>{recoveryPosts++;await route.fetch();await route.abort('failed');},{times:1});
-    await page.getByRole('button',{name:'确认重设密码',exact:true}).click();
+    await page.getByRole('button',{name:'完成并登录',exact:true}).click();
     await expect(page.getByRole('heading',{name:'我的 Agent',exact:true})).toBeVisible();
     expect(recoveryPosts,'The committed result is confirmed automatically without another reset').toBe(1);
     await expect(page.getByRole('heading', { name: '我的 Agent', exact: true })).toBeVisible();
@@ -416,7 +416,7 @@ test('恢复请求未到服务时刷新，重新输入必要秘密后沿用原�
       // Deliberately do not route.fetch(): the service never receives this POST.
       await route.abort('failed'); aborted();
     }, { times: 1 });
-    await page.getByRole('button', { name: '确认重设密码', exact: true }).click();
+    await page.getByRole('button', { name: '完成并登录', exact: true }).click();
     await intercepted; await idle(page);
     expect(Boolean(original), 'Capture the original recovery command before the network failure').toBe(true);
     expect(original!.operationId).toBe(next.pendingOperation.operationId);
@@ -443,7 +443,7 @@ test('恢复请求未到服务时刷新，重新输入必要秘密后沿用原�
       resumedAuthorization = route.request().headers().authorization ?? '';
       await route.continue();
     }, { times: 1 });
-    await mutate(page, '/owner/recoveries', page.getByRole('button', { name: '确认重设密码', exact: true }));
+    await mutate(page, '/owner/recoveries', page.getByRole('button', { name: '完成并登录', exact: true }));
     expect(Boolean(resumed), 'Continuation must send the original recovery command').toBe(true);
     assertSameRecoveryFields(resumed!, original!);
     expect(resumedAuthorization === originalAuthorization, 'Continuation uses the original old recovery proof').toBe(true);
@@ -474,7 +474,7 @@ test('恢复已提交但响应丢失时刷新，预存新会话按完整键读�
       const response = await route.fetch(); committedStatus = response.status();
       await route.abort('failed'); submitted();
     }, { times: 1 });
-    await page.getByRole('button', { name: '确认重设密码', exact: true }).click();
+    await page.getByRole('button', { name: '完成并登录', exact: true }).click();
     await intercepted; await idle(page);
     expect(committedStatus, 'The service committed before the response was discarded').toBe(200);
     expect(Boolean(original), 'Capture the original committed recovery command').toBe(true);
@@ -527,7 +527,7 @@ test('登录请求未到服务时刷新，重新输入密码沿用原登录键�
     sameFields(progress.pendingOperation,pending.pendingOperation,['operationId','scope','action']);
     expect(!JSON.stringify(progress).includes(owner.password)).toBe(true);
     await page.getByRole('checkbox',{name:'我已保存本次操作进度文件',exact:true}).check();await page.getByRole('button',{name:'保存后退出',exact:true}).click();
-    await page.locator('.login-help > summary').click();await page.getByRole('button',{name:'使用管理备份或继续上次操作',exact:true}).click();
+    await page.locator('.login-help > summary').click();await page.getByRole('button',{name:'使用登录备份或继续上次操作',exact:true}).click();
     await page.locator('#credentials-import').setInputFiles(await privateFile(directory,'pending-login',progress));await idle(page);
     plannedFailure(page, `/v1/operations/${pending.pendingOperation.operationId}`, '401');
     await page.reload();
