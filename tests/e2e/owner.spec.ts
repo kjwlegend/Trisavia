@@ -117,8 +117,9 @@ async function managedFixture(directory: string, agent: Resident) {
   const password = 'synthetic owner passphrase one';
   await privateFile(directory, 'owner', { setupToken, sessionToken, recoveryToken, password });
   await ok('/owner-setups', { operationId: op(), setupToken }, token);
-  await ok('/owner/setup/complete', { operationId: op(), password, recoveryToken, sessionToken, credentialsSaved: true }, setupToken);
-  return { sessionToken, recoveryToken, password };
+  const completeOperationId = op();
+  await ok('/owner/setup/complete', { operationId: completeOperationId, password, recoveryToken, sessionToken, credentialsSaved: true }, setupToken);
+  return { sessionToken, recoveryToken, password, setupToken, completeOperationId };
 }
 async function idle(page: Page) {
   await expect(page.locator('main')).toHaveAttribute('aria-busy', 'false');
@@ -670,6 +671,74 @@ test('首次设置已提交但响应丢失时刷新，新会话精确核对原�
     expect((await http('/owner/setup', undefined, saved.setupToken as string)).status).toBe(401);
     await expect(page.locator('#selected-id')).toContainText(agent.agentId);
   } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test('旧版恢复进度缺少原恢复字段时，在忘记密码中补选旧备份仍续接原键与下一代材料', async ({ page }) => {
+  const directory = await mkdtemp(join(tmpdir(), 'm1-legacy-recovery-'));
+  try {
+    const agent = await resident(directory, 'Legacy recovery resident'), owner = await managedFixture(directory, agent);
+    const operationId = op(), nextSession = credential(), nextRecovery = credential();
+    const legacy = { format: 'connet-owner-v1', origin, ownerId: agent.ownerId, sessionToken: nextSession, recoveryToken: nextRecovery,
+      pendingOperation: { operationId, scope: `owner:${agent.ownerId}`, action: 'recover', kind: 'recovery' } };
+    track(page, agent.runtimeToken, owner.recoveryToken, nextSession, nextRecovery);
+    await page.goto('/owner'); await idle(page); await page.locator('#forgot-password').click();
+    plannedFailure(page, '/v1/owner/recovery', '401'); // The uncommitted successor is expected to be inactive.
+    await page.locator('#credentials-import').setInputFiles(await privateFile(directory, 'legacy-progress', legacy));
+    await expect(page.locator('#recovery-resume-info')).toBeVisible();
+    const originalPreserved = () => page.evaluate(({operationId, nextSession, nextRecovery}) => {
+      const saved = JSON.parse(sessionStorage.getItem('connet.owner.v1') || '{}');
+      return saved.pendingOperation?.operationId === operationId && saved.pendingOperation?.action === 'recover'
+        && saved.sessionToken === nextSession && saved.recoveryToken === nextRecovery;
+    }, {operationId, nextSession, nextRecovery});
+    expect(await originalPreserved(), 'Legacy pending command and successor proofs remain current').toBe(true);
+    await page.locator('#recovery-source-import').setInputFiles(await privateFile(directory, 'wrong-companion', {format:'connet-owner-v1',origin,ownerId:op(),recoveryToken:owner.recoveryToken}));
+    await expect(page.locator('#recovery-resume-info')).toBeVisible(); expect(await originalPreserved()).toBe(true);
+    await page.locator('#recovery-source-import').setInputFiles(await privateFile(directory, 'original-backup', {format:'connet-owner-v1',origin,ownerId:agent.ownerId,recoveryToken:owner.recoveryToken}));
+    await expect(page.locator('#global-notice')).toContainText('继续同一次重设'); expect(await originalPreserved()).toBe(true);
+    const password = 'synthetic legacy recovery password'; track(page, password); await page.locator('#recovery-password').fill(password);
+    const successor = await downloaded(page, page.locator('#recovery-download'), directory);
+    expect(successor.pendingOperation.operationId === operationId && successor.sessionToken === nextSession && successor.recoveryToken === nextRecovery, 'Re-downloaded backup preserves the complete original command').toBe(true);
+    let submittedOriginal = false;
+    page.on('request', request => { if (new URL(request.url()).pathname === '/v1/owner/recoveries' && request.method() === 'POST') {
+      const body = request.postDataJSON(); submittedOriginal = body.operationId === operationId && body.sessionToken === nextSession && body.recoveryToken === nextRecovery;
+    } });
+    await page.locator('#recovery-saved').check(); await mutate(page, '/owner/recoveries', page.locator('#recovery-submit'));
+    await expect(page.locator('#selected-id')).toContainText(agent.agentId); expect(submittedOriginal).toBe(true);
+    expect((await http('/owner/recovery', undefined, owner.recoveryToken)).status).toBe(401);
+    expect((await ok('/agent/self', undefined, agent.runtimeToken)).agentId).toBe(agent.agentId);
+  } finally { await rm(directory, {recursive:true,force:true}); }
+});
+
+test('普通退出与保存未决进度后退出均清理主会话和私密归档，保持服务器恢复权与Agent身份', async ({ page }) => {
+  const directory = await mkdtemp(join(tmpdir(), 'm1-logout-progress-'));
+  try {
+    const agent = await resident(directory, 'Logout archive resident'), owner = await managedFixture(directory, agent);
+    const stale = {format:'connet-owner-v1',origin,ownerId:agent.ownerId,sessionToken:credential(),recoveryToken:owner.recoveryToken,setupToken:owner.setupToken,
+      pendingOperation:{operationId:owner.completeOperationId,scope:`setup:${owner.setupToken.split('.')[0]}`,action:'completeSetup',kind:'setup'}};
+    const file = await privateFile(directory,'stale-backup',stale); track(page, owner.password, owner.recoveryToken, owner.setupToken, stale.sessionToken);
+    const hasArchive = () => page.evaluate(token => (sessionStorage.getItem('connet.owner.progress.v1') || '').includes(token), owner.recoveryToken);
+    const cleared = () => page.evaluate(() => sessionStorage.getItem('connet.owner.v1') === null && sessionStorage.getItem('connet.owner.progress.v1') === null && (document.querySelector('#recovery-token') as HTMLInputElement).value === '');
+    for (const pendingExit of [false,true]) {
+      await page.goto('/owner'); await idle(page); await page.locator('#forgot-password').click(); await page.locator('#credentials-import').setInputFiles(file);
+      await expect(page.locator('#recovery-password')).toBeVisible(); expect(await hasArchive()).toBe(true);
+      await page.locator('#back-to-login').click(); await page.locator('#login-owner').fill(agent.ownerId); await page.locator('#login-password').fill(owner.password);
+      if (pendingExit) {
+        plannedFailure(page,'/v1/owner/sessions','net::ERR_FAILED'); await page.route('**/v1/owner/sessions', route => route.abort('failed'), {times:1});
+        await page.locator('#login-submit').click(); await expect(page.locator('#prepare-auth-exit')).toBeVisible();
+        await expect(page.locator('#confirm-auth-exit')).toBeDisabled(); expect(await hasArchive()).toBe(true);
+        const progress = await downloaded(page, page.locator('#prepare-auth-exit'), directory); expect(progress.pendingOperation.action).toBe('login');
+        await expect(page.locator('#confirm-auth-exit')).toBeDisabled(); expect(await hasArchive()).toBe(true);
+        await page.locator('#auth-exit-saved').check(); await page.locator('#confirm-auth-exit').click();
+      } else {
+        await mutate(page,'/owner/sessions',page.locator('#login-submit')); await expect(page.locator('#selected-id')).toContainText(agent.agentId);
+        expect(await hasArchive()).toBe(true); await page.locator('#logout').click();
+      }
+      expect(await cleared(), 'Logout clears all local private records and hidden recovery input').toBe(true);
+      await page.reload(); await idle(page); expect(await cleared()).toBe(true);
+      expect((await ok('/owner/recovery',undefined,owner.recoveryToken)).ownerId).toBe(agent.ownerId);
+      expect((await ok('/agent/self',undefined,agent.runtimeToken)).agentId).toBe(agent.agentId);
+    }
+  } finally { await rm(directory, {recursive:true,force:true}); }
 });
 
 test('明确的管理编号或密码错误不锁住登录和忘记密码',async({page})=>{

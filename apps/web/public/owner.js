@@ -348,7 +348,10 @@ async function importCredentials(event){
     try{await committed(await receipt(vault.pendingOperation),vault.pendingOperation);return;}catch(error){if(error instanceof BackupError)throw error;}
    }
    if(vault.recoveryToken){try{await useRecoveryBackup({...vault});return;}catch(error){if(error instanceof BackupError||isUnknown(error))throw error;}}
-   if(pendingRecovery()&&vault.sourceRecoveryToken){await recoveryOwner(vault.sourceRecoveryToken,vault.ownerId);showPendingRecovery();message('已找到上次重设的进度，请继续。');return;}
+   if(pendingRecovery()){
+    if(vault.sourceRecoveryToken)await recoveryOwner(vault.sourceRecoveryToken,vault.ownerId);
+    showPendingRecovery();message(vault.sourceRecoveryToken?'已找到上次重设的进度，请继续。':'上次重设的进度已保留。请在下方选择上一次登录备份，继续同一次操作。','pending');return;
+   }
    if(pendingSetup()&&vault.setupToken){try{await readSetup();message('上次设置尚未完成，请继续设置密码。');return;}catch(error){if(isUnknown(error))throw error;}}
    if(!vault.pendingOperation&&vault.sessionToken&&!vault.recoveryToken){await restorePasswordIntent();return;}
    throw new BackupError('unavailable_backup');
@@ -356,12 +359,13 @@ async function importCredentials(event){
   await resume();
  }catch(error){
   // Keep the imported command and its pre-saved proofs intact even when verification fails.
+  if(event.target.id==='recovery-source-import'){showPendingRecovery(true);backupError(error.code==='authentication_failed'?new BackupError('unavailable_backup'):error);return;}
   if(error instanceof BackupError){if(error.code==='unavailable_backup'){archiveImportedProgress();clearPending();}$('#recovery-pick-step').hidden=false;$('#recovery-form').hidden=true;backupError(error);}
   else if(vault.pendingOperation&&isUnknown(error)){showPendingAuthentication();message(authenticationPendingMessage(),'pending');}
   else{$('#recovery-pick-step').hidden=false;$('#recovery-form').hidden=true;backupError(error.code==='authentication_failed'?new BackupError('unavailable_backup'):error);}
  }finally{event.target.value='';setBusy(false);}
 }
-function logout(){recoveryIntent=false;sessionOnlyBackup=null;readGeneration++;selectionGeneration++;readAbort?.abort();agents=[];selectedId='';pendingPayload=null;setupInfo=null;setupPrepared=false;recoveryPrepared=null;runtimePrepared=null;invitePrepared=null;resetAuthenticationExit();vault={format:'connet-owner-v1',origin:location.origin};try{sessionStorage.removeItem(storageKey);}catch{}$$('input[type=password]').forEach(input=>input.value='');$('#login-owner').value='';$('#recovery-owner').value='';showSignIn();message('已退出本次登录，Agent 仍保留原身份。请妥善保存自己的登录备份。');controls();}
+function logout(){recoveryIntent=false;sessionOnlyBackup=null;readGeneration++;selectionGeneration++;readAbort?.abort();agents=[];selectedId='';pendingPayload=null;setupInfo=null;setupPrepared=false;recoveryPrepared=null;runtimePrepared=null;invitePrepared=null;resetAuthenticationExit();vault={format:'connet-owner-v1',origin:location.origin};for(const key of [storageKey,'connet.owner.progress.v1']){try{sessionStorage.removeItem(key);}catch{}}$$('input[type=password],#recovery-token').forEach(input=>input.value='');$('#login-owner').value='';$('#recovery-owner').value='';showSignIn();message('已退出本次登录，Agent 仍保留原身份。请妥善保存自己的登录备份。');controls();}
 async function resume(){
   if(vault.pendingOperation){
     vault.pendingOperation.uncertain=true;save();showSignIn();message('正在继续上次操作，请稍等。','pending');controls();
