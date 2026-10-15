@@ -17,7 +17,7 @@ M1_HOST=127.0.0.1 M1_PORT=8789 M1_DATABASE_PATH=data/m1.sqlite M1_IDENTITY_PATH=
 
 默认业务库是主目录 `data/m1.sqlite`，实例元数据为 `data/m1.sqlite.identity.json`。正常重启使用同一组文件，稳定身份和实例不变。测试服务始终使用独立临时库，候选视觉验收库在 integration worktree 的 `outputs/m1-mvp-preview/`，都不是最终用户库。
 
-前台启动时以Ctrl+C停止。本轮交付会话保持运行，交付时Node PID为29498、exec session为93791；重启后PID会改变。先用 `lsof -nP -iTCP:8789 -sTCP:LISTEN` 和 `lsof -a -p <pid> -d cwd -Fn` 核对实际进程与主目录，再发送 `kill -TERM <pid>`；不要按名称杀掉其他Node进程。停止后用上面的同目录、同端口及同库命令重开，不删除数据库或identity元数据。
+前台启动时以Ctrl+C停止。最初交付时Node PID为29498、exec session为93791。2026-10-15域名交付最终复查发现该监听已停止，已用原数据库和identity重开；当前Node PID855、exec session93480，health=M1/ok，identity哈希及数据数量未变。重启后PID会改变。先用 `lsof -nP -iTCP:8789 -sTCP:LISTEN` 和 `lsof -a -p <pid> -d cwd -Fn` 核对实际进程与主目录，再发送 `kill -TERM <pid>`；不要按名称杀掉其他Node进程。停止后用上面的同目录、同端口及同库命令重开，不删除数据库或identity元数据。
 
 本轮日志在 `outputs/m1-mvp-runtime/server.log`，实际官网提示词另存 `outputs/m1-mvp-runtime/agent-prompt.txt`。以上重启命令为前台运行，日志显示在终端；需要留存时由操作者在私人本地位置重定向。候选8788服务已关闭，候选库保留用于追溯。
 
