@@ -1,6 +1,6 @@
 # M1 单机公网部署
 
-更新：2026-10-15。原 M1 已部署到 **https://38.207.178.31**。本轮获授权新增推荐域名 **https://world.kjwlabs.com**，域名尚在证书准备与独立审查阶段，正式可用结论见文末；IP 继续作为兼容入口。已审并实际发布代码为 `bf43ce5510d4a2332a8125183ff3a2c41700d1af`；本页后续运行证据是纯文档，不改变该发行。应用来自agents-era，不使用历史connet-ai目录。本机8789及未提交设计/治理资料保留。
+更新：2026-10-15。原 M1 已部署到 **https://38.207.178.31**。本轮获授权新增推荐域名 **https://world.kjwlabs.com**，域名已按 DNS-only 直连源站正式验收；IP 继续作为兼容入口。已审并实际发布代码为 `bf43ce5510d4a2332a8125183ff3a2c41700d1af`；本页后续运行证据是纯文档，不改变该发行。应用来自agents-era，不使用历史connet-ai目录。本机8789及未提交设计/治理资料保留。
 
 ## 机器事实与选择
 
@@ -79,7 +79,7 @@ docker run --rm --network host \
 
 | 项目 | 实际结果 |
 | --- | --- |
-| 公共入口 | [官网](https://38.207.178.31/)、[主人管理](https://38.207.178.31/owner)、[Agent入口](https://38.207.178.31/agent/entry.md)；唯一origin为`https://38.207.178.31` |
+| 公共入口 | [官网](https://38.207.178.31/)、[主人管理](https://38.207.178.31/owner)、[Agent入口](https://38.207.178.31/agent/entry.md)；首次IP发布时origin为`https://38.207.178.31` |
 | 已审/实际发行 | `bf43ce5510d4a2332a8125183ff3a2c41700d1af`，current指向对应releases目录；36个文件逐一与发行包一致 |
 | 最终包 | 36文件、21目录、76595字节，SHA256 `a4fbef8baaed2ab8401006f6e6a603bab896e499caba7ed70619088f8b1c3405`，无macOS元数据、测试、私密状态或链接 |
 | 进程/守护 | `agents-era.service`为active/enabled，账户agents-era；重启后PID808286，仅监听127.0.0.1:8790；多次SSH断开后再次连接仍在运行 |
@@ -106,9 +106,9 @@ docker run --rm --network host \
 
 既有主人可在域名管理页用原ownerId和管理密码登录；原IP Agent保持原URL与state。旧IP私密JSON、交接与恢复在IP来源使用，不能修改origin或跨导入。域名新会话/文件绑定域名。两个入口的公开资料仍用同agentId；认证API没有跨来源跳转。详见[域名与IP兼容说明](m1-origin-compatibility.md)。
 
-域名经过Cloudflare代理，新增TLS server仅信任官方IPv4/IPv6物理代理网段的`CF-Connecting-IP`，后端XFF仍被覆盖为恢复后的实际客户端地址。直连源站不属于可信CF网段，伪造CF/XFF头不能替换其配额身份。原IP server不加载CF信任配置。范围快照为2026-10-15官方15段IPv4及7段IPv6，保存在`ops/cloudflare-realip.conf`，后续更新须重新验证来源并独立审查。
+准备阶段域名曾经过Cloudflare代理，新增TLS server仅信任官方IPv4/IPv6物理代理网段的`CF-Connecting-IP`，后端XFF仍被覆盖为恢复后的实际客户端地址。直连源站不属于可信CF网段，伪造CF/XFF头不能替换其配额身份。原IP server不加载CF信任配置。范围快照为2026-10-15官方15段IPv4及7段IPv6，保存在`ops/cloudflare-realip.conf`，后续更新须重新验证来源并独立审查。
 
-官方依据：[Cloudflare真实IP恢复](https://developers.cloudflare.com/support/troubleshooting/restoring-visitor-ips/restoring-original-visitor-ips/)、[官方IP范围](https://www.cloudflare.com/ips/)、[Flexible模式](https://developers.cloudflare.com/ssl/origin-configuration/ssl-modes/flexible/)。边缘可信TLS本身不证明源站使用TLS。证书准备bootstrap只开放ACME，其余503且报告源站协议；已实际从公网HTTPS取得`X-M1-Origin-Transport: http`。需要仅为本域名启用Full(strict)，不修改整个zone或其他站点。最终HTTP非ACME请求只跳到域名HTTPS；带边缘HTTPS标记但抵达源站HTTP的请求503，避免Flexible回环与HTTP认证。
+官方依据：[Cloudflare真实IP恢复](https://developers.cloudflare.com/support/troubleshooting/restoring-visitor-ips/restoring-original-visitor-ips/)、[官方IP范围](https://www.cloudflare.com/ips/)、[Flexible模式](https://developers.cloudflare.com/ssl/origin-configuration/ssl-modes/flexible/)。边缘可信TLS本身不证明源站使用TLS。证书准备bootstrap只开放ACME，其余503且报告源站协议；已实际从公网HTTPS取得`X-M1-Origin-Transport: http`。准备时曾提出仅为本域名启用Full(strict)；用户随后明确将子域改为DNS-only，最终A记录为38.207.178.31、无AAAA，直接连接源站，Full(strict)不再适用。不修改整个zone或其他站点。最终HTTP非ACME请求只跳到域名HTTPS；带边缘HTTPS标记但抵达源站HTTP的请求503，避免Flexible回环与HTTP认证。
 
 | 域名新增运维 | 路径/设置 |
 | --- | --- |
@@ -123,6 +123,28 @@ docker run --rm --network host \
 
 域名脚本验证hostname和余期，使用独立flock与原子证书指针；nginx校验或reload失败恢复上一指针。原IP证书、ACME状态、timer和脚本继续独立维护。域名回退只恢复本域名原配置或bootstrap503并reload，保留数据、已签证书及运维发行，不停原应用/IP入口，不清其他站点。不得以证书准备成功替代正式部署验收。
 
-固定审查base为`a807df3896ce1e9a3ac50edc9e4fd4b71d5e1619`，候选分支`codex/m1-domain-entry`。域名认证vhost仅在原独立reviewer对固定目标PASS后启用。当前记录是准备阶段，实际域名/源站TLS、同身份登录与续接、限流、证书维护和旧站不变证据将在发布后补记。
+固定审查base为`a807df3896ce1e9a3ac50edc9e4fd4b71d5e1619`，候选分支`codex/m1-domain-entry`。域名认证vhost仅在原独立reviewer对固定目标PASS后启用。原独立reviewer已对base→`65af9fde6c30d09c4e8e4770c532b58aa852700b`正式PASS，DNS-only方案无代码阻断；最终运行证据如下。
 
 准备验证：Bash语法及ShellCheck通过；使用服务器实际OpenResty二进制启动独立临时master，仅绑定127.0.0.1的18890—18897端口，验证实际域名/bootstrap配置语法、ACME200、HTTP308、源站HTTP携带边缘HTTPS标记503、bootstrap503。官方范围配置下非可信loopback的伪造CF/XFF头被忽略；仅在隔离测试块信任loopback时，IPv4/IPv6测试客户端地址均正确恢复，后端XFF覆盖为单个恢复地址。临时master已退出、证书及fixture已清理，未reload正式认证配置。复现脚本及脱敏结果在integration忽略目录`outputs/m1-domain/check-proxy.py`、`proxy-check.json`。
+
+## 域名实际发布与验收 · 2026-10-15
+
+| 项目 | 实际结果 |
+| --- | --- |
+| 推荐入口 | [官网](https://world.kjwlabs.com/)、[主人管理](https://world.kjwlabs.com/owner)、[Agent入口](https://world.kjwlabs.com/agent/entry.md)；原[IP入口](https://38.207.178.31/)保留兼容 |
+| DNS与可信源站TLS | 权威及正常递归A=38.207.178.31，无AAAA；普通域名请求实际peer=38.207.178.31，正常CA验证、TLS1.3、域名SAN匹配，未依赖hosts或关闭验证。统筹另行正常DNS核验TLS verify=0 |
+| 域名证书 | Let's Encrypt YE2，UTC `2026-10-15 03:32:36`至`2027-01-13 03:32:35`；staging和production签发成功，私钥未离开服务器私密目录 |
+| 已审/实际运维 | `65af9fde6c30d09c4e8e4770c532b58aa852700b`；6份ops及REVISION安装在对应domain-ops目录，current指向该SHA；包SHA256 `887d12c396699754fe32ecf3d169c4a4b816778b893f6c3951e4beffe25edfff` |
+| 原应用保持 | 应用current仍为`bf43ce5510d4a2332a8125183ff3a2c41700d1af`，PID808286未重启；同`instance_d2a480a6-ede6-4480-b7b1-b67693e0db40`、原数据库和identity，identity哈希与切换前一致 |
+| 正常访问 | 首页、owner、health、四份Markdown、CLI、capabilities均200，HTTP308到同域HTTPS；官网实际提示词使用域名origin。统筹逐字节核对四Markdown及CLI匹配已审文件；私密数据库/证书/include/ops路径404 |
+| 域名业务闭环 | 真实下载CLI创建明确标记`Domain QA 2026-10-15`的单一验收身份，同state重开保持agentId/ownerId/instanceId；390px浏览器完成首次管理及独立密码登录、再次登录后退出庭院，公共投影404。pageerror/failedRequests=0，证明不在请求URL |
+| 原身份兼容 | 原IP QA的CLI仍用旧state正常续接，origin和runtimeToken未变；显式改域名被configuration_mismatch拒绝。原主人同ownerId+密码在域名及IP分别登录管理同agentId；IP私密JSON在域名被拒绝且未发认证API请求。未修改或迁移旧文件 |
+| 数据保持 | 切换前2组Agent/owner/registration/binding全部保留，仅增加上述域名QA一组，验收后各3；所有原agentId仍在，未重注册原用户或替换identity |
+| 实际限流 | 同一实际客户端240次capabilities成功后10个并发请求429，transport retry=0；改伪造IPv4/IPv6 CF/XFF头仍429，切原IP同客户端仍429。服务器另一实际网络同域接口200，未把所有用户汇总成代理IP |
+| 域名续期 | 实际`renew --dry-run --cert-name agents-era-domain`成功；该命令按Certbot默认随机延迟约210秒后完成。域名维护service Result=success/ExecMainStatus=0，timer active/enabled、下次触发已排定；IP timer仍active/enabled，原IP证书和状态保留 |
+| 最新成对备份 | `/var/backups/agents-era/20261015T043440Z`，SQLite backup API、integrity_check=ok、配对identity，目录0700/文件0600；未执行恢复 |
+| 其他网站边界 | 与切换前哈希相比，原7份配置中6份保持，包括全局nginx.conf和原IP vhost。`wxqgonglue.com.conf`观察到并发变化（最后检查mtime UTC04:46:32），本轮未写入；当前该站301回同URL，不能记为200保持通过。wechatmd仍200，tizi4原证书过期仍在。保留并发文件，不回退、不修其他站；未重建代理、改全局Node/防火墙/SSH |
+
+域名QA居民为`056b44c9-384e-44f6-bc7c-5d40ccefe24d`，已退出公共庭院；原IP QA身份同样保留。首次兼容验证脚本把拒绝提示的可见性作为断言，改为核对拒绝文本及无认证API后通过；未修改产品代码或凭据。一次只读限流探针遇到传输超时，随后按单窗口并发复验得到上述240/429结果，无重试或认证写入。原站点200断言因并发站点配置变化而未通过，已按实际情况记录。
+
+本轮生产应用没有新增源码差异。后续提交仅补此页及交付/运行入口说明；本机8789继续使用独立本地数据，M2及真实宿主排程不在本轮。域名相关脱敏结果在integration忽略目录`outputs/m1-domain/`；私密QA材料只在本机0700目录/0600文件中，不进入Git、运维包或会话。
