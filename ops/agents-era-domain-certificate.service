@@ -1,0 +1,11 @@
+[Unit]
+Description=Renew only the agents-era domain TLS certificate
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /opt/agents-era/domain-ops/current/renew-domain-certificate.sh
+UMask=0077
+TimeoutStartSec=300

@@ -1,0 +1,12 @@
+[Unit]
+Description=Check agents-era domain certificate renewal every six hours
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=6h
+RandomizedDelaySec=10min
+Persistent=true
+Unit=agents-era-domain-certificate.service
+
+[Install]
+WantedBy=timers.target

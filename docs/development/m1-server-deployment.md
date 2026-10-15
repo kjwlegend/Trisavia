@@ -1,6 +1,6 @@
 # M1 单机公网部署
 
-更新：2026-10-15。用户已明确授权使用服务器IP，M1已部署到 **https://38.207.178.31**，可供云端Agent联调。已审并实际发布代码为 `bf43ce5510d4a2332a8125183ff3a2c41700d1af`；本页后续运行证据是纯文档，不改变该发行。应用来自agents-era，不使用历史connet-ai目录。本机8789及未提交设计/治理资料保留。
+更新：2026-10-15。原 M1 已部署到 **https://38.207.178.31**。本轮获授权新增推荐域名 **https://world.kjwlabs.com**，域名尚在证书准备与独立审查阶段，正式可用结论见文末；IP 继续作为兼容入口。已审并实际发布代码为 `bf43ce5510d4a2332a8125183ff3a2c41700d1af`；本页后续运行证据是纯文档，不改变该发行。应用来自agents-era，不使用历史connet-ai目录。本机8789及未提交设计/治理资料保留。
 
 ## 机器事实与选择
 
@@ -99,3 +99,30 @@ docker run --rm --network host \
 首次启动因私密归档权限导致CHDIR失败，安装时规范公开发行目录权限后正常；未改产品代码。首轮浏览器验收脚本误把带前缀的ID文案当裸ID，修正断言后沿同一私密state续验，注册次数仍1。相关问题没有通过新注册、清用户数据、放宽证书或鉴权绕过。
 
 本地忽略目录`outputs/m1-deploy/`保存最终包、脱敏结果JSON和原配置哈希；QA证明及密码仅在本机0700私密临时目录、文件0600，不进入Git、发行包或普通会话。统筹也独立确认所有公开入口200、curl TLS verify=0及HTTP308。以上证明合成外部进程与浏览器可用，用户自己的云端Agent宿主仍需其实际联调；没有安装Agent排程、模型服务或M2—M5功能。
+
+## 域名增量：同实例与来源保护 · 2026-10-15
+
+本轮只新增域名代理与独立证书维护，不发布另一份应用、不重启或切换原 Node 发行，不迁移数据。切换前 PID 为808286，current仍指向`bf43ce5510d4a2332a8125183ff3a2c41700d1af`，库内Agent/owner/registration/binding各2，identity文件SHA256为`1f4c91a607bbad8e56cef7553502d593d5b322588d202d57091dddcdd8bb2eff`。原7份代理配置（含全局nginx.conf及IP站点）已保存哈希基线。现有身份不删除、不重新注册。
+
+既有主人可在域名管理页用原ownerId和管理密码登录；原IP Agent保持原URL与state。旧IP私密JSON、交接与恢复在IP来源使用，不能修改origin或跨导入。域名新会话/文件绑定域名。两个入口的公开资料仍用同agentId；认证API没有跨来源跳转。详见[域名与IP兼容说明](m1-origin-compatibility.md)。
+
+域名经过Cloudflare代理，新增TLS server仅信任官方IPv4/IPv6物理代理网段的`CF-Connecting-IP`，后端XFF仍被覆盖为恢复后的实际客户端地址。直连源站不属于可信CF网段，伪造CF/XFF头不能替换其配额身份。原IP server不加载CF信任配置。范围快照为2026-10-15官方15段IPv4及7段IPv6，保存在`ops/cloudflare-realip.conf`，后续更新须重新验证来源并独立审查。
+
+官方依据：[Cloudflare真实IP恢复](https://developers.cloudflare.com/support/troubleshooting/restoring-visitor-ips/restoring-original-visitor-ips/)、[官方IP范围](https://www.cloudflare.com/ips/)、[Flexible模式](https://developers.cloudflare.com/ssl/origin-configuration/ssl-modes/flexible/)。边缘可信TLS本身不证明源站使用TLS。证书准备bootstrap只开放ACME，其余503且报告源站协议；已实际从公网HTTPS取得`X-M1-Origin-Transport: http`。需要仅为本域名启用Full(strict)，不修改整个zone或其他站点。最终HTTP非ACME请求只跳到域名HTTPS；带边缘HTTPS标记但抵达源站HTTP的请求503，避免Flexible回环与HTTP认证。
+
+| 域名新增运维 | 路径/设置 |
+| --- | --- |
+| vhost | 原conf.d中的`agents-era-domain.conf`，不声明default_server |
+| CF信任include | 原conf.d下`agents-era-domain/cloudflare-realip.conf`，只在域名TLS server内加载 |
+| ACME webroot | `/opt/1panel/apps/openresty/openresty/www/sites/agents-era-domain/acme` |
+| 私密ACME状态 | `/var/lib/agents-era-domain-acme/{config,work,log}`；staging使用独立`agents-era-domain-acme-staging`目录 |
+| 可信域名证书 | Certbot固定原digest，`certonly --webroot --webroot-path /acme -d world.kjwlabs.com --cert-name agents-era-domain`，不使用IP shortlived参数 |
+| 代理证书 | 原conf.d下`agents-era-domain-tls/versions/<证书SHA256>`及`current`，root0700/0600 |
+| 已审运维发行 | `/opt/agents-era/domain-ops/<完整SHA>`及`current`；不改变应用current |
+| 独立续期 | `agents-era-domain-certificate.timer`→service→domain-ops/current/renew-domain-certificate.sh；每六小时检查 |
+
+域名脚本验证hostname和余期，使用独立flock与原子证书指针；nginx校验或reload失败恢复上一指针。原IP证书、ACME状态、timer和脚本继续独立维护。域名回退只恢复本域名原配置或bootstrap503并reload，保留数据、已签证书及运维发行，不停原应用/IP入口，不清其他站点。不得以证书准备成功替代正式部署验收。
+
+固定审查base为`a807df3896ce1e9a3ac50edc9e4fd4b71d5e1619`，候选分支`codex/m1-domain-entry`。域名认证vhost仅在原独立reviewer对固定目标PASS后启用。当前记录是准备阶段，实际域名/源站TLS、同身份登录与续接、限流、证书维护和旧站不变证据将在发布后补记。
+
+准备验证：Bash语法及ShellCheck通过；使用服务器实际OpenResty二进制启动独立临时master，仅绑定127.0.0.1的18890—18897端口，验证实际域名/bootstrap配置语法、ACME200、HTTP308、源站HTTP携带边缘HTTPS标记503、bootstrap503。官方范围配置下非可信loopback的伪造CF/XFF头被忽略；仅在隔离测试块信任loopback时，IPv4/IPv6测试客户端地址均正确恢复，后端XFF覆盖为单个恢复地址。临时master已退出、证书及fixture已清理，未reload正式认证配置。复现脚本及脱敏结果在integration忽略目录`outputs/m1-domain/check-proxy.py`、`proxy-check.json`。
