@@ -397,7 +397,7 @@ async function loadAgents({resetProfile=true}={}){
   await readAccount(session,generation);
   if(generation!==readGeneration||session!==vault.sessionToken)return;
   view='managed';$('#auth-view').hidden=true;$('#manage-view').hidden=false;$('#session-actions').hidden=false;$('#page-title').textContent='我的 Agent';$('#page-description').textContent='当前授权下的居民与资料。状态按读取时间展示。';
-  if(requestedAgentId){if(agents.some(agent=>agent.agentId===requestedAgentId))selectedId=requestedAgentId;else message('这个 Agent 当前不可用，请从我的 Agent 中选择。','error');requestedAgentId=null;}
+  if(requestedAgentId){if(agents.some(agent=>agent.agentId===requestedAgentId)){if(selectedId!==requestedAgentId)selectionGeneration++;selectedId=requestedAgentId;message('已打开当前获准的 Agent 资料。');}else message('这个 Agent 当前不可用，请从我的 Agent 中选择。','error');requestedAgentId=null;}
   if(!agents.some(a=>a.agentId===selectedId)){selectedId=agents[0]?.agentId||'';selectionGeneration++;resetProfile=true;}
   renderList();renderAgent(resetProfile);await loadInvites(session,generation);if(generation!==readGeneration||session!==vault.sessionToken)return;controls();if(vault.claimContext)showClaim();
 }
@@ -613,10 +613,13 @@ $('#add-agent').addEventListener('click',openInvite);$('#empty-invite').addEvent
 // A new private link can arrive while this very /owner document is open.
 // Handle same-document navigation too, and remove its capability before requests.
 window.addEventListener('hashchange',()=>{
-  const fragment=location.hash,proof=new URLSearchParams(fragment.slice(1)).get('handoff');
+  const fragment=location.hash,parameters=new URLSearchParams(fragment.slice(1)),proof=parameters.get('handoff'),target=parameters.get('agent');
   if(fragment)history.replaceState(null,'',location.pathname);
   if(proof){
     try{if(receiveHandoff(proof)){setBusy(true);const active=vault;void resume().catch(fail).finally(()=>{if(vault===active)setBusy(false);});}}catch(error){fail(error);}
+  }else if(target&&vault.sessionToken&&!vault.pendingOperation){
+    requestedAgentId=target;clearCompletedTaskNotice();message('正在读取此 Agent 的获准资料。');setBusy(true);const active=vault,expectedRead=readGeneration+1;
+    void loadAgents().catch(error=>{if(vault===active&&readGeneration===expectedRead)fail(error);}).finally(()=>{if(vault===active&&readGeneration===expectedRead)setBusy(false);});
   }else if(!vault.pendingOperation&&!vault.sessionToken){if(fragment==='#register')showRegistration();else if(fragment==='#login')showSignIn();}
 });
 if(incomingHandoff){try{receiveHandoff(incomingHandoff);}catch(error){fail(error);}}
