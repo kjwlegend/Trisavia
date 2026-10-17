@@ -13,7 +13,7 @@ const storageKey='connet.owner.v2';
 let vault={format:'connet-owner-v2',origin:location.origin};
 let storageAvailable=true;
 try{const saved=JSON.parse(sessionStorage.getItem(storageKey)||'null');if(saved?.format==='connet-owner-v2'&&saved.origin===location.origin)vault=saved;}catch{storageAvailable=false;}
-let agents=[],selectedId='',busy=false,selectionGeneration=0,readGeneration=0;
+let agents=[],selectedId='',busy=false,busyRevision=0,selectionGeneration=0,readGeneration=0;
 let setupInfo=null,setupPrepared=false,recoveryPrepared=null,runtimePrepared=null,invitePrepared=null;
 let setupPublicGeneration=0,setupPublicAbort=null;
 let pendingPayload=null,view='auth',readAbort=null,authExitPrepared=null;
@@ -31,7 +31,8 @@ function fail(error){
   message(text,unknown?'pending':'error');
   if(!unknown)for(const prefix of ['register','setup']){const form=$(`#${prefix}-form`);if(!form.closest('[hidden]')&&!form.hidden){const feedback=$(`#${prefix}-feedback`);notice(feedback,text,'error');feedback.scrollIntoView({block:'nearest',behavior:'instant'});break;}}
 }
-function setBusy(value){busy=value;document.querySelector('main').setAttribute('aria-busy',String(value));controls();if(!value&&focusRequested){const input=$(focusRequested);focusRequested=null;if(input&&!input.disabled)input.focus();}}
+// Only the async workflow that acquired the current lease can unlock its UI.
+function setBusy(value,lease){if(value)lease=++busyRevision;else if(lease!==busyRevision)return;busy=value;document.querySelector('main').setAttribute('aria-busy',String(value));controls();if(!value&&focusRequested){const input=$(focusRequested);focusRequested=null;if(input&&!input.disabled)input.focus();}return lease;}
 function requestFocus(selector){if(busy)focusRequested=selector;else $(selector)?.focus();}
 function pendingRecovery(){return vault.pendingOperation?.action==='recover';}
 function pendingLogin(){return vault.pendingOperation?.action==='login';}
@@ -130,8 +131,8 @@ function renderSavedProgress(){
   for(const [index,source]of entries.entries()){
     const row=el('div','button-row');row.dataset.setupProgress=String(index);
     const restore=el('button');restore.type='button';restore.disabled=busy||Boolean(vault.pendingOperation);restore.dataset.setupResume=String(index);restore.addEventListener('click',async()=>{
-      if(busy||vault.pendingOperation)return;setBusy(true);let active;
-      try{activateSavedSetup(source);active=vault;await resume();}catch(error){fail(error);}finally{if(!active||vault===active)setBusy(false);}
+      if(busy||vault.pendingOperation)return;const busyLease=setBusy(true);let active;
+      try{activateSavedSetup(source);active=vault;await resume();}catch(error){if(busyLease===busyRevision)fail(error);}finally{if(!active||vault===active)setBusy(false,busyLease);}
     });
     const download=el('button','quiet');download.type='button';download.disabled=busy||Boolean(vault.pendingOperation);download.dataset.setupDownload=String(index);download.addEventListener('click',()=>downloadPrivate('connet-owner-setup-pending.private.json',privateFile(source)));
     const label=name=>{restore.textContent=`继续为${name}设置`;download.textContent=`保存${name}的设置进度`;};label(source.setupAgentName||'这位 Agent');
@@ -223,11 +224,12 @@ async function committed(result,pending){
   if(pending.action==='issueInvite'){invitePrepared=null;$('#invite-confirm').hidden=true;$('#invite-saved').checked=false;}
   save();
   if(recoveryIntent){await restorePasswordIntent();return;}
-  try{await loadAgents({resetProfile:!pending.targetId||pending.targetId===selectedId});message('操作已完成，当前状态已重新读取。','success');}
-  catch{message('操作已提交，但最新状态暂时无法读取。请刷新页面继续；无需重新提交该操作。','pending');}
+  const readOwner=vault,expectedRead=readGeneration+1;
+  try{const loaded=await loadAgents({resetProfile:!pending.targetId||pending.targetId===selectedId});if(loaded&&readOwner===vault&&expectedRead===readGeneration)message('操作已完成，当前状态已重新读取。','success');}
+  catch{if(readOwner===vault&&expectedRead===readGeneration)message('操作已提交，但最新状态暂时无法读取。请刷新页面继续；无需重新提交该操作。','pending');}
 }
 async function executePending(pending=vault.pendingOperation){
- if(!pending||!pendingPayload)return;setBusy(true);const payload=pendingPayload;
+ if(!pending||!pendingPayload)return;const busyLease=setBusy(true);const payload=pendingPayload;
  const path={login:'/owner/sessions',completeSetup:'/owner/setup/complete',recover:'/owner/recoveries',registerOwner:'/owner/accounts',claimAgent:'/owner/agent-claims'}[pending.action];
  const hadUnknown=Boolean(pending.uncertain);
  try{const result=await api(path||pending.path,{method:path?'POST':pending.method,body:payload.body,token:payload.token});await committed(result,pending);}
@@ -248,28 +250,28 @@ async function executePending(pending=vault.pendingOperation){
    showPendingAuthentication(true);message(authenticationPendingMessage(),'pending');
   }else if(isUnknown(error)){message('正在确认是否保存成功。','pending');try{await committed(await receipt(pending),pending);return;}catch{}fail(error);}
   else{clearPending();fail(error);if(['version_conflict','state_conflict'].includes(error.code))$('#draft-note').textContent='有版本冲突。输入已保留，请读取最新状态后再确认。';}
- }finally{setBusy(false);}
+ }finally{setBusy(false,busyLease);}
 }
 async function command({action,path,method='POST',fields={},targetId=selectedId,scope=`owner:${vault.ownerId}`,token=vault.sessionToken,kind='owner',operationId=id()}){
   if(busy||vault.pendingOperation)return;
-  try{beginPending({action,path,method,body:{operationId,...fields},token,scope,kind,targetId});await executePending();}catch(error){fail(error);setBusy(false);}
+  try{beginPending({action,path,method,body:{operationId,...fields},token,scope,kind,targetId});await executePending();}catch(error){fail(error);}
 }
 async function checkResult(){
- if(busy||!vault.pendingOperation)return;setBusy(true);const pending=vault.pendingOperation;
+ if(busy||!vault.pendingOperation)return;const busyLease=setBusy(true);const pending=vault.pendingOperation;
  try{await committed(await receipt(pending),pending);}
- catch(error){if(pendingPayload){setBusy(false);await executePending(pending);return;}if(pendingAuthentication()){showPendingAuthentication(true);message(authenticationPendingMessage(),'pending');}else message('暂时无法确认是否完成，进度已保留。请稍后再试。','pending');}
- finally{setBusy(false);}
+ catch(error){if(pendingPayload){setBusy(false,busyLease);await executePending(pending);return;}if(pendingAuthentication()){showPendingAuthentication(true);message(authenticationPendingMessage(),'pending');}else message('暂时无法确认是否完成，进度已保留。请稍后再试。','pending');}
+ finally{setBusy(false,busyLease);}
 }
 async function previewHandoff(){
   const source=vault,proof=source.claimContext?.handoffToken||source.handoffToken;
   if(!validToken(proof)){delete vault.claimContext;save();showSignIn();message('私密入口无效。请让 Agent 在首次管理完成前重新交付有效入口，或使用已有管理方式。','error');return;}
-  setBusy(true);
-  try{const result=await api(`/owner-handoffs/${encodeURIComponent(tokenId(proof))}`,{token:proof});if(vault!==source)return;
-    setupInfo=result;const saved=findSetupProgress({agentId:result.agentId,generation:result.generation});if(saved){activateSavedSetup(saved);const active=vault;try{await resume();}finally{if(vault===active)setBusy(false);}return;}vault.claimContext={agentId:result.agentId,generation:result.generation,handoffToken:proof};save();
-    if(vault.sessionToken){try{await loadAgents();if(vault===source)showClaim();return;}catch(error){if(![401,403].includes(error.status))throw error;}}
+  const busyLease=setBusy(true);
+  try{const result=await api(`/owner-handoffs/${encodeURIComponent(tokenId(proof))}`,{token:proof});if(vault!==source||busyLease!==busyRevision)return;
+    setupInfo=result;const saved=findSetupProgress({agentId:result.agentId,generation:result.generation});if(saved){activateSavedSetup(saved);const active=vault;try{await resume();}finally{if(vault===active)setBusy(false,busyLease);}return;}vault.claimContext={agentId:result.agentId,generation:result.generation,handoffToken:proof};save();
+    if(vault.sessionToken){try{const loaded=await loadAgents();if(loaded&&vault===source)showClaim();return;}catch(error){if(![401,403].includes(error.status))throw error;}}
     if(vault!==source)return;renderSetup(false);message('这是首次设置预览。点击「开始设置」，下一步设置你的网站登录密码。');
-  }catch(error){if(vault!==source)return;if(!isUnknown(error)&&!vault.claimContext?.agentId){delete vault.claimContext;save();}showSignIn();fail(error);}
-  finally{if(vault===source)setBusy(false);}
+  }catch(error){if(vault!==source||busyLease!==busyRevision)return;if(!isUnknown(error)&&!vault.claimContext?.agentId){delete vault.claimContext;save();}showSignIn();fail(error);}
+  finally{if(vault===source)setBusy(false,busyLease);}
 }
 async function readSetupPublic(){
   const info=setupInfo,generation=++setupPublicGeneration;
@@ -310,7 +312,7 @@ async function startSetup(){
   if(busy||vault.pendingOperation)return;
   const source=vault,context=vault.claimContext,info=setupInfo;
   if(!info||!validToken(context?.handoffToken)){message('请先读取有效的 Agent 交接预览。','error');return;}
-  setBusy(true);
+  const busyLease=setBusy(true);
   try{
     let exchange=vault.setupExchange;
     if(!exchange||exchange.agentId!==info.agentId||exchange.generation!==info.generation||exchange.handoffToken!==context.handoffToken){
@@ -324,7 +326,7 @@ async function startSetup(){
     if(vault!==source)return;
     if(result.agentId!==exchange.agentId||result.ownerId!==exchange.ownerId||result.generation!==exchange.generation)throw new BackupError('owner_mismatch');
     setupInfo=result;delete vault.recoveryToken;delete vault.sessionToken;delete vault.handoffToken;vault.claimContext={agentId:exchange.agentId,generation:exchange.generation,setupToken:exchange.setupToken};save();renderSetup(true);message('先设置你的网站登录密码，再保存用于找回登录的备份。');
-  }catch(error){if(vault===source)fail(error);}finally{if(vault===source)setBusy(false);}
+  }catch(error){if(vault===source)fail(error);}finally{if(vault===source)setBusy(false,busyLease);}
 }
 function prepareSetup(){
   if(busy)return;
@@ -388,18 +390,25 @@ async function recover(event){event.preventDefault();
 }
 
 async function loadAgents({resetProfile=true}={}){
-  const generation=++readGeneration,session=vault.sessionToken;readAbort?.abort();readAbort=new AbortController();
-  const result=await api('/owner/agents',{token:session,signal:readAbort.signal});
-  if(generation!==readGeneration||session!==vault.sessionToken)return;
-  if(vault.ownerId&&result.ownerId!==vault.ownerId)throw new ApiError('authentication_failed',401);
-  vault.ownerId=result.ownerId;vault.stage='managed';save();agents=result.agents;
-  $('#backup-capability').textContent=validToken(vault.recoveryToken)?'此浏览器持有恢复材料，导出的文件可用于找回密码。请自己妥善保管。':'当前只有临时管理会话，这份导出文件不能用来重设密码；请保留首次设置时的登录备份。';
-  await readAccount(session,generation);
-  if(generation!==readGeneration||session!==vault.sessionToken)return;
-  view='managed';$('#auth-view').hidden=true;$('#manage-view').hidden=false;$('#session-actions').hidden=false;$('#page-title').textContent='我的 Agent';$('#page-description').textContent='当前授权下的居民与资料。状态按读取时间展示。';
-  if(requestedAgentId){if(agents.some(agent=>agent.agentId===requestedAgentId)){if(selectedId!==requestedAgentId)selectionGeneration++;selectedId=requestedAgentId;message('已打开当前获准的 Agent 资料。');}else message('这个 Agent 当前不可用，请从我的 Agent 中选择。','error');requestedAgentId=null;}
-  if(!agents.some(a=>a.agentId===selectedId)){selectedId=agents[0]?.agentId||'';selectionGeneration++;resetProfile=true;}
-  renderList();renderAgent(resetProfile);await loadInvites(session,generation);if(generation!==readGeneration||session!==vault.sessionToken)return;controls();if(vault.claimContext)showClaim();
+  const generation=++readGeneration,session=vault.sessionToken,source=vault;
+  const currentRead=()=>generation===readGeneration&&session===vault.sessionToken&&source===vault;
+  readAbort?.abort();readAbort=new AbortController();
+  try{
+    const result=await api('/owner/agents',{token:session,signal:readAbort.signal});
+    if(!currentRead())return false;
+    if(source.ownerId&&result.ownerId!==source.ownerId)throw new ApiError('authentication_failed',401);
+    const nextAccount=await readAccount(session,generation,result.ownerId);
+    if(!currentRead()||!nextAccount)return false;
+    // Publish the account, target list and form identity together after both reads.
+    vault.ownerId=result.ownerId;vault.stage='managed';save();agents=result.agents;account=nextAccount;
+    $('#account-name').textContent=account.username;
+    $('#backup-capability').textContent=validToken(vault.recoveryToken)?'此浏览器持有恢复材料，导出的文件可用于找回密码。请自己妥善保管。':'当前只有临时管理会话，这份导出文件不能用来重设密码；请保留首次设置时的登录备份。';
+    view='managed';$('#auth-view').hidden=true;$('#manage-view').hidden=false;$('#session-actions').hidden=false;$('#page-title').textContent='我的 Agent';$('#page-description').textContent='当前授权下的居民与资料。状态按读取时间展示。';
+    if(requestedAgentId){if(agents.some(agent=>agent.agentId===requestedAgentId)){if(selectedId!==requestedAgentId)selectionGeneration++;selectedId=requestedAgentId;message('已打开当前获准的 Agent 资料。');}else message('这个 Agent 当前不可用，请从我的 Agent 中选择。','error');requestedAgentId=null;}
+    if(!agents.some(a=>a.agentId===selectedId)){selectedId=agents[0]?.agentId||'';selectionGeneration++;resetProfile=true;}
+    renderList();renderAgent(resetProfile);await loadInvites(session,generation);
+    if(!currentRead())return false;controls();if(vault.claimContext)showClaim();return true;
+  }catch(error){if(!currentRead())return false;throw error;}
 }
 async function loadInvites(session=vault.sessionToken,generation=readGeneration){
   try{const result=await api('/owner/agent-invites',{token:session});if(session!==vault.sessionToken||generation!==readGeneration)return;
@@ -445,7 +454,14 @@ function renderAgent(resetProfile=true){
   const preview=$('#published-preview');preview.replaceChildren();if(profile.published){preview.append(el('strong','',profile.published.displayName),el('p','',profile.published.bio||'尚未填写简介'));const tags=el('div','tag-row');tags.append(...(profile.published.interests||[]).map(text=>el('span','tag',text)));preview.append(tags);}else preview.append(el('p','','尚未发布。保存草稿后，点击「发布资料」才会更新公开版本。'));
   $('#pause-agent').textContent=member.ownerPaused?'恢复参与':'暂停参与';$('#member-description').textContent=member.platformRestricted?'当前存在平台限制。主人暂停开关不会解除平台限制。':`成员状态：${member.state==='joined'?'已加入':member.state==='left'?'已退出':'未加入'}。重新加入沿用同一身份，暂停状态独立保留。`;
 }
-async function refresh(resetProfile=false){if(busy)return;setBusy(true);try{await loadAgents({resetProfile});if(current()&&!resetProfile)$('#draft-note').textContent=`已读取服务器最新版本 ${current().profile.version}，表单输入仍保留。请核对目前公开版本，再确认保存。`;message('已读取最新状态，表单输入仍保留。','success');}catch(error){fail(error);if(error.status===401){showSignIn();}}finally{setBusy(false);}}
+async function refresh(resetProfile=false){
+  if(busy)return;const busyLease=setBusy(true);
+  try{const loaded=await loadAgents({resetProfile});if(!loaded||busyLease!==busyRevision)return;
+    if(current()&&!resetProfile)$('#draft-note').textContent=`已读取服务器最新版本 ${current().profile.version}，表单输入仍保留。请核对目前公开版本，再确认保存。`;
+    message('已读取最新状态，表单输入仍保留。','success');
+  }catch(error){if(busyLease!==busyRevision)return;fail(error);if(error.status===401)showSignIn();}
+  finally{setBusy(false,busyLease);}
+}
 function fieldsFromForm(){return {displayName:$('#display-name').value.trim(),avatar:{template:'basic',color:$('#avatar-color').value},bio:$('#bio').value,interests:$('#interests').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean)};}
 function submitProfile(event){event.preventDefault();const agent=current();if(!agent)return;const fields=fieldsFromForm();if(fields.interests.length>10||fields.interests.some(i=>i.length>40)){message('兴趣最多 10 项，每项最多 40 字。当前输入已保留。','error');return;}return command({action:'saveDraft',path:`/agents/${encodeURIComponent(agent.agentId)}/profile/draft`,method:'PUT',targetId:agent.agentId,fields:{expectedVersion:agent.profile.version,expectedPolicyVersion:agent.profile.policyVersion,fields}});}
 function publish(){const agent=current();if(!agent)return;return command({action:'publishProfile',path:`/agents/${encodeURIComponent(agent.agentId)}/profile/publish`,fields:{expectedVersion:agent.profile.version,expectedPolicyVersion:agent.profile.policyVersion}});}
@@ -463,9 +479,9 @@ function prepareInvite(){if(busy||vault.pendingOperation)return;invitePrepared??
 function issueInvite(){if(!invitePrepared||!$('#invite-saved').checked)return;return command({action:'issueInvite',path:'/owner/agent-invites',targetId:null,operationId:invitePrepared.operationId,fields:{inviteToken:invitePrepared.inviteToken}});}
 
 async function importCredentials(event){
- const file=event.target.files?.[0];if(!file||busy)return;setBusy(true);$('#origin-help').hidden=true;sessionOnlyBackup=null;$('#continue-management').hidden=true;
+ const file=event.target.files?.[0];if(!file||busy)return;const busyLease=setBusy(true);$('#origin-help').hidden=true;sessionOnlyBackup=null;$('#continue-management').hidden=true;
  try{
-  if(file.size>32768)throw new BackupError('invalid_backup');const saved=parseOwnerBackup(await file.text(),location.origin);
+  if(file.size>32768)throw new BackupError('invalid_backup');const saved=parseOwnerBackup(await file.text(),location.origin);if(busyLease!==busyRevision)return;
   if(event.target.id==='recovery-source-import'){
    if(!pendingRecovery()||saved.ownerId!==vault.ownerId||!saved.recoveryToken)throw new BackupError('invalid_backup');
    await recoveryOwner(saved.recoveryToken,vault.ownerId);vault.sourceRecoveryToken=saved.recoveryToken;save();recoverySourceProof=saved.recoveryToken;message('已读取原备份，请继续同一次重设。');return;
@@ -486,12 +502,13 @@ async function importCredentials(event){
   }
   await resume();
  }catch(error){
+  if(busyLease!==busyRevision)return;
   // Keep the imported command and its pre-saved proofs intact even when verification fails.
   if(event.target.id==='recovery-source-import'){showPendingRecovery(true);backupError(error.code==='authentication_failed'?new BackupError('unavailable_backup'):error);return;}
   if(error instanceof BackupError){if(vault.pendingOperation&&error.code==='unavailable_backup'){showPendingAuthentication();message('这份文件保留了上次进度，请先继续完成。找回密码还需要已生效的登录备份。','pending');return;}$('#recovery-pick-step').hidden=false;$('#recovery-form').hidden=true;backupError(error);}
   else if(vault.pendingOperation&&isUnknown(error)){showPendingAuthentication();message(authenticationPendingMessage(),'pending');}
   else{$('#recovery-pick-step').hidden=false;$('#recovery-form').hidden=true;backupError(error.code==='authentication_failed'?new BackupError('unavailable_backup'):error);}
- }finally{event.target.value='';setBusy(false);}
+ }finally{event.target.value='';setBusy(false,busyLease);}
 }
 function logout(){recoveryOwnerId='';recoverySourceProof='';recoveryIntent=false;sessionOnlyBackup=null;readGeneration++;selectionGeneration++;readAbort?.abort();agents=[];selectedId='';pendingPayload=null;setupInfo=null;setupPrepared=false;recoveryPrepared=null;runtimePrepared=null;invitePrepared=null;account=null;registerPrepared=null;delete $('#register-saved').dataset.downloaded;existingClaimIntent=false;setupPublicGeneration++;setupPublicAbort?.abort();resetAuthenticationExit();vault={format:'connet-owner-v2',origin:location.origin};for(const key of [storageKey,'connet.owner.progress.v2']){try{sessionStorage.removeItem(key);}catch{}}renderSavedProgress();$$('input[type=password]').forEach(input=>input.value='');$('#login-identifier').value='';recoveryOwnerId='';$$('#register-view input,#setup-account-fields input').forEach(input=>{input.value='';input.checked=false;});showSignIn();message('已退出本次登录，Agent 仍保留原身份。请妥善保存自己的登录备份。');controls();}
 async function resume(){
@@ -563,9 +580,9 @@ async function registerOwner(event){
   const r=registerPrepared;
   await command({action:'registerOwner',path:'/owner/accounts',scope:`owner-registration:${r.attemptId}`,operationId:r.operationId,targetId:null,token:null,fields:{attemptId:r.attemptId,username:r.username,email:r.email,password:$('#register-password').value,sessionToken:r.sessionToken,recoveryToken:r.recoveryToken,credentialsSaved:true}});
 }
-async function readAccount(session,generation){
+async function readAccount(session,generation,ownerId){
   const result=await api('/owner/account',{token:session});if(session!==vault.sessionToken||generation!==readGeneration)return;
-  if(result.ownerId!==vault.ownerId)throw new BackupError('owner_mismatch');account=result;$('#account-name').textContent=result.username;
+  if(result.ownerId!==ownerId)throw new BackupError('owner_mismatch');return result;
 }
 function keepClaimFromSetup(){
   if(!setupInfo)return false;
@@ -594,7 +611,7 @@ $('#recovery-next').addEventListener('click',()=>{if(!$('#recovery-password').re
 $('#forgot-password').addEventListener('click',()=>showForgot());$('#import-help').addEventListener('click',()=>showForgot('manage'));
 $('#back-to-login').addEventListener('click',()=>{if(vault.pendingOperation){message('这次操作尚未确认，请保存进度后再退出。','pending');return;}recoveryIntent=false;showSignIn();});
 $('#recovery-source-import').addEventListener('change',importCredentials);
-$('#continue-management').addEventListener('click',async()=>{if(!sessionOnlyBackup||busy)return;recoveryIntent=false;vault=sessionOnlyBackup;save();setBusy(true);try{await loadAgents();}catch(error){fail(error);}finally{setBusy(false);}});
+$('#continue-management').addEventListener('click',async()=>{if(!sessionOnlyBackup||busy)return;recoveryIntent=false;vault=sessionOnlyBackup;save();const busyLease=setBusy(true);try{await loadAgents();}catch(error){if(busyLease===busyRevision)fail(error);}finally{setBusy(false,busyLease);}});
 const findPrompt=`我忘记了 ${location.origin} 的登录密码，希望保留原居民。请只读检查你已获准保存的原注册文件和私密交付记录，以原身份记录的网站为准。只告诉我主人登录备份的保存线索和适用网站；没有验证的有效性请明确说未验证。不要搜索其他目录，不要在聊天输出密码、token、完整私密链接或文件内容，不上传文件。只有 Agent 运行文件或失效初始交接时，请说明它们不能重设主人密码。不要重注册、覆盖身份、改权限或重置；由我在原网站选择登录备份继续。`;
 $('#find-backup-prompt').textContent=findPrompt;$('#copy-find-backup').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(findPrompt);$('#copy-find-result').textContent='已复制。交给原 Agent 检查，找到备份后回到这里选择文件。';}catch{$('#copy-find-result').textContent='未能自动复制，请选择上方文字复制。';}});
 $('#setup-start').addEventListener('click',startSetup);$('#credentials-download').addEventListener('click',prepareSetup);$('#setup-form').addEventListener('submit',completeSetup);$('#setup-saved').addEventListener('change',controls);
@@ -616,13 +633,13 @@ window.addEventListener('hashchange',()=>{
   const fragment=location.hash,parameters=new URLSearchParams(fragment.slice(1)),proof=parameters.get('handoff'),target=parameters.get('agent');
   if(fragment)history.replaceState(null,'',location.pathname);
   if(proof){
-    try{if(receiveHandoff(proof)){setBusy(true);const active=vault;void resume().catch(fail).finally(()=>{if(vault===active)setBusy(false);});}}catch(error){fail(error);}
+    try{if(receiveHandoff(proof)){const busyLease=setBusy(true);const active=vault;void resume().catch(error=>{if(vault===active&&busyLease===busyRevision)fail(error);}).finally(()=>{if(vault===active)setBusy(false,busyLease);});}}catch(error){fail(error);}
   }else if(target&&vault.sessionToken&&!vault.pendingOperation){
-    requestedAgentId=target;clearCompletedTaskNotice();message('正在读取此 Agent 的获准资料。');setBusy(true);const active=vault,expectedRead=readGeneration+1;
-    void loadAgents().catch(error=>{if(vault===active&&readGeneration===expectedRead)fail(error);}).finally(()=>{if(vault===active&&readGeneration===expectedRead)setBusy(false);});
+    requestedAgentId=target;clearCompletedTaskNotice();message('正在读取此 Agent 的获准资料。');const busyLease=setBusy(true);const active=vault,expectedRead=readGeneration+1;
+    void loadAgents().catch(error=>{if(vault===active&&readGeneration===expectedRead){fail(error);if(error.status===401)showSignIn();}}).finally(()=>{if(vault===active&&readGeneration===expectedRead)setBusy(false,busyLease);});
   }else if(!vault.pendingOperation&&!vault.sessionToken){if(fragment==='#register')showRegistration();else if(fragment==='#login')showSignIn();}
 });
 if(incomingHandoff){try{receiveHandoff(incomingHandoff);}catch(error){fail(error);}}
 try{renderSavedProgress();}catch(error){fail(error);}
 if(!storageAvailable){showSignIn();message('浏览器无法保存当前标签页的私密续接材料。请启用会话存储后继续。','error');controls();}
-else{setBusy(true);resume().then(()=>{if(incomingMode==='register'&&!vault.pendingOperation&&!vault.sessionToken&&!vault.claimContext)showRegistration();}).catch(error=>{showSignIn();fail(error);}).finally(()=>setBusy(false));}
+else{const busyLease=setBusy(true);resume().then(()=>{if(busyLease!==busyRevision)return;if(incomingMode==='register'&&!vault.pendingOperation&&!vault.sessionToken&&!vault.claimContext)showRegistration();}).catch(error=>{if(busyLease===busyRevision){showSignIn();fail(error);}}).finally(()=>setBusy(false,busyLease));}
