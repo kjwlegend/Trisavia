@@ -5,7 +5,7 @@ export const hudNames = ['个人', '背包', '信箱', '世界'] as const;
 export type HudName = typeof hudNames[number];
 
 export const hudWindow = (page: Page) => page.locator('#hud-window');
-export const hudButton = (page: Page, name: HudName) => page.locator('#hud-dock').getByRole('button', { name, exact: true });
+export const hudButton = (page: Page, name: HudName) => page.locator('#hud-dock').getByRole('button', { name, exact: true, includeHidden: true });
 
 export async function openHud(page: Page, name: HudName) {
   const trigger = hudButton(page, name);
