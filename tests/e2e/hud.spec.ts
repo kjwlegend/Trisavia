@@ -121,14 +121,17 @@ test('an Agent settings URL locates a bound target but never grants access to an
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
 
-test('real account summaries keep zero, one and multiple Agent targets isolated across delayed refresh, failure and logout', async ({ page, baseURL, privacy }) => {
+test('real account summaries keep zero, one and multiple Agent targets isolated across navigation, delayed refresh, failure and logout', async ({ page, baseURL, privacy }) => {
   const directory = await privateDirectory('hud-real-session-');
   const releases: Array<() => void> = [];
   try {
     const owner = await accountFixture(baseURL!, directory);
     await loginIdentifier(page, privacy, owner.username, owner.password); await page.goto('/');
     const writes: string[] = [];
-    page.on('request', request => { if (new URL(request.url()).pathname.startsWith('/v1/') && !['GET', 'HEAD'].includes(request.method())) writes.push(request.method()); });
+    page.on('request', request => {
+      const path = new URL(request.url()).pathname;
+      if (path.startsWith('/v1/') && !['GET', 'HEAD'].includes(request.method())) writes.push(`${request.method()} ${path}`);
+    });
     await expect(page.locator('#hud-account')).toContainText(owner.username);
     const selector = page.getByLabel('当前 Agent', { exact: true });
     await expect(selector).toBeDisabled(); await openHud(page, '个人');
@@ -146,10 +149,37 @@ test('real account summaries keep zero, one and multiple Agent targets isolated 
     const first = await add('真实第一位 Agent'); await refresh();
     await expect(selector).toBeEnabled(); await expect(selector).toHaveValue(first.agentId);
     await openHud(page, '个人'); await expect(hudWindow(page)).toContainText(first.name);
-    const second = await add('真实第二位 Agent'); await refresh();
+    const second = await add('真实第二位 Agent'), bio = '第二位自己的简介，不属于第一位。';
+    const self = await fixtureOk(baseURL!, '/agent/self', undefined, second.runtimeToken);
+    const draft = await fixtureOk(baseURL!, `/agents/${second.agentId}/profile/draft`, { operationId: operationId(),
+      expectedVersion: self.profile.version, expectedPolicyVersion: self.profile.policyVersion,
+      fields: { displayName: second.name, avatar: { template: 'basic', color: 'coral' }, bio } }, second.runtimeToken, 'PUT');
+    await fixtureOk(baseURL!, `/agents/${second.agentId}/profile/publish`, { operationId: operationId(),
+      expectedVersion: draft.version, expectedPolicyVersion: draft.policyVersion }, second.runtimeToken);
+    await refresh();
     await expect(selector.locator('option')).toHaveCount(2);
-    await selector.selectOption(second.agentId); await openHud(page, '个人');
+    expect(await selector.locator('option').first().getAttribute('value'), 'The journey deliberately selects a non-first Agent').not.toBe(second.agentId);
+    await selector.selectOption(second.agentId); await refresh();
+    await expect(page.locator('#hud-agent')).toHaveAttribute('data-phase', 'ready');
+    await expect(selector).toHaveValue(second.agentId); await openHud(page, '个人');
     await expect(hudWindow(page)).toContainText(second.name); await expect(hudWindow(page)).not.toContainText(first.name);
+    await expect(hudWindow(page)).toContainText(bio);
+    const profileAvatar = hudWindow(page).locator('#hud-feature-profile .hud-profile-identity canvas');
+    const chosenImage = await profileAvatar.evaluate((canvas: HTMLCanvasElement) => canvas.toDataURL());
+    const management = hudWindow(page).getByRole('link', { name: '管理资料与参与方式', exact: true });
+    await expect(management).toHaveAttribute('href', `/owner#agent=${second.agentId}`);
+    await management.click(); await idle(page);
+    await expect(page.locator('#selected-id')).toContainText(second.agentId);
+    await expect(page.getByLabel('居民名字', { exact: true })).toHaveValue(second.name);
+    await expect(page.locator('#bio')).toHaveValue(bio); await expect(page.locator('#avatar-color')).toHaveValue('coral');
+    expect(await page.locator('#selected-avatar canvas').evaluate((canvas: HTMLCanvasElement) => canvas.toDataURL()), 'The management avatar matches the selected personal profile').toBe(chosenImage);
+    await page.getByRole('link', { name: 'connet.ai 首页', exact: true }).click();
+    await expect(page.locator('#hud-agent')).toHaveAttribute('data-phase', 'ready');
+    await expect(selector, 'Returning through the brand keeps the deliberately selected non-first Agent').toHaveValue(second.agentId);
+    await openHud(page, '个人');
+    await expect(hudWindow(page)).toContainText(second.name); await expect(hudWindow(page)).toContainText(bio);
+    await expect(hudWindow(page)).not.toContainText(first.name);
+    expect(await profileAvatar.evaluate((canvas: HTMLCanvasElement) => canvas.toDataURL()), 'The same selected Agent keeps its own avatar after returning to the world').toBe(chosenImage);
     await expect(hudWindow(page).getByRole('link', { name: '管理资料与参与方式', exact: true })).toHaveAttribute('href', `/owner#agent=${second.agentId}`);
     await closeHud(page); await selector.selectOption(first.agentId); await openHud(page, '背包');
     await expect(hudWindow(page)).toContainText('此内容尚未接入');
@@ -200,11 +230,31 @@ test('real account summaries keep zero, one and multiple Agent targets isolated 
     expect(await page.evaluate(() => sessionStorage.getItem('connet.owner.v2') === null && sessionStorage.getItem('connet.owner.progress.v2') === null), 'HUD logout clears the private owner session and archive').toBe(true);
     late.release(); await late.finished;
     await expect(selector).toBeDisabled(); await expect(page.locator('#hud-account')).toContainText('注册／登录');
+    expect(await page.evaluate(ids => ids.every(id => !JSON.stringify(sessionStorage).includes(id)), [first.agentId, second.agentId]),
+      'Logout and a late read do not retain the previous account selection in tab progress').toBe(true);
     await openHud(page, '个人'); await expect(hudWindow(page)).toContainText('登录后可查看自己的 Agent 资料');
     await expect(hudWindow(page)).not.toContainText(first.name); await expect(hudWindow(page)).not.toContainText(second.name);
     expect((await fixtureOk(baseURL!, '/agent/self', undefined, first.runtimeToken)).agentId).toBe(first.agentId);
     expect((await fixtureOk(baseURL!, '/agent/self', undefined, second.runtimeToken)).agentId).toBe(second.agentId);
     expect(writes, 'Real summaries, demo previews, refresh and logout submit no business mutations').toEqual([]);
+    await page.reload(); await expect(selector).toBeDisabled();
+    await expect(selector.locator('option')).toHaveCount(1);
+    expect(await selector.locator('option').first().getAttribute('value')).not.toBe(second.agentId);
+    const other = await ownerWithAgents(baseURL!, directory, ['新账号的第一位', '新账号的第二位']);
+    await loginIdentifier(page, privacy, other.owner.username, other.owner.password);
+    await page.getByRole('link', { name: 'connet.ai 首页', exact: true }).click();
+    await expect(page.locator('#hud-agent')).toHaveAttribute('data-phase', 'ready');
+    await expect(selector.locator('option')).toHaveCount(2);
+    const choices = await selector.locator('option').evaluateAll(options => options.map(option => (option as HTMLOptionElement).value));
+    expect(choices.sort()).toEqual(other.agents.map(agent => agent.agentId).sort());
+    expect(other.agents.map(agent => agent.agentId)).toContain(await selector.inputValue());
+    await openHud(page, '个人');
+    await expect(hudWindow(page)).not.toContainText(first.name); await expect(hudWindow(page)).not.toContainText(second.name);
+    await page.goto(`/owner#agent=${second.agentId}`); await idle(page);
+    await expect(page.locator('#global-notice')).toContainText('不可用');
+    await expect(page.locator('#selected-id')).not.toContainText(second.agentId);
+    expect((await page.locator('body').innerText()).includes(second.name), 'An old account selection cannot authorize or disclose its target to a different account').toBe(false);
+    expect(writes, 'Only the deliberate new-account login writes during the account switch').toEqual(['POST /v1/owner/sessions']);
   } finally { for (const release of releases) release(); await rm(directory, { recursive: true, force: true }); }
 });
 
