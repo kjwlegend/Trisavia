@@ -1,11 +1,11 @@
 import {icon,illustration} from '../icons.js';
 import {el,button,demoLabel,feedback,contextKey,focusNode} from './shared.js';
-export function createMailFeature(provider){const node=el('section','hud-feature');node.id='hud-feature-mail';let key='',demo=false,tab='private',filter='全部通知',selected={private:'',world:''},detailOnly=false,sourcePreview=null,compact=false,state={phase:'idle'};
+export function createMailFeature(provider,onEnterDemo=()=>{}){const node=el('section','hud-feature');node.id='hud-feature-mail';let key='',demo=false,tab='private',filter='全部通知',selected={private:'',world:''},detailOnly=false,sourcePreview=null,compact=false,state={phase:'idle'};
   function focusMessage(){focusNode([...node.querySelectorAll('[data-message-id]')].find(control=>control.dataset.messageId===selected[tab]));}
   function render(){node.replaceChildren();
-    if(!demo){node.append(el('p','','此内容尚未接入。'),el('p','hud-muted','尚未接入真实通知，也未确认私人消息阅读范围。'),button('查看演示信箱',()=>{demo=true;render();provider.load();}));return;}
+    if(!demo){node.append(el('p','','此内容尚未接入。'),el('p','hud-muted','尚未接入真实通知，也未确认私人消息阅读范围。'),button('查看演示信箱',()=>{demo=true;render();onEnterDemo();provider.load();}));return;}
     node.append(demoLabel('演示数据 · 示例阅读者，不是当前账号的消息'),el('p','hud-muted','示例阅读者：lin · 获准通知摘要（演示）'));
-    if(state.phase!=='ready'){node.append(feedback(state,provider));return;}
+    if(state.phase!=='ready'){node.append(feedback(state,provider,onEnterDemo));return;}
     if(sourcePreview){node.append(button('返回信箱详情',()=>{sourcePreview=null;render();focusNode(node.querySelector('#hud-mail-detail button'));},'hud-back'),el('h3','',sourcePreview.name),illustration(sourcePreview.art),el('p','',sourcePreview.description),el('p','hud-muted','这是该通知引用的演示作品。'));return;}
     const toolbar=el('div','hud-filters');for(const [value,label]of [['private','私人通知'],['world','世界动态（公开）']]){const control=button(label,()=>{tab=value;detailOnly=false;render();focusNode([...node.querySelectorAll('[data-tab]')].find(control=>control.dataset.tab===value));});control.dataset.tab=value;control.setAttribute('aria-pressed',String(tab===value));toolbar.append(control);}node.append(toolbar);
     if(tab==='private'){const label=el('label','hud-filter-label','通知筛选'),select=el('select');select.setAttribute('aria-label','通知筛选');for(const text of ['全部通知','待处理']){const option=el('option','',text);option.value=text;option.selected=filter===text;select.append(option);}select.addEventListener('change',()=>{filter=select.value;detailOnly=false;render();focusNode(node.querySelector('select'));});label.append(select);node.append(label);}

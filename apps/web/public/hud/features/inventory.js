@@ -1,7 +1,7 @@
 import {illustration} from '../icons.js';
 import {el,button,demoLabel,feedback,contextKey,focusNode} from './shared.js';
 
-export function createInventoryFeature(provider){
+export function createInventoryFeature(provider,onEnterDemo=()=>{}){
   const node=el('section','hud-feature'),results=el('div');
   node.id='hud-feature-inventory';results.id='hud-item-results';
   let demo=false,key='',filter='全部',query='',selected='',detailOnly=false,preview=false,compact=false,state={phase:'idle'};
@@ -31,9 +31,9 @@ export function createInventoryFeature(provider){
   }
   function render(){
     node.replaceChildren();
-    if(!demo){node.append(el('p','','此内容尚未接入。'),el('p','hud-muted','尚无真实持有物来源，不显示资产数量或余额。'),button('查看演示背包',()=>{demo=true;render();provider.load();}));return;}
+    if(!demo){node.append(el('p','','此内容尚未接入。'),el('p','hud-muted','尚无真实持有物来源，不显示资产数量或余额。'),button('查看演示背包',()=>{demo=true;render();onEnterDemo();provider.load();}));return;}
     node.append(demoLabel('演示数据 · 示例持有物，非当前账号或 Agent 的资产'));
-    if(state.phase!=='ready'){node.append(feedback(state,provider));return;}
+    if(state.phase!=='ready'){node.append(feedback(state,provider,onEnterDemo));return;}
     const item=selectVisible(visibleItems());
     if(preview&&item){node.append(button('返回背包详情',returnToDetail,'hud-back'),el('h3','',item.name),illustration(item.art,Number(item.id.split('-')[1])),el('p','',item.description),el('p','hud-muted','示例作品预览 · 作者声明不证明版权或交易权。'));return;}
     preview=false;

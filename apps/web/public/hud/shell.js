@@ -13,7 +13,9 @@ export function createHud(){
   const header=el('div','hud-window-header'),title=el('h2');title.id='hud-title';title.tabIndex=-1;const titleIcon=el('span'),close=el('button');close.id='hud-close';close.type='button';close.setAttribute('aria-label','关闭窗口');close.append(icon('close'));header.append(titleIcon,title,close);
   const body=el('div','hud-window-body');windowNode.append(header,body);
   const tooltip=el('div','hud-tooltip');tooltip.id='hud-tooltip';tooltip.setAttribute('role','tooltip');tooltip.hidden=true;
-  const provider=createDemoProvider(),session=createSessionApi(),features={profile:createProfileFeature(provider),inventory:createInventoryFeature(provider),mail:createMailFeature(provider),world:createWorldFeature()};
+  const provider=createDemoProvider(),session=createSessionApi();
+  const enterDemo=key=>()=>{if(current===key&&!windowNode.hidden)title.focus({preventScroll:true});};
+  const features={profile:createProfileFeature(provider,enterDemo('profile')),inventory:createInventoryFeature(provider,enterDemo('inventory')),mail:createMailFeature(provider,enterDemo('mail')),world:createWorldFeature()};
   const names={profile:'个人',inventory:'背包',mail:'信箱',world:'世界'},buttons={};let current='',trigger=null,hoverTimer=0;
   function hideTip(){clearTimeout(hoverTimer);tooltip.hidden=true;for(const button of Object.values(buttons))button.removeAttribute('aria-describedby');}
   function showTip(key){hideTip();tooltip.textContent=names[key];tooltip.hidden=false;tooltip.classList.toggle('is-below',root.getBoundingClientRect().height<420);buttons[key].setAttribute('aria-describedby','hud-tooltip');}
