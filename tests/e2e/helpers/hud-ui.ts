@@ -34,5 +34,7 @@ export async function containedHud(page: Page) {
 }
 
 export async function camera(page: Page): Promise<{ x: number; y: number; scale: number }> {
+  await expect.poll(() => page.evaluate(async () => Boolean((await import(String('/assets/home.js'))).getWorldState()?.camera.width)),
+    { message: 'The actual world camera has initialized' }).toBe(true);
   return page.evaluate(async () => (await import(String('/assets/home.js'))).getWorldState().camera);
 }
