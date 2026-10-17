@@ -74,9 +74,9 @@ export async function prepareRegistration(page: Page, directory: string, privacy
   privacy.password(fields.password); privacy.track(fields.email);
   if (fromHome) {
     await page.goto('/');
-    const register = page.locator('header nav').getByRole('link', { name: '注册', exact: true });
-    if (await register.isVisible()) await register.click();
-    else { await page.locator('header nav').getByRole('link', { name: '注册／登录', exact: true }).click(); await page.locator('#show-register').click(); }
+    await page.locator('#hud-account').click();
+    await page.getByRole('link', { name: '注册／登录', exact: true }).click();
+    await page.locator('#show-register').click();
   } else await page.goto('/owner#register');
   await expect(page.locator('#register-form')).toBeVisible();
   await page.locator('#register-username').fill(fields.username); await page.locator('#register-email').fill(fields.email);

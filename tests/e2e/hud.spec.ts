@@ -66,6 +66,9 @@ test('the four dock controls disclose one panel, keep hover separate and restore
   // must not reset the chosen view or request browser fullscreen.
   if (info.project.name === 'desktop') {
     expect(restored.x).toBeCloseTo(original.x, 4); expect(restored.y).toBeCloseTo(original.y, 4); expect(restored.scale).toBeCloseTo(original.scale, 4);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await openHud(page, '背包'); await containedHud(page); await closeHud(page);
+    await expect(hudButton(page, '背包')).toBeFocused();
   }
   expect(await page.evaluate(() => document.fullscreenElement === null)).toBe(true);
   await noPageOverflow(page);
@@ -86,7 +89,7 @@ test('an Agent settings URL locates a bound target but never grants access to an
     privacy.allowStatus(`/v1/owner/agents/${foreign.agentId}`, 404);
     await page.goto(`/owner#agent=${encodeURIComponent(foreign.agentId)}`);
     await expect(page.locator('#selected-id')).not.toContainText(foreign.agentId);
-    await expect(page.locator('#global-notice')).toContainText(/无权|无法|不属于|未关联|不可访问/);
+    await expect(page.locator('#global-notice')).toContainText(/无权|无法|不属于|未关联|不可访问|不可用/);
     const visible = await page.locator('body').innerText();
     expect([foreign.name, other.owner.username, other.owner.email, other.owner.ownerId].every(value => !visible.includes(value)),
       'A public target locator does not reveal another owner or its private management fields').toBe(true);
@@ -97,4 +100,91 @@ test('an Agent settings URL locates a bound target but never grants access to an
     await expect(page.locator('#login-form')).toBeVisible(); await expect(page.locator('#manage-view')).toBeHidden();
     expect((await page.locator('body').innerText()).includes(selected.name), 'A target URL alone cannot restore an account session').toBe(false);
   } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test('real account summaries keep zero, one and multiple Agent targets isolated across delayed refresh, failure and logout', async ({ page, baseURL, privacy }) => {
+  const directory = await privateDirectory('hud-real-session-');
+  const releases: Array<() => void> = [];
+  try {
+    const owner = await accountFixture(baseURL!, directory);
+    await loginIdentifier(page, privacy, owner.username, owner.password); await page.goto('/');
+    const writes: string[] = [];
+    page.on('request', request => { if (new URL(request.url()).pathname.startsWith('/v1/') && !['GET', 'HEAD'].includes(request.method())) writes.push(request.method()); });
+    await expect(page.locator('#hud-account')).toContainText(owner.username);
+    const selector = page.getByLabel('当前 Agent', { exact: true });
+    await expect(selector).toBeDisabled(); await openHud(page, '个人');
+    await expect(hudWindow(page)).toContainText('你还没有关联的 Agent');
+    await expect(hudWindow(page).getByRole('link', { name: '邀请 Agent', exact: true })).toHaveAttribute('href', '/owner');
+    const add = async (name: string) => {
+      const inviteToken = credential(); await privateJson(directory, 'hud-real-invite', { inviteToken });
+      await fixtureOk(baseURL!, '/owner/agent-invites', { operationId: operationId(), inviteToken }, owner.sessionToken);
+      return agentFixture(baseURL!, directory, name, inviteToken);
+    };
+    const refresh = async () => {
+      if (await page.locator('#hud-account').getAttribute('aria-expanded') !== 'true') await page.locator('#hud-account').click();
+      await page.getByRole('button', { name: '刷新账户状态', exact: true }).click();
+    };
+    const first = await add('真实第一位 Agent'); await refresh();
+    await expect(selector).toBeEnabled(); await expect(selector).toHaveValue(first.agentId);
+    await openHud(page, '个人'); await expect(hudWindow(page)).toContainText(first.name);
+    const second = await add('真实第二位 Agent'); await refresh();
+    await expect(selector.locator('option')).toHaveCount(2);
+    await selector.selectOption(second.agentId); await openHud(page, '个人');
+    await expect(hudWindow(page)).toContainText(second.name); await expect(hudWindow(page)).not.toContainText(first.name);
+    await expect(hudWindow(page).getByRole('link', { name: '管理资料与参与方式', exact: true })).toHaveAttribute('href', `/owner#agent=${second.agentId}`);
+    await closeHud(page); await selector.selectOption(first.agentId); await openHud(page, '背包');
+    await expect(hudWindow(page)).toContainText('此内容尚未接入');
+    await hudWindow(page).getByRole('button', { name: '查看演示背包', exact: true }).click();
+    await expect(hudWindow(page).locator('.hud-demo-label:visible')).toContainText('非当前账号或 Agent 的资产');
+    await closeHud(page); await selector.selectOption(second.agentId); await openHud(page, '背包');
+    await expect(hudWindow(page)).toContainText('此内容尚未接入');
+    await expect(hudWindow(page).locator('.hud-demo-label:visible')).toHaveCount(0);
+    await closeHud(page);
+    const text = await page.locator('body').innerText();
+    expect([owner.email, owner.ownerId, owner.sessionToken, owner.recoveryToken].every(value => !text.includes(value)), 'The HUD account projection exposes no email, internal owner UUID or proof').toBe(true);
+
+    const holdRead = async () => {
+      let enter!: () => void, finish!: () => void;
+      const entered = new Promise<void>(resolve => { enter = resolve; }), finished = new Promise<void>(resolve => { finish = resolve; });
+      let release!: () => void;
+      const gate = new Promise<void>(resolve => { release = resolve; }); releases.push(release);
+      await page.route('**/v1/owner/agents', async route => {
+        const response = await route.fetch(); expect(response.status()).toBe(200); enter(); await gate;
+        try { await route.fulfill({ response }); }
+        catch (error) { if (route.request().failure()?.errorText !== 'net::ERR_ABORTED') throw error; }
+        finally { finish(); }
+      }, { times: 1 });
+      return { entered, finished, release };
+    };
+    await selector.selectOption(first.agentId); const old = await holdRead(); await refresh(); await old.entered;
+    const repeated = await holdRead(); await refresh(); await repeated.entered;
+    await expect(selector, 'Refreshing the same valid account twice keeps current Agent choices usable').toBeEnabled();
+    await expect(page.locator('#hud-account')).toContainText(owner.username);
+    await selector.selectOption(second.agentId); await openHud(page, '个人');
+    await expect(hudWindow(page)).toContainText(second.name); old.release(); repeated.release(); await Promise.all([old.finished, repeated.finished]);
+    await expect(page.locator('#hud-agent')).toHaveAttribute('data-phase', 'ready');
+    await expect(selector).toHaveValue(second.agentId); await expect(hudWindow(page)).toContainText(second.name);
+    await expect(hudWindow(page)).not.toContainText(first.name);
+
+    const savedProof = await page.evaluate(() => JSON.parse(sessionStorage.getItem('connet.owner.v2') || '{}').sessionToken);
+    privacy.track(savedProof); privacy.allowStatus('/v1/owner/account', 503);
+    await page.route('**/v1/owner/account', route => route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: { code: 'service_unavailable' } }) }), { times: 1 });
+    await refresh(); await expect(page.locator('#hud-agent')).toHaveAttribute('data-phase', 'error'); await openHud(page, '个人');
+    await expect(hudWindow(page)).toContainText('资料暂不可用');
+    await expect(hudWindow(page).getByRole('button', { name: '查看演示资料', exact: true })).toBeVisible();
+    await expect(hudWindow(page).getByText('小岚', { exact: true })).toHaveCount(0);
+    expect(await page.evaluate(proof => JSON.parse(sessionStorage.getItem('connet.owner.v2') || '{}').sessionToken === proof, savedProof), 'A transient read failure retains the valid private login material').toBe(true);
+    await refresh(); await expect(selector).toHaveValue(second.agentId);
+
+    const late = await holdRead(); await refresh(); await late.entered;
+    await page.getByRole('button', { name: '退出登录', exact: true }).click();
+    expect(await page.evaluate(() => sessionStorage.getItem('connet.owner.v2') === null && sessionStorage.getItem('connet.owner.progress.v2') === null), 'HUD logout clears the private owner session and archive').toBe(true);
+    late.release(); await late.finished;
+    await expect(selector).toBeDisabled(); await expect(page.locator('#hud-account')).toContainText('注册／登录');
+    await openHud(page, '个人'); await expect(hudWindow(page)).toContainText('登录后可查看自己的 Agent 资料');
+    await expect(hudWindow(page)).not.toContainText(first.name); await expect(hudWindow(page)).not.toContainText(second.name);
+    expect((await fixtureOk(baseURL!, '/agent/self', undefined, first.runtimeToken)).agentId).toBe(first.agentId);
+    expect((await fixtureOk(baseURL!, '/agent/self', undefined, second.runtimeToken)).agentId).toBe(second.agentId);
+    expect(writes, 'Real summaries, demo previews, refresh and logout submit no business mutations').toEqual([]);
+  } finally { for (const release of releases) release(); await rm(directory, { recursive: true, force: true }); }
 });

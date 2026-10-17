@@ -1,3 +1,4 @@
+import { openHud, closeHud, hudButton } from './helpers/hud-ui.ts';
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
@@ -78,12 +79,12 @@ test('world and camera cover every initial desktop and mobile viewport without r
   });
   const sizes = info.project.name === 'mobile'
     ? [{ width: 390, height: 844 }, { width: 320, height: 568 }, { width: 844, height: 390 }]
-    : [{ width: 1440, height: 1000 }, { width: 1024, height: 768 }];
+    : [{ width: 1440, height: 1000 }, { width: 1280, height: 800 }, { width: 1024, height: 768 }];
   for (const size of sizes) {
     await page.setViewportSize(size); await page.goto('/'); await ready(page); await coverViewport(page);
     await expect(page.locator('#world-place-directory')).not.toHaveAttribute('open', '');
     await expect(page.locator('#world-detail')).toBeHidden();
-    for (const control of [page.locator('header nav').getByRole('link', { name: /Agent 接入/ }), page.locator('#world-fit'), page.locator('#world-pause')]) {
+    for (const control of [page.locator('header nav').getByRole('link', { name: /Agent 接入/ }), hudButton(page, '个人'), hudButton(page, '世界')]) {
       const box = await control.boundingBox();
       expect(Boolean(box && box.width >= 44 && box.height >= 44 && box.y >= 0 && box.y + box.height <= size.height + 1), 'Primary control remains a visible 44px target inside the viewport').toBe(true);
     }
@@ -93,7 +94,7 @@ test('world and camera cover every initial desktop and mobile viewport without r
 
 test('full map is an explicit alternate view and closing details preserves the chosen camera', async ({ page }) => {
   await page.goto('/'); await ready(page); await coverViewport(page);
-  await page.getByRole('button', { name: '全景', exact: true }).click();
+  await openHud(page, '世界'); await page.getByRole('button', { name: '全景', exact: true }).click();
   const overview = (await worldState(page)).camera;
   expect(overview.scale * 1536).toBeLessThanOrEqual(overview.width + 2);
   expect(overview.scale * 1024).toBeLessThanOrEqual(overview.height + 2);
@@ -111,14 +112,14 @@ test('full map is an explicit alternate view and closing details preserves the c
   await page.getByRole('button', { name: '关闭场所说明', exact: true }).click();
   const closed = (await worldState(page)).camera;
   expect(closed.x).toBeCloseTo(beforeDetail.x, 4); expect(closed.y).toBeCloseTo(beforeDetail.y, 4); expect(closed.scale).toBeCloseTo(beforeDetail.scale, 4);
-  await page.getByRole('button', { name: '返回初始视角', exact: true }).click();
+  await openHud(page, '世界'); await page.getByRole('button', { name: '返回初始视角', exact: true }).click(); await closeHud(page);
   await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
   await coverViewport(page);
 });
 
 test('closing an overview detail after a wide-to-phone resize fits the current viewport and preserves custom views separately', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 }); await page.goto('/'); await ready(page);
-  await page.locator('#world-fit').click();
+  await openHud(page, '世界'); await page.locator('#world-fit').click();
   await page.locator('#world-open-list').click();
   await page.getByRole('button', { name: '中央公共庭', exact: true }).click();
   await expect(page.locator('#world-detail-title')).toHaveText('中央公共庭');
@@ -127,7 +128,7 @@ test('closing an overview detail after a wide-to-phone resize fits the current v
   await page.getByRole('button', { name: '关闭场所说明', exact: true }).click();
   const fitted = await worldState(page);
   expect(fitted.mode).toBe('overview');
-  await page.locator('#world-fit').click();
+  await openHud(page, '世界'); await page.locator('#world-fit').click();
   const freshFit = await worldState(page);
   expect(fitted.camera.scale, 'Restored overview matches an explicit fit at the new viewport, including safe control insets').toBeCloseTo(freshFit.camera.scale, 4);
   expect(fitted.camera.x).toBeCloseTo(freshFit.camera.x, 4); expect(fitted.camera.y).toBeCloseTo(freshFit.camera.y, 4);
@@ -135,7 +136,7 @@ test('closing an overview detail after a wide-to-phone resize fits the current v
   expect(fitted.camera.scale * 1024).toBeLessThanOrEqual(fitted.camera.height + 2);
   await noOverflow(page);
 
-  await page.locator('#world-reset').click();
+  await openHud(page, '世界'); await page.locator('#world-reset').click();
   await page.getByRole('button', { name: '放大地图', exact: true }).click();
   const custom = await worldState(page); expect(custom.mode).toBe('custom');
   await page.locator('#world-open-list').click();
@@ -162,8 +163,8 @@ test('mobile scrolls naturally, explores with two-dimensional touch drag, then r
   await expect.poll(() => page.evaluate(() => scrollY), { message: 'Default map touch allows the page to scroll towards the introduction' }).toBeGreaterThan(60);
   await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
   await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
+  await openHud(page, '世界'); await page.getByRole('button', { name: '放大地图', exact: true }).click();
   await page.getByRole('button', { name: '探索地图', exact: true }).click();
-  await page.getByRole('button', { name: '放大地图', exact: true }).click();
   const before = (await worldState(page)).camera;
   await swipe(page, { x: size.width * 0.65, y: size.height * 0.58 }, { x: size.width * 0.35, y: size.height * 0.44 });
   const after = (await worldState(page)).camera;
@@ -171,12 +172,12 @@ test('mobile scrolls naturally, explores with two-dimensional touch drag, then r
   expect(Math.abs(after.y - before.y), 'Exploration moves the camera vertically').toBeGreaterThan(5);
   expect((await worldState(page)).mode).toBe('custom'); expect((await worldState(page)).exploring).toBe(true);
   expect(await page.evaluate(() => scrollY), 'Exploration does not drag the page').toBeLessThanOrEqual(1);
-  await page.getByRole('button', { name: '退出探索', exact: true }).click(); await downPage();
+  await page.locator('#hud-exit-explore').click(); await downPage();
   await expect.poll(() => page.evaluate(() => scrollY), { message: 'Exit exploration restores normal scrolling' }).toBeGreaterThan(60);
   await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
-  await page.getByRole('button', { name: '探索地图', exact: true }).click();
-  await page.getByRole('button', { name: '全景', exact: true }).click();
-  await expect(page.getByRole('button', { name: '退出探索', exact: true })).toHaveCount(0);
+  await openHud(page, '世界'); await page.getByRole('button', { name: '探索地图', exact: true }).click();
+  await openHud(page, '世界'); await page.getByRole('button', { name: '全景', exact: true }).click();
+  await expect(page.locator('#hud-exit-explore')).toBeHidden(); await closeHud(page);
   await downPage();
   await expect.poll(() => page.evaluate(() => scrollY), { message: 'Full map view also restores normal scrolling' }).toBeGreaterThan(60);
   await noOverflow(page);
@@ -186,12 +187,12 @@ test('same-document portrait to landscape viewport changes keep a single honest 
   test.skip(info.project.name !== 'mobile', 'Viewport rotation uses the mobile emulation context');
   await page.setViewportSize({ width: 390, height: 844 }); await page.goto('/'); await ready(page);
   const navigation = page.locator('header nav');
-  await expect(navigation.getByRole('link', { name: '注册／登录', exact: true })).toBeVisible();
-  await page.setViewportSize({ width: 844, height: 390 });
-  await expect(navigation.getByRole('link', { name: '注册／登录', exact: true })).toHaveCount(0);
-  await expect(navigation.getByRole('link', { name: '注册', exact: true })).toBeVisible();
-  await expect(navigation.getByRole('link', { name: '登录', exact: true })).toBeVisible(); await coverViewport(page);
-  await page.setViewportSize({ width: 390, height: 844 });
-  await expect(navigation.getByRole('link', { name: '注册／登录', exact: true })).toBeVisible();
-  await expect(navigation.getByRole('link', { name: '注册', exact: true })).toBeHidden(); await coverViewport(page);
+  for (const size of [{ width: 390, height: 844 }, { width: 844, height: 390 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(size);
+    await expect(navigation.getByRole('button', { name: '注册／登录', exact: true })).toHaveCount(1);
+    await expect(navigation.getByRole('link', { name: 'Agent 接入', exact: true })).toHaveCount(1);
+    await navigation.getByRole('button', { name: '注册／登录', exact: true }).click();
+    await expect(navigation.getByRole('link', { name: '注册／登录', exact: true })).toHaveCount(1);
+    await page.keyboard.press('Escape'); await coverViewport(page);
+  }
 });

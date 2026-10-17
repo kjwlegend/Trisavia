@@ -52,6 +52,7 @@ test('personal examples require an explicit demo context and their public previe
 });
 
 test('inventory filters retain only visible selections, clear empty details and return from the same read-only artwork preview', async ({ page }, info) => {
+  if (info.project.name === 'desktop') await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/'); const window = await demo(page, '背包');
   await expect(window.getByRole('button', { name: '全部', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(window.getByRole('button', { name: '街区速写', exact: true })).toHaveAttribute('aria-pressed', 'true');
@@ -89,15 +90,18 @@ test('mail separates private pending examples from public announcements and remo
   await expect(window).toContainText('不是当前账号的消息'); await expect(window).toContainText('示例阅读者：lin');
   await expect(window.getByRole('button', { name: '私人通知', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(window.getByLabel('通知筛选', { exact: true })).toHaveValue('全部通知');
+  await expect(window.getByLabel('示例私人通知', { exact: true }).getByRole('button')).toHaveCount(6);
   await window.getByRole('button', { name: /作品说明有更新/ }).click();
   await expect(window).toContainText('仅供知晓'); await window.getByRole('button', { name: '查看内容', exact: true }).click();
   await expect(window).toContainText('同一夹具的演示内容');
   await page.keyboard.press('Escape'); await expect(window).toBeVisible(); await expect(window.getByRole('heading', { name: '作品说明有更新', exact: true })).toBeVisible();
   await mailList(page); await window.getByLabel('通知筛选', { exact: true }).selectOption('待处理');
   await expect(window.getByRole('button', { name: /资料有一项待确认/ })).toBeVisible();
+  await expect(window.getByLabel('示例私人通知', { exact: true }).getByRole('button')).toHaveCount(1);
   await expect(window.getByRole('button', { name: /作品说明有更新|旧提醒已到期|旧内容已不可查看/ })).toHaveCount(0);
   await window.getByRole('button', { name: '世界动态（公开）', exact: true }).click();
   await expect(window.getByLabel('通知筛选', { exact: true })).toHaveCount(0);
+  await expect(window.getByLabel('示例公共公告', { exact: true }).getByRole('button').first()).toBeVisible();
   await expect(window.getByRole('button', { name: /资料有一项待确认/ })).toHaveCount(0);
   await window.getByRole('button', { name: '私人通知', exact: true }).click();
   await expect(window.getByLabel('通知筛选', { exact: true })).toHaveValue('待处理');
