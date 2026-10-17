@@ -9,7 +9,7 @@ export function createSessionApi(){
     if(vault?.pendingOperation){activeProof='';publish({phase:'pending',username:'',agents:[],selectedAgentId:''});return;}
     if(!vault?.sessionToken){activeProof='';selection='';publish({phase:'anonymous',username:'',agents:[],selectedAgentId:''});return;}
     if(activeProof!==vault.sessionToken){selection='';state={phase:'loading',username:'',agents:[],selectedAgentId:''};}activeProof=vault.sessionToken;const proof=activeProof;
-    publish({...state,phase:state.phase==='ready'?'refreshing':'loading'});
+    publish({...state,phase:['ready','refreshing'].includes(state.phase)?'refreshing':'loading'});
     try{const account=await api('/owner/account',{token:proof,signal:controller.signal});if(revision!==generation||readVault()?.sessionToken!==proof)return;const result=await api('/owner/agents',{token:proof,signal:controller.signal});
       if(revision!==generation||readVault()?.sessionToken!==proof)return;
       if(account.ownerId!==result.ownerId||account.ownerId!==vault.ownerId)throw new Error('account_mismatch');
