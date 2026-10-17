@@ -28,3 +28,5 @@
 @media(max-width:759px){.world-home .nav-wrap{height:56px;padding:0 12px}.world-home .brand{font-size:16px;gap:6px}.world-home .brand-mark{width:24px;height:24px;font-size:23px}.world-home header nav{gap:8px}.hud-account{max-width:96px;padding:8px 6px;gap:4px}.hud-account>.hud-icon:last-child{display:none}.hud-account span{max-width:52px}.world-home .hud-entry{font-size:14px;padding:8px}.hud-dock{right:12px}.hud-tooltip{right:12px}.hud-agent{left:12px;bottom:max(12px,env(safe-area-inset-bottom))}.hud-explore-exit{right:12px;bottom:max(12px,env(safe-area-inset-bottom))}.world-home .world-demo{left:12px;top:64px;max-width:calc(100% - 24px)}}
 @media(max-height:480px){.hud-window{max-height:calc(100% - 88px)}.hud-agent{bottom:8px}.hud-root.is-compact .hud-window{max-height:65%;bottom:8px}}
 @media(prefers-reduced-motion:reduce){.hud-dock-plate{transition:none}}
+/* Place descriptions share the Dock's left-hand reading lane on desktop. */
+@media(min-width:760px){.world-home .world-detail{right:100px}}
