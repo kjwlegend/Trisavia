@@ -146,10 +146,16 @@ test('real account summaries keep zero, one and multiple Agent targets isolated 
       if (await page.locator('#hud-account').getAttribute('aria-expanded') !== 'true') await page.locator('#hud-account').click();
       await page.getByRole('button', { name: '刷新账户状态', exact: true }).click();
     };
-    const first = await add('真实第一位 Agent'); await refresh();
-    await expect(selector).toBeEnabled(); await expect(selector).toHaveValue(first.agentId);
-    await openHud(page, '个人'); await expect(hudWindow(page)).toContainText(first.name);
-    const second = await add('真实第二位 Agent'), bio = '第二位自己的简介，不属于第一位。';
+    const initial = await add('真实初始 Agent'); await refresh();
+    await expect(selector).toBeEnabled(); await expect(selector).toHaveValue(initial.agentId);
+    await openHud(page, '个人'); await expect(hudWindow(page)).toContainText(initial.name);
+    const added = await add('真实追加 Agent'); await refresh();
+    await expect(selector.locator('option')).toHaveCount(2);
+    const optionIds = await selector.locator('option').evaluateAll(options => options.map(option => (option as HTMLOptionElement).value));
+    const fixtures = [initial, added];
+    expect([...optionIds].sort(), 'Both real options map to this account’s complete fixture identities').toEqual(fixtures.map(agent => agent.agentId).sort());
+    const first = fixtures.find(agent => agent.agentId === optionIds[0])!, second = fixtures.find(agent => agent.agentId === optionIds[1])!;
+    const bio = '非首项居民自己的简介，不属于首项。';
     const self = await fixtureOk(baseURL!, '/agent/self', undefined, second.runtimeToken);
     const draft = await fixtureOk(baseURL!, `/agents/${second.agentId}/profile/draft`, { operationId: operationId(),
       expectedVersion: self.profile.version, expectedPolicyVersion: self.profile.policyVersion,
