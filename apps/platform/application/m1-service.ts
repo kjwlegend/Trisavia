@@ -1,12 +1,14 @@
 import { randomUUID } from "node:crypto";
 import type { JsonObject, JsonValue, M1ReadSession, M1Store, M1Table, M1Transaction, StoredRow } from "../contracts/store.ts";
 import { checkPassword, equalDigest, hashPassword, parseToken, payloadHash, verifier } from "../domains/access/credentials.ts";
+import { accountFields, loginIdentifier } from "../domains/access/account-identifiers.ts";
 import { boolean, fail, object, text, version } from "../domains/common/errors.ts";
 import { AVATAR_COLORS, PROFILE_FIELDS, validateFields, validatePublication } from "../domains/profile/profile-rules.ts";
 
 export type M1Action =
   | "capabilities" | "catalog" | "register" | "registrationResult" | "self" | "publicProfile"
   | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup" | "readRecovery"
+  | "registerOwner" | "readAccount" | "claimAgent"
   | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites"
   | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveDraft" | "publishProfile" | "profilePolicy"
   | "readMembership" | "join" | "leave" | "participation" | "receipt";
@@ -18,6 +20,7 @@ export interface M1Options {
   sessionTtlMs?: number;
   inviteTtlMs?: number;
   registrationLimit?: number;
+  ownerRegistrationLimit?: number;
   maxAgentsPerOwner?: number;
   maxActiveInvitesPerOwner?: number;
 }
@@ -72,6 +75,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     session: options.sessionTtlMs ?? 12 * 60 * 60_000,
     invite: options.inviteTtlMs ?? 24 * 60 * 60_000,
     registrations: options.registrationLimit ?? 1000,
+    ownerRegistrations: options.ownerRegistrationLimit ?? 1000,
     agentsPerOwner: options.maxAgentsPerOwner ?? 20,
     invitesPerOwner: options.maxActiveInvitesPerOwner ?? 20,
   };
@@ -96,7 +100,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
   function authenticate(tx: M1ReadSession, raw: unknown, kinds: readonly string[]): CredentialRow {
     const parsed = parseToken(raw);
     const credential = tx.get<Credential>("credentials", parsed.id);
-    if (!credential || !equalDigest(credential.data.verifier, verifier(credential.data.kind, parsed)) || !credential.data.active) {
+    if (!credential || !equalDigest(credential.data.verifier, verifier(typeof credential.data.verifierKind === "string" ? credential.data.verifierKind : credential.data.kind, parsed)) || !credential.data.active) {
       fail("authentication_failed", 401, "Authentication failed");
     }
     if (credential.data.epoch !== store.recoveryEpoch) fail("restore_access_unsupported", 403, "Identity is retained; access cannot be restored from old credentials");
@@ -151,6 +155,15 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     return { registrationAttemptId: row.id, agentId: row.data.agentId!, ownerId: row.data.ownerId!, managementStatus: row.data.managementStatus!, profileUrl: profileUrl(scalarString(row, "agentId")) };
   }
 
+  function accountComplete(owner: StoredRow): boolean {
+    return typeof owner.data.usernameKey === "string" && typeof owner.data.emailKey === "string";
+  }
+
+  function availableAccount(tx: M1ReadSession, fields: ReturnType<typeof accountFields>, ownerId: string): void {
+    if (tx.find("owners", { usernameKey: fields.usernameKey }).some((row) => row.id !== ownerId)) fail("username_unavailable", 409, "Username is already in use", { field: "username" });
+    if (tx.find("owners", { emailKey: fields.emailKey }).some((row) => row.id !== ownerId)) fail("email_unavailable", 409, "Email is already in use", { field: "email" });
+  }
+
   function profileUrl(agentId: string): string {
     return `/residents/${encodeURIComponent(agentId)}`;
   }
@@ -181,7 +194,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
 
   function managementView(tx: M1ReadSession, agent: StoredRow): JsonObject {
     const registration = tx.find("registrations", { agentId: agent.id })[0];
-    const owner = registration ? tx.get("owners", scalarString(registration, "ownerId")) : undefined;
+    const owner = registration ? tx.get("owners", typeof registration.data.initialOwnerId === "string" ? registration.data.initialOwnerId : scalarString(registration, "ownerId")) : undefined;
     const continuation = registration && typeof registration.data.continuationCredentialId === "string" ? tx.get("credentials", registration.data.continuationCredentialId) : undefined;
     const initial = agent.data.managementKind === "initial" || continuation?.data.kind === "bootstrap";
     const generation = initial && typeof owner?.data.handoffGeneration === "number" ? owner.data.handoffGeneration : null;
@@ -206,6 +219,64 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     return store.transaction((tx) => {
       // This is the server's state-read time, never evidence that a local Agent is online.
       const asOf = now();
+      if (action === "registerOwner") {
+        const input = object(raw, ["operationId", "attemptId", "username", "email", "password", "sessionToken", "recoveryToken", "credentialsSaved"]);
+        const attemptId = text(input.attemptId, "attemptId", 36, 36);
+        if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/u.test(attemptId)) fail("invalid_request", 400, "Expected a UUID attempt ID", { field: "attemptId" });
+        const prior = tx.get("owners", attemptId);
+        if (prior) {
+          if (prior.data.accountRegistrationAttemptId !== attemptId) fail("account_id_conflict", 409, "Use a new unused account attempt");
+          const actor = authenticate(tx, input.sessionToken, ["owner_session"]);
+          if (actor.data.ownerId !== prior.id || actor.id !== prior.data.registrationSessionId) fail("authentication_failed", 401, "Authentication failed");
+          return command(tx, `owner-registration:${attemptId}`, action, input, () => fail("account_id_conflict", 409, "Use a new unused account attempt"));
+        }
+        return command(tx, `owner-registration:${attemptId}`, action, input, () => {
+          if (input.credentialsSaved !== true) fail("invalid_request", 400, "Save the independent credentials before registration");
+          const fields = accountFields(input.username, input.email);
+          availableAccount(tx, fields, attemptId);
+          if (tx.find("owners").length >= limits.ownerRegistrations) fail("quota_exceeded", 429, "Account registration limit reached");
+          const password = hashPassword(input.password);
+          tx.insert("owners", { id: attemptId, version: 1, data: { status: "active", epoch: store.recoveryEpoch, authVersion: 1, createdAt: now(), initializedAt: now(), passwordSalt: password.salt, passwordHash: password.hash, ...fields, accountRegistrationAttemptId: attemptId, registrationSessionId: parseToken(input.sessionToken, true).id } });
+          newCredential(tx, input.recoveryToken, "owner_recovery", { ownerId: attemptId, ownerAuthVersion: 1 });
+          const session = newCredential(tx, input.sessionToken, "owner_session", { ownerId: attemptId, ownerAuthVersion: 1, expiresAt: now() + limits.session });
+          return { ownerId: attemptId, sessionId: session.id, expiresAt: session.data.expiresAt!, accountComplete: true };
+        });
+      }
+
+      if (action === "readAccount") {
+        object(raw, []);
+        const actor = authenticate(tx, token, ["owner_session"]);
+        const owner = required(tx, "owners", actor.data.ownerId!);
+        return { ownerId: owner.id, version: owner.version, username: typeof owner.data.username === "string" ? owner.data.username : null, email: typeof owner.data.email === "string" ? owner.data.email : null, emailVerified: false, accountComplete: accountComplete(owner), asOf };
+      }
+
+      if (action === "claimAgent") {
+        const input = object(raw, ["operationId", "agentId", "expectedGeneration", "handoffToken", "setupToken"]);
+        const actor = authenticate(tx, token, ["owner_session"]);
+        return command(tx, `owner:${actor.data.ownerId!}`, action, input, () => {
+          if ((input.handoffToken === undefined) === (input.setupToken === undefined)) fail("invalid_request", 400, "Supply exactly one private handoff or setup proof");
+          const proof = authenticate(tx, input.handoffToken ?? input.setupToken, input.handoffToken === undefined ? ["setup"] : ["handoff"]);
+          const agentId = text(input.agentId, "agentId", 8, 100);
+          if (proof.data.agentId !== agentId) fail("target_not_accessible", 404, "Target is not accessible");
+          const pending = required(tx, "owners", proof.data.ownerId!);
+          if (version(input.expectedGeneration, "expectedGeneration") !== proof.data.handoffGeneration) fail("generation_conflict", 409, "Handoff generation changed");
+          if (tx.find("bindings", { agentId, active: true }).length) fail("state_conflict", 409, "Agent is already managed");
+          if (tx.find("bindings", { ownerId: actor.data.ownerId, active: true }).length >= limits.agentsPerOwner) fail("quota_exceeded", 429, "Owner Agent limit reached");
+          const agent = required(tx, "agents", agentId);
+          const registration = tx.find("registrations", { agentId })[0]!;
+          const continuation = required(tx, "credentials", scalarString(registration, "continuationCredentialId"));
+          if (continuation.data.kind !== "bootstrap") fail("target_not_accessible", 404, "Target is not accessible");
+          tx.insert("bindings", { id: randomUUID(), version: 1, data: { agentId, ownerId: actor.data.ownerId!, active: true } });
+          update(tx, "owners", pending, { status: "claimed", claimedByOwnerId: actor.data.ownerId!, claimedAt: now() });
+          update(tx, "registrations", registration, { ownerId: actor.data.ownerId!, initialOwnerId: pending.id, managementStatus: "managed" });
+          update(tx, "agents", agent, { managementInitializedAt: now() });
+          // Preserve continuation identity as a read-only registration proof; it
+          // can no longer mint initial owner capabilities after this claim.
+          update(tx, "credentials", continuation, { kind: "registration_receipt", verifierKind: "bootstrap", ownerId: actor.data.ownerId! });
+          revokeCredentials(tx, { ownerId: pending.id }, ["bootstrap", "handoff", "setup"]);
+          return { ownerId: actor.data.ownerId!, agentId, managementStatus: "managed", generation: proof.data.handoffGeneration!, invalidated: ["bootstrap", "handoff", "setup"] };
+        });
+      }
       if (action === "publicProfile") {
         const input = object(raw, ["agentId"]);
         const agentId = text(input.agentId, "agentId", 8, 100);
@@ -278,7 +349,8 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         object(raw, []);
         const actor = authenticate(tx, token, ["runtime"]);
         const agentId = actor.data.agentId!;
-        return { agentId, instanceId: store.instanceId, runtimeVersion: actor.data.runtimeVersion!, profile: profileView(required(tx, "profiles", agentId)), membership: membershipView(required(tx, "memberships", agentId)), profileUrl: profileUrl(agentId), management: managementView(tx, required(tx, "agents", agentId)), asOf };
+        const registration = tx.find("registrations", { agentId })[0]!;
+        return { agentId, ownerId: scalarString(registration, "ownerId"), instanceId: store.instanceId, runtimeVersion: actor.data.runtimeVersion!, profile: profileView(required(tx, "profiles", agentId)), membership: membershipView(required(tx, "memberships", agentId)), profileUrl: profileUrl(agentId), management: managementView(tx, required(tx, "agents", agentId)), asOf };
       }
 
       if (action === "issueHandoff") {
@@ -311,7 +383,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
       }
 
       if (action === "previewHandoff" || action === "exchangeSetup" || action === "readSetup" || action === "completeSetup") {
-        const keys = action === "previewHandoff" ? ["handoffId"] : action === "exchangeSetup" ? ["operationId", "setupToken"] : action === "completeSetup" ? ["operationId", "password", "recoveryToken", "sessionToken", "credentialsSaved"] : [];
+        const keys = action === "previewHandoff" ? ["handoffId"] : action === "exchangeSetup" ? ["operationId", "setupToken"] : action === "completeSetup" ? ["operationId", "password", "recoveryToken", "sessionToken", "credentialsSaved", "username", "email"] : [];
         const input = object(raw, keys);
         const actor = authenticate(tx, token, action === "previewHandoff" || action === "exchangeSetup" ? ["handoff"] : ["setup"]);
         if (action === "previewHandoff") {
@@ -326,28 +398,33 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         });
         return command(tx, `setup:${actor.id}`, action, input, () => {
           if (input.credentialsSaved !== true) fail("invalid_request", 400, "Save the independent credentials before completing setup");
-          const password = hashPassword(input.password);
           const owner = required(tx, "owners", actor.data.ownerId!);
+          const fields = accountFields(input.username, input.email);
+          availableAccount(tx, fields, owner.id);
+          const password = hashPassword(input.password);
           const ownerAuthVersion = numberValue(owner, "authVersion");
           newCredential(tx, input.recoveryToken, "owner_recovery", { ownerId: owner.id, ownerAuthVersion });
           const session = newCredential(tx, input.sessionToken, "owner_session", { ownerId: owner.id, ownerAuthVersion, expiresAt: now() + limits.session });
           tx.insert("bindings", { id: randomUUID(), version: 1, data: { agentId: actor.data.agentId!, ownerId: owner.id, active: true } });
-          update(tx, "owners", owner, { status: "active", passwordSalt: password.salt, passwordHash: password.hash, initializedAt: now() });
+          update(tx, "owners", owner, { status: "active", passwordSalt: password.salt, passwordHash: password.hash, initializedAt: now(), ...fields });
           update(tx, "agents", required(tx, "agents", actor.data.agentId!), { managementInitializedAt: now() });
           const registration = tx.find("registrations", { agentId: actor.data.agentId })[0]!;
           update(tx, "registrations", registration, { managementStatus: "managed" });
           revokeCredentials(tx, { ownerId: owner.id }, ["bootstrap", "handoff", "setup"]);
-          return { agentId: actor.data.agentId!, ownerId: owner.id, managementStatus: "managed", sessionId: session.id, expiresAt: session.data.expiresAt!, invalidated: ["bootstrap", "handoff", "setup"] };
+          return { agentId: actor.data.agentId!, ownerId: owner.id, managementStatus: "managed", sessionId: session.id, expiresAt: session.data.expiresAt!, accountComplete: true, invalidated: ["bootstrap", "handoff", "setup"] };
         });
       }
 
       if (action === "login") {
-        const input = object(raw, ["operationId", "ownerId", "password", "sessionToken"]);
-        const ownerId = text(input.ownerId, "ownerId", 8, 100);
-        const owner = tx.get("owners", ownerId);
-        if (!owner || owner.data.status !== "active" || !checkPassword(input.password, scalarString(owner, "passwordSalt"), scalarString(owner, "passwordHash"))) fail("authentication_failed", 401, "Authentication failed");
+        const input = object(raw, ["operationId", "identifier", "password", "sessionToken"]);
+        const identifier = loginIdentifier(input.identifier);
+        const owner = tx.find("owners", { [identifier.field]: identifier.key })[0];
+        const correctPassword = checkPassword(input.password, owner?.data.status === "active" ? scalarString(owner, "passwordSalt") : "unavailable-account", owner?.data.status === "active" ? scalarString(owner, "passwordHash") : "0".repeat(128));
+        if (!owner || owner.data.status !== "active" || !correctPassword) fail("authentication_failed", 401, "Authentication failed");
+        const ownerId = owner.id;
         if (owner.data.epoch !== store.recoveryEpoch) fail("restore_access_unsupported", 403, "Identity is retained; access cannot be restored from old credentials");
-        return command(tx, `owner:${ownerId}`, action, input, () => {
+        const scope = `owner-login:${parseToken(input.sessionToken, true).id}`;
+        return command(tx, scope, action, input, () => {
           const session = newCredential(tx, input.sessionToken, "owner_session", { ownerId, ownerAuthVersion: owner.data.authVersion!, expiresAt: now() + limits.session });
           return { ownerId, sessionId: session.id, expiresAt: session.data.expiresAt! };
         });

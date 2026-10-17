@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { mkdtemp, rm, chmod } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -28,7 +29,7 @@ interface Membership {
   platformRestricted: boolean; platformVersion: number;
 }
 interface Owner {
-  ownerId: string; sessionToken: string; recoveryToken: string; password: string;
+  ownerId: string; username: string; email: string; sessionToken: string; recoveryToken: string; password: string;
   initialHandoffToken: string; setupToken: string;
 }
 interface Result<T> { status: number; body: T }
@@ -106,11 +107,12 @@ async function manage(app: FastifyInstance, agent: Agent): Promise<Owner> {
   const sessionToken = newCredential('session');
   const recoveryToken = newCredential('recovery');
   const password = newCredential('password');
+  const username = `Owner_${randomUUID().slice(0, 8)}`, email = `${randomUUID()}@example.test`;
   await ok(app, 'POST', '/v1/owner/setup/complete', {
-    operationId: newOperationId(), password, recoveryToken, sessionToken, credentialsSaved: true,
+    operationId: newOperationId(), username, email, password, recoveryToken, sessionToken, credentialsSaved: true,
   }, setupToken);
   assert.equal(typeof handoff.handoffId, 'string');
-  return { ownerId: agent.ownerId, sessionToken, recoveryToken, password, initialHandoffToken, setupToken };
+  return { ownerId: agent.ownerId, username, email, sessionToken, recoveryToken, password, initialHandoffToken, setupToken };
 }
 async function profile(app: FastifyInstance, agent: Agent, bearer = agent.runtimeToken): Promise<Profile> {
   return ok(app, 'GET', `/v1/agents/${agent.agentId}/profile`, undefined, bearer);
@@ -243,7 +245,7 @@ test('INT-05: setup is restricted; complete response can be lost after independe
   await rejected(app, 'GET', '/v1/owner/agents', undefined, setupToken);
   await rejected(app, 'POST', '/v1/owner/agent-invites', { operationId: newOperationId(), inviteToken: newCredential('invite') }, setupToken);
   const sessionToken = newCredential('session');
-  const payload = { operationId: newOperationId(), password: newCredential('password'), recoveryToken: newCredential('recovery'), sessionToken, credentialsSaved: true };
+  const payload = { operationId: newOperationId(), username: 'Integration_Owner', email: 'integration-owner@example.test', password: newCredential('password'), recoveryToken: newCredential('recovery'), sessionToken, credentialsSaved: true };
   await ok(app, 'POST', '/v1/owner/setup/complete', payload, setupToken); // Discard completion response.
   await ok(app, 'GET', '/v1/owner/agents', undefined, sessionToken);
   await ok(app, 'GET', receiptUrl(payload.operationId, `setup:${setupToken.split('.')[0]}`, 'completeSetup'), undefined, sessionToken);
@@ -256,9 +258,9 @@ test('INT-06: later login and lost recovery response use saved next-generation p
   const agent = await register(app);
   const owner = await manage(app, agent);
   const freshSession = newCredential('session');
-  await ok(app, 'POST', '/v1/owner/sessions', { operationId: newOperationId(), ownerId: owner.ownerId, password: owner.password, sessionToken: freshSession });
+  await ok(app, 'POST', '/v1/owner/sessions', { operationId: newOperationId(), identifier: owner.username, password: owner.password, sessionToken: freshSession });
   await ok(app, 'GET', `/v1/owner/agents/${agent.agentId}`, undefined, freshSession);
-  await rejected(app, 'POST', '/v1/owner/sessions', { operationId: newOperationId(), ownerId: owner.ownerId, password: newCredential('incorrect'), sessionToken: newCredential('session') });
+  await rejected(app, 'POST', '/v1/owner/sessions', { operationId: newOperationId(), identifier: owner.email, password: newCredential('incorrect'), sessionToken: newCredential('session') });
   await rejected(app, 'GET', '/v1/owner/agents', undefined, agent.runtimeToken);
   const unusedInvite = newCredential('invite');
   await ok(app, 'POST', '/v1/owner/agent-invites', { operationId: newOperationId(), inviteToken: unusedInvite }, freshSession);
@@ -274,7 +276,7 @@ test('INT-06: later login and lost recovery response use saved next-generation p
   advance(12 * 60 * 60 * 1000 + 1);
   await rejected(app, 'GET', '/v1/owner/agents', undefined, recoveryPayload.sessionToken);
   const laterSession = newCredential('session');
-  await ok(app, 'POST', '/v1/owner/sessions', { operationId: newOperationId(), ownerId: owner.ownerId,
+  await ok(app, 'POST', '/v1/owner/sessions', { operationId: newOperationId(), identifier: owner.email,
     password: recoveryPayload.password, sessionToken: laterSession });
   await ok(app, 'GET', `/v1/owner/agents/${agent.agentId}`, undefined, laterSession);
 });

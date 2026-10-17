@@ -254,12 +254,31 @@ test('failed schema upgrade rolls back its DDL and migration marker', () => {
   try {
     migrateDatabase(database);
     assert.throws(() => migrateDatabase(database, [...migrations, {
-      version: 2, name: 'injected_failure', sql: 'CREATE TABLE temporary_upgrade(id TEXT); INVALID SQL;',
+      version: migrations.length + 1, name: 'injected_failure', sql: 'CREATE TABLE temporary_upgrade(id TEXT); INVALID SQL;',
     }]));
     assert.equal(database.prepare("SELECT COUNT(*) AS count FROM sqlite_master WHERE name = 'temporary_upgrade'").get()?.count, 0);
-    assert.equal(database.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get()?.count, 1);
+    assert.equal(database.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get()?.count, migrations.length);
     migrateDatabase(database);
   } finally {
     database.close();
   }
+});
+
+test('normalized account keys stay unique after reopen and conflicts roll back all transaction writes', (t) => {
+  const databasePath = diskPath(t), store = openM1Store({ ...options, databasePath });
+  store.transaction((tx) => {
+    tx.insert('owners', row('pending-owner', { status: 'pending_setup' }));
+    tx.insert('owners', row('new-account', { username: 'First', usernameKey: 'first', email: 'first@example.test', emailKey: 'first@example.test' }));
+  });
+  store.close();
+  const reopened = openM1Store({ ...options, databasePath }); t.after(() => reopened.close());
+  for (const duplicate of [{ usernameKey: 'first', emailKey: 'other@example.test' }, { usernameKey: 'other', emailKey: 'first@example.test' }]) {
+    assert.throws(() => reopened.transaction((tx) => {
+      tx.insert('facts', row('must-rollback'));
+      tx.insert('owners', row('duplicate', duplicate));
+    }), storageCode('constraint'));
+  }
+  assert.equal(reopened.read((tx) => tx.find('owners')).length, 2);
+  assert.equal(reopened.read((tx) => tx.get('facts', 'must-rollback')), undefined);
+  assert.equal(reopened.read((tx) => tx.get('owners', 'duplicate')), undefined);
 });

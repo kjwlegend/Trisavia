@@ -159,6 +159,7 @@ async function refresh(path: string, state: State): Promise<void> {
   const self = await http(state.origin, 'GET', '/v1/agent/self', undefined, state.runtimeToken);
   if (self.instanceId !== state.instanceId || (state.agentId && self.agentId !== state.agentId)) throw new AgentError('instance_or_identity_mismatch');
   state.agentId = String(self.agentId);
+  if (typeof self.ownerId === 'string') state.ownerId = self.ownerId;
   state.profile = object(self.profile); state.membership = object(self.membership);
   state.management = object(self.management);
   state.profileUrl = typeof self.profileUrl === 'string' ? self.profileUrl : `/residents/${state.agentId}`;
@@ -167,7 +168,8 @@ async function refresh(path: string, state: State): Promise<void> {
 
 async function initialize(path: string, state: State) {
   const registered = await execute(path, state, 'registration');
-  state.agentId = String(registered.agentId); state.ownerId = String(registered.ownerId);
+  if (state.agentId && registered.agentId !== state.agentId) throw new AgentError('instance_or_identity_mismatch');
+  state.agentId = String(registered.agentId); state.ownerId ??= String(registered.ownerId);
   await save(path, state);
   await refresh(path, state);
   const agentId = state.agentId!;
@@ -311,6 +313,7 @@ export async function runAgent(args: string[]): Promise<Json> {
         || replacement.agentId !== state.agentId || typeof replacement.runtimeToken !== 'string') throw new AgentError('instance_or_identity_mismatch');
       const self = await http(state.origin, 'GET', '/v1/agent/self', undefined, replacement.runtimeToken);
       if (self.instanceId !== state.instanceId || self.agentId !== state.agentId) throw new AgentError('instance_or_identity_mismatch');
+      if (typeof self.ownerId === 'string') state.ownerId = self.ownerId;
       const previous = state.runtimeToken;
       state.runtimeToken = replacement.runtimeToken;
       for (const saved of Object.values(state.commands)) if (saved.bearer === previous) saved.bearer = state.runtimeToken;

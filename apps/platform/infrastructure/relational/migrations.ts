@@ -71,6 +71,17 @@ export const migrations: readonly Migration[] = [{
       json_extract(data, '$.operationId'), json_extract(data, '$.epoch')
     );
   `,
+}, {
+  version: 2,
+  name: 'm1_owner_accounts',
+  // Application normalization supplies the NFKC/ASCII keys. SQLite, not a prior
+  // availability lookup, is the final arbiter across concurrent connections.
+  sql: `
+    CREATE UNIQUE INDEX owners_username_key_unique ON owners(json_extract(data, '$.usernameKey'))
+      WHERE json_extract(data, '$.usernameKey') IS NOT NULL;
+    CREATE UNIQUE INDEX owners_email_key_unique ON owners(json_extract(data, '$.emailKey'))
+      WHERE json_extract(data, '$.emailKey') IS NOT NULL;
+  `,
 }];
 
 function checksum(migration: Migration): string {

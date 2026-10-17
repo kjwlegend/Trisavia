@@ -32,7 +32,7 @@ async function fits(page: Page) {
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
 }
 async function touchNavigation(page: Page) {
-  const links = page.locator('header nav a');
+  const links = page.locator('header nav a:visible');
   await expect(links).toHaveCount(2);
   for (const link of await links.all()) {
     const box = await link.boundingBox();
@@ -40,19 +40,28 @@ async function touchNavigation(page: Page) {
   }
 }
 
-test('anonymous courtyard explains M1 and offers same-origin HTTP entry without a resident directory', async ({ page, baseURL }, info) => {
+test('anonymous town offers equivalent venue details and same-origin HTTP entry without a resident directory', async ({ page, baseURL }, info) => {
   const observed = observations(page);
   const discoveryRequests: string[] = [];
   page.on('request', request => { if (new URL(request.url()).pathname.startsWith('/v1/')) discoveryRequests.push('api'); });
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('成为居民');
-  await expect(page.getByText('Agent 仍在你的工具中运行。感知、互动与自动排程尚未启用。')).toBeVisible();
-  const venue = page.getByRole('button', { name: '居民资料馆', exact: true });
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('清昼小镇');
+  await expect(page.locator('#world-canvas')).toBeVisible();
+  await expect(page.getByText('演示世界 · 人物活动为场景演示', {exact:true})).toBeVisible();
+  await expect(page.locator('.world-entry-copy')).toContainText('感知、互动与自动排程尚未启用');
+  await page.locator('#world-place-directory > summary').click();
+  await expect(page.locator('.world-place-group')).toHaveCount(6);
+  const venue = page.getByRole('button', { name: '河岸书馆', exact: true });
   await venue.focus(); await venue.press('Enter');
   await expect(venue).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.getByText('M1 提供明确居民的公开资料。发现其他居民与世界观察将在后续阶段提供。')).toBeVisible();
+  await expect(page.locator('#world-detail-title')).toHaveText('河岸书馆');
+  await expect(page.locator('#world-detail')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#world-detail')).toBeHidden();
+  await expect(venue).toBeFocused();
+  await page.locator('#connect > summary').click();
   await expect(page.locator('#agent-prompt')).toContainText(`${baseURL}/agent/entry.md`);
-  await expect(page.getByRole('link', { name: '下载 Node 24 客户端' })).toHaveAttribute('href', '/agent/m1-agent.ts');
+  await expect(page.getByRole('link', { name: '下载可选 Node 24 客户端' })).toHaveAttribute('href', '/agent/m1-agent.ts');
   await page.getByRole('button', { name: '复制接入提示词' }).click();
   await expect(page.locator('#copy-status')).toBeVisible();
   await fits(page);
@@ -74,17 +83,64 @@ test('320px and reduced motion preserve the entry, venue controls and owner auth
   await page.goto('/');
   await fits(page);
   await touchNavigation(page);
+  await expect(page.locator('#world-canvas')).toBeVisible();
+  const state = () => page.evaluate(async () => (await import(String('/assets/home.js'))).getWorldState());
+  expect((await state()).paused).toBe(true);
+  await page.locator('#world-zoom-in').click();
+  await expect(page.locator('#world-zoom')).toHaveText('125%');
+  await page.locator('#world-canvas').focus(); await page.keyboard.press('Home');
+  expect((await state()).mode).toBe('overview');
+  await page.locator('#world-reset').click();
+  await expect(page.locator('#world-zoom')).toHaveText('100%');
+  await page.locator('#world-place-directory > summary').click();
+  await page.locator('#world-place-information-hall').click();
+  await expect(page.locator('#world-detail-links a').first()).toHaveAttribute('href', '/agent/entry.md');
+  await page.locator('#world-detail-close').click();
+  await page.locator('#connect > summary').click();
   await expect(page.getByRole('button', { name: '复制接入提示词' })).toBeVisible();
-  await page.getByRole('button', { name: '接入中心', exact: true }).click();
-  await expect(page.getByRole('link', { name: '查看接入说明' })).toHaveAttribute('href', '/agent/entry.md');
   expect(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true);
-  expect(await page.locator('.venue-button').first().evaluate(element => getComputedStyle(element).animationName)).toBe('none');
+  expect((await state()).paused).toBe(true);
   await page.goto('/owner');
-  await expect(page.getByRole('heading', { name: '主人管理', exact: true })).toBeVisible();
-  await expect(page.getByLabel('登录密码', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await expect(page.locator('#login-form').getByLabel('登录密码', { exact: true })).toBeVisible();
   await expect(page.locator('#manage-view')).toBeHidden();
   await fits(page);
   expect(observed.issues).toEqual([]);
+});
+
+test('world map selection, movement and pause keep one accessible detail and stable coordinates', async ({page}) => {
+  const observed=observations(page); await page.emulateMedia({reducedMotion:'no-preference'});await page.goto('/');await page.locator('#world-canvas').waitFor();
+  const state=()=>page.evaluate(async()=>(await import(String('/assets/home.js'))).getWorldState());
+  const initial=JSON.stringify((await state()).actors);
+  await expect.poll(async()=>JSON.stringify((await state()).actors)).not.toBe(initial);
+  await page.locator('#world-pause').click();await expect(page.locator('#world-pause')).toHaveAttribute('aria-pressed','true');
+  const frozen=JSON.stringify((await state()).actors);await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  expect(JSON.stringify((await state()).actors)).toBe(frozen);
+  await page.locator('#world-fit').click();
+  const camera=(await state()).camera,box=(await page.locator('#world-canvas').boundingBox())!;
+  await page.locator('#world-canvas').click({position:{x:(576-camera.x)*camera.scale+box.width/2,y:(328-camera.y)*camera.scale+box.height/2}});
+  await expect(page.locator('#world-detail-title')).toHaveText('河岸书馆');await expect(page.locator('#world-place-library')).toHaveAttribute('aria-pressed','true');
+  await page.keyboard.press('Escape');await expect(page.locator('#world-canvas')).toBeFocused();
+  await page.locator('#world-reset').click();
+  await page.locator('#world-zoom-in').click();await expect(page.locator('#world-zoom')).toHaveText('125%');
+  await page.locator('#world-fit').click();expect((await state()).mode).toBe('overview');
+  await fits(page);expect(observed.issues).toEqual([]);
+});
+
+test('world asset failure retains venue descriptions and ordinary M1 links, and retry restores the map', async ({page}) => {
+  let pageErrors=0;page.on('pageerror',()=>pageErrors++);
+  const atlas='**/assets/world-town/assets/characters/sheet.svg';await page.route(atlas,route=>route.abort());
+  await page.goto('/');await expect(page.locator('#world-fallback')).toBeVisible();
+  for (const id of ['world-zoom-out', 'world-zoom-in', 'world-fit', 'world-pause', 'world-explore', 'world-reset']) {
+    const control = page.locator(`#${id}`);
+    if (await control.isVisible()) await expect(control, 'Unavailable map actions are disabled while assets have failed').toBeDisabled();
+  }
+  await expect(page.locator('#world-gesture-hint')).toBeHidden(); await expect(page.locator('#world-open-list')).toBeEnabled();
+  await page.locator('#world-place-information-hall').click();await expect(page.locator('#world-detail-title')).toHaveText('信息厅');
+  await expect(page.locator('#world-detail-links a')).toHaveCount(2);await page.keyboard.press('Escape');
+  await page.unroute(atlas);await page.locator('#world-retry').click();await expect(page.locator('#world-canvas')).toBeVisible();await expect(page.locator('#world-fallback')).toBeHidden();
+  await expect(page.locator('#world-fit')).toBeEnabled(); await expect(page.locator('#world-gesture-hint')).toBeVisible();
+  expect(pageErrors).toBe(0);await fits(page);
 });
 
 test('browser downloads the standalone client and sees only the joined published projection', async ({ page, baseURL }, info) => {
@@ -93,8 +149,9 @@ test('browser downloads the standalone client and sees only the joined published
   const directory = await mkdtemp(join(tmpdir(), 'm1-browser-client-'));
   try {
     await page.goto('/');
+    await page.locator('#connect > summary').click();
     const downloading = page.waitForEvent('download');
-    await page.getByRole('link', { name: '下载 Node 24 客户端' }).click();
+    await page.getByRole('link', { name: '下载可选 Node 24 客户端' }).click();
     const downloaded = await downloading;
     const stream = await downloaded.createReadStream();
     if (!stream) throw new Error('Public client download was unavailable');

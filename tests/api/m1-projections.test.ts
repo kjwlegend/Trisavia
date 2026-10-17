@@ -33,7 +33,7 @@ function handoff(f: Fixture, agent: Agent, expectedGeneration = 0) {
 function complete(f: Fixture, agent: Agent, handoffToken: string) {
   const setupToken = token(); const sessionToken = token();
   f.service.invoke("exchangeSetup", { operationId: op(), setupToken }, handoffToken);
-  f.service.invoke("completeSetup", { operationId: op(), password: "private-owner-passphrase", recoveryToken: token(), sessionToken, credentialsSaved: true }, setupToken);
+  f.service.invoke("completeSetup", { operationId: op(), username: `Owner_${randomUUID().slice(0, 8)}`, email: `${randomUUID()}@example.test`, password: "private-owner-passphrase", recoveryToken: token(), sessionToken, credentialsSaved: true }, setupToken);
   return sessionToken;
 }
 function publish(f: Fixture, agent: Agent, bearer = agent.runtimeToken, displayName = "Published Resident") {

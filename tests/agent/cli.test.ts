@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { createServer } from 'node:http';
+import { randomUUID } from 'node:crypto';
 import { mkdtemp, readFile, writeFile, rm, stat, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -72,6 +73,7 @@ async function initializeOwner(origin: string, state: Json) {
   const setupToken = newCredential('setup'), sessionToken = newCredential('session'), recoveryToken = newCredential('recovery');
   await api(origin, 'POST', '/v1/owner-setups', { operationId: newOperationId(), setupToken }, state.handoff.token);
   await api(origin, 'POST', '/v1/owner/setup/complete', { operationId: newOperationId(), password: 'process-test-password',
+    username: `Process_${randomUUID().replaceAll('-', '').slice(0, 12)}`, email: `process-${randomUUID()}@example.test`,
     recoveryToken, sessionToken, credentialsSaved: true }, setupToken);
   return sessionToken;
 }
@@ -132,6 +134,42 @@ test('downloaded standalone CLI completes real HTTP, private handoff, restart an
   safeOutput(imported.stdout + imported.stderr, await json(statePath));
   const conflicting = await cli(directory, ['onboard', '--url', running.address, '--state', statePath, '--name', 'Different intent']);
   assert.equal(conflicting.code, 1); assert.equal((await json(statePath)).agentId, state.agentId);
+});
+
+test('legal owner claim is adopted from authenticated self after process reopen without changing Agent proofs or historical receipt', { timeout: 30_000 }, async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'm1-agent-owner-claim-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const running = await server(directory); t.after(() => stop(running.child));
+  await download(directory, running.address);
+  const path = join(directory, 'agent.json');
+  const first = await cli(directory, ['onboard', '--url', running.address, '--state', path, '--name', 'Claimed process Agent']);
+  assert.equal(first.code, 0);
+  const before = await json(path), originalReceipt = JSON.stringify(before.commands.registration.result);
+  const sessionToken = newCredential('session'), recoveryToken = newCredential('recovery'), attemptId = randomUUID();
+  const registrationOperationId = newOperationId();
+  await writeFile(join(directory, 'owner.private.json'), JSON.stringify({ sessionToken, recoveryToken,
+    ownerId: attemptId, pendingOperation: { operationId: registrationOperationId,
+      scope: `owner-registration:${attemptId}`, action: 'registerOwner' } }), { mode: 0o600 });
+  const owner = await api(running.address, 'POST', '/v1/owner/accounts', { operationId: registrationOperationId, attemptId,
+    username: `Process_${randomUUID().replaceAll('-', '').slice(0, 10)}`, email: `${randomUUID()}@example.test`,
+    password: `Synthetic-${randomUUID()}`, sessionToken, recoveryToken, credentialsSaved: true });
+  await api(running.address, 'POST', '/v1/owner/agent-claims', { operationId: newOperationId(), agentId: before.agentId,
+    expectedGeneration: before.handoff.generation, handoffToken: before.handoff.token }, sessionToken);
+  const current = await api(running.address, 'GET', '/v1/agent/self', undefined, before.runtimeToken);
+  assert.equal(current.ownerId, owner.ownerId); assert.equal(current.agentId, before.agentId);
+  for (const command of ['status', 'onboard']) {
+    const reopened = await cli(directory, [command, '--state', path]);
+    assert.equal(reopened.code, 0, 'A new client process resumes the same Agent after its legal owner claim');
+    const summary = JSON.parse(reopened.stdout), after = await json(path);
+    assert.equal(summary.agentId, before.agentId); assert.equal(summary.ownerId, owner.ownerId);
+    assert.equal(summary.managementStatus, 'managed'); assert.equal(summary.membership, 'joined');
+    assert(after.runtimeToken === before.runtimeToken && after.continuationToken === before.continuationToken,
+      'Claiming ownership must not replace local Agent proofs');
+    assert.equal(after.instanceId, before.instanceId);
+    assert(JSON.stringify(after.commands.registration.result) === originalReceipt, 'The original committed registration receipt remains immutable history');
+    assert.equal(after.profile.version, before.profile.version); assert.equal(after.membership.version, before.membership.version);
+    safeOutput(reopened.stdout + reopened.stderr, after);
+  }
 });
 
 test('registration, draft and handoff response loss plus backend restart resume each original complete command', { timeout: 30_000 }, async t => {

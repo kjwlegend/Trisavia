@@ -39,7 +39,7 @@ function setup(f: Fixture, agent: Registration) {
   const sessionToken = token();
   const recoveryToken = token();
   const password = "test-owner-password-123";
-  const input = { operationId: operationId(), password, recoveryToken, sessionToken, credentialsSaved: true };
+  const input = { operationId: operationId(), username: `Owner_${randomUUID().slice(0, 8)}`, email: `${randomUUID()}@example.test`, password, recoveryToken, sessionToken, credentialsSaved: true };
   const result = f.service.invoke("completeSetup", input, setupToken);
   return { sessionToken, recoveryToken, password, result, input, setupToken, handoffToken, handoff };
 }
@@ -102,7 +102,7 @@ test("preview is non-consuming; refresh supersedes expired handoff and setup; bi
   error("insufficient_scope", () => f.service.invoke("managedAgent", { agentId: agent.agentId }, setupToken));
   const sessionToken = token();
   const completeId = operationId();
-  const complete = f.service.invoke("completeSetup", { operationId: completeId, password: "independent-owner-password", recoveryToken: token(), sessionToken, credentialsSaved: true }, setupToken);
+  const complete = f.service.invoke("completeSetup", { operationId: completeId, username: "Independent_Owner", email: "independent@example.test", password: "independent-owner-password", recoveryToken: token(), sessionToken, credentialsSaved: true }, setupToken);
   const completeQuery = { operationId: completeId, scope: `setup:${setupToken.split(".")[0]}`, action: "completeSetup" };
   for (const proof of [first, second, third, oldSetup, setupToken, agent.input.continuationToken]) error("authentication_failed", () => f.service.invoke("receipt", completeQuery, proof));
   assert.deepEqual(f.service.invoke("receipt", completeQuery, sessionToken), complete);
@@ -217,8 +217,8 @@ test("recovery activates pre-saved successors, closes old management and invites
   error("authentication_failed", () => f.service.invoke("listAgents", {}, owner.sessionToken));
   error("authentication_failed", () => f.service.invoke("recover", { operationId: operationId() }, owner.recoveryToken));
   error("authentication_failed", () => registration(f, inviteToken));
-  error("authentication_failed", () => f.service.invoke("login", { operationId: operationId(), ownerId: agent.ownerId, password: owner.password, sessionToken: token() }));
-  f.service.invoke("login", { operationId: operationId(), ownerId: agent.ownerId, password: "next-password-for-owner", sessionToken: token() });
+  error("authentication_failed", () => f.service.invoke("login", { operationId: operationId(), identifier: owner.input.username, password: owner.password, sessionToken: token() }));
+  f.service.invoke("login", { operationId: operationId(), identifier: owner.input.username, password: "next-password-for-owner", sessionToken: token() });
   assert.equal(f.service.invoke("self", {}, agent.input.runtimeToken).agentId, agent.agentId);
 });
 
@@ -228,7 +228,7 @@ test("copied old authorization state cannot authenticate into a new recovery epo
   const restored: M1Store = { instanceId: f.store.instanceId, recoveryEpoch: "epoch-restored", read: f.store.read.bind(f.store), transaction: f.store.transaction.bind(f.store), close() {} };
   const service = createM1Service(restored);
   error("restore_access_unsupported", () => service.invoke("self", {}, agent.input.runtimeToken));
-  error("restore_access_unsupported", () => service.invoke("login", { operationId: operationId(), ownerId: agent.ownerId, password: owner.password, sessionToken: token() }));
+  error("restore_access_unsupported", () => service.invoke("login", { operationId: operationId(), identifier: owner.input.username, password: owner.password, sessionToken: token() }));
   assert.equal(f.store.read((tx) => tx.get("agents", agent.agentId)?.id), agent.agentId);
 });
 
