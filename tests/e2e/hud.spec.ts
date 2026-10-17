@@ -1,5 +1,5 @@
 import { test, expect } from './helpers/owner-account-ui.ts';
-import { loginIdentifier, logout } from './helpers/owner-account-ui.ts';
+import { idle, loginIdentifier, logout, mutation } from './helpers/owner-account-ui.ts';
 import { accountFixture, agentFixture, credential, fixtureOk, fixtureRequest, operationId, privateDirectory, privateJson } from './helpers/private-fixtures.ts';
 import { rm } from 'node:fs/promises';
 import { hudNames, hudButton, hudWindow, openHud, closeHud, containedHud, camera, noPageOverflow } from './helpers/hud-ui.ts';
@@ -69,6 +69,25 @@ test('the four dock controls disclose one panel, keep hover separate and restore
     await page.setViewportSize({ width: 1280, height: 800 });
     await openHud(page, '背包'); await containedHud(page); await closeHud(page);
     await expect(hudButton(page, '背包')).toBeFocused();
+    for (const size of [{ width: 1440, height: 900 }, { width: 1280, height: 900 }]) {
+      await page.setViewportSize(size);
+      for (const name of hudNames) {
+        await openHud(page, '世界'); await page.locator('#world-open-list').click();
+        const beforeDetail = await camera(page);
+        await page.getByRole('button', { name: '中央公共庭', exact: true }).click();
+        await expect(page.locator('#world-detail-title')).toHaveText('中央公共庭');
+        const placeBox = (await page.locator('#world-detail').boundingBox())!, dockBox = (await dock.boundingBox())!;
+        expect(placeBox.x + placeBox.width, 'The place card leaves at least 12px before the full dock').toBeLessThanOrEqual(dockBox.x - 12);
+        for (const action of hudNames) await expect(hudButton(page, action)).toBeInViewport();
+        await hudButton(page, name).click();
+        await expect(hudWindow(page)).toBeVisible(); await expect(page.locator('#hud-title')).toHaveText(name);
+        await expect(page.getByRole('dialog')).toHaveCount(1);
+        await expect(page.locator('#world-detail'), 'A place card does not intercept a different dock action').toBeHidden();
+        const afterDetail = await camera(page);
+        expect(afterDetail.x).toBeCloseTo(beforeDetail.x, 4); expect(afterDetail.y).toBeCloseTo(beforeDetail.y, 4); expect(afterDetail.scale).toBeCloseTo(beforeDetail.scale, 4);
+        await closeHud(page); await expect(hudButton(page, name)).toBeFocused();
+      }
+    }
   }
   expect(await page.evaluate(() => document.fullscreenElement === null)).toBe(true);
   await noPageOverflow(page);
@@ -187,4 +206,80 @@ test('real account summaries keep zero, one and multiple Agent targets isolated 
     expect((await fixtureOk(baseURL!, '/agent/self', undefined, second.runtimeToken)).agentId).toBe(second.agentId);
     expect(writes, 'Real summaries, demo previews, refresh and logout submit no business mutations').toEqual([]);
   } finally { for (const release of releases) release(); await rm(directory, { recursive: true, force: true }); }
+});
+
+test('an owner target change keeps editing locked until the new authorized read finishes after an older refresh is cancelled', async ({ page, baseURL, privacy }) => {
+  const directory = await privateDirectory('owner-target-read-race-');
+  const held: Array<() => void> = [];
+  try {
+    const own = await ownerWithAgents(baseURL!, directory, ['切换前的居民', '切换后的居民']);
+    const first = own.agents[0]!, second = own.agents[1]!;
+    await loginIdentifier(page, privacy, own.owner.username, own.owner.password);
+    await page.goto(`/owner#agent=${first.agentId}`); await idle(page);
+    await expect(page.locator('#selected-id')).toContainText(first.agentId);
+    await expect(page.getByLabel('居民名字', { exact: true })).toHaveValue(first.name);
+
+    const writes: string[] = [];
+    page.on('request', request => {
+      const path = new URL(request.url()).pathname;
+      if (path.startsWith('/v1/') && !['GET', 'HEAD'].includes(request.method())) writes.push(`${request.method()} ${path}`);
+    });
+    const holdRead = async (path: string) => {
+      let enter!: () => void, finish!: () => void, release!: () => void;
+      const entered = new Promise<void>(resolve => { enter = resolve; });
+      const finished = new Promise<void>(resolve => { finish = resolve; });
+      const gate = new Promise<void>(resolve => { release = resolve; });
+      held.push(release);
+      await page.route(`**/v1${path}`, async route => {
+        const response = await route.fetch(); expect(response.status()).toBe(200); enter(); await gate;
+        try { await route.fulfill({ response }); }
+        catch (error) { if (route.request().failure()?.errorText !== 'net::ERR_ABORTED') throw error; }
+        finally { finish(); }
+      }, { times: 1 });
+      return { entered, finished, release };
+    };
+    const locked = async () => {
+      await expect(page.locator('main')).toHaveAttribute('aria-busy', 'true');
+      for (const selector of ['#display-name', '#bio', '#interests', '#avatar-color', '#save-profile', '#publish-profile']) {
+        await expect(page.locator(selector), 'A superseded read cannot unlock a target that is still being verified').toBeDisabled();
+      }
+      await expect(page.locator('#unknown-controls')).toBeHidden();
+      await expect(page.locator('#global-notice'), 'Cancelling a superseded read does not invent an unresolved write').not.toHaveClass(/pending/);
+      expect(writes, 'No profile mutation is sent while the new target is unresolved').toEqual([]);
+    };
+
+    const old = await holdRead('/owner/agents');
+    await page.getByRole('button', { name: '刷新状态', exact: true }).click(); await old.entered;
+    await locked();
+    const next = await holdRead('/owner/agents'), account = await holdRead('/owner/account');
+    const cancelled = page.waitForEvent('requestfailed', request => new URL(request.url()).pathname === '/v1/owner/agents');
+    const originalDocument = await page.evaluate(() => performance.timeOrigin);
+    await page.evaluate(target => { location.hash = `agent=${encodeURIComponent(target)}`; }, second.agentId);
+    await next.entered; await cancelled;
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
+    expect(await page.evaluate(() => performance.timeOrigin), 'The target changes in the current owner document').toBe(originalDocument);
+    await locked();
+    await expect(page.locator('#selected-id')).toContainText(first.agentId);
+    old.release(); await old.finished;
+    await locked();
+
+    next.release(); await next.finished; await account.entered;
+    await locked();
+    account.release(); await account.finished; await idle(page);
+    await expect(page.locator('#selected-id')).toContainText(second.agentId);
+    await expect(page.getByLabel('居民名字', { exact: true })).toHaveValue(second.name);
+    await expect(page.getByLabel('居民名字', { exact: true })).toBeEditable();
+    await expect(page.getByRole('button', { name: '保存草稿', exact: true })).toBeEnabled();
+    const changedName = '只保存到切换后的居民';
+    await page.getByLabel('居民名字', { exact: true }).fill(changedName);
+    await mutation(page, `/agents/${second.agentId}/profile/draft`, page.getByRole('button', { name: '保存草稿', exact: true }), 200, 'PUT');
+    expect(writes).toEqual([`PUT /v1/agents/${second.agentId}/profile/draft`]);
+    const list = await fixtureOk(baseURL!, '/owner/agents', undefined, own.owner.sessionToken);
+    expect(list.agents.find((agent: any) => agent.agentId === first.agentId).profile.draft.displayName).toBe(first.name);
+    expect(list.agents.find((agent: any) => agent.agentId === second.agentId).profile.draft.displayName).toBe(changedName);
+  } finally {
+    for (const release of held) release();
+    await page.unrouteAll({ behavior: 'wait' });
+    await rm(directory, { recursive: true, force: true });
+  }
 });

@@ -85,6 +85,17 @@ for (const committed of [false, true]) {
       expect(loss.durable()).toBe(true); expect(saved.pendingOperation.scope).toBe(`owner:${owner.ownerId}`);
       expect(saved.pendingOperation.input.agentId).toBe(agent.agentId); expect(saved.claimContext.agentId).toBe(agent.agentId);
       expect(saved.claimContext.handoffToken === handoff.handoffToken).toBe(true);
+      let targetReads = 0;
+      page.on('request', request => { if (new URL(request.url()).pathname.startsWith('/v1/owner/agents')) targetReads++; });
+      await page.evaluate(target => { location.hash = `agent=${target}`; }, randomUUID());
+      await expect.poll(() => new URL(page.url()).hash.length).toBe(0);
+      const preserved = await pending(page);
+      samePrivateFields(preserved, saved, ['ownerId', 'sessionToken']);
+      expect(JSON.stringify(preserved.pendingOperation) === JSON.stringify(saved.pendingOperation), 'An unresolved claim retains its complete original command when another target URL arrives').toBe(true);
+      expect(JSON.stringify(preserved.claimContext) === JSON.stringify(saved.claimContext), 'The explicit claim keeps the original Agent and its proof').toBe(true);
+      expect(targetReads, 'A target URL cannot start a competing read while the claim result is unknown').toBe(0);
+      await expect(page.locator('#unknown-controls')).toBeVisible();
+      await expect(page.locator('#global-notice')).toHaveClass(/pending/);
       await page.reload(); await idle(page);
       if (!committed) {
         await expect(page.locator('#claim-account')).toContainText(owner.username);

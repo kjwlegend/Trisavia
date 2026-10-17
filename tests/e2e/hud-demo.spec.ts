@@ -15,9 +15,17 @@ test.afterEach(async ({ page }) => { expect(writes.get(page), 'Browsing isolated
 
 async function demo(page: Page, feature: '个人' | '背包' | '信箱') {
   const window = await openHud(page, feature);
-  await window.getByRole('button', { name: `查看演示${feature === '个人' ? '资料' : feature}`, exact: true }).click();
+  const entry = window.getByRole('button', { name: `查看演示${feature === '个人' ? '资料' : feature}`, exact: true });
+  await entry.focus(); await entry.press('Enter');
   await expect(window.locator('.hud-demo-label:visible')).toContainText('演示数据');
   return window;
+}
+async function keyboardContinuesInPanel(page: Page) {
+  await expect.poll(() => page.evaluate(() => document.querySelector('#hud-window')!.contains(document.activeElement)),
+    { message: 'Entering a demo keeps keyboard focus in the current panel' }).toBe(true);
+  await page.keyboard.press('Tab');
+  await expect.poll(() => page.evaluate(() => document.querySelector('#hud-window')!.contains(document.activeElement)),
+    { message: 'The next Tab continues through the open panel rather than starting again from the page' }).toBe(true);
 }
 async function inventoryList(page: Page) {
   const window = hudWindow(page);
@@ -37,8 +45,26 @@ test('personal examples require an explicit demo context and their public previe
   let loads = 0; page.on('request', request => { if (new URL(request.url()).pathname === '/assets/hud/demo-fixtures.json') loads++; });
   await openHud(page, '个人');
   await expect(hudWindow(page)).toContainText('登录后可查看自己的 Agent 资料'); expect(loads).toBe(0);
+  let enter!: () => void, release!: () => void, finish!: () => void;
+  const entered = new Promise<void>(resolve => { enter = resolve; }), gate = new Promise<void>(resolve => { release = resolve; });
+  const finished = new Promise<void>(resolve => { finish = resolve; });
+  await page.route('**/assets/hud/demo-fixtures.json', async route => {
+    const response = await route.fetch(); expect(response.status()).toBe(200); enter(); await gate;
+    try { await route.fulfill({ response }); } finally { finish(); }
+  }, { times: 1 });
   const window = await demo(page, '个人');
+  try {
+    await entered; await keyboardContinuesInPanel(page);
+    await openHud(page, '世界'); await expect(page.locator('#hud-title')).toBeFocused();
+    const loaded = page.waitForResponse(response => new URL(response.url()).pathname === '/assets/hud/demo-fixtures.json');
+    release(); await finished; await (await loaded).finished();
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await expect(page.locator('#hud-title')).toHaveText('世界');
+    await expect(page.locator('#hud-title'), 'A late demo response cannot reclaim keyboard focus after its panel was left').toBeFocused();
+  } finally { release(); await page.unrouteAll({ behavior: 'wait' }); }
+  await openHud(page, '个人');
   await expect(window.getByText('小岚', { exact: true })).toBeVisible();
+  await keyboardContinuesInPanel(page);
   await expect(window).toContainText('与当前真实 Agent 无关'); await expect(window).toContainText('暂未收到新报告（示例）');
   await window.getByRole('button', { name: '公开资料', exact: true }).click();
   await expect(window).toContainText('只读公开字段'); await expect(window.getByRole('heading', { name: '最近记录（示例）' })).toHaveCount(0);
@@ -56,6 +82,7 @@ test('inventory filters retain only visible selections, clear empty details and 
   await page.goto('/'); const window = await demo(page, '背包');
   await expect(window.getByRole('button', { name: '全部', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(window.getByRole('button', { name: '街区速写', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await keyboardContinuesInPanel(page);
   await window.getByRole('button', { name: '纪念明信片', exact: true }).click(); await inventoryList(page);
   await window.getByRole('button', { name: '作品', exact: true }).click();
   await expect(window.getByRole('button', { name: '纪念明信片', exact: true })).toHaveAttribute('aria-pressed', 'true');
@@ -100,9 +127,11 @@ test('mail separates private pending examples from public announcements and remo
   await expect(window.getByRole('button', { name: '私人通知', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(window.getByLabel('通知筛选', { exact: true })).toHaveValue('全部通知');
   await expect(window.getByLabel('示例私人通知', { exact: true }).getByRole('button')).toHaveCount(6);
+  await keyboardContinuesInPanel(page);
   await window.getByRole('button', { name: /作品说明有更新/ }).click();
   await expect(window).toContainText('仅供知晓'); await window.getByRole('button', { name: '查看内容', exact: true }).click();
-  await expect(window).toContainText('同一夹具的演示内容');
+  await expect(window.getByRole('heading', { name: '街区速写', exact: true })).toBeVisible();
+  await expect(window).toContainText('该通知引用的演示作品');
   await page.keyboard.press('Escape'); await expect(window).toBeVisible(); await expect(window.getByRole('heading', { name: '作品说明有更新', exact: true })).toBeVisible();
   await mailList(page); await window.getByLabel('通知筛选', { exact: true }).selectOption('待处理');
   await expect(window.getByRole('button', { name: /资料有一项待确认/ })).toBeVisible();
