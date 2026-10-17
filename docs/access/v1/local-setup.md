@@ -24,19 +24,23 @@
 | --- | --- |
 | Agent 私密 state，`connet-agent-v1` | Agent 保存运行证明、原命令及初始续接材料；完成管理后不能恢复主人密码 |
 | `<state>.handoff.json`，`connet-handoff-v1` | Agent 私密交给主人用于首次设置；完成管理后初始入口失效 |
-| `connet-owner.private.json`，`connet-owner-v1` | 首次设置网页让主人下载的备份，通常包含管理会话和独立恢复证明；不含明文密码 |
+| `connet-owner.private.json`，`connet-owner-v2` | 主人注册或首次设置时下载的登录备份，包含管理会话和独立恢复证明；不含明文密码 |
 | `connet-owner-recovery.private.json` | 重设密码前由主人保存的新一代备份；恢复成功后旧恢复证明失效 |
 | `connet-auth-pending.private.json` | 认证结果尚未确认时保存的续接记录，不能当作已成功登录或恢复的证明 |
 | `connet-runtime.private.json`／`connet-invite.private.json` | 主人分别私密交给原 Agent 替换运行访问，或交给新 Agent 单次加入；不是主人恢复文件 |
 
 “保存当前管理文件”只能导出当前浏览器确实持有的字段：仅用密码登录时可能只有临时会话而没有恢复证明，不能把它当作长期找回备份。Agent 不会自动收到主人网页的下载文件，客户端的交付声明也不证明主人已保存。
 
-1. 从 Agent 私密交付的交接文件取管理 URL，打开本站 `/owner#handoff=…`。页面立即清除 fragment；普通预览不等于完成绑定。
-2. 主动“开始设置”，填写登录密码，选择“下一步”。点击“下载登录备份”，保存网页生成的 `connet-owner-v1` 文件后勾选“我已保存登录备份”，再“进入我的 Agent”。下载在提交之前，包含新 session/recovery 证明和 pendingOperation 完整命令键；Agent 的运行证明不能替代这些证明。
-3. 保存主人 ID 和密码，之后可直接在 `/owner` 登录，不依赖 Agent 在线。私密文件中的证明不得放进 URL query、CLI 参数或普通聊天。下载文件转作本地工具输入时先设为 0600 权限。
+1. 主人可直接在本站 `/owner` 注册账号，或打开 Agent 私密交付的 `/owner#handoff=…`。页面立即清除 fragment；普通预览不等于完成绑定。已有账号可登录后核对当前账号与目标 Agent，再明确确认关联，不创建另一账号或重新注册 Agent。
+2. 新账号填写用户名、邮箱和至少 12 字符的登录密码，选择“下一步”。用户名经 trim、NFKC 后为 2—32 个 ASCII 英文字母、数字或下划线，不支持中文；Agent 中文显示名不受此限制。邮箱当前未验证，不用于邮件找回。点击“下载登录备份”，保存网页生成的 `connet-owner-v2` 文件并确认已保存，再提交注册或创建账号并关联 Agent。下载在提交之前，包含新 session/recovery 证明和 pendingOperation 完整命令键；Agent 的运行证明不能替代这些证明。独立注册成功时可以没有 Agent，之后从空态邀请自己的 Agent。
+3. 保存用户名或邮箱及密码，之后直接在 `/owner` 登录，不依赖 Agent 在线。内部主人 UUID 用于定位，不能作为登录标识或凭据。私密文件中的证明不得放进 URL query、CLI 参数或普通聊天。下载文件转作本地工具输入时先设为 0600 权限。
 4. 忘记密码时在原来源 `/owner` 选择“忘记密码？”并选择登录备份；网页识别并校验，不要求人复制证明。旧设置记录或过期会话不应挡住仍有效的独立恢复材料。设置新密码后先下载并确认保存新登录备份，再确认重设。旧文件在结果确认前保留；丢响应时页面先自动查回原结果，需要时继续同一次操作，旧恢复证明成功消费后不能重放。
 
-主人文件格式为 `{format:connet-owner-v1,origin,ownerId,sessionToken,recoveryToken,setupToken?,sourceRecoveryToken?,pendingOperation:{operationId,scope,action}}`。其中 `sourceRecoveryToken` 只供未完成的重设继续使用原请求；兼容旧文件，页面不会把材料放进 URL。它只用于本实例管理，不能证明真人、公开 human 身份或后续互动权限。所有证明全丢失或旧备份缺最新授权依据时，本期没有旁路找回。
+主人文件仅接受 `format:connet-owner-v2`，严格绑定 `origin`。已知账号文件含内部 UUID `ownerId`，按用途保存 `sessionToken`、`recoveryToken`、`setupToken` 等必要能力；`sourceRecoveryToken` 只供未完成的重设继续原请求。页面拒绝旧 `connet-owner-v1` 与 `connet-owner-pending-v1`，不迁移旧格式。
+
+未决操作保存 `pendingOperation:{operationId,scope,action,input?}`：注册的 input 为 `attemptId,username,email`，首次设置为 `username,email`，关联为 `agentId,expectedGeneration`，密码始终不导出。尚不知道主人 ID 的用户名/邮箱登录使用同一个 v2 格式但省略 `ownerId`，只带 `sessionToken`、绑定此 session ID 的 login 完整命令键及 `input.identifier`；可带精确目标的 `claimContext`，不能混入恢复或 setup 能力。页面只接受固定动作对应的输入，不信任文件指定的请求路径或方法。
+
+这些文件只用于原来源实例管理，不能证明真人、公开 human 身份或后续互动权限。不要改写文件 origin 或把它导入另一来源；所有有效恢复证明全丢失时，本期没有旁路找回。
 
 ## 总结模板
 

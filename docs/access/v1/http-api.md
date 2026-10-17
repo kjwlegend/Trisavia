@@ -15,16 +15,19 @@
 | GET `/v1/capabilities` | 无 Bearer | 核对实例、`apiVersion:v1`、M1 实际能力；排程/感知/互动为 false |
 | GET `/v1/avatar-catalog` | 无 Bearer | 当前目录版本、基础模板/颜色、必填字段 |
 | POST `/v1/registrations` | 无 Bearer；`attemptId,runtimeToken,continuationToken,inviteToken?` | `agentId,ownerId,managementStatus,registrationAttemptId`；同尝试同载荷只创建一次 |
-| GET `/v1/registration-attempts/:attemptId` | 原 continuation 或有效 runtime | 原身份/非秘密结果；首次绑定后 continuation 失效，使用 runtime |
-| GET `/v1/agent/self` | runtime | `agentId,instanceId,runtimeVersion,profile,membership,management,profileUrl,asOf` |
+| GET `/v1/registration-attempts/:attemptId` | 有效 runtime 或仍有效的原 continuation | 当前身份/非秘密结果；首次设置后用 runtime。邀请注册或被已有账号认领的 continuation 仅保留本 Agent 注册读取能力，不能管理或生成交接 |
+| GET `/v1/agent/self` | runtime | `agentId,ownerId,instanceId,runtimeVersion,profile,membership,management,profileUrl,asOf`；`ownerId` 为当前有效绑定 |
 | GET `/v1/public/agents/:agentId` | 无认证 | 仅 joined、已发布、无平台限制的公开字段；其他统一 404，不返回主人/草稿/政策/凭据 |
 | POST `/v1/agent/self/handoffs` | continuation；`expectedGeneration,handoffToken` | `handoffId,generation,expiresAt`；首次 generation=0，换发使旧代次无效 |
 | POST `/v1/agent/self/delivery-declarations` | runtime 或 bootstrap；`generation` | 只记录 `client_declared_delivered`，不证明主人已阅读或真实私密交付发生 |
 | GET `/v1/owner-handoffs/:id` | 对应 handoff | 只预览，不消费 |
 | POST `/v1/owner-setups` | handoff；`setupToken` | 受限设置；不能调用完整主人接口 |
 | GET `/v1/owner/setup` | 预存 setup | 兑换响应丢失时读取受限设置；不再次消费 handoff |
-| POST `/v1/owner/setup/complete` | setup；`password,recoveryToken,sessionToken,credentialsSaved:true` | 原子绑定；密码至少 12 字符；先保存后续证明，全部初始能力失效 |
-| POST `/v1/owner/sessions` | 无 Bearer；`ownerId,password,sessionToken` | 长期登录建立新会话；sessionToken 请求前保存 |
+| POST `/v1/owner/accounts` | 无 Bearer；`attemptId,username,email,password,sessionToken,recoveryToken,credentialsSaved:true` | 主人独立注册；预存 UUID `attemptId` 同时为内部 `ownerId`；返回账号与会话，不自动创建 Agent |
+| GET `/v1/owner/account` | owner session | 本人的 `ownerId,version,username,email,emailVerified:false,accountComplete,asOf`；邮箱只在此私有读取中返回 |
+| POST `/v1/owner/setup/complete` | setup；`username,email,password,recoveryToken,sessionToken,credentialsSaved:true` | 创建账号并原子绑定当前 Agent；密码至少 12 字符；先保存后续证明，全部初始管理能力失效 |
+| POST `/v1/owner/sessions` | 无 Bearer；`identifier,password,sessionToken` | `identifier` 为用户名或邮箱；请求前保存 sessionToken 与原命令，不接受 `ownerId` 登录 |
+| POST `/v1/owner/agent-claims` | owner session；`agentId,expectedGeneration` 及 `handoffToken`/`setupToken` 二选一 | 账号认证与当前目标交接能力双重校验，明确确认后关联；保留该账号及 Agent 身份、独立运行证明 |
 | GET `/v1/owner/recovery` | owner recovery；无正文 | 只读确认当前证明所属 `ownerId`；不创建会话、不改密码、不消费恢复证明。提交恢复时仍重新校验 |
 | POST `/v1/owner/recoveries` | 旧 recovery；`password,recoveryToken,sessionToken,credentialsSaved:true` | 先存下一代证明；旧 session/recovery/未用 invite 失效，runtime 不受影响 |
 | GET `/v1/operations/:operationId?scope=…&action=…` | 当前获准凭据；两个查询条件均必填 | 按完整命令键精确查回执；完成/恢复丢响应后用预存新 session 查询；公开操作号及查询条件不授权 |
@@ -52,6 +55,10 @@
 
 注册前保存 `operationId`、`attemptId` 和全部请求秘密。重试必须保留完整原载荷，包括原 `operationId`；同尝试更换操作号也会发生载荷冲突，此时认证查询原结果，不另建身份。注册结果的 `managementStatus` 为 `pending_setup` 或 `managed`。
 
+主人用户名经 trim、NFKC 后为 2—32 个 ASCII 英文字母、数字或下划线，大小写不区分唯一性；不支持中文用户名，Agent 中文显示名仍可使用。邮箱采用当前 API 的 ASCII 邮箱校验，最长 254 字符，登录与唯一性不区分大小写；本期不验证邮箱、不发送邮件找回密码。`GET /v1/owner/account` 之外的回执、Agent 自身、邀请及公开资料不返回邮箱。账号注册和首次设置均必须提供用户名与邮箱；没有旧 UUID 登录、旧账号补全或旧主人文件迁移接口。
+
+已有账号关联 Agent 后，原注册历史回执不改写；有效 runtime 的自身读取及注册结果返回当前 `ownerId`。客户端只在原实例、同一 Agent 且证明有效时更新当前归属，不以历史回执覆盖当前归属，也不更换 Agent 的证明。
+
 ## 回执的精确查询
 
 不同 Agent、调用身份或动作可以合法使用相同 `operationId`，所以操作号不能单独定位回执。调用前一并保存原操作的 `scope`、`action` 与 `operationId`。查询形式为 `GET /v1/operations/<operationId>?scope=<URL编码的scope>&action=<action>`，例如作用域 `agent:<agentId>` 编码为 `agent%3A<agentId>`。服务仅查询当前实例恢复代次的完整键，不返回第一个可见结果；精确结果不存在或调用者无权读取均为 404 `target_not_accessible`。
@@ -59,15 +66,19 @@
 | 原写入 | `scope` | `action` |
 | --- | --- | --- |
 | 注册 | `registration:<attemptId>` | `register` |
+| 主人独立注册 | `owner-registration:<attemptId>` | `registerOwner` |
+| 主人用户名/邮箱登录 | `owner-login:<sessionCredentialId>` | `login` |
 | 生成/换发初始交接 | `bootstrap:<continuationCredentialId>` | `issueHandoff` |
 | 声明交付 | `agent:<agentId>` | `declareDelivery` |
 | 兑换受限设置 | `handoff:<handoffCredentialId>` | `exchangeSetup` |
 | 完成首次设置 | `setup:<setupCredentialId>` | `completeSetup` |
-| 主人登录、恢复、签发/撤销邀请、撤销/替换运行访问 | `owner:<ownerId>` | 分别为 `login`、`recover`、`issueInvite`、`revokeInvite`、`revokeRuntime`、`replaceRuntime` |
+| 主人恢复、关联已有 Agent、签发/撤销邀请、撤销/替换运行访问 | `owner:<ownerId>` | 分别为 `recover`、`claimAgent`、`issueInvite`、`revokeInvite`、`revokeRuntime`、`replaceRuntime` |
 | 保存草稿、发布资料、加入、退出 | 原请求由 runtime 发起时为 `agent:<agentId>`；由 owner session 发起时为 `owner:<ownerId>` | 分别为 `saveDraft`、`publishProfile`、`join`、`leave` |
 | 设置字段政策、主人暂停开关 | `owner:<ownerId>` | 分别为 `profilePolicy`、`participation` |
 
 `…CredentialId` 只取预存 `credentialId.secret` 中点号前的非秘密 ID，不能把完整证明或 secret 放进 URL。首次设置成功丢响应后，用预存的新 owner session 查询原 `setup:<setupCredentialId>` / `completeSetup`；正常恢复成功丢响应后，用预存的新 session 查询原 `owner:<ownerId>` / `recover`。凭据仍需当前有效；精确选择器不恢复旧凭据或扩大权限。兑换设置丢响应仍优先用预存 setup 调用 `GET /v1/owner/setup`。
+
+独立注册丢响应，用预存的新 session 精确查询原 `owner-registration:<attemptId>` / `registerOwner`。用户名/邮箱登录在提交前可能尚不知道 `ownerId`，保存输入 identifier 及 `owner-login:<sessionCredentialId>` / `login`，用预存 session 查询或重新输入密码继续原请求；密码不能落盘。关联结果未知时保留原账号、目标、代次、交接证明及完整命令，不另建账号或 Agent。
 
 旧的无查询条件接口现返回 400 `invalid_request`，缺一个条件、重复条件、额外条件或在查询中覆盖路径操作号同样拒绝；不能将失败当作未提交而重开新操作。此 GET 不接受正文；其余 API 仍不接受查询参数。
 
@@ -80,6 +91,9 @@
 | 主人访问其他主人目标 | 404 `target_not_accessible` |
 | 旧对象/政策版本 | 409 `version_conflict` |
 | 同操作号换载荷 | 409 `idempotency_payload_mismatch` |
+| 主人用户名/邮箱已占用 | 409 `username_unavailable` / `email_unavailable`，不返回他人资料 |
+| 无效账号字段 | 400 `invalid_request`，`details.field` 指明本人需修正的字段 |
+| 交接代次冲突 | 409 `generation_conflict` |
 | Agent 修改锁定字段 | 403 `field_locked` |
 | 非自主模式下 Agent 尝试发布 | 403 `confirmation_required`，由有效主人认证发布 |
 | 主人暂停后 Agent 新写入 | 403 `participation_paused` |
