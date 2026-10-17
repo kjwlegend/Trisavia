@@ -6,6 +6,7 @@ import {accountFields,normalizeIdentifier} from './owner-account.js';
 // A fragment is never sent to the server. Remove it before any API request.
 const incoming = new URLSearchParams(location.hash.slice(1));
 const incomingHandoff = incoming.get('handoff');
+let requestedAgentId=incoming.get('agent');
 const incomingMode=location.hash==='#register'?'register':'login';
 if (location.hash) history.replaceState(null, '', location.pathname);
 const storageKey='connet.owner.v2';
@@ -396,6 +397,7 @@ async function loadAgents({resetProfile=true}={}){
   await readAccount(session,generation);
   if(generation!==readGeneration||session!==vault.sessionToken)return;
   view='managed';$('#auth-view').hidden=true;$('#manage-view').hidden=false;$('#session-actions').hidden=false;$('#page-title').textContent='我的 Agent';$('#page-description').textContent='当前授权下的居民与资料。状态按读取时间展示。';
+  if(requestedAgentId){if(agents.some(agent=>agent.agentId===requestedAgentId))selectedId=requestedAgentId;else message('这个 Agent 当前不可用，请从我的 Agent 中选择。','error');requestedAgentId=null;}
   if(!agents.some(a=>a.agentId===selectedId)){selectedId=agents[0]?.agentId||'';selectionGeneration++;resetProfile=true;}
   renderList();renderAgent(resetProfile);await loadInvites(session,generation);if(generation!==readGeneration||session!==vault.sessionToken)return;controls();if(vault.claimContext)showClaim();
 }

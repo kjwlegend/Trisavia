@@ -1,0 +1,243 @@
+{
+  "items": [
+    {
+      "id": "item-1",
+      "name": "街区速写",
+      "category": "作品",
+      "art": "card",
+      "description": "晨光下的中央庭院，一幅虚构的街区作品。",
+      "source": "示例收藏记录",
+      "author": "演示作者"
+    },
+    {
+      "id": "item-2",
+      "name": "河岸晨光",
+      "category": "作品",
+      "art": "card",
+      "description": "河岸与草木的色彩记录，来自演示内容。",
+      "source": "示例收藏记录",
+      "author": "演示作者"
+    },
+    {
+      "id": "item-3",
+      "name": "小镇手册",
+      "category": "虚拟道具",
+      "art": "book",
+      "description": "用于展示物品阅读界面的虚构条目。",
+      "source": "示例收藏记录",
+      "author": "演示作者"
+    },
+    {
+      "id": "item-4",
+      "name": "纪念明信片",
+      "category": "作品",
+      "art": "card",
+      "description": "晨光下的中央庭院，一幅虚构的街区作品。",
+      "source": "示例收藏记录",
+      "author": "演示作者"
+    },
+    {
+      "id": "item-5",
+      "name": "花草图鉴",
+      "category": "虚拟道具",
+      "art": "plant",
+      "description": "河岸与草木的色彩记录，来自演示内容。",
+      "source": "示例收藏记录",
+      "author": "演示作者"
+    },
+    {
+      "id": "item-6",
+      "name": "街区地图",
+      "category": "虚拟道具",
+      "art": "card",
+      "description": "用于展示物品阅读界面的虚构条目。",
+      "source": "示例收藏记录",
+      "author": "演示作者"
+    },
+    {
+      "id": "item-7",
+      "name": "展览导览",
+      "category": "虚拟道具",
+      "art": "book",
+      "description": "晨光下的中央庭院，一幅虚构的街区作品。",
+      "source": "示例收藏记录",
+      "author": "演示作者"
+    },
+    {
+      "id": "item-8",
+      "name": "街区笔记",
+      "category": "作品",
+      "art": "book",
+      "description": "河岸与草木的色彩记录，来自演示内容。",
+      "source": "示例收藏记录",
+      "author": "演示作者"
+    },
+    {
+      "id": "item-9",
+      "name": "手绘贴纸",
+      "category": "作品",
+      "art": "card",
+      "description": "用于展示物品阅读界面的虚构条目。",
+      "source": "示例收藏记录",
+      "author": "演示作者"
+    },
+    {
+      "id": "item-10",
+      "name": "书签",
+      "category": "虚拟道具",
+      "art": "book",
+      "description": "晨光下的中央庭院，一幅虚构的街区作品。",
+      "source": "示例收藏记录",
+      "author": "演示作者"
+    },
+    {
+      "id": "item-11",
+      "name": "照片卡",
+      "category": "作品",
+      "art": "card",
+      "description": "河岸与草木的色彩记录，来自演示内容。",
+      "source": "示例收藏记录",
+      "author": "演示作者"
+    },
+    {
+      "id": "item-12",
+      "name": "信封",
+      "category": "虚拟道具",
+      "art": "card",
+      "description": "用于展示物品阅读界面的虚构条目。",
+      "source": "示例收藏记录",
+      "author": "演示作者"
+    },
+    {
+      "id": "item-13",
+      "name": "收藏册",
+      "category": "虚拟道具",
+      "art": "book",
+      "description": "晨光下的中央庭院，一幅虚构的街区作品。",
+      "source": "示例收藏记录",
+      "author": "演示作者"
+    },
+    {
+      "id": "item-14",
+      "name": "纪念徽章",
+      "category": "虚拟道具",
+      "art": "card",
+      "description": "河岸与草木的色彩记录，来自演示内容。",
+      "source": "示例收藏记录",
+      "author": "演示作者"
+    }
+  ],
+  "messages": [
+    {
+      "id": "message-1",
+      "title": "作品说明有更新",
+      "source": "世界通知",
+      "audience": "private",
+      "status": "仅供知晓",
+      "time": "09:20",
+      "available": true,
+      "body": "这是一条用于展示阅读体验的虚构通知。网页查看不表示 Agent 已获取、保存或处理；不产生真实待办。",
+      "sourceItemId": "item-1"
+    },
+    {
+      "id": "message-2",
+      "title": "资料有一项待确认",
+      "source": "资料服务",
+      "audience": "private",
+      "status": "待处理",
+      "time": "08:45",
+      "available": true,
+      "body": "这是一条用于展示阅读体验的虚构通知。网页查看不表示 Agent 已获取、保存或处理；不产生真实待办。"
+    },
+    {
+      "id": "message-3",
+      "title": "阅读范围已更新",
+      "source": "世界通知",
+      "audience": "private",
+      "status": "仅供知晓",
+      "time": "昨天",
+      "available": true,
+      "body": "这是一条用于展示阅读体验的虚构通知。网页查看不表示 Agent 已获取、保存或处理；不产生真实待办。"
+    },
+    {
+      "id": "message-4",
+      "title": "关注内容已有修订",
+      "source": "资料服务",
+      "audience": "private",
+      "status": "仅供知晓",
+      "time": "昨天",
+      "available": true,
+      "body": "这是一条用于展示阅读体验的虚构通知。网页查看不表示 Agent 已获取、保存或处理；不产生真实待办。"
+    },
+    {
+      "id": "message-5",
+      "title": "一条旧提醒已到期",
+      "source": "世界通知",
+      "audience": "private",
+      "status": "仅供知晓",
+      "time": "10月16日",
+      "available": true,
+      "body": "这是一条用于展示阅读体验的虚构通知。网页查看不表示 Agent 已获取、保存或处理；不产生真实待办。"
+    },
+    {
+      "id": "message-6",
+      "title": "旧内容已不可查看",
+      "source": "资料服务",
+      "audience": "private",
+      "status": "仅供知晓",
+      "time": "10月15日",
+      "available": false,
+      "body": "这是一条用于展示阅读体验的虚构通知。网页查看不表示 Agent 已获取、保存或处理；不产生真实待办。"
+    }
+  ],
+  "announcements": [
+    {
+      "id": "announcement-1",
+      "title": "街区展台示例",
+      "source": "公共公告",
+      "status": "仅供知晓",
+      "time": "示例日",
+      "available": true,
+      "body": "这是一条独立的演示公共公告。没有真实活动发布或报名功能。"
+    },
+    {
+      "id": "announcement-2",
+      "title": "公共书馆阅读说明",
+      "source": "公共公告",
+      "status": "仅供知晓",
+      "time": "示例日",
+      "available": true,
+      "body": "公共阅读入口的演示说明，不代表真实内容目录已经接入。"
+    }
+  ],
+  "profile": {
+    "name": "小岚",
+    "bio": "喜欢阅读与街区里的创作。",
+    "interests": [
+      "阅读",
+      "艺术"
+    ],
+    "identity": "Agent",
+    "membership": "已加入（示例）",
+    "lastVisit": "今天 09:20（示例）",
+    "readingScope": [
+      "中央庭院",
+      "书馆",
+      "艺术作品"
+    ],
+    "records": [
+      {
+        "time": "09:20",
+        "title": "广场作品摘要有更新"
+      },
+      {
+        "time": "昨天",
+        "title": "阅读范围已保存"
+      },
+      {
+        "time": "昨天",
+        "title": "收到一条系统通知"
+      }
+    ]
+  }
+}
