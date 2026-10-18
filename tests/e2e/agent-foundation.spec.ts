@@ -1,9 +1,9 @@
 import { rm } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import type { Page } from '@playwright/test';
-import { test, expect, idle, loginIdentifier, mutation, trackBackup } from './helpers/owner-account-ui.ts';
+import { test, expect, idle, loginIdentifier, logout, mutation, openHandoff, prepareRegistration, trackBackup } from './helpers/owner-account-ui.ts';
 import type { PrivacyObservation } from './helpers/owner-account-ui.ts';
-import { accountFixture, agentFixture, credential, fixtureOk, fixtureRequest, operationId, privateDirectory, privateDownload, privateJson } from './helpers/private-fixtures.ts';
+import { accountFixture, agentFixture, credential, fixtureOk, fixtureRequest, handoffFixture, operationId, privateDirectory, privateDownload, privateJson } from './helpers/private-fixtures.ts';
 import type { Json } from './helpers/private-fixtures.ts';
 
 test.use({ trace: 'off', screenshot: 'off', video: 'off' });
@@ -23,6 +23,47 @@ async function openProgressImport(page: Page) {
   await page.getByRole('button', { name: '继续已保存进度', exact: true }).click();
   await expect(page.locator('#credentials-import')).toBeVisible();
 }
+
+test('FND-U01 viewing forgotten-password help before a same-document handoff still completes the new owner setup in management', async ({ page, baseURL, privacy }) => {
+  const directory = await privateDirectory('foundation-forgot-then-handoff-');
+  try {
+    const fields = (prefix: string) => { const suffix = randomUUID().replaceAll('-', '').slice(0, 10); return {
+      username: `${prefix}_${suffix}`, email: `${prefix.toLowerCase()}-${suffix}@example.test`, password: `Synthetic-${randomUUID()}`,
+    }; };
+    const prior = fields('Prior'), firstBackup = await prepareRegistration(page, directory, privacy, prior);
+    await mutation(page, '/owner/accounts', page.locator('#register-submit'));
+    await expect(page.getByRole('heading', { name: '我的 Agent', exact: true })).toBeVisible();
+    await logout(page);
+    await page.getByRole('button', { name: '忘记密码？', exact: true }).click();
+    await expect(page.getByLabel('选择登录备份', { exact: true })).toBeVisible();
+    expect(await page.getByLabel('选择登录备份', { exact: true }).evaluate((input: HTMLInputElement) => input.files?.length)).toBe(0);
+    const agent = await agentFixture(baseURL!, directory, '切换任务后的新居民'), handoff = await handoffFixture(baseURL!, directory, agent), next = fields('New');
+    privacy.password(next.password); privacy.track(next.email, agent.runtimeToken, agent.continuationToken);
+    const recoveryCalls: string[] = [];
+    page.on('request', request => { const path = new URL(request.url()).pathname;
+      if (path === '/v1/owner/recovery' || path === '/v1/owner/recoveries') recoveryCalls.push(`${request.method()} ${path}`);
+    });
+    await openHandoff(page, privacy, handoff.handoffToken, true);
+    await mutation(page, '/owner-setups', page.getByRole('button', { name: '开始设置', exact: true }));
+    await page.locator('#setup-username').fill(next.username); await page.locator('#setup-email').fill(next.email);
+    await page.locator('#setup-password').fill(next.password); await page.locator('#setup-next').click();
+    const backup = await privateDownload(page, page.locator('#credentials-download'), directory); trackBackup(privacy, backup);
+    expect(backup.pendingOperation.action).toBe('completeSetup');
+    await expect(page.locator('#setup-complete')).toBeDisabled(); await page.locator('#setup-saved').check();
+    const completed = await mutation(page, '/owner/setup/complete', page.getByRole('button', { name: '创建账号并关联 Agent', exact: true }));
+    expect(completed.ownerId).toBe(backup.ownerId);
+    const actual = await fixtureOk(baseURL!, '/owner/account', undefined, backup.sessionToken);
+    expect(actual.username).toBe(next.username);
+    const self = await fixtureOk(baseURL!, '/agent/self', undefined, agent.runtimeToken);
+    expect(self.ownerId).toBe(backup.ownerId); expect(self.management.managementStatus).toBe('managed');
+    await expect(page.getByRole('heading', { name: '我的 Agent', exact: true })).toBeVisible();
+    await expect(page.locator('#selected-id')).toContainText(agent.agentId);
+    await expect(page.getByLabel('居民名字', { exact: true })).toHaveValue(agent.name);
+    await expect(page.locator('#forgot-view')).toBeHidden(); await expect(page.locator('#recovery-form')).toBeHidden();
+    expect(recoveryCalls, 'A completed new setup must not enter owner recovery due to an earlier help-page visit').toEqual([]);
+    expect((await fixtureOk(baseURL!, '/owner/agents', undefined, firstBackup.sessionToken)).agents).toHaveLength(0);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
 async function assistanceFixture(origin: string, directory: string, agent: Awaited<ReturnType<typeof agentFixture>>) {
   const assistanceToken = credential(), id = operationId();
   await privateJson(directory, 'assistance-command', { operationId: id, assistanceToken, scope: `agent:${agent.agentId}`, action: 'createRecoveryRequest' });
