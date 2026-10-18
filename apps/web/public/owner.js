@@ -542,8 +542,17 @@ async function importCredentials(event){
    await recoveryOwner(saved.recoveryToken,vault.ownerId);vault.sourceRecoveryToken=saved.recoveryToken;save();recoverySourceProof=saved.recoveryToken;message('已读取原备份，请继续同一次重设。');return;
   }
   if(assistance.token&&!vault.pendingOperation){
-   if(saved.pendingOperation){if(saved.assistanceContext?.assistanceToken!==assistance.token)throw new BackupError('owner_mismatch');}
-   else{if(!saved.recoveryToken)throw new BackupError('unavailable_backup');await useRecoveryBackup(saved);return;}
+   if(saved.ownerId!==assistance.context?.ownerId)throw new BackupError('owner_mismatch');
+   const previous=saved.pendingOperation,context=saved.assistanceContext;
+   // Downloads retain their original auth metadata after success. Verify the
+   // independent recovery proof; never replay that historical registration/setup.
+   if(!previous||(!context&&['registerOwner','completeSetup','recover'].includes(previous.action))){if(!saved.recoveryToken)throw new BackupError('unavailable_backup');await useRecoveryBackup(saved);return;}
+   if(context?.assistanceToken!==assistance.token){
+    if(previous.action!=='recover'||!context||!saved.sessionToken)throw new BackupError('owner_mismatch');
+    const result=await api(`/operations/${encodeURIComponent(previous.operationId)}?scope=${encodeURIComponent(previous.scope)}&action=recover`,{token:saved.sessionToken});
+    if(result.ownerId!==saved.ownerId||result.requestId!==context.requestId)throw new BackupError('owner_mismatch');
+    await useRecoveryBackup(saved);return;
+   }
   }
   if(['unpublishProfile','rejectRecoveryRequest'].includes(saved.pendingOperation?.action)&&vault.sessionToken&&!vault.pendingOperation){
    const active=vault;if(active.ownerId!==saved.ownerId)throw new BackupError('owner_mismatch');
