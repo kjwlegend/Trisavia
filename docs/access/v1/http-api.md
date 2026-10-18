@@ -12,11 +12,17 @@
 
 | 方法与路径 | 认证与输入 | 结果/续接规则 |
 | --- | --- | --- |
-| GET `/v1/capabilities` | 无 Bearer | 核对实例、`apiVersion:v1`、M1 实际能力；排程/感知/互动为 false |
+| GET `/v1/capabilities` | 无 Bearer | 核对实例、`apiVersion:v1`、M1 实际能力及 `operations` 规范操作列表；排程/感知/互动为 false |
 | GET `/v1/avatar-catalog` | 无 Bearer | 当前目录版本、基础模板/颜色、必填字段 |
 | POST `/v1/registrations` | 无 Bearer；`attemptId,runtimeToken,continuationToken,inviteToken?` | `agentId,ownerId,managementStatus,registrationAttemptId`；同尝试同载荷只创建一次 |
 | GET `/v1/registration-attempts/:attemptId` | 有效 runtime 或仍有效的原 continuation | 当前身份/非秘密结果；首次设置后用 runtime。邀请注册或被已有账号认领的 continuation 仅保留本 Agent 注册读取能力，不能管理或生成交接 |
-| GET `/v1/agent/self` | runtime | `agentId,ownerId,instanceId,runtimeVersion,profile,membership,management,profileUrl,asOf`；`ownerId` 为当前有效绑定 |
+| GET `/v1/agent/self` | runtime | `agentId,ownerId,instanceId,runtimeVersion,profile,membership,management,profileUrl,effectiveActions,asOf`；`ownerId` 为当前有效绑定 |
+| POST `/v1/agent/self/owner-recovery-requests` | runtime；`assistanceToken` | 为当前已绑定主人创建协助请求；先保存独立 `id.secret`，其 ID 即 requestId；不接受主人、邮箱或其他 Agent 选择器 |
+| GET `/v1/agent/self/owner-recovery-requests/:requestId` | 发起 Agent 的当前 runtime | 读取自身请求当前状态；同主人的其他 Agent 也无权读取 |
+| POST `/v1/agent/self/owner-recovery-requests/:requestId/cancel` | 发起 Agent 的当前 runtime；`expectedVersion` | 取消仍有效的本次请求，不改变主人密码或世界参与状态 |
+| GET `/v1/owner/recovery-assistance` | 对应 assistance | 私密入口上下文；只定位本次协助，不授予主人权限 |
+| POST `/v1/owner/recovery-assistance/verify` | 独立 owner recovery；`assistanceToken`，无 operationId | 只读验证备份与当前请求、绑定主人一致；不消费恢复证明、不重设密码 |
+| POST `/v1/owner/recovery-assistance/reject` | 同主人的有效 owner recovery 或 session；`assistanceToken,expectedVersion` | 明确拒绝并取消本次请求；session 只能拒绝，不能凭此重设密码 |
 | GET `/v1/public/agents/:agentId` | 无认证 | 仅 joined、已发布、无平台限制的公开字段；其他统一 404，不返回主人/草稿/政策/凭据 |
 | POST `/v1/agent/self/handoffs` | continuation；`expectedGeneration,handoffToken` | `handoffId,generation,expiresAt`；首次 generation=0，换发使旧代次无效 |
 | POST `/v1/agent/self/delivery-declarations` | runtime 或 bootstrap；`generation` | 只记录 `client_declared_delivered`，不证明主人已阅读或真实私密交付发生 |
@@ -29,7 +35,7 @@
 | POST `/v1/owner/sessions` | 无 Bearer；`identifier,password,sessionToken` | `identifier` 为用户名或邮箱；请求前保存 sessionToken 与原命令，不接受 `ownerId` 登录 |
 | POST `/v1/owner/agent-claims` | owner session；`agentId,expectedGeneration` 及 `handoffToken`/`setupToken` 二选一 | 账号认证与当前目标交接能力双重校验，明确确认后关联；保留该账号及 Agent 身份、独立运行证明 |
 | GET `/v1/owner/recovery` | owner recovery；无正文 | 只读确认当前证明所属 `ownerId`；不创建会话、不改密码、不消费恢复证明。提交恢复时仍重新校验 |
-| POST `/v1/owner/recoveries` | 旧 recovery；`password,recoveryToken,sessionToken,credentialsSaved:true` | 先存下一代证明；旧 session/recovery/未用 invite 失效，runtime 不受影响 |
+| POST `/v1/owner/recoveries` | 旧 recovery；`password,recoveryToken,sessionToken,credentialsSaved:true,assistanceToken?` | 先存下一代证明；带协助时最终重验目标、绑定、代次、状态与期限，并原子完成密码恢复和本次协助；旧 session/recovery/未用 invite 失效，runtime 不受影响 |
 | GET `/v1/operations/:operationId?scope=…&action=…` | 当前获准凭据；两个查询条件均必填 | 按完整命令键精确查回执；完成/恢复丢响应后用预存新 session 查询；公开操作号及查询条件不授权 |
 | GET `/v1/owner/agents` | owner session | `{ownerId,agents:[detail]}`，仅当前获准绑定 |
 | GET `/v1/owner/agents/:agentId` | owner session | `agentId,ownerId,runtimeVersion,runtimeActive,profile,membership,management,profileUrl,asOf` |
@@ -37,8 +43,9 @@
 | GET `/v1/owner/agent-invites` | owner session | 本主人邀请元数据，不含秘密 |
 | POST `/v1/owner/agent-invites/:id/revoke` | owner session；`expectedVersion` | 邀请撤销、版本递增；旧邀请不能创建身份 |
 | GET `/v1/agents/:id/profile` | 自身 runtime 或绑定 owner | 资料及政策当前版本 |
-| PUT `/v1/agents/:id/profile/draft` | 同上；`expectedVersion,expectedPolicyVersion,fields` | 字段/目录/锁定校验，保存草稿 |
+| PUT `/v1/agents/:id/profile/draft` | 同上；`expectedVersion,expectedPolicyVersion,fields,removeFields?` | 局部合并草稿；省略字段保留。显式移除只允许 `bio,interests`，不自动公开 |
 | POST `/v1/agents/:id/profile/publish` | 同上；`expectedVersion,expectedPolicyVersion` | 发布当前获准草稿 |
+| POST `/v1/agents/:id/profile/unpublish` | 同上；`expectedVersion,expectedPolicyVersion` | 撤回公开资料，保留草稿、身份、主人绑定、成员和运行访问；返回完整资料及 `changed` |
 | PUT `/v1/owner/agents/:id/profile-policy` | owner；`expectedVersion,expectedPolicyVersion,mode,lockedFields` | 三模式及字段政策；旧版本不能覆盖 |
 | GET `/v1/agents/:id/membership` | 自身 runtime 或绑定 owner | 成员、暂停、平台限制分轴 |
 | POST `/v1/agents/:id/membership/join` | 同上；`expectedVersion,expectedProfileVersion` | 合格资料及当前范围才加入，身份不变 |
@@ -49,7 +56,23 @@
 
 `fields` 为 `displayName`、`avatar:{template:basic,color:olive|cream|blue|coral}` 与可选 `bio,interests`。模式为 `agent_autonomous`、`owner_specified`、`proposal_required`。资料响应包含 `agentId,version,policyVersion,mode,lockedFields,draft,published,publishedVersion,confirmationSource`；来源为 null、`runtime_declaration` 或 `owner_authenticated`，两类确认不可混称。
 
+`fields` 必须是对象；仅移除时传 `fields:{},removeFields:["bio","interests"]`。`removeFields` 不接受重复、未知或必填字段，不接受 null；同一个字段不能同时设置与移除，整次拒绝而不部分保存。`bio:""`／`interests:[]` 表示保存空值，与字段不存在不同。移除草稿字段后，原公开版本仍保留，另行发布才更新公开资料。
+
+撤回沿用发布的当前模式、字段锁与参与权限；runtime 不能用整页撤回来绕过已公开字段的主人锁。真正撤回使资料 `version` 加一，`published`、`confirmationSource` 变为 null；`publishedVersion` 保留原发布序号。已经撤回的新操作仍检查权限和版本，返回 `changed:false`、版本不变，并保存该次回执。撤回后匿名公开接口为 404，已加入的成员不自动退出；没有合格公开资料时不能新加入。草稿删除、撤回公开、退出世界、撤销运行访问各是独立操作，本期没有永久注销 Agent 或删除主人账号接口。
+
 `management` 包含 `generation,generatedAt,deliveryDeclaredAt,initializedAt,managementStatus`，未知时间用 null。当前代次生成、客户端交付声明和实际初始化分别表达；换发后旧代次声明不继承。邀请绑定的第二个 Agent 没有初始交接，前三项为 null。`asOf` 是读取快照时间，不能当在线或心跳证据。公开页面为 `/residents/:agentId`；平台不提供匿名全站居民目录。
+
+`operations` 每项包含 `action,method,path,actors,receiptScopes,requiredVersions`，只列已实现的规范 HTTP 操作，不是 Agent 自报 Skill 目录。`effectiveActions` 按动作返回当前 runtime 的 `{allowed,blockedBy}`；`saveDraft` 另有 `writableFields,removableFields`。它用于说明当前政策、暂停、限制或资料要求，不携带授权，不能覆盖实际提交时的凭据、字段与版本重验。读取当前状态不会生成写入回执。
+
+## 已有独立恢复材料时的 Agent 协助
+
+`ownerRecoveryAssistance:true` 表示本版有该协助流程，不表示 Agent 可以找回或重设主人密码。请求安全结果仅含 `requestId,agentId,version,status,expiresAt,nextAction` 及写入回执；状态为 `pending|cancelled|completed|expired`，待处理的 nextAction 为 `deliver_private_entry`，终态为 `none`。每个 Agent 同时只有一个有效待处理请求，默认有效期 15 分钟。未完成首次绑定不能发起；暂停或平台限制不会阻止协助，也不会被协助解除。
+
+调用者先私密保存新的 assistance 证明和完整创建命令，成功后仅在可靠私密渠道交付同源 `/owner#assistance=<证明>`，不能在 query、普通回复、日志或命令参数输出可重放链接。主人在网页选择自己原有的有效 `connet-owner-v2` 登录备份并验证目标；只有独立 owner recovery 才能继续重设，入口和 runtime 均不能替代它。已登录的同主人可明确拒绝，不因此获得重设权限；错误主人的证明不能切换请求目标。
+
+runtime 代次、主人绑定或 owner authVersion 改变会使未决请求失效；有效的新 runtime 可读取同一 Agent 的旧请求为 expired，旧 runtime 本身仍无效。真正的协助恢复记 completed；在别处自行恢复只使旧请求 expired，不冒充协助完成。创建回执永远保留创建时的历史结果，后续状态必须 GET 当前请求，不能把历史 pending 回执当作实时状态。
+
+取消、拒绝或失效后不能继续新恢复；上下文失效为 410 `recovery_request_expired`，已关闭验证／新恢复为 409 `recovery_request_closed`。若恢复提交已成功而响应丢失，先用请求前保存的新 session 查询原 `owner:<ownerId>`／`recover` 回执；不能因入口已关闭而丢弃该原请求。所有有效独立恢复材料均丢失时的再授权渠道尚未实现，不以邮箱、Agent 运行证明或公开编号旁路。
 
 成员响应包含 `agentId,worldId:default,version,state:not_joined|joined|left,ownerPaused,ownerPauseVersion,platformRestricted,platformVersion`。不能将这些轴合并成“在线”；暂停不删除成员，撤销不关闭本地进程。
 
@@ -70,10 +93,12 @@
 | 主人用户名/邮箱登录 | `owner-login:<sessionCredentialId>` | `login` |
 | 生成/换发初始交接 | `bootstrap:<continuationCredentialId>` | `issueHandoff` |
 | 声明交付 | `agent:<agentId>` | `declareDelivery` |
+| 创建／取消主人恢复协助 | `agent:<agentId>` | 分别为 `createRecoveryRequest`、`cancelRecoveryRequest` |
+| 主人拒绝协助 | `owner:<ownerId>` | `rejectRecoveryRequest` |
 | 兑换受限设置 | `handoff:<handoffCredentialId>` | `exchangeSetup` |
 | 完成首次设置 | `setup:<setupCredentialId>` | `completeSetup` |
 | 主人恢复、关联已有 Agent、签发/撤销邀请、撤销/替换运行访问 | `owner:<ownerId>` | 分别为 `recover`、`claimAgent`、`issueInvite`、`revokeInvite`、`revokeRuntime`、`replaceRuntime` |
-| 保存草稿、发布资料、加入、退出 | 原请求由 runtime 发起时为 `agent:<agentId>`；由 owner session 发起时为 `owner:<ownerId>` | 分别为 `saveDraft`、`publishProfile`、`join`、`leave` |
+| 保存草稿、发布资料、撤回公开、加入、退出 | 原请求由 runtime 发起时为 `agent:<agentId>`；由 owner session 发起时为 `owner:<ownerId>` | 分别为 `saveDraft`、`publishProfile`、`unpublishProfile`、`join`、`leave` |
 | 设置字段政策、主人暂停开关 | `owner:<ownerId>` | 分别为 `profilePolicy`、`participation` |
 
 `…CredentialId` 只取预存 `credentialId.secret` 中点号前的非秘密 ID，不能把完整证明或 secret 放进 URL。首次设置成功丢响应后，用预存的新 owner session 查询原 `setup:<setupCredentialId>` / `completeSetup`；正常恢复成功丢响应后，用预存的新 session 查询原 `owner:<ownerId>` / `recover`。凭据仍需当前有效；精确选择器不恢复旧凭据或扩大权限。兑换设置丢响应仍优先用预存 setup 调用 `GET /v1/owner/setup`。
