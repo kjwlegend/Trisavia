@@ -109,3 +109,52 @@ test('new account recovery retains successor proofs and the original command wit
  assert.equal(parsed.sourceRecoveryToken,proof);assert.equal(parsed.recoveryToken,recovery);assert.equal(parsed.password,undefined);
  assert.equal(parsed.pendingOperation.scope,`owner:${ownerId}`);
 });
+
+const assistanceContext={assistanceToken:'assistance_request_01.'+'a'.repeat(43),requestId:'assistance_request_01',agentId:'agent_target_01',ownerId,version:2};
+
+test('assisted recovery progress retains its exact request and successor proofs while discarding executable input',()=>{
+ const source={format:'connet-owner-v2',origin,ownerId,sessionToken:session,recoveryToken:recovery,sourceRecoveryToken:proof,
+  assistanceContext:{...assistanceContext,path:'https://untrusted.invalid'},
+  pendingOperation:{...pending('recover',`owner:${ownerId}`),path:'https://untrusted.invalid',method:'DELETE',input:{password:'must-not-import',assistanceToken:session}}};
+ const parsed=parseOwnerBackup(JSON.stringify(source),origin);
+ assert.deepEqual(parsed.assistanceContext,assistanceContext);
+ assert.equal(parsed.sourceRecoveryToken,proof);assert.equal(parsed.sessionToken,session);assert.equal(parsed.recoveryToken,recovery);
+ assert.equal(parsed.pendingOperation.operationId,source.pendingOperation.operationId);
+ assert.equal(parsed.pendingOperation.input,undefined);assert.equal(parsed.pendingOperation.path,undefined);assert.equal(parsed.pendingOperation.method,undefined);
+ for(const context of [
+  {...assistanceContext,ownerId:'37125e07-07d5-470b-a701-2b786067ab57'},
+  {...assistanceContext,requestId:'different_request'}, {...assistanceContext,version:0},
+  {...assistanceContext,version:1.5}, {...assistanceContext,agentId:'short'},
+ ])assert.throws(()=>parseOwnerBackup(JSON.stringify({...source,assistanceContext:context}),origin));
+ for(const key of ['sessionToken','recoveryToken','sourceRecoveryToken'])assert.throws(()=>parseOwnerBackup(JSON.stringify({...source,[key]:undefined}),origin));
+ assert.throws(()=>parseOwnerBackup(JSON.stringify({...source,pendingOperation:undefined}),origin));
+ assert.throws(()=>parseOwnerBackup(JSON.stringify({...source,pendingOperation:pending('unpublishProfile',`owner:${ownerId}`,{expectedVersion:2,expectedPolicyVersion:1})}),origin));
+});
+
+test('rejection progress accepts an independent owner proof and pins request, Agent, owner and version',()=>{
+ const command={...pending('rejectRecoveryRequest',`owner:${ownerId}`,{expectedVersion:2}),targetId:assistanceContext.agentId};
+ for(const credential of [{sessionToken:session},{recoveryToken:recovery}]){
+  const source={format:'connet-owner-v2',origin,ownerId,...credential,assistanceContext,pendingOperation:command};
+  const parsed=parseOwnerBackup(JSON.stringify(source),origin);
+  assert.equal(parsed.pendingOperation.operationId,command.operationId);assert.equal(parsed.pendingOperation.targetId,assistanceContext.agentId);
+  assert.deepEqual(parsed.pendingOperation.input,{expectedVersion:2});assert.deepEqual(parsed.assistanceContext,assistanceContext);
+  for(const change of [{targetId:'different_agent'},{scope:'owner:other_owner'},{input:{expectedVersion:3}}]){
+   assert.throws(()=>parseOwnerBackup(JSON.stringify({...source,pendingOperation:{...command,...change}}),origin));
+  }
+  assert.throws(()=>parseOwnerBackup(JSON.stringify({...source,assistanceContext:undefined}),origin));
+ }
+ assert.throws(()=>parseOwnerBackup(JSON.stringify({format:'connet-owner-v2',origin,ownerId,assistanceContext,pendingOperation:command}),origin));
+});
+
+test('withdrawal progress preserves one original command and cannot import a route or relax version checks',()=>{
+ const source={format:'connet-owner-v2',origin,ownerId,sessionToken:session,
+  pendingOperation:{...pending('unpublishProfile',`owner:${ownerId}`,{expectedVersion:3,expectedPolicyVersion:2,password:'must-not-import'}),targetId:'agent_target_01',path:'https://untrusted.invalid',method:'DELETE',kind:'runtime'}};
+ const parsed=parseOwnerBackup(JSON.stringify(source),origin);
+ assert.equal(parsed.pendingOperation.targetId,'agent_target_01');assert.equal(parsed.pendingOperation.operationId,source.pendingOperation.operationId);
+ assert.deepEqual(parsed.pendingOperation.input,{expectedVersion:3,expectedPolicyVersion:2});
+ assert.equal(parsed.pendingOperation.path,undefined);assert.equal(parsed.pendingOperation.method,undefined);assert.equal(parsed.pendingOperation.kind,undefined);
+ for(const change of [{targetId:'short'},{scope:'owner:other_owner'},{input:{expectedVersion:0,expectedPolicyVersion:2}},{input:{expectedVersion:3,expectedPolicyVersion:1.5}}]){
+  assert.throws(()=>parseOwnerBackup(JSON.stringify({...source,pendingOperation:{...source.pendingOperation,...change}}),origin));
+ }
+ assert.throws(()=>parseOwnerBackup(JSON.stringify({...source,sessionToken:undefined,recoveryToken:recovery}),origin));
+});
