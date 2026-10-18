@@ -71,7 +71,7 @@
 | 项目 | 已记录的交付事实 |
 | --- | --- |
 | 固定源码与服务 | 快照 `/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-world-account/user-delivery-7ea0659` 精确对应 7ea0659。旧 PID 12917 正常 SIGTERM；新 PID 23004 仅监听 `127.0.0.1:8789`，Node 24 直接启动；显式 `M1_EMAIL_MODE=experience`，未继承 Resend 私有配置 |
-| 只读就绪核对 | health、capabilities、`/`、`/owner`、owner-panel.js、world-bootstrap.js 共 6 项必要只读 HTTP 核对固定字节一致；`emailMode:experience`，两项 ownerEmail 能力为 true |
+| 只读就绪核对 | 共 6 项必要只读 HTTP：health／capabilities 核对状态与模式，`emailMode:experience`、两项 ownerEmail 能力为 true；`/`、`/owner`、owner-panel.js、world-bootstrap.js 核对固定源码字节一致 |
 | 统筹浏览器定点 | ego space36/p1 已 finish：刷新 `/#account` 渲染世界地图、Dock 与登录面板；关闭重开、点击注册显示 1234、直接 `/owner` 归一至 `/#account` 登录均通过；`startupError:false`、canvas／账户面板各 1。[实际截图](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-world-account/startup-fix-7ea0659.png) 保留本次实看范围 |
 | 用户身份与数据 | 沿用 `/Users/kjw/Workspace/Codes/agents-era/data/m1-account-v2.sqlite` 与配对 identity，实例 `instance_6ee4d865-1e1a-4b40-90eb-2dbe6c46165f` 不变。本次无新迁移、schema 4，全部 14 表记录数与全行指纹不变 |
 | 一致备份 | 上述证据同目录保留 `live-consistent.sqlite`、`stopped-consistent.sqlite` 与配对 identity；SQLite backup API 纳入 WAL，两份 quick_check 为 ok，目录／文件权限 0700／0600 |
