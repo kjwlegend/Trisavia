@@ -518,7 +518,7 @@ async function selectAgent(agentId){if(hasPending()||emailFlow.unfinished||assis
 function renderAgent(resetProfile=true){
   const agent=current();$('#empty-agents').hidden=Boolean(agent);
   for(const selector of ['#agent-summary','#profile-panel','#policy-panel','#membership-panel','#runtime-panel'])$(selector).hidden=!agent;
-  
+
   if(!agent)return;const profile=agent.profile,p=profile.published||profile.draft||{},member=agent.membership;
   $('#selected-name').textContent=p.displayName||'未命名居民';$('#selected-id').textContent=`居民 ID · ${agent.agentId}`;avatar($('#selected-avatar'),p,agent.agentId);
   $('#profile-link').href=`/residents/${encodeURIComponent(agent.agentId)}`;
