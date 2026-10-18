@@ -27,7 +27,7 @@ const assistance=createRecoveryAssistance(()=>controls());
 const globalNotice=$('#global-notice');
 brandHeader('owner');courtyard($('#auth-courtyard'));
 function save(){try{sessionStorage.setItem(storageKey,JSON.stringify(vault));}catch{storageAvailable=false;throw new ApiError('private_storage_unavailable',400);}}
-function message(text,tone=''){notice(globalNotice,text,tone);}
+function message(text,tone=''){delete globalNotice.dataset.backupError;notice(globalNotice,text,tone);}
 function clearCompletedTaskNotice(){if(!vault.pendingOperation&&globalNotice.classList.contains('success'))notice(globalNotice,'');}
 function clearResolvedValidation(){if(vault.pendingOperation)return;if(globalNotice.classList.contains('error'))notice(globalNotice,'');for(const prefix of ['register','setup'])notice($(`#${prefix}-feedback`),'');}
 function fail(error){
@@ -133,6 +133,7 @@ function rejectAssistance(){
 function backupError(error){
  const messages={agent_material:'这是 Agent 的身份或交接文件，不能重设主人密码。请选择首次设置时保存的主人登录备份。',invalid_backup:'这不是可用的新版主人登录备份。请选择本次注册或恢复后保存的文件。',different_origin:'文件来自另一个网站，请回原网站使用。',unavailable_backup:'这份恢复材料尚未生效、已使用或已失效。请选择最新有效的主人登录备份。原 Agent 身份仍然保留。',owner_mismatch:'这份备份不属于当前账号，请选择对应账号的备份。',operation_mismatch:'返回结果与本次操作的目标不一致，原进度仍保留。请保存进度，核对对应的操作文件后再继续。'};
  message(messages[error.code]||errorText(error),'error');
+ globalNotice.dataset.backupError=error.code;
  if(error.originalOrigin){$('#origin-message').textContent=error.originalOrigin==='https://38.207.178.31'?'这份文件来自原 IP 网站，请在原网站继续找回登录。':'这份文件来自推荐域名，请在原网站继续。';$('#original-origin').href=error.originalOrigin+'/owner';$('#origin-help').hidden=false;}
 }
 async function recoveryOwner(token,ownerId){
@@ -202,6 +203,7 @@ function receiveHandoff(proof){
 async function useRecoveryBackup(source){
  const context=assistance.token?await assistance.verify(source):null;
  if(!context)await recoveryOwner(source.recoveryToken,source.ownerId);archiveImportedProgress();
+ if(!vault.pendingOperation&&globalNotice.dataset.backupError&&globalNotice.classList.contains('error'))message('备份已验证，尚未重设密码。');
  // A valid recovery proof is independent of the expired setup/session recorded in an old download.
  vault={format:'connet-owner-v2',origin:location.origin,ownerId:source.ownerId,recoveryToken:source.recoveryToken,...(context?{assistanceContext:context}:{})};
  pendingPayload=null;setupPrepared=false;recoveryPrepared=null;save();
