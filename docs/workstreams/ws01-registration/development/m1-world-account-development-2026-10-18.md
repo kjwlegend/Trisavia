@@ -94,6 +94,8 @@
 | --- | --- |
 | main／8789 | 6 提交、13 文件快进至准确 dde598；快照 `/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-owned-agents/user-delivery-dde598b`。旧 PID 23004 正常 SIGTERM，新 PID 49675 仅 8789；沿用原 origin、显式 experience 环境及真实系统时钟，不含预览库／身份／冻结 clock，不继承 Resend key |
 | 数据／备份 | 原用户库、配对 identity 与实例沿用；schema 4、全部 14 表记录数／全行指纹不变，无新迁移。上述新备份目录保留 live-consistent／stopped-consistent SQLite 与 identity，两库 quick_check 为 ok，目录／文件 0700／0600 |
-| 只读就绪／待确认 | 共 9 项 HTTP：health／capabilities 核对状态与模式；两个入口及五个本功能脚本／样式与固定源码字节一致，并核对其 no-store／nosniff。**8789 最终浏览器确认仍 pending**，不由预览结论代替 |
+| 只读就绪／实际确认 | 共 9 项 HTTP：health／capabilities 核对状态与模式；两个入口及五个本功能脚本／样式与固定源码字节一致，并核对其 no-store／nosniff。总指挥另实际确认 owned-agents.js 200 且与 dde Git 对象逐字节一致；8789 `/#account` 世界／账户面板正常，startupError=false、canvas=1、accountPanel=1，访客说明正确，未操作真实账户或清 storage。[实际截图](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-owned-agents/user-8789-backup-before-owned-agents-20261018T114432Z/commander-8789-world-account-confirmation.png) |
 
 可回退至 backend／schema 4 相同的原 7ea 快照，继续使用当前原库和 identity，不回灌旧备份；更旧 fd2 仍不兼容，不能覆盖近期写入。以上合成 QA 不等于完整 M1、真实认证失效浏览器、真实邮件、手机或其他尺寸验收。交付未操作真实用户账号、其他服务或公网；本作者仅静态整理既有回报，没有重跑测试、浏览器、服务或数据库操作。
+
+技术总监已核对固定 dde QA 18892 的 PID 44155／工作目录后正常 SIGTERM，确认无子进程或监听；fixture、证据、旧快照及 worktree 保留，其余服务未动。运行源码 dde、8789 PID 49675 不变。
