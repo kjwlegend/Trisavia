@@ -377,7 +377,7 @@ async function previewHandoff(){
   try{const result=await api(`/owner-handoffs/${encodeURIComponent(tokenId(proof))}`,{token:proof});if(vault!==source||busyLease!==busyRevision)return;
     setupInfo=result;const saved=findSetupProgress({agentId:result.agentId,generation:result.generation});if(saved){activateSavedSetup(saved);const active=vault;try{await resume();}finally{if(vault===active)setBusy(false,busyLease);}return;}vault.claimContext={agentId:result.agentId,generation:result.generation,handoffToken:proof};save();
     if(vault.sessionToken){try{const loaded=await loadAgents();if(loaded&&vault===source)showClaim();return;}catch(error){if(![401,403].includes(error.status))throw error;}}
-    if(vault!==source)return;renderSetup(false);emailFlow.openRegistration(registrationTarget());message('请核对此次 Agent 并填写注册资料。发送验证码前不会创建账号；已有账号可登录后确认关联。');
+    if(vault!==source)return;renderSetup(false);emailFlow.openRegistration(registrationTarget());message('请核对此次 Agent 并填写注册资料。完成验证并确认提交前不会创建账号；已有账号可登录后确认关联。');
   }catch(error){if(vault!==source||busyLease!==busyRevision)return;if(!isUnknown(error)&&!vault.claimContext?.agentId){delete vault.claimContext;save();}showSignIn();fail(error);}
   finally{if(vault===source)setBusy(false,busyLease);}
 }
