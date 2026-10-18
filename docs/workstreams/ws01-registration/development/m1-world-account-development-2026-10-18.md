@@ -1,12 +1,12 @@
 # 世界内账户与管理 · 开发交接
 
-日期：2026-10-18。共同基线：`22e0d82c862a8dce019dc466d26eb5aa5236d66a`。网页首包为 `05fc5d1f4e84baf9b1d3a8896a84d156aab079b4`，首轮候选为 `841947c29445e6b6f3da97b70c82776f279996e9`。首轮独立静态审查有阻塞，网页修订最终源为 `fe5d58f3fc03e5e16db369e29a32312dde669b0a`（含 37ec470 五项修订、efe995c 体验模式与最后模式屏障）。开发完成，测试待安排；须交原 reviewer／设计负责人复核，运行验证因用户要求未执行。
+日期：2026-10-18。共同基线：`22e0d82c862a8dce019dc466d26eb5aa5236d66a`。网页首包为 `05fc5d1f4e84baf9b1d3a8896a84d156aab079b4`，首轮候选 `841947c29445e6b6f3da97b70c82776f279996e9` 的阻塞经修订后，原独审已静态接受准确最终源码 `6523d5841e6220d99f27d53b0954237f57661463`。设计负责人对 `8acde84` 的接受覆盖最终未变 UI。main 已由共同基线快进至 6523d58，并仅更新本地 8789；服务就绪核对不等于完整用户验收通过。
 
 设计唯一依据为[世界内账户合同](../design/world-account-entry-contract.md)与[桌面效果稿](../../../design/world-account-entry-desktop.html)。效果稿是虚构示例，不是产品截图或运行证据。
 
 ## 范围与模块
 
-本轮把原账户与管理呈现迁入同一世界壳、单一面板宿主，保留 M1 原鉴权、目标与回执边界，不迁移数据；另按新增授权提供体验／真实邮件两种验证码模式。API 作者首包 `cbf3b9cb5af984b0903d63a643069e17b3a85fc4` 仅使 `/owner` 直接返回 `index.html`，integration 对应 `4458418`；模式增量为 `e085ff9874d650c7cf096380695cd36b25428ced` → `90bc9ec9c54b8a16233b138a07eac25b919eea2c`，涉及 email-onboarding、m1-service、邮件契约／配置加载与 `.env.example`，后者收紧模式切换屏障。公开接入说明首包为 `5ab8292069b1dec73b081c67e00f008b6eb09e50`，integration 对应 `6301848`。
+本轮把原账户与管理呈现迁入同一世界壳、单一面板宿主，保留 M1 原鉴权、目标与回执边界；另按新增授权提供体验／真实邮件两种验证码模式。API 作者首包 `cbf3b9cb5af984b0903d63a643069e17b3a85fc4` 仅使 `/owner` 直接返回 `index.html`，integration 对应 `4458418`；模式增量为 `e085ff9874d650c7cf096380695cd36b25428ced` → `90bc9ec9c54b8a16233b138a07eac25b919eea2c`，涉及 email-onboarding、m1-service、邮件契约／配置加载与 `.env.example`，后者收紧模式切换屏障。公开接入说明首包为 `5ab8292069b1dec73b081c67e00f008b6eb09e50`，integration 对应 `6301848`。本地交付沿用原用户库与身份，schema 升级事实见下文。
 
 以下网页模块均位于 `apps/web/public/`，按原作者固定交接与源码文件清单记录：
 
@@ -29,7 +29,7 @@
 
 ## 首轮反馈与修订交接
 
-首轮[独立静态代码审查](../validation/m1-world-account-static-code-review-2026-10-18.md)提出 1 项 P1、3 项 P2；WAC-R01 与设计 WA-D01 为同一入口问题，设计另有 WA-D02。作者已在 `37ec470c75795213605920247aab1017b73a16a2` 实施下列修订，待与模式增量一并由原负责人复核，不是问题已验证关闭或运行 PASS。
+首轮[独立静态代码审查](../validation/m1-world-account-static-code-review-2026-10-18.md)提出 1 项 P1、3 项 P2；WAC-R01 与设计 WA-D01 为同一入口问题，设计另有 WA-D02。首轮修订来源为 `37ec470c75795213605920247aab1017b73a16a2`，体验／模式屏障至 `fe5d58f`，后续 WAC-R05 至 6523d58 收口。原 reviewer 最终对 WAC-R01—R05 无遗留静态阻塞；以下为源码修订与静态接受，未标运行 PASS。
 
 | 首轮问题 | 修订范围 |
 | --- | --- |
@@ -38,6 +38,7 @@
 | WAC-R03：显式目标不可访问却编辑另一 Agent | 目标不可用进入明确错误，不自动回落到旧选择或首项编辑；须由人另行明确选择 |
 | WAC-R04：备份恢复仍自动进入管理 | 与邮箱恢复统一成功提示，再用新密码普通登录；保留精确原回执、操作键及新旧证明，不因改变呈现丢失未知结果续接 |
 | WA-D02：合法 handoff 未直接展开新注册 | 固定目标后直接进入新账号注册／邮箱验码呈现，保留已有账号登录确认路径；不把打开入口当作已绑定 |
+| WAC-R05：首次恢复发码／注册开始回执续接被锁住 | 两种 start 回执接受后自动只读当前 attempt；后续 GET 失败不冒充原回执缺失，不重提原开始命令，保留模式与未知进度屏障 |
 
 ## 验证码模式增量
 
@@ -47,7 +48,7 @@
 
 ## 用户任务覆盖交接
 
-下表仅记录源码迁入范围，不能作为可见流程已完成或运行通过的证据；首轮缺口按上表修订并待复核。
+下表仅记录源码迁入范围；最终静态接受和本地服务就绪均不能替代可见用户流程验收。
 
 | 任务 | 迁入世界内的范围 |
 | --- | --- |
@@ -59,10 +60,17 @@
 | 现有管理 | 资料草稿、发布／撤回、形象、参与各轴、模式／字段锁、运行撤销／替换、邀请与必要记录，不借布局改变权限 |
 | 原世界与 M2 | 世界场所与面板互斥；背包／信箱等仍是明确进入的演示，不伪造资产、消息、在线或互动 |
 
-## 待安排
+## 本地交付与待验证
 
-- 原 reviewer／设计负责人复核：首轮 WAC-R01—R04、WA-D01／WA-D02 及修订差异；首轮其余静态覆盖不等于本轮修后运行通过。
-- 后续获准运行时：上述用户任务、关闭／返回／焦点、长内容滚动、刷新与未知结果、A/B 隔离及退出清理；本轮不扩写或执行测试套件。
-- 两模式挑战、切换后的原操作续接、真实邮件配置／投递／收信及完整闭环均未运行验证；体验码不能充当真实邮箱属权证据，能力布尔或历史 PASS 不替代本轮证据。
+以下按技术总监既有 [delivery-evidence.json](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-world-account/user-8789-backup-before-world-account-20261018T101910Z/delivery-evidence.json) 记录，本次仅静态读取，不重跑操作。
 
-本轮未执行测试、typecheck、build、Node 语法检查、浏览器验收、端口探测、应用启动、服务切换、发信、迁移或部署；未改 8789／8799 用户服务和数据。源码开发、独立静态审查与运行验证分别记录，不沿用旧 PASS。
+| 项目 | 已记录的交付事实 |
+| --- | --- |
+| 固定源码与服务 | 快照 `/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-world-account/user-delivery-6523d58` 精确对应 6523d58。旧 PID 96469 正常 SIGTERM；新 PID 12917 仅监听 `127.0.0.1:8789`，Node 24 直接启动、无需构建；显式 `M1_EMAIL_MODE=experience`，未继承 Resend 私有配置 |
+| 只读就绪核对 | `/`、`/owner` 与固定 index 字节一致；模块／CSS、health、capabilities 共 17 个只读响应核对成功。`emailMode:experience`，两项 ownerEmail 能力为 true；仅证明 service readiness |
+| 用户身份与迁移 | 沿用 `/Users/kjw/Workspace/Codes/agents-era/data/m1-account-v2.sqlite` 与配对 identity，实例 `instance_6ee4d865-1e1a-4b40-90eb-2dbe6c46165f` 不变。事务应用 migration 3／4，schema 2→4；原 10 个数据表的记录数与全行指纹不变，新 3 表为空，库 `quick_check:ok` |
+| 一致备份 | 上述证据同目录保留 `live-consistent.sqlite`、`stopped-consistent.sqlite` 与配对 identity；SQLite backup API 纳入 WAL，两份 quick_check 为 ok，目录／文件权限 0700／0600 |
+
+旧 fd2 快照保留，但旧程序不能直接打开 schema 3／4；不能沿用「指回 fd2」回退，也不能用旧备份覆盖后续写入。需保全当前数据后另行制定前向修复／回退方案。
+
+上述用户任务、焦点／滚动、未知结果、A/B 隔离、退出清理、两模式挑战及切换续接仍待运行验收；真实邮件配置／投递／收信未验证，体验码不证明真实邮箱属权。未运行自动化测试、typecheck、build、语法检查、浏览器或注册验收，未发真实邮件；其他端口与公网未操作。本次文档收口没有新增应用或数据库操作，历史 PASS 不替代本轮证据。
