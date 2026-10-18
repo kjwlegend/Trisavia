@@ -1,6 +1,6 @@
 # 世界内账户与管理 · 开发交接
 
-日期：2026-10-18。共同基线：`22e0d82c862a8dce019dc466d26eb5aa5236d66a`。网页首包为 `05fc5d1f4e84baf9b1d3a8896a84d156aab079b4`，首轮候选 `841947c29445e6b6f3da97b70c82776f279996e9` 的阻塞经修订后，原独审已静态接受准确最终源码 `6523d5841e6220d99f27d53b0954237f57661463`。设计负责人对 `8acde84` 的接受覆盖最终未变 UI。main 已由共同基线快进至 6523d58，并仅更新本地 8789；服务就绪核对不等于完整用户验收通过。
+日期：2026-10-18。共同基线：`22e0d82c862a8dce019dc466d26eb5aa5236d66a`。网页首包为 `05fc5d1f4e84baf9b1d3a8896a84d156aab079b4`，首轮候选 `841947c29445e6b6f3da97b70c82776f279996e9` 的阻塞已修订。现 main／8789 产品源码为 `7ea0659b7398449e05acd7af7742f91a0e154bd1`；原独审已静态接受 WAC-R01—R05 及本次启动定点修订。设计负责人对 `8acde84` 的未变 UI 接受范围保留。真实浏览器仅完成下述启动／面板切换定点，不等于完整用户验收通过。
 
 设计唯一依据为[世界内账户合同](../design/world-account-entry-contract.md)与[桌面效果稿](../../../design/world-account-entry-desktop.html)。效果稿是虚构示例，不是产品截图或运行证据。
 
@@ -48,7 +48,7 @@
 
 ## 用户任务覆盖交接
 
-下表仅记录源码迁入范围；最终静态接受和本地服务就绪均不能替代可见用户流程验收。
+下表仅记录源码迁入范围；静态接受、服务就绪和启动定点均不能替代完整用户流程验收。
 
 | 任务 | 迁入世界内的范围 |
 | --- | --- |
@@ -62,15 +62,20 @@
 
 ## 本地交付与待验证
 
-以下按技术总监既有 [delivery-evidence.json](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-world-account/user-8789-backup-before-world-account-20261018T101910Z/delivery-evidence.json) 记录，本次仅静态读取，不重跑操作。
+首次 `6523d5841e6220d99f27d53b0954237f57661463` 交付的 [历史证据](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-world-account/user-8789-backup-before-world-account-20261018T101910Z/delivery-evidence.json) 保留：事务应用 migration 3／4，schema 2→4，原 10 个数据表记录数与全行指纹不变、新 3 表为空；当时 17 项 HTTP source readiness 未覆盖实际 DOM 启动。
+
+用户报 fatal 后，统筹 ego space36 复现 `owner-panel.js:15:27` 的 `TypeError: Cannot set properties of null (setting 'open')`：控件先搬入尚未复挂的 sections，再从 root 查询得到 null，后续 agent-select 同类。原作者修订 `e68ead79127f1bf8ef167c59aa1c79477e1f2526` 在 move 前保存两个真实节点引用、搬后使用引用；仅三行，不吞异常或删除管理功能。原独审已静态接受准确产品 7ea0659。
+
+以下按本次 [delivery-evidence.json](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-world-account/user-8789-backup-before-panel-startup-fix-20261018T103855Z/delivery-evidence.json) 及统筹浏览器回报记录，本作者仅静态读取，不重跑操作。
 
 | 项目 | 已记录的交付事实 |
 | --- | --- |
-| 固定源码与服务 | 快照 `/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-world-account/user-delivery-6523d58` 精确对应 6523d58。旧 PID 96469 正常 SIGTERM；新 PID 12917 仅监听 `127.0.0.1:8789`，Node 24 直接启动、无需构建；显式 `M1_EMAIL_MODE=experience`，未继承 Resend 私有配置 |
-| 只读就绪核对 | `/`、`/owner` 与固定 index 字节一致；模块／CSS、health、capabilities 共 17 个只读响应核对成功。`emailMode:experience`，两项 ownerEmail 能力为 true；仅证明 service readiness |
-| 用户身份与迁移 | 沿用 `/Users/kjw/Workspace/Codes/agents-era/data/m1-account-v2.sqlite` 与配对 identity，实例 `instance_6ee4d865-1e1a-4b40-90eb-2dbe6c46165f` 不变。事务应用 migration 3／4，schema 2→4；原 10 个数据表的记录数与全行指纹不变，新 3 表为空，库 `quick_check:ok` |
+| 固定源码与服务 | 快照 `/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-world-account/user-delivery-7ea0659` 精确对应 7ea0659。旧 PID 12917 正常 SIGTERM；新 PID 23004 仅监听 `127.0.0.1:8789`，Node 24 直接启动；显式 `M1_EMAIL_MODE=experience`，未继承 Resend 私有配置 |
+| 只读就绪核对 | health、capabilities、`/`、`/owner`、owner-panel.js、world-bootstrap.js 共 6 项必要只读 HTTP 核对固定字节一致；`emailMode:experience`，两项 ownerEmail 能力为 true |
+| 统筹浏览器定点 | ego space36/p1 已 finish：刷新 `/#account` 渲染世界地图、Dock 与登录面板；关闭重开、点击注册显示 1234、直接 `/owner` 归一至 `/#account` 登录均通过；`startupError:false`、canvas／账户面板各 1。[实际截图](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-world-account/startup-fix-7ea0659.png) 保留本次实看范围 |
+| 用户身份与数据 | 沿用 `/Users/kjw/Workspace/Codes/agents-era/data/m1-account-v2.sqlite` 与配对 identity，实例 `instance_6ee4d865-1e1a-4b40-90eb-2dbe6c46165f` 不变。本次无新迁移、schema 4，全部 14 表记录数与全行指纹不变 |
 | 一致备份 | 上述证据同目录保留 `live-consistent.sqlite`、`stopped-consistent.sqlite` 与配对 identity；SQLite backup API 纳入 WAL，两份 quick_check 为 ok，目录／文件权限 0700／0600 |
 
 旧 fd2 快照保留，但旧程序不能直接打开 schema 3／4；不能沿用「指回 fd2」回退，也不能用旧备份覆盖后续写入。需保全当前数据后另行制定前向修复／回退方案。
 
-上述用户任务、焦点／滚动、未知结果、A/B 隔离、退出清理、两模式挑战及切换续接仍待运行验收；真实邮件配置／投递／收信未验证，体验码不证明真实邮箱属权。未运行自动化测试、typecheck、build、语法检查、浏览器或注册验收，未发真实邮件；其他端口与公网未操作。本次文档收口没有新增应用或数据库操作，历史 PASS 不替代本轮证据。
+除上述启动／面板切换外，注册、登录、私密续接、A/B 隔离、退出清理、两模式挑战及完整业务仍待运行验收。统筹未填写／提交账号、登录或发码，未清存储、未发真实邮件；真实投递／收信未验证，体验码不证明真实邮箱属权。未运行自动化测试、typecheck、build 或语法检查，其他端口与公网未操作。本次文档收口没有新增浏览器、应用或数据库操作，历史 PASS 不替代本轮证据。
