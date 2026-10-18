@@ -1,0 +1,10 @@
+.world-owned-labels{position:absolute;inset:0;z-index:1;pointer-events:none}
+.world-owned-label{position:absolute;display:flex;align-items:center;gap:5px;max-width:176px;min-width:0;min-height:22px;height:22px;padding:1px 6px;border:1px solid #789387;border-radius:6px;background:#FAF8ED;color:#244C56;font-size:12px;font-weight:400;line-height:18px;white-space:nowrap;pointer-events:auto;box-shadow:0 1px 3px #244c5612}
+.world-owned-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.world-owned-badge{flex-shrink:0;font-size:12px;line-height:18px}
+.world-owned-label.is-current{border-color:#397E80;box-shadow:0 0 0 1px #397e8040}
+.world-owned-label.is-short{max-width:none}.world-owned-label.is-short .world-owned-name{display:none}
+.world-owned-label.is-marker{width:8px;min-width:8px;height:8px;min-height:8px;max-width:8px;padding:0;border:0;border-radius:1px;background:#397E80;transform:rotate(45deg)}
+.world-owned-label:hover{background:#eef5e9}.world-owned-label:focus-visible{outline:2px solid #397E80;outline-offset:2px}
+.hud-root .hud-locate-agent{position:absolute;left:216px;bottom:24px;min-width:48px;height:48px;padding:6px;pointer-events:auto;background:#FAF8ED;border-color:#789387;border-radius:10px}
+.hud-root .hud-locate-agent:disabled{pointer-events:none}

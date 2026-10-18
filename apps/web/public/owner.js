@@ -15,7 +15,7 @@ let sessionPhase='anonymous';const subscribers=new Set();let presentation=null,s
 function unfinishedTask(){return Boolean(vault.pendingOperation||vault.stage==='recovered'||emailFlow?.unfinished||assistance.token||vault.claimContext||vault.setupToken||recoveryPrepared||(recoveryIntent&&!$('#recovery-form').hidden)||runtimePrepared||invitePrepared||backupPrepared||presentation?.confirming);}
 function authTaskVisible(){return !$('#auth-view').hidden&&(!$('#forgot-view').hidden||!$('#setup-view').hidden||!$('#claim-view').hidden||!$('#backup-recovered-view').hidden||(emailFlow?.active&&!$('#email-view').hidden));}
 function accountIntent(){return hasPending()||unfinishedTask()||authTaskVisible()?'resume':'account';}
-function summary(){const ready=authenticatedOwner();return{authenticated:ready,phase:busy&&ready?'refreshing':ready?(sessionPhase==='error'?'error':'ready'):sessionPhase,username:ready?account.username:'',agents:ready?agents.map(agent=>{const profile=agent.profile.published||agent.profile.draft||{};return{agentId:agent.agentId,name:profile.displayName||'未命名 Agent',bio:profile.bio||'',interests:profile.interests||[],avatar:profile.avatar||{},membership:agent.membership.state,ownerPaused:agent.membership.ownerPaused,platformRestricted:agent.membership.platformRestricted,asOf:agent.asOf};}):[],selectedAgentId:ready?selectedId:'',accountIntent:accountIntent(),continuation:unfinishedTask()||authTaskVisible()||entryStore?.pending?'继续上次操作':''};}
+function summary(){const ready=authenticatedOwner();return{authenticated:ready,phase:busy&&ready?'refreshing':ready?(sessionPhase==='error'?'error':'ready'):sessionPhase,username:ready?account.username:'',agents:ready?agents.map(agent=>{const profile=agent.profile.published||agent.profile.draft||{};return{agentId:agent.agentId,name:profile.displayName||'未命名 Agent',bio:profile.bio||'',interests:profile.interests||[],avatar:profile.avatar||{},profileSource:agent.profile.published?'published':'draft',membership:agent.membership.state,ownerPaused:agent.membership.ownerPaused,platformRestricted:agent.membership.platformRestricted,asOf:agent.asOf};}):[],selectedAgentId:ready?selectedId:'',accountIntent:accountIntent(),continuation:unfinishedTask()||authTaskVisible()||entryStore?.pending?'继续上次操作':''};}
 function safeTarget(){const context=emailFlow?.target||assistance.snapshot()||vault.claimContext;if(!context?.agentId)return null;const owned=agents.find(agent=>agent.agentId===context.agentId);return{agentId:context.agentId,name:context.agentId===setupInfo?.agentId?vault.setupAgentName||'':owned?.profile.published?.displayName||owned?.profile.draft?.displayName||'',avatar:context.agentId===setupInfo?.agentId?setupAvatar:owned?.profile.published?.avatar||owned?.profile.draft?.avatar,recovery:Boolean(context.recovery||assistance.token)};}
 function emitState(){presentation?.account(account);presentation?.target(safeTarget());const state=summary();presentation?.state(state);for(const listener of subscribers)listener(structuredClone(state));onState(state);presentation?.sync();onView();}
 const storageKey='connet.owner.v2';
@@ -31,7 +31,11 @@ let account=null,accountSession='',existingClaimIntent=false,assistanceSession=n
 const assistance=createRecoveryAssistance(()=>controls(),root);
 const globalNotice=$('#global-notice');
 
-function save(source=vault){try{sessionStorage.setItem(storageKey,JSON.stringify(source));}catch{storageAvailable=false;throw new ApiError('private_storage_unavailable',400);}}
+function save(source=vault){try{sessionStorage.setItem(storageKey,JSON.stringify(source));}catch{storageAvailable=false;throw new ApiError('private_storage_unavailable',400);}finally{if(source===vault&&accountSession&&(accountSession!==vault.sessionToken||account?.ownerId!==vault.ownerId))emitState();}}
+function expireAuthenticatedSession(source,session,generation){
+  if(vault!==source||vault.sessionToken!==session||generation!==readGeneration)return;
+  clearAgentSelection({ownerId:source.ownerId});account=null;accountSession='';assistanceSession=null;agents=[];selectedId='';sessionPhase='expired';emitState();
+}
 function message(text,tone=''){delete globalNotice.dataset.backupError;notice(globalNotice,text,tone);}
 function clearCompletedTaskNotice(){if(!vault.pendingOperation&&globalNotice.classList.contains('success'))notice(globalNotice,'');}
 function clearResolvedValidation(){if(vault.pendingOperation)return;if(globalNotice.classList.contains('error'))notice(globalNotice,'');for(const prefix of ['setup'])notice($(`#${prefix}-feedback`),'');}
@@ -333,9 +337,10 @@ async function committed(result,pending){
 async function executePending(pending=vault.pendingOperation){
  if(!pending||!pendingPayload)return;const busyLease=setBusy(true);const payload=pendingPayload;
  const path=pending.action==='unpublishProfile'?`/agents/${encodeURIComponent(pending.targetId)}/profile/unpublish`:{login:'/owner/sessions',completeSetup:'/owner/setup/complete',recover:'/owner/recoveries',registerOwner:'/owner/accounts',claimAgent:'/owner/agent-claims',rejectRecoveryRequest:'/owner/recovery-assistance/reject',enableRecoveryBackup:'/owner/recovery-backups'}[pending.action];
- const hadUnknown=Boolean(pending.uncertain);
+ const hadUnknown=Boolean(pending.uncertain),authSource=vault,authSession=vault.sessionToken,authGeneration=readGeneration;
  try{const result=await api(path||pending.path,{method:path?'POST':pending.method,body:payload.body,token:payload.token});await committed(result,pending);}
  catch(error){
+  if(error.status===401&&payload.token===authSession)expireAuthenticatedSession(authSource,authSession,authGeneration);
   if(error.recoveryReceiptConfirmed){message('密码重设结果已读到，但暂时无法保存完成状态。原进度和下一代证明仍保留，请继续确认原操作，不要重新重设。','pending');return;}
   if(pending.action==='enableRecoveryBackup'&&error.code==='inactive_backup'){pending.uncertain=true;save();backupError(error);return;}
   if(pending.action==='enableRecoveryBackup'&&error.backupReceiptConfirmed){pending.uncertain=true;save();message('已读到原启用结果，但暂时无法核对这份文件目前是否有效。原进度和当前恢复材料都已保留，请稍后继续核对。','pending');return;}
@@ -515,13 +520,13 @@ async function loadAgents({resetProfile=true}={}){
     if(selectedId)rememberAgentSelection(result.ownerId,agents,selectedId);
     renderList();renderAgent(resetProfile);await loadInvites(session,generation);
     if(!currentRead())return false;presentation?.managed();controls();if(unavailableAgentId)presentation?.unavailable(unavailableAgentId);else if(explicitTarget)presentation?.navigate('profile');if(vault.claimContext)showClaim();return true;
-  }catch(error){if(!currentRead())return false;if(error.status===401){clearAgentSelection({ownerId:source.ownerId});account=null;accountSession='';agents=[];selectedId='';sessionPhase='expired';emitState();}else{sessionPhase='error';emitState();}throw error;}
+  }catch(error){if(!currentRead())return false;if(error.status===401)expireAuthenticatedSession(source,session,generation);else{sessionPhase='error';emitState();}throw error;}
 }
 async function loadInvites(session=vault.sessionToken,generation=readGeneration){
   try{const result=await api('/owner/agent-invites',{token:session});if(session!==vault.sessionToken||generation!==readGeneration)return;
     $('#invite-list').replaceChildren();for(const invite of result.invites){const row=el('div','invite-row'),text=el('div');text.append(el('p','mono',invite.inviteId),el('p','muted',`${invite.consumed?'已使用':!invite.active?'已撤销':invite.expiresAt<=Date.now()?'已过期':'可使用'} · ${stamp(invite.expiresAt)}`));row.append(text);if(invite.active&&!invite.consumed&&invite.expiresAt>Date.now()){const button=el('button','small','撤销邀请');button.type='button';button.addEventListener('click',()=>command({action:'revokeInvite',path:`/owner/agent-invites/${encodeURIComponent(invite.inviteId)}/revoke`,targetId:null,fields:{expectedVersion:invite.version}}));row.append(button);}$('#invite-list').append(row);}
     if(!result.invites.length)$('#invite-list').append(el('p','small-text','尚未签发邀请。'));
-  }catch(error){if(session===vault.sessionToken&&generation===readGeneration)$('#invite-list').replaceChildren(el('p','small-text','邀请列表暂时无法读取；可以刷新状态重试。'));}
+  }catch(error){if(session===vault.sessionToken&&generation===readGeneration){if(error.status===401)expireAuthenticatedSession(vault,session,generation);$('#invite-list').replaceChildren(el('p','small-text','邀请列表暂时无法读取；可以刷新状态重试。'));}}
 }
 function renderList(){
   $('#agent-count').textContent=String(agents.length);$('#agent-list').replaceChildren();$('#agent-select').replaceChildren();

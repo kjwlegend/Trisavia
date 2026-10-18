@@ -1,8 +1,11 @@
 import {$,el} from '../common.js';
 import {createWorldScene,places,placeDetails} from '../world-scene.js';
+import {createOwnedAgentBinding} from './owned-agents.js';
 let scene=null;
-export function initSceneRenderer(){
+export function initSceneRenderer({session,onSelectAgent=()=>{}}={}){
 let mapReady=false,mapFailed=false;
+let sceneGeneration=0,sceneAbort=null;
+const ownedAgents=session?createOwnedAgentBinding(session,onSelectAgent):null;
 let returnFocus = null;
 let currentPlace = null;
 const list = $('#world-place-list');
@@ -68,18 +71,21 @@ function updateControls(state) {
   if ($('#world-motion-status').textContent !== text) $('#world-motion-status').textContent = text;
 }
 async function startScene() {
+  const generation=++sceneGeneration;sceneAbort?.abort();sceneAbort=new AbortController();ownedAgents?.attach(null);
   scene?.destroy(); scene = null;mapReady=false;mapFailed=false;setMapAvailable(false);
   $('#world-fallback').hidden = true;
   $('#world-motion-status').textContent = '正在铺开演示地图…';
   try {
-    scene = await createWorldScene($('#world-scene'), {onSelect: openPlace, onChange: updateControls, onError: mapError});
+    const next = await createWorldScene($('#world-scene'), {signal:sceneAbort.signal,onSelect: openPlace, onOwnedSelect:(agentId,origin)=>ownedAgents?.select(agentId,origin), onChange: updateControls, onError:()=>{if(generation===sceneGeneration)mapError();}});
+    if(generation!==sceneGeneration){next.destroy();return;}
+    scene=next;if(!mapFailed)ownedAgents?.attach(scene);
     if(!mapFailed){setMapAvailable(true);updateControls(scene.getState());}
     if (currentPlace) scene.select(currentPlace);
-  } catch { mapError(); }
+  } catch { if(generation===sceneGeneration)mapError(); }
 }
-function setMapAvailable(value){mapReady=value;for(const id of ['world-zoom-out','world-zoom-in','world-fit','world-pause','world-explore','world-reset'])$(`#${id}`).disabled=!value;$('#world-gesture-hint').hidden=!value;}
+function setMapAvailable(value){mapReady=value;for(const id of ['world-zoom-out','world-zoom-in','world-fit','world-pause','world-explore','world-reset'])$(`#${id}`).disabled=!value;$('#world-gesture-hint').hidden=!value;document.dispatchEvent(new CustomEvent('world:availability',{detail:{available:value}}));}
 function mapError() {
-  mapFailed=true;setMapAvailable(false);
+  mapFailed=true;ownedAgents?.attach(null);setMapAvailable(false);
   $('#world-fallback').hidden = false;
   $('#world-place-directory').open = true;
   $('#world-motion-status').textContent = '地图暂不可用 · 场所列表仍可查看';
@@ -99,8 +105,7 @@ $('#world-retry').addEventListener('click', startScene);
 for (const link of document.querySelectorAll('a[href="#connect"]')) link.addEventListener('click', () => { $('#connect').open = true; });
 if (location.hash === '#connect') $('#connect').open = true;
 startScene();
-window.addEventListener('pagehide', event => { if (!event.persisted) scene?.destroy(); });
-
-
+window.addEventListener('pagehide', event => { if (!event.persisted){sceneGeneration++;sceneAbort?.abort();ownedAgents?.dispose();scene?.destroy();} });
+return{locateAgent(agentId){return mapReady&&scene?.locateOwnedAgent(agentId)||false;}};
 }
 export function getWorldState(){return scene?.getState()??null;}

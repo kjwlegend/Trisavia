@@ -13,6 +13,12 @@ export function avatar(node, fields={},agentId='') {
   const canvas=document.createElement('canvas');canvas.width=32;canvas.height=32;canvas.className='avatar';canvas.setAttribute('aria-hidden','true');
   const ctx=canvas.getContext('2d');rect(ctx,0,0,32,32,'#e8efe0');person(ctx,16,27,fields.avatar?.color,hash(agentId)%2);node.replaceChildren(canvas);
 }
+// The world uses the same real basic avatar and palette, on a transparent sprite.
+export function avatarSprite(fields={},agentId=''){
+  const canvas=document.createElement('canvas');canvas.width=32;canvas.height=40;
+  const ctx=canvas.getContext('2d');if(!ctx)throw new Error('canvas_unavailable');
+  ctx.scale(2,2);person(ctx,8,18,fields.avatar?.color,hash(agentId)%2);return canvas;
+}
 function hash(value) { return [...value].reduce((n,c)=>(n*31+c.charCodeAt(0))>>>0,7); }
 function building(ctx,x,y,w,h,glass=false) {
   rect(ctx,x+3,y+h-3,w,6,'#5b9b47');rect(ctx,x,y,w,h,'#304060');

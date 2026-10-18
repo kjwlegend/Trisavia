@@ -9,11 +9,12 @@ const prompt = `可用现有安全 HTTP 工具直接接入；Node 24 仅在运�
 $('#agent-prompt').textContent=prompt;
 $('#copy-prompt').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(prompt);notice($('#copy-status'),'已复制。把提示词交给你正在使用的 Agent 即可。','success');}catch{notice($('#copy-status'),'浏览器未允许复制。请选中上方提示词手动复制。','error');}});
 
-const accountNode=mountOwnerPanel();let hud=null,controller=null;
+const accountNode=mountOwnerPanel();let hud=null,controller=null,renderer=null;
 const presentation=createOwnerPresentation(accountNode,{setTitle:value=>hud?.setAccountTitle(value),close:()=>hud?.close(),onChange:()=>controller?.notifyPresentation()});
 controller=createOwnerController(accountNode,{entryStore,isVisible:()=>hud?.isAccountOpen()||false,focusTitle:()=>hud?.focusAccountTitle(),onView:()=>hud?.setAccountTitle(controller?.getTitle()||'账户'),onLogout:()=>hud?.close(),confirmAction:(...args)=>presentation.confirm(...args)});controller.attachPresentation(presentation);
-hud=createHud({session:createSessionApi(controller),accountNode,onOpenAccount:(mode,agentId)=>controller.open(mode,agentId),getAccountTitle:()=>controller.getTitle()});
-initSceneRenderer();
+const session=createSessionApi(controller);
+hud=createHud({session,accountNode,onLocateAgent:agentId=>renderer?.locateAgent(agentId),onOpenAccount:(mode,agentId)=>controller.open(mode,agentId),getAccountTitle:()=>controller.getTitle()});
+renderer=initSceneRenderer({session,onSelectAgent:(agentId,origin)=>hud.openAccount('profile',agentId,origin)});
 const hadPrivateEntry=entryStore.pending;
 let entryRevision=0;
 window.addEventListener('hashchange',()=>{entryRevision++;try{const next=entryStore.capture();if(next.mode)hud.openAccount(next.mode,next.agentId);}catch{const alert=document.createElement('p');alert.className='notice error world-startup-error';alert.setAttribute('role','alert');alert.textContent='无法安全保存这次入口，请允许会话存储后重新打开。原任务保持不变。';$('#main').prepend(alert);}});
