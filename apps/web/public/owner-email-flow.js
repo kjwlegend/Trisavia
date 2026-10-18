@@ -64,7 +64,7 @@ export function createOwnerEmailFlow(hooks){
     $('#email-target').hidden=!fixedAgentId;$('#email-target').textContent=`本次目标：${targetLabel()} · ${fixedAgentId||''}`;
     $('#email-start').hidden=Boolean(progress);$('#email-start').textContent='发送注册验证码';
     $('#email-challenge').hidden=!progress||status==='completed';
-    $('#email-delivery').textContent=progress?`${copy[currentView?.deliveryStatus]||'正在确认邮件状态…'}${canRenewChallenge()?' 上一验证码已过期，可以明确重新发送新验证码；这不表示旧邮件肯定没有发出。':''}`:'';
+    $('#email-delivery').textContent=progress?(canRenewChallenge()?'上一验证码已过期。请点击「重新发送新验证码」，并使用新验证码；旧邮件仍可能送达，其中的验证码已失效。':copy[currentView?.deliveryStatus]||'正在确认邮件状态…'):'';
     $('#email-expiry').textContent=currentView?`本次流程有效至 ${stamp(currentView.expiresAt)}${currentView.resendAfter>Date.now()?`；${stamp(currentView.resendAfter)} 后可重发。`:''}`:'';
     $('#email-code-row').hidden=status==='email_proved'||status==='completed';
     $('#email-finish').hidden=status!=='email_proved'&&!finalActions.includes(progress?.pending?.action);
