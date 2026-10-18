@@ -119,9 +119,18 @@ for (const previousAssisted of [true, false]) test(`FND-R01 a successful ${previ
     expect(actual.status, 'The service has not completed the current request').toBe('pending'); expect(recoverPosts).toBe(0);
     await expect(page.locator('#global-notice'), 'A same-owner receipt must also belong to this exact assistance request before announcing completion').not.toContainText('协助已完成');
     await expect(page.getByRole('heading', { name: '我的 Agent', exact: true })).toBeHidden();
+    await expect(page.locator('#recovery-form'), 'The valid independent proof can authorize a new recovery for B without accepting A as its result').toBeVisible();
+    expect((await vault(page)).pendingOperation).toBeUndefined();
+    await page.locator('#back-to-login').click();
+    await page.locator('.login-help > summary').click();
+    await page.getByRole('button', { name: '使用登录备份或继续上次操作', exact: true }).click();
+    await page.getByLabel('选择登录备份', { exact: true }).setInputFiles(await privateJson(directory, 'restore-unresolved-b-with-old-receipt-key', mismatched)); await idle(page);
     const unresolved = await vault(page);
     expect(unresolved.pendingOperation?.operationId, 'A mismatched receipt must not clear the saved operation').toBe(previousOperationId);
     expect(unresolved.assistanceContext?.requestId).toBe(current.requestId);
+    expect(unresolved.sessionToken === sessionToken && unresolved.recoveryToken === recoveryToken, 'An unresolved command retains the exact pre-saved next proofs').toBe(true);
+    expect((await fixtureOk(baseURL!, `/agent/self/owner-recovery-requests/${current.requestId}`, undefined, agent.runtimeToken)).status).toBe('pending');
+    await expect(page.locator('#global-notice')).not.toContainText('协助已完成'); expect(recoverPosts).toBe(0);
     if (previous) expect((await fixtureOk(baseURL!, `/agent/self/owner-recovery-requests/${previous.requestId}`, undefined, agent.runtimeToken)).status).toBe('completed');
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
@@ -204,9 +213,15 @@ for (const committed of [false, true]) test(`independent owner backup completes 
     await page.getByLabel('选择登录备份', { exact: true }).setInputFiles(await privateJson(directory, 'original-registration-backup', owner.backup));
     expect((await verified).status()).toBe(200); await idle(page);
     await expect(page.locator('#recovery-form')).toBeVisible(); await expect(page.locator('#assistance-status')).toContainText('主人备份已验证');
+    await expect(page.locator('#assistance-status')).toContainText('尚未重设密码');
+    await expect(page.locator('#global-notice')).not.toHaveClass(/\berror\b/);
+    await expect(page.locator('#global-notice')).not.toContainText('不属于');
+    await expect(page.locator('#global-notice')).not.toContainText('协助已完成');
     const password = `Assisted-${randomUUID()}`; privacy.password(password);
     await page.getByLabel('新登录密码', { exact: true }).fill(password); await page.locator('#recovery-next').click();
     const prepared = await privateDownload(page, page.locator('#recovery-download'), directory); trackBackup(privacy, prepared);
+    await expect(page.locator('#global-notice')).not.toHaveClass(/\berror\b/);
+    await expect(page.locator('#global-notice')).not.toContainText('不属于');
     expect(prepared.pendingOperation.action).toBe('recover'); expect(prepared.pendingOperation.scope).toBe(`owner:${owner.ownerId}`);
     expect(prepared.assistanceContext.agentId).toBe(agent.agentId); expect(prepared.assistanceContext.requestId).toBe(request.requestId);
     expect(prepared.sourceRecoveryToken === owner.recoveryToken, 'Next backup preserves the original recovery proof only for the same command').toBe(true);
