@@ -1,7 +1,16 @@
 import { fail, object, text } from "../common/errors.ts";
 
 export const PROFILE_FIELDS = ["displayName", "avatar", "bio", "interests"] as const;
+export const REMOVABLE_PROFILE_FIELDS = ["bio", "interests"] as const;
 export const AVATAR_COLORS = ["olive", "cream", "blue", "coral"] as const;
+
+export function validateRemoveFields(value: unknown): (typeof REMOVABLE_PROFILE_FIELDS)[number][] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value) || value.length > REMOVABLE_PROFILE_FIELDS.length || value.some((field) => !REMOVABLE_PROFILE_FIELDS.includes(field as (typeof REMOVABLE_PROFILE_FIELDS)[number])) || new Set(value).size !== value.length) {
+    fail("invalid_request", 400, "Only unique optional bio and interests fields may be removed", { field: "removeFields" });
+  }
+  return value as (typeof REMOVABLE_PROFILE_FIELDS)[number][];
+}
 
 export function validateFields(value: unknown): Record<string, unknown> {
   const fields = object(value, PROFILE_FIELDS);

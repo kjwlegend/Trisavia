@@ -3,14 +3,14 @@ import type { JsonObject, JsonValue, M1ReadSession, M1Store, M1Table, M1Transact
 import { checkPassword, equalDigest, hashPassword, parseToken, payloadHash, verifier } from "../domains/access/credentials.ts";
 import { accountFields, loginIdentifier } from "../domains/access/account-identifiers.ts";
 import { boolean, fail, object, text, version } from "../domains/common/errors.ts";
-import { AVATAR_COLORS, PROFILE_FIELDS, validateFields, validatePublication } from "../domains/profile/profile-rules.ts";
+import { AVATAR_COLORS, PROFILE_FIELDS, validateFields, validatePublication, validateRemoveFields } from "../domains/profile/profile-rules.ts";
 
 export type M1Action =
   | "capabilities" | "catalog" | "register" | "registrationResult" | "self" | "publicProfile"
   | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup" | "readRecovery"
   | "registerOwner" | "readAccount" | "claimAgent"
   | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites"
-  | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveDraft" | "publishProfile" | "profilePolicy"
+  | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveDraft" | "publishProfile" | "unpublishProfile" | "profilePolicy"
   | "readMembership" | "join" | "leave" | "participation" | "receipt";
 
 export interface M1Options {
@@ -147,6 +147,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     tx.insert("facts", { id: randomUUID(), version: 1, data: {
       action, operationId, receiptId: result.receiptId!, epoch: store.recoveryEpoch,
       agentId: result.agentId ?? null, ownerId: result.ownerId ?? null, time: result.serverTime!, visibility: "private",
+      ...(typeof result.changed === "boolean" ? { changed: result.changed } : {}),
     } });
     return result;
   }
@@ -495,8 +496,8 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         });
       }
 
-      if (["readProfile", "saveDraft", "publishProfile", "profilePolicy"].includes(action)) {
-        const keys = action === "readProfile" ? ["agentId"] : action === "saveDraft" ? ["operationId", "agentId", "expectedVersion", "expectedPolicyVersion", "fields"] : action === "profilePolicy" ? ["operationId", "agentId", "expectedVersion", "expectedPolicyVersion", "mode", "lockedFields"] : ["operationId", "agentId", "expectedVersion", "expectedPolicyVersion"];
+      if (["readProfile", "saveDraft", "publishProfile", "unpublishProfile", "profilePolicy"].includes(action)) {
+        const keys = action === "readProfile" ? ["agentId"] : action === "saveDraft" ? ["operationId", "agentId", "expectedVersion", "expectedPolicyVersion", "fields", "removeFields"] : action === "profilePolicy" ? ["operationId", "agentId", "expectedVersion", "expectedPolicyVersion", "mode", "lockedFields"] : ["operationId", "agentId", "expectedVersion", "expectedPolicyVersion"];
         const input = object(raw, keys);
         const actor = authenticate(tx, token, action === "profilePolicy" ? ["owner_session"] : ["runtime", "owner_session"]);
         const agentId = text(input.agentId, "agentId", 8, 100);
@@ -513,12 +514,21 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
           businessWrite(tx, actor, agentId);
           if (action === "saveDraft") {
             const fields = validateFields(input.fields) as JsonObject;
+            const removeFields = validateRemoveFields(input.removeFields);
+            if (removeFields.some((field) => Object.hasOwn(fields, field))) fail("invalid_request", 400, "A field cannot be set and removed together", { field: "removeFields" });
             const locked = profile.data.lockedFields as string[];
-            if (actor.data.kind === "runtime" && Object.keys(fields).some((field) => locked.includes(field))) fail("field_locked", 403, "Owner locked a requested field");
+            if (actor.data.kind === "runtime" && [...Object.keys(fields), ...removeFields].some((field) => locked.includes(field))) fail("field_locked", 403, "Owner locked a requested field");
             const draft = { ...dataObject(profile.data.draft), ...fields };
+            for (const field of removeFields) delete draft[field];
             return profileView(update(tx, "profiles", profile, { draft }));
           }
           if (actor.data.kind === "runtime" && profile.data.mode !== "agent_autonomous") fail("confirmation_required", 403, "Owner confirmation is required for publication");
+          if (action === "unpublishProfile") {
+            const published = dataObject(profile.data.published);
+            if (actor.data.kind === "runtime" && (profile.data.lockedFields as string[]).some((field) => Object.hasOwn(published, field))) fail("field_locked", 403, "Owner locked a published field");
+            if (profile.data.published === null) return { ...profileView(profile), changed: false };
+            return { ...profileView(update(tx, "profiles", profile, { published: null })), changed: true };
+          }
           const draft = dataObject(profile.data.draft);
           validatePublication(draft);
           // An older draft must not publish a locked field over the owner's current public value.

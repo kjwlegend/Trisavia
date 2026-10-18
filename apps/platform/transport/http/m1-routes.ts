@@ -33,6 +33,7 @@ const routes: Definition[] = [
   { method: "GET", url: "/v1/agents/:agentId/profile", action: "readProfile" },
   { method: "PUT", url: "/v1/agents/:agentId/profile/draft", action: "saveDraft" },
   { method: "POST", url: "/v1/agents/:agentId/profile/publish", action: "publishProfile" },
+  { method: "POST", url: "/v1/agents/:agentId/profile/unpublish", action: "unpublishProfile" },
   { method: "PUT", url: "/v1/owner/agents/:agentId/profile-policy", action: "profilePolicy" },
   { method: "GET", url: "/v1/agents/:agentId/membership", action: "readMembership" },
   { method: "POST", url: "/v1/agents/:agentId/membership/join", action: "join" },
