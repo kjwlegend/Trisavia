@@ -15,6 +15,7 @@ export function readEmailProgress(){
   const invalid=()=>{throw new ApiError('email_progress_invalid',400);};
   if(saved.format!=='connet-email-progress-v1'||saved.origin!==location.origin||!Object.hasOwn(actions,saved.kind)||typeof saved.attemptId!=='string'||saved.attemptId.length<8||saved.attemptId.length>100||!validToken(saved.browserToken)||(saved.kind==='registration'&&!uuid(saved.attemptId)))invalid();
   const next={format:saved.format,origin:saved.origin,kind:saved.kind,attemptId:saved.attemptId,browserToken:saved.browserToken};
+  if(saved.verificationMode!==undefined){if(!['experience','resend'].includes(saved.verificationMode)||saved.codeLength!==(saved.verificationMode==='experience'?4:8))invalid();next.verificationMode=saved.verificationMode;next.codeLength=saved.codeLength;}
   if(saved.kind==='registration'){
     let fields;try{fields=accountFields(saved.username,saved.email);}catch{invalid();}
     if(fields.username!==saved.username||fields.email!==saved.email)invalid();Object.assign(next,fields);
@@ -33,7 +34,7 @@ export function readEmailProgress(){
   if(saved.pending){const p=saved.pending;if(typeof p.operationId!=='string'||p.operationId.length<8||p.operationId.length>100||!actions[next.kind].includes(p.action)||p.scope!==emailScope(next))invalid();
     if((p.action==='completeSetup'&&!next.target)||(p.action==='registerOwner'&&next.target)||(['registerOwner','completeSetup','recoverByEmail'].includes(p.action)&&!next.sessionToken))invalid();
     next.pending={operationId:p.operationId,scope:p.scope,action:p.action,uncertain:true};
-    if(p.action.startsWith('verify')){const challengeOperationId=p.challengeOperationId||next.sendOperationId;if(typeof challengeOperationId!=='string'||challengeOperationId.length<8||challengeOperationId.length>100)invalid();next.pending.challengeOperationId=challengeOperationId;}
+    if(p.action.startsWith('verify')){const challengeOperationId=p.challengeOperationId||next.sendOperationId;if(typeof challengeOperationId!=='string'||challengeOperationId.length<8||challengeOperationId.length>100)invalid();next.pending.challengeOperationId=challengeOperationId;if(p.challengeBound!==undefined&&p.challengeBound!==true)invalid();if(p.challengeBound===true)next.pending.challengeBound=true;}
   }
   return next;
 }

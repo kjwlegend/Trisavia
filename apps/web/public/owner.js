@@ -105,7 +105,7 @@ function finishRecovery(result,pending){
   vault=next;pendingPayload=null;resetAuthenticationExit();readGeneration++;readAbort?.abort();selectionGeneration++;
   account=null;accountSession='';agents=[];selectedId='';unavailableAgentId='';requestedAgentId='';sessionPhase='recovered';
   recoveryIntent=false;recoveryPrepared=null;recoveryOwnerId='';recoverySourceProof='';setupInfo=null;runtimePrepared=null;invitePrepared=null;backupPrepared=null;
-  clearAgentSelection({ownerId:result.ownerId});emailFlow?.endRequest(result.ownerId,result.requestId);assistanceSession=null;assistance.clear();
+  clearAgentSelection({ownerId:result.ownerId});entryStore?.clearTarget();emailFlow?.endRequest(result.ownerId,result.requestId);assistanceSession=null;assistance.clear();
   $$('[data-owner-password]').forEach(input=>input.value='');$('#agent-list').replaceChildren();$('#agent-select').replaceChildren();
   showRecoveryCompleted();
 }
@@ -119,7 +119,7 @@ function showForgot(purpose='recover'){
   $('#setup-view').hidden=true;$('#sign-in-view').hidden=true;$('#forgot-view').hidden=false;
   $('#recovery-pick-step').hidden=false;$('#recovery-form').hidden=true;$('#origin-help').hidden=true;
   $('#recovery-choices').hidden=purpose==='manage';$('#recovery-backup-choice').hidden=purpose!=='manage';$('#recovery-email-help').hidden=true;
-  $('#continue-management').hidden=true;$('#recovery-title').textContent=purpose==='manage'?'使用登录备份或继续进度':'找回登录';controls();requestFocus(purpose==='manage'?'#credentials-import':'#recovery-mail-help');
+  $('#continue-management').hidden=true;$('#recovery-title').textContent=purpose==='manage'?'使用登录备份或继续进度':'找回登录';renderVerificationMode();void emailFlow.readCapabilities();controls();requestFocus(purpose==='manage'?'#credentials-import':'#recovery-mail-help');
 }
 function recoveryForm(resuming=false){
   showAuth();$('#setup-view').hidden=true;$('#sign-in-view').hidden=true;$('#forgot-view').hidden=false;
@@ -131,7 +131,7 @@ function showAssistancePage(){
   showAuth();$('#setup-view').hidden=true;$('#sign-in-view').hidden=true;$('#forgot-view').hidden=false;
   $('#recovery-title').textContent='验证主人身份';$('#recovery-pick-step').hidden=pendingRejection()||assistance.terminal;
   $('#recovery-choices').hidden=true;$('#recovery-email-help').hidden=true;$('#recovery-backup-choice').hidden=false;
-  $('#recovery-form').hidden=true;$('#origin-help').hidden=true;$('#continue-management').hidden=true;controls();
+  $('#recovery-form').hidden=true;$('#origin-help').hidden=true;$('#continue-management').hidden=true;renderVerificationMode();void emailFlow.readCapabilities();controls();
 }
 async function openAssistance(proof){
   if(vault.pendingOperation){showPendingAuthentication();message('请先继续或保存上一次操作，再打开新的协助入口。','pending');return;}
@@ -312,7 +312,7 @@ async function committed(result,pending){
     $('#email-password').value='';$('#email-password-confirm').value='';$('#setup-password').value='';$('#login-password').value='';$('#recovery-password').value='';$('#recovery-password-confirm').value='';recoverySourceProof='';
   }
   if(pending.action==='completeSetup'){delete vault.setupExchange;delete vault.exchangeOperationId;delete vault.claimContext;delete vault.setupAccount;delete vault.completeOperationId;}
-  if(pending.action==='login'){unavailableAgentId='';requestedAgentId='';}
+  if(pending.action==='login'){const intention=entryStore?.target();unavailableAgentId='';if(intention?.agentId&&(!intention.ownerId||intention.ownerId===result.ownerId))requestedAgentId=intention.agentId;else{requestedAgentId='';entryStore?.clearTarget();}}
   if(pending.action==='claimAgent'){unavailableAgentId='';selectedId=pending.targetId;selectionGeneration++;delete vault.claimContext;setupInfo=null;existingClaimIntent=false;}
   clearPending();
   if(pending.action==='replaceRuntime'){runtimePrepared=null;$('#runtime-confirm').hidden=true;$('#runtime-saved').checked=false;}
@@ -485,6 +485,7 @@ async function recover(event){event.preventDefault();
 
 async function loadAgents({resetProfile=true}={}){
   if(vault.stage==='recovered'){showRecoveryCompleted();return false;}
+  let explicitTarget=false;
   const generation=++readGeneration,session=vault.sessionToken,source=vault;
   const currentRead=()=>generation===readGeneration&&session===vault.sessionToken&&source===vault;
   readAbort?.abort();readAbort=new AbortController();
@@ -500,6 +501,11 @@ async function loadAgents({resetProfile=true}={}){
     $('#backup-capability').textContent=validToken(vault.recoveryToken)?'此浏览器持有恢复材料，导出的文件可用于找回密码。请自己妥善保管。':'当前管理会话不能单独找回密码。可选择启用备用恢复文件；没有备份时，使用原 Agent 私密入口验证原邮箱。';
     view='managed';$('#auth-view').hidden=true;$('#manage-view').hidden=false;$('#session-actions').hidden=false;$('#page-title').textContent='我的 Agent';$('#page-description').textContent='当前授权下的居民与资料。状态按读取时间展示。';
     if(requestedAgentId){
+      const intention=entryStore?.target();if(intention?.ownerId&&intention.ownerId!==result.ownerId){requestedAgentId='';unavailableAgentId='';entryStore.clearTarget();}
+    }
+    if(requestedAgentId){
+      explicitTarget=true;
+      entryStore?.rememberTarget(result.ownerId,requestedAgentId);
       if(agents.some(agent=>agent.agentId===requestedAgentId)){if(selectedId!==requestedAgentId)selectionGeneration++;selectedId=requestedAgentId;unavailableAgentId='';message('已打开当前获准的 Agent 资料。');}
       else{unavailableAgentId=requestedAgentId;selectedId='';selectionGeneration++;message('这个 Agent 当前不可用，请明确选择自己的 Agent 后再编辑。','error');}
       requestedAgentId='';
@@ -508,7 +514,7 @@ async function loadAgents({resetProfile=true}={}){
     else if(!agents.some(a=>a.agentId===selectedId)){selectedId=readAgentSelection(result.ownerId,agents)||agents[0]?.agentId||'';selectionGeneration++;resetProfile=true;}
     if(selectedId)rememberAgentSelection(result.ownerId,agents,selectedId);
     renderList();renderAgent(resetProfile);await loadInvites(session,generation);
-    if(!currentRead())return false;presentation?.managed();controls();if(unavailableAgentId)presentation?.unavailable(unavailableAgentId);if(vault.claimContext)showClaim();return true;
+    if(!currentRead())return false;presentation?.managed();controls();if(unavailableAgentId)presentation?.unavailable(unavailableAgentId);else if(explicitTarget)presentation?.navigate('profile');if(vault.claimContext)showClaim();return true;
   }catch(error){if(!currentRead())return false;if(error.status===401){clearAgentSelection({ownerId:source.ownerId});account=null;accountSession='';agents=[];selectedId='';sessionPhase='expired';emitState();}else{sessionPhase='error';emitState();}throw error;}
 }
 async function loadInvites(session=vault.sessionToken,generation=readGeneration){
@@ -534,7 +540,7 @@ async function selectAgent(agentId){if(hasPending()||!authenticatedOwner()||emai
   const focused=document.activeElement;
   const focusRoot=$('#agent-list').contains(focused)?$('#agent-list'):null;
   const focusedAgent=focused?.dataset?.agentId;
-  unavailableAgentId='';selectedId=agentId;rememberAgentSelection(vault.ownerId,agents,selectedId);selectionGeneration++;runtimePrepared=null;$('#runtime-confirm').hidden=true;$('#runtime-saved').checked=false;renderList();renderAgent(true);message('已切换居民，表单使用当前目标的草稿与版本。');controls();
+  unavailableAgentId='';entryStore?.clearTarget();selectedId=agentId;rememberAgentSelection(vault.ownerId,agents,selectedId);selectionGeneration++;runtimePrepared=null;$('#runtime-confirm').hidden=true;$('#runtime-saved').checked=false;renderList();renderAgent(true);message('已切换居民，表单使用当前目标的草稿与版本。');controls();
   presentation?.navigate('profile');emitState();
   if(focusRoot&&focusedAgent){const replacement=$$('[data-agent-id]',focusRoot).find(button=>button.dataset.agentId===focusedAgent);replacement?.focus({preventScroll:true});}
 }
@@ -795,7 +801,7 @@ async function claimAgent(){
 function openInvite(){if(hasPending())return;if(!authenticatedOwner()){showSignIn();return;}presentation?.navigate('invite');$('#invites-panel').scrollIntoView({block:'start',behavior:'instant'});$('#prepare-invite').focus({preventScroll:true});}
 
 emailFlow=createOwnerEmailFlow({
-  root,onView:()=>{presentation?.sync();onView();},
+  root,onView:()=>{presentation?.sync();onView();},modeChanged:()=>renderVerificationMode(),
   uiState:()=>({busy,mainPending:Boolean(vault.pendingOperation)}),lock:()=>setBusy(true),unlock:lease=>setBusy(false,lease),focus:requestFocus,
   show:node=>{clearCompletedTaskNotice();if(!vault.pendingOperation&&globalNotice.dataset.backupError)message('');showAuth();$('#setup-view').hidden=true;$('#sign-in-view').hidden=true;$('#forgot-view').hidden=true;node.hidden=false;},
   targetName:agentId=>agentId===setupInfo?.agentId?vault.setupAgentName:agents.find(agent=>agent.agentId===agentId)?.profile.published?.displayName,
@@ -803,12 +809,12 @@ emailFlow=createOwnerEmailFlow({
   back:()=>{if(assistance.token)showAssistancePage();else showSignIn();},
   registered:async(result,progress)=>{
     if(vault.pendingOperation)throw new BackupError('operation_mismatch');
-    const target=progress.target;
-    if(result.ownerId!==(target?.ownerId||progress.attemptId)||result.sessionId!==tokenId(progress.sessionToken)||(target&&(result.agentId!==target.agentId||result.managementStatus!=='managed')))throw new BackupError('operation_mismatch');
+    const target=progress.target,mode=result.verificationMode||'resend',exp=mode==='experience';
+    if(mode!==(progress.verificationMode||'resend')||!['experience','resend'].includes(mode)||result.emailVerified!==!exp||result.ownerId!==(target?.ownerId||progress.attemptId)||result.sessionId!==tokenId(progress.sessionToken)||(target&&(result.agentId!==target.agentId||result.managementStatus!=='managed')))throw new BackupError('operation_mismatch');
     // Persist the actual session before discarding the email completion key.
     vault={format:'connet-owner-v2',origin:location.origin,ownerId:result.ownerId,sessionToken:progress.sessionToken,stage:'managed'};save();
     recoveryIntent=false;recoveryPrepared=null;setupInfo=null;setupPrepared=false;account=null;accountSession='';unavailableAgentId='';requestedAgentId='';selectedId=target?.agentId||'';
-    assistance.clear();try{await loadAgents();message(target?`账号已创建，${agents.find(agent=>agent.agentId===target.agentId)?.profile.published?.displayName||'Agent'}已关联。`:'账号已创建，邮箱已验证。你可以邀请自己的 Agent。','success');presentation?.success({title:'账号已创建',username:account?.username||'',agentName:target?current()?.profile.published?.displayName||current()?.profile.draft?.displayName||'Agent':''});requestFocus('#page-title');}
+    assistance.clear();try{await loadAgents();const created=target?`账号已创建，${agents.find(agent=>agent.agentId===target.agentId)?.profile.published?.displayName||'Agent'}已关联。`:'账号已创建。你可以邀请自己的 Agent。';message(`${created}${exp?'体验验证已通过，邮箱归属尚未核实。':'邮箱已验证。'}`,'success');presentation?.success({title:'账号已创建',username:account?.username||'',agentName:target?current()?.profile.published?.displayName||current()?.profile.draft?.displayName||'Agent':''});requestFocus('#page-title');}
     catch{showSignIn();message('账号已创建，但暂时无法读取列表。请用刚设置的用户名和密码正常登录。','pending');}
   },
   recovered:result=>{if(vault.ownerId===result.ownerId){vault={format:'connet-owner-v2',origin:location.origin};save();clearAgentSelection({ownerId:result.ownerId});}assistanceSession=null;},
@@ -824,8 +830,9 @@ $('#backup-recovered-login').addEventListener('click',()=>{showSignIn();message(
 $('#recovery-mail-help').addEventListener('click',()=>{$('#recovery-choices').hidden=true;$('#recovery-backup-choice').hidden=true;$('#recovery-email-help').hidden=false;$('#recovery-title').textContent='让原 Agent 帮助找回';emitState();});
 $('#recovery-use-backup').addEventListener('click',()=>{$('#recovery-choices').hidden=true;$('#recovery-email-help').hidden=true;$('#recovery-backup-choice').hidden=false;$('#recovery-title').textContent='使用备用恢复文件';emitState();});
 $('#recovery-choices-back').addEventListener('click',()=>showForgot());
-const emailHelpPrompt=`我忘记了 ${location.origin} 的主人登录密码。请为你当前正式绑定的主人创建登录找回请求，并通过安全私密方式把入口交给我。我会在网页自行收取和输入原邮箱验证码。不要接收、代收或保存我的验证码、密码或主人恢复文件，也不要重新注册或改变绑定。`;
-$('#email-help-prompt').textContent=emailHelpPrompt;$('#copy-email-help').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(emailHelpPrompt);$('#email-help-status').textContent='已复制。请交给原 Agent，由你自己在网页继续。';}catch{$('#email-help-status').textContent='请选中上方请求文字复制。';}});
+function emailHelpPrompt(){return `我忘记了 ${location.origin} 的主人登录密码。请为你当前正式绑定的主人创建登录找回请求，并通过安全私密方式把入口交给我。${emailFlow.verificationMode==='experience'?'当前为体验阶段，我会在网页自行输入体验验证码。':'我会在网页自行收取和输入原邮箱验证码。'}不要接收、代收或保存我的验证码、密码或主人恢复文件，也不要重新注册或改变绑定。`;}
+function renderVerificationMode(){const exp=emailFlow?.verificationMode==='experience';$('#recovery-mail-help').textContent=exp?'通过体验验证码找回':'通过原邮箱找回';$('#email-recovery-start').textContent=exp?'通过体验验证码找回':'通过邮箱验证码找回';for(const key of ['#recovery-mode-note','#recovery-choice-mode-note']){$(key).hidden=!exp;$(key).textContent=exp?'体验验证码：1234，无需查收邮件。当前不核实邮箱归属。':'';}$('#assistance-guidance').textContent=exp?'通过本次体验验证码，或选择有效登录备份继续找回。无需把验证码、文件或密码交给 Agent。':'通过原邮箱验证码，或选择有效登录备份验证身份。无需把验证码、文件或密码交给 Agent。';$('#assistance-proof-note').textContent=exp?'此私密入口和 Agent 运行文件本身都不能重设密码。体验码仍需在本次有效请求中由网站核对。':'没有备份也可验证账号原邮箱。此入口和 Agent 运行文件本身都不能重设密码。';$('#email-help-intro').textContent=exp?'请让已关联的原 Agent 创建找回请求，再打开它私密交付的入口，由你自己在网页输入本次体验验证码。':'请让已关联的原 Agent 创建找回请求，再打开它私密交付的入口，由你自己收取并输入原邮箱验证码。';$('#email-help-prompt').textContent=emailHelpPrompt();}
+$('#email-help-prompt').textContent=emailHelpPrompt();$('#copy-email-help').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(emailHelpPrompt());$('#email-help-status').textContent='已复制。请交给原 Agent，由你自己在网页继续。';}catch{$('#email-help-status').textContent='请选中上方请求文字复制。';}});
 $('#back-to-login').addEventListener('click',async()=>{if(vault.pendingOperation){message('这次操作尚未确认，请保存进度后再退出。','pending');return;}const managed=hasAssistanceSession();assistanceSession=null;assistance.clear();delete vault.assistanceContext;save();recoveryIntent=false;recoveryPrepared=null;recoveryOwnerId='';recoverySourceProof='';$('#recovery-password').value='';$('#recovery-password-confirm').value='';if(!managed){showSignIn();return;}const busyLease=setBusy(true);try{await loadAgents();presentation?.navigate('agents');}catch(error){fail(error);showSignIn();}finally{setBusy(false,busyLease);}});
 $('#reject-assistance').addEventListener('click',rejectAssistance);
 $('#assistance-refresh').addEventListener('click',async()=>{if(busy||vault.pendingOperation)return;const busyLease=setBusy(true);try{assistanceSession=null;await assistance.read();await verifyAssistanceSession();showAssistancePage();}catch(error){fail(error);}finally{setBusy(false,busyLease);}});
@@ -852,7 +859,7 @@ async function requestLogout(){if(busy||emailFlow.pending){message('请先确认
 $('#appearance-form').addEventListener('submit',event=>{event.preventDefault();const agent=current();if(!agent)return;void command({action:'saveDraft',path:`/agents/${encodeURIComponent(agent.agentId)}/profile/draft`,method:'PUT',targetId:agent.agentId,fields:{expectedVersion:agent.profile.version,expectedPolicyVersion:agent.profile.policyVersion,fields:{avatar:{template:'basic',color:$('#appearance-color').value}}}});});
 async function handleEntry(){
   const entry=entryStore?.peek();if(!entry)return false;
-  const protectedTask=emailFlow.unfinished||assistance.token||recoveryPrepared||(recoveryIntent&&!$('#recovery-form').hidden)||runtimePrepared||invitePrepared||backupPrepared;
+  const protectedTask=vault.stage==='recovered'||emailFlow.unfinished||assistance.token||recoveryPrepared||(recoveryIntent&&!$('#recovery-form').hidden)||runtimePrepared||invitePrepared||backupPrepared;
   const unarchivableClaim=vault.claimContext&&!vault.claimContext.handoffToken&&!vault.setupToken;
   if(hasPending()||protectedTask||unarchivableClaim){message('请先继续当前任务，或明确返回／取消，再处理另一位 Agent。原任务和新入口已保留。','pending');return true;}
   if(presentation?.dirty()){const confirmation=confirmationSnapshot();if(!await confirmAction('打开新的 Agent 任务','当前有尚未保存的资料。放弃这些修改并打开新的 Agent 入口？','放弃修改并继续')||!sameConfirmation(confirmation))return true;}
@@ -886,16 +893,18 @@ async function navigateAccount(mode='account',agentId=''){
   if(mode==='recover'){showForgot();return;}
   if(mode==='entry'&&!vault.sessionToken){presentation?.entry();return;}
   if(agentId&&agentId!==selectedId&&runtimePrepared){message('请先完成当前 Agent 的运行文件确认，再切换目标。原进度保持不变。','pending');return;}
-  if(vault.sessionToken){if(agentId&&agentId!==selectedId&&presentation?.dirty()){const confirmation=confirmationSnapshot();if(!await confirmAction('切换 Agent','当前有尚未保存的资料。放弃这些修改并读取另一位 Agent？','放弃修改并继续')||!sameConfirmation(confirmation))return;}const source=vault,lease=setBusy(true);try{if(agentId)requestedAgentId=agentId;const loaded=await loadAgents({resetProfile:!presentation?.dirty()||Boolean(agentId&&agentId!==selectedId)});if(loaded&&vault===source&&lease===busyRevision&&!vault.claimContext)presentation?.navigate(mode==='account'?'security':mode==='entry'?'invite':mode==='profile'?(unavailableAgentId?'unavailable':'profile'):'agents');}catch(error){if(vault===source&&lease===busyRevision){fail(error);if(error.status===401)showSignIn();}}finally{setBusy(false,lease);}return;}
+  if(vault.sessionToken){if(agentId&&agentId!==selectedId&&presentation?.dirty()){const confirmation=confirmationSnapshot();if(!await confirmAction('切换 Agent','当前有尚未保存的资料。放弃这些修改并读取另一位 Agent？','放弃修改并继续')||!sameConfirmation(confirmation))return;}const source=vault,lease=setBusy(true);try{if(agentId){entryStore?.rememberTarget(undefined,agentId);requestedAgentId=agentId;}const loaded=await loadAgents({resetProfile:!presentation?.dirty()||Boolean(agentId&&agentId!==selectedId)});if(loaded&&vault===source&&lease===busyRevision&&!vault.claimContext)presentation?.navigate(mode==='account'?'security':mode==='entry'?'invite':mode==='profile'?(unavailableAgentId?'unavailable':'profile'):'agents');}catch(error){if(vault===source&&lease===busyRevision){fail(error);if(error.status===401)showSignIn();}}finally{setBusy(false,lease);}return;}
   showSignIn();
 }
-async function start(){if(started)return;started=true;
+async function start(intent={}){if(started)return;started=true;
   try{renderSavedProgress();}catch(error){fail(error);}
   if(!storageAvailable){showSignIn();message('浏览器无法保存私密续接材料，请启用会话存储后继续。','error');return;}
   if(vault.pendingOperation){const lease=setBusy(true);try{await resume();}catch(error){fail(error);}finally{setBusy(false,lease);}return;}
   if(emailFlow.unfinished){await emailFlow.resume();return;}
+  if(vault.stage==='recovered'){showRecoveryCompleted();return;}
   if(assistance.token||vault.claimContext||vault.setupToken){const lease=setBusy(true);try{if(assistance.token)await openAssistance(assistance.token);else await resume();}catch(error){fail(error);}finally{setBusy(false,lease);}if(entryStore?.pending)await handleEntry();return;}
   if(await handleEntry())return;
+  if(intent.agentId)requestedAgentId=intent.agentId;
   const lease=setBusy(true);sessionPhase=vault.sessionToken?'loading':'anonymous';emitState();
   try{await resume();}catch(error){fail(error);}finally{setBusy(false,lease);}
 }
