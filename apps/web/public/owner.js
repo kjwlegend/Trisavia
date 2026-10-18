@@ -504,7 +504,7 @@ async function importCredentials(event){
    if(busyLease!==busyRevision||vault!==active)return;
    if(currentAccount.ownerId!==saved.ownerId||owned.ownerId!==saved.ownerId||!owned.agents.some(agent=>agent.agentId===saved.pendingOperation.targetId))throw new BackupError('owner_mismatch');
    // Keep the newly authenticated session and recovery material; import only the original command.
-   vault={...active,pendingOperation:saved.pendingOperation};pendingPayload=null;save();await resume();return;
+   vault={...active,pendingOperation:saved.pendingOperation};pendingPayload=null;recoveryIntent=false;save();await resume();return;
   }
   vault=saved;account=null;pendingPayload=null;setupInfo=null;setupPublicGeneration++;setupPublicAbort?.abort();setupPrepared=false;recoveryPrepared=null;save();
   if(pendingUnpublish()){recoveryIntent=false;await resume();return;}
