@@ -40,7 +40,13 @@ export function createPanelTransition(node,{
     try{
       const animation=node.animate(frames,{duration,easing:visible?'cubic-bezier(.2,.8,.2,1)':'cubic-bezier(.4,0,1,1)',fill:'both'});
       active.animation=animation;
-      active.timer=setTimer(()=>finish(turn,visible),duration+80);
+      // animate() can still be pending with startTime=null. Do not let a wall
+      // clock cancel its first frame before the document starts playback.
+      const armFallback=()=>{
+        if(destroyed||turn!==generation||active?.animation!==animation)return;
+        active.timer=setTimer(()=>finish(turn,visible),duration+80);
+      };
+      if(animation.ready?.then)animation.ready.then(armFallback,()=>finish(turn,visible));else armFallback();
       animation.finished.then(()=>finish(turn,visible),()=>{});
     }catch{finish(turn,visible);}
     return promise;
