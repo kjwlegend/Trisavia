@@ -56,7 +56,8 @@ export function createOwnerEmailFlow(hooks){
     $('#email-intro').textContent=reg?'填写账号资料，验证邮箱后完成注册。登录备份是可选的备用方式。':'验证码只会发往账号原已存邮箱。请在此网页输入，不要告诉 Agent。';
     $('#email-account-fields').hidden=!reg;$('#email-password-label').textContent=reg?'登录密码':'新登录密码';
     $('#email-username').required=reg;$('#email-address').required=reg;$('#email-password-confirm').required=!reg;
-    $('#email-target').hidden=!(progress?.target||progress?.agentId||proposedTarget);$('#email-target').textContent=`本次目标：${targetLabel()}`;
+    const fixedAgentId=progress?.target?.agentId||progress?.agentId||proposedTarget?.agentId;
+    $('#email-target').hidden=!fixedAgentId;$('#email-target').textContent=`本次目标：${targetLabel()} · ${fixedAgentId||''}`;
     $('#email-start').hidden=Boolean(progress);$('#email-start').textContent='发送注册验证码';
     $('#email-challenge').hidden=!progress||status==='completed';
     $('#email-delivery').textContent=progress?(copy[currentView?.deliveryStatus]||'正在确认邮件状态…'):'';
