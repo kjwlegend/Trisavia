@@ -6,6 +6,7 @@ import {readAgentSelection,rememberAgentSelection,clearAgentSelection} from './a
 import {createRecoveryAssistance} from './owner-recovery-assistance.js';
 import {assertOwnerOperationResult} from './owner-operation-result.js';
 import {createOwnerEmailFlow} from './owner-email-flow.js';
+import {createOwnerReceiptReader,confirmUnknownOwnerOperation} from './owner-receipt.js';
 
 export function createOwnerController(root,{entryStore,onState=()=>{},onView=()=>{},isVisible=()=>true,onLogout=()=>{},confirmAction=async()=>false,focusTitle=()=>{}}={}){
 const $=(selector,scope=root)=>query(selector,scope);
@@ -291,7 +292,7 @@ function beginPending({action,scope,path,method='POST',body,token,kind='owner',t
   vault.pendingOperation=pending;save();pendingPayload={body,token};controls();return pending;
 }
 function clearPending(){delete vault.pendingOperation;pendingPayload=null;resetAuthenticationExit();save();controls();}
-async function receipt(pending){return api(`/operations/${encodeURIComponent(pending.operationId)}?scope=${encodeURIComponent(pending.scope)}&action=${encodeURIComponent(pending.action)}`,{token:pending.action==='rejectRecoveryRequest'?(vault.recoveryToken||vault.sessionToken):vault.sessionToken});}
+const receipt=createOwnerReceiptReader({request:api,context:()=>({source:vault,ownerId:vault.ownerId,sessionToken:vault.sessionToken,recoveryToken:vault.recoveryToken,generation:readGeneration,authenticated:authenticatedOwner()}),expire:({source,sessionToken,generation})=>expireAuthenticatedSession(source,sessionToken,generation)});
 function assertBackupReceipt(result,pending,ownerId,proof){
   if(!validToken(proof)||result.ownerId!==ownerId||result.recoveryId!==tokenId(proof)||result.operationId!==pending.operationId||pending.scope!==`owner:${ownerId}`)throw new BackupError('operation_mismatch');
 }
@@ -359,9 +360,9 @@ async function executePending(pending=vault.pendingOperation){
    }
    pending.uncertain=true;vault.pendingOperation=pending;save();
    message('正在确认是否完成，请稍等。','pending');
-   try{await committed(await receipt(pending),pending);return;}catch{}
+   if(await confirmUnknownOwnerOperation(pending,{receipt,committed}))return;
    showPendingAuthentication(true);message(authenticationPendingMessage(),'pending');
-  }else if(isUnknown(error)||(pendingUnpublish()&&hadUnknown)){if(pendingUnpublish()){pending.uncertain=true;save();}message('正在确认是否保存成功。','pending');try{await committed(await receipt(pending),pending);return;}catch{}if(pendingUnpublish())message(unpublishPendingMessage(error),'pending');else fail(error);}
+  }else if(isUnknown(error)||(pendingUnpublish()&&hadUnknown)){if(pendingUnpublish()){pending.uncertain=true;save();}message('正在确认是否保存成功。','pending');if(await confirmUnknownOwnerOperation(pending,{receipt,committed}))return;if(pendingUnpublish())message(unpublishPendingMessage(error),'pending');else fail(error);}
   else{clearPending();fail(error);if(['version_conflict','state_conflict'].includes(error.code))$('#draft-note').textContent='有版本冲突。输入已保留，请读取最新状态后再确认。';}
  }finally{setBusy(false,busyLease);}
 }
