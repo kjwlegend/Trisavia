@@ -3,6 +3,19 @@ import {avatarSprite} from './scene.js';
 
 const overlaps=(a,b,gap=0)=>a.left<b.right+gap&&a.right>b.left-gap&&a.top<b.bottom+gap&&a.bottom>b.top-gap;
 const hash=value=>[...value].reduce((n,c)=>(Math.imul(n,31)+c.charCodeAt(0))>>>0,7);
+function freeAreas(bounds,blocked){
+  let areas=[bounds];
+  for(const obstacle of blocked){
+    const next=[];
+    for(const area of areas){
+      if(!overlaps(area,obstacle)){next.push(area);continue;}
+      const left=Math.max(area.left,obstacle.left),right=Math.min(area.right,obstacle.right),top=Math.max(area.top,obstacle.top),bottom=Math.min(area.bottom,obstacle.bottom);
+      for(const rect of [{...area,bottom:top},{...area,top:bottom},{left:area.left,right:left,top,bottom},{left:right,right:area.right,top,bottom}])if(rect.right>rect.left&&rect.bottom>rect.top)next.push(rect);
+    }
+    areas=next;
+  }
+  return areas;
+}
 function standingSpots(objects){
   const blocked=objects.map(o=>({left:o.x-o.sprite.ax-8,right:o.x-o.sprite.ax+o.sprite.canvas.width+8,top:o.y-o.sprite.ay-4,bottom:o.y-o.sprite.ay+o.sprite.canvas.height+8}));
   const points=[],add=(x,y)=>{
@@ -33,11 +46,13 @@ export function createOwnedAgentLayer(root,objects,{onSelect=()=>{}}={}){
       const node=document.querySelector(selector);if(!node||node.hidden||!node.getClientRects().length)continue;
       const r=node.getBoundingClientRect();obstacles.push({left:r.left-box.left-8,right:r.right-box.left+8,top:r.top-box.top-8,bottom:r.bottom-box.top+8});
     }
-    const used=[],order=[...entries.values()].sort((a,b)=>Number(b.agentId===selectedId)-Number(a.agentId===selectedId)||Number(b.agentId===hoveredId||b.agentId===focusedId)-Number(a.agentId===hoveredId||a.agentId===focusedId)||a.agentId.localeCompare(b.agentId));
+    const used=[],rank=entry=>entry.agentId===selectedId?0:entry.agentId===focusedId?1:entry.agentId===hoveredId?2:3;
+    const order=[...entries.values()].sort((a,b)=>rank(a)-rank(b)||a.agentId.localeCompare(b.agentId));
     for(const entry of order){
-      const p=project.point(entry.x,entry.y);entry.button.hidden=p.x<0||p.x>box.width||p.y<0||p.y>box.height;
+      const p=project.point(entry.x,entry.y),full=rank(entry)<3,outside=p.x<0||p.x>box.width||p.y<0||p.y>box.height;
+      entry.button.hidden=outside&&!full;
       if(entry.button.hidden)continue;
-      text(entry);const full=entry.agentId===selectedId||entry.agentId===hoveredId||entry.agentId===focusedId;
+      text(entry);entry.button.classList.toggle('is-priority',full);entry.button.classList.remove('is-compact-label');entry.button.style.maxWidth='';entry.button.style.left='0px';entry.button.style.top='0px';
       const place=()=>{
         const r=entry.button.getBoundingClientRect(),width=r.width,height=r.height;
         const left=Math.max(12,Math.min(box.width-width-12,p.x-width/2)),top=p.y-36*project.scale-height-6;
@@ -46,6 +61,26 @@ export function createOwnedAgentLayer(root,objects,{onSelect=()=>{}}={}){
         return rect;
       };
       let rect=place();
+      if(!rect&&full){
+        const bounds={left:12,right:box.width-12,top:76,bottom:box.height-12};
+        const blocked=[...obstacles,...used.map(r=>({left:r.left-4,right:r.right+4,top:r.top-4,bottom:r.bottom+4}))];
+        const areas=freeAreas(bounds,blocked),desired={left:p.x-entry.button.offsetWidth/2,top:p.y-36*project.scale-entry.button.offsetHeight-6};
+        function nearest(){
+          const {width,height}=entry.button.getBoundingClientRect();
+          return areas.filter(area=>area.right-area.left>=width&&area.bottom-area.top>=height).map(area=>{
+            const left=Math.max(area.left,Math.min(area.right-width,desired.left)),top=Math.max(area.top,Math.min(area.bottom-height,desired.top));
+            return{left,right:left+width,top,bottom:top+height,distance:Math.hypot(left-desired.left,top-desired.top)};
+          }).sort((a,b)=>a.distance-b.distance)[0]||null;
+        }
+        rect=nearest();
+        if(!rect){
+          // Keep the identity and its 44px entry; shorten the name, never hide a
+          // current/focused Agent merely because its original head label clips.
+          const area=areas.filter(a=>a.right-a.left>=54&&a.bottom-a.top>=44).sort((a,b)=>(b.right-b.left)-(a.right-a.left))[0];
+          if(area){entry.button.classList.add('is-compact-label');entry.button.style.maxWidth=`${Math.min(176,area.right-area.left)}px`;entry.badge.textContent=entry.agentId===selectedId?'当前 Agent':'我的 Agent';rect=nearest();
+            if(!rect){entry.badge.textContent=entry.agentId===selectedId?'当前':'我的';rect=nearest();}}
+        }
+      }
       if(!rect&&!full){text(entry,true);rect=place();}
       if(!rect&&!full){entry.button.classList.add('is-marker');entry.name.textContent='';entry.badge.textContent='';rect=place();}
       entry.button.hidden=!rect;

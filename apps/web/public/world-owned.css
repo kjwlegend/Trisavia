@@ -3,6 +3,8 @@
 .world-owned-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .world-owned-badge{flex-shrink:0;font-size:12px;line-height:18px}
 .world-owned-label.is-current{border-color:#397E80;box-shadow:0 0 0 1px #397e8040}
+.world-owned-label.is-priority{height:44px;min-height:44px;min-width:54px}
+.world-owned-label.is-compact-label{gap:3px;padding-left:4px;padding-right:4px}
 .world-owned-label.is-short{max-width:none}.world-owned-label.is-short .world-owned-name{display:none}
 .world-owned-label.is-marker{width:8px;min-width:8px;height:8px;min-height:8px;max-width:8px;padding:0;border:0;border-radius:1px;background:#397E80;transform:rotate(45deg)}
 .world-owned-label:hover{background:#eef5e9}.world-owned-label:focus-visible{outline:2px solid #397E80;outline-offset:2px}
