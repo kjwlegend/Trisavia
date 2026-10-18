@@ -81,7 +81,7 @@
 
 本人验码后，网页以上表的 `registerOwner` 或 `completeSetup` 完成；两者作用域均为 `owner-registration:<attemptId>`。换邮箱必须放弃原挑战重新开始；最终提交仍检查用户名／邮箱唯一性和原交接，失败不留下可登录半成品或消费绑定机会。注册码和注册证明不能用于主人登录、密码恢复或另一 Agent。
 
-注册尝试读取返回 `attemptId,purpose:registration,status,expiresAt,resendAfter,deliveryStatus`，可有 `deliveryId`、固定目标的 `agentId,generation`，验码后才有 `grantExpiresAt`。不返回邮箱、验证码或证明。网页只使用原尝试的 browser 读取，不依据公开 attemptId 获权。
+注册尝试读取返回 `attemptId,purpose:registration,status,expiresAt,resendAfter,deliveryStatus`；有投递任务时附 `deliveryId,sendOperationId`，有交接目标时附 `agentId,generation,ownerId`，验码后才有 `grantExpiresAt`。此 `ownerId` 是服务端从交接证明派生的原待初始化主人，客户端请求不能指定。`sendOperationId` 是该投递任务的原发送操作号，属于非秘密定位信息。不返回邮箱、验证码或证明。网页只使用原尝试的 browser 读取，不依据公开 attemptId 获权。
 
 ## 主人恢复协助
 
@@ -103,7 +103,9 @@
 
 邮箱恢复尝试的安全读取采用同类字段，`purpose:recovery`，另有 `requestId,agentId,ownerId`，不返回邮箱、验证码或证明。这是本次受限浏览器的私有状态，不是 Agent 的四状态投影；Agent 不取得 `email_proved` 状态或对应权限。发信按同主人 30 分钟最多 3 封、24 小时最多 10 封计数，创建请求每主人每小时最多 5 次，另有来源 IP 与全局限额。
 
-发送／重发、验码、完成分别保存原操作号和完整正文续接。`deliveryStatus` 为 `unavailable|none|queued|accepted|failed|unknown`；它与邮箱验证／恢复状态分开。`queued` 只表示投递任务排队，`accepted` 只表示服务商受理，都不证明送达、主人收到、验码或完成；`unknown` 保留原投递标识和操作键核对，不另造请求盲发。通道缺配置时明确不可用，不发万能码、不跳过验证；真实投递和收信尚未验收。
+同一恢复 request 只建立一个 browser attempt；换浏览器不能清除累计 5 次错误。另起尝试返回 409 `email_attempt_exists`，须用原 browser 续接，或请当前有效 Agent 取消原请求后重新发起。未完成的 `email_proved` 授权到达 `grantExpiresAt`（最长 5 分钟，且不超过请求截止时间）时，安全状态为 `expired`；恢复也须取消原请求并重新发起，不能换 browser 绕过。
+
+发送／重发、验码、完成分别保存原操作号和完整正文续接。`deliveryStatus` 为 `unavailable|none|queued|accepted|failed|unknown`；它与邮箱验证／恢复状态分开。`queued` 只表示投递任务排队，`accepted` 只表示服务商受理，都不证明送达、主人收到、验码或完成。`queued`／`unknown` 时保留并续接 `sendOperationId` 对应的原发送 action／operationId／body，不另造操作号或验证码；新发送操作会被拒为 409 `email_delivery_pending`，`details.operationId` 指向原发送操作。通道缺配置时明确不可用，不发万能码、不跳过验证；真实投递和收信尚未验收。
 
 服务端启用配置为私有 `RESEND_API_KEY`、`M1_EMAIL_FROM`、`M1_PUBLIC_ORIGIN`、`M1_EMAIL_CODE_SECRET`（至少 32 字节），发件地址须匹配在 Resend 已验证的域名。真实值不写文档、Agent、网页或普通聊天。两个邮箱能力布尔只表示配置齐全，不是投递／闭环验收证据；无配置保留已有登录、合法关联、可选独立备份与 Agent 自有活动。
 
@@ -160,6 +162,9 @@ runtime 代次、主人绑定或 owner authVersion 改变会使未决请求失�
 | 主人访问其他主人目标 | 404 `target_not_accessible` |
 | 旧对象/政策版本 | 409 `version_conflict` |
 | 同操作号换载荷 | 409 `idempotency_payload_mismatch` |
+| 原投递仍排队或结果未知时另起发送 | 409 `email_delivery_pending`，`details.operationId` 为原发送操作号 |
+| 同一恢复请求另起 browser attempt | 409 `email_attempt_exists`；原 browser 续接，或当前 Agent 取消请求后重新发起 |
+| 邮件尝试或未完成的受限授权已过期 | 安全读取为 `expired`，继续受限动作返回 410 `email_attempt_expired` |
 | 主人用户名/邮箱已占用 | 409 `username_unavailable` / `email_unavailable`，不返回他人资料 |
 | 无效账号字段 | 400 `invalid_request`，`details.field` 指明本人需修正的字段 |
 | 交接代次冲突 | 409 `generation_conflict` |
