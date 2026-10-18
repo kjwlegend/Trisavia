@@ -152,7 +152,12 @@ export function createOwnerEmailFlow(hooks){
     if(storageError){show();fail(storageError);return;}
     if(progress&&(registration()||progress.assistanceToken!==context.assistanceToken)){show();inform('当前还有另一项邮箱流程，请先继续该流程。','pending');return;}
     if(!progress){const state=baseState('recovery');progress={...state,attemptId:tokenId(state.browserToken),...context};try{save();}catch(error){progress=null;show();fail(error);return;}}
-    show();void readCapabilities();await run(async()=>{save();if(!currentView)await issue('startEmailRecovery');else await read();if(experience()&&!pending()&&currentView?.status==='pending_email'&&!progress.sendOperationId)await issue('sendRecoveryCode');});
+    show();void readCapabilities();await run(async()=>{
+      save();if(!currentView)await issue('startEmailRecovery');
+      // The start receipt is historical; read the current mode before enabling the next step.
+      await read();
+      if(experience()&&!modeMismatch()&&!pending()&&currentView?.status==='pending_email'&&!progress.sendOperationId)await issue('sendRecoveryCode');
+    });
   }
   const basePath=()=>registration()?`/owner/registration-attempts/${encodeURIComponent(progress.attemptId)}`:`/owner/email-recovery-attempts/${encodeURIComponent(progress.attemptId)}`;
   function payload(action){
