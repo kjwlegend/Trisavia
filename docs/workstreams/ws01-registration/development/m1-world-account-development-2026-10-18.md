@@ -99,3 +99,26 @@
 可回退至 backend／schema 4 相同的原 7ea 快照，继续使用当前原库和 identity，不回灌旧备份；更旧 fd2 仍不兼容，不能覆盖近期写入。以上合成 QA 不等于完整 M1、真实认证失效浏览器、真实邮件、手机或其他尺寸验收。交付未操作真实用户账号、其他服务或公网；本作者仅静态整理既有回报，没有重跑测试、浏览器、服务或数据库操作。
 
 技术总监已核对固定 dde QA 18892 的 PID 44155／工作目录后正常 SIGTERM，确认无子进程或监听；fixture、证据、旧快照及 worktree 保留，其余服务未动。运行源码 dde、8789 PID 49675 不变。
+
+## 自有 Agent 漫游与底部 HUD 交付 · 514ca56
+
+本次合并交付合法路网漫游／短停、默认无地图文字牌、hover／focus 仅姓名且 focus 优先、随动脚环与保持缩放的实时定位；复用单 RAF、暂停／减少动态及后台 delta 限制，同 ID 刷新保进度。底中横栏为 240×72，原 320／440／520 宽面板在安全区居中，180ms 进入／140ms 退场、reduced 即时终态；场所开关不改镜头。原认证、选择、未决任务与回执边界不变，动画不代表在线或真实 Agent 行为。
+
+固定产品为 `514ca56a950fdd2ee7c12f2d59813db499e537f6`，基线 `ee9745bcc87207b99377e6370972d5f2f451f4c6`。原 web 来源 `4c88e6b` → `2e44c29` → `b1bb9cd` → `5f271d8`；测试来源 `c7c789f`、`3e6229b`、`fad65e7`。[原独审](../validation/m1-owned-agents-static-code-review-2026-10-18.md)最终接受准确 514ca56。OAM-R03 已修正镜头变化后以真实 client 指针位置重新命中，鼠标 hover 与键盘 focus 独立；设计接受默认无文字／移动光圈及三张新 HUD 布局画面，保留各自实看范围。
+
+技术总监分别在 2f4b4f3 执行运动／binding 单文件 **10/10**，fb7fe61 执行过渡驱动 **2/2**，514ca56 增强延迟 ready 后执行同文件 **3/3**；没有把三批拼作同版全量结果。模型测试不证明真实 DOM、焦点、几何或动画帧；未重跑未变回执、全量回归、typecheck 或 build。
+
+[原模拟报告](../validation/user-simulation/m1-owned-agents-desktop-round-01.md)分版保留：R3／2f4b 实际 8.147 秒双角色移动、hover／键盘姓名、切换、暂停恢复、147% 定位保比例及退出；普通滚轮、精确 150% 未测。R4／fb7 底栏、居中、输入焦点和定位范围完成，但退出持续 opacity／scale 1／1 后直接隐藏，失败不抹写。作者 TaskSpace44 另确认 native pending、startTime=null、currentTime=0 时墙钟兜底已取消首帧；5f271d8 改为原生 ready 后才挂同代 duration＋80 兜底，不延长动效，不声称修复浏览器调度。
+
+R5／514ca56 的 TaskSpace45 已 finish，始终访客、无账户写入：先 pending 约 1 秒，随后原生 140ms 内实得 opacity .946→.761→.494→.076、scale .998→.973 再 hidden，退出问题在该范围 fixed/verified；不能称总等待仅 140ms 或已消除启动延迟。pending 期关后重开未被旧回调隐藏，输入可编辑／清空，Escape 回登录入口；实际点击间隔 1003ms，未覆盖原生已运行时亚 140ms 快速点击，也未在新版重跑 R3／R4 整轮。
+
+本次交付按 [delivery-evidence.json](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-owned-agents/user-8789-backup-before-wandering-centered-hud-20261018T154044Z/delivery-evidence.json) 记录：
+
+| 项目 | 交付事实与边界 |
+| --- | --- |
+| main／源码／8789 | 7 提交、14 文件快进至准确 514ca56；702 项他人改动字节保持。快照 `/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-owned-agents/user-delivery-514ca56` 的 129 文件逐项 Git／hash 核对。旧 PID 49675 正常 SIGTERM，新 PID 23948 仅 8789 |
+| 全新一致备份 | 上述证据同目录含 live-consistent.sqlite、stopped-consistent.sqlite 与配对 identity，目录／文件 0700／0600，两库 quick_check 为 ok；使用最终切换时的当前用户数据，不复用旧备份 |
+| 身份／数据／环境 | 原 `data/m1-account-v2.sqlite`、identity、实例 `instance_6ee4d865-1e1a-4b40-90eb-2dbe6c46165f` 保持；schema 4、全部 14 表行数／全行指纹不变，无新迁移或回灌。沿原 origin、显式 experience／1234 与真实系统时钟，不带 QA 库、identity、冻结 clock 或 Resend key |
+| 只读就绪／待确认 | 15 项必要 HTTP：health／capabilities 核对状态与模式，两个入口与本轮 11 个 JS／CSS 核对固定源码字节及 no-store／nosniff。8789 最终访客浏览器确认仍 pending；QA 18892／PID 17820／source514 暂留，原合成库／identity／fixture／QA clock 保留 |
+
+可回退至同 backend／schema 4 的原 dde598 用户快照，继续使用当前数据库及 identity，不能还原旧备份覆盖后来写入。交付未操作真实账号、真实邮件、公网或其他端口。当前不含新提出的注册／保存即公开、参与状态与访问频率业务／API 变化，全面 Agent 管理新版及原型仍是设计产物。以上不等于完整 M1、真实邮件、手机、其他尺寸或性能验收；本作者仅静态整理，没有重跑验证或操作服务／账号／数据库。
