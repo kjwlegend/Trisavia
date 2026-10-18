@@ -14,8 +14,6 @@ const routes: Definition[] = [
   { method: "GET", url: "/v1/owner-handoffs/:handoffId", action: "previewHandoff" },
   { method: "POST", url: "/v1/owner-setups", action: "exchangeSetup" },
   { method: "GET", url: "/v1/owner/setup", action: "readSetup" },
-  { method: "POST", url: "/v1/owner/setup/complete", action: "completeSetup" },
-  { method: "POST", url: "/v1/owner/accounts", action: "registerOwner" },
   { method: "GET", url: "/v1/owner/account", action: "readAccount" },
   { method: "POST", url: "/v1/owner/agent-claims", action: "claimAgent" },
   { method: "POST", url: "/v1/owner/sessions", action: "login" },
@@ -83,9 +81,9 @@ export function registerM1Routes(app: FastifyInstance, service: M1Service): void
           const hasBody = request.body !== undefined || request.headers["transfer-encoding"] !== undefined
             || (request.headers["content-length"] !== undefined && request.headers["content-length"] !== "0");
           if (hasBody || Object.keys(params).some((key) => key in query)) fail("invalid_request", 400, "Receipt selectors belong in the query; operation ID belongs in the path");
-          return service.invoke("receipt", { ...query, ...params }, headerToken(request));
+          return service.invokeHttp("receipt", { ...query, ...params }, headerToken(request), { clientIp: request.ip });
         }
-        return service.invoke(definition.action, { ...body, ...params }, headerToken(request));
+        return service.invokeHttp(definition.action, { ...body, ...params }, headerToken(request), { clientIp: request.ip });
       },
     });
   }

@@ -1,8 +1,10 @@
+import { loadEmailConfig, type EmailConfig } from '../infrastructure/email/resend.ts';
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
 export interface BackendConfig {
+  email?: EmailConfig;
   host: string;
   port: number;
   trustProxyLoopback: boolean;
@@ -21,6 +23,7 @@ export function loadBackendConfig(
   env: NodeJS.ProcessEnv = process.env,
   cwd = process.cwd(),
 ): BackendConfig {
+  const email = loadEmailConfig(env);
   const host = env.M1_HOST ?? '127.0.0.1';
   if (!['127.0.0.1', '::1', 'localhost'].includes(host)) {
     throw new Error('M1_HOST must be a loopback address for this local candidate');
@@ -45,7 +48,7 @@ export function loadBackendConfig(
   }
   if (databasePath === ':memory:') {
     return {
-      host, port, trustProxyLoopback, databasePath, identityPath: null,
+      host, port, trustProxyLoopback, databasePath, identityPath: null, ...(email ? { email } : {}),
       instanceId: env.M1_INSTANCE_ID ?? `instance_${randomUUID()}`,
       recoveryEpoch: env.M1_RECOVERY_EPOCH ?? `epoch_${randomUUID()}`,
     };
@@ -90,5 +93,5 @@ export function loadBackendConfig(
       || (env.M1_RECOVERY_EPOCH && env.M1_RECOVERY_EPOCH !== saved.recoveryEpoch)) {
     throw new Error('Environment identity conflicts with saved metadata; resolve it explicitly');
   }
-  return { host, port, trustProxyLoopback, databasePath, identityPath, instanceId: saved.instanceId, recoveryEpoch: saved.recoveryEpoch };
+  return { host, port, trustProxyLoopback, databasePath, identityPath, ...(email ? { email } : {}), instanceId: saved.instanceId, recoveryEpoch: saved.recoveryEpoch };
 }

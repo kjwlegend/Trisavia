@@ -4,7 +4,7 @@ export interface JsonObject { [key: string]: JsonValue }
 
 export const M1_TABLES = [
   'agents', 'owners', 'credentials', 'bindings', 'registrations',
-  'profiles', 'memberships', 'operations', 'facts', 'recovery_requests',
+  'profiles', 'memberships', 'operations', 'facts', 'recovery_requests', 'email_attempts', 'mail_jobs',
 ] as const;
 export type M1Table = (typeof M1_TABLES)[number];
 

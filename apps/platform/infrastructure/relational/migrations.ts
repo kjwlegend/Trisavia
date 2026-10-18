@@ -98,6 +98,27 @@ export const migrations: readonly Migration[] = [{
     ) STRICT;
     CREATE INDEX recovery_requests_agent_index ON recovery_requests(agent_id);
   `,
+}, {
+  version: 4,
+  name: 'm1_email_onboarding',
+  sql: `
+    CREATE TABLE email_attempts (
+      id TEXT PRIMARY KEY NOT NULL CHECK(length(id) > 0),
+      version INTEGER NOT NULL CHECK(version > 0),
+      data TEXT NOT NULL CHECK(json_valid(data) AND json_type(data) = 'object'),
+      browser_credential_id TEXT GENERATED ALWAYS AS (json_extract(data, '$.browserCredentialId')) STORED NOT NULL UNIQUE REFERENCES credentials(id),
+      CHECK(COALESCE(json_extract(data, '$.purpose') IN ('registration', 'recovery'), 0))
+    ) STRICT;
+    CREATE UNIQUE INDEX email_attempts_recovery_request_unique ON email_attempts(json_extract(data, '$.requestId'))
+      WHERE json_extract(data, '$.purpose') = 'recovery';
+    CREATE TABLE mail_jobs (
+      id TEXT PRIMARY KEY NOT NULL CHECK(length(id) > 0),
+      version INTEGER NOT NULL CHECK(version > 0),
+      data TEXT NOT NULL CHECK(json_valid(data) AND json_type(data) = 'object')
+    ) STRICT;
+    CREATE UNIQUE INDEX mail_jobs_idempotency_unique ON mail_jobs(json_extract(data, '$.idempotencyKey'));
+    CREATE INDEX mail_jobs_owner_index ON mail_jobs(json_extract(data, '$.ownerKey'));
+  `,
 }];
 
 function checksum(migration: Migration): string {

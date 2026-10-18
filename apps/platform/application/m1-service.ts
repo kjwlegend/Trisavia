@@ -1,9 +1,11 @@
 import { randomUUID } from "node:crypto";
 import type { JsonObject, JsonValue, M1ReadSession, M1Store, M1Table, M1Transaction, StoredRow } from "../contracts/store.ts";
 import { checkPassword, equalDigest, hashPassword, parseToken, payloadHash, verifier } from "../domains/access/credentials.ts";
-import { accountFields, loginIdentifier } from "../domains/access/account-identifiers.ts";
+import { loginIdentifier } from "../domains/access/account-identifiers.ts";
 import { boolean, fail, M1Error, object, text, version } from "../domains/common/errors.ts";
 import { AVATAR_COLORS, PROFILE_FIELDS, REMOVABLE_PROFILE_FIELDS, validateFields, validatePublication, validateRemoveFields } from "../domains/profile/profile-rules.ts";
+import { createEmailOnboarding } from "./email-onboarding.ts";
+import type { EmailConfig } from "../infrastructure/email/resend.ts";
 import { FOUNDATION_HTTP_OPERATIONS } from "../contracts/foundation-operations.ts";
 
 export type M1Action =
@@ -13,10 +15,13 @@ export type M1Action =
   | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites"
   | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveDraft" | "publishProfile" | "unpublishProfile" | "profilePolicy"
   | "createRecoveryRequest" | "readRecoveryRequest" | "cancelRecoveryRequest" | "recoveryAssistance" | "verifyRecoveryRequest" | "rejectRecoveryRequest"
+  | "startRegistration" | "readRegistrationAttempt" | "sendRegistrationCode" | "verifyRegistrationEmail" | "cancelRegistration"
+  | "startEmailRecovery" | "readEmailRecoveryAttempt" | "sendRecoveryCode" | "verifyRecoveryEmail" | "recoverByEmail" | "enableRecoveryBackup"
   | "readMembership" | "join" | "leave" | "participation" | "receipt";
 
 export interface M1Options {
   now?: () => number;
+  email?: EmailConfig;
   handoffTtlMs?: number;
   setupTtlMs?: number;
   sessionTtlMs?: number;
@@ -29,7 +34,8 @@ export interface M1Options {
 }
 
 export interface M1Service {
-  invoke(action: M1Action, input?: unknown, token?: string): JsonObject;
+  invoke(action: M1Action, input?: unknown, token?: string, context?: { clientIp?: string }): JsonObject;
+  invokeHttp(action: M1Action, input?: unknown, token?: string, context?: { clientIp?: string }): Promise<JsonObject>;
 }
 
 interface Credential extends JsonObject {
@@ -77,7 +83,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     setup: options.setupTtlMs ?? 15 * 60_000,
     session: options.sessionTtlMs ?? 12 * 60 * 60_000,
     invite: options.inviteTtlMs ?? 24 * 60 * 60_000,
-    recoveryRequest: options.recoveryRequestTtlMs ?? 15 * 60_000,
+    recoveryRequest: options.recoveryRequestTtlMs ?? 30 * 60_000,
     registrations: options.registrationLimit ?? 1000,
     ownerRegistrations: options.ownerRegistrationLimit ?? 1000,
     agentsPerOwner: options.maxAgentsPerOwner ?? 20,
@@ -164,11 +170,6 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     return typeof owner.data.usernameKey === "string" && typeof owner.data.emailKey === "string";
   }
 
-  function availableAccount(tx: M1ReadSession, fields: ReturnType<typeof accountFields>, ownerId: string): void {
-    if (tx.find("owners", { usernameKey: fields.usernameKey }).some((row) => row.id !== ownerId)) fail("username_unavailable", 409, "Username is already in use", { field: "username" });
-    if (tx.find("owners", { emailKey: fields.emailKey }).some((row) => row.id !== ownerId)) fail("email_unavailable", 409, "Email is already in use", { field: "email" });
-  }
-
   function profileUrl(agentId: string): string {
     return `/residents/${encodeURIComponent(agentId)}`;
   }
@@ -242,6 +243,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
 
   function recoveryCreatePermission(tx: M1ReadSession, agentId: string): StoredRow {
     const owner = recoveryOwner(tx, agentId);
+    if (tx.find("recovery_requests", { ownerId: owner.id }).filter((row) => numberValue(row, "createdAt") > now() - 3_600_000).length >= 5) fail("recovery_rate_limited", 429, "Try again later");
     if (tx.find("recovery_requests", { agentId }).some((row) => recoveryStatus(tx, row) === "pending")) fail("recovery_request_pending", 409, "A recovery request is already pending");
     return owner;
   }
@@ -309,41 +311,22 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     return { agentId, ownerId: actor.data.ownerId!, runtimeVersion: agent.data.runtimeVersion!, runtimeActive: agent.data.runtimeActive!, profile: profileView(required(tx, "profiles", agentId)), membership: membershipView(required(tx, "memberships", agentId)), profileUrl: profileUrl(agentId), management: managementView(tx, agent), asOf };
   }
 
-  function invoke(action: M1Action, raw: unknown = {}, token?: string): JsonObject {
-    if (action === "capabilities") return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, ownerRecoveryAssistance: true, runtimeReplacement: true, scheduling: false, perception: false, interaction: false, operations: FOUNDATION_HTTP_OPERATIONS.map((operation) => ({ ...operation, actors: [...operation.actors], receiptScopes: { ...operation.receiptScopes }, requiredVersions: [...operation.requiredVersions] })) };
+  const email = createEmailOnboarding(store, { authenticate, newCredential, command, pendingRecovery, recoveryContext }, {
+    now, sessionTtl: limits.session, ownerLimit: limits.ownerRegistrations, ...(options.email ? { config: options.email } : {}),
+  });
+
+  function invoke(action: M1Action, raw: unknown = {}, token?: string, context: { clientIp?: string } = {}): JsonObject {
+    if (action === "capabilities") return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, ownerRecoveryAssistance: true, ownerEmailVerification: email.configured, ownerEmailRecovery: email.configured, runtimeReplacement: true, scheduling: false, perception: false, interaction: false, operations: FOUNDATION_HTTP_OPERATIONS.map((operation) => ({ ...operation, actors: [...operation.actors], receiptScopes: { ...operation.receiptScopes }, requiredVersions: [...operation.requiredVersions] })) };
     if (action === "catalog") return { version: 1, templates: [{ id: "basic", colors: [...AVATAR_COLORS] }], requiredFields: ["displayName", "avatar"] };
+    if (email.handles(action)) return email.invoke(action, raw, token, context.clientIp);
     return store.transaction((tx) => {
       // This is the server's state-read time, never evidence that a local Agent is online.
       const asOf = now();
-      if (action === "registerOwner") {
-        const input = object(raw, ["operationId", "attemptId", "username", "email", "password", "sessionToken", "recoveryToken", "credentialsSaved"]);
-        const attemptId = text(input.attemptId, "attemptId", 36, 36);
-        if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/u.test(attemptId)) fail("invalid_request", 400, "Expected a UUID attempt ID", { field: "attemptId" });
-        const prior = tx.get("owners", attemptId);
-        if (prior) {
-          if (prior.data.accountRegistrationAttemptId !== attemptId) fail("account_id_conflict", 409, "Use a new unused account attempt");
-          const actor = authenticate(tx, input.sessionToken, ["owner_session"]);
-          if (actor.data.ownerId !== prior.id || actor.id !== prior.data.registrationSessionId) fail("authentication_failed", 401, "Authentication failed");
-          return command(tx, `owner-registration:${attemptId}`, action, input, () => fail("account_id_conflict", 409, "Use a new unused account attempt"));
-        }
-        return command(tx, `owner-registration:${attemptId}`, action, input, () => {
-          if (input.credentialsSaved !== true) fail("invalid_request", 400, "Save the independent credentials before registration");
-          const fields = accountFields(input.username, input.email);
-          availableAccount(tx, fields, attemptId);
-          if (tx.find("owners").length >= limits.ownerRegistrations) fail("quota_exceeded", 429, "Account registration limit reached");
-          const password = hashPassword(input.password);
-          tx.insert("owners", { id: attemptId, version: 1, data: { status: "active", epoch: store.recoveryEpoch, authVersion: 1, createdAt: now(), initializedAt: now(), passwordSalt: password.salt, passwordHash: password.hash, ...fields, accountRegistrationAttemptId: attemptId, registrationSessionId: parseToken(input.sessionToken, true).id } });
-          newCredential(tx, input.recoveryToken, "owner_recovery", { ownerId: attemptId, ownerAuthVersion: 1 });
-          const session = newCredential(tx, input.sessionToken, "owner_session", { ownerId: attemptId, ownerAuthVersion: 1, expiresAt: now() + limits.session });
-          return { ownerId: attemptId, sessionId: session.id, expiresAt: session.data.expiresAt!, accountComplete: true };
-        });
-      }
-
       if (action === "readAccount") {
         object(raw, []);
         const actor = authenticate(tx, token, ["owner_session"]);
         const owner = required(tx, "owners", actor.data.ownerId!);
-        return { ownerId: owner.id, version: owner.version, username: typeof owner.data.username === "string" ? owner.data.username : null, email: typeof owner.data.email === "string" ? owner.data.email : null, emailVerified: false, accountComplete: accountComplete(owner), asOf };
+        return { ownerId: owner.id, version: owner.version, username: typeof owner.data.username === "string" ? owner.data.username : null, email: typeof owner.data.email === "string" ? owner.data.email : null, emailVerified: owner.data.emailVerified === true, emailVerifiedAt: owner.data.emailVerifiedAt ?? null, emailVerificationSource: owner.data.emailVerificationSource ?? null, accountComplete: accountComplete(owner), asOf };
       }
 
       if (action === "claimAgent") {
@@ -478,8 +461,8 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         });
       }
 
-      if (action === "previewHandoff" || action === "exchangeSetup" || action === "readSetup" || action === "completeSetup") {
-        const keys = action === "previewHandoff" ? ["handoffId"] : action === "exchangeSetup" ? ["operationId", "setupToken"] : action === "completeSetup" ? ["operationId", "password", "recoveryToken", "sessionToken", "credentialsSaved", "username", "email"] : [];
+      if (action === "previewHandoff" || action === "exchangeSetup" || action === "readSetup") {
+        const keys = action === "previewHandoff" ? ["handoffId"] : action === "exchangeSetup" ? ["operationId", "setupToken"] : [];
         const input = object(raw, keys);
         const actor = authenticate(tx, token, action === "previewHandoff" || action === "exchangeSetup" ? ["handoff"] : ["setup"]);
         if (action === "previewHandoff") {
@@ -492,23 +475,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
           update(tx, "credentials", actor, { active: false });
           return { agentId: actor.data.agentId!, ownerId: actor.data.ownerId!, setupId: setup.id, generation: actor.data.handoffGeneration!, expiresAt: setup.data.expiresAt! };
         });
-        return command(tx, `setup:${actor.id}`, action, input, () => {
-          if (input.credentialsSaved !== true) fail("invalid_request", 400, "Save the independent credentials before completing setup");
-          const owner = required(tx, "owners", actor.data.ownerId!);
-          const fields = accountFields(input.username, input.email);
-          availableAccount(tx, fields, owner.id);
-          const password = hashPassword(input.password);
-          const ownerAuthVersion = numberValue(owner, "authVersion");
-          newCredential(tx, input.recoveryToken, "owner_recovery", { ownerId: owner.id, ownerAuthVersion });
-          const session = newCredential(tx, input.sessionToken, "owner_session", { ownerId: owner.id, ownerAuthVersion, expiresAt: now() + limits.session });
-          tx.insert("bindings", { id: randomUUID(), version: 1, data: { agentId: actor.data.agentId!, ownerId: owner.id, active: true } });
-          update(tx, "owners", owner, { status: "active", passwordSalt: password.salt, passwordHash: password.hash, initializedAt: now(), ...fields });
-          update(tx, "agents", required(tx, "agents", actor.data.agentId!), { managementInitializedAt: now() });
-          const registration = tx.find("registrations", { agentId: actor.data.agentId })[0]!;
-          update(tx, "registrations", registration, { managementStatus: "managed" });
-          revokeCredentials(tx, { ownerId: owner.id }, ["bootstrap", "handoff", "setup"]);
-          return { agentId: actor.data.agentId!, ownerId: owner.id, managementStatus: "managed", sessionId: session.id, expiresAt: session.data.expiresAt!, accountComplete: true, invalidated: ["bootstrap", "handoff", "setup"] };
-        });
+        fail("invalid_request", 400, "Unsupported setup action");
       }
 
       if (action === "login") {
@@ -538,13 +505,16 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         const agentId = actor.data.agentId!;
         if (action === "createRecoveryRequest") return command(tx, `agent:${agentId}`, action, input, () => {
           const owner = recoveryCreatePermission(tx, agentId);
+          const sourceKey = payloadHash([store.instanceId, context.clientIp ?? "internal"]);
+          const recent = tx.find("recovery_requests").filter((row) => numberValue(row, "createdAt") > now() - 3_600_000);
+          if (recent.filter((row) => row.data.sourceKey === sourceKey).length >= 30 || recent.length >= 1000) fail("recovery_rate_limited", 429, "Try again later");
           const binding = tx.find("bindings", { agentId, ownerId: owner.id, active: true })[0]!;
-          const context = newCredential(tx, input.assistanceToken, "recovery_assistance", { agentId, ownerId: owner.id });
-          const request: StoredRow = { id: context.id, version: 1, data: {
-            agentId, ownerId: owner.id, epoch: store.recoveryEpoch, contextCredentialId: context.id,
+          const requestContext = newCredential(tx, input.assistanceToken, "recovery_assistance", { agentId, ownerId: owner.id });
+          const request: StoredRow = { id: requestContext.id, version: 1, data: {
+            agentId, ownerId: owner.id, epoch: store.recoveryEpoch, contextCredentialId: requestContext.id,
             bindingId: binding.id, bindingVersion: binding.version, creatorRuntimeCredentialId: actor.id,
             creatorRuntimeVersion: actor.data.runtimeVersion!, ownerAuthVersion: owner.data.authVersion!,
-            status: "pending", createdAt: now(), expiresAt: now() + limits.recoveryRequest,
+            status: "pending", createdAt: now(), expiresAt: now() + limits.recoveryRequest, sourceKey,
           } };
           tx.insert("recovery_requests", request);
           return recoveryView(tx, request);
@@ -595,6 +565,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
           }
           update(tx, "owners", owner, { authVersion: ownerAuthVersion, passwordSalt: password.salt, passwordHash: password.hash });
           if (assistance) update(tx, "recovery_requests", assistance, { status: "completed", completedAt: now(), completionOperationId: text(input.operationId, "operationId", 8, 100) });
+          email.notify(tx, owner, text(input.operationId, "operationId", 8, 100));
           return { ownerId: owner.id, ...(assistance ? { requestId: assistance.id } : {}), sessionId: session.id, ownerAuthVersion, expiresAt: session.data.expiresAt!, invalidated: ["owner_session", "owner_recovery", "invite"] };
         });
       }
@@ -700,13 +671,15 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         const operationId = text(input.operationId, "operationId", 8, 100);
         const scope = text(input.scope, "scope", 1, 220);
         const commandAction = text(input.action, "action", 1, 100);
-        const actor = authenticate(tx, token, ["runtime", "bootstrap", "registration_receipt", "owner_session", "owner_recovery"]);
+        const actor = authenticate(tx, token, ["runtime", "bootstrap", "registration_receipt", "owner_session", "owner_recovery", "email_registration", "email_recovery"]);
         // This is the same unique command key used by writes. Never choose among
         // otherwise visible receipts when independent clients reuse an operation ID.
         const row = tx.find("operations", { scope, action: commandAction, operationId, epoch: store.recoveryEpoch })[0];
         if (row) {
           const result = dataObject(row.data.result);
-          if (actor.data.kind === "owner_recovery") {
+          if (actor.data.kind === "email_registration" || actor.data.kind === "email_recovery") {
+            if (email.canRead(tx, actor, scope, commandAction, operationId)) return result;
+          } else if (actor.data.kind === "owner_recovery") {
             if (scope === `owner:${actor.data.ownerId!}` && commandAction === "rejectRecoveryRequest" && result.ownerId === actor.data.ownerId) return result;
           } else if (actor.data.kind === "owner_session") {
             if (result.ownerId === actor.data.ownerId) return result;
@@ -722,5 +695,13 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
       fail("invalid_request", 400, "Unsupported M1 action");
     });
   }
-  return { invoke };
+  async function invokeHttp(action: M1Action, input?: unknown, token?: string, context?: { clientIp?: string }): Promise<JsonObject> {
+    const result = invoke(action, input, token, context);
+    // Delivery failure cannot turn an already committed password change into an unknown reset.
+    if (["sendRegistrationCode", "sendRecoveryCode", "recoverByEmail", "recover", "receipt"].includes(action)) {
+      try { await email.dispatch(result, action); } catch { /* Durable intent remains queryable/retryable. */ }
+    }
+    return result;
+  }
+  return { invoke, invokeHttp };
 }

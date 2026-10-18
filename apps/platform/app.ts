@@ -1,3 +1,4 @@
+import type { EmailConfig } from './infrastructure/email/resend.ts';
 import { randomUUID } from 'node:crypto';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { createM1Service } from './application/m1-service.ts';
@@ -6,6 +7,7 @@ import { registerM1Routes } from './transport/http/m1-routes.ts';
 import { registerSiteRoutes } from './transport/http/site-routes.ts';
 
 export interface BuildAppOptions {
+  email?: EmailConfig;
   databasePath?: string;
   instanceId?: string;
   recoveryEpoch?: string;
@@ -43,7 +45,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
         return reply.code(503).send({ status: 'unavailable', error: { code: 'storage_unavailable' } });
       }
     });
-    const service = createM1Service(store, options.clock ? { now: options.clock } : {});
+    const service = createM1Service(store, { ...(options.clock ? { now: options.clock } : {}), ...(options.email ? { email: options.email } : {}) });
     registerM1Routes(app, service);
     registerSiteRoutes(app);
     return app;
