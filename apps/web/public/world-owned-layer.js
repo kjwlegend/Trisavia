@@ -1,23 +1,13 @@
 import {el} from './common.js';
 import {avatarSprite} from './scene.js';
 import {createOwnedAgentMotion} from './world-owned-motion.js';
-
-const overlaps=(a,b)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
-function freeAreas(bounds,blocked){
-  let areas=[bounds];
-  for(const obstacle of blocked){const next=[];for(const area of areas){
-    if(!overlaps(area,obstacle)){next.push(area);continue;}
-    const left=Math.max(area.left,obstacle.left),right=Math.min(area.right,obstacle.right),top=Math.max(area.top,obstacle.top),bottom=Math.min(area.bottom,obstacle.bottom);
-    for(const rect of [{...area,bottom:top},{...area,top:bottom},{left:area.left,right:left,top,bottom},{left:right,right:area.right,top,bottom}])if(rect.right>rect.left&&rect.bottom>rect.top)next.push(rect);
-  }areas=next;}
-  return areas;
-}
+import {overlaps,freeAreas,worldOverlayRects} from './world-safe-area.js';
 function nearestRect(areas,width,height,desired){return areas.filter(a=>a.right-a.left>=width&&a.bottom-a.top>=height).map(area=>{
   const left=Math.max(area.left,Math.min(area.right-width,desired.left)),top=Math.max(area.top,Math.min(area.bottom-height,desired.top));
   return{left,right:left+width,top,bottom:top+height,distance:Math.hypot(left-desired.left,top-desired.top)};
 }).sort((a,b)=>a.distance-b.distance)[0]||null;}
 
-export function createOwnedAgentLayer(root,graph,{blockedRects=[],onSelect=()=>{}}={}){
+export function createOwnedAgentLayer(root,graph,{blockedRects=[],onSelect=()=>{},onOverlayChange=()=>{}}={}){
   const labels=el('div','world-owned-labels');labels.setAttribute('aria-label','我的 Agent 地图操作');root.append(labels);
   const tooltip=el('div','world-owned-tooltip');tooltip.id='world-owned-tooltip';tooltip.setAttribute('role','tooltip');tooltip.hidden=true;labels.append(tooltip);
   const motion=createOwnedAgentMotion(graph,{blockedRects}),entries=new Map();
@@ -27,11 +17,7 @@ export function createOwnedAgentLayer(root,graph,{blockedRects=[],onSelect=()=>{
     if(destroyed||!project)return;lastProjection=project;
     const box=root.getBoundingClientRect();
     if(!geometry||geometry.width!==box.width||geometry.height!==box.height){
-      const obstacles=[];
-      for(const selector of ['header','#hud-dock','#hud-agent','#hud-locate-agent','#hud-window','#world-detail','.world-demo']){
-        const node=document.querySelector(selector);if(!node||node.hidden||!node.getClientRects().length)continue;
-        const r=node.getBoundingClientRect();obstacles.push({left:r.left-box.left-8,right:r.right-box.left+8,top:r.top-box.top-8,bottom:r.bottom-box.top+8});
-      }
+      const obstacles=worldOverlayRects(root);
       geometry={width:box.width,height:box.height,areas:freeAreas({left:12,right:box.width-12,top:76,bottom:box.height-12},obstacles),obstacles};
     }
     const active=entries.get(focusedId)||entries.get(hoveredId);
@@ -51,8 +37,11 @@ export function createOwnedAgentLayer(root,graph,{blockedRects=[],onSelect=()=>{
     if(!rect){const area=geometry.areas.filter(a=>a.right-a.left>=32&&a.bottom-a.top>=22).sort((a,b)=>(b.right-b.left)-(a.right-a.left))[0];if(area){tooltip.style.maxWidth=`${Math.min(176,area.right-area.left)}px`;const size=tooltip.getBoundingClientRect();rect=nearestRect(geometry.areas,size.width,size.height,desired);}}
     if(rect){tooltip.style.left=`${rect.left}px`;tooltip.style.top=`${rect.top}px`;}else tooltip.hidden=true;
   }
-  const observer=new MutationObserver(()=>{geometry=null;layout();});
-  for(const selector of ['#hud-root','#world-detail','.world-demo']){const node=document.querySelector(selector);if(node)observer.observe(node,{subtree:true,attributes:true,attributeFilter:['hidden','class','style','open']});}
+  function overlayChanged(){if(destroyed)return;geometry=null;onOverlayChange();layout();}
+  const observer=new MutationObserver(overlayChanged),resizer=new ResizeObserver(overlayChanged);
+  for(const selector of ['#hud-root','#world-detail','.world-demo']){const node=document.querySelector(selector);if(node)observer.observe(node,{subtree:true,attributes:true,attributeFilter:['hidden','class','style','open','data-panel-state']});}
+  const layoutRoot=document.querySelector('#world-layout');if(layoutRoot)observer.observe(layoutRoot,{attributes:true,attributeFilter:['style']});
+  for(const selector of ['header','#hud-dock','#hud-agent','#hud-locate-agent','#hud-window','#world-detail','.world-demo']){const node=document.querySelector(selector);if(node)resizer.observe(node);}
   function set(projection){
     if(destroyed)return;selectedId=projection.selectedAgentId;const ids=new Set(projection.agents.map(agent=>agent.agentId));motion.sync([...ids]);
     for(const [id,entry]of entries)if(!ids.has(id)){entry.button.remove();entries.delete(id);}
@@ -83,6 +72,6 @@ export function createOwnedAgentLayer(root,graph,{blockedRects=[],onSelect=()=>{
     layout,hover(id){if(hoveredId===id)return;hoveredId=entries.has(id)?id:'';layout();},
     hit(point,scale){return[...entries.values()].map(entry=>({entry,d:Math.hypot(point.x-entry.x,point.y-entry.y)})).filter(({entry})=>Math.abs(point.x-entry.x)<=Math.max(16,22/scale)&&Math.abs(point.y-entry.y+16)<=Math.max(20,22/scale)).sort((a,b)=>a.d-b.d)[0]?.entry;},
     point(id){const position=motion.read(id);return position?{x:position.x,y:position.y}:null;},
-    destroy(){destroyed=true;observer.disconnect();motion.clear();entries.clear();labels.remove();const note=document.querySelector('#world-owned-note');if(note)note.hidden=true;},
+    destroy(){destroyed=true;observer.disconnect();resizer.disconnect();motion.clear();entries.clear();labels.remove();const note=document.querySelector('#world-owned-note');if(note)note.hidden=true;},
   };
 }

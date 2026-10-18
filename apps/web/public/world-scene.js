@@ -1,6 +1,7 @@
 // The world consumes one local design-kit subset; character frames share one sheet.
 import {townAssets} from './world-town/assets.js';
 import {createOwnedAgentLayer} from './world-owned-layer.js';
+import {freeAreas,worldOverlayRects} from './world-safe-area.js';
 export const WORLD_SIZE = Object.freeze({ width: 1536, height: 1024 });
 const W = WORLD_SIZE.width, H = WORLD_SIZE.height;
 const demoNote = '这是演示场所，人物与活动不来自真实账号。本版不提供世界发现、社交、成长或交易。';
@@ -163,10 +164,10 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   // Only the existing bridge centre corridors can cross the river. The road
   // graph supplies their north/south entry ports; no route is made over water.
   blockedRects.push(...[[0,376],[392,1144],[1160,W]].map(([left,right])=>({left,right,top:96,bottom:192})));
-  const ownedLayer=createOwnedAgentLayer(root,graph,{blockedRects,onSelect:onOwnedSelect});
+  const ownedLayer=createOwnedAgentLayer(root,graph,{blockedRects,onSelect:onOwnedSelect,onOverlayChange:()=>{if(!destroyed)refreshOwnedHover();}});
   const camera={x:W/2,y:H/2,zoom:1,base:1,width:0,height:0,dpr:1};
   let hoverPointer=null,hoverProjection='';
-  let mode='initial',exploring=false,selectionCamera=null;
+  let mode='initial',exploring=false;
   let paused=reduced.matches,pauseReason=reduced.matches?'reduced':'user',visible=true,destroyed=false,broken=false,selected=null,raf=0,lastTime=null,lastDraw=0,elapsed=0,environment=true,actorLimit=actors.length,quality=0;
   let frames=0,drawMs=0,slowSamples=[],metrics={fps:0,meanDrawMs:0};
   const abort=new AbortController(),eventOptions={signal:abort.signal};
@@ -177,14 +178,6 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   function screenCenter(){if(mode!=='overview')return{x:camera.width/2,y:camera.height/2};const i=overviewInsets();return{x:(camera.width+i.left-i.right)/2,y:(camera.height+i.top-i.bottom)/2};}
   function notify(){canvas.classList.toggle('is-exploring',exploring);onChange(state());}
   function clampCamera(){const scale=camera.base*camera.zoom;for(const [axis,size,view]of [['x',W,camera.width],['y',H,camera.height]]){const half=view/(2*scale);camera[axis]=size*scale<=view?size/2:Math.max(half,Math.min(size-half,camera[axis]));}}
-  function ensureSelection(){if(!selected)return;const scale=camera.base*camera.zoom;
-    const phone=camera.width<760, panel=document.querySelector('#world-detail'),box=panel&&!panel.hidden?panel.getBoundingClientRect():null;
-    const right=box&&!phone?Math.max(80,box.left-root.getBoundingClientRect().left-20):camera.width-24;
-    const bottom=box&&phone?box.top-root.getBoundingClientRect().top-20:camera.height-150;
-    const left=24,top=camera.width<760?124:96,c=screenCenter();
-    const x=(selected.x-camera.x)*scale+c.x,y=(selected.y-camera.y-24)*scale+c.y;
-    camera.x+=(x-Math.max(left,Math.min(right,x)))/scale;camera.y+=(y-Math.max(top,Math.min(bottom,y)))/scale;clampCamera();
-  }
   function fail(){if(broken)return;broken=true;cancelAnimationFrame(raf);raf=0;onError();}
   function draw(){
     if(destroyed||broken||!camera.width||!camera.height)return;
@@ -235,16 +228,23 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   function setExploring(value){exploring=Boolean(value);pointers.clear();drag=null;pinch=null;canvas.classList.remove('is-dragging');notify();}
   function fit(){mode='overview';exploring=false;camera.zoom=overviewScale()/camera.base;camera.x=W/2;camera.y=H/2;draw();notify();}
   function reset(){mode='initial';exploring=false;resize();}
-  function select(place){if(place&&!selected)selectionCamera={x:camera.x,y:camera.y,zoom:camera.zoom,scale:camera.base*camera.zoom,mode};selected=place??null;
-    if(!selected&&selectionCamera){const previousScale=selectionCamera.scale;Object.assign(camera,{x:selectionCamera.x,y:selectionCamera.y,zoom:selectionCamera.zoom});mode=selectionCamera.mode;selectionCamera=null;if(mode==='overview'){camera.zoom=overviewScale()/camera.base;camera.x=W/2;camera.y=H/2;}else camera.zoom=mode==='initial'?1:Math.max(overviewScale()/camera.base,Math.min(3,previousScale/camera.base));clampCamera();}
-    else ensureSelection();draw();notify();}
+  // Opening, switching or closing a reading panel never takes the camera.
+  function select(place){selected=place??null;draw();notify();}
   function setPaused(value){paused=Boolean(value)||reduced.matches;pauseReason=reduced.matches?'reduced':'user';reconcile();notify();}
   function setOwnedAgents(projection){if(destroyed)return;ownedLayer.set(projection);draw();}
   function locateOwnedAgent(agentId){
     const point=ownedLayer.point(agentId);if(!point||destroyed||broken)return false;
-    const scale=camera.base*camera.zoom;mode='custom';const center=screenCenter(),bounds=root.getBoundingClientRect(),panel=document.querySelector('#hud-window:not([hidden])');
-    const right=panel?Math.max(80,panel.getBoundingClientRect().left-bounds.left-20):camera.width-96;
-    camera.x=point.x-((24+right)/2-center.x)/scale;camera.y=point.y-16-((88+camera.height-80)/2-center.y)/scale;
+    const scale=camera.base*camera.zoom,bounds=root.getBoundingClientRect();
+    // Explicit location uses the normal full-stage projection. Compute the
+    // destination before changing mode, and admit only reachable safe centres.
+    const center={x:camera.width/2,y:camera.height/2};
+    const header=document.querySelector('header'),top=Math.max(88,(header?.getBoundingClientRect().bottom||bounds.top+64)-bounds.top+16);
+    const areas=freeAreas({left:24,right:camera.width-24,top,bottom:camera.height-24},worldOverlayRects(root,16));
+    const halfWidth=Math.max(44,32*scale)/2,halfHeight=Math.max(44,40*scale)/2;
+    const area=areas.map(r=>({left:Math.max(r.left+halfWidth,center.x+(point.x-W)*scale),right:Math.min(r.right-halfWidth,center.x+point.x*scale),top:Math.max(r.top+halfHeight,center.y+(point.y-H-16)*scale),bottom:Math.min(r.bottom-halfHeight,center.y+(point.y-16)*scale)})).filter(r=>r.right>=r.left&&r.bottom>=r.top).sort((a,b)=>(b.right-b.left)*(b.bottom-b.top)-(a.right-a.left)*(a.bottom-a.top))[0];
+    if(!area)return false;
+    mode='custom';
+    camera.x=point.x-((area.left+area.right)/2-center.x)/scale;camera.y=point.y-16-((area.top+area.bottom)/2-center.y)/scale;
     // Explicit location may move a fitted world beneath the panel. The normal
     // full-viewport clamp would undo that pan when the world fits the viewport.
     camera.x=Math.max(0,Math.min(W,camera.x));camera.y=Math.max(0,Math.min(H,camera.y));draw();notify();return true;

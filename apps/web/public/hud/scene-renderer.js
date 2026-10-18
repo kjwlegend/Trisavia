@@ -1,6 +1,7 @@
 import {$,el} from '../common.js';
 import {createWorldScene,places,placeDetails} from '../world-scene.js';
 import {createOwnedAgentBinding} from './owned-agents.js';
+import {createPanelTransition} from './panel-transition.js';
 let scene=null;
 export function initSceneRenderer({session,onSelectAgent=()=>{}}={}){
 let mapReady=false,mapFailed=false;
@@ -8,6 +9,7 @@ let sceneGeneration=0,sceneAbort=null;
 const ownedAgents=session?createOwnedAgentBinding(session,onSelectAgent):null;
 let returnFocus = null;
 let currentPlace = null;
+const detail=$('#world-detail'),detailTransition=createPanelTransition(detail);
 const list = $('#world-place-list');
 for (const area of [...new Set(places.map(place => place.area))]) {
   const group = el('section', 'world-place-group');
@@ -38,16 +40,16 @@ function openPlace(place, origin) {
   const links = $('#world-detail-links'); links.replaceChildren();
   for (const link of details.links || []) { const node = el('a', '', `${link.label} ↗`); node.href = link.href; links.append(node); }
   for (const button of list.querySelectorAll('button')) button.setAttribute('aria-pressed', String(button.dataset.placeId === place.id));
-  $('#world-detail').hidden = false;
+  detailTransition.show();
   $('#world-layout').classList.add('has-detail');
   scene?.select(place);
   $('#world-detail').focus({preventScroll: true});
   if (origin !== scene?.canvas) $('#world-layout').scrollIntoView({block:'start',behavior:'instant'});
 }
 function closePlace(restoreFocus=true) {
-  if ($('#world-detail').hidden) return;
+  if (!currentPlace) return;
   currentPlace = null;
-  $('#world-detail').hidden = true;
+  detailTransition.hide();
   $('#world-layout').classList.remove('has-detail');
   for (const button of list.querySelectorAll('button')) button.setAttribute('aria-pressed', 'false');
   scene?.select(null);
@@ -93,7 +95,7 @@ function mapError() {
 document.addEventListener('hud:open',()=>closePlace(false));
 $('#world-detail-close').addEventListener('click', closePlace);
 $('#world-back').addEventListener('click', closePlace);
-document.addEventListener('keydown', event => {if(event.key!=='Escape'||event.defaultPrevented||document.querySelector('#hud-window:not([hidden])')||event.target.closest?.('input,textarea,select,[contenteditable=true]'))return;if(!$('#world-detail').hidden){event.preventDefault();closePlace();}else if(scene?.getState().exploring){event.preventDefault();scene.setExploring(false);scene.canvas.focus({preventScroll:true});}});
+document.addEventListener('keydown', event => {if(event.key!=='Escape'||event.defaultPrevented||document.querySelector('#hud-window:not([hidden]):not([data-panel-state=closing])')||detailTransition.state==='closing'||event.target.closest?.('input,textarea,select,[contenteditable=true]'))return;if(currentPlace){event.preventDefault();closePlace();}else if(scene?.getState().exploring){event.preventDefault();scene.setExploring(false);scene.canvas.focus({preventScroll:true});}});
 $('#world-zoom-out').addEventListener('click', () => { if (scene) scene.setZoom(scene.getState().zoom - .25); });
 $('#world-zoom-in').addEventListener('click', () => { if (scene) scene.setZoom(scene.getState().zoom + .25); });
 $('#world-fit').addEventListener('click', () => scene?.fit());
@@ -105,7 +107,7 @@ $('#world-retry').addEventListener('click', startScene);
 for (const link of document.querySelectorAll('a[href="#connect"]')) link.addEventListener('click', () => { $('#connect').open = true; });
 if (location.hash === '#connect') $('#connect').open = true;
 startScene();
-window.addEventListener('pagehide', event => { if (!event.persisted){sceneGeneration++;sceneAbort?.abort();ownedAgents?.dispose();scene?.destroy();} });
+window.addEventListener('pagehide', event => { if (!event.persisted){sceneGeneration++;sceneAbort?.abort();ownedAgents?.dispose();detailTransition.destroy();scene?.destroy();} });
 return{locateAgent(agentId){return mapReady&&scene?.locateOwnedAgent(agentId)||false;}};
 }
 export function getWorldState(){return scene?.getState()??null;}
