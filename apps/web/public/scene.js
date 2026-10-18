@@ -1,23 +1,26 @@
 import {el} from './common.js';
 const palettes = {olive:'#467d50',cream:'#eadbbb',blue:'#357abb',coral:'#df735f'};
 function rect(ctx,x,y,w,h,color) { ctx.fillStyle=color;ctx.fillRect(x,y,w,h); }
-function person(ctx,x,y,color,variant=0,selected=false) {
+function person(ctx,x,y,color,variant=0,selected=false,pose={}) {
   if (selected) {ctx.strokeStyle='#2050a0';ctx.lineWidth=1;ctx.strokeRect(x-5,y-1,11,5);}
   rect(ctx,x-3,y,7,2,'#397b46');
-  rect(ctx,x-2,y-5,2,5,'#304060');rect(ctx,x+1,y-5,2,5,'#304060');
+  const stride=pose.walking?[0,1,0,-1][pose.step%4]:0;
+  rect(ctx,x-2,y-5+stride,2,5,'#304060');rect(ctx,x+1,y-5-stride,2,5,'#304060');
   rect(ctx,x-3,y-11,7,7,palettes[color]||palettes.olive);
   rect(ctx,x-1,y-10,2,5,'#eff5e7');rect(ctx,x-4,y-10,1,5,'#eebf90');rect(ctx,x+4,y-10,1,5,'#eebf90');
   rect(ctx,x-3,y-17,7,7,'#304060');rect(ctx,x-2,y-15,5,5,'#efc198');rect(ctx,x-3,y-17,7,3,variant?'#805d42':'#413f4b');
+  if(pose.direction==='N')rect(ctx,x-2,y-14,5,3,variant?'#805d42':'#413f4b');
+  else if(pose.direction==='E'||pose.direction==='W')rect(ctx,x+(pose.direction==='E'?2:-2),y-13,1,1,'#304060');
 }
 export function avatar(node, fields={},agentId='') {
   const canvas=document.createElement('canvas');canvas.width=32;canvas.height=32;canvas.className='avatar';canvas.setAttribute('aria-hidden','true');
   const ctx=canvas.getContext('2d');rect(ctx,0,0,32,32,'#e8efe0');person(ctx,16,27,fields.avatar?.color,hash(agentId)%2);node.replaceChildren(canvas);
 }
 // The world uses the same real basic avatar and palette, on a transparent sprite.
-export function avatarSprite(fields={},agentId=''){
+export function avatarSprite(fields={},agentId='',pose={}){
   const canvas=document.createElement('canvas');canvas.width=32;canvas.height=40;
   const ctx=canvas.getContext('2d');if(!ctx)throw new Error('canvas_unavailable');
-  ctx.scale(2,2);person(ctx,8,18,fields.avatar?.color,hash(agentId)%2);return canvas;
+  ctx.scale(2,2);person(ctx,8,18,fields.avatar?.color,hash(agentId)%2,false,pose);return canvas;
 }
 function hash(value) { return [...value].reduce((n,c)=>(n*31+c.charCodeAt(0))>>>0,7); }
 function building(ctx,x,y,w,h,glass=false) {

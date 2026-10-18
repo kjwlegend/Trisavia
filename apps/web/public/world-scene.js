@@ -159,7 +159,11 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   for(const [x,y]of [[620,534],[916,534],[1072,624],[1170,624],[1218,809]])objects.push({kind:'bench',x,y,sprite:sprite(images,'bench')});
   for(const [x,y]of [[256,360],[1250,774],[428,800],[656,775],[960,364]])objects.push({kind:'planter',x,y,sprite:sprite(images,'planter')});
   const actors=makeActors(graph,mobile?12:18);
-  const ownedLayer=createOwnedAgentLayer(root,objects,{onSelect:onOwnedSelect});let ownedLayoutKey='';
+  const blockedRects=objects.flatMap(o=>{const footprint=o.footprint||townAssets.assets[o.assetId||o.kind]?.footprint;if(!footprint)return[];return[{left:o.x-o.sprite.ax+footprint.x,right:o.x-o.sprite.ax+footprint.x+footprint.width,top:o.y-o.sprite.ay+footprint.y,bottom:o.y-o.sprite.ay+footprint.y+footprint.height}];});
+  // Only the existing bridge centre corridors can cross the river. The road
+  // graph supplies their north/south entry ports; no route is made over water.
+  blockedRects.push(...[[0,376],[392,1144],[1160,W]].map(([left,right])=>({left,right,top:96,bottom:192})));
+  const ownedLayer=createOwnedAgentLayer(root,graph,{blockedRects,onSelect:onOwnedSelect});
   const camera={x:W/2,y:H/2,zoom:1,base:1,width:0,height:0,dpr:1};
   let mode='initial',exploring=false,selectionCamera=null;
   let paused=reduced.matches,pauseReason=reduced.matches?'reduced':'user',visible=true,destroyed=false,broken=false,selected=null,raf=0,lastTime=null,lastDraw=0,elapsed=0,environment=true,actorLimit=actors.length,quality=0;
@@ -192,8 +196,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
       for(const o of sorted){if(o.kind==='actor')drawActor(ctx,o,images);else if(o.kind==='owned-agent')ownedLayer.draw(ctx,o,scale);else ctx.drawImage(o.sprite.canvas,o.x-o.sprite.ax,o.y-o.sprite.ay);}
       if(selected){const isActor=selected.kind==='actor';ctx.strokeStyle='#557f9a';ctx.lineWidth=2/Math.max(scale,.4);ctx.setLineDash([5/scale,4/scale]);ctx.beginPath();ctx.ellipse(selected.x,selected.y+3,isActor?13:Math.min(selected.w/2+12,70),isActor?6:16,0,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);}
       ctx.restore();
-      const key=[camera.x,camera.y,scale,camera.width,camera.height,mode].join(':');
-      if(key!==ownedLayoutKey){ownedLayoutKey=key;ownedLayer.layout({scale,point:(x,y)=>({x:(x-camera.x)*scale+center.x,y:(y-camera.y)*scale+center.y})});}
+      ownedLayer.layout({scale,point:(x,y)=>({x:(x-camera.x)*scale+center.x,y:(y-camera.y)*scale+center.y})});
       frames++;drawMs+=performance.now()-start;
     }catch{fail();}
   }
@@ -203,6 +206,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
     if(lastTime===null){lastTime=time;lastDraw=time;}
     const dt=Math.min((time-lastTime)/1000,.05);lastTime=time;elapsed+=dt;
     for(const actor of actors.slice(0,actorLimit))updateActor(actor,dt,graph);
+    ownedLayer.step(dt,{paused,visible:visible&&!document.hidden});
     if(!mobile||time-lastDraw>=1000/30-1){
       const interval=time-lastDraw;lastDraw=time;draw();if(interval>0)slowSamples.push(interval);
       if(slowSamples.length>=120){const mean=slowSamples.reduce((a,b)=>a+b,0)/slowSamples.length;metrics={fps:Math.round(1000/mean),meanDrawMs:Math.round(drawMs/Math.max(frames,1)*100)/100};slowSamples=[];
@@ -229,8 +233,8 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   function select(place){if(place&&!selected)selectionCamera={x:camera.x,y:camera.y,zoom:camera.zoom,scale:camera.base*camera.zoom,mode};selected=place??null;
     if(!selected&&selectionCamera){const previousScale=selectionCamera.scale;Object.assign(camera,{x:selectionCamera.x,y:selectionCamera.y,zoom:selectionCamera.zoom});mode=selectionCamera.mode;selectionCamera=null;if(mode==='overview'){camera.zoom=overviewScale()/camera.base;camera.x=W/2;camera.y=H/2;}else camera.zoom=mode==='initial'?1:Math.max(overviewScale()/camera.base,Math.min(3,previousScale/camera.base));clampCamera();}
     else ensureSelection();draw();notify();}
-  function setPaused(value){paused=value;pauseReason='user';reconcile();notify();}
-  function setOwnedAgents(projection){if(destroyed)return;ownedLayer.set(projection);ownedLayoutKey='';draw();}
+  function setPaused(value){paused=Boolean(value)||reduced.matches;pauseReason=reduced.matches?'reduced':'user';reconcile();notify();}
+  function setOwnedAgents(projection){if(destroyed)return;ownedLayer.set(projection);draw();}
   function locateOwnedAgent(agentId){
     const point=ownedLayer.point(agentId);if(!point||destroyed||broken)return false;
     const scale=camera.base*camera.zoom;mode='custom';const center=screenCenter(),bounds=root.getBoundingClientRect(),panel=document.querySelector('#hud-window:not([hidden])');
@@ -258,7 +262,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
     const p=local(e);if(!pointers.has(e.pointerId)){const target=hit(p.x,p.y);ownedLayer.hover(target?.kind==='owned-agent'?target.agentId:'');canvas.style.cursor=target?'pointer':'grab';return;}pointers.set(e.pointerId,p);
     if(pinch&&pointers.size===2){const[a,b]=[...pointers.values()];setZoom(pinch.zoom*Math.hypot(a.x-b.x,a.y-b.y)/Math.max(1,pinch.distance));return;}
     if(!drag)return;
-    if(Math.hypot(p.x-drag.start.x,p.y-drag.start.y)>6)drag.moved=true;
+    if(Math.hypot(p.x-drag.start.x,p.y-drag.start.y)>6){drag.moved=true;ownedLayer.hover('');}
     if(drag.type==='touch'&&!exploring)return;
     if(drag.moved){mode='custom';const s=camera.base*camera.zoom;camera.x-=(p.x-drag.last.x)/s;camera.y-=(p.y-drag.last.y)/s;clampCamera();canvas.classList.add('is-dragging');draw();}drag.last=p;
   },eventOptions);
