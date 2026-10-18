@@ -1,4 +1,4 @@
-import {$,api,ApiError,errorText,isUnknown,credential,id,tokenId,stamp,downloadPrivate} from './common.js';
+import {$ as query,api,ApiError,errorText,isUnknown,credential,id,tokenId,stamp,downloadPrivate} from './common.js';
 import {accountFields} from './owner-account.js';
 import {readEmailProgress,saveEmailProgress,clearEmailProgress,emailScope} from './owner-email-state.js';
 
@@ -15,6 +15,7 @@ const copy={
 function mismatch(){throw new ApiError('operation_mismatch',400);}
 
 export function createOwnerEmailFlow(hooks){
+  const $=selector=>query(selector,hooks.root||document);
   let progress=null,currentView=null,viewFromRead=false,active=false,localBusy=false,lease=null,generation=0,storageError=null,backupDownloaded=false,proposedTarget=null;
   try{progress=readEmailProgress();}catch(error){storageError=error;}
   const node=$('#email-view');
@@ -61,7 +62,7 @@ export function createOwnerEmailFlow(hooks){
     $('#email-account-fields').hidden=!reg;$('#email-password-label').textContent=reg?'登录密码':'新登录密码';
     $('#email-username').required=reg;$('#email-address').required=reg;$('#email-password-confirm').required=!reg;
     const fixedAgentId=progress?.target?.agentId||progress?.agentId||proposedTarget?.agentId;
-    $('#email-target').hidden=!fixedAgentId;$('#email-target').textContent=`本次目标：${targetLabel()} · ${fixedAgentId||''}`;
+    $('#email-target-context').hidden=!fixedAgentId;$('#email-target').textContent=`本次目标：${targetLabel()} · ${fixedAgentId||''}`;
     $('#email-start').hidden=Boolean(progress);$('#email-start').textContent='发送注册验证码';
     $('#email-challenge').hidden=!progress||status==='completed';
     $('#email-delivery').textContent=progress?(canRenewChallenge()?'上一验证码已过期。请点击「重新发送新验证码」，并使用新验证码；旧邮件仍可能送达，其中的验证码已失效。':copy[currentView?.deliveryStatus]||'正在确认邮件状态…'):'';
@@ -80,7 +81,7 @@ export function createOwnerEmailFlow(hooks){
     $('#email-form').hidden=status==='completed'&&!reg;
     $('#email-back').textContent=reg?'返回登录':'返回找回方式';
     $('#email-restart').hidden=!['expired','cancelled'].includes(status)||pending();
-    controls(hooks.uiState());
+    controls(hooks.uiState());hooks.onView?.();
   }
   function controls({busy=false,mainPending=false}={}){
     if(!active)return;const locked=localBusy||busy||mainPending,closed=['completed','expired','cancelled'].includes(currentView?.status);
@@ -230,6 +231,7 @@ export function createOwnerEmailFlow(hooks){
   });
   $('#email-backup-saved').addEventListener('change',()=>{if(!progress||!backupDownloaded)return;try{progress.backupSaved=$('#email-backup-saved').checked;save();controls(hooks.uiState());}catch(error){fail(error);}});
   return{openRegistration,openRecovery,controls,clear,
+    get target(){if(!active||progress?.completed)return null;const target=progress?.target||proposedTarget;if(target)return{agentId:target.agentId};return progress?.kind==='recovery'?{agentId:progress.agentId,recovery:true}:null;},
     get pending(){return pending();},get active(){return active;},get unfinished(){return Boolean(progress&&!progress.completed&&currentView?.status!=='completed');},
     canNavigate(){if(localBusy||pending()){inform('请先继续当前操作，确认结果后再打开新的任务。','pending');show();return false;}return true;},
     endRequest(ownerId,requestId){if(progress?.kind==='recovery'&&progress.ownerId===ownerId&&progress.requestId===requestId&&!pending())clear();},

@@ -87,7 +87,7 @@ function mapError() {
 document.addEventListener('hud:open',()=>closePlace(false));
 $('#world-detail-close').addEventListener('click', closePlace);
 $('#world-back').addEventListener('click', closePlace);
-document.addEventListener('keydown', event => {if(event.key!=='Escape')return;if(!$('#world-detail').hidden){event.preventDefault();closePlace();}else if(scene?.getState().exploring){event.preventDefault();scene.setExploring(false);scene.canvas.focus({preventScroll:true});}});
+document.addEventListener('keydown', event => {if(event.key!=='Escape'||event.defaultPrevented||document.querySelector('#hud-window:not([hidden])')||event.target.closest?.('input,textarea,select,[contenteditable=true]'))return;if(!$('#world-detail').hidden){event.preventDefault();closePlace();}else if(scene?.getState().exploring){event.preventDefault();scene.setExploring(false);scene.canvas.focus({preventScroll:true});}});
 $('#world-zoom-out').addEventListener('click', () => { if (scene) scene.setZoom(scene.getState().zoom - .25); });
 $('#world-zoom-in').addEventListener('click', () => { if (scene) scene.setZoom(scene.getState().zoom + .25); });
 $('#world-fit').addEventListener('click', () => scene?.fit());

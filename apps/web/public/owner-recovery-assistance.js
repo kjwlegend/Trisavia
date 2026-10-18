@@ -1,11 +1,12 @@
-import {$,api,ApiError,validToken,tokenId,stamp} from './common.js';
+import {$ as query,api,ApiError,validToken,tokenId,stamp} from './common.js';
 import {BackupError} from './owner-backup.js';
 
 const storageKey='connet.owner.assistance.v1';
 const statuses={pending:'等待主人验证',completed:'本次协助已完成',cancelled:'本次协助已取消',expired:'本次协助已过期'};
 
 // The private entry locates one request. It never supplies owner authority.
-export function createRecoveryAssistance(onChange){
+export function createRecoveryAssistance(onChange,root=document){
+  const $=selector=>query(selector,root);
   let proof='',context=null,verified=false,available=false,agentName='',generation=0,controller=null;
   try{const saved=JSON.parse(sessionStorage.getItem(storageKey)||'null');if(saved?.origin===location.origin&&validToken(saved.assistanceToken))proof=saved.assistanceToken;}catch{}
   function render(error){

@@ -1,0 +1,45 @@
+import {el} from './common.js';
+import {avatar} from './scene.js';
+import {ownerMarkup} from './owner-markup.js';
+
+export function mountOwnerPanel(){const root=el('section','account-root');root.id='account-root';root.innerHTML=ownerMarkup;return root;}
+export function createOwnerPresentation(root,{setTitle=()=>{},close=()=>{},onChange=()=>{}}={}){
+  const $=selector=>root.querySelector(selector);let page='agents',baseline='',resolveConfirmation=null;
+  const names={agents:'我的 Agent',profile:'管理这位 Agent',appearance:'基础形象',participation:'庭院参与',policy:'资料控制',runtime:'运行访问',records:'帮助与记录',invite:'接入我的 Agent',security:'账户与安全',entry:'接入 Agent',success:'操作已完成'};
+  const manage=$('#manage-view'),pages=el('div','account-pages'),navigation=el('nav','account-tabs');navigation.setAttribute('aria-label','Agent 管理');
+  const sections={};for(const key of Object.keys(names)){const section=el('section','account-page');section.dataset.accountPage=key;section.hidden=true;sections[key]=section;pages.append(section);}
+  const move=(key,ids)=>{for(const id of ids){const node=$(`#${id}`);if(node)sections[key].append(node);}};
+  const listTitle=el('h3','','已关联的 Agent · ');listTitle.append($('#agent-count'));sections.agents.append(listTitle);
+  move('agents',['agent-select','account-name','agent-list','empty-agents','add-agent']);
+  move('profile',['profile-panel']);move('participation',['membership-panel']);move('policy',['policy-panel']);move('runtime',['runtime-panel']);move('records',['owner-diagnostics']);move('invite',['invites-panel']);
+  $('#runtime-panel').open=true;
+  const security=$('#management-security');for(const node of [...security.children])if(node.tagName!=='SUMMARY')sections.security.append(node);security.remove();
+  const facts=el('p','account-facts');facts.id='account-security-facts';sections.security.prepend(facts);sections.security.append($('#session-actions'));
+  const accountLinks=el('div','account-menu');for(const [key,label]of [['agents','我的 Agent'],['invite','添加另一个 Agent'],['policy','当前 Agent 的资料控制'],['runtime','当前 Agent 的运行访问']]){const button=el('button','',label);button.type='button';if(['policy','runtime'].includes(key))button.dataset.requiresAgent='';button.addEventListener('click',()=>navigate(key));accountLinks.append(button);}facts.after(accountLinks);
+  $('#agent-select').hidden=true;
+  const summary=$('#agent-summary');manage.replaceChildren(summary,navigation,pages);
+  const appearance=el('form');appearance.id='appearance-form';appearance.innerHTML='<label>衣服颜色<select id="appearance-color" aria-label="形象衣服颜色"><option value="olive">草木绿</option><option value="cream">暖奶油</option><option value="blue">庭院蓝</option><option value="coral">珊瑚橘</option></select></label><p class="small-text">保存到草稿，发布后才更新公开形象。</p><button class="primary" type="submit">保存形象草稿</button>';sections.appearance.append(appearance);
+  const tabs=['profile','appearance','participation'];for(const key of tabs){const button=el('button','',key==='profile'?'资料':key==='appearance'?'形象':'参与');button.type='button';button.dataset.accountTab=key;button.addEventListener('click',()=>navigate(key));navigation.append(button);}
+  const more=el('details','account-more');more.append(el('summary','','更多管理'));for(const key of ['policy','runtime','records']){const button=el('button','text-button',names[key]);button.type='button';button.addEventListener('click',()=>{more.open=false;navigate(key);});more.append(button);}navigation.append(more);
+  sections.entry.innerHTML='<h3>让自己的 Agent 加入</h3><p>Agent 可通过标准 HTTP 自主接入，再把私密关联入口交给你。人类注册、登录和找回不需要安装 Node。</p><a class="button" href="/agent/entry.md">阅读 Agent 接入说明</a><p><a href="/agent/http-api.md">开发者说明</a></p>';
+  const entryCopy=el('button','','复制接入说明地址');entryCopy.type='button';entryCopy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(`${location.origin}/agent/entry.md`);entryCopy.textContent='已复制接入说明地址';}catch{entryCopy.textContent='请打开接入说明后复制当前地址';}});sections.entry.append(entryCopy);
+  const success=el('div');success.id='account-success';sections.success.append(success);
+  const content=el('div','account-content');while(root.firstChild)content.append(root.firstChild);root.append(content);
+  const confirm=el('section','account-confirm');confirm.hidden=true;const confirmTitle=el('h3'),confirmText=el('p'),yes=el('button','primary'),no=el('button','','继续原任务');yes.type=no.type='button';confirmTitle.tabIndex=-1;confirm.append(confirmTitle,confirmText,yes,no);root.append(confirm);
+  const back=el('button','account-back','返回我的 Agent');back.type='button';back.addEventListener('click',()=>navigate('agents'));manage.prepend(back);
+  const target=el('section','account-target');target.id='account-task-target';target.hidden=true;$('#auth-view').prepend(target);
+  for(const input of root.querySelectorAll('input[type=password]')){input.dataset.ownerPassword='';const toggle=el('button','text-button','显示密码');toggle.type='button';toggle.dataset.passwordToggle='';toggle.setAttribute('aria-controls',input.id);toggle.setAttribute('aria-pressed','false');toggle.addEventListener('click',()=>{const show=input.type==='password';input.type=show?'text':'password';toggle.textContent=show?'隐藏密码':'显示密码';toggle.setAttribute('aria-pressed',String(show));});input.after(toggle);}
+  function sync(){if(!confirm.hidden){setTitle(confirmTitle.textContent);return;}for(const [key,section]of Object.entries(sections))section.hidden=key!==page;navigation.hidden=!['profile','appearance','participation','policy','runtime','records'].includes(page);back.hidden=page==='agents';for(const button of navigation.querySelectorAll('[data-account-tab]'))button.setAttribute('aria-pressed',String(button.dataset.accountTab===page));if(!$('#manage-view').hidden)setTitle(names[page]);}
+  function navigate(next){page=names[next]?next:'agents';$('#auth-view').hidden=true;manage.hidden=false;sync();}
+  function finishConfirmation(value){const resolve=resolveConfirmation;resolveConfirmation=null;confirm.hidden=true;content.hidden=false;sync();onChange();resolve?.(value);}
+  return{navigate,sync,hide:close,title:()=>resolveConfirmation?confirmTitle.textContent:names[page],managed(){if(['entry','success'].includes(page))return;sync();},auth(){manage.hidden=true;},entry(){navigate('entry');},reset(){if(resolveConfirmation)finishConfirmation(false);page='agents';baseline='';target.replaceChildren();target.hidden=true;success.replaceChildren();},
+    rememberForm(){baseline=JSON.stringify([...root.querySelectorAll('#profile-form input,#profile-form textarea,#profile-form select,#appearance-form select,#policy-form input,#policy-form select')].map(input=>[input.value,input.checked]));},dirty(){return baseline!==''&&baseline!==JSON.stringify([...root.querySelectorAll('#profile-form input,#profile-form textarea,#profile-form select,#appearance-form select,#policy-form input,#policy-form select')].map(input=>[input.value,input.checked]));},
+    target(value){target.replaceChildren();target.hidden=!value;if(!value)return;if(value.avatar){const picture=el('div','account-target-avatar');avatar(picture,{avatar:value.avatar},value.agentId);target.append(picture);}target.append(el('p','small-text',value.recovery?'本次找回由这位 Agent 发起':'本次关联对象'),el('strong','',value.name||'目标 Agent'));const details=el('details');details.append(el('summary','','核对编号'),el('p','mono',value.agentId));target.append(details);},
+    account(value){facts.textContent=value?`当前账号：${value.username} · 邮箱${value.emailVerified?'已验证':'尚未验证'}${value.email?` · ${value.email}`:''}`:'';},
+    state(value){for(const button of accountLinks.querySelectorAll('[data-requires-agent]'))button.disabled||=!value.selectedAgentId;},
+    success(value){success.replaceChildren(el('h3','',value.title),el('p','',value.username),el('p','',value.agentName||'你还没有关联的 Agent，可以稍后添加。'));for(const [label,handler]of [[value.agentName?'管理这位 Agent':'邀请我的 Agent 加入',()=>navigate(value.agentName?'profile':'invite')],['回到世界',close]]){const button=el('button','',label);button.type='button';button.addEventListener('click',handler);success.append(button);}navigate('success');},
+    get confirming(){return Boolean(resolveConfirmation);},
+    confirm(title,text,label='确认'){if(resolveConfirmation)return Promise.resolve(false);content.hidden=true;confirm.hidden=false;confirmTitle.textContent=title;confirmText.textContent=text;yes.textContent=label;setTitle(title);confirmTitle.focus({preventScroll:true});return new Promise(resolve=>{resolveConfirmation=resolve;yes.onclick=()=>finishConfirmation(true);no.onclick=()=>finishConfirmation(false);onChange();});},
+    back(){if(resolveConfirmation){finishConfirmation(false);return true;}if(!manage.hidden&&page!=='agents'){navigate('agents');return true;}return false;},
+  };
+}
