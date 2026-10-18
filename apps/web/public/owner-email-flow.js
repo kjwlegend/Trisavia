@@ -15,7 +15,7 @@ const copy={
 function mismatch(){throw new ApiError('operation_mismatch',400);}
 
 export function createOwnerEmailFlow(hooks){
-  let progress=null,currentView=null,active=false,localBusy=false,lease=null,generation=0,storageError=null,backupDownloaded=false,proposedTarget=null;
+  let progress=null,currentView=null,viewFromRead=false,active=false,localBusy=false,lease=null,generation=0,storageError=null,backupDownloaded=false,proposedTarget=null;
   try{progress=readEmailProgress();}catch(error){storageError=error;}
   const node=$('#email-view');
   const save=()=>saveEmailProgress(progress);
@@ -23,6 +23,7 @@ export function createOwnerEmailFlow(hooks){
   const verifiedMessage=()=>registration()?`邮箱已验证，请完成注册${progress.target?'并关联 Agent':''}。`:'邮箱已验证，尚未重设密码。请设置新密码并确认。';
   const pending=()=>Boolean(progress?.pending);
   const editable=()=>!progress&&!storageError;
+  const canRenewChallenge=()=>viewFromRead&&currentView?.status==='pending_email'&&currentView.challengeExpired===true;
   const inform=(text,tone='')=>{const output=$('#email-feedback');output.textContent=text;output.className=`notice ${tone}`;output.hidden=!text;};
   function fail(error){
     const unavailable=error.code==='email_unavailable'&&error.status===503;
@@ -33,6 +34,7 @@ export function createOwnerEmailFlow(hooks){
   function assertView(result){
     const p=progress;if(!p||result.attemptId!==p.attemptId||result.purpose!==(registration()?'registration':'recovery')||!states.includes(result.status)||!deliveries.includes(result.deliveryStatus)||!Number.isFinite(result.expiresAt))mismatch();
     if(result.sendOperationId!==undefined&&(typeof result.sendOperationId!=='string'||result.sendOperationId.length<8||result.sendOperationId.length>100))mismatch();
+    if((result.codeExpiresAt!==null&&(!Number.isFinite(result.codeExpiresAt)||result.codeExpiresAt<=0))||typeof result.challengeExpired!=='boolean')mismatch();
     if(registration()){if(p.target&&(result.agentId!==p.target.agentId||result.generation!==p.target.generation||result.ownerId!==p.target.ownerId))mismatch();if(!p.target&&result.agentId!==undefined)mismatch();}
     else if(result.ownerId!==p.ownerId||result.agentId!==p.agentId||result.requestId!==p.requestId)mismatch();
   }
@@ -48,6 +50,7 @@ export function createOwnerEmailFlow(hooks){
       assertView(result);
       if(result.verification==='invalid')throw new ApiError('email_code_invalid',400);
       if(command.action.startsWith('verify')&&(result.verification!=='valid'||result.status!=='email_proved'))mismatch();
+      if(command.action.startsWith('verify')&&result.sendOperationId!==command.challengeOperationId)mismatch();
     }
   }
   function render(){
@@ -61,7 +64,7 @@ export function createOwnerEmailFlow(hooks){
     $('#email-target').hidden=!fixedAgentId;$('#email-target').textContent=`本次目标：${targetLabel()} · ${fixedAgentId||''}`;
     $('#email-start').hidden=Boolean(progress);$('#email-start').textContent='发送注册验证码';
     $('#email-challenge').hidden=!progress||status==='completed';
-    $('#email-delivery').textContent=progress?(copy[currentView?.deliveryStatus]||'正在确认邮件状态…'):'';
+    $('#email-delivery').textContent=progress?`${copy[currentView?.deliveryStatus]||'正在确认邮件状态…'}${canRenewChallenge()?' 上一验证码已过期，可以明确重新发送新验证码；这不表示旧邮件肯定没有发出。':''}`:'';
     $('#email-expiry').textContent=currentView?`本次流程有效至 ${stamp(currentView.expiresAt)}${currentView.resendAfter>Date.now()?`；${stamp(currentView.resendAfter)} 后可重发。`:''}`:'';
     $('#email-code-row').hidden=status==='email_proved'||status==='completed';
     $('#email-finish').hidden=status!=='email_proved'&&!finalActions.includes(progress?.pending?.action);
@@ -70,7 +73,8 @@ export function createOwnerEmailFlow(hooks){
     $('#email-proof-status').textContent=status==='email_proved'?verifiedMessage():status==='expired'?(reg?'这次注册已过期，请重新开始。':'这次重设授权已过期。请返回并让原 Agent 取消旧请求，再私密交付新找回入口。'):status==='cancelled'?'这次注册已取消。':'';
     $('#email-continue').hidden=!pending();$('#email-cancel').hidden=!progress||!reg||finalActions.includes(progress.pending?.action)||status==='completed';
     $('#email-retry-start').hidden=!progress||progress.started||pending();
-    $('#email-delivery-retry').hidden=!progress?.sendOperationId||!['queued','unknown'].includes(currentView?.deliveryStatus)||pending();
+    $('#email-delivery-retry').hidden=!progress?.sendOperationId||!['queued','unknown'].includes(currentView?.deliveryStatus)||pending()||canRenewChallenge();
+    $('#email-send').textContent=canRenewChallenge()?'重新发送新验证码':'发送／重发验证码';
     $('#email-recovery-backup').hidden=reg||status!=='email_proved';
     $('#email-completed').hidden=status!=='completed'||reg;
     $('#email-form').hidden=status==='completed'&&!reg;
@@ -85,7 +89,7 @@ export function createOwnerEmailFlow(hooks){
     $('#email-start').disabled=locked||Boolean(progress)||Boolean(storageError);
     $('#email-code').disabled=locked||closed||Boolean(progress?.pending&&!['verifyRegistrationEmail','verifyRecoveryEmail'].includes(progress.pending.action));
     $('#email-verify').disabled=locked||!progress||closed||currentView?.status==='email_proved'||Boolean(progress.pending&&!['verifyRegistrationEmail','verifyRecoveryEmail'].includes(progress.pending.action));
-    $('#email-send').disabled=locked||!progress?.started||closed||currentView?.status==='email_proved'||Boolean(progress.pending)||['queued','unknown'].includes(currentView?.deliveryStatus)||(currentView?.resendAfter||0)>Date.now();
+    $('#email-send').disabled=locked||!progress?.started||closed||currentView?.status==='email_proved'||Boolean(progress.pending)||(['queued','unknown'].includes(currentView?.deliveryStatus)&&!canRenewChallenge())||(currentView?.resendAfter||0)>Date.now();
     $('#email-finish').disabled=locked||closed||(currentView?.status!=='email_proved'&&!finalActions.includes(progress?.pending?.action))||Boolean(progress?.pending&&!finalActions.includes(progress.pending.action))||Boolean(progress?.recoveryToken&&!progress.backupSaved);
     $('#email-continue').disabled=locked||!pending();$('#email-refresh').disabled=locked||!progress;
     $('#email-password').disabled=locked||Boolean(progress?.pending&&!finalActions.includes(progress.pending.action));
@@ -141,9 +145,11 @@ export function createOwnerEmailFlow(hooks){
     if(finalActions.includes(action)){progress.sessionToken??=credential('session');}
     if(action.startsWith('start'))progress.startOperationId??=id();
     const sending=['sendRegistrationCode','sendRecoveryCode'].includes(action);
-    if(sending&&!['queued','unknown'].includes(currentView?.deliveryStatus))progress.sendOperationId=id();
+    if(sending&&(canRenewChallenge()||!['queued','unknown'].includes(currentView?.deliveryStatus)))progress.sendOperationId=id();
     if(sending&&!progress.sendOperationId)throw new ApiError('email_progress_invalid',400);
-    progress.pending={action,scope:emailScope(progress),operationId:action.startsWith('start')?progress.startOperationId:sending?progress.sendOperationId:id()};save();await submit();
+    const verifying=action.startsWith('verify');
+    if(verifying&&!progress.sendOperationId)throw new ApiError('email_progress_invalid',400);
+    progress.pending={action,scope:emailScope(progress),operationId:action.startsWith('start')?progress.startOperationId:sending?progress.sendOperationId:id(),...(verifying?{challengeOperationId:progress.sendOperationId}:{})};save();await submit();
   }
   async function accept(result,command){
     assertReceipt(result,command);
@@ -157,12 +163,21 @@ export function createOwnerEmailFlow(hooks){
       delete progress.pending;progress.completed=true;save();$('#email-password').value='';$('#email-password-confirm').value='';$('#email-code').value='';
       hooks.recovered(result);inform('密码已重设，本次 Agent 协助已完成。请用新密码正常登录。','success');render();return;
     }
-    currentView=result;progress.started=true;delete progress.pending;save();$('#email-code').value='';
+    progress.started=true;
+    if(command.action.startsWith('verify')){
+      // A historical verification receipt cannot prove the current challenge.
+      const latest=await api(basePath(),{token:progress.browserToken});assertView(latest);currentView=latest;viewFromRead=true;
+      if(latest.sendOperationId!==command.challengeOperationId||latest.status!=='email_proved'){
+        delete progress.pending;save();$('#email-code').value='';inform('验证码或验证授权的状态已变化，请按当前页面继续。','pending');render();return;
+      }
+    }else{currentView=result;viewFromRead=false;}
+    delete progress.pending;save();$('#email-code').value='';
     if(command.action.startsWith('verify'))inform(verifiedMessage());
     else if(command.action==='cancelRegistration'){clear();hooks.back();return;}
+    else if(['sendRegistrationCode','sendRecoveryCode'].includes(command.action)){await read();inform(copy[currentView.deliveryStatus]||'当前进度已保存。');}
     else inform(copy[result.deliveryStatus]||'当前进度已保存。');render();
   }
-  async function read(){const result=await api(basePath(),{token:progress.browserToken});assertView(result);currentView=result;progress.started=true;if(!progress.pending&&result.sendOperationId)progress.sendOperationId=result.sendOperationId;if(!pending()&&!registration()&&result.status==='completed')progress.completed=true;save();render();return result;}
+  async function read(){const result=await api(basePath(),{token:progress.browserToken});assertView(result);currentView=result;viewFromRead=true;progress.started=true;if(!progress.pending&&result.sendOperationId)progress.sendOperationId=result.sendOperationId;if(!pending()&&!registration()&&result.status==='completed')progress.completed=true;save();render();return result;}
   async function originalReceipt(){const p=progress.pending;return api(`/operations/${encodeURIComponent(p.operationId)}?scope=${encodeURIComponent(p.scope)}&action=${encodeURIComponent(p.action)}`,{token:progress.browserToken});}
   async function submit(){
     const command=progress.pending;if(!command)return;
@@ -195,17 +210,17 @@ export function createOwnerEmailFlow(hooks){
     await submit();
   }
   async function refresh(){await run(async()=>{if(progress?.pending)await continuePending();else if(progress)await read();});}
-  function clear(){generation++;progress=null;currentView=null;active=false;storageError=null;backupDownloaded=false;proposedTarget=null;clearEmailProgress();node.hidden=true;$('#email-password').value='';$('#email-password-confirm').value='';$('#email-code').value='';}
+  function clear(){generation++;progress=null;currentView=null;viewFromRead=false;active=false;storageError=null;backupDownloaded=false;proposedTarget=null;clearEmailProgress();node.hidden=true;$('#email-password').value='';$('#email-password-confirm').value='';$('#email-code').value='';}
   async function finish(event){event.preventDefault();if(!progress||(!finalActions.includes(progress.pending?.action)&&currentView?.status!=='email_proved'))return;if(!$('#email-password').reportValidity())return;
     if(!registration()&&$('#email-password').value!==$('#email-password-confirm').value){inform('两次新密码不一致，请重新确认。','error');hooks.focus('#email-password-confirm');return;}
     await run(async()=>{if(progress.pending)await continuePending();else await issue(registration()?(progress.target?'completeSetup':'registerOwner'):'recoverByEmail');});
   }
   $('#email-start').addEventListener('click',startRegistration);
-  $('#email-send').addEventListener('click',()=>run(async()=>{if(progress&&!pending())await issue(registration()?'sendRegistrationCode':'sendRecoveryCode');}));
+  $('#email-send').addEventListener('click',()=>run(async()=>{if(!progress||pending())return;await read();if(currentView.status!=='pending_email')return;if(['queued','unknown'].includes(currentView.deliveryStatus)&&!canRenewChallenge()){inform('上一封邮件尚未确认，请继续确认原投递结果。','pending');return;}await issue(registration()?'sendRegistrationCode':'sendRecoveryCode');}));
   $('#email-verify').addEventListener('click',()=>run(async()=>{if(!/^[0-9]{8}$/.test($('#email-code').value.trim())){inform('请输入邮件中的 8 位数字验证码。','error');return;}if(pending())await continuePending();else await issue(registration()?'verifyRegistrationEmail':'verifyRecoveryEmail');}));
   $('#email-refresh').addEventListener('click',refresh);$('#email-continue').addEventListener('click',refresh);$('#email-form').addEventListener('submit',finish);
   $('#email-retry-start').addEventListener('click',()=>run(async()=>{if(progress&&!pending()&&!progress.started)await issue(registration()?'startRegistration':'startEmailRecovery');}));
-  $('#email-delivery-retry').addEventListener('click',()=>run(async()=>{if(!progress||pending()||!progress.sendOperationId)return;await read();if(['queued','unknown'].includes(currentView.deliveryStatus))await issue(registration()?'sendRegistrationCode':'sendRecoveryCode');}));
+  $('#email-delivery-retry').addEventListener('click',()=>run(async()=>{if(!progress||pending()||!progress.sendOperationId)return;await read();if(canRenewChallenge()){inform('上一验证码已过期。请点击“重新发送新验证码”继续；旧邮件投递状态仍以当前显示为准。');return;}if(['queued','unknown'].includes(currentView.deliveryStatus))await issue(registration()?'sendRegistrationCode':'sendRecoveryCode');}));
   $('#email-cancel').addEventListener('click',()=>run(async()=>{if(!pending()&&registration())await issue('cancelRegistration');}));
   $('#email-back').addEventListener('click',()=>{if(localBusy||pending())return;active=false;node.hidden=true;hooks.back();});
   $('#email-restart').addEventListener('click',()=>{if(localBusy||pending())return;const reg=registration(),target=progress?.target;clear();if(reg)openRegistration(target);else hooks.back();});

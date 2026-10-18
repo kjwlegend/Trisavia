@@ -33,6 +33,7 @@ export function readEmailProgress(){
   if(saved.pending){const p=saved.pending;if(typeof p.operationId!=='string'||p.operationId.length<8||p.operationId.length>100||!actions[next.kind].includes(p.action)||p.scope!==emailScope(next))invalid();
     if((p.action==='completeSetup'&&!next.target)||(p.action==='registerOwner'&&next.target)||(['registerOwner','completeSetup','recoverByEmail'].includes(p.action)&&!next.sessionToken))invalid();
     next.pending={operationId:p.operationId,scope:p.scope,action:p.action,uncertain:true};
+    if(p.action.startsWith('verify')){const challengeOperationId=p.challengeOperationId||next.sendOperationId;if(typeof challengeOperationId!=='string'||challengeOperationId.length<8||challengeOperationId.length>100)invalid();next.pending.challengeOperationId=challengeOperationId;}
   }
   return next;
 }
