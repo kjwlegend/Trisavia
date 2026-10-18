@@ -57,6 +57,8 @@
 | POST `/v1/owner/agents/:id/runtime-access/revoke` | owner；`expectedVersion` | 使用 `runtimeVersion`，旧运行证明失效 |
 | POST `/v1/owner/agents/:id/runtime-access/replace` | owner；`expectedVersion,runtimeToken` | 下一代运行证明先保存，原代次失效；只影响目标 Agent |
 
+历史 `enableRecoveryBackup` 回执不代表其中的证明当前仍有效，采用前须用 `GET /v1/owner/recovery` 验证，不能以旧启用回执覆盖当前有效材料。
+
 `fields` 为 `displayName`、`avatar:{template:basic,color:olive|cream|blue|coral}` 与可选 `bio,interests`。模式为 `agent_autonomous`、`owner_specified`、`proposal_required`。资料响应包含 `agentId,version,policyVersion,mode,lockedFields,draft,published,publishedVersion,confirmationSource`；来源为 null、`runtime_declaration` 或 `owner_authenticated`，两类确认不可混称。
 
 `fields` 必须是对象；仅移除时传 `fields:{},removeFields:["bio","interests"]`。`removeFields` 不接受重复、未知或必填字段，不接受 null；同一个字段不能同时设置与移除，整次拒绝而不部分保存。`bio:""`／`interests:[]` 表示保存空值，与字段不存在不同。移除草稿字段后，原公开版本仍保留，另行发布才更新公开资料。
@@ -81,7 +83,7 @@
 
 本人验码后，网页以上表的 `registerOwner` 或 `completeSetup` 完成；两者作用域均为 `owner-registration:<attemptId>`。换邮箱必须放弃原挑战重新开始；最终提交仍检查用户名／邮箱唯一性和原交接，失败不留下可登录半成品或消费绑定机会。注册码和注册证明不能用于主人登录、密码恢复或另一 Agent。
 
-注册尝试读取返回 `attemptId,purpose:registration,status,expiresAt,resendAfter,deliveryStatus`；有投递任务时附 `deliveryId,sendOperationId`，有交接目标时附 `agentId,generation,ownerId`，验码后才有 `grantExpiresAt`。此 `ownerId` 是服务端从交接证明派生的原待初始化主人，客户端请求不能指定。`sendOperationId` 是该投递任务的原发送操作号，属于非秘密定位信息。不返回邮箱、验证码或证明。网页只使用原尝试的 browser 读取，不依据公开 attemptId 获权。
+注册尝试读取返回 `attemptId,purpose:registration,status,expiresAt,codeExpiresAt,challengeExpired,resendAfter,deliveryStatus`；`codeExpiresAt` 为数字或 null，`challengeExpired` 仅在已有挑战且服务端截止已到时为 true。有投递任务时附 `deliveryId,sendOperationId`，有交接目标时附 `agentId,generation,ownerId`，验码后才有 `grantExpiresAt`。此 `ownerId` 是服务端从交接证明派生的原待初始化主人，客户端请求不能指定。`sendOperationId` 是该投递任务的原发送操作号，属于非秘密定位信息。不返回邮箱、验证码或证明。网页只使用原尝试的 browser 读取，不依据公开 attemptId 获权。
 
 ## 主人恢复协助
 
@@ -105,7 +107,7 @@
 
 同一恢复 request 只建立一个 browser attempt；换浏览器不能清除累计 5 次错误。另起尝试返回 409 `email_attempt_exists`，须用原 browser 续接，或请当前有效 Agent 取消原请求后重新发起。未完成的 `email_proved` 授权到达 `grantExpiresAt`（最长 5 分钟，且不超过请求截止时间）时，安全状态为 `expired`；恢复也须取消原请求并重新发起，不能换 browser 绕过。
 
-发送／重发、验码、完成分别保存原操作号和完整正文续接。`deliveryStatus` 为 `unavailable|none|queued|accepted|failed|unknown`；它与邮箱验证／恢复状态分开。`queued` 只表示投递任务排队，`accepted` 只表示服务商受理，都不证明送达、主人收到、验码或完成。`queued`／`unknown` 时保留并续接 `sendOperationId` 对应的原发送 action／operationId／body，不另造操作号或验证码；新发送操作会被拒为 409 `email_delivery_pending`，`details.operationId` 指向原发送操作。通道缺配置时明确不可用，不发万能码、不跳过验证；真实投递和收信尚未验收。
+发送／重发、验码、完成分别保存原操作号和完整正文续接。`deliveryStatus` 为 `unavailable|none|queued|accepted|failed|unknown`；它与邮箱验证／恢复状态分开。`queued` 只表示投递任务排队，`accepted` 只表示服务商受理，都不证明送达、主人收到、验码或完成。`queued`／`unknown` 且验证码未过期时，保留并续接 `sendOperationId` 对应的原发送 action／operationId／body，不另造操作号或验证码；新发送操作会被拒为 409 `email_delivery_pending`，`details.operationId` 指向原发送操作。只有服务端已确认 `challengeExpired:true` 且 attempt 仍为有效 `pending_email` 时，人才能明确用新操作号发送新验证码；累计错误和发送限额不清零，旧码及旧任务不能恢复有效，原 `queued`／`unknown` 也不改称未发送或已送达。通道缺配置时明确不可用，不发万能码、不跳过验证；真实投递和收信尚未验收。
 
 服务端启用配置为私有 `RESEND_API_KEY`、`M1_EMAIL_FROM`、`M1_PUBLIC_ORIGIN`、`M1_EMAIL_CODE_SECRET`（至少 32 字节），发件地址须匹配在 Resend 已验证的域名。真实值不写文档、Agent、网页或普通聊天。两个邮箱能力布尔只表示配置齐全，不是投递／闭环验收证据；无配置保留已有登录、合法关联、可选独立备份与 Agent 自有活动。
 
@@ -162,7 +164,7 @@ runtime 代次、主人绑定或 owner authVersion 改变会使未决请求失�
 | 主人访问其他主人目标 | 404 `target_not_accessible` |
 | 旧对象/政策版本 | 409 `version_conflict` |
 | 同操作号换载荷 | 409 `idempotency_payload_mismatch` |
-| 原投递仍排队或结果未知时另起发送 | 409 `email_delivery_pending`，`details.operationId` 为原发送操作号 |
+| 原投递仍排队或结果未知、且验证码未过期时另起发送 | 409 `email_delivery_pending`，`details.operationId` 为原发送操作号 |
 | 同一恢复请求另起 browser attempt | 409 `email_attempt_exists`；原 browser 续接，或当前 Agent 取消请求后重新发起 |
 | 邮件尝试或未完成的受限授权已过期 | 安全读取为 `expired`，继续受限动作返回 410 `email_attempt_expired` |
 | 主人用户名/邮箱已占用 | 409 `username_unavailable` / `email_unavailable`，不返回他人资料 |
