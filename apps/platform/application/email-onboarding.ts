@@ -35,6 +35,9 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
     ...(settings.config.resend ? { RESEND_API_KEY: settings.config.resend.apiKey, M1_EMAIL_FROM: settings.config.resend.from, M1_PUBLIC_ORIGIN: settings.config.resend.publicOrigin, M1_EMAIL_CODE_SECRET: settings.config.resend.codeSecret } : {}) });
   const currentMode = config?.mode ?? 'unavailable';
   const attemptMode = (row: StoredRow): EmailMode => row.data.verificationMode === 'experience' ? 'experience' : 'resend';
+  function matchingMode(mode: EmailMode): void {
+    if (currentMode !== mode) fail('email_mode_mismatch', 409, 'Continue reading the original result or start again in the current verification mode', { currentMode, verificationMode: mode });
+  }
   function configured(mode: EmailMode, sending = false): ResendEmailConfig | undefined {
     if (!config) fail('email_unavailable', 503, 'Verification channel is temporarily unavailable');
     if (mode === 'experience') return undefined;
@@ -45,6 +48,9 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
     // A public experience code proves no mailbox control. Its independent domain
     // retains context across restarts/mode switches without requiring a mail key.
     if (mode === 'experience') return emailDigest(payloadHash([store.instanceId, store.recoveryEpoch, 'experience-code-v1']), store.instanceId, 'experience', ...parts);
+    // Without the old real key a POST body cannot be compared to its stored
+    // keyed hash. Its authenticated GET receipt remains available independently.
+    if (!config?.resend) matchingMode(mode);
     return emailDigest(configured(mode)!.codeSecret, store.instanceId, ...parts);
   }
   const available = (mode: EmailMode) => Boolean(config && (mode === 'experience' || config.resend));
@@ -68,7 +74,7 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
   }
   function view(tx: M1ReadSession, row: StoredRow): JsonObject {
     const delivery = typeof row.data.deliveryId === 'string' ? tx.get('mail_jobs', row.data.deliveryId) : undefined;
-    return { attemptId: row.id, purpose: row.data.purpose!, verificationMode: attemptMode(row), sendOperationIdRequired: row.data.verificationMode !== undefined, codeLength: attemptMode(row) === 'experience' ? 4 : 8, status: status(tx, row), expiresAt: row.data.expiresAt!,
+    return { attemptId: row.id, purpose: row.data.purpose!, verificationMode: attemptMode(row), currentMode, modeMismatch: currentMode !== attemptMode(row), sendOperationIdRequired: row.data.verificationMode !== undefined, codeLength: attemptMode(row) === 'experience' ? 4 : 8, status: status(tx, row), expiresAt: row.data.expiresAt!,
       codeExpiresAt: row.data.codeExpiresAt ?? null, challengeExpired: challengeExpired(row),
       resendAfter: row.data.resendAfter ?? 0, deliveryStatus: delivery?.data.state ?? (available(attemptMode(row)) ? 'none' : 'unavailable'),
       ...(row.data.deliveryId ? { deliveryId: row.data.deliveryId, sendOperationId: delivery?.data.operationId ?? null } : {}),
@@ -173,6 +179,9 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
       if (action.startsWith('verify')) commandInput = { ...input, code: digest(mode, 'operation-code', row.id, text(input.code, 'code', 1, 64)) };
       const result = hooks.command(tx, scope(row), action, commandInput, () => {
         if (action === 'cancelRegistration') { pending(tx, row); return view(tx, update(tx, 'email_attempts', row, { status: 'cancelled' })); }
+        // command returns an existing exact receipt before reaching this gate.
+        // A frozen challenge may never mint new authority under another mode.
+        matchingMode(mode);
         const email = configured(mode, action.startsWith('send')); pending(tx, row, action === 'registerOwner' || action === 'completeSetup' || action === 'recoverByEmail');
         if (action.startsWith('send')) {
           if (row.data.status !== 'pending_email') fail('email_attempt_closed', 409, 'Email attempt is closed');
