@@ -4,6 +4,7 @@ import {parseOwnerBackup,BackupError} from './owner-backup.js';
 import {accountFields,normalizeIdentifier} from './owner-account.js';
 import {readAgentSelection,rememberAgentSelection,clearAgentSelection} from './agent-selection.js';
 import {createRecoveryAssistance} from './owner-recovery-assistance.js';
+import {assertOwnerOperationResult} from './owner-operation-result.js';
 
 // A fragment is never sent to the server. Remove it before any API request.
 const incoming = new URLSearchParams(location.hash.slice(1));
@@ -130,7 +131,7 @@ function rejectAssistance(){
   return command({action:'rejectRecoveryRequest',path:'/owner/recovery-assistance/reject',scope:`owner:${context.ownerId}`,targetId:context.agentId,token:sessionAuthorized?vault.sessionToken:recoverySourceProof||vault.recoveryToken,fields:{assistanceToken:context.assistanceToken,expectedVersion:context.version}});
 }
 function backupError(error){
- const messages={agent_material:'这是 Agent 的身份或交接文件，不能重设主人密码。请选择首次设置时保存的主人登录备份。',invalid_backup:'这不是可用的新版主人登录备份。请选择本次注册或恢复后保存的文件。',different_origin:'文件来自另一个网站，请回原网站使用。',unavailable_backup:'这份恢复材料尚未生效、已使用或已失效。请选择最新有效的主人登录备份。原 Agent 身份仍然保留。',owner_mismatch:'这份备份不属于当前账号，请选择对应账号的备份。'};
+ const messages={agent_material:'这是 Agent 的身份或交接文件，不能重设主人密码。请选择首次设置时保存的主人登录备份。',invalid_backup:'这不是可用的新版主人登录备份。请选择本次注册或恢复后保存的文件。',different_origin:'文件来自另一个网站，请回原网站使用。',unavailable_backup:'这份恢复材料尚未生效、已使用或已失效。请选择最新有效的主人登录备份。原 Agent 身份仍然保留。',owner_mismatch:'这份备份不属于当前账号，请选择对应账号的备份。',operation_mismatch:'返回结果与本次操作的目标不一致，原进度仍保留。请保存进度，核对对应的操作文件后再继续。'};
  message(messages[error.code]||errorText(error),'error');
  if(error.originalOrigin){$('#origin-message').textContent=error.originalOrigin==='https://38.207.178.31'?'这份文件来自原 IP 网站，请在原网站继续找回登录。':'这份文件来自推荐域名，请在原网站继续。';$('#original-origin').href=error.originalOrigin+'/owner';$('#origin-help').hidden=false;}
 }
@@ -257,6 +258,7 @@ function beginPending({action,scope,path,method='POST',body,token,kind='owner',t
 function clearPending(){delete vault.pendingOperation;pendingPayload=null;resetAuthenticationExit();save();controls();}
 async function receipt(pending){return api(`/operations/${encodeURIComponent(pending.operationId)}?scope=${encodeURIComponent(pending.scope)}&action=${encodeURIComponent(pending.action)}`,{token:pending.action==='rejectRecoveryRequest'?(vault.recoveryToken||vault.sessionToken):vault.sessionToken});}
 async function committed(result,pending){
+  assertOwnerOperationResult(result,pending,vault);
   if(pending.action==='rejectRecoveryRequest'){assistance.showResult(result);clearPending();delete vault.assistanceContext;save();showAssistancePage();message('已拒绝本次协助请求。你的密码和登录备份保持不变。','success');return;}
   const assistedRecovery=pending.action==='recover'&&Boolean(vault.assistanceContext);
   const setupTarget=pending.action==='completeSetup'?(result.agentId||setupInfo?.agentId):null;
@@ -289,6 +291,7 @@ async function executePending(pending=vault.pendingOperation){
  const hadUnknown=Boolean(pending.uncertain);
  try{const result=await api(path||pending.path,{method:path?'POST':pending.method,body:payload.body,token:payload.token});await committed(result,pending);}
  catch(error){
+  if(error.code==='operation_mismatch'){pending.uncertain=true;save();backupError(error);return;}
   if(pendingAuthentication()){
    // A first, explicit rejection cannot have committed this newly generated command.
    if(!hadUnknown&&!isUnknown(error)){
@@ -315,7 +318,7 @@ async function command({action,path,method='POST',fields={},targetId=selectedId,
 async function checkResult(){
  if(busy||!vault.pendingOperation)return;const busyLease=setBusy(true);const pending=vault.pendingOperation;
  try{await committed(await receipt(pending),pending);}
- catch(error){if(pendingPayload){setBusy(false,busyLease);await executePending(pending);return;}if(pendingAuthentication()){showPendingAuthentication(true);message(authenticationPendingMessage(),'pending');}else message('暂时无法确认是否完成，进度已保留。请稍后再试。','pending');}
+ catch(error){if(error.code==='operation_mismatch'){backupError(error);return;}if(pendingPayload){setBusy(false,busyLease);await executePending(pending);return;}if(pendingAuthentication()){showPendingAuthentication(true);message(authenticationPendingMessage(),'pending');}else message('暂时无法确认是否完成，进度已保留。请稍后再试。','pending');}
  finally{setBusy(false,busyLease);}
 }
 async function previewHandoff(){
@@ -553,6 +556,13 @@ async function importCredentials(event){
   if(assistance.token&&!vault.pendingOperation){
    if(saved.ownerId!==assistance.context?.ownerId)throw new BackupError('owner_mismatch');
    const previous=saved.pendingOperation,context=saved.assistanceContext;
+   if(previous?.action==='recover'&&context?.assistanceToken===assistance.token){
+    let originalResult;try{originalResult=await api(`/operations/${encodeURIComponent(previous.operationId)}?scope=${encodeURIComponent(previous.scope)}&action=recover`,{token:saved.sessionToken});}catch{/* An unknown current operation must retain its original continuation. */}
+    if(originalResult){
+     if(originalResult.ownerId!==saved.ownerId||originalResult.operationId!==previous.operationId)throw new BackupError('operation_mismatch');
+     if(originalResult.requestId!==context.requestId){await useRecoveryBackup(saved);return;}
+    }
+   }
    // Downloads retain their original auth metadata after success. Verify the
    // independent recovery proof; never replay that historical registration/setup.
    if(!previous||(!context&&['registerOwner','completeSetup','recover'].includes(previous.action))){if(!saved.recoveryToken)throw new BackupError('unavailable_backup');await useRecoveryBackup(saved);return;}
@@ -618,6 +628,7 @@ async function resume(){
     vault.pendingOperation.uncertain=true;save();showSignIn();message('正在继续上次操作，请稍等。','pending');controls();
     try{const result=await receipt(vault.pendingOperation);await committed(result,vault.pendingOperation);return;}
     catch(error){
+      if(error.code==='operation_mismatch'){backupError(error);return;}
       if(vault.assistanceContext){try{await assistance.read(vault.assistanceContext.assistanceToken);}catch{}}
       if(pendingUnpublish()){try{await loadAgents();}catch(readError){if([401,403].includes(readError.status))error=readError;}message(unpublishPendingMessage(error),'pending');}
       if(pendingSetup()&&vault.setupToken){try{await readSetup();}catch{}}
