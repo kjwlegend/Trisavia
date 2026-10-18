@@ -38,6 +38,10 @@ export function parseOwnerBackup(text,origin){
     const e=next.setupExchange;if(e&&(c.agentId!==e.agentId||c.generation!==e.generation||(c.handoffToken?c.handoffToken!==e.handoffToken:c.setupToken!==e.setupToken)))invalid();
     next.claimContext={agentId:c.agentId,generation:c.generation,...(c.handoffToken?{handoffToken:c.handoffToken}:{setupToken:c.setupToken})};
   }
+  if(saved.assistanceContext){const c=saved.assistanceContext;
+    if(loginOnly||!validToken(c.assistanceToken)||c.requestId!==tokenId(c.assistanceToken)||!validId(c.agentId)||c.ownerId!==next.ownerId||!generation(c.version)||!['recover','rejectRecoveryRequest'].includes(saved.pendingOperation?.action))invalid();
+    next.assistanceContext={assistanceToken:c.assistanceToken,requestId:c.requestId,agentId:c.agentId,ownerId:c.ownerId,version:c.version};
+  }
   if(saved.pendingOperation){const p=saved.pendingOperation;
     if(!p||!validId(p.operationId)||typeof p.scope!=='string')invalid();
     const input=p.input;let clean;
@@ -61,10 +65,14 @@ export function parseOwnerBackup(text,origin){
       }else if(p.action==='unpublishProfile'){
         if(!next.sessionToken||p.scope!==`owner:${next.ownerId}`||!validId(p.targetId)||!generation(input?.expectedVersion)||!generation(input?.expectedPolicyVersion))invalid();
         clean={expectedVersion:input.expectedVersion,expectedPolicyVersion:input.expectedPolicyVersion};
+      }else if(p.action==='rejectRecoveryRequest'){
+        const c=next.assistanceContext;
+        if(!c||(!next.recoveryToken&&!next.sessionToken)||p.scope!==`owner:${next.ownerId}`||p.targetId!==c.agentId||input?.expectedVersion!==c.version)invalid();
+        clean={expectedVersion:c.version};
       }else invalid();
     }catch{invalid();}
     // Imported files never choose request paths, methods, passwords or actions.
-    next.pendingOperation={operationId:p.operationId,scope:p.scope,action:p.action,...(p.action==='unpublishProfile'?{targetId:p.targetId}:{}),...(clean?{input:clean}:{}),uncertain:true};
+    next.pendingOperation={operationId:p.operationId,scope:p.scope,action:p.action,...(['unpublishProfile','rejectRecoveryRequest'].includes(p.action)?{targetId:p.targetId}:{}),...(clean?{input:clean}:{}),uncertain:true};
   }else if(loginOnly)invalid();
   return next;
 }

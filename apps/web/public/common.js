@@ -42,6 +42,8 @@ const messages = {
   authentication_failed: '授权已过期、已使用或已撤销。请使用有效管理文件、密码登录或恢复证明继续。',
   insufficient_scope: '这份授权不能执行此操作。请使用主人管理方式登录。',
   target_not_accessible: '当前授权无法读取这个目标。',
+  recovery_request_expired: '这次恢复协助已过期或不再有效，请重新发起，或使用当前有效的主人登录备份。',
+  recovery_request_closed: '这次恢复协助已完成或已取消，不能再次重设密码。',
   version_conflict: '资料或状态已被修改。你的输入仍保留，请先读取最新状态，再确认是否保存。',
   state_conflict: '状态发生冲突。请读取最新状态，再确认操作。',
   idempotency_payload_mismatch: '这次进度与新填写内容不一致。请先继续之前保存的进度。',
