@@ -78,6 +78,166 @@ async function initializeOwner(origin: string, state: Json) {
   return sessionToken;
 }
 
+async function privateInput(directory: string, value: Json) {
+  const path = join(directory, `input-${randomUUID()}.json`);
+  await writeFile(path, JSON.stringify(value), { mode: 0o600 }); return path;
+}
+async function command(directory: string, statePath: string, name: string, args: string[] = []): Promise<Json> {
+  const result = await cli(directory, [name, '--state', statePath, ...args]);
+  const state = await json(statePath); safeOutput(result.stdout + result.stderr, state);
+  assert.equal(result.code, 0, `Reference client ${name} must succeed`);
+  return JSON.parse(result.stdout);
+}
+
+test('downloaded reference client manages its own draft, publication and membership without recreating an identity', { timeout: 30_000 }, async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'm1-agent-crud-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const running = await server(directory); t.after(() => stop(running.child));
+  await download(directory, running.address);
+  const path = join(directory, 'a1.json'), otherPath = join(directory, 'a2.json');
+  await command(directory, path, 'onboard', ['--url', running.address, '--name', 'CRUD A1']);
+  await command(directory, otherPath, 'onboard', ['--url', running.address, '--name', 'Untouched A2']);
+  const initial = await json(path), other = await json(otherPath);
+  const catalogue = await cli(directory, ['avatar-catalog', '--url', running.address]);
+  assert.equal(catalogue.code, 0); assert.deepEqual(JSON.parse(catalogue.stdout).catalog.templates[0].colors, ['olive', 'cream', 'blue', 'coral']);
+  const input = await privateInput(directory, { fields: { displayName: 'Updated A1', bio: 'A permitted biography',
+    interests: ['reading'], avatar: { template: 'basic', color: 'coral' } } });
+  let result = await command(directory, path, 'profile-update', ['--input-file', input]);
+  assert.equal(result.profileDetails.draft.displayName, 'Updated A1'); assert.equal(result.profileDetails.published.displayName, 'CRUD A1');
+  assert.equal((await command(directory, path, 'profile-read')).profileDetails.draft.avatar.color, 'coral');
+  await command(directory, path, 'profile-publish');
+  result = await command(directory, path, 'profile-clear', ['--fields', 'bio,interests']);
+  assert(!('bio' in result.profileDetails.draft)); assert(!('interests' in result.profileDetails.draft));
+  assert.equal(result.profileDetails.draft.displayName, 'Updated A1'); assert.equal(result.profileDetails.draft.avatar.color, 'coral');
+  assert.equal(result.profileDetails.published.bio, 'A permitted biography', 'Removing a draft field does not silently publish');
+  result = await command(directory, path, 'profile-publish');
+  const visible = await api(running.address, 'GET', `/v1/public/agents/${initial.agentId}`);
+  assert(!('bio' in visible.profile)); assert(!('interests' in visible.profile));
+  const beforeInvalid = await readFile(path, 'utf8');
+  for (const field of ['displayName', 'avatar', 'unknown', 'bio,bio']) {
+    assert.equal((await cli(directory, ['profile-clear', '--state', path, '--fields', field])).code, 1);
+    assert.equal(await readFile(path, 'utf8'), beforeInvalid, 'Invalid removal cannot change local or remote intent');
+  }
+  const publishedVersion = result.profileDetails.publishedVersion;
+  result = await command(directory, path, 'profile-unpublish');
+  assert.equal(result.operation.changed, true); assert.equal(result.profileDetails.published, null);
+  assert.equal(result.profileDetails.confirmationSource, null); assert.equal(result.profileDetails.publishedVersion, publishedVersion);
+  assert.equal(result.membershipDetails.state, 'joined'); assert.equal(result.profileDetails.draft.displayName, 'Updated A1');
+  assert.equal((await fetch(`${running.address}/v1/public/agents/${initial.agentId}`)).status, 404);
+  assert.equal((await command(directory, path, 'status')).profile, 'unpublished', 'Status must not automatically republish withdrawn data');
+  result = await command(directory, path, 'profile-unpublish'); assert.equal(result.operation.changed, false);
+  assert.equal((await command(directory, path, 'membership-leave')).membershipDetails.state, 'left');
+  assert.equal((await command(directory, path, 'membership-read')).membershipDetails.state, 'left');
+  const blocked = await cli(directory, ['membership-join', '--state', path]);
+  assert.equal(blocked.code, 1); assert.match(blocked.stderr, /admission_requirements_unmet/);
+  await command(directory, path, 'profile-publish');
+  assert.equal((await command(directory, path, 'membership-join')).membershipDetails.state, 'joined');
+  const final = await json(path), currentOther = await api(running.address, 'GET', '/v1/agent/self', undefined, other.runtimeToken);
+  assert.equal(final.agentId, initial.agentId); assert.equal(final.ownerId, initial.ownerId);
+  assert(final.runtimeToken === initial.runtimeToken && final.continuationToken === initial.continuationToken, 'CRUD preserves both independent Agent proofs');
+  assert.equal(currentOther.profile.version, other.profile.version); assert.equal(currentOther.profile.published.displayName, 'Untouched A2');
+  assert.equal(currentOther.membership.version, other.membership.version);
+});
+
+test('reference client preserves original CRUD commands across lost responses, restart and cross-Agent receipt checks', { timeout: 30_000 }, async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'm1-agent-crud-loss-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  let running = await server(directory), upstream = running.address;
+  t.after(() => stop(running.child));
+  let discard = '', interfere: (() => Promise<void>) | undefined; const writes = new Map<string, number>();
+  const proxy = createServer(async (request, response) => {
+    const chunks: Buffer[] = []; for await (const chunk of request) chunks.push(Buffer.from(chunk));
+    const body = Buffer.concat(chunks), path = request.url!;
+    try {
+      const forwarded = await fetch(`${upstream}${path}`, { method: request.method!, headers: {
+        ...(request.headers.authorization ? { authorization: request.headers.authorization } : {}), ...(body.length ? { 'content-type': 'application/json' } : {}),
+      }, ...(body.length ? { body } : {}) });
+      const payload = await forwarded.text();
+      if (path === '/v1/agent/self' && forwarded.status === 200 && interfere) { const change = interfere; interfere = undefined; await change(); }
+      if (request.method !== 'GET') writes.set(path, (writes.get(path) ?? 0) + 1);
+      if (discard && path.endsWith(discard) && request.method !== 'GET' && forwarded.status === 200) { discard = ''; response.destroy(); return; }
+      response.writeHead(forwarded.status, { 'content-type': forwarded.headers.get('content-type') ?? 'application/json' }); response.end(payload);
+    } catch { response.writeHead(503); response.end('{}'); }
+  });
+  await new Promise<void>(resolve => proxy.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise<void>(resolve => proxy.close(() => resolve())));
+  const address = proxy.address(); assert(address && typeof address !== 'string'); const origin = `http://127.0.0.1:${address.port}`;
+  await download(directory, origin);
+  const path = join(directory, 'a1.json'), otherPath = join(directory, 'a2.json');
+  await command(directory, path, 'onboard', ['--url', origin, '--name', 'Loss A1']);
+  await command(directory, otherPath, 'onboard', ['--url', origin, '--name', 'Loss A2']);
+  const initial = await json(path), other = await json(otherPath);
+  const input = await privateInput(directory, { fields: { bio: 'Original complete intent' } });
+  const cases = [
+    { name: 'profile-update', suffix: '/profile/draft', args: ['--input-file', input] },
+    { name: 'profile-unpublish', suffix: '/profile/unpublish', args: [] },
+    { name: 'membership-leave', suffix: '/membership/leave', args: [] },
+    { name: 'membership-join', suffix: '/membership/join', args: [] },
+  ];
+  for (const [index, item] of cases.entries()) {
+    if (item.name === 'membership-join') await command(directory, path, 'profile-publish');
+    const endpoint = `/v1/agents/${initial.agentId}${item.suffix}`, before = writes.get(endpoint) ?? 0;
+    discard = item.suffix;
+    const lost = await cli(directory, [item.name, '--state', path, ...item.args]);
+    assert.equal(lost.code, 1); safeOutput(lost.stdout + lost.stderr, initial);
+    const pending = await json(path), key = pending.pendingMutation.key, original = pending.commands[key];
+    assert.equal(original.status, 'pending'); assert.equal(original.path, endpoint); assert.equal(original.scope, `agent:${initial.agentId}`);
+    const selection = new URLSearchParams({ scope: original.scope, action: original.action });
+    assert.equal((await fetch(`${origin}/v1/operations/${original.body.operationId}?${selection}`, { headers: { authorization: `Bearer ${other.runtimeToken}` } })).status, 404);
+    const conflict = await cli(directory, ['profile-clear', '--state', path, '--fields', 'interests']);
+    assert.equal(conflict.code, 1); assert.match(conflict.stderr, /pending_operation_requires_original/);
+    assert.equal((await json(path)).pendingMutation.key, key);
+    if (index === 0) { await stop(running.child); running = await server(directory); upstream = running.address; }
+    const read = await command(directory, path, 'profile-read'); assert.equal(read.pendingOperation.operationId, original.body.operationId);
+    await command(directory, path, 'status');
+    const resumed = await json(path);
+    assert.equal(resumed.pendingMutation, undefined); assert.equal(resumed.commands[key].status, 'committed');
+    assert.deepEqual(resumed.commands[key].body, original.body); assert.equal(writes.get(endpoint), before + 1, 'Receipt recovery does not resend a committed mutation');
+    assert.equal(resumed.agentId, initial.agentId); assert(resumed.runtimeToken === initial.runtimeToken, 'Restart keeps the original runtime proof');
+  }
+  const session = await initializeOwner(origin, initial);
+  interfere = async () => {
+    const current = await api(upstream, 'GET', `/v1/agents/${initial.agentId}/profile`, undefined, session);
+    await api(upstream, 'PUT', `/v1/agents/${initial.agentId}/profile/draft`, { operationId: newOperationId(),
+      expectedVersion: current.version, expectedPolicyVersion: current.policyVersion, fields: { bio: 'Owner concurrent edit' } }, session);
+  };
+  const stale = await cli(directory, ['profile-update', '--state', path, '--input-file', input]);
+  assert.equal(stale.code, 1); assert.match(stale.stderr, /version_conflict/);
+  assert.equal((await api(origin, 'GET', `/v1/agents/${initial.agentId}/profile`, undefined, initial.runtimeToken)).draft.bio, 'Owner concurrent edit');
+  assert.equal((await json(path)).pendingMutation, undefined);
+  const corrected = await command(directory, path, 'profile-update', ['--input-file', input]);
+  assert.equal(corrected.profileDetails.draft.bio, 'Original complete intent', 'A new explicit retry reads current versions instead of overwriting with a stale CAS');
+});
+
+test('reference client reports policy refusals without losing identity and can correct a rejected intent', { timeout: 30_000 }, async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'm1-agent-crud-policy-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const running = await server(directory); t.after(() => stop(running.child)); await download(directory, running.address);
+  const path = join(directory, 'a1.json'); await command(directory, path, 'onboard', ['--url', running.address, '--name', 'Policy Agent']);
+  const initial = await json(path), session = await initializeOwner(running.address, initial);
+  const policy = async (mode: string, lockedFields: string[]) => {
+    const current = await api(running.address, 'GET', `/v1/agents/${initial.agentId}/profile`, undefined, session);
+    return api(running.address, 'PUT', `/v1/owner/agents/${initial.agentId}/profile-policy`, { operationId: newOperationId(),
+      expectedVersion: current.version, expectedPolicyVersion: current.policyVersion, mode, lockedFields }, session);
+  };
+  await policy('agent_autonomous', ['bio']);
+  const input = await privateInput(directory, { fields: { bio: 'Corrected after unlock' } });
+  const locked = await cli(directory, ['profile-update', '--state', path, '--input-file', input]);
+  assert.equal(locked.code, 1); assert.match(locked.stderr, /field_locked/);
+  assert.equal((await json(path)).pendingMutation, undefined, 'An explicit policy rejection allows a corrected new command');
+  await policy('agent_autonomous', []); await command(directory, path, 'profile-update', ['--input-file', input]);
+  await policy('proposal_required', []);
+  for (const name of ['profile-publish', 'profile-unpublish']) {
+    const denied = await cli(directory, [name, '--state', path]); assert.equal(denied.code, 1); assert.match(denied.stderr, /confirmation_required/);
+  }
+  await policy('agent_autonomous', []);
+  const member = await api(running.address, 'GET', `/v1/agents/${initial.agentId}/membership`, undefined, session);
+  await api(running.address, 'PUT', `/v1/owner/agents/${initial.agentId}/participation`, { operationId: newOperationId(), expectedVersion: member.version, paused: true }, session);
+  const paused = await cli(directory, ['profile-unpublish', '--state', path]); assert.equal(paused.code, 1); assert.match(paused.stderr, /participation_paused/);
+  const left = await command(directory, path, 'membership-leave'); assert.equal(left.membershipDetails.state, 'left'); assert.equal(left.membershipDetails.ownerPaused, true);
+  const final = await json(path); assert.equal(final.agentId, initial.agentId); assert(final.runtimeToken === initial.runtimeToken);
+});
+
 test('downloaded standalone CLI completes real HTTP, private handoff, restart and invitation without a repository cwd', { timeout: 30_000 }, async t => {
   const directory = await mkdtemp(join(tmpdir(), 'm1-agent-external-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
