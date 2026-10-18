@@ -206,7 +206,7 @@ export function createOwnerEmailFlow(hooks){
     if(command.action.startsWith('verify'))inform(modeMismatch()?mismatchMessage():verifiedMessage(),modeMismatch()?'pending':'');
     else if(command.action==='cancelRegistration'){clear();hooks.back();return;}
     // A start receipt recovered by originalReceipt needs the same current-state read as a fresh start.
-    else if(command.action==='startEmailRecovery'){await read();inform(modeMismatch()?mismatchMessage():copy[currentView.deliveryStatus]||'当前进度已保存。');}
+    else if(['startRegistration','startEmailRecovery'].includes(command.action)){await read();inform(modeMismatch()?mismatchMessage():copy[currentView.deliveryStatus]||'当前进度已保存。');}
     else if(['sendRegistrationCode','sendRecoveryCode'].includes(command.action)){await read();inform(modeMismatch()?mismatchMessage():copy[currentView.deliveryStatus]||'当前进度已保存。');}
     else inform(copy[result.deliveryStatus]||'当前进度已保存。');render();
   }
