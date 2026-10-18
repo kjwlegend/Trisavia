@@ -6,17 +6,17 @@ export function mountOwnerPanel(){const root=el('section','account-root');root.i
 export function createOwnerPresentation(root,{setTitle=()=>{},close=()=>{},onChange=()=>{}}={}){
   const $=selector=>root.querySelector(selector);let page='agents',baseline='',resolveConfirmation=null,authenticated=false;
   const names={agents:'我的 Agent',profile:'管理这位 Agent',appearance:'基础形象',participation:'庭院参与',policy:'资料控制',runtime:'运行访问',records:'帮助与记录',invite:'接入我的 Agent',security:'账户与安全',entry:'接入 Agent',success:'操作已完成',unavailable:'目标不可用'};
-  const manage=$('#manage-view'),pages=el('div','account-pages'),navigation=el('nav','account-tabs');navigation.setAttribute('aria-label','Agent 管理');
+  const manage=$('#manage-view'),agentSelect=$('#agent-select'),runtimePanel=$('#runtime-panel'),pages=el('div','account-pages'),navigation=el('nav','account-tabs');navigation.setAttribute('aria-label','Agent 管理');
   const sections={};for(const key of Object.keys(names)){const section=el('section','account-page');section.dataset.accountPage=key;section.hidden=true;sections[key]=section;pages.append(section);}
   const move=(key,ids)=>{for(const id of ids){const node=$(`#${id}`);if(node)sections[key].append(node);}};
   const listTitle=el('h3','','已关联的 Agent · ');listTitle.append($('#agent-count'));sections.agents.append(listTitle);
   move('agents',['agent-select','account-name','agent-list','empty-agents','add-agent']);
   move('profile',['profile-panel']);move('participation',['membership-panel']);move('policy',['policy-panel']);move('runtime',['runtime-panel']);move('records',['owner-diagnostics']);move('invite',['invites-panel']);
-  $('#runtime-panel').open=true;
+  runtimePanel.open=true;
   const security=$('#management-security');for(const node of [...security.children])if(node.tagName!=='SUMMARY')sections.security.append(node);security.remove();
   const facts=el('p','account-facts');facts.id='account-security-facts';sections.security.prepend(facts);sections.security.append($('#session-actions'));
   const accountLinks=el('div','account-menu');for(const [key,label]of [['agents','我的 Agent'],['invite','添加另一个 Agent'],['policy','当前 Agent 的资料控制'],['runtime','当前 Agent 的运行访问']]){const button=el('button','',label);button.type='button';if(['policy','runtime'].includes(key))button.dataset.requiresAgent='';button.addEventListener('click',()=>navigate(key));accountLinks.append(button);}facts.after(accountLinks);
-  $('#agent-select').hidden=true;
+  agentSelect.hidden=true;
   const summary=$('#agent-summary');manage.replaceChildren(summary,navigation,pages);
   const appearance=el('form');appearance.id='appearance-form';appearance.innerHTML='<label>衣服颜色<select id="appearance-color" aria-label="形象衣服颜色"><option value="olive">草木绿</option><option value="cream">暖奶油</option><option value="blue">庭院蓝</option><option value="coral">珊瑚橘</option></select></label><p class="small-text">保存到草稿，发布后才更新公开形象。</p><button class="primary" type="submit">保存形象草稿</button>';sections.appearance.append(appearance);
   const tabs=['profile','appearance','participation'];for(const key of tabs){const button=el('button','',key==='profile'?'资料':key==='appearance'?'形象':'参与');button.type='button';button.dataset.accountTab=key;button.addEventListener('click',()=>navigate(key));navigation.append(button);}
