@@ -137,7 +137,7 @@ function rejectAssistance(){
   return command({action:'rejectRecoveryRequest',path:'/owner/recovery-assistance/reject',scope:`owner:${context.ownerId}`,targetId:context.agentId,token:sessionAuthorized?vault.sessionToken:recoverySourceProof||vault.recoveryToken,fields:{assistanceToken:context.assistanceToken,expectedVersion:context.version}});
 }
 function backupError(error){
- const messages={agent_material:'这是 Agent 的身份或交接文件，不能重设主人密码。请选择首次设置时保存的主人登录备份。',invalid_backup:'这不是可用的新版主人登录备份。请选择本次注册或恢复后保存的文件。',different_origin:'文件来自另一个网站，请回原网站使用。',unavailable_backup:'这份恢复材料尚未生效、已使用或已失效。请选择最新有效的主人登录备份。原 Agent 身份仍然保留。',owner_mismatch:'这份备份不属于当前账号，请选择对应账号的备份。',operation_mismatch:'返回结果与本次操作的目标不一致，原进度仍保留。请保存进度，核对对应的操作文件后再继续。'};
+ const messages={agent_material:'这是 Agent 的身份或交接文件，不能重设主人密码。请选择首次设置时保存的主人登录备份。',invalid_backup:'这不是可用的新版主人登录备份。请选择本次注册或恢复后保存的文件。',different_origin:'文件来自另一个网站，请回原网站使用。',unavailable_backup:'这份恢复材料尚未生效、已使用或已失效。请选择最新有效的主人登录备份。原 Agent 身份仍然保留。',inactive_backup:'这份文件曾经启用，但现在已失效。当前浏览器原有的恢复材料保持不变，不会重新启用旧文件。',owner_mismatch:'这份备份不属于当前账号，请选择对应账号的备份。',operation_mismatch:'返回结果与本次操作的目标不一致，原进度仍保留。请保存进度，核对对应的操作文件后再继续。'};
  message(messages[error.code]||errorText(error),'error');
  globalNotice.dataset.backupError=error.code;
  if(error.originalOrigin){$('#origin-message').textContent=error.originalOrigin==='https://38.207.178.31'?'这份文件来自原 IP 网站，请在原网站继续找回登录。':'这份文件来自推荐域名，请在原网站继续。';$('#original-origin').href=error.originalOrigin+'/owner';$('#origin-help').hidden=false;}
@@ -267,9 +267,21 @@ function beginPending({action,scope,path,method='POST',body,token,kind='owner',t
 }
 function clearPending(){delete vault.pendingOperation;pendingPayload=null;resetAuthenticationExit();save();controls();}
 async function receipt(pending){return api(`/operations/${encodeURIComponent(pending.operationId)}?scope=${encodeURIComponent(pending.scope)}&action=${encodeURIComponent(pending.action)}`,{token:pending.action==='rejectRecoveryRequest'?(vault.recoveryToken||vault.sessionToken):vault.sessionToken});}
+function assertBackupReceipt(result,pending,ownerId,proof){
+  if(!validToken(proof)||result.ownerId!==ownerId||result.recoveryId!==tokenId(proof)||result.operationId!==pending.operationId||pending.scope!==`owner:${ownerId}`)throw new BackupError('operation_mismatch');
+}
+async function currentBackupProof(proof,ownerId){
+  try{return await recoveryOwner(proof,ownerId);}catch(error){if([401,403,404].includes(error.status))throw new BackupError('inactive_backup');throw error;}
+}
 async function committed(result,pending){
   assertOwnerOperationResult(result,pending,vault);
-  if(pending.action==='enableRecoveryBackup'){const proof=vault.backupPreparation?.recoveryToken||vault.recoveryToken;if(!validToken(proof)||result.ownerId!==vault.ownerId||result.recoveryId!==tokenId(proof)||result.operationId!==pending.operationId||pending.scope!==`owner:${vault.ownerId}`)throw new BackupError('operation_mismatch');vault.recoveryToken=proof;delete vault.backupPreparation;backupPrepared=null;$('#backup-confirm').hidden=true;$('#backup-saved').checked=false;}
+  if(pending.action==='enableRecoveryBackup'){
+    const source=vault,proof=source.backupPreparation?.recoveryToken||source.recoveryToken;
+    assertBackupReceipt(result,pending,source.ownerId,proof);
+    try{await currentBackupProof(proof,source.ownerId);}catch(error){error.backupReceiptConfirmed=true;throw error;}
+    if(vault!==source||source.pendingOperation?.operationId!==pending.operationId)throw new BackupError('operation_mismatch');
+    vault.recoveryToken=proof;delete vault.backupPreparation;backupPrepared=null;$('#backup-confirm').hidden=true;$('#backup-saved').checked=false;
+  }
   if(pending.action==='rejectRecoveryRequest'){emailFlow?.endRequest(result.ownerId,result.requestId);assistance.showResult(result);clearPending();delete vault.assistanceContext;save();showAssistancePage();message('已拒绝本次协助请求。你的密码和登录备份保持不变。','success');return;}
   const assistedRecovery=pending.action==='recover'&&Boolean(vault.assistanceContext);
   const setupTarget=pending.action==='completeSetup'?(result.agentId||setupInfo?.agentId):null;
@@ -302,6 +314,8 @@ async function executePending(pending=vault.pendingOperation){
  const hadUnknown=Boolean(pending.uncertain);
  try{const result=await api(path||pending.path,{method:path?'POST':pending.method,body:payload.body,token:payload.token});await committed(result,pending);}
  catch(error){
+  if(pending.action==='enableRecoveryBackup'&&error.code==='inactive_backup'){pending.uncertain=true;save();backupError(error);return;}
+  if(pending.action==='enableRecoveryBackup'&&error.backupReceiptConfirmed){pending.uncertain=true;save();message('已读到原启用结果，但暂时无法核对这份文件目前是否有效。原进度和当前恢复材料都已保留，请稍后继续核对。','pending');return;}
   if(error.code==='operation_mismatch'){pending.uncertain=true;save();backupError(error);return;}
   if(pendingAuthentication()){
    // A first, explicit rejection cannot have committed this newly generated command.
@@ -330,7 +344,7 @@ async function command({action,path,method='POST',fields={},targetId=selectedId,
 async function checkResult(){
  if(busy||!vault.pendingOperation)return;const busyLease=setBusy(true);const pending=vault.pendingOperation;
  try{await committed(await receipt(pending),pending);}
- catch(error){if(error.code==='operation_mismatch'){backupError(error);return;}if(pendingPayload){setBusy(false,busyLease);await executePending(pending);return;}if(pendingAuthentication()){showPendingAuthentication(true);message(authenticationPendingMessage(),'pending');}else message('暂时无法确认是否完成，进度已保留。请稍后再试。','pending');}
+ catch(error){if(['operation_mismatch','inactive_backup'].includes(error.code)){backupError(error);return;}if(pendingBackup()&&error.backupReceiptConfirmed){message('原启用结果已确认，但暂时无法核对文件当前是否有效。进度和当前恢复材料已保留，请稍后继续核对。','pending');return;}if(pendingPayload){setBusy(false,busyLease);await executePending(pending);return;}if(pendingAuthentication()){showPendingAuthentication(true);message(authenticationPendingMessage(),'pending');}else message('暂时无法确认是否完成，进度已保留。请稍后再试。','pending');}
  finally{setBusy(false,busyLease);}
 }
 async function previewHandoff(){
@@ -555,6 +569,37 @@ async function enableBackup(){
   try{vault.backupPreparation={recoveryToken:backupPrepared.recoveryToken};save();await command({action:'enableRecoveryBackup',path:'/owner/recovery-backups',targetId:null,operationId:backupPrepared.operationId,fields:{recoveryToken:backupPrepared.recoveryToken,credentialsSaved:true}});}catch(error){fail(error);}
 }
 
+async function importBackupProgress(saved,busyLease){
+  const active=vault,pending=saved.pendingOperation,candidate=saved.recoveryToken;
+  if(active.ownerId&&active.ownerId!==saved.ownerId)throw new BackupError('owner_mismatch');
+  const previous=active.pendingOperation;
+  if(previous&&(previous.action!==pending.action||previous.scope!==pending.scope||previous.operationId!==pending.operationId||(active.backupPreparation?.recoveryToken||active.recoveryToken)!==candidate))throw new BackupError('operation_mismatch');
+  if(recoveryIntent&&!previous){
+    let usable=false;try{await currentBackupProof(candidate,saved.ownerId);usable=true;}catch(error){if(error.code!=='inactive_backup')throw error;}
+    if(vault!==active||busyLease!==busyRevision)return;
+    // An active independent proof needs no live historical session to recover.
+    if(usable){await useRecoveryBackup(saved);return;}
+  }
+  const session=active.ownerId===saved.ownerId&&active.sessionToken?active.sessionToken:saved.sessionToken;
+  const accountView=await api('/owner/account',{token:session});
+  if(vault!==active||busyLease!==busyRevision)return;
+  if(accountView.ownerId!==saved.ownerId)throw new BackupError('owner_mismatch');
+  let originalResult;
+  try{originalResult=await api(`/operations/${encodeURIComponent(pending.operationId)}?scope=${encodeURIComponent(pending.scope)}&action=enableRecoveryBackup`,{token:session});}
+  catch(error){if(error.status!==404&&!isUnknown(error))throw error;}
+  if(vault!==active||busyLease!==busyRevision)return;
+  if(originalResult){
+    assertBackupReceipt(originalResult,pending,saved.ownerId,candidate);
+    // Reject a historical, now revoked file before it can replace the vault.
+    try{await currentBackupProof(candidate,saved.ownerId);}catch(error){if(error instanceof BackupError||!isUnknown(error))throw error;}
+    if(vault!==active||busyLease!==busyRevision)return;
+  }
+  const base=active.ownerId===saved.ownerId?active:{format:'connet-owner-v2',origin:location.origin,ownerId:saved.ownerId};
+  vault={...base,sessionToken:session,pendingOperation:pending,backupPreparation:{recoveryToken:candidate}};
+  pendingPayload={token:session,body:{operationId:pending.operationId,recoveryToken:candidate,credentialsSaved:true}};recoveryIntent=false;save();
+  if(originalResult)await committed(originalResult,pending);else await resume();
+}
+
 async function importCredentials(event){
  const file=event.target.files?.[0];if(!file||busy||emailFlow.pending)return;const busyLease=setBusy(true);$('#origin-help').hidden=true;sessionOnlyBackup=null;$('#continue-management').hidden=true;
  try{
@@ -583,13 +628,14 @@ async function importCredentials(event){
     await useRecoveryBackup(saved);return;
    }
   }
-  if(['unpublishProfile','rejectRecoveryRequest','enableRecoveryBackup'].includes(saved.pendingOperation?.action)&&vault.sessionToken&&!vault.pendingOperation){
+  if(saved.pendingOperation?.action==='enableRecoveryBackup'){await importBackupProgress(saved,busyLease);return;}
+  if(['unpublishProfile','rejectRecoveryRequest'].includes(saved.pendingOperation?.action)&&vault.sessionToken&&!vault.pendingOperation){
    const active=vault;if(active.ownerId!==saved.ownerId)throw new BackupError('owner_mismatch');
    const [currentAccount,owned]=await Promise.all([api('/owner/account',{token:active.sessionToken}),api('/owner/agents',{token:active.sessionToken})]);
    if(busyLease!==busyRevision||vault!==active)return;
-   if(currentAccount.ownerId!==saved.ownerId||owned.ownerId!==saved.ownerId||(saved.pendingOperation.action!=='enableRecoveryBackup'&&!owned.agents.some(agent=>agent.agentId===saved.pendingOperation.targetId)))throw new BackupError('owner_mismatch');
+   if(currentAccount.ownerId!==saved.ownerId||owned.ownerId!==saved.ownerId||!owned.agents.some(agent=>agent.agentId===saved.pendingOperation.targetId))throw new BackupError('owner_mismatch');
    // Keep the newly authenticated session and recovery material; import only the original command.
-   vault={...active,pendingOperation:saved.pendingOperation,...(saved.pendingOperation.action==='enableRecoveryBackup'?{backupPreparation:{recoveryToken:saved.recoveryToken}}:{}),...(saved.assistanceContext?{assistanceContext:saved.assistanceContext}:{})};pendingPayload=null;recoveryIntent=false;save();await resume();return;
+   vault={...active,pendingOperation:saved.pendingOperation,...(saved.assistanceContext?{assistanceContext:saved.assistanceContext}:{})};pendingPayload=null;recoveryIntent=false;save();await resume();return;
   }
   vault=saved;account=null;pendingPayload=null;setupInfo=null;setupPublicGeneration++;setupPublicAbort?.abort();setupPrepared=false;recoveryPrepared=null;save();
   if(vault.assistanceContext){recoveryIntent=false;await resume();return;}
@@ -639,7 +685,8 @@ async function resume(){
     vault.pendingOperation.uncertain=true;save();showSignIn();message('正在继续上次操作，请稍等。','pending');controls();
     try{const result=await receipt(vault.pendingOperation);await committed(result,vault.pendingOperation);return;}
     catch(error){
-      if(error.code==='operation_mismatch'){backupError(error);return;}
+      if(['operation_mismatch','inactive_backup'].includes(error.code)){backupError(error);return;}
+      if(pendingBackup()&&error.backupReceiptConfirmed){showPendingAuthentication();message('已读到原启用结果，但暂时无法核对这份文件目前是否有效。原进度和当前恢复材料已保留，请稍后继续核对。','pending');return;}
       if(vault.assistanceContext){try{await assistance.read(vault.assistanceContext.assistanceToken);}catch{}}
       if(pendingUnpublish()){try{await loadAgents();}catch(readError){if([401,403].includes(readError.status))error=readError;}message(unpublishPendingMessage(error),'pending');}
       if(pendingSetup()&&vault.setupToken){try{await readSetup();}catch{}}
