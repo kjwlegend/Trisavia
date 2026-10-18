@@ -79,7 +79,7 @@ export function createOwnerEmailFlow(hooks){
     $('#email-recovery-backup').hidden=reg||status!=='email_proved';
     $('#email-completed').hidden=status!=='completed'||reg;
     $('#email-form').hidden=status==='completed'&&!reg;
-    $('#email-back').textContent=reg?'返回登录':'返回找回方式';
+    $('#email-back').textContent=reg?(progress?.target||proposedTarget?'已有账号？登录并关联':'返回登录'):'返回找回方式';
     $('#email-restart').hidden=!['expired','cancelled'].includes(status)||pending();
     controls(hooks.uiState());hooks.onView?.();
   }
