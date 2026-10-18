@@ -182,6 +182,9 @@ function renderSavedProgress(){
 }
 function receiveHandoff(proof){
   if(vault.pendingOperation){message('之前的进度还需确认，请先继续上次操作，或保存进度稍后继续。','pending');return false;}
+  // A new handoff ends the previously browsed recovery view, not an issued command.
+  recoveryIntent=false;sessionOnlyBackup=null;recoveryPrepared=null;recoveryOwnerId='';recoverySourceProof='';focusRequested=null;
+  $('#recovery-password').value='';$('#recovery-saved').checked=false;
   assistance.clear();delete vault.assistanceContext;
   clearCompletedTaskNotice();
   const found=findSetupProgress({proof});
@@ -256,6 +259,7 @@ async function receipt(pending){return api(`/operations/${encodeURIComponent(pen
 async function committed(result,pending){
   if(pending.action==='rejectRecoveryRequest'){assistance.showResult(result);clearPending();delete vault.assistanceContext;save();showAssistancePage();message('已拒绝本次协助请求。你的密码和登录备份保持不变。','success');return;}
   const assistedRecovery=pending.action==='recover'&&Boolean(vault.assistanceContext);
+  const setupTarget=pending.action==='completeSetup'?(result.agentId||setupInfo?.agentId):null;
   if(['completeSetup','recover','login','registerOwner'].includes(pending.action)){
     if(vault.ownerId&&result.ownerId!==vault.ownerId)throw new BackupError('owner_mismatch');
     vault.ownerId=result.ownerId;vault.format='connet-owner-v2';vault.stage='managed';delete vault.setupToken;delete vault.handoffToken;delete vault.sourceRecoveryToken;setupPrepared=false;recoveryPrepared=null;
@@ -271,7 +275,12 @@ async function committed(result,pending){
   if(recoveryIntent){await restorePasswordIntent();return;}
   const readOwner=vault,expectedRead=readGeneration+1;
   const keepProfileInputs=pending.action==='unpublishProfile'&&view==='managed'&&pending.targetId===selectedId;
-  try{const loaded=await loadAgents({resetProfile:pending.action==='unpublishProfile'?!keepProfileInputs:!pending.targetId||pending.targetId===selectedId});if(loaded&&readOwner===vault&&expectedRead===readGeneration)message(assistedRecovery?'登录已找回，本次 Agent 协助已完成。':pending.action==='unpublishProfile'?'公开资料已撤回。草稿仍保留，当前表单输入未保存。':'操作已完成，当前状态已重新读取。','success');}
+  try{const loaded=await loadAgents({resetProfile:pending.action==='unpublishProfile'?!keepProfileInputs:!pending.targetId||pending.targetId===selectedId});if(loaded&&readOwner===vault&&expectedRead===readGeneration){
+    if(pending.action==='completeSetup'){
+      const agent=agents.find(agent=>agent.agentId===setupTarget),name=agent?.profile.published?.displayName||agent?.profile.draft?.displayName||'Agent';
+      message(`账号已创建，${name}已关联。`,'success');requestFocus('#page-title');
+    }else message(assistedRecovery?'登录已找回，本次 Agent 协助已完成。':pending.action==='unpublishProfile'?'公开资料已撤回。草稿仍保留，当前表单输入未保存。':'操作已完成，当前状态已重新读取。','success');
+  }}
   catch{if(readOwner===vault&&expectedRead===readGeneration)message('操作已提交，但最新状态暂时无法读取。请刷新页面继续；无需重新提交该操作。','pending');}
 }
 async function executePending(pending=vault.pendingOperation){
