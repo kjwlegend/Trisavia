@@ -58,10 +58,13 @@ export function parseOwnerBackup(text,origin){
         const c=next.claimContext;
         if(!next.sessionToken||p.scope!==`owner:${next.ownerId}`||!c||input?.agentId!==c.agentId||input.expectedGeneration!==c.generation)invalid();
         clean={agentId:c.agentId,expectedGeneration:c.generation};
+      }else if(p.action==='unpublishProfile'){
+        if(!next.sessionToken||p.scope!==`owner:${next.ownerId}`||!validId(p.targetId)||!generation(input?.expectedVersion)||!generation(input?.expectedPolicyVersion))invalid();
+        clean={expectedVersion:input.expectedVersion,expectedPolicyVersion:input.expectedPolicyVersion};
       }else invalid();
     }catch{invalid();}
     // Imported files never choose request paths, methods, passwords or actions.
-    next.pendingOperation={operationId:p.operationId,scope:p.scope,action:p.action,...(clean?{input:clean}:{}),uncertain:true};
+    next.pendingOperation={operationId:p.operationId,scope:p.scope,action:p.action,...(p.action==='unpublishProfile'?{targetId:p.targetId}:{}),...(clean?{input:clean}:{}),uncertain:true};
   }else if(loginOnly)invalid();
   return next;
 }
