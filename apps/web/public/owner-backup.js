@@ -58,6 +58,8 @@ export function parseOwnerBackup(text,origin){
       }else if(p.action==='registerOwner'){
         if(!next.sessionToken||!next.recoveryToken||p.scope!==`owner-registration:${next.ownerId}`||input?.attemptId!==next.ownerId)invalid();
         clean={attemptId:next.ownerId,...readAccountInput(input)};
+      }else if(p.action==='enableRecoveryBackup'){
+        if(!next.sessionToken||!next.recoveryToken||p.scope!==`owner:${next.ownerId}`)invalid();
       }else if(p.action==='claimAgent'){
         const c=next.claimContext;
         if(!next.sessionToken||p.scope!==`owner:${next.ownerId}`||!c||input?.agentId!==c.agentId||input.expectedGeneration!==c.generation)invalid();

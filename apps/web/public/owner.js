@@ -5,6 +5,7 @@ import {accountFields,normalizeIdentifier} from './owner-account.js';
 import {readAgentSelection,rememberAgentSelection,clearAgentSelection} from './agent-selection.js';
 import {createRecoveryAssistance} from './owner-recovery-assistance.js';
 import {assertOwnerOperationResult} from './owner-operation-result.js';
+import {createOwnerEmailFlow} from './owner-email-flow.js';
 
 // A fragment is never sent to the server. Remove it before any API request.
 const incoming = new URLSearchParams(location.hash.slice(1));
@@ -22,19 +23,19 @@ let setupInfo=null,setupPrepared=false,recoveryPrepared=null,runtimePrepared=nul
 let setupPublicGeneration=0,setupPublicAbort=null;
 let pendingPayload=null,view='auth',readAbort=null,authExitPrepared=null;
 let recoveryIntent=false,sessionOnlyBackup=null,focusRequested=null,recoveryOwnerId='',recoverySourceProof='';
-let account=null,registerPrepared=null,existingClaimIntent=false,assistanceSession=null;
+let account=null,existingClaimIntent=false,assistanceSession=null,emailFlow=null,backupPrepared=null;
 const assistance=createRecoveryAssistance(()=>controls());
 const globalNotice=$('#global-notice');
 brandHeader('owner');courtyard($('#auth-courtyard'));
 function save(){try{sessionStorage.setItem(storageKey,JSON.stringify(vault));}catch{storageAvailable=false;throw new ApiError('private_storage_unavailable',400);}}
 function message(text,tone=''){delete globalNotice.dataset.backupError;notice(globalNotice,text,tone);}
 function clearCompletedTaskNotice(){if(!vault.pendingOperation&&globalNotice.classList.contains('success'))notice(globalNotice,'');}
-function clearResolvedValidation(){if(vault.pendingOperation)return;if(globalNotice.classList.contains('error'))notice(globalNotice,'');for(const prefix of ['register','setup'])notice($(`#${prefix}-feedback`),'');}
+function clearResolvedValidation(){if(vault.pendingOperation)return;if(globalNotice.classList.contains('error'))notice(globalNotice,'');for(const prefix of ['setup'])notice($(`#${prefix}-feedback`),'');}
 function fail(error){
   const field=error.field||error.details?.field,unknown=!error.field&&isUnknown(error);
-  const text=(error.field||error.code==='invalid_request')&&['username','email'].includes(field)?field==='username'?'用户名须为 2—32 个英文字母、数字或下划线。':'请填写有效邮箱；当前未验证，不用于邮件找回。':error.code==='private_storage_unavailable'?'浏览器无法保存当前标签页的私密续接材料。请启用会话存储后再继续。':errorText(error);
+  const text=(error.field||error.code==='invalid_request')&&['username','email'].includes(field)?field==='username'?'用户名须为 2—32 个英文字母、数字或下划线。':'请填写有效邮箱，并在网页完成验证码验证。':error.code==='private_storage_unavailable'?'浏览器无法保存当前标签页的私密续接材料。请启用会话存储后再继续。':errorText(error);
   message(text,unknown?'pending':'error');
-  if(!unknown)for(const prefix of ['register','setup']){const form=$(`#${prefix}-form`);if(!form.closest('[hidden]')&&!form.hidden){const feedback=$(`#${prefix}-feedback`);notice(feedback,text,'error');feedback.scrollIntoView({block:'nearest',behavior:'instant'});break;}}
+  if(!unknown)for(const prefix of ['setup']){const form=$(`#${prefix}-form`);if(!form.closest('[hidden]')&&!form.hidden){const feedback=$(`#${prefix}-feedback`);notice(feedback,text,'error');feedback.scrollIntoView({block:'nearest',behavior:'instant'});break;}}
 }
 // Only the async workflow that acquired the current lease can unlock its UI.
 function setBusy(value,lease){if(value)lease=++busyRevision;else if(lease!==busyRevision)return;busy=value;document.querySelector('main').setAttribute('aria-busy',String(value));controls();if(!value&&focusRequested){const input=$(focusRequested);focusRequested=null;if(input&&!input.disabled)input.focus();}return lease;}
@@ -44,15 +45,16 @@ function pendingLogin(){return vault.pendingOperation?.action==='login';}
 function pendingSetup(){return vault.pendingOperation?.action==='completeSetup';}
 function pendingUnpublish(){return vault.pendingOperation?.action==='unpublishProfile';}
 function pendingRejection(){return vault.pendingOperation?.action==='rejectRecoveryRequest';}
-function pendingAuthentication(){return pendingRecovery()||pendingLogin()||pendingSetup()||pendingRejection()||['registerOwner','claimAgent'].includes(vault.pendingOperation?.action);}
+function pendingBackup(){return vault.pendingOperation?.action==='enableRecoveryBackup';}
+function pendingAuthentication(){return pendingRecovery()||pendingLogin()||pendingSetup()||pendingRejection()||pendingBackup()||['registerOwner','claimAgent'].includes(vault.pendingOperation?.action);}
 function pendingExportable(){return pendingAuthentication()||pendingUnpublish();}
 function recoveryProofsReady(){return pendingRecovery()&&vault.pendingOperation.scope===`owner:${vault.ownerId}`&&validToken(vault.sessionToken)&&validToken(vault.recoveryToken);}
 function loginProofReady(){return pendingLogin()&&validToken(vault.sessionToken)&&vault.pendingOperation.scope===`owner-login:${tokenId(vault.sessionToken)}`;}
 function setupProofsReady(){return pendingSetup()&&validToken(vault.setupToken)&&vault.pendingOperation.scope===`setup:${tokenId(vault.setupToken)}`&&validToken(vault.sessionToken)&&validToken(vault.recoveryToken);}
 function controls(){
-  const pending=Boolean(vault.pendingOperation);
-  $$('main button').forEach(button=>{button.disabled=busy||(pending&&!['check-result','retry-operation','logout','show-login'].includes(button.id));});
-  $$('main input,main textarea,main select').forEach(input=>{input.disabled=busy||pending;});
+  const pending=Boolean(vault.pendingOperation),emailPending=Boolean(emailFlow?.pending);
+  $$('main button').forEach(button=>{button.disabled=busy||emailPending||(pending&&!['check-result','retry-operation','logout','show-login'].includes(button.id));});
+  $$('main input,main textarea,main select').forEach(input=>{input.disabled=busy||pending||emailPending;});
   $('#setup-saved').disabled=!setupPrepared||busy||pending;
   $('#setup-complete').disabled=busy||pending||!setupPrepared||!$('#setup-saved').checked;
   if(pendingSetup()){
@@ -78,14 +80,18 @@ function controls(){
   $('#agent-select').disabled=busy;$('#credentials-import').disabled=busy||(pending&&$('#recovery-pick-step').hidden);$('#recovery-source-import').disabled=busy;
   $('#setup-next').disabled=busy||(pending&&!pendingSetup());$('#recovery-next').disabled=busy||(pending&&!pendingRecovery());
   accountControls();
+  $('#email-recovery-start').disabled=busy||pending||emailPending||!assistance.ready||assistance.terminal;
+  $('#backup-saved').disabled=busy||pending||!backupPrepared;$('#enable-backup').disabled=busy||pending||!backupPrepared||!$('#backup-saved').checked;
+  emailFlow?.controls({busy,mainPending:pending});
   $('#recovery-submit').textContent=vault.assistanceContext?'重设密码并完成协助':'完成并登录';
   $('#reject-assistance').hidden=!assistance.token||(!assistance.verified&&!hasAssistanceSession())||assistance.terminal;
   $('#reject-assistance').disabled=busy||pending||(!assistance.verified&&!hasAssistanceSession())||!assistance.ready;
   $('#back-to-login').textContent=hasAssistanceSession()?'返回我的 Agent':'返回登录';
   if(assistance.token){$('#credentials-import').disabled||=!assistance.ready||assistance.terminal;$('#continue-management').hidden=true;if(assistance.terminal&&!pending){$('#recovery-pick-step').hidden=true;$('#recovery-form').hidden=true;}}
+  if(emailPending)$$('main button,main input,main textarea,main select').filter(control=>!$('#email-view').contains(control)).forEach(control=>control.disabled=true);
   if(selectedId){const agent=current();if(agent){$('#join-agent').disabled||=agent.membership.state==='joined';$('#leave-agent').disabled||=agent.membership.state==='left';$('#revoke-runtime').disabled||=!agent.runtimeActive;$('#unpublish-profile').disabled||=!agent.profile.published;}}
 }
-function showAuth(){for(const selector of ['#register-view','#claim-view'])$(selector).hidden=true;view='auth';$('#auth-view').hidden=false;$('#manage-view').hidden=true;$('#session-actions').hidden=true;$('#page-title').textContent='主人管理';$('#page-description').textContent='独立管理你的居民，Agent 无需保持在线。';}
+function showAuth(){for(const selector of ['#email-view','#claim-view'])$(selector).hidden=true;view='auth';$('#auth-view').hidden=false;$('#manage-view').hidden=true;$('#session-actions').hidden=true;$('#page-title').textContent='主人管理';$('#page-description').textContent='独立管理你的居民，Agent 无需保持在线。';}
 function showSignIn(){showAuth();$('#setup-view').hidden=true;$('#forgot-view').hidden=true;$('#sign-in-view').hidden=false;
   $('#login-identifier').value=vault.pendingOperation?.input?.identifier||$('#login-identifier').value;
   $('#login-resume-info').hidden=!pendingLogin();$('#login-submit').textContent=pendingLogin()?'继续登录':'登录';controls();requestFocus(pendingLogin()?'#login-password':'#login-identifier');
@@ -162,7 +168,7 @@ function activateSavedSetup(source){
     vault={...previous,claimContext:{...target,setupToken:source.setupToken}};
     for(const key of ['setupToken','setupExchange','exchangeOperationId','setupAccount','completeOperationId','handoffToken'])delete vault[key];
   }else vault=structuredClone(source);
-  pendingPayload=null;setupInfo=null;setupPrepared=false;registerPrepared=null;readGeneration++;readAbort?.abort();setupPublicGeneration++;setupPublicAbort?.abort();
+  pendingPayload=null;setupInfo=null;setupPrepared=false;readGeneration++;readAbort?.abort();setupPublicGeneration++;setupPublicAbort?.abort();
   $$('#setup-account-fields input,#setup-password').forEach(input=>input.value='');$('#setup-saved').checked=false;save();
 }
 function renderSavedProgress(){
@@ -183,6 +189,7 @@ function renderSavedProgress(){
   }
 }
 function receiveHandoff(proof){
+  if(emailFlow&&!emailFlow.canNavigate())return false;
   if(vault.pendingOperation){message('之前的进度还需确认，请先继续上次操作，或保存进度稍后继续。','pending');return false;}
   // A new handoff ends the previously browsed recovery view, not an issued command.
   recoveryIntent=false;sessionOnlyBackup=null;recoveryPrepared=null;recoveryOwnerId='';recoverySourceProof='';focusRequested=null;
@@ -225,9 +232,10 @@ function showPendingRecovery(preserveInputs=false){
  if(!preserveInputs){$('#recovery-password').value='';$('#recovery-saved').checked=false;}controls();
 }
 function showPendingAuthentication(preserveInputs=false){
+  if(pendingBackup()){showSignIn();message('备用恢复文件的启用结果尚未确认，请继续上次操作。','pending');return;}
   if(pendingRejection()){showAssistancePage();return;}
   if(pendingRecovery()){showPendingRecovery(preserveInputs);return;}
-  if(vault.pendingOperation?.action==='registerOwner'){showRegistration(true);return;}
+  if(vault.pendingOperation?.action==='registerOwner'){showSignIn();message('原注册进度已保留。请继续核对原结果；新的注册需要先验证邮箱。','pending');return;}
   if(vault.pendingOperation?.action==='claimAgent'){showClaim();return;}
   if(pendingSetup()){renderSetup(true);if(!preserveInputs){$('#setup-password').value='';$('#setup-saved').checked=false;}}
   else if(pendingLogin()){showSignIn();tab('login');if(!preserveInputs)$('#login-password').value='';}
@@ -238,7 +246,7 @@ function authenticationPendingMessage(){
 }
 function tab(mode){if(mode==='recovery')showForgot();else showSignIn();}
 function current(){return agents.find(agent=>agent.agentId===selectedId);}
-function privateFile(source=vault){const result={format:'connet-owner-v2',origin:location.origin,...(source.ownerId?{ownerId:source.ownerId}:{})};for(const key of ['sessionToken','recoveryToken','setupToken','sourceRecoveryToken','pendingOperation','claimContext','setupExchange','assistanceContext'])if(source[key])result[key]=source[key];return result;}
+function privateFile(source=vault){const result={format:'connet-owner-v2',origin:location.origin,...(source.ownerId?{ownerId:source.ownerId}:{})};for(const key of ['sessionToken','recoveryToken','setupToken','sourceRecoveryToken','pendingOperation','claimContext','setupExchange','assistanceContext'])if(source[key])result[key]=source[key];if(source.pendingOperation?.action==='enableRecoveryBackup'&&source.backupPreparation?.recoveryToken)result.recoveryToken=source.backupPreparation.recoveryToken;return result;}
 function downloadVault(){downloadPrivate('connet-owner.private.json',privateFile());}
 function authenticationExitKey(){const pending=vault.pendingOperation;return pendingExportable()?JSON.stringify([pending.scope,pending.action,pending.operationId,pending.targetId,pending.input,vault.sessionToken,vault.recoveryToken,vault.setupToken,vault.claimContext,vault.assistanceContext]):null;}
 function resetAuthenticationExit(){authExitPrepared=null;$('#auth-exit-confirm').hidden=true;$('#auth-exit-saved').checked=false;}
@@ -261,18 +269,19 @@ function clearPending(){delete vault.pendingOperation;pendingPayload=null;resetA
 async function receipt(pending){return api(`/operations/${encodeURIComponent(pending.operationId)}?scope=${encodeURIComponent(pending.scope)}&action=${encodeURIComponent(pending.action)}`,{token:pending.action==='rejectRecoveryRequest'?(vault.recoveryToken||vault.sessionToken):vault.sessionToken});}
 async function committed(result,pending){
   assertOwnerOperationResult(result,pending,vault);
-  if(pending.action==='rejectRecoveryRequest'){assistance.showResult(result);clearPending();delete vault.assistanceContext;save();showAssistancePage();message('已拒绝本次协助请求。你的密码和登录备份保持不变。','success');return;}
+  if(pending.action==='enableRecoveryBackup'){const proof=vault.backupPreparation?.recoveryToken||vault.recoveryToken;if(!validToken(proof)||result.ownerId!==vault.ownerId||result.recoveryId!==tokenId(proof)||result.operationId!==pending.operationId||pending.scope!==`owner:${vault.ownerId}`)throw new BackupError('operation_mismatch');vault.recoveryToken=proof;delete vault.backupPreparation;backupPrepared=null;$('#backup-confirm').hidden=true;$('#backup-saved').checked=false;}
+  if(pending.action==='rejectRecoveryRequest'){emailFlow?.endRequest(result.ownerId,result.requestId);assistance.showResult(result);clearPending();delete vault.assistanceContext;save();showAssistancePage();message('已拒绝本次协助请求。你的密码和登录备份保持不变。','success');return;}
   const assistedRecovery=pending.action==='recover'&&Boolean(vault.assistanceContext);
   const setupTarget=pending.action==='completeSetup'?(result.agentId||setupInfo?.agentId):null;
   if(['completeSetup','recover','login','registerOwner'].includes(pending.action)){
     if(vault.ownerId&&result.ownerId!==vault.ownerId)throw new BackupError('owner_mismatch');
     vault.ownerId=result.ownerId;vault.format='connet-owner-v2';vault.stage='managed';delete vault.setupToken;delete vault.handoffToken;delete vault.sourceRecoveryToken;setupPrepared=false;recoveryPrepared=null;
-    $('#register-password').value='';$('#setup-password').value='';$('#login-password').value='';$('#recovery-password').value='';recoverySourceProof='';
+    $('#email-password').value='';$('#setup-password').value='';$('#login-password').value='';$('#recovery-password').value='';recoverySourceProof='';
   }
   if(pending.action==='completeSetup'){delete vault.setupExchange;delete vault.exchangeOperationId;delete vault.claimContext;delete vault.setupAccount;delete vault.completeOperationId;}
   if(pending.action==='claimAgent'){delete vault.claimContext;setupInfo=null;existingClaimIntent=false;}
-  registerPrepared=null;clearPending();
-  if(assistedRecovery){delete vault.assistanceContext;assistance.clear();}
+  clearPending();
+  if(assistedRecovery){emailFlow?.endRequest(result.ownerId,result.requestId);delete vault.assistanceContext;assistance.clear();}
   if(pending.action==='replaceRuntime'){runtimePrepared=null;$('#runtime-confirm').hidden=true;$('#runtime-saved').checked=false;}
   if(pending.action==='issueInvite'){invitePrepared=null;$('#invite-confirm').hidden=true;$('#invite-saved').checked=false;}
   save();
@@ -283,13 +292,13 @@ async function committed(result,pending){
     if(pending.action==='completeSetup'){
       const agent=agents.find(agent=>agent.agentId===setupTarget),name=agent?.profile.published?.displayName||agent?.profile.draft?.displayName||'Agent';
       message(`账号已创建，${name}已关联。`,'success');requestFocus('#page-title');
-    }else message(assistedRecovery?'登录已找回，本次 Agent 协助已完成。':pending.action==='unpublishProfile'?'公开资料已撤回。草稿仍保留，当前表单输入未保存。':'操作已完成，当前状态已重新读取。','success');
+    }else message(assistedRecovery?'登录已找回，本次 Agent 协助已完成。':pending.action==='unpublishProfile'?'公开资料已撤回。草稿仍保留，当前表单输入未保存。':pending.action==='enableRecoveryBackup'?'备用恢复文件已启用，请妥善保存。':'操作已完成，当前状态已重新读取。','success');
   }}
   catch{if(readOwner===vault&&expectedRead===readGeneration)message('操作已提交，但最新状态暂时无法读取。请刷新页面继续；无需重新提交该操作。','pending');}
 }
 async function executePending(pending=vault.pendingOperation){
  if(!pending||!pendingPayload)return;const busyLease=setBusy(true);const payload=pendingPayload;
- const path=pending.action==='unpublishProfile'?`/agents/${encodeURIComponent(pending.targetId)}/profile/unpublish`:{login:'/owner/sessions',completeSetup:'/owner/setup/complete',recover:'/owner/recoveries',registerOwner:'/owner/accounts',claimAgent:'/owner/agent-claims',rejectRecoveryRequest:'/owner/recovery-assistance/reject'}[pending.action];
+ const path=pending.action==='unpublishProfile'?`/agents/${encodeURIComponent(pending.targetId)}/profile/unpublish`:{login:'/owner/sessions',completeSetup:'/owner/setup/complete',recover:'/owner/recoveries',registerOwner:'/owner/accounts',claimAgent:'/owner/agent-claims',rejectRecoveryRequest:'/owner/recovery-assistance/reject',enableRecoveryBackup:'/owner/recovery-backups'}[pending.action];
  const hadUnknown=Boolean(pending.uncertain);
  try{const result=await api(path||pending.path,{method:path?'POST':pending.method,body:payload.body,token:payload.token});await committed(result,pending);}
  catch(error){
@@ -300,7 +309,8 @@ async function executePending(pending=vault.pendingOperation){
     const action=pending.action,oldRecovery=payload.token;clearPending();
     if(action==='login'){delete vault.sessionToken;save();showSignIn();message(error.code==='authentication_failed'?'用户名、邮箱或密码不正确，请检查后再试。':errorText(error),'error');}
     else if(action==='recover'){delete vault.sessionToken;vault.recoveryToken=oldRecovery;delete vault.sourceRecoveryToken;save();showForgot();if(vault.assistanceContext&&['recovery_request_closed','recovery_request_expired'].includes(error.code)){try{await assistance.read(vault.assistanceContext.assistanceToken);}catch{}}message(error.code==='authentication_failed'?'登录备份已失效或已使用，请选择最新有效的备份。':errorText(error),'error');}
-    else if(action==='registerOwner'){registerPrepared=null;showRegistration();fail(error);}
+    else if(action==='enableRecoveryBackup'){delete vault.backupPreparation;backupPrepared=null;$('#backup-confirm').hidden=true;save();fail(error);}
+    else if(action==='registerOwner'){showSignIn();fail(error);}
     else if(action==='claimAgent'){showClaim();fail(error);}
     else if(action==='rejectRecoveryRequest'){if(error.status===401)assistanceSession=null;if(['recovery_request_closed','recovery_request_expired'].includes(error.code)){try{await assistance.read(vault.assistanceContext.assistanceToken);}catch{}}showAssistancePage();fail(error);}
     else{setupPrepared=false;delete vault.completeOperationId;delete vault.setupAccount;save();$('#setup-saved').checked=false;renderSetup(true);fail(error);}return;
@@ -314,7 +324,7 @@ async function executePending(pending=vault.pendingOperation){
  }finally{setBusy(false,busyLease);}
 }
 async function command({action,path,method='POST',fields={},targetId=selectedId,scope=`owner:${vault.ownerId}`,token=vault.sessionToken,kind='owner',operationId=id()}){
-  if(busy||vault.pendingOperation)return;
+  if(busy||vault.pendingOperation||emailFlow?.pending)return;
   try{beginPending({action,path,method,body:{operationId,...fields},token,scope,kind,targetId});await executePending();}catch(error){fail(error);controls();}
 }
 async function checkResult(){
@@ -330,7 +340,7 @@ async function previewHandoff(){
   try{const result=await api(`/owner-handoffs/${encodeURIComponent(tokenId(proof))}`,{token:proof});if(vault!==source||busyLease!==busyRevision)return;
     setupInfo=result;const saved=findSetupProgress({agentId:result.agentId,generation:result.generation});if(saved){activateSavedSetup(saved);const active=vault;try{await resume();}finally{if(vault===active)setBusy(false,busyLease);}return;}vault.claimContext={agentId:result.agentId,generation:result.generation,handoffToken:proof};save();
     if(vault.sessionToken){try{const loaded=await loadAgents();if(loaded&&vault===source)showClaim();return;}catch(error){if(![401,403].includes(error.status))throw error;}}
-    if(vault!==source)return;renderSetup(false);message('这是首次设置预览。点击「开始设置」，下一步设置你的网站登录密码。');
+    if(vault!==source)return;renderSetup(false);message('请核对此次 Agent。创建账号时先验证邮箱，完成后会自动关联；已有账号可直接登录并确认关联。');
   }catch(error){if(vault!==source||busyLease!==busyRevision)return;if(!isUnknown(error)&&!vault.claimContext?.agentId){delete vault.claimContext;save();}showSignIn();fail(error);}
   finally{if(vault===source)setBusy(false,busyLease);}
 }
@@ -367,27 +377,11 @@ function renderSetup(restricted){
 }
 async function readSetup(){
   const source=vault,proof=source.setupToken,result=await api('/owner/setup',{token:proof});if(vault!==source||vault.setupToken!==proof)return;
-  setupInfo=result;vault.ownerId=result.ownerId;if(!vault.pendingOperation)vault.claimContext={agentId:result.agentId,generation:result.generation,setupToken:proof};save();renderSetup(true);
+  setupInfo=result;vault.ownerId=result.ownerId;if(!vault.pendingOperation)vault.claimContext={agentId:result.agentId,generation:result.generation,setupToken:proof};save();renderSetup(Boolean(vault.pendingOperation));
 }
 async function startSetup(){
-  if(busy||vault.pendingOperation)return;
-  const source=vault,context=vault.claimContext,info=setupInfo;
-  if(!info||!validToken(context?.handoffToken)){message('请先读取有效的 Agent 交接预览。','error');return;}
-  const busyLease=setBusy(true);
-  try{
-    let exchange=vault.setupExchange;
-    if(!exchange||exchange.agentId!==info.agentId||exchange.generation!==info.generation||exchange.handoffToken!==context.handoffToken){
-      if(vault.setupToken)archiveProgress(vault);
-      exchange={operationId:id(),ownerId:info.ownerId,agentId:info.agentId,generation:info.generation,handoffToken:context.handoffToken,setupToken:credential('setup')};
-    }
-    vault.setupExchange=exchange;vault.ownerId=exchange.ownerId;vault.setupToken=exchange.setupToken;vault.handoffToken=exchange.handoffToken;vault.exchangeOperationId=exchange.operationId;vault.stage='restricted_setup';save();
-    let result;
-    try{result=await api('/owner-setups',{method:'POST',body:{operationId:exchange.operationId,setupToken:exchange.setupToken},token:exchange.handoffToken});}
-    catch(error){if(vault!==source)return;if(!isUnknown(error))throw error;try{result=await api('/owner/setup',{token:exchange.setupToken});}catch{message('设置兑换结果未知。预存设置证明和同次兑换请求已保留，请重新读取受限设置。','pending');return;}}
-    if(vault!==source)return;
-    if(result.agentId!==exchange.agentId||result.ownerId!==exchange.ownerId||result.generation!==exchange.generation)throw new BackupError('owner_mismatch');
-    setupInfo=result;delete vault.recoveryToken;delete vault.sessionToken;delete vault.handoffToken;vault.claimContext={agentId:exchange.agentId,generation:exchange.generation,setupToken:exchange.setupToken};save();renderSetup(true);message('先设置你的网站登录密码，再保存用于找回登录的备份。');
-  }catch(error){if(vault===source)fail(error);}finally{if(vault===source)setBusy(false,busyLease);}
+  if(busy||vault.pendingOperation||!emailFlow.canNavigate())return;
+  try{const target=registrationTarget();if(!target){message('请先读取有效的 Agent 交接预览。','error');return;}emailFlow.openRegistration(target);}catch(error){fail(error);}
 }
 function prepareSetup(){
   if(busy)return;
@@ -408,7 +402,7 @@ async function completeSetup(event){event.preventDefault();if(busy||!$('#setup-s
   if(!setupPrepared)return;
   await command({action:'completeSetup',path:'/owner/setup/complete',scope:`setup:${tokenId(vault.setupToken)}`,token:vault.setupToken,kind:'setup',operationId:vault.completeOperationId,targetId:null,fields:{password,recoveryToken:vault.recoveryToken,sessionToken:vault.sessionToken,credentialsSaved:true,...vault.setupAccount}});
 }
-async function login(event){event.preventDefault();if(busy)return;
+async function login(event){event.preventDefault();if(busy||emailFlow.pending)return;
   if(pendingLogin()){
     if(!loginProofReady())return;const password=$('#login-password').value;if(password.length<12)return;
     pendingPayload={token:null,body:{operationId:vault.pendingOperation.operationId,identifier:vault.pendingOperation.input.identifier,password,sessionToken:vault.sessionToken}};
@@ -463,7 +457,7 @@ async function loadAgents({resetProfile=true}={}){
     // Publish the account, target list and form identity together after both reads.
     vault.ownerId=result.ownerId;vault.stage='managed';save();agents=result.agents;account=nextAccount;
     $('#account-name').textContent=account.username;
-    $('#backup-capability').textContent=validToken(vault.recoveryToken)?'此浏览器持有恢复材料，导出的文件可用于找回密码。请自己妥善保管。':'当前只有临时管理会话，这份导出文件不能用来重设密码；请保留首次设置时的登录备份。';
+    $('#backup-capability').textContent=validToken(vault.recoveryToken)?'此浏览器持有恢复材料，导出的文件可用于找回密码。请自己妥善保管。':'当前管理会话不能单独找回密码。可选择启用备用恢复文件；没有备份时，使用原 Agent 私密入口验证原邮箱。';
     view='managed';$('#auth-view').hidden=true;$('#manage-view').hidden=false;$('#session-actions').hidden=false;$('#page-title').textContent='我的 Agent';$('#page-description').textContent='当前授权下的居民与资料。状态按读取时间展示。';
     if(requestedAgentId){if(agents.some(agent=>agent.agentId===requestedAgentId)){if(selectedId!==requestedAgentId)selectionGeneration++;selectedId=requestedAgentId;message('已打开当前获准的 Agent 资料。');}else message('这个 Agent 当前不可用，请从我的 Agent 中选择。','error');requestedAgentId=null;}
     if(!agents.some(a=>a.agentId===selectedId)){selectedId=readAgentSelection(result.ownerId,agents)||agents[0]?.agentId||'';selectionGeneration++;resetProfile=true;}
@@ -547,8 +541,22 @@ function revokeRuntime(){const agent=current();if(!agent)return;if(!confirm(`撤
 function prepareInvite(){if(busy||vault.pendingOperation)return;invitePrepared??={inviteToken:credential('invite'),operationId:id()};downloadPrivate('connet-invite.private.json',{format:'connet-invite-v1',origin:location.origin,ownerId:vault.ownerId,...invitePrepared});$('#invite-saved').checked=false;$('#invite-confirm').hidden=false;controls();}
 function issueInvite(){if(!invitePrepared||!$('#invite-saved').checked)return;return command({action:'issueInvite',path:'/owner/agent-invites',targetId:null,operationId:invitePrepared.operationId,fields:{inviteToken:invitePrepared.inviteToken}});}
 
+function prepareBackup(){
+  if(busy||vault.pendingOperation||emailFlow.pending||!vault.sessionToken)return;
+  try{backupPrepared??={ownerId:vault.ownerId,sessionToken:vault.sessionToken,recoveryToken:credential('recovery'),operationId:id()};
+    if(backupPrepared.ownerId!==vault.ownerId||backupPrepared.sessionToken!==vault.sessionToken){backupPrepared=null;return;}
+    const file={format:'connet-owner-v2',origin:location.origin,ownerId:vault.ownerId,sessionToken:vault.sessionToken,recoveryToken:backupPrepared.recoveryToken,pendingOperation:{operationId:backupPrepared.operationId,scope:`owner:${vault.ownerId}`,action:'enableRecoveryBackup'}};
+    downloadPrivate('connet-owner-recovery.private.json',file);$('#backup-confirm').hidden=false;$('#backup-saved').checked=false;controls();message('请确认备用恢复文件已保存，再启用。它目前尚未生效。');
+  }catch(error){fail(error);}
+}
+async function enableBackup(){
+  if(!backupPrepared||!$('#backup-saved').checked||busy||vault.pendingOperation)return;
+  if(backupPrepared.ownerId!==vault.ownerId||backupPrepared.sessionToken!==vault.sessionToken)return;
+  try{vault.backupPreparation={recoveryToken:backupPrepared.recoveryToken};save();await command({action:'enableRecoveryBackup',path:'/owner/recovery-backups',targetId:null,operationId:backupPrepared.operationId,fields:{recoveryToken:backupPrepared.recoveryToken,credentialsSaved:true}});}catch(error){fail(error);}
+}
+
 async function importCredentials(event){
- const file=event.target.files?.[0];if(!file||busy)return;const busyLease=setBusy(true);$('#origin-help').hidden=true;sessionOnlyBackup=null;$('#continue-management').hidden=true;
+ const file=event.target.files?.[0];if(!file||busy||emailFlow.pending)return;const busyLease=setBusy(true);$('#origin-help').hidden=true;sessionOnlyBackup=null;$('#continue-management').hidden=true;
  try{
   if(file.size>32768)throw new BackupError('invalid_backup');const saved=parseOwnerBackup(await file.text(),location.origin);if(busyLease!==busyRevision)return;
   if(event.target.id==='recovery-source-import'){
@@ -567,7 +575,7 @@ async function importCredentials(event){
    }
    // Downloads retain their original auth metadata after success. Verify the
    // independent recovery proof; never replay that historical registration/setup.
-   if(!previous||(!context&&['registerOwner','completeSetup','recover'].includes(previous.action))){if(!saved.recoveryToken)throw new BackupError('unavailable_backup');await useRecoveryBackup(saved);return;}
+   if(!previous||(!context&&['registerOwner','completeSetup','recover','enableRecoveryBackup'].includes(previous.action))){if(!saved.recoveryToken)throw new BackupError('unavailable_backup');await useRecoveryBackup(saved);return;}
    if(context?.assistanceToken!==assistance.token){
     if(previous.action!=='recover'||!context||!saved.sessionToken)throw new BackupError('owner_mismatch');
     const result=await api(`/operations/${encodeURIComponent(previous.operationId)}?scope=${encodeURIComponent(previous.scope)}&action=recover`,{token:saved.sessionToken});
@@ -575,13 +583,13 @@ async function importCredentials(event){
     await useRecoveryBackup(saved);return;
    }
   }
-  if(['unpublishProfile','rejectRecoveryRequest'].includes(saved.pendingOperation?.action)&&vault.sessionToken&&!vault.pendingOperation){
+  if(['unpublishProfile','rejectRecoveryRequest','enableRecoveryBackup'].includes(saved.pendingOperation?.action)&&vault.sessionToken&&!vault.pendingOperation){
    const active=vault;if(active.ownerId!==saved.ownerId)throw new BackupError('owner_mismatch');
    const [currentAccount,owned]=await Promise.all([api('/owner/account',{token:active.sessionToken}),api('/owner/agents',{token:active.sessionToken})]);
    if(busyLease!==busyRevision||vault!==active)return;
-   if(currentAccount.ownerId!==saved.ownerId||owned.ownerId!==saved.ownerId||!owned.agents.some(agent=>agent.agentId===saved.pendingOperation.targetId))throw new BackupError('owner_mismatch');
+   if(currentAccount.ownerId!==saved.ownerId||owned.ownerId!==saved.ownerId||(saved.pendingOperation.action!=='enableRecoveryBackup'&&!owned.agents.some(agent=>agent.agentId===saved.pendingOperation.targetId)))throw new BackupError('owner_mismatch');
    // Keep the newly authenticated session and recovery material; import only the original command.
-   vault={...active,pendingOperation:saved.pendingOperation,...(saved.assistanceContext?{assistanceContext:saved.assistanceContext}:{})};pendingPayload=null;recoveryIntent=false;save();await resume();return;
+   vault={...active,pendingOperation:saved.pendingOperation,...(saved.pendingOperation.action==='enableRecoveryBackup'?{backupPreparation:{recoveryToken:saved.recoveryToken}}:{}),...(saved.assistanceContext?{assistanceContext:saved.assistanceContext}:{})};pendingPayload=null;recoveryIntent=false;save();await resume();return;
   }
   vault=saved;account=null;pendingPayload=null;setupInfo=null;setupPublicGeneration++;setupPublicAbort?.abort();setupPrepared=false;recoveryPrepared=null;save();
   if(vault.assistanceContext){recoveryIntent=false;await resume();return;}
@@ -609,7 +617,7 @@ async function importCredentials(event){
   else{$('#recovery-pick-step').hidden=false;$('#recovery-form').hidden=true;backupError(error.code==='authentication_failed'?new BackupError('unavailable_backup'):error);}
  }finally{event.target.value='';setBusy(false,busyLease);}
 }
-function logout(){clearAgentSelection();assistanceSession=null;assistance.clear();recoveryOwnerId='';recoverySourceProof='';recoveryIntent=false;sessionOnlyBackup=null;readGeneration++;selectionGeneration++;readAbort?.abort();agents=[];selectedId='';pendingPayload=null;setupInfo=null;setupPrepared=false;recoveryPrepared=null;runtimePrepared=null;invitePrepared=null;account=null;registerPrepared=null;delete $('#register-saved').dataset.downloaded;existingClaimIntent=false;setupPublicGeneration++;setupPublicAbort?.abort();resetAuthenticationExit();vault={format:'connet-owner-v2',origin:location.origin};for(const key of [storageKey,'connet.owner.progress.v2']){try{sessionStorage.removeItem(key);}catch{}}renderSavedProgress();$$('input[type=password]').forEach(input=>input.value='');$('#login-identifier').value='';recoveryOwnerId='';$$('#register-view input,#setup-account-fields input').forEach(input=>{input.value='';input.checked=false;});showSignIn();message('已退出本次登录，Agent 仍保留原身份。请妥善保存自己的登录备份。');controls();}
+function logout(){emailFlow?.clear();backupPrepared=null;clearAgentSelection();assistanceSession=null;assistance.clear();recoveryOwnerId='';recoverySourceProof='';recoveryIntent=false;sessionOnlyBackup=null;readGeneration++;selectionGeneration++;readAbort?.abort();agents=[];selectedId='';pendingPayload=null;setupInfo=null;setupPrepared=false;recoveryPrepared=null;runtimePrepared=null;invitePrepared=null;account=null;existingClaimIntent=false;setupPublicGeneration++;setupPublicAbort?.abort();resetAuthenticationExit();vault={format:'connet-owner-v2',origin:location.origin};for(const key of [storageKey,'connet.owner.progress.v2']){try{sessionStorage.removeItem(key);}catch{}}renderSavedProgress();$$('input[type=password]').forEach(input=>input.value='');$('#login-identifier').value='';recoveryOwnerId='';$$('#email-view input,#setup-account-fields input').forEach(input=>{input.value='';input.checked=false;});showSignIn();message('已退出本次登录，Agent 仍保留原身份。');controls();}
 async function resume(){
   if(vault.pendingOperation){
     if(vault.assistanceContext){
@@ -617,6 +625,7 @@ async function resume(){
       // Restore only the entry before querying the original receipt, not its executability.
       assistance.restore(vault.assistanceContext.assistanceToken);
     }
+    if(pendingBackup()){vault.pendingOperation=parseOwnerBackup(JSON.stringify(privateFile()),location.origin).pendingOperation;const p=vault.pendingOperation;pendingPayload={token:vault.sessionToken,body:{operationId:p.operationId,recoveryToken:vault.backupPreparation?.recoveryToken||vault.recoveryToken,credentialsSaved:true}};}
     if(pendingRejection()){
       vault.pendingOperation=parseOwnerBackup(JSON.stringify(privateFile()),location.origin).pendingOperation;
       const p=vault.pendingOperation;pendingPayload={token:vault.recoveryToken||vault.sessionToken,body:{operationId:p.operationId,assistanceToken:vault.assistanceContext.assistanceToken,...p.input}};
@@ -653,11 +662,8 @@ function pendingInput(action,body){
   if(action==='rejectRecoveryRequest')return{expectedVersion:body.expectedVersion};
 }
 function accountControls(){
-  const p=vault.pendingOperation,pending=Boolean(p),registration=p?.action==='registerOwner';
-  $('#register-saved').disabled=busy||(!registration&&(!registerPrepared||!$('#register-saved').dataset.downloaded));
-  $('#register-submit').disabled=busy||(!registration&&pending)||(!registerPrepared&&!registration)||!$('#register-saved').checked;
-  if(registration){$('#register-password').disabled=busy;$('#register-download').disabled=busy;$('#register-username').disabled=true;$('#register-email').disabled=true;}
-  $('#claim-confirm').disabled=busy||(pending&&p?.action!=='claimAgent')||!account||account.ownerId!==vault.ownerId;
+  const p=vault.pendingOperation;
+  $('#claim-confirm').disabled=busy||(Boolean(p)&&p.action!=='claimAgent')||!account||account.ownerId!==vault.ownerId;
   if(pendingLogin())$('#login-identifier').disabled=true;
 }
 function validateAccountForm(prefix){
@@ -665,40 +671,8 @@ function validateAccountForm(prefix){
   try{const fields=accountFields(username.value,email.value);username.value=fields.username;email.value=fields.email;return fields;}
   catch(error){requestFocus(`#${prefix}-${error.field}`);throw error;}
 }
-function showRegistration(resuming=false){
-  showAuth();$('#setup-view').hidden=true;$('#sign-in-view').hidden=true;$('#forgot-view').hidden=true;$('#register-view').hidden=false;
-  const p=resuming?vault.pendingOperation:null;
-  if(p?.input){$('#register-username').value=p.input.username;$('#register-email').value=p.input.email;}
-  $('#register-fields').hidden=false;$('#register-next').hidden=Boolean(p);$('#register-backup-step').hidden=!p;$('#register-edit').hidden=Boolean(p);
-  $('#register-submit').textContent=p?'继续创建账号':'创建账号';$('#register-saved').checked=false;delete $('#register-saved').dataset.downloaded;controls();requestFocus('#register-password');
-}
-function prepareRegistration(){
-  if(busy||vault.pendingOperation)return;
-  try{const fields=validateAccountForm('register');if(!$('#register-password').reportValidity())return;
-    delete $('#register-saved').dataset.downloaded;const attemptId=id();registerPrepared={attemptId,...fields,operationId:id(),sessionToken:credential('session'),recoveryToken:credential('recovery')};
-    // The attempt UUID is the eventual internal owner ID, never a user-facing login name.
-    vault={format:'connet-owner-v2',origin:location.origin,ownerId:attemptId,sessionToken:registerPrepared.sessionToken,recoveryToken:registerPrepared.recoveryToken};save();
-    clearResolvedValidation();$('#register-fields').hidden=true;$('#register-backup-step').hidden=false;$('#register-saved').checked=false;controls();$('#register-download').focus();
-  }catch(error){fail(error);}
-}
-function downloadRegistration(){
-  const p=vault.pendingOperation;
-  if(p?.action==='registerOwner'){downloadPrivate('connet-owner.private.json',privateFile());controls();return;}
-  if(!registerPrepared||busy)return;
-  const r=registerPrepared;downloadPrivate('connet-owner.private.json',{...privateFile(),pendingOperation:{operationId:r.operationId,scope:`owner-registration:${r.attemptId}`,action:'registerOwner',input:{attemptId:r.attemptId,username:r.username,email:r.email}}});
-  $('#register-saved').disabled=false;$('#register-saved').dataset.downloaded='true';controls();
-}
-async function registerOwner(event){
-  event.preventDefault();if(busy||!$('#register-saved').checked)return;
-  const p=vault.pendingOperation;
-  if(p?.action==='registerOwner'){
-    if(!$('#register-password').reportValidity())return;
-    pendingPayload={token:null,body:{operationId:p.operationId,...p.input,password:$('#register-password').value,sessionToken:vault.sessionToken,recoveryToken:vault.recoveryToken,credentialsSaved:true}};await executePending();return;
-  }
-  if(!registerPrepared||!$('#register-saved').dataset.downloaded)return;
-  const r=registerPrepared;
-  await command({action:'registerOwner',path:'/owner/accounts',scope:`owner-registration:${r.attemptId}`,operationId:r.operationId,targetId:null,token:null,fields:{attemptId:r.attemptId,username:r.username,email:r.email,password:$('#register-password').value,sessionToken:r.sessionToken,recoveryToken:r.recoveryToken,credentialsSaved:true}});
-}
+function registrationTarget(){const context=vault.claimContext;if(!context?.agentId)return null;const ownerId=setupInfo?.agentId===context.agentId?setupInfo.ownerId:vault.setupExchange?.agentId===context.agentId?vault.setupExchange.ownerId:null;if(!ownerId)throw new BackupError('owner_mismatch');return{ownerId,...context};}
+function showRegistration(){if(vault.pendingOperation)return;try{emailFlow.openRegistration(registrationTarget());}catch(error){fail(error);}}
 async function readAccount(session,generation,ownerId){
   const result=await api('/owner/account',{token:session});if(session!==vault.sessionToken||generation!==readGeneration)return;
   if(result.ownerId!==ownerId)throw new BackupError('owner_mismatch');return result;
@@ -725,6 +699,28 @@ async function claimAgent(){
 }
 function openInvite(){if(busy||vault.pendingOperation)return;$('#management-security').open=true;$('#invites-panel').scrollIntoView({block:'start',behavior:'instant'});$('#prepare-invite').focus({preventScroll:true});}
 
+emailFlow=createOwnerEmailFlow({
+  uiState:()=>({busy,mainPending:Boolean(vault.pendingOperation)}),lock:()=>setBusy(true),unlock:lease=>setBusy(false,lease),focus:requestFocus,
+  show:node=>{clearCompletedTaskNotice();if(!vault.pendingOperation&&globalNotice.dataset.backupError)message('');showAuth();$('#setup-view').hidden=true;$('#sign-in-view').hidden=true;$('#forgot-view').hidden=true;node.hidden=false;},
+  targetName:agentId=>agentId===setupInfo?.agentId?vault.setupAgentName:agents.find(agent=>agent.agentId===agentId)?.profile.published?.displayName,
+  registrationTarget,
+  back:()=>{if(assistance.token)showAssistancePage();else showSignIn();},
+  registered:async(result,progress)=>{
+    if(vault.pendingOperation)throw new BackupError('operation_mismatch');
+    const target=progress.target;
+    if(result.ownerId!==(target?.ownerId||progress.attemptId)||result.sessionId!==tokenId(progress.sessionToken)||(target&&(result.agentId!==target.agentId||result.managementStatus!=='managed')))throw new BackupError('operation_mismatch');
+    // Persist the actual session before discarding the email completion key.
+    vault={format:'connet-owner-v2',origin:location.origin,ownerId:result.ownerId,sessionToken:progress.sessionToken,stage:'managed'};save();
+    recoveryIntent=false;recoveryPrepared=null;setupInfo=null;setupPrepared=false;account=null;selectedId=target?.agentId||'';
+    assistance.clear();try{await loadAgents();message(target?`账号已创建，${agents.find(agent=>agent.agentId===target.agentId)?.profile.published?.displayName||'Agent'}已关联。`:'账号已创建，邮箱已验证。你可以邀请自己的 Agent。','success');requestFocus('#page-title');}
+    catch{showSignIn();message('账号已创建，但暂时无法读取列表。请用刚设置的用户名和密码正常登录。','pending');}
+  },
+  recovered:result=>{if(vault.ownerId===result.ownerId){vault={format:'connet-owner-v2',origin:location.origin};save();clearAgentSelection({ownerId:result.ownerId});}assistanceSession=null;},
+  loginAfterRecovery:()=>{assistance.clear();recoveryIntent=false;showSignIn();message('请用刚设置的新密码登录原账号。');},
+});
+$('#prepare-backup').addEventListener('click',prepareBackup);$('#backup-saved').addEventListener('change',controls);$('#enable-backup').addEventListener('click',enableBackup);
+$('#email-recovery-start').addEventListener('click',()=>{if(!busy&&!vault.pendingOperation&&assistance.ready&&!assistance.terminal)void emailFlow.openRecovery(assistance.snapshot());});
+
 $('#setup-next').addEventListener('click',()=>{try{if(!$('#setup-account-fields').hidden&&!pendingSetup())validateAccountForm('setup');}catch(error){fail(error);return;}if(!$('#setup-password').reportValidity())return;clearResolvedValidation();$('#setup-password-step').hidden=true;$('#setup-backup-step').hidden=false;$('#credentials-download').focus();});
 $('#recovery-next').addEventListener('click',()=>{if(!$('#recovery-password').reportValidity())return;if(!validToken(recoverySourceProof)){message('请先重新选择上一次备份，以继续这次操作。','error');return;}$('#recovery-password-step').hidden=true;$('#recovery-backup-step').hidden=false;$('#recovery-download').focus();});
 $('#forgot-password').addEventListener('click',()=>showForgot());$('#import-help').addEventListener('click',()=>showForgot('manage'));
@@ -738,13 +734,11 @@ const findPrompt=`我忘记了 ${location.origin} 的登录密码，希望保留
 $('#find-backup-prompt').textContent=findPrompt;$('#copy-find-backup').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(findPrompt);$('#copy-find-result').textContent='已复制。交给原 Agent 检查，找到备份后回到这里选择文件。';}catch{$('#copy-find-result').textContent='未能自动复制，请选择上方文字复制。';}});
 $('#setup-start').addEventListener('click',startSetup);$('#credentials-download').addEventListener('click',prepareSetup);$('#setup-form').addEventListener('submit',completeSetup);$('#setup-saved').addEventListener('change',controls);
 $('#login-form').addEventListener('submit',login);$('#recovery-form').addEventListener('submit',recover);$('#recovery-download').addEventListener('click',prepareRecovery);$('#recovery-saved').addEventListener('change',controls);$('#login-tab').addEventListener('click',()=>tab('login'));$('#recovery-tab').addEventListener('click',()=>tab('recovery'));$('#show-login').addEventListener('click',()=>{showSignIn();tab('login');});$('#credentials-import').addEventListener('change',importCredentials);
-$('#check-result').addEventListener('click',checkResult);$('#retry-operation').addEventListener('click',()=>executePending());$('#refresh-agents').addEventListener('click',()=>refresh());$('#logout').addEventListener('click',()=>pendingUnpublish()||pendingRejection()?prepareAuthenticationExit():logout());$('#download-current').addEventListener('click',downloadVault);$('#agent-select').addEventListener('change',event=>selectAgent(event.target.value));
+$('#check-result').addEventListener('click',checkResult);$('#retry-operation').addEventListener('click',()=>executePending());$('#refresh-agents').addEventListener('click',()=>refresh());$('#logout').addEventListener('click',()=>pendingUnpublish()||pendingRejection()||pendingBackup()?prepareAuthenticationExit():logout());$('#download-current').addEventListener('click',downloadVault);$('#agent-select').addEventListener('change',event=>selectAgent(event.target.value));
 $('#prepare-auth-exit').addEventListener('click',prepareAuthenticationExit);$('#auth-exit-saved').addEventListener('change',controls);$('#confirm-auth-exit').addEventListener('click',exitPendingAuthentication);
 $('#profile-form').addEventListener('submit',submitProfile);$('#publish-profile').addEventListener('click',publish);$('#unpublish-profile').addEventListener('click',unpublish);$('#reload-profile').addEventListener('click',()=>refresh(false));$('#policy-form').addEventListener('submit',policy);$('#join-agent').addEventListener('click',()=>membership('join'));$('#leave-agent').addEventListener('click',()=>membership('leave'));$('#pause-agent').addEventListener('click',pause);
 $('#prepare-runtime').addEventListener('click',prepareRuntime);$('#runtime-saved').addEventListener('change',controls);$('#replace-runtime').addEventListener('click',replaceRuntime);$('#revoke-runtime').addEventListener('click',revokeRuntime);$('#prepare-invite').addEventListener('click',prepareInvite);$('#invite-saved').addEventListener('change',controls);$('#issue-invite').addEventListener('click',issueInvite);
-$('#show-register').addEventListener('click',()=>showRegistration());$('#register-login').addEventListener('click',showSignIn);
-$('#register-next').addEventListener('click',prepareRegistration);$('#register-download').addEventListener('click',downloadRegistration);$('#register-saved').addEventListener('change',controls);$('#register-form').addEventListener('submit',registerOwner);
-$('#register-edit').addEventListener('click',()=>{registerPrepared=null;delete $('#register-saved').dataset.downloaded;showRegistration();});
+$('#show-register').addEventListener('click',()=>showRegistration());
 $('#setup-existing').addEventListener('click',()=>{if(keepClaimFromSetup())showSignIn();});
 $('#claim-confirm').addEventListener('click',claimAgent);$('#claim-cancel').addEventListener('click',()=>{if(vault.pendingOperation)return;delete vault.claimContext;save();void refresh();});
 $('#claim-switch').addEventListener('click',()=>{if(vault.pendingOperation)return;const context=vault.claimContext;logout();vault.claimContext=context;save();showSignIn();message('请登录要关联的主人账号。登录后仍需确认关联。');});
@@ -755,17 +749,18 @@ window.addEventListener('hashchange',()=>{
   const fragment=location.hash,parameters=new URLSearchParams(fragment.slice(1)),proof=parameters.get('handoff'),target=parameters.get('agent'),assistanceProof=parameters.get('assistance');
   if(fragment)history.replaceState(null,'',location.pathname);
   if(assistanceProof&&!proof){
-    if(busy||vault.pendingOperation){message('请先继续或保存当前操作，再重新打开新的协助入口。','pending');return;}
+    if(busy||vault.pendingOperation||!emailFlow.canNavigate()){message('请先继续或保存当前操作，再重新打开新的协助入口。','pending');return;}
     const busyLease=setBusy(true);void openAssistance(assistanceProof).catch(error=>{if(busyLease===busyRevision)fail(error);}).finally(()=>setBusy(false,busyLease));
   }else if(proof){
     try{if(receiveHandoff(proof)){const busyLease=setBusy(true);const active=vault;void resume().catch(error=>{if(vault===active&&busyLease===busyRevision)fail(error);}).finally(()=>{if(vault===active)setBusy(false,busyLease);});}}catch(error){fail(error);}
-  }else if(target&&vault.sessionToken&&!vault.pendingOperation){
+  }else if(target&&vault.sessionToken&&!vault.pendingOperation&&emailFlow.canNavigate()){
     assistance.clear();delete vault.assistanceContext;
     requestedAgentId=target;clearCompletedTaskNotice();message('正在读取此 Agent 的获准资料。');const busyLease=setBusy(true);const active=vault,expectedRead=readGeneration+1;
     void loadAgents().catch(error=>{if(vault===active&&readGeneration===expectedRead){fail(error);if(error.status===401)showSignIn();}}).finally(()=>{if(vault===active&&readGeneration===expectedRead)setBusy(false,busyLease);});
-  }else if(!vault.pendingOperation&&!vault.sessionToken){if(fragment==='#register')showRegistration();else if(fragment==='#login')showSignIn();}
+  }else if(!vault.pendingOperation&&!vault.sessionToken&&emailFlow.canNavigate()){if(fragment==='#register')showRegistration();else if(fragment==='#login')showSignIn();}
 });
 if(incomingHandoff){try{receiveHandoff(incomingHandoff);}catch(error){fail(error);}}
 try{renderSavedProgress();}catch(error){fail(error);}
 if(!storageAvailable){showSignIn();message('浏览器无法保存当前标签页的私密续接材料。请启用会话存储后继续。','error');controls();}
+else if(!vault.pendingOperation&&emailFlow.unfinished){void emailFlow.resume();}
 else{const busyLease=setBusy(true);const assistanceProof=!incomingHandoff&&!requestedAgentId&&!vault.pendingOperation?(incomingAssistance||assistance.token):null;const start=assistanceProof?openAssistance(assistanceProof):resume();start.then(()=>{if(busyLease!==busyRevision)return;if(!assistanceProof&&incomingMode==='register'&&!vault.pendingOperation&&!vault.sessionToken&&!vault.claimContext)showRegistration();}).catch(error=>{if(busyLease===busyRevision){if(assistance.token)showAssistancePage();else showSignIn();fail(error);}}).finally(()=>setBusy(false,busyLease));}

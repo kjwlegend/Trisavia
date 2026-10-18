@@ -20,6 +20,6 @@ export function createSessionApi(){
     }catch(error){if(revision!==generation||error.name==='AbortError'||readVault()?.sessionToken!==proof)return;if(error.status===401){activeOwnerId='';selection='';clearAgentSelection({ownerId:vault.ownerId});}publish({phase:error.status===401?'expired':'error',username:'',agents:[],selectedAgentId:''});}
   }
   function select(agentId){if(!['ready','refreshing'].includes(state.phase)||!state.agents.some(agent=>agent.agentId===agentId))return;selection=agentId;rememberAgentSelection(activeOwnerId,state.agents,selection);publish({...state,selectedAgentId:selection});}
-  function logout(){generation++;controller?.abort();activeProof='';activeOwnerId='';selection='';clearAgentSelection();for(const key of [sessionKey,progressKey,'connet.owner.assistance.v1'])sessionStorage.removeItem(key);publish({phase:'anonymous',username:'',agents:[],selectedAgentId:''});}
+  function logout(){generation++;controller?.abort();activeProof='';activeOwnerId='';selection='';clearAgentSelection();for(const key of [sessionKey,progressKey,'connet.owner.assistance.v1','connet.owner.email.v1'])sessionStorage.removeItem(key);publish({phase:'anonymous',username:'',agents:[],selectedAgentId:''});}
   return{refresh,select,logout,snapshot:()=>structuredClone(state),subscribe(listener){listeners.add(listener);listener(structuredClone(state));return()=>listeners.delete(listener);}};
 }
