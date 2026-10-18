@@ -82,6 +82,22 @@ export const migrations: readonly Migration[] = [{
     CREATE UNIQUE INDEX owners_email_key_unique ON owners(json_extract(data, '$.emailKey'))
       WHERE json_extract(data, '$.emailKey') IS NOT NULL;
   `,
+}, {
+  version: 3,
+  name: 'm1_owner_recovery_assistance',
+  sql: `
+    CREATE TABLE recovery_requests (
+      id TEXT PRIMARY KEY NOT NULL CHECK(length(id) > 0),
+      version INTEGER NOT NULL CHECK(version > 0),
+      data TEXT NOT NULL CHECK(json_valid(data) AND json_type(data) = 'object'),
+      agent_id TEXT GENERATED ALWAYS AS (json_extract(data, '$.agentId')) STORED NOT NULL REFERENCES agents(id),
+      owner_id TEXT GENERATED ALWAYS AS (json_extract(data, '$.ownerId')) STORED NOT NULL REFERENCES owners(id),
+      context_credential_id TEXT GENERATED ALWAYS AS (json_extract(data, '$.contextCredentialId')) STORED NOT NULL UNIQUE REFERENCES credentials(id),
+      CHECK(COALESCE(json_extract(data, '$.status') IN ('pending', 'completed', 'cancelled'), 0)),
+      CHECK(context_credential_id = id)
+    ) STRICT;
+    CREATE INDEX recovery_requests_agent_index ON recovery_requests(agent_id);
+  `,
 }];
 
 function checksum(migration: Migration): string {

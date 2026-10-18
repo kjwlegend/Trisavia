@@ -140,7 +140,7 @@ test('capabilities describes only registered canonical foundation routes, actor 
   const response = await app.inject({ url: '/v1/capabilities' }); assert.equal(response.statusCode, 200);
   const capabilities = response.json();
   assert.equal(capabilities.ownerRecovery, true); assert.equal(capabilities.scheduling, false); assert.equal(capabilities.perception, false); assert.equal(capabilities.interaction, false);
-  assert.equal(capabilities.operations.length, 13);
+  assert.equal(capabilities.operations.length, 19);
   const actions = new Set<string>();
   for (const operation of capabilities.operations) {
     assert.equal(actions.has(operation.action), false); actions.add(operation.action);

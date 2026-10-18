@@ -12,6 +12,7 @@ export type M1Action =
   | "registerOwner" | "readAccount" | "claimAgent"
   | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites"
   | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveDraft" | "publishProfile" | "unpublishProfile" | "profilePolicy"
+  | "createRecoveryRequest" | "readRecoveryRequest" | "cancelRecoveryRequest" | "recoveryAssistance" | "verifyRecoveryRequest" | "rejectRecoveryRequest"
   | "readMembership" | "join" | "leave" | "participation" | "receipt";
 
 export interface M1Options {
@@ -20,6 +21,7 @@ export interface M1Options {
   setupTtlMs?: number;
   sessionTtlMs?: number;
   inviteTtlMs?: number;
+  recoveryRequestTtlMs?: number;
   registrationLimit?: number;
   ownerRegistrationLimit?: number;
   maxAgentsPerOwner?: number;
@@ -75,6 +77,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     setup: options.setupTtlMs ?? 15 * 60_000,
     session: options.sessionTtlMs ?? 12 * 60 * 60_000,
     invite: options.inviteTtlMs ?? 24 * 60 * 60_000,
+    recoveryRequest: options.recoveryRequestTtlMs ?? 15 * 60_000,
     registrations: options.registrationLimit ?? 1000,
     ownerRegistrations: options.ownerRegistrationLimit ?? 1000,
     agentsPerOwner: options.maxAgentsPerOwner ?? 20,
@@ -215,6 +218,52 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     validatePublication(dataObject(profile.data.published));
   }
 
+  function recoveryOwner(tx: M1ReadSession, agentId: string): StoredRow {
+    const binding = tx.find("bindings", { agentId, active: true })[0];
+    const owner = binding && tx.get("owners", scalarString(binding, "ownerId"));
+    if (!owner || owner.data.status !== "active" || owner.data.epoch !== store.recoveryEpoch) fail("owner_setup_required", 409, "Complete owner setup before requesting assistance");
+    return owner;
+  }
+
+  function recoveryStatus(tx: M1ReadSession, request: StoredRow): string {
+    // A completed request records this exact recovery, despite its auth-version rotation.
+    if (request.data.status !== "pending") return scalarString(request, "status");
+    const owner = tx.get("owners", scalarString(request, "ownerId"));
+    const binding = tx.get("bindings", scalarString(request, "bindingId"));
+    const runtime = tx.get("credentials", scalarString(request, "creatorRuntimeCredentialId"));
+    const agent = tx.get("agents", scalarString(request, "agentId"));
+    if (request.data.epoch !== store.recoveryEpoch || numberValue(request, "expiresAt") <= now()
+      || !owner || owner.data.status !== "active" || owner.data.epoch !== store.recoveryEpoch || owner.data.authVersion !== request.data.ownerAuthVersion
+      || !binding || binding.version !== request.data.bindingVersion || binding.data.active !== true || binding.data.ownerId !== owner.id
+      || !runtime || runtime.data.active !== true || runtime.data.kind !== "runtime" || runtime.data.epoch !== store.recoveryEpoch
+      || runtime.data.runtimeVersion !== request.data.creatorRuntimeVersion || !agent || agent.data.runtimeVersion !== request.data.creatorRuntimeVersion || agent.data.runtimeActive !== true) return "expired";
+    return "pending";
+  }
+
+  function recoveryCreatePermission(tx: M1ReadSession, agentId: string): StoredRow {
+    const owner = recoveryOwner(tx, agentId);
+    if (tx.find("recovery_requests", { agentId }).some((row) => recoveryStatus(tx, row) === "pending")) fail("recovery_request_pending", 409, "A recovery request is already pending");
+    return owner;
+  }
+
+  function recoveryView(tx: M1ReadSession, request: StoredRow, ownerContext = false): JsonObject {
+    const status = recoveryStatus(tx, request);
+    return { requestId: request.id, agentId: request.data.agentId!, version: request.version, status, expiresAt: request.data.expiresAt!,
+      ...(ownerContext ? { ownerId: request.data.ownerId!, requires: "owner_recovery" } : { nextAction: status === "pending" ? "deliver_private_entry" : "none" }) };
+  }
+
+  function recoveryContext(tx: M1ReadSession, raw: unknown, ownerId?: string): StoredRow {
+    const context = authenticate(tx, raw, ["recovery_assistance"]);
+    const request = required(tx, "recovery_requests", context.id);
+    if (ownerId !== undefined && request.data.ownerId !== ownerId) fail("target_not_accessible", 404, "Target is not accessible");
+    return request;
+  }
+
+  function pendingRecovery(tx: M1ReadSession, request: StoredRow): void {
+    if (recoveryStatus(tx, request) === "expired" || numberValue(request, "expiresAt") <= now()) fail("recovery_request_expired", 410, "Recovery request expired");
+    if (request.data.status !== "pending") fail("recovery_request_closed", 409, "Recovery request is closed");
+  }
+
   function effectiveActions(tx: M1ReadSession, actor: CredentialRow, agentId: string): JsonObject {
     const profile = required(tx, "profiles", agentId);
     const check = (work: () => void): JsonObject => {
@@ -229,6 +278,13 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
       publishProfile: check(() => { write(); publicationPermission(profile, actor, false); }),
       unpublishProfile: check(() => { write(); publicationPermission(profile, actor, true); }),
       join: check(() => { write(); joinPermission(profile); }), leave: check(() => {}),
+      createRecoveryRequest: check(() => { recoveryCreatePermission(tx, agentId); }),
+      readRecoveryRequest: check(() => {}),
+      cancelRecoveryRequest: check(() => {
+        const request = tx.find("recovery_requests", { agentId }).find((row) => recoveryStatus(tx, row) === "pending");
+        if (!request) fail("recovery_request_closed", 409, "No pending recovery request");
+        pendingRecovery(tx, request);
+      }),
     };
   }
 
@@ -254,7 +310,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
   }
 
   function invoke(action: M1Action, raw: unknown = {}, token?: string): JsonObject {
-    if (action === "capabilities") return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, runtimeReplacement: true, scheduling: false, perception: false, interaction: false, operations: FOUNDATION_HTTP_OPERATIONS.map((operation) => ({ ...operation, actors: [...operation.actors], receiptScopes: { ...operation.receiptScopes }, requiredVersions: [...operation.requiredVersions] })) };
+    if (action === "capabilities") return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, ownerRecoveryAssistance: true, runtimeReplacement: true, scheduling: false, perception: false, interaction: false, operations: FOUNDATION_HTTP_OPERATIONS.map((operation) => ({ ...operation, actors: [...operation.actors], receiptScopes: { ...operation.receiptScopes }, requiredVersions: [...operation.requiredVersions] })) };
     if (action === "catalog") return { version: 1, templates: [{ id: "basic", colors: [...AVATAR_COLORS] }], requiredFields: ["displayName", "avatar"] };
     return store.transaction((tx) => {
       // This is the server's state-read time, never evidence that a local Agent is online.
@@ -476,11 +532,59 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         return { ownerId: actor.data.ownerId!, status: "recovery_available" };
       }
 
+      if (["createRecoveryRequest", "readRecoveryRequest", "cancelRecoveryRequest"].includes(action)) {
+        const input = object(raw, action === "createRecoveryRequest" ? ["operationId", "assistanceToken"] : action === "readRecoveryRequest" ? ["requestId"] : ["operationId", "requestId", "expectedVersion"]);
+        const actor = authenticate(tx, token, ["runtime"]);
+        const agentId = actor.data.agentId!;
+        if (action === "createRecoveryRequest") return command(tx, `agent:${agentId}`, action, input, () => {
+          const owner = recoveryCreatePermission(tx, agentId);
+          const binding = tx.find("bindings", { agentId, ownerId: owner.id, active: true })[0]!;
+          const context = newCredential(tx, input.assistanceToken, "recovery_assistance", { agentId, ownerId: owner.id });
+          const request: StoredRow = { id: context.id, version: 1, data: {
+            agentId, ownerId: owner.id, epoch: store.recoveryEpoch, contextCredentialId: context.id,
+            bindingId: binding.id, bindingVersion: binding.version, creatorRuntimeCredentialId: actor.id,
+            creatorRuntimeVersion: actor.data.runtimeVersion!, ownerAuthVersion: owner.data.authVersion!,
+            status: "pending", createdAt: now(), expiresAt: now() + limits.recoveryRequest,
+          } };
+          tx.insert("recovery_requests", request);
+          return recoveryView(tx, request);
+        });
+        const request = required(tx, "recovery_requests", text(input.requestId, "requestId", 8, 100));
+        if (request.data.agentId !== agentId) fail("target_not_accessible", 404, "Target is not accessible");
+        if (action === "readRecoveryRequest") return recoveryView(tx, request);
+        return command(tx, `agent:${agentId}`, action, input, () => {
+          pendingRecovery(tx, request); expected(request, input);
+          return recoveryView(tx, update(tx, "recovery_requests", request, { status: "cancelled", cancelledAt: now() }));
+        });
+      }
+
+      if (action === "recoveryAssistance") {
+        object(raw, []);
+        const request = recoveryContext(tx, token);
+        if (recoveryStatus(tx, request) === "expired" || numberValue(request, "expiresAt") <= now()) fail("recovery_request_expired", 410, "Recovery request expired");
+        return recoveryView(tx, request, true);
+      }
+
+      if (action === "verifyRecoveryRequest" || action === "rejectRecoveryRequest") {
+        const input = object(raw, action === "verifyRecoveryRequest" ? ["assistanceToken"] : ["operationId", "assistanceToken", "expectedVersion"]);
+        const actor = authenticate(tx, token, action === "verifyRecoveryRequest" ? ["owner_recovery"] : ["owner_recovery", "owner_session"]);
+        const work = () => {
+          const request = recoveryContext(tx, input.assistanceToken, actor.data.ownerId!);
+          pendingRecovery(tx, request);
+          if (action === "verifyRecoveryRequest") return recoveryView(tx, request, true);
+          expected(request, input);
+          return recoveryView(tx, update(tx, "recovery_requests", request, { status: "cancelled", cancelledAt: now() }), true);
+        };
+        return action === "verifyRecoveryRequest" ? work() : command(tx, `owner:${actor.data.ownerId!}`, action, input, work);
+      }
+
       if (action === "recover") {
-        const input = object(raw, ["operationId", "password", "recoveryToken", "sessionToken", "credentialsSaved"]);
+        const input = object(raw, ["operationId", "password", "recoveryToken", "sessionToken", "credentialsSaved", "assistanceToken"]);
         const actor = authenticate(tx, token, ["owner_recovery"]);
         return command(tx, `owner:${actor.data.ownerId!}`, action, input, () => {
           if (input.credentialsSaved !== true) fail("invalid_request", 400, "Save the next independent credentials before recovery");
+          const assistance = input.assistanceToken === undefined ? undefined : recoveryContext(tx, input.assistanceToken, actor.data.ownerId!);
+          if (assistance) pendingRecovery(tx, assistance);
           const password = hashPassword(input.password);
           const owner = required(tx, "owners", actor.data.ownerId!);
           const ownerAuthVersion = numberValue(owner, "authVersion") + 1;
@@ -490,7 +594,8 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
             if (old.id !== recovery.id && old.id !== session.id && ["owner_session", "owner_recovery", "invite"].includes(scalarString(old, "kind")) && old.data.active) update(tx, "credentials", old, { active: false });
           }
           update(tx, "owners", owner, { authVersion: ownerAuthVersion, passwordSalt: password.salt, passwordHash: password.hash });
-          return { ownerId: owner.id, sessionId: session.id, ownerAuthVersion, expiresAt: session.data.expiresAt!, invalidated: ["owner_session", "owner_recovery", "invite"] };
+          if (assistance) update(tx, "recovery_requests", assistance, { status: "completed", completedAt: now(), completionOperationId: text(input.operationId, "operationId", 8, 100) });
+          return { ownerId: owner.id, ...(assistance ? { requestId: assistance.id } : {}), sessionId: session.id, ownerAuthVersion, expiresAt: session.data.expiresAt!, invalidated: ["owner_session", "owner_recovery", "invite"] };
         });
       }
 
@@ -595,13 +700,15 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         const operationId = text(input.operationId, "operationId", 8, 100);
         const scope = text(input.scope, "scope", 1, 220);
         const commandAction = text(input.action, "action", 1, 100);
-        const actor = authenticate(tx, token, ["runtime", "bootstrap", "registration_receipt", "owner_session"]);
+        const actor = authenticate(tx, token, ["runtime", "bootstrap", "registration_receipt", "owner_session", "owner_recovery"]);
         // This is the same unique command key used by writes. Never choose among
         // otherwise visible receipts when independent clients reuse an operation ID.
         const row = tx.find("operations", { scope, action: commandAction, operationId, epoch: store.recoveryEpoch })[0];
         if (row) {
           const result = dataObject(row.data.result);
-          if (actor.data.kind === "owner_session") {
+          if (actor.data.kind === "owner_recovery") {
+            if (scope === `owner:${actor.data.ownerId!}` && commandAction === "rejectRecoveryRequest" && result.ownerId === actor.data.ownerId) return result;
+          } else if (actor.data.kind === "owner_session") {
             if (result.ownerId === actor.data.ownerId) return result;
             if (typeof result.agentId === "string" && tx.find("bindings", { agentId: result.agentId, ownerId: actor.data.ownerId, active: true }).length) return result;
           } else if (result.agentId === actor.data.agentId) {

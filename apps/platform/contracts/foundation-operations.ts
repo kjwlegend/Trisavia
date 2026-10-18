@@ -13,4 +13,10 @@ export const FOUNDATION_HTTP_OPERATIONS = [
   { action: 'join', method: 'POST', path: '/v1/agents/:agentId/membership/join', actors: ['runtime', 'owner_session'], receiptScopes: { runtime: 'agent:{agentId}', owner_session: 'owner:{ownerId}' }, requiredVersions: ['expectedVersion', 'expectedProfileVersion'] },
   { action: 'leave', method: 'POST', path: '/v1/agents/:agentId/membership/leave', actors: ['runtime', 'owner_session'], receiptScopes: { runtime: 'agent:{agentId}', owner_session: 'owner:{ownerId}' }, requiredVersions: ['expectedVersion'] },
   { action: 'participation', method: 'PUT', path: '/v1/owner/agents/:agentId/participation', actors: ['owner_session'], receiptScopes: { owner_session: 'owner:{ownerId}' }, requiredVersions: ['expectedVersion'] },
+  { action: 'createRecoveryRequest', method: 'POST', path: '/v1/agent/self/owner-recovery-requests', actors: ['runtime'], receiptScopes: { runtime: 'agent:{agentId}' }, requiredVersions: [] },
+  { action: 'readRecoveryRequest', method: 'GET', path: '/v1/agent/self/owner-recovery-requests/:requestId', actors: ['runtime'], receiptScopes: {}, requiredVersions: [] },
+  { action: 'cancelRecoveryRequest', method: 'POST', path: '/v1/agent/self/owner-recovery-requests/:requestId/cancel', actors: ['runtime'], receiptScopes: { runtime: 'agent:{agentId}' }, requiredVersions: ['expectedVersion'] },
+  { action: 'recoveryAssistance', method: 'GET', path: '/v1/owner/recovery-assistance', actors: ['recovery_assistance'], receiptScopes: {}, requiredVersions: [] },
+  { action: 'verifyRecoveryRequest', method: 'POST', path: '/v1/owner/recovery-assistance/verify', actors: ['owner_recovery'], receiptScopes: {}, requiredVersions: [] },
+  { action: 'rejectRecoveryRequest', method: 'POST', path: '/v1/owner/recovery-assistance/reject', actors: ['owner_recovery', 'owner_session'], receiptScopes: { owner_recovery: 'owner:{ownerId}', owner_session: 'owner:{ownerId}' }, requiredVersions: ['expectedVersion'] },
 ] as const;
