@@ -119,6 +119,7 @@ R5／514ca56 的 TaskSpace45 已 finish，始终访客、无账户写入：先 p
 | main／源码／8789 | 7 提交、14 文件快进至准确 514ca56；702 项他人改动字节保持。快照 `/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-owned-agents/user-delivery-514ca56` 的 129 文件逐项 Git／hash 核对。旧 PID 49675 正常 SIGTERM，新 PID 23948 仅 8789 |
 | 全新一致备份 | 上述证据同目录含 live-consistent.sqlite、stopped-consistent.sqlite 与配对 identity，目录／文件 0700／0600，两库 quick_check 为 ok；使用最终切换时的当前用户数据，不复用旧备份 |
 | 身份／数据／环境 | 原 `data/m1-account-v2.sqlite`、identity、实例 `instance_6ee4d865-1e1a-4b40-90eb-2dbe6c46165f` 保持；schema 4、全部 14 表行数／全行指纹不变，无新迁移或回灌。沿原 origin、显式 experience／1234 与真实系统时钟，不带 QA 库、identity、冻结 clock 或 Resend key |
-| 只读就绪／待确认 | 15 项必要 HTTP：health／capabilities 核对状态与模式，两个入口与本轮 11 个 JS／CSS 核对固定源码字节及 no-store／nosniff。8789 最终访客浏览器确认仍 pending；QA 18892／PID 17820／source514 暂留，原合成库／identity／fixture／QA clock 保留 |
+| 只读就绪／最终确认 | 15 项必要 HTTP：health／capabilities 核对状态与模式，两个入口与本轮 11 个 JS／CSS 核对固定源码字节及 no-store／nosniff。总指挥另实际确认 11 个 `/assets` 均 200、哈希逐项与 514ca56 一致；TaskSpace43 访客 `#account` 的 1440×900 画面正常呈现底栏／居中登录窗，未见 bootstrap 失败，无登录写入。[最终访客截图](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-owned-agents/user-8789-backup-before-wandering-centered-hud-20261018T154044Z/commander-8789-final-hud-confirmation.png) |
+| QA 收尾 | 18892 此前保留待上述确认；技术总监核对 PID 17820、固定 source-514ca56 工作目录及无子进程后，仅对该 PID 正常 SIGTERM，确认 18892 无监听。全部 fixture、快照、报告、备份与 worktree 保留，8789／其他服务未动；运行源码仍 514ca56、PID 23948 |
 
 可回退至同 backend／schema 4 的原 dde598 用户快照，继续使用当前数据库及 identity，不能还原旧备份覆盖后来写入。交付未操作真实账号、真实邮件、公网或其他端口。当前不含新提出的注册／保存即公开、参与状态与访问频率业务／API 变化，全面 Agent 管理新版及原型仍是设计产物。以上不等于完整 M1、真实邮件、手机、其他尺寸或性能验收；本作者仅静态整理，没有重跑验证或操作服务／账号／数据库。
