@@ -1,6 +1,6 @@
 # 世界内账户与管理 · 开发交接
 
-日期：2026-10-18。共同基线：`22e0d82c862a8dce019dc466d26eb5aa5236d66a`。网页首包为 `05fc5d1f4e84baf9b1d3a8896a84d156aab079b4`，首轮候选 `841947c29445e6b6f3da97b70c82776f279996e9` 的阻塞已修订。现 main／8789 产品源码为 `7ea0659b7398449e05acd7af7742f91a0e154bd1`；原独审已静态接受 WAC-R01—R05 及本次启动定点修订。设计负责人对 `8acde84` 的未变 UI 接受范围保留。真实浏览器仅完成下述启动／面板切换定点，不等于完整用户验收通过。
+日期：2026-10-18。共同基线：`22e0d82c862a8dce019dc466d26eb5aa5236d66a`。网页首包为 `05fc5d1f4e84baf9b1d3a8896a84d156aab079b4`，首轮候选 `841947c29445e6b6f3da97b70c82776f279996e9` 的阻塞已修订。此前世界账户壳启动修复源码为 `7ea0659b7398449e05acd7af7742f91a0e154bd1`；原独审已静态接受 WAC-R01—R05 及该启动定点修订。设计负责人对 `8acde84` 的未变 UI 接受范围保留。该阶段真实浏览器只覆盖启动／面板切换；当前自有 Agent 增量与交付见末节，不等于完整用户验收通过。
 
 设计唯一依据为[世界内账户合同](../design/world-account-entry-contract.md)与[桌面效果稿](../../../design/world-account-entry-desktop.html)。效果稿是虚构示例，不是产品截图或运行证据。
 
@@ -60,7 +60,7 @@
 | 现有管理 | 资料草稿、发布／撤回、形象、参与各轴、模式／字段锁、运行撤销／替换、邀请与必要记录，不借布局改变权限 |
 | 原世界与 M2 | 世界场所与面板互斥；背包／信箱等仍是明确进入的演示，不伪造资产、消息、在线或互动 |
 
-## 本地交付与待验证
+## 世界账户壳交付历史（6523／7ea）
 
 首次 `6523d5841e6220d99f27d53b0954237f57661463` 交付的 [历史证据](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-world-account/user-8789-backup-before-world-account-20261018T101910Z/delivery-evidence.json) 保留：事务应用 migration 3／4，schema 2→4，原 10 个数据表记录数与全行指纹不变、新 3 表为空；当时 17 项 HTTP source readiness 未覆盖实际 DOM 启动。
 
@@ -78,4 +78,22 @@
 
 旧 fd2 快照保留，但旧程序不能直接打开 schema 3／4；不能沿用「指回 fd2」回退，也不能用旧备份覆盖后续写入。需保全当前数据后另行制定前向修复／回退方案。
 
-除上述启动／面板切换外，注册、登录、私密续接、A/B 隔离、退出清理、两模式挑战及完整业务仍待运行验收。统筹未填写／提交账号、登录或发码，未清存储、未发真实邮件；真实投递／收信未验证，体验码不证明真实邮箱属权。未运行自动化测试、typecheck、build 或语法检查，其他端口与公网未操作。本次文档收口没有新增浏览器、应用或数据库操作，历史 PASS 不替代本轮证据。
+截至 7ea 交付，除上述启动／面板切换外，注册、登录、私密续接、A/B 隔离、退出清理、两模式挑战及完整业务仍待运行验收。该阶段统筹未填写／提交账号、登录或发码，未清存储、未发真实邮件，也未运行自动化测试、typecheck、build 或语法检查；其他端口与公网未操作。体验码不证明真实邮箱属权，历史 PASS 不替代后续证据。
+
+## 自有 Agent 地图增量交付 · dde598b
+
+本次仅实现当前已鉴权主人自有 Agent 的私人静态角色层：姓名、基础形象、唯一当前标识、列表／地图选择及保持缩放的定位；未发布对象明确仅自己可见。原管理的授权、脏表单与未决任务保护保留，不增加公开目录、在线状态或真实 M2。
+
+修订包括：OAM-R01 定位不再被全视口 clamp 抵消；OAM-R02 当前管理回执 401 清除失效角色／高亮而保留原 pending、正文及证明，旧会话迟回和其他用途证明不误清新主人；OA-D01 当前／焦点姓名牌在面板拥挤时避让，保留原可操作节点。[原独审](../validation/m1-owned-agents-static-code-review-2026-10-18.md)已接受完整 `dde598bd41feeb6a866d38d5b8c365b6d3564abb`，无本功能静态阻塞。技术总监在固定源码执行两份纯 Node 定点文件 **10/10**（投影／binding 7 项、生产回执函数 3 项），不挂载完整 controller／DOM，也未跑广泛回归。
+
+[原普通用户模拟报告](../validation/user-simulation/m1-owned-agents-desktop-round-01.md)保留 R1 在 e460 的五项子旅程及当时 OA-D01 open；R2 在 dde 指定姓名牌／键盘焦点、150% 定位与退出烟测 PASS，OA-D01 fixed/verified，没有把 B／Empty 和整轮刷新改记为新版重跑。原设计负责人已接受本功能实际 1440×900 截图，范围与普通模拟、静态审查分别保留。
+
+本次实际交付按 [delivery-evidence.json](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-owned-agents/user-8789-backup-before-owned-agents-20261018T114432Z/delivery-evidence.json) 记录：
+
+| 项目 | 交付事实与边界 |
+| --- | --- |
+| main／8789 | 6 提交、13 文件快进至准确 dde598；快照 `/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-owned-agents/user-delivery-dde598b`。旧 PID 23004 正常 SIGTERM，新 PID 49675 仅 8789；沿用原 origin、显式 experience 环境及真实系统时钟，不含预览库／身份／冻结 clock，不继承 Resend key |
+| 数据／备份 | 原用户库、配对 identity 与实例沿用；schema 4、全部 14 表记录数／全行指纹不变，无新迁移。上述新备份目录保留 live-consistent／stopped-consistent SQLite 与 identity，两库 quick_check 为 ok，目录／文件 0700／0600 |
+| 只读就绪／待确认 | 共 9 项 HTTP：health／capabilities 核对状态与模式；两个入口及五个本功能脚本／样式与固定源码字节一致，并核对其 no-store／nosniff。**8789 最终浏览器确认仍 pending**，不由预览结论代替 |
+
+可回退至 backend／schema 4 相同的原 7ea 快照，继续使用当前原库和 identity，不回灌旧备份；更旧 fd2 仍不兼容，不能覆盖近期写入。以上合成 QA 不等于完整 M1、真实认证失效浏览器、真实邮件、手机或其他尺寸验收。交付未操作真实用户账号、其他服务或公网；本作者仅静态整理既有回报，没有重跑测试、浏览器、服务或数据库操作。
