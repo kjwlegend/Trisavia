@@ -57,9 +57,16 @@ test('FND-U01 viewing forgotten-password help before a same-document handoff sti
     const self = await fixtureOk(baseURL!, '/agent/self', undefined, agent.runtimeToken);
     expect(self.ownerId).toBe(backup.ownerId); expect(self.management.managementStatus).toBe('managed');
     await expect(page.getByRole('heading', { name: '我的 Agent', exact: true })).toBeVisible();
+    await expect(page.locator('#page-title')).toBeFocused();
+    await expect(page.locator('#account-name')).toHaveText(next.username);
     await expect(page.locator('#selected-id')).toContainText(agent.agentId);
+    await expect(page.locator('#selected-name')).toHaveText(agent.name);
+    await expect(page.locator('#selected-avatar')).toBeVisible(); await expect(page.locator('#stage-initialized')).toContainText('已建立');
     await expect(page.getByLabel('居民名字', { exact: true })).toHaveValue(agent.name);
     await expect(page.locator('#forgot-view')).toBeHidden(); await expect(page.locator('#recovery-form')).toBeHidden();
+    await expect(page.locator('#setup-backup-step')).toBeHidden();
+    await expect(page.locator('#global-notice')).toContainText('账号已创建'); await expect(page.locator('#global-notice')).toContainText('已关联');
+    expect((await page.locator('#manage-view').innerText()).includes(prior.username), 'The previous owner B does not remain in owner A management').toBe(false);
     expect(recoveryCalls, 'A completed new setup must not enter owner recovery due to an earlier help-page visit').toEqual([]);
     expect((await fixtureOk(baseURL!, '/owner/agents', undefined, firstBackup.sessionToken)).agents).toHaveLength(0);
   } finally { await rm(directory, { recursive: true, force: true }); }
@@ -76,6 +83,76 @@ async function openAssistance(page: Page, privacy: PrivacyObservation, proof: st
   await expect.poll(() => new URL(page.url()).hash.length, { message: 'Private assistance fragment is removed immediately' }).toBe(0);
   await idle(page); await expect(page.locator('#assistance-context')).toBeVisible();
 }
+
+for (const previousAssisted of [true, false]) test(`FND-R01 a successful ${previousAssisted ? 'different assistance request' : 'ordinary recovery'} receipt cannot complete the current request but its valid independent backup can verify it`, async ({ page, baseURL, privacy }) => {
+  const directory = await privateDirectory('foundation-recovery-receipt-target-');
+  try {
+    const owner = await accountFixture(baseURL!, directory), agent = await ownedAgent(baseURL!, directory, owner, '核对本次协助的居民');
+    const previous = previousAssisted ? await assistanceFixture(baseURL!, directory, agent) : null;
+    const sessionToken = credential(), recoveryToken = credential(), previousOperationId = operationId();
+    const oldFile: Json = { format: 'connet-owner-v2', origin: baseURL!, ownerId: owner.ownerId, sessionToken, recoveryToken,
+      sourceRecoveryToken: owner.recoveryToken, pendingOperation: { operationId: previousOperationId, scope: `owner:${owner.ownerId}`, action: 'recover' },
+      ...(previous ? { assistanceContext: { assistanceToken: previous.assistanceToken, requestId: previous.requestId,
+        agentId: agent.agentId, ownerId: owner.ownerId, version: 1 } } : {}) };
+    const originalPath = await privateJson(directory, 'actually-committed-recovery', oldFile); trackBackup(privacy, oldFile);
+    const previousResult = await fixtureOk(baseURL!, '/owner/recoveries', { operationId: previousOperationId,
+      password: `Previous-${randomUUID()}`, sessionToken, recoveryToken, credentialsSaved: true,
+      ...(previous ? { assistanceToken: previous.assistanceToken } : {}) }, owner.recoveryToken);
+    expect(previousResult.requestId).toBe(previous?.requestId);
+    const current = await assistanceFixture(baseURL!, directory, agent);
+    let recoverPosts = 0;
+    page.on('request', request => { if (new URL(request.url()).pathname === '/v1/owner/recoveries' && request.method() === 'POST') recoverPosts++; });
+    await openAssistance(page, privacy, current.assistanceToken);
+    await page.getByLabel('选择登录备份', { exact: true }).setInputFiles(originalPath); await idle(page);
+    await expect(page.locator('#assistance-status')).toContainText('主人备份已验证');
+    await expect(page.locator('#recovery-form')).toBeVisible();
+    const verified = await vault(page);
+    expect(verified.assistanceContext.requestId).toBe(current.requestId);
+    expect(verified.pendingOperation, 'A genuine completed backup supplies independent recovery authority without replaying its old command').toBeUndefined();
+    await expect(page.locator('#global-notice')).not.toContainText('协助已完成');
+    await page.locator('#back-to-login').click(); await openAssistance(page, privacy, current.assistanceToken);
+    const mismatched = { ...oldFile, assistanceContext: { assistanceToken: current.assistanceToken, requestId: current.requestId,
+      agentId: agent.agentId, ownerId: owner.ownerId, version: 1 } };
+    trackBackup(privacy, mismatched);
+    await page.getByLabel('选择登录备份', { exact: true }).setInputFiles(await privateJson(directory, 'current-context-with-old-command', mismatched)); await idle(page);
+    const actual = await fixtureOk(baseURL!, `/agent/self/owner-recovery-requests/${current.requestId}`, undefined, agent.runtimeToken);
+    expect(actual.status, 'The service has not completed the current request').toBe('pending'); expect(recoverPosts).toBe(0);
+    await expect(page.locator('#global-notice'), 'A same-owner receipt must also belong to this exact assistance request before announcing completion').not.toContainText('协助已完成');
+    await expect(page.getByRole('heading', { name: '我的 Agent', exact: true })).toBeHidden();
+    const unresolved = await vault(page);
+    expect(unresolved.pendingOperation?.operationId, 'A mismatched receipt must not clear the saved operation').toBe(previousOperationId);
+    expect(unresolved.assistanceContext?.requestId).toBe(current.requestId);
+    if (previous) expect((await fixtureOk(baseURL!, `/agent/self/owner-recovery-requests/${previous.requestId}`, undefined, agent.runtimeToken)).status).toBe('completed');
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test('FND-R01 an owner receipt for withdrawing Agent A cannot acknowledge or clear an unresolved withdrawal of Agent B', async ({ page, baseURL, privacy }) => {
+  const directory = await privateDirectory('foundation-withdraw-receipt-target-');
+  try {
+    const owner = await accountFixture(baseURL!, directory), first = await ownedAgent(baseURL!, directory, owner, '已撤回的原目标'), second = await ownedAgent(baseURL!, directory, owner, '仍公开的待确认目标');
+    const a = await fixtureOk(baseURL!, `/agents/${first.agentId}/profile`, undefined, owner.sessionToken);
+    const b = await fixtureOk(baseURL!, `/agents/${second.agentId}/profile`, undefined, owner.sessionToken);
+    const id = operationId(); await privateJson(directory, 'original-a-withdrawal-key', { operationId: id,
+      scope: `owner:${owner.ownerId}`, action: 'unpublishProfile', targetId: first.agentId, expectedVersion: a.version, expectedPolicyVersion: a.policyVersion });
+    await fixtureOk(baseURL!, `/agents/${first.agentId}/profile/unpublish`, { operationId: id, expectedVersion: a.version, expectedPolicyVersion: a.policyVersion }, owner.sessionToken);
+    await loginIdentifier(page, privacy, owner.username, owner.password); await select(page, second.agentId);
+    const active = await vault(page); trackBackup(privacy, active);
+    const wrongTarget = { format: 'connet-owner-v2', origin: baseURL!, ownerId: owner.ownerId, sessionToken: owner.sessionToken,
+      pendingOperation: { operationId: id, scope: `owner:${owner.ownerId}`, action: 'unpublishProfile', targetId: second.agentId,
+        input: { expectedVersion: b.version, expectedPolicyVersion: b.policyVersion }, uncertain: true } };
+    trackBackup(privacy, wrongTarget); let posts = 0;
+    page.on('request', request => { if (new URL(request.url()).pathname.endsWith('/profile/unpublish') && request.method() === 'POST') posts++; });
+    await openProgressImport(page);
+    await page.getByLabel('选择登录备份', { exact: true }).setInputFiles(await privateJson(directory, 'b-target-with-a-receipt-key', wrongTarget)); await idle(page);
+    expect((await fixtureOk(baseURL!, `/public/agents/${second.agentId}`)).profile.displayName).toBe(second.name);
+    expect((await fixtureOk(baseURL!, '/agent/self', undefined, first.runtimeToken)).profile.published).toBe(null);
+    const unresolved = await vault(page);
+    expect(unresolved.sessionToken === active.sessionToken, 'Current authenticated proof remains unchanged').toBe(true);
+    expect(unresolved.pendingOperation?.targetId, 'An Agent A receipt cannot clear the saved Agent B target').toBe(second.agentId);
+    expect(unresolved.pendingOperation?.operationId).toBe(id); expect(posts).toBe(0);
+    await expect(page.locator('#global-notice')).not.toContainText('公开资料已撤回');
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
 
 test('only the authenticated bound owner can decline assistance without a backup and neither session can use it to reset a password', async ({ page, baseURL, privacy }) => {
   const directory = await privateDirectory('foundation-assistance-reject-');
