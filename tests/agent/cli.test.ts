@@ -64,7 +64,8 @@ async function api(origin: string, method: string, path: string, body?: Json, to
   return response.json() as Promise<Json>;
 }
 function safeOutput(output: string, state: Json) {
-  for (const token of [state.runtimeToken, state.continuationToken, state.handoff?.token].filter(Boolean)) {
+  for (const token of [state.runtimeToken, state.continuationToken, state.handoff?.token, state.assistance?.token,
+    ...Object.values(state.commands ?? {}).map((value: any) => value.body?.assistanceToken)].filter(Boolean)) {
     assert(!output.includes(token), 'CLI output must not contain a proof');
     assert(!output.includes(token.split('.')[1]), 'CLI output must not contain the secret segment');
   }
@@ -100,6 +101,10 @@ test('downloaded reference client manages its own draft, publication and members
   const initial = await json(path), other = await json(otherPath);
   const catalogue = await cli(directory, ['avatar-catalog', '--url', running.address]);
   assert.equal(catalogue.code, 0); assert.deepEqual(JSON.parse(catalogue.stdout).catalog.templates[0].colors, ['olive', 'cream', 'blue', 'coral']);
+  const capabilities = await cli(directory, ['capabilities', '--url', running.address]); assert.equal(capabilities.code, 0);
+  const unpublishOperation = JSON.parse(capabilities.stdout).operations.find((operation: Json) => operation.action === 'unpublishProfile');
+  assert.equal(unpublishOperation.method, 'POST'); assert.equal(unpublishOperation.path, '/v1/agents/:agentId/profile/unpublish');
+  assert.deepEqual(unpublishOperation.requiredVersions, ['expectedVersion', 'expectedPolicyVersion']);
   const input = await privateInput(directory, { fields: { displayName: 'Updated A1', bio: 'A permitted biography',
     interests: ['reading'], avatar: { template: 'basic', color: 'coral' } } });
   let result = await command(directory, path, 'profile-update', ['--input-file', input]);
@@ -187,6 +192,12 @@ test('reference client preserves original CRUD commands across lost responses, r
     const conflict = await cli(directory, ['profile-clear', '--state', path, '--fields', 'interests']);
     assert.equal(conflict.code, 1); assert.match(conflict.stderr, /pending_operation_requires_original/);
     assert.equal((await json(path)).pendingMutation.key, key);
+    if (index === 0) {
+      const changed = await privateInput(directory, { fields: { bio: 'A different intent must wait' } });
+      const mismatched = await cli(directory, ['profile-update', '--state', path, '--input-file', changed]);
+      assert.equal(mismatched.code, 1); assert.match(mismatched.stderr, /pending_operation_requires_original/);
+      assert.deepEqual((await json(path)).commands[key].body, original.body);
+    }
     if (index === 0) { await stop(running.child); running = await server(directory); upstream = running.address; }
     const read = await command(directory, path, 'profile-read'); assert.equal(read.pendingOperation.operationId, original.body.operationId);
     await command(directory, path, 'status');
@@ -207,6 +218,80 @@ test('reference client preserves original CRUD commands across lost responses, r
   assert.equal((await json(path)).pendingMutation, undefined);
   const corrected = await command(directory, path, 'profile-update', ['--input-file', input]);
   assert.equal(corrected.profileDetails.draft.bio, 'Original complete intent', 'A new explicit retry reads current versions instead of overwriting with a stale CAS');
+  const assistanceEndpoint = '/v1/agent/self/owner-recovery-requests', beforeAssistance = writes.get(assistanceEndpoint) ?? 0;
+  discard = assistanceEndpoint;
+  const lostAssistance = await cli(directory, ['recovery-request-create', '--state', path]); assert.equal(lostAssistance.code, 1);
+  const pendingAssistance = await json(path), assistanceKey = pendingAssistance.pendingMutation.key;
+  const originalAssistance = pendingAssistance.commands[assistanceKey]; safeOutput(lostAssistance.stdout + lostAssistance.stderr, pendingAssistance);
+  const resumedAssistance = await command(directory, path, 'status');
+  const savedAssistance = await json(path), privateEntry = await json(resumedAssistance.privateAssistanceFile);
+  assert.equal(writes.get(assistanceEndpoint), beforeAssistance + 1, 'Create response loss reuses the original request and token');
+  assert.deepEqual(savedAssistance.commands[assistanceKey].body, originalAssistance.body);
+  assert.equal(new URL(privateEntry.url).hash, `#assistance=${originalAssistance.body.assistanceToken}`);
+  await command(directory, path, 'recovery-request-cancel');
+});
+
+test('downloaded client requests owner assistance without gaining owner authority and reads true terminal state after reopening', { timeout: 30_000 }, async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'm1-agent-assistance-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const running = await server(directory); t.after(() => stop(running.child)); await download(directory, running.address);
+  const ownerId = randomUUID(), sessionToken = newCredential('session'), recoveryToken = newCredential('recovery');
+  await privateInput(directory, { ownerId, sessionToken, recoveryToken });
+  await api(running.address, 'POST', '/v1/owner/accounts', { operationId: newOperationId(), attemptId: ownerId,
+    username: `Assist_${randomUUID().replaceAll('-', '').slice(0, 12)}`, email: `${randomUUID()}@example.test`,
+    password: 'assistance-test-password', sessionToken, recoveryToken, credentialsSaved: true });
+  const paths = [join(directory, 'a1.json'), join(directory, 'a2.json')];
+  for (const [index, path] of paths.entries()) {
+    const inviteToken = newCredential('invite');
+    await api(running.address, 'POST', '/v1/owner/agent-invites', { operationId: newOperationId(), inviteToken }, sessionToken);
+    const inviteFile = await privateInput(directory, { origin: running.address, inviteToken });
+    await command(directory, path, 'onboard', ['--url', running.address, '--name', `Assistance Agent ${index + 1}`, '--invite-file', inviteFile]);
+  }
+  const path = paths[0]!, initial = await json(path), sibling = await json(paths[1]!);
+  const first = await command(directory, path, 'recovery-request-create');
+  assert.equal(first.recoveryRequest.status, 'pending'); assert.equal(first.recoveryRequest.nextAction, 'deliver_private_entry');
+  const entry = await json(first.privateAssistanceFile); assert.equal((await stat(first.privateAssistanceFile)).mode & 0o777, 0o600);
+  assert.equal(new URL(entry.url).origin, running.address); assert.equal(new URL(entry.url).pathname, '/owner');
+  assert.equal(new URL(entry.url).hash, `#assistance=${(await json(path)).assistance.token}`);
+  const id = first.recoveryRequest.requestId, requestPath = `/v1/agent/self/owner-recovery-requests/${id}`;
+  const foreignRead = await cli(directory, ['recovery-request-read', '--state', paths[1]!, '--request-id', id]);
+  assert.equal(foreignRead.code, 1); assert.match(foreignRead.stderr, /target_not_accessible/);
+  const foreignCancel = await cli(directory, ['recovery-request-cancel', '--state', paths[1]!, '--request-id', id]);
+  assert.equal(foreignCancel.code, 1); assert.match(foreignCancel.stderr, /target_not_accessible/);
+  assert.equal((await api(running.address, 'GET', requestPath, undefined, initial.runtimeToken)).status, 'pending');
+  const capability = (await json(path)).assistance.token;
+  const resetWithoutBackup = await fetch(`${running.address}/v1/owner/recoveries`, { method: 'POST', headers: {
+    'content-type': 'application/json', authorization: `Bearer ${capability}` }, body: JSON.stringify({ operationId: newOperationId(),
+    password: 'not-authorized-password', sessionToken: newCredential('session'), recoveryToken: newCredential('recovery'), credentialsSaved: true, assistanceToken: capability }) });
+  assert.equal(resetWithoutBackup.status, 403);
+  assert.equal((await command(directory, path, 'recovery-request-cancel')).recoveryRequest.status, 'cancelled');
+  assert.equal((await command(directory, path, 'status')).recoveryRequest.status, 'cancelled');
+  await command(directory, path, 'recovery-request-create');
+  const standaloneNext = { sessionToken: newCredential('session'), recoveryToken: newCredential('recovery') };
+  await privateInput(directory, standaloneNext);
+  await api(running.address, 'POST', '/v1/owner/recoveries', { operationId: newOperationId(), password: 'standalone-recovery-password',
+    ...standaloneNext, credentialsSaved: true }, recoveryToken);
+  assert.equal((await command(directory, path, 'status')).recoveryRequest.status, 'expired', 'Recovery elsewhere is not fabricated as assisted completion');
+  await command(directory, path, 'recovery-request-create');
+  const pending = await json(path), current = pending.assistance, commandKey = Object.keys(pending.commands).find(key => pending.commands[key].body.assistanceToken === current.token)!;
+  const next = { sessionToken: newCredential('session'), recoveryToken: newCredential('recovery') }; await privateInput(directory, next);
+  await api(running.address, 'POST', '/v1/owner/recoveries', { operationId: newOperationId(), password: 'assisted-recovery-password',
+    ...next, credentialsSaved: true, assistanceToken: current.token }, standaloneNext.recoveryToken);
+  const complete = await command(directory, path, 'status'); assert.equal(complete.recoveryRequest.status, 'completed');
+  assert.equal(complete.recoveryRequest.nextAction, 'none');
+  assert.equal((await json(path)).commands[commandKey].result.status, 'pending', 'Historical creation receipt remains historical; current status is a fresh read');
+  assert.equal(complete.agentId, initial.agentId); assert((await json(path)).runtimeToken === initial.runtimeToken, 'Recovery keeps the same Agent proof');
+  await command(directory, path, 'recovery-request-create');
+  const beforeReplacement = await json(path), runtimeToken = newCredential('runtime');
+  await api(running.address, 'POST', `/v1/owner/agents/${initial.agentId}/runtime-access/replace`, {
+    operationId: newOperationId(), expectedVersion: 1, runtimeToken }, next.sessionToken);
+  assert.equal((await cli(directory, ['status', '--state', path])).code, 1);
+  const runtimeFile = await privateInput(directory, { format: 'connet-runtime-v1', origin: running.address, agentId: initial.agentId, runtimeToken });
+  const replaced = await command(directory, path, 'import-runtime', ['--runtime-file', runtimeFile]);
+  assert.equal(replaced.recoveryRequest.status, 'expired'); assert.equal(replaced.agentId, initial.agentId);
+  assert.equal((await json(path)).assistance.requestId, beforeReplacement.assistance.requestId);
+  const other = await api(running.address, 'GET', '/v1/agent/self', undefined, sibling.runtimeToken);
+  assert.equal(other.agentId, sibling.agentId); assert.equal(other.ownerId, ownerId);
 });
 
 test('reference client reports policy refusals without losing identity and can correct a rejected intent', { timeout: 30_000 }, async t => {
@@ -221,11 +306,17 @@ test('reference client reports policy refusals without losing identity and can c
       expectedVersion: current.version, expectedPolicyVersion: current.policyVersion, mode, lockedFields }, session);
   };
   await policy('agent_autonomous', ['bio']);
+  const restricted = await command(directory, path, 'profile-read');
+  assert(!restricted.effectiveActions.saveDraft.writableFields.includes('bio')); assert(!restricted.effectiveActions.saveDraft.removableFields.includes('bio'));
   const input = await privateInput(directory, { fields: { bio: 'Corrected after unlock' } });
   const locked = await cli(directory, ['profile-update', '--state', path, '--input-file', input]);
   assert.equal(locked.code, 1); assert.match(locked.stderr, /field_locked/);
   assert.equal((await json(path)).pendingMutation, undefined, 'An explicit policy rejection allows a corrected new command');
   await policy('agent_autonomous', []); await command(directory, path, 'profile-update', ['--input-file', input]);
+  await policy('agent_autonomous', ['displayName']);
+  const lockedPublication = await command(directory, path, 'profile-read');
+  assert.equal(lockedPublication.effectiveActions.unpublishProfile.allowed, false); assert(lockedPublication.effectiveActions.unpublishProfile.blockedBy.includes('field_locked'));
+  const lockedWithdrawal = await cli(directory, ['profile-unpublish', '--state', path]); assert.equal(lockedWithdrawal.code, 1); assert.match(lockedWithdrawal.stderr, /field_locked/);
   await policy('proposal_required', []);
   for (const name of ['profile-publish', 'profile-unpublish']) {
     const denied = await cli(directory, [name, '--state', path]); assert.equal(denied.code, 1); assert.match(denied.stderr, /confirmation_required/);
@@ -234,6 +325,8 @@ test('reference client reports policy refusals without losing identity and can c
   const member = await api(running.address, 'GET', `/v1/agents/${initial.agentId}/membership`, undefined, session);
   await api(running.address, 'PUT', `/v1/owner/agents/${initial.agentId}/participation`, { operationId: newOperationId(), expectedVersion: member.version, paused: true }, session);
   const paused = await cli(directory, ['profile-unpublish', '--state', path]); assert.equal(paused.code, 1); assert.match(paused.stderr, /participation_paused/);
+  const gates = await command(directory, path, 'membership-read'); assert.equal(gates.effectiveActions.leave.allowed, true);
+  assert(gates.effectiveActions.join.blockedBy.includes('participation_paused'));
   const left = await command(directory, path, 'membership-leave'); assert.equal(left.membershipDetails.state, 'left'); assert.equal(left.membershipDetails.ownerPaused, true);
   const final = await json(path); assert.equal(final.agentId, initial.agentId); assert(final.runtimeToken === initial.runtimeToken);
 });
@@ -521,7 +614,9 @@ globalThis.fetch = async (input, options = {}) => {
       scope: `registration:${material.attemptId}`, status: 'pending', body: { operationId: newOperationId(), ...material } } } };
   const path = join(directory, 'existing.json'), original = JSON.stringify(state);
   await writeFile(path, original, { mode: 0o600 });
-  for (const command of ['onboard', 'status', 'handoff', 'import-runtime']) {
+  for (const command of ['onboard', 'status', 'handoff', 'import-runtime', 'avatar-catalog', 'capabilities', 'profile-read', 'profile-update',
+    'profile-clear', 'profile-publish', 'profile-unpublish', 'membership-read', 'membership-join', 'membership-leave',
+    'recovery-request-create', 'recovery-request-read', 'recovery-request-cancel']) {
     const result = await probe([command, '--state', path]);
     assert.equal(result.code, 1); assert(result.stderr.startsWith('invalid_origin;'));
     assert.equal(result.attempts.length, 0, 'Saved public HTTP must be rejected for every command before transport');

@@ -86,6 +86,8 @@ interface State {
   pendingReason?: string;
   manualControl?: boolean;
   pendingMutation?: { name: string; intent: Json; key: string };
+  effectiveActions?: Json;
+  assistance?: { token: string; privateFile: string; requestId: string; snapshot: Json };
 }
 
 function object(value: unknown): Json { return value && typeof value === 'object' && !Array.isArray(value) ? value as Json : {}; }
@@ -168,7 +170,9 @@ async function refresh(path: string, state: State): Promise<void> {
   if (typeof self.ownerId === 'string') state.ownerId = self.ownerId;
   state.profile = object(self.profile); state.membership = object(self.membership);
   state.management = object(self.management);
+  state.effectiveActions = object(self.effectiveActions);
   state.profileUrl = typeof self.profileUrl === 'string' ? self.profileUrl : `/residents/${state.agentId}`;
+  if (state.assistance) state.assistance.snapshot = await readRequest(state, state.assistance.requestId);
   await save(path, state);
 }
 
@@ -215,14 +219,42 @@ const mutations: Record<string, { suffix: string; action: string; method: 'POST'
   'profile-unpublish': { suffix: 'profile/unpublish', action: 'unpublishProfile', method: 'POST' },
   'membership-join': { suffix: 'membership/join', action: 'join', method: 'POST' },
   'membership-leave': { suffix: 'membership/leave', action: 'leave', method: 'POST' },
+  'recovery-request-create': { suffix: 'owner-recovery-requests', action: 'createRecoveryRequest', method: 'POST' },
+  'recovery-request-cancel': { suffix: 'owner-recovery-requests', action: 'cancelRecoveryRequest', method: 'POST' },
 };
 function removalList(value: unknown): string[] {
   if (!Array.isArray(value) || value.some(field => typeof field !== 'string' || !['bio', 'interests'].includes(field))
     || new Set(value).size !== value.length) throw new AgentError('invalid_profile_input');
   return value as string[];
 }
-async function mutationIntent(name: string, options: Record<string, string>, state: State): Promise<Json> {
-  if (state.pendingMutation?.name === name && !options['--input-file'] && !options['--fields']) return state.pendingMutation.intent;
+function requestId(value: unknown): string {
+  if (typeof value !== 'string' || !/^[A-Za-z0-9_-]{8,100}$/.test(value)) throw new AgentError('request_id_required');
+  return value;
+}
+function safeRequest(value: Json): Json {
+  return Object.fromEntries(['requestId', 'agentId', 'version', 'status', 'expiresAt', 'nextAction'].filter(key => key in value).map(key => [key, value[key]]));
+}
+async function readRequest(state: State, id: string): Promise<Json> {
+  const result = await http(state.origin, 'GET', `/v1/agent/self/owner-recovery-requests/${encodeURIComponent(id)}`, undefined, state.runtimeToken);
+  if (result.agentId !== state.agentId || result.requestId !== id) throw new AgentError('instance_or_identity_mismatch');
+  return safeRequest(result);
+}
+async function mutationIntent(name: string, options: Record<string, string>, state: State, path: string): Promise<Json> {
+  if (state.pendingMutation?.name === name && !options['--input-file'] && !options['--fields']) {
+    if ((options['--request-id'] && options['--request-id'] !== state.pendingMutation.intent.requestId)
+      || (options['--out'] && resolve(options['--out']) !== state.pendingMutation.intent.privateFile)) throw new AgentError('pending_operation_requires_original');
+    return state.pendingMutation.intent;
+  }
+  if (name === 'recovery-request-create') {
+    const output = resolve(options['--out'] ?? `${path}.assistance.json`);
+    if (output === path) throw new AgentError('invalid_output_path');
+    try {
+      const existing = await readPrivateJson(output);
+      if (existing.format !== 'connet-assistance-v1' || existing.agentId !== state.agentId || existing.origin !== state.origin) throw new AgentError('output_file_conflict');
+    } catch (error) { if (!(error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT')) throw error; }
+    return { assistanceToken: newCredential('assistance'), privateFile: output };
+  }
+  if (name === 'recovery-request-cancel') return { requestId: requestId(options['--request-id'] ?? state.assistance?.requestId) };
   if (name === 'profile-clear') {
     if (!options['--fields']) throw new AgentError('fields_required');
     const removeFields = removalList(options['--fields'].split(','));
@@ -245,6 +277,18 @@ async function resumeMutation(path: string, state: State): Promise<Json> {
   if (!pending) throw new AgentError('state_invalid');
   try {
     const result = await execute(path, state, pending.key);
+    if (pending.name === 'recovery-request-create') {
+      const token = String(pending.intent.assistanceToken), id = token.split('.')[0]!;
+      if (result.agentId !== state.agentId || result.requestId !== id) throw new AgentError('instance_or_identity_mismatch');
+      state.assistance = { token, requestId: id, privateFile: String(pending.intent.privateFile), snapshot: safeRequest(result) };
+      await save(path, state);
+      const url = new URL('/owner', state.origin); url.hash = `assistance=${token}`;
+      await writePrivateJson(state.assistance.privateFile, { format: 'connet-assistance-v1', origin: state.origin,
+        url: url.href, agentId: state.agentId, requestId: id, expiresAt: result.expiresAt });
+    } else {
+      const assistance = state.assistance;
+      if (pending.name === 'recovery-request-cancel' && assistance && assistance.requestId === result.requestId) assistance.snapshot = safeRequest(result);
+    }
     delete state.pendingMutation; delete state.pendingReason; await save(path, state);
     await refresh(path, state);
     return result;
@@ -253,7 +297,7 @@ async function resumeMutation(path: string, state: State): Promise<Json> {
     // Authentication failures and transport uncertainty retain the original key.
     const rejected = ['invalid_request', 'profile_validation_failed', 'field_locked', 'participation_paused',
       'platform_restricted', 'version_conflict', 'confirmation_required', 'admission_requirements_unmet', 'idempotency_payload_mismatch'];
-    if (error instanceof AgentError && error.status && error.status < 500 && rejected.includes(error.code)) {
+    if (error instanceof AgentError && ([400, 409, 422].includes(error.status ?? 0) || (error.status === 403 && rejected.includes(error.code)))) {
       state.commands[pending.key]!.status = 'rejected'; state.commands[pending.key]!.error = error.code;
       delete state.pendingMutation; await save(path, state);
     }
@@ -269,10 +313,15 @@ async function mutate(path: string, state: State, name: string, intent: Json): P
   }
   await refresh(path, state);
   const definition = mutations[name]!, operationId = newOperationId(), key = `manual_${operationId}`;
-  const body: Json = { operationId, expectedVersion: name.startsWith('profile-') ? state.profile!.version : state.membership!.version, ...intent };
-  if (name.startsWith('profile-')) body.expectedPolicyVersion = state.profile!.policyVersion;
-  if (name === 'membership-join') body.expectedProfileVersion = state.profile!.version;
-  state.commands[key] = { method: definition.method, path: `/v1/agents/${state.agentId}/${definition.suffix}`,
+  const body: Json = { operationId };
+  if (name.startsWith('profile-')) Object.assign(body, { expectedVersion: state.profile!.version, expectedPolicyVersion: state.profile!.policyVersion, ...intent });
+  else if (name.startsWith('membership-')) Object.assign(body, { expectedVersion: state.membership!.version, ...intent,
+    ...(name === 'membership-join' ? { expectedProfileVersion: state.profile!.version } : {}) });
+  else if (name === 'recovery-request-create') body.assistanceToken = intent.assistanceToken;
+  else body.expectedVersion = (await readRequest(state, requestId(intent.requestId))).version;
+  const endpoint = name.startsWith('recovery-request-') ? `/v1/agent/self/${definition.suffix}${name === 'recovery-request-cancel' ? `/${requestId(intent.requestId)}/cancel` : ''}`
+    : `/v1/agents/${state.agentId}/${definition.suffix}`;
+  state.commands[key] = { method: definition.method, path: endpoint,
     body, bearer: state.runtimeToken, scope: `agent:${state.agentId}`, action: definition.action, status: 'pending' };
   state.manualControl = true; delete state.pendingReason; state.pendingMutation = { name, intent, key }; await save(path, state);
   return resumeMutation(path, state);
@@ -331,6 +380,7 @@ function summary(path: string, state: State) {
     deliveryStatus: state.management?.deliveryDeclaredAt ? 'client_declared_delivered' : state.handoff ? 'generated' : 'not_generated',
     local_setup: 'saved', schedule_configuration: 'not_configured', periodic_run_verification: 'not_verified',
     pendingReason: state.pendingReason ?? null,
+    effectiveActions: state.effectiveActions ?? {}, recoveryRequest: state.assistance?.snapshot ?? null, privateAssistanceFile: state.assistance?.privateFile ?? null,
     pendingOperation: state.pendingMutation ? { name: state.pendingMutation.name, operationId: state.commands[state.pendingMutation.key]?.body.operationId,
       scope: state.commands[state.pendingMutation.key]?.scope, action: state.commands[state.pendingMutation.key]?.action } : null,
     privateStateFile: path, privateHandoffFile: state.handoff?.privateFile ?? null };
@@ -338,11 +388,11 @@ function summary(path: string, state: State) {
 
 export async function runAgent(args: string[]): Promise<Json> {
   const command = args[0];
-  const publicReads = ['avatar-catalog', 'capabilities'], reads = ['profile-read', 'membership-read'];
+  const publicReads = ['avatar-catalog', 'capabilities'], reads = ['profile-read', 'membership-read', 'recovery-request-read'];
   if (!['onboard', 'status', 'handoff', 'import-runtime', ...publicReads, ...reads, ...Object.keys(mutations)].includes(command ?? '')) throw new AgentError('invalid_command');
   const options: Record<string, string> = {};
   let declareDelivered = false;
-  const allowed = ['--url', '--state', '--name', '--bio', '--color', '--invite-file', '--runtime-file', '--out', '--input-file', '--fields'];
+  const allowed = ['--url', '--state', '--name', '--bio', '--color', '--invite-file', '--runtime-file', '--out', '--input-file', '--fields', '--request-id'];
   for (let i = 1; i < args.length; i++) {
     const key = args[i]!;
     if (key === '--declare-delivered') { declareDelivered = true; continue; }
@@ -350,7 +400,8 @@ export async function runAgent(args: string[]): Promise<Json> {
     options[key] = args[++i]!;
   }
   if (publicReads.includes(command!) || reads.includes(command!) || command! in mutations) {
-    const accepted = ['--url', '--state', ...(command === 'profile-update' ? ['--input-file'] : []), ...(command === 'profile-clear' ? ['--fields'] : [])];
+    const accepted = ['--url', '--state', ...(command === 'profile-update' ? ['--input-file'] : []), ...(command === 'profile-clear' ? ['--fields'] : []),
+      ...(command === 'recovery-request-create' ? ['--out'] : []), ...(['recovery-request-read', 'recovery-request-cancel'].includes(command!) ? ['--request-id'] : [])];
     if (declareDelivered || Object.keys(options).some(key => !accepted.includes(key))) throw new AgentError('invalid_arguments');
   }
   if (!options['--state']) {
@@ -411,7 +462,9 @@ export async function runAgent(args: string[]): Promise<Json> {
       state.runtimeToken = replacement.runtimeToken;
       for (const saved of Object.values(state.commands)) if (saved.bearer === previous) saved.bearer = state.runtimeToken;
       state.profile = object(self.profile); state.membership = object(self.membership); state.management = object(self.management);
+      state.effectiveActions = object(self.effectiveActions);
       state.profileUrl = typeof self.profileUrl === 'string' ? self.profileUrl : `/residents/${state.agentId}`;
+      if (state.assistance) state.assistance.snapshot = await readRequest(state, state.assistance.requestId);
       await save(path, state);
       return summary(path, state);
     }
@@ -419,12 +472,18 @@ export async function runAgent(args: string[]): Promise<Json> {
       if (!state.agentId || state.commands.registration?.status !== 'committed') throw new AgentError('registration_required');
       if (reads.includes(command!)) {
         await refresh(path, state);
+        if (command === 'recovery-request-read') {
+          const result = await readRequest(state, requestId(options['--request-id'] ?? state.assistance?.requestId));
+          const assistance = state.assistance;
+          if (assistance && assistance.requestId === result.requestId) { assistance.snapshot = result; await save(path, state); }
+          return { ...details(path, state), recoveryRequest: result };
+        }
         const resource = command === 'profile-read' ? 'profile' : 'membership';
         const result = await http(state.origin, 'GET', `/v1/agents/${state.agentId}/${resource}`, undefined, state.runtimeToken);
         if (result.agentId !== state.agentId) throw new AgentError('instance_or_identity_mismatch');
         state[resource] = result; await save(path, state); return details(path, state);
       }
-      const intent = await mutationIntent(command!, options, state), result = await mutate(path, state, command!, intent);
+      const intent = await mutationIntent(command!, options, state, path), result = await mutate(path, state, command!, intent);
       return { ...details(path, state), operation: { operationId: result.operationId, outcome: result.outcome, receiptId: result.receiptId,
         ...(typeof result.changed === 'boolean' ? { changed: result.changed } : {}) } };
     }
