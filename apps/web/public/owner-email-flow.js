@@ -212,6 +212,10 @@ export function createOwnerEmailFlow(hooks){
   }
   async function read(){const result=await api(basePath(),{token:progress.browserToken});assertView(result);currentView=result;retainMode(result);viewFromRead=true;progress.started=true;if(!progress.pending&&result.sendOperationId)progress.sendOperationId=result.sendOperationId;if(!pending()&&!registration()&&result.status==='completed')progress.completed=true;save();render();return result;}
   async function originalReceipt(){const p=progress.pending;return api(`/operations/${encodeURIComponent(p.operationId)}?scope=${encodeURIComponent(p.scope)}&action=${encodeURIComponent(p.action)}`,{token:progress.browserToken});}
+  async function acceptOriginalReceipt(result,command){
+    try{await accept(result,command);}
+    catch(error){if(error.code==='email_code_invalid'){delete progress.pending;save();}throw error;}
+  }
   async function submit(){
     const command=progress.pending;if(!command)return;
     save();let received=false;
@@ -222,13 +226,19 @@ export function createOwnerEmailFlow(hooks){
       // A rejected code is a finished verification attempt, never a new grant.
       if(error.code==='email_code_invalid'){delete progress.pending;save();$('#email-code').value='';try{await read();}catch{}throw error;}
       if(error.code==='email_unavailable'&&error.status===503){
-        if(command.uncertain){try{await accept(await originalReceipt(),command);return;}catch(receiptError){if(receiptError.status!==404)throw receiptError;}}
+        if(command.uncertain){
+          let receipt;try{receipt=await originalReceipt();}catch(receiptError){if(receiptError.status!==404)throw receiptError;}
+          if(receipt!==undefined){await acceptOriginalReceipt(receipt,command);return;}
+        }
         delete progress.pending;save();throw error;
       }
       if(!isUnknown(error)&&!command.uncertain&&error.code!=='idempotency_payload_mismatch'){
         delete progress.pending;save();if(command.action==='startRegistration'){progress=null;currentView=null;clearEmailProgress();}else try{await read();}catch{}throw error;
       }
-      try{await accept(await originalReceipt(),command);return;}catch(receiptError){if(receiptError.code==='operation_mismatch')throw receiptError;if(receiptError.code==='email_code_invalid'){delete progress.pending;save();throw receiptError;}}
+      let receipt;
+      try{receipt=await originalReceipt();}catch(receiptError){if(receiptError.code==='operation_mismatch')throw receiptError;if(receiptError.code==='email_code_invalid'){delete progress.pending;save();throw receiptError;}}
+      // Once a receipt is found, failures in its follow-up read must not restart the command.
+      if(receipt!==undefined){await acceptOriginalReceipt(receipt,command);return;}
       progress.pending.uncertain=true;save();
       try{await read();}catch{}
       throw error;
@@ -236,8 +246,10 @@ export function createOwnerEmailFlow(hooks){
   }
   async function continuePending(){
     if(!progress?.pending)return;const command=progress.pending;
-    try{const result=await originalReceipt();await accept(result,command);return;}
+    let receipt;
+    try{receipt=await originalReceipt();}
     catch(error){if(error.code==='operation_mismatch')throw error;if(error.code==='email_code_invalid'){delete progress.pending;save();throw error;}if(error.status!==404&&!(command.action.startsWith('start')&&error.status===401)){throw error;}}
+    if(receipt!==undefined){await acceptOriginalReceipt(receipt,command);return;}
     try{await read();if(modeMismatch()){inform(mismatchMessage(),'pending');return;}}catch(error){if(!command.action.startsWith('start')||![401,404].includes(error.status))throw error;}
     if(finalActions.includes(command.action)&&!$('#email-password').reportValidity()){inform('原进度已保存，请重新输入上次使用的密码，再继续。','pending');hooks.focus('#email-password');return;}
     if(command.action.startsWith('verify')&&!validCode()){inform(`请重新输入本次 ${codeLength()} 位验证码；会先核对原验证结果，不会重复消费已成功的验证码。`,'pending');hooks.focus('#email-code');return;}
