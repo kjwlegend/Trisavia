@@ -23,7 +23,7 @@ export function registerSiteRoutes(app: FastifyInstance): void {
     reply.header('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'");
     return payload;
   });
-  for (const [route, name] of [['/', 'index.html'], ['/owner', 'owner.html'], ['/residents/:agentId', 'resident.html']] as const) {
+  for (const [route, name] of [['/', 'index.html'], ['/owner', 'index.html'], ['/residents/:agentId', 'resident.html']] as const) {
     app.get(route, (_request, reply) => file(reply, resolve(webRoot, name), mime['.html']!));
   }
   app.get('/favicon.ico', (_request, reply) => reply.code(204).send());
