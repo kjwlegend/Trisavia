@@ -2,15 +2,13 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { M1Action, M1Service } from "../../application/m1-service.ts";
 import { M1Error, fail } from "../../domains/common/errors.ts";
 import { StorageError } from "../../contracts/store.ts";
+import { FOUNDATION_HTTP_OPERATIONS } from "../../contracts/foundation-operations.ts";
 
 type Definition = { method: "GET" | "POST" | "PUT"; url: string; action: M1Action };
 const routes: Definition[] = [
-  { method: "GET", url: "/v1/capabilities", action: "capabilities" },
-  { method: "GET", url: "/v1/avatar-catalog", action: "catalog" },
-  { method: "GET", url: "/v1/public/agents/:agentId", action: "publicProfile" },
+  ...FOUNDATION_HTTP_OPERATIONS.map(({ method, path, action }) => ({ method, url: path, action })),
   { method: "POST", url: "/v1/registrations", action: "register" },
   { method: "GET", url: "/v1/registration-attempts/:attemptId", action: "registrationResult" },
-  { method: "GET", url: "/v1/agent/self", action: "self" },
   { method: "POST", url: "/v1/agent/self/handoffs", action: "issueHandoff" },
   { method: "POST", url: "/v1/agent/self/delivery-declarations", action: "declareDelivery" },
   { method: "GET", url: "/v1/owner-handoffs/:handoffId", action: "previewHandoff" },
@@ -30,15 +28,6 @@ const routes: Definition[] = [
   { method: "POST", url: "/v1/owner/agent-invites/:inviteId/revoke", action: "revokeInvite" },
   { method: "POST", url: "/v1/owner/agents/:agentId/runtime-access/revoke", action: "revokeRuntime" },
   { method: "POST", url: "/v1/owner/agents/:agentId/runtime-access/replace", action: "replaceRuntime" },
-  { method: "GET", url: "/v1/agents/:agentId/profile", action: "readProfile" },
-  { method: "PUT", url: "/v1/agents/:agentId/profile/draft", action: "saveDraft" },
-  { method: "POST", url: "/v1/agents/:agentId/profile/publish", action: "publishProfile" },
-  { method: "POST", url: "/v1/agents/:agentId/profile/unpublish", action: "unpublishProfile" },
-  { method: "PUT", url: "/v1/owner/agents/:agentId/profile-policy", action: "profilePolicy" },
-  { method: "GET", url: "/v1/agents/:agentId/membership", action: "readMembership" },
-  { method: "POST", url: "/v1/agents/:agentId/membership/join", action: "join" },
-  { method: "POST", url: "/v1/agents/:agentId/membership/leave", action: "leave" },
-  { method: "PUT", url: "/v1/owner/agents/:agentId/participation", action: "participation" },
   { method: "GET", url: "/v1/operations/:operationId", action: "receipt" },
 ];
 

@@ -2,8 +2,9 @@ import { randomUUID } from "node:crypto";
 import type { JsonObject, JsonValue, M1ReadSession, M1Store, M1Table, M1Transaction, StoredRow } from "../contracts/store.ts";
 import { checkPassword, equalDigest, hashPassword, parseToken, payloadHash, verifier } from "../domains/access/credentials.ts";
 import { accountFields, loginIdentifier } from "../domains/access/account-identifiers.ts";
-import { boolean, fail, object, text, version } from "../domains/common/errors.ts";
-import { AVATAR_COLORS, PROFILE_FIELDS, validateFields, validatePublication, validateRemoveFields } from "../domains/profile/profile-rules.ts";
+import { boolean, fail, M1Error, object, text, version } from "../domains/common/errors.ts";
+import { AVATAR_COLORS, PROFILE_FIELDS, REMOVABLE_PROFILE_FIELDS, validateFields, validatePublication, validateRemoveFields } from "../domains/profile/profile-rules.ts";
+import { FOUNDATION_HTTP_OPERATIONS } from "../contracts/foundation-operations.ts";
 
 export type M1Action =
   | "capabilities" | "catalog" | "register" | "registrationResult" | "self" | "publicProfile"
@@ -193,6 +194,44 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     if (member.data.platformRestricted) fail("platform_restricted", 403, "Platform participation is restricted");
   }
 
+  function publicationPermission(profile: StoredRow, actor: CredentialRow, unpublish: boolean): void {
+    if (actor.data.kind === "runtime" && profile.data.mode !== "agent_autonomous") fail("confirmation_required", 403, "Owner confirmation is required for publication");
+    const published = dataObject(profile.data.published);
+    if (unpublish) {
+      if (actor.data.kind === "runtime" && (profile.data.lockedFields as string[]).some((field) => Object.hasOwn(published, field))) fail("field_locked", 403, "Owner locked a published field");
+      return;
+    }
+    const draft = dataObject(profile.data.draft);
+    validatePublication(draft);
+    if (actor.data.kind === "runtime") {
+      for (const field of profile.data.lockedFields as string[]) {
+        if (JSON.stringify(draft[field]) !== JSON.stringify(published[field])) fail("field_locked", 403, "Owner locked a field changed in this draft");
+      }
+    }
+  }
+
+  function joinPermission(profile: StoredRow): void {
+    if (profile.data.published === null) fail("admission_requirements_unmet", 422, "Publish a valid profile before joining");
+    validatePublication(dataObject(profile.data.published));
+  }
+
+  function effectiveActions(tx: M1ReadSession, actor: CredentialRow, agentId: string): JsonObject {
+    const profile = required(tx, "profiles", agentId);
+    const check = (work: () => void): JsonObject => {
+      try { work(); return { allowed: true, blockedBy: [] }; }
+      catch (error) { if (error instanceof M1Error) return { allowed: false, blockedBy: [error.code] }; throw error; }
+    };
+    const write = () => businessWrite(tx, actor, agentId);
+    const locked = profile.data.lockedFields as string[];
+    return {
+      readProfile: check(() => {}), readMembership: check(() => {}),
+      saveDraft: { ...check(write), writableFields: PROFILE_FIELDS.filter((field) => !locked.includes(field)), removableFields: REMOVABLE_PROFILE_FIELDS.filter((field) => !locked.includes(field)) },
+      publishProfile: check(() => { write(); publicationPermission(profile, actor, false); }),
+      unpublishProfile: check(() => { write(); publicationPermission(profile, actor, true); }),
+      join: check(() => { write(); joinPermission(profile); }), leave: check(() => {}),
+    };
+  }
+
   function managementView(tx: M1ReadSession, agent: StoredRow): JsonObject {
     const registration = tx.find("registrations", { agentId: agent.id })[0];
     const owner = registration ? tx.get("owners", typeof registration.data.initialOwnerId === "string" ? registration.data.initialOwnerId : scalarString(registration, "ownerId")) : undefined;
@@ -215,7 +254,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
   }
 
   function invoke(action: M1Action, raw: unknown = {}, token?: string): JsonObject {
-    if (action === "capabilities") return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, runtimeReplacement: true, scheduling: false, perception: false, interaction: false };
+    if (action === "capabilities") return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, runtimeReplacement: true, scheduling: false, perception: false, interaction: false, operations: FOUNDATION_HTTP_OPERATIONS.map((operation) => ({ ...operation, actors: [...operation.actors], receiptScopes: { ...operation.receiptScopes }, requiredVersions: [...operation.requiredVersions] })) };
     if (action === "catalog") return { version: 1, templates: [{ id: "basic", colors: [...AVATAR_COLORS] }], requiredFields: ["displayName", "avatar"] };
     return store.transaction((tx) => {
       // This is the server's state-read time, never evidence that a local Agent is online.
@@ -351,7 +390,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         const actor = authenticate(tx, token, ["runtime"]);
         const agentId = actor.data.agentId!;
         const registration = tx.find("registrations", { agentId })[0]!;
-        return { agentId, ownerId: scalarString(registration, "ownerId"), instanceId: store.instanceId, runtimeVersion: actor.data.runtimeVersion!, profile: profileView(required(tx, "profiles", agentId)), membership: membershipView(required(tx, "memberships", agentId)), profileUrl: profileUrl(agentId), management: managementView(tx, required(tx, "agents", agentId)), asOf };
+        return { agentId, ownerId: scalarString(registration, "ownerId"), instanceId: store.instanceId, runtimeVersion: actor.data.runtimeVersion!, profile: profileView(required(tx, "profiles", agentId)), membership: membershipView(required(tx, "memberships", agentId)), profileUrl: profileUrl(agentId), management: managementView(tx, required(tx, "agents", agentId)), effectiveActions: effectiveActions(tx, actor, agentId), asOf };
       }
 
       if (action === "issueHandoff") {
@@ -522,22 +561,12 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
             for (const field of removeFields) delete draft[field];
             return profileView(update(tx, "profiles", profile, { draft }));
           }
-          if (actor.data.kind === "runtime" && profile.data.mode !== "agent_autonomous") fail("confirmation_required", 403, "Owner confirmation is required for publication");
+          publicationPermission(profile, actor, action === "unpublishProfile");
           if (action === "unpublishProfile") {
-            const published = dataObject(profile.data.published);
-            if (actor.data.kind === "runtime" && (profile.data.lockedFields as string[]).some((field) => Object.hasOwn(published, field))) fail("field_locked", 403, "Owner locked a published field");
             if (profile.data.published === null) return { ...profileView(profile), changed: false };
             return { ...profileView(update(tx, "profiles", profile, { published: null })), changed: true };
           }
           const draft = dataObject(profile.data.draft);
-          validatePublication(draft);
-          // An older draft must not publish a locked field over the owner's current public value.
-          if (actor.data.kind === "runtime") {
-            const published = dataObject(profile.data.published);
-            for (const field of profile.data.lockedFields as string[]) {
-              if (JSON.stringify(draft[field]) !== JSON.stringify(published[field])) fail("field_locked", 403, "Owner locked a field changed in this draft");
-            }
-          }
           return profileView(update(tx, "profiles", profile, { published: draft, publishedVersion: numberValue(profile, "publishedVersion") + 1, confirmationSource: actor.data.kind === "runtime" ? "runtime_declaration" : "owner_authenticated" }));
         });
       }
@@ -556,8 +585,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
           businessWrite(tx, actor, agentId);
           const profile = required(tx, "profiles", agentId);
           if (version(input.expectedProfileVersion, "expectedProfileVersion") !== profile.version) fail("version_conflict", 409, "Profile changed", { version: profile.version });
-          if (profile.data.published === null) fail("admission_requirements_unmet", 422, "Publish a valid profile before joining");
-          validatePublication(dataObject(profile.data.published));
+          joinPermission(profile);
           return membershipView(member.data.state === "joined" ? member : update(tx, "memberships", member, { state: "joined" }));
         });
       }

@@ -3,7 +3,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { test, type TestContext } from 'node:test';
 import Fastify from 'fastify';
 import { createM1Service } from '../../apps/platform/application/m1-service.ts';
-import type { JsonObject } from '../../apps/platform/contracts/store.ts';
+import { M1_TABLES, type JsonObject } from '../../apps/platform/contracts/store.ts';
 import { M1Error } from '../../apps/platform/domains/common/errors.ts';
 import { openM1Store } from '../../apps/platform/infrastructure/relational/sqlite-store.ts';
 import { registerM1Routes } from '../../apps/platform/transport/http/m1-routes.ts';
@@ -133,4 +133,51 @@ test('an absent locked field does not block unpublish, but a revoked runtime can
   f.call('revokeRuntime', { operationId: op(), agentId: f.agentId, expectedVersion: 1 }, f.sessionToken);
   rejects('authentication_failed', () => f.call('unpublishProfile', pending, f.runtimeToken));
   assert.equal(f.call('unpublishProfile', selector(f.agentId, profile), f.sessionToken).changed, false);
+});
+
+test('capabilities describes only registered canonical foundation routes, actor scopes and required versions', async (t) => {
+  const f = fixture(t), app = Fastify({ logger: false }); registerM1Routes(app, f.service); t.after(() => app.close());
+  const response = await app.inject({ url: '/v1/capabilities' }); assert.equal(response.statusCode, 200);
+  const capabilities = response.json();
+  assert.equal(capabilities.ownerRecovery, true); assert.equal(capabilities.scheduling, false); assert.equal(capabilities.perception, false); assert.equal(capabilities.interaction, false);
+  assert.equal(capabilities.operations.length, 13);
+  const actions = new Set<string>();
+  for (const operation of capabilities.operations) {
+    assert.equal(actions.has(operation.action), false); actions.add(operation.action);
+    assert.equal(app.hasRoute({ method: operation.method, url: operation.path }), true);
+  }
+  const removal = capabilities.operations.find((operation: JsonObject) => operation.action === 'saveDraft');
+  assert.deepEqual(removal.actors, ['runtime', 'owner_session']);
+  assert.deepEqual(removal.receiptScopes, { runtime: 'agent:{agentId}', owner_session: 'owner:{ownerId}' });
+  assert.deepEqual(removal.requiredVersions, ['expectedVersion', 'expectedPolicyVersion']);
+  assert.deepEqual(capabilities.operations.find((operation: JsonObject) => operation.action === 'join').requiredVersions, ['expectedVersion', 'expectedProfileVersion']);
+  assert.equal(response.body.includes(f.runtimeToken), false); assert.equal(response.body.includes('crud@example.test'), false);
+});
+
+test('self effective actions reuse current publication and participation checks without writing or authorizing cached requests', (t) => {
+  const f = fixture(t);
+  const snapshot = () => f.store.read((tx) => JSON.stringify(M1_TABLES.map((table) => tx.find(table))));
+  const before = snapshot();
+  const initial = f.call('self', {}, f.runtimeToken).effectiveActions as Record<string, JsonObject>;
+  assert.equal(initial.publishProfile?.allowed, true); assert.equal(initial.unpublishProfile?.allowed, true);
+  assert.equal(snapshot() === before, true, 'Reading effective actions must not write a fact, receipt or business state');
+  const profile = policy(f, 'owner_specified', ['bio']);
+  const current = f.call('self', {}, f.runtimeToken).effectiveActions as Record<string, JsonObject>;
+  assert.deepEqual(current.publishProfile?.blockedBy, ['confirmation_required']); assert.deepEqual(current.unpublishProfile?.blockedBy, ['confirmation_required']);
+  assert.deepEqual(current.saveDraft?.removableFields, ['interests']); assert.equal((current.saveDraft?.writableFields as string[]).includes('bio'), false);
+  rejects('confirmation_required', () => f.call('unpublishProfile', selector(f.agentId, profile), f.runtimeToken));
+  f.call('participation', { operationId: op(), agentId: f.agentId, expectedVersion: f.member.version, paused: true }, f.sessionToken);
+  const paused = f.call('self', {}, f.runtimeToken).effectiveActions as Record<string, JsonObject>;
+  for (const action of ['saveDraft', 'publishProfile', 'unpublishProfile', 'join']) assert.deepEqual(paused[action]?.blockedBy, ['participation_paused']);
+  assert.equal(paused.leave?.allowed, true); assert.equal(paused.readProfile?.allowed, true);
+  const other = token(); const otherAgent = f.call('register', { operationId: op(), attemptId: randomUUID(), runtimeToken: other, continuationToken: token() }).agentId;
+  const isolated = f.call('self', {}, other).effectiveActions as Record<string, JsonObject>;
+  assert.deepEqual(isolated.publishProfile?.blockedBy, ['profile_validation_failed']); assert.deepEqual(isolated.join?.blockedBy, ['admission_requirements_unmet']);
+  rejects('target_not_accessible', () => f.call('readProfile', { agentId: otherAgent }, f.runtimeToken));
+  f.store.transaction((tx) => { const row = tx.get('memberships', f.agentId)!; tx.update('memberships', { ...row, version: row.version + 1, data: { ...row.data, ownerPaused: false, platformRestricted: true } }, row.version); });
+  const restricted = f.call('self', {}, f.runtimeToken).effectiveActions as Record<string, JsonObject>;
+  assert.deepEqual(restricted.saveDraft?.blockedBy, ['platform_restricted']); assert.equal(restricted.leave?.allowed, true);
+  const replacement = token(); f.call('replaceRuntime', { operationId: op(), agentId: f.agentId, expectedVersion: 1, runtimeToken: replacement }, f.sessionToken);
+  rejects('authentication_failed', () => f.call('self', {}, f.runtimeToken));
+  assert.equal(f.call('self', {}, replacement).runtimeVersion, 2);
 });
