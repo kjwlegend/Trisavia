@@ -1,8 +1,8 @@
-import type { EmailConfig, MailPayload, Delivery } from '../../contracts/email.ts';
-export type { EmailConfig, MailPayload, Delivery } from '../../contracts/email.ts';
+import type { EmailConfig, ResendEmailConfig, MailPayload, Delivery } from '../../contracts/email.ts';
+export type { EmailConfig, EmailMode, ResendEmailConfig, MailPayload, Delivery } from '../../contracts/email.ts';
 
 /** Partial or invalid configuration disables only email, never password/backup access. */
-export function loadEmailConfig(env: NodeJS.ProcessEnv): EmailConfig | undefined {
+function loadResendConfig(env: NodeJS.ProcessEnv): ResendEmailConfig | undefined {
   const apiKey = env.RESEND_API_KEY?.trim(), from = env.M1_EMAIL_FROM?.trim();
   const publicOrigin = env.M1_PUBLIC_ORIGIN?.trim(), codeSecret = env.M1_EMAIL_CODE_SECRET;
   if (!apiKey || !from || !publicOrigin || !codeSecret || Buffer.byteLength(codeSecret) < 32 || /[\r\n]/u.test(from)) return undefined;
@@ -14,8 +14,16 @@ export function loadEmailConfig(env: NodeJS.ProcessEnv): EmailConfig | undefined
   return { apiKey, from, publicOrigin, codeSecret };
 }
 
+/** Experience is explicit. An absent mode selects real mail; an unknown mode never enables it. */
+export function loadEmailConfig(env: NodeJS.ProcessEnv): EmailConfig | undefined {
+  const mode = env.M1_EMAIL_MODE ?? 'resend';
+  if (mode !== 'experience' && mode !== 'resend') return undefined;
+  const resend = loadResendConfig(env);
+  return { mode, ...(resend ? { resend } : {}) };
+}
+
 /** One bounded attempt. Only explicit continuation retries the identical durable body/key. */
-export async function sendResend(config: EmailConfig, payload: MailPayload, idempotencyKey: string): Promise<Delivery> {
+export async function sendResend(config: ResendEmailConfig, payload: MailPayload, idempotencyKey: string): Promise<Delivery> {
   try {
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST', redirect: 'error', signal: AbortSignal.timeout(8000),

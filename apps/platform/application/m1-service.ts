@@ -158,6 +158,8 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
       action, operationId, receiptId: result.receiptId!, epoch: store.recoveryEpoch,
       agentId: result.agentId ?? null, ownerId: result.ownerId ?? null, time: result.serverTime!, visibility: "private",
       ...(typeof result.changed === "boolean" ? { changed: result.changed } : {}),
+      ...(typeof result.verificationMode === "string" ? { verificationMode: result.verificationMode } : {}),
+      ...(typeof result.verificationSource === "string" ? { verificationSource: result.verificationSource } : {}),
     } });
     return result;
   }
@@ -316,7 +318,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
   });
 
   function invoke(action: M1Action, raw: unknown = {}, token?: string, context: { clientIp?: string } = {}): JsonObject {
-    if (action === "capabilities") return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, ownerRecoveryAssistance: true, ownerEmailVerification: email.configured, ownerEmailRecovery: email.configured, runtimeReplacement: true, scheduling: false, perception: false, interaction: false, operations: FOUNDATION_HTTP_OPERATIONS.map((operation) => ({ ...operation, actors: [...operation.actors], receiptScopes: { ...operation.receiptScopes }, requiredVersions: [...operation.requiredVersions] })) };
+    if (action === "capabilities") return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, ownerRecoveryAssistance: true, ownerEmailVerification: email.configured, ownerEmailRecovery: email.configured, emailMode: email.mode, runtimeReplacement: true, scheduling: false, perception: false, interaction: false, operations: FOUNDATION_HTTP_OPERATIONS.map((operation) => ({ ...operation, actors: [...operation.actors], receiptScopes: { ...operation.receiptScopes }, requiredVersions: [...operation.requiredVersions] })) };
     if (action === "catalog") return { version: 1, templates: [{ id: "basic", colors: [...AVATAR_COLORS] }], requiredFields: ["displayName", "avatar"] };
     if (email.handles(action)) return email.invoke(action, raw, token, context.clientIp);
     return store.transaction((tx) => {
@@ -326,7 +328,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         object(raw, []);
         const actor = authenticate(tx, token, ["owner_session"]);
         const owner = required(tx, "owners", actor.data.ownerId!);
-        return { ownerId: owner.id, version: owner.version, username: typeof owner.data.username === "string" ? owner.data.username : null, email: typeof owner.data.email === "string" ? owner.data.email : null, emailVerified: owner.data.emailVerified === true, emailVerifiedAt: owner.data.emailVerifiedAt ?? null, emailVerificationSource: owner.data.emailVerificationSource ?? null, accountComplete: accountComplete(owner), asOf };
+        return { ownerId: owner.id, version: owner.version, username: typeof owner.data.username === "string" ? owner.data.username : null, email: typeof owner.data.email === "string" ? owner.data.email : null, emailVerified: owner.data.emailVerified === true, emailVerifiedAt: owner.data.emailVerifiedAt ?? null, emailVerificationSource: owner.data.emailVerificationSource ?? null, emailVerificationMode: owner.data.emailVerificationMode ?? null, lastRecoveryVerificationMode: owner.data.lastRecoveryVerificationMode ?? null, lastRecoveryVerificationSource: owner.data.lastRecoveryVerificationSource ?? null, accountComplete: accountComplete(owner), asOf };
       }
 
       if (action === "claimAgent") {
