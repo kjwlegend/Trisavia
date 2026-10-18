@@ -153,9 +153,7 @@ export function createOwnerEmailFlow(hooks){
     if(progress&&(registration()||progress.assistanceToken!==context.assistanceToken)){show();inform('当前还有另一项邮箱流程，请先继续该流程。','pending');return;}
     if(!progress){const state=baseState('recovery');progress={...state,attemptId:tokenId(state.browserToken),...context};try{save();}catch(error){progress=null;show();fail(error);return;}}
     show();void readCapabilities();await run(async()=>{
-      save();if(!currentView)await issue('startEmailRecovery');
-      // The start receipt is historical; read the current mode before enabling the next step.
-      await read();
+      save();if(!currentView)await issue('startEmailRecovery');else await read();
       if(experience()&&!modeMismatch()&&!pending()&&currentView?.status==='pending_email'&&!progress.sendOperationId)await issue('sendRecoveryCode');
     });
   }
@@ -207,6 +205,8 @@ export function createOwnerEmailFlow(hooks){
     delete progress.pending;save();$('#email-code').value='';
     if(command.action.startsWith('verify'))inform(modeMismatch()?mismatchMessage():verifiedMessage(),modeMismatch()?'pending':'');
     else if(command.action==='cancelRegistration'){clear();hooks.back();return;}
+    // A start receipt recovered by originalReceipt needs the same current-state read as a fresh start.
+    else if(command.action==='startEmailRecovery'){await read();inform(modeMismatch()?mismatchMessage():copy[currentView.deliveryStatus]||'当前进度已保存。');}
     else if(['sendRegistrationCode','sendRecoveryCode'].includes(command.action)){await read();inform(modeMismatch()?mismatchMessage():copy[currentView.deliveryStatus]||'当前进度已保存。');}
     else inform(copy[result.deliveryStatus]||'当前进度已保存。');render();
   }
