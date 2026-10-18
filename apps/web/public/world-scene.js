@@ -165,6 +165,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   blockedRects.push(...[[0,376],[392,1144],[1160,W]].map(([left,right])=>({left,right,top:96,bottom:192})));
   const ownedLayer=createOwnedAgentLayer(root,graph,{blockedRects,onSelect:onOwnedSelect});
   const camera={x:W/2,y:H/2,zoom:1,base:1,width:0,height:0,dpr:1};
+  let hoverPointer=null,hoverProjection='';
   let mode='initial',exploring=false,selectionCamera=null;
   let paused=reduced.matches,pauseReason=reduced.matches?'reduced':'user',visible=true,destroyed=false,broken=false,selected=null,raf=0,lastTime=null,lastDraw=0,elapsed=0,environment=true,actorLimit=actors.length,quality=0;
   let frames=0,drawMs=0,slowSamples=[],metrics={fps:0,meanDrawMs:0};
@@ -191,6 +192,10 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
     try{
       ctx.setTransform(camera.dpr,0,0,camera.dpr,0,0);rect(ctx,0,0,camera.width,camera.height,'#e4ecdc');ctx.save();
       const scale=camera.base*camera.zoom;const center=screenCenter();ctx.translate(center.x-camera.x*scale,center.y-camera.y*scale);ctx.scale(scale,scale);ctx.drawImage(ground.canvas,0,0);
+      // Every camera entry renders here. Re-hit the last real pointer after a
+      // projection change; never carry a mouse hold onto a different screen spot.
+      const canvasBox=canvas.getBoundingClientRect(),projection=[camera.x,camera.y,scale,center.x,center.y,camera.width,camera.height,canvasBox.left,canvasBox.top].join(':');
+      if(projection!==hoverProjection){hoverProjection=projection;refreshOwnedHover();}
       if(environment){for(let i=0;i<25;i++){const x=(i*137+elapsed*3)%W,y=115+(i*29)%61;line(ctx,x,y,x+18+(i%3)*6,y,'#cce1d8',2);}}
       const sorted=[...objects,...actors.slice(0,actorLimit),...ownedLayer.actors()].sort((a,b)=>a.y-b.y||Number(a.kind==='actor')-Number(b.kind==='actor')||String(a.id||a.kind).localeCompare(String(b.id||b.kind)));
       for(const o of sorted){if(o.kind==='actor')drawActor(ctx,o,images);else if(o.kind==='owned-agent')ownedLayer.draw(ctx,o,scale);else ctx.drawImage(o.sprite.canvas,o.x-o.sprite.ax,o.y-o.sprite.ay);}
@@ -253,13 +258,20 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   }
   const pointers=new Map();let drag=null,pinch=null;
   const local=e=>{const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};};
+  function refreshOwnedHover(){
+    if(!hoverPointer||(pointers.size&&drag?.moved)||document.elementFromPoint(hoverPointer.clientX,hoverPointer.clientY)!==canvas){ownedLayer.hover('');return null;}
+    const p=local(hoverPointer),target=hit(p.x,p.y);ownedLayer.hover(target?.kind==='owned-agent'?target.agentId:'');canvas.style.cursor=target?'pointer':'grab';return target;
+  }
   canvas.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='touch'){hoverPointer=null;ownedLayer.hover('');}
+    else hoverPointer={clientX:e.clientX,clientY:e.clientY};
     if(e.button!==0)return;const p=local(e);pointers.set(e.pointerId,p);canvas.setPointerCapture(e.pointerId);
     if(pointers.size===1)drag={start:p,last:p,moved:false,type:e.pointerType};
     if(pointers.size===2&&exploring){const [a,b]=[...pointers.values()];pinch={distance:Math.hypot(a.x-b.x,a.y-b.y),zoom:camera.zoom};if(drag)drag.moved=true;}
   },eventOptions);
   canvas.addEventListener('pointermove',e=>{
-    const p=local(e);if(!pointers.has(e.pointerId)){const target=hit(p.x,p.y);ownedLayer.hover(target?.kind==='owned-agent'?target.agentId:'');canvas.style.cursor=target?'pointer':'grab';return;}pointers.set(e.pointerId,p);
+    if(e.pointerType!=='touch')hoverPointer={clientX:e.clientX,clientY:e.clientY};
+    const p=local(e);if(!pointers.has(e.pointerId)){refreshOwnedHover();return;}pointers.set(e.pointerId,p);
     if(pinch&&pointers.size===2){const[a,b]=[...pointers.values()];setZoom(pinch.zoom*Math.hypot(a.x-b.x,a.y-b.y)/Math.max(1,pinch.distance));return;}
     if(!drag)return;
     if(Math.hypot(p.x-drag.start.x,p.y-drag.start.y)>6){drag.moved=true;ownedLayer.hover('');}
@@ -273,8 +285,9 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
     if(!pointers.size){drag=null;pinch=null;canvas.classList.remove('is-dragging');}else{pinch=null;if(drag){drag.moved=true;drag.last=[...pointers.values()][0];}}
   }
   canvas.addEventListener('pointerup',e=>finishPointer(e),eventOptions);canvas.addEventListener('pointercancel',e=>finishPointer(e,true),eventOptions);
-  canvas.addEventListener('pointerleave',()=>ownedLayer.hover(''),eventOptions);
-  canvas.addEventListener('wheel',e=>{if(!(e.ctrlKey||e.metaKey))return;e.preventDefault();setZoom(camera.zoom*(e.deltaY<0?1.15:1/1.15));},{...eventOptions,passive:false});
+  canvas.addEventListener('pointerleave',()=>{hoverPointer=null;ownedLayer.hover('');},eventOptions);
+  window.addEventListener('blur',()=>{hoverPointer=null;ownedLayer.hover('');},eventOptions);
+  canvas.addEventListener('wheel',e=>{if(!(e.ctrlKey||e.metaKey))return;hoverPointer={clientX:e.clientX,clientY:e.clientY};e.preventDefault();setZoom(camera.zoom*(e.deltaY<0?1.15:1/1.15));},{...eventOptions,passive:false});
   canvas.addEventListener('keydown',e=>{
     if(e.target!==canvas)return;
     if(['+','=','-','_','Home','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key))e.preventDefault();else return;
