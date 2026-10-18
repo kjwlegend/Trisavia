@@ -236,7 +236,9 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
     const scale=camera.base*camera.zoom;mode='custom';const center=screenCenter(),bounds=root.getBoundingClientRect(),panel=document.querySelector('#hud-window:not([hidden])');
     const right=panel?Math.max(80,panel.getBoundingClientRect().left-bounds.left-20):camera.width-96;
     camera.x=point.x-((24+right)/2-center.x)/scale;camera.y=point.y-16-((88+camera.height-80)/2-center.y)/scale;
-    clampCamera();draw();notify();return true;
+    // Explicit location may move a fitted world beneath the panel. The normal
+    // full-viewport clamp would undo that pan when the world fits the viewport.
+    camera.x=Math.max(0,Math.min(W,camera.x));camera.y=Math.max(0,Math.min(H,camera.y));draw();notify();return true;
   }
   function worldPoint(x,y){const s=camera.base*camera.zoom;const c=screenCenter();return{x:(x-c.x)/s+camera.x,y:(y-c.y)/s+camera.y};}
   function hit(x,y){
