@@ -20,6 +20,7 @@ export function createOwnerEmailFlow(hooks){
   const node=$('#email-view');
   const save=()=>saveEmailProgress(progress);
   const registration=()=>progress?.kind==='registration';
+  const verifiedMessage=()=>registration()?`邮箱已验证，请完成注册${progress.target?'并关联 Agent':''}。`:'邮箱已验证，尚未重设密码。请设置新密码并确认。';
   const pending=()=>Boolean(progress?.pending);
   const editable=()=>!progress&&!storageError;
   const inform=(text,tone='')=>{const output=$('#email-feedback');output.textContent=text;output.className=`notice ${tone}`;output.hidden=!text;};
@@ -66,7 +67,7 @@ export function createOwnerEmailFlow(hooks){
     $('#email-finish').hidden=status!=='email_proved'&&!finalActions.includes(progress?.pending?.action);
     $('#email-finish').textContent=reg?(progress?.target?`注册并关联${targetLabel()}`:'完成注册'):'确认重设密码';
     $('#email-password-row').hidden=!reg&&status!=='email_proved'&&!finalActions.includes(progress?.pending?.action);$('#email-password-confirm-row').hidden=reg;
-    $('#email-proof-status').textContent=status==='email_proved'?'邮箱已通过本次验证，尚未完成注册或密码重设。':status==='expired'?(reg?'这次注册已过期，请重新开始。':'这次重设授权已过期。请返回并让原 Agent 取消旧请求，再私密交付新找回入口。'):status==='cancelled'?'这次注册已取消。':'';
+    $('#email-proof-status').textContent=status==='email_proved'?verifiedMessage():status==='expired'?(reg?'这次注册已过期，请重新开始。':'这次重设授权已过期。请返回并让原 Agent 取消旧请求，再私密交付新找回入口。'):status==='cancelled'?'这次注册已取消。':'';
     $('#email-continue').hidden=!pending();$('#email-cancel').hidden=!progress||!reg||finalActions.includes(progress.pending?.action)||status==='completed';
     $('#email-retry-start').hidden=!progress||progress.started||pending();
     $('#email-delivery-retry').hidden=!progress?.sendOperationId||!['queued','unknown'].includes(currentView?.deliveryStatus)||pending();
@@ -157,7 +158,7 @@ export function createOwnerEmailFlow(hooks){
       hooks.recovered(result);inform('密码已重设，本次 Agent 协助已完成。请用新密码正常登录。','success');render();return;
     }
     currentView=result;progress.started=true;delete progress.pending;save();$('#email-code').value='';
-    if(command.action.startsWith('verify'))inform('邮箱已通过本次验证，请确认下一步。');
+    if(command.action.startsWith('verify'))inform(verifiedMessage());
     else if(command.action==='cancelRegistration'){clear();hooks.back();return;}
     else inform(copy[result.deliveryStatus]||'当前进度已保存。');render();
   }
