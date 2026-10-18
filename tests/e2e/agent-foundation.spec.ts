@@ -2,6 +2,7 @@ import { rm } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import type { Page } from '@playwright/test';
 import { test, expect, idle, loginIdentifier, mutation, trackBackup } from './helpers/owner-account-ui.ts';
+import type { PrivacyObservation } from './helpers/owner-account-ui.ts';
 import { accountFixture, agentFixture, credential, fixtureOk, fixtureRequest, operationId, privateDirectory, privateDownload, privateJson } from './helpers/private-fixtures.ts';
 import type { Json } from './helpers/private-fixtures.ts';
 
@@ -22,6 +23,126 @@ async function openProgressImport(page: Page) {
   await page.getByRole('button', { name: '继续已保存进度', exact: true }).click();
   await expect(page.locator('#credentials-import')).toBeVisible();
 }
+async function assistanceFixture(origin: string, directory: string, agent: Awaited<ReturnType<typeof agentFixture>>) {
+  const assistanceToken = credential(), id = operationId();
+  await privateJson(directory, 'assistance-command', { operationId: id, assistanceToken, scope: `agent:${agent.agentId}`, action: 'createRecoveryRequest' });
+  const result = await fixtureOk(origin, '/agent/self/owner-recovery-requests', { operationId: id, assistanceToken }, agent.runtimeToken);
+  return { assistanceToken, requestId: result.requestId as string };
+}
+async function openAssistance(page: Page, privacy: PrivacyObservation, proof: string) {
+  privacy.track(proof); await page.goto('/');
+  await page.evaluate(value => { location.assign(`/owner#assistance=${encodeURIComponent(value)}`); }, proof);
+  await expect.poll(() => new URL(page.url()).hash.length, { message: 'Private assistance fragment is removed immediately' }).toBe(0);
+  await idle(page); await expect(page.locator('#assistance-context')).toBeVisible();
+}
+
+test('only the authenticated bound owner can decline assistance without a backup and neither session can use it to reset a password', async ({ page, baseURL, privacy }) => {
+  const directory = await privateDirectory('foundation-assistance-reject-');
+  try {
+    const owner = await accountFixture(baseURL!, directory), agent = await ownedAgent(baseURL!, directory, owner, '等待主人确认的居民');
+    const other = await accountFixture(baseURL!, directory), request = await assistanceFixture(baseURL!, directory, agent);
+    const before = await fixtureOk(baseURL!, '/agent/self', undefined, agent.runtimeToken);
+    await loginIdentifier(page, privacy, other.username, other.password); const foreignVault = await vault(page);
+    trackBackup(privacy, foreignVault); await openAssistance(page, privacy, request.assistanceToken);
+    await expect(page.getByRole('button', { name: '拒绝本次协助', exact: true })).toBeHidden();
+    await expect(page.locator('#recovery-form')).toBeHidden();
+    expect(JSON.stringify(await vault(page)) === JSON.stringify(foreignVault), 'Another account does not adopt the target owner or any proof').toBe(true);
+    expect((await fixtureOk(baseURL!, `/agent/self/owner-recovery-requests/${request.requestId}`, undefined, agent.runtimeToken)).status).toBe('pending');
+    await page.locator('#back-to-login').click(); await loginIdentifier(page, privacy, owner.username, owner.password);
+    const original = await vault(page); trackBackup(privacy, original); expect(original.recoveryToken).toBeUndefined();
+    await openAssistance(page, privacy, request.assistanceToken);
+    await expect(page.getByRole('button', { name: '拒绝本次协助', exact: true })).toBeEnabled();
+    await expect(page.locator('#recovery-form')).toBeHidden();
+    page.once('dialog', dialog => { expect(dialog.message()).toContain('密码和登录备份不会改变'); return dialog.accept(); });
+    await mutation(page, '/owner/recovery-assistance/reject', page.getByRole('button', { name: '拒绝本次协助', exact: true }));
+    await expect(page.locator('#assistance-status')).toHaveText('本次协助已取消');
+    await expect(page.locator('#recovery-form')).toBeHidden(); await expect(page.locator('#credentials-import')).toBeHidden();
+    const after = await vault(page);
+    expect(after.sessionToken === original.sessionToken, 'Declining assistance retains the current session').toBe(true);
+    expect(after.recoveryToken === original.recoveryToken, 'Declining assistance creates no replacement recovery material').toBe(true);
+    expect(after.ownerId).toBe(owner.ownerId);
+    await page.getByRole('button', { name: '返回我的 Agent', exact: true }).click();
+    await expect(page.getByRole('heading', { name: '我的 Agent', exact: true })).toBeVisible();
+    const final = await fixtureOk(baseURL!, '/agent/self', undefined, agent.runtimeToken);
+    expect(final.profile).toEqual(before.profile); expect(final.membership).toEqual(before.membership);
+    expect((await fixtureOk(baseURL!, `/agent/self/owner-recovery-requests/${request.requestId}`, undefined, agent.runtimeToken)).status).toBe('cancelled');
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+for (const committed of [false, true]) test(`independent owner backup completes assistance after ${committed ? 'a committed response loss' : 'an unsent request'} using only the saved next proofs and original command`, async ({ page, baseURL, privacy }) => {
+  const directory = await privateDirectory('foundation-assisted-recovery-');
+  try {
+    const owner = await accountFixture(baseURL!, directory), agent = await ownedAgent(baseURL!, directory, owner, '恢复仍保留的居民');
+    const other = await accountFixture(baseURL!, directory), request = await assistanceFixture(baseURL!, directory, agent);
+    const before = await fixtureOk(baseURL!, '/agent/self', undefined, agent.runtimeToken);
+    await openAssistance(page, privacy, request.assistanceToken);
+    const empty = await vault(page); trackBackup(privacy, other.backup);
+    await page.getByLabel('选择登录备份', { exact: true }).setInputFiles(await privateJson(directory, 'wrong-owner-backup', other.backup)); await idle(page);
+    await expect(page.locator('#global-notice')).toContainText('不属于');
+    expect(JSON.stringify(await vault(page)) === JSON.stringify(empty), 'A wrong backup cannot replace the vault or assistance target').toBe(true);
+    await expect(page.locator('#recovery-form')).toBeHidden();
+    trackBackup(privacy, owner.backup);
+    const verified = page.waitForResponse(response => new URL(response.url()).pathname === '/v1/owner/recovery-assistance/verify');
+    await page.getByLabel('选择登录备份', { exact: true }).setInputFiles(await privateJson(directory, 'original-registration-backup', owner.backup));
+    expect((await verified).status()).toBe(200); await idle(page);
+    await expect(page.locator('#recovery-form')).toBeVisible(); await expect(page.locator('#assistance-status')).toContainText('主人备份已验证');
+    const password = `Assisted-${randomUUID()}`; privacy.password(password);
+    await page.getByLabel('新登录密码', { exact: true }).fill(password); await page.locator('#recovery-next').click();
+    const prepared = await privateDownload(page, page.locator('#recovery-download'), directory); trackBackup(privacy, prepared);
+    expect(prepared.pendingOperation.action).toBe('recover'); expect(prepared.pendingOperation.scope).toBe(`owner:${owner.ownerId}`);
+    expect(prepared.assistanceContext.agentId).toBe(agent.agentId); expect(prepared.assistanceContext.requestId).toBe(request.requestId);
+    expect(prepared.sourceRecoveryToken === owner.recoveryToken, 'Next backup preserves the original recovery proof only for the same command').toBe(true);
+    let posts = 0, original: Json | undefined;
+    page.on('request', event => { if (new URL(event.url()).pathname === '/v1/owner/recoveries' && event.method() === 'POST') posts++; });
+    privacy.allowNetworkFailure('/v1/owner/recoveries');
+    await page.route('**/v1/operations/**', async route => {
+      privacy.allowStatus(new URL(route.request().url()).pathname, 503);
+      await route.fulfill({ status: 503, json: { error: { code: 'commit_result_unknown' } } });
+    }, { times: 1 });
+    await page.route('**/v1/owner/recoveries', async route => {
+      original = route.request().postDataJSON();
+      const saved = await vault(page);
+      expect(saved.pendingOperation.operationId).toBe(prepared.pendingOperation.operationId);
+      expect(saved.sessionToken === prepared.sessionToken && saved.recoveryToken === prepared.recoveryToken, 'Both next proofs are persisted before consuming recovery').toBe(true);
+      if (committed) await route.fetch(); await route.abort('failed');
+    }, { times: 1 });
+    await page.locator('#recovery-saved').check(); await page.getByRole('button', { name: '重设密码并完成协助', exact: true }).click();
+    await expect(page.locator('#unknown-controls')).toBeVisible(); await idle(page);
+    const pending = await vault(page); expect(pending.pendingOperation.action).toBe('recover');
+    const exported = await privateDownload(page, page.locator('#prepare-auth-exit'), directory); trackBackup(privacy, exported);
+    expect(exported.pendingOperation.operationId).toBe(prepared.pendingOperation.operationId);
+    expect(exported.sessionToken === prepared.sessionToken && exported.recoveryToken === prepared.recoveryToken, 'Export keeps the exact next proofs').toBe(true);
+    await page.locator('#auth-exit-saved').check(); await page.locator('#confirm-auth-exit').click();
+    expect(await page.evaluate(() => !sessionStorage.getItem('connet.owner.assistance.v1') && !sessionStorage.getItem('connet.owner.v2')), 'Explicit exit clears the private entry and active proof').toBe(true);
+    await page.locator('.login-help > summary').click();
+    await page.getByRole('button', { name: '使用登录备份或继续上次操作', exact: true }).click();
+    if (!committed) privacy.allowStatus(`/v1/operations/${prepared.pendingOperation.operationId}`, 401, 2);
+    await page.getByLabel('选择登录备份', { exact: true }).setInputFiles(await privateJson(directory, 'same-recovery-progress', exported)); await idle(page);
+    if (!committed) {
+      await expect(page.locator('#recovery-resume-info')).toBeVisible();
+      const resumed = await vault(page);
+      expect(resumed.pendingOperation.operationId).toBe(prepared.pendingOperation.operationId);
+      expect(resumed.sessionToken === prepared.sessionToken && resumed.recoveryToken === prepared.recoveryToken).toBe(true);
+      await page.getByLabel('新登录密码', { exact: true }).fill(password); await page.locator('#recovery-next').click();
+      const repeated = await privateDownload(page, page.locator('#recovery-download'), directory);
+      expect(repeated.sessionToken === prepared.sessionToken && repeated.recoveryToken === prepared.recoveryToken).toBe(true);
+      await page.locator('#recovery-saved').check();
+      let identical = false; await page.route('**/v1/owner/recoveries', async route => { identical = JSON.stringify(route.request().postDataJSON()) === JSON.stringify(original); await route.continue(); }, { times: 1 });
+      await mutation(page, '/owner/recoveries', page.getByRole('button', { name: '重设密码并完成协助', exact: true })); expect(identical).toBe(true);
+    }
+    await expect(page.getByRole('heading', { name: '我的 Agent', exact: true })).toBeVisible();
+    await expect(page.locator('#global-notice')).toContainText('本次 Agent 协助已完成');
+    const final = await vault(page); expect(final.pendingOperation).toBeUndefined();
+    expect(final.sessionToken === prepared.sessionToken && final.recoveryToken === prepared.recoveryToken).toBe(true);
+    expect(posts).toBe(committed ? 1 : 2);
+    const self = await fixtureOk(baseURL!, '/agent/self', undefined, agent.runtimeToken);
+    expect(self.ownerId).toBe(owner.ownerId); expect(self.profile).toEqual(before.profile); expect(self.membership).toEqual(before.membership);
+    expect((await fixtureOk(baseURL!, `/agent/self/owner-recovery-requests/${request.requestId}`, undefined, agent.runtimeToken)).status).toBe('completed');
+    await openAssistance(page, privacy, request.assistanceToken);
+    await expect(page.locator('#assistance-status')).toHaveText('本次协助已完成');
+    await expect(page.locator('#credentials-import')).toBeHidden(); await expect(page.locator('#recovery-form')).toBeHidden();
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
 
 test('owner withdraws public data without losing private drafts, unsaved inputs, membership or another Agent and can publish again', async ({ page, baseURL, privacy }) => {
   const directory = await privateDirectory('foundation-withdraw-');

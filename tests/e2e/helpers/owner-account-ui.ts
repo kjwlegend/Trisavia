@@ -62,8 +62,9 @@ export async function mutation(page: Page, path: string, button: Locator, status
   const value = await response.json() as Json; await idle(page); return value;
 }
 export function trackBackup(privacy: PrivacyObservation, backup: Json) {
-  for (const key of ['sessionToken', 'recoveryToken', 'setupToken']) if (typeof backup[key] === 'string') privacy.track(backup[key]);
+  for (const key of ['sessionToken', 'recoveryToken', 'setupToken', 'sourceRecoveryToken']) if (typeof backup[key] === 'string') privacy.track(backup[key]);
   for (const key of ['handoffToken', 'setupToken']) if (typeof backup.claimContext?.[key] === 'string') privacy.track(backup.claimContext[key]);
+  if (typeof backup.assistanceContext?.assistanceToken === 'string') privacy.track(backup.assistanceContext.assistanceToken);
 }
 export function allowReceiptProbe(privacy: PrivacyObservation, backup: Json) {
   const path = `/v1/operations/${backup.pendingOperation.operationId}`;
