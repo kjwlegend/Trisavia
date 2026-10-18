@@ -49,9 +49,13 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
     }
     return string(row, 'status');
   }
+  function challengeExpired(row: StoredRow): boolean {
+    return typeof row.data.codeExpiresAt === 'number' && row.data.codeExpiresAt <= now();
+  }
   function view(tx: M1ReadSession, row: StoredRow): JsonObject {
     const delivery = typeof row.data.deliveryId === 'string' ? tx.get('mail_jobs', row.data.deliveryId) : undefined;
     return { attemptId: row.id, purpose: row.data.purpose!, status: status(tx, row), expiresAt: row.data.expiresAt!,
+      codeExpiresAt: row.data.codeExpiresAt ?? null, challengeExpired: challengeExpired(row),
       resendAfter: row.data.resendAfter ?? 0, deliveryStatus: config ? delivery?.data.state ?? 'none' : 'unavailable',
       ...(row.data.deliveryId ? { deliveryId: row.data.deliveryId, sendOperationId: delivery?.data.operationId ?? null } : {}),
       ...(row.data.agentId ? { agentId: row.data.agentId!, ...(row.data.purpose === 'registration' ? { generation: row.data.generation!, ownerId: row.data.ownerId! } : { requestId: row.data.requestId!, ownerId: row.data.ownerId! }) } : {}),
@@ -154,7 +158,7 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
         if (action.startsWith('send')) {
           if (row.data.status !== 'pending_email') fail('email_attempt_closed', 409, 'Email attempt is closed');
           const previous = typeof row.data.deliveryId === 'string' ? tx.get('mail_jobs', row.data.deliveryId) : undefined;
-          if (previous && ['queued', 'unknown'].includes(string(previous, 'state'))) fail('email_delivery_pending', 409, 'Continue the original delivery operation', { operationId: previous.data.operationId });
+          if (previous && ['queued', 'unknown'].includes(string(previous, 'state')) && !challengeExpired(row)) fail('email_delivery_pending', 409, 'Continue the original delivery operation', { operationId: previous.data.operationId });
           const key = sourceKey(clientIp), ownerKey = sendLimit(tx, row, key), code = emailCode(), generation = (row.data.challengeGeneration as number ?? 0) + 1;
           const id = randomUUID(), expiresAt = Math.min(now() + 10 * 60_000, number(row, 'expiresAt'));
           const purpose = registration ? 'registration' : 'password recovery';
