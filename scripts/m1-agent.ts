@@ -176,7 +176,7 @@ async function refresh(path: string, state: State): Promise<void> {
   await save(path, state);
 }
 
-async function initialize(path: string, state: State) {
+async function initialize(path: string, state: State, defaultPublicRole: boolean) {
   const registered = await execute(path, state, 'registration');
   if (state.agentId && registered.agentId !== state.agentId) throw new AgentError('instance_or_identity_mismatch');
   state.agentId = String(registered.agentId); state.ownerId ??= String(registered.ownerId);
@@ -185,6 +185,24 @@ async function initialize(path: string, state: State) {
   const agentId = state.agentId!;
   delete state.pendingReason;
   try {
+    const legacyProfileFlow = ['draft', 'publish', 'join'].some(key => state.commands[key]);
+    if (!legacyProfileFlow && (defaultPublicRole || state.commands.initialProfile)) {
+      if (!state.commands.initialProfile) {
+        const profile = state.profile!, member = state.membership!;
+        // Apply initial intent only to the untouched registration default. Never
+        // rebase it over an owner's later edit, policy, proposal or explicit exit.
+        if (profile.confirmationSource !== 'platform_default' || profile.version !== 1
+          || profile.policyVersion !== 1 || profile.publishedVersion !== 1
+          || profile.mode !== 'agent_autonomous' || member.state !== 'joined') {
+          state.pendingReason = profile.mode !== 'agent_autonomous' ? 'owner_confirmation_required' : 'initial_profile_requires_explicit_update';
+          return;
+        }
+        await prepare(path, state, 'initialProfile', { method: 'PUT', path: `/v1/agents/${agentId}/profile`, bearer: state.runtimeToken,
+          scope: `agent:${agentId}`, action: 'saveProfile', body: { operationId: newOperationId(),
+            expectedVersion: profile.version, expectedPolicyVersion: profile.policyVersion, fields: state.fields } });
+      } else await execute(path, state, 'initialProfile');
+      return;
+    }
     if (!state.commands.draft && !state.profile!.published) {
       await prepare(path, state, 'draft', { method: 'PUT', path: `/v1/agents/${agentId}/profile/draft`, bearer: state.runtimeToken,
         scope: `agent:${agentId}`, action: 'saveDraft', body: { operationId: newOperationId(),
@@ -206,7 +224,7 @@ async function initialize(path: string, state: State) {
           expectedProfileVersion: state.profile!.version } });
     } else if (state.commands.join) await execute(path, state, 'join');
   } catch (error) {
-    if (!(error instanceof AgentError) || !['confirmation_required', 'field_locked', 'participation_paused', 'platform_restricted', 'version_conflict'].includes(error.code)) throw error;
+    if (!(error instanceof AgentError) || !['confirmation_required', 'field_locked', 'participation_paused', 'platform_restricted', 'version_conflict', 'role_not_public'].includes(error.code)) throw error;
     state.pendingReason = error.code;
   } finally { await refresh(path, state); }
 }
@@ -496,7 +514,7 @@ export async function runAgent(args: string[]): Promise<Json> {
       if (command === 'handoff') await handoff(path, state, resolve(options['--out'] ?? state.handoff?.privateFile ?? `${path}.handoff.json`), declareDelivered);
       return summary(path, state);
     }
-    await initialize(path, state);
+    await initialize(path, state, capabilities.defaultPublicRole === true);
     await handoff(path, state, resolve(options['--out'] ?? state.handoff?.privateFile ?? `${path}.handoff.json`), declareDelivered);
     return summary(path, state);
   } finally { await release(); }
