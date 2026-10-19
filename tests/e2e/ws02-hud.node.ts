@@ -125,7 +125,7 @@ test('WS02 mailbox detail preserves filters, focus and body position while read/
   const selected = list.getByRole('button', { name: /滚动示例通知 10/ }); await selected.scrollIntoViewIfNeeded();
   const listTop = await top(list); assert(listTop > 80); await selected.press('Enter');
   await expect(detail).toBeVisible(); await expect(page.locator('#hud-detail-title')).toBeFocused();
-  assert.equal(await detail.getAttribute('aria-modal'), 'false'); assert.equal(await window.evaluate(node => node.inert), true);
+  assert.equal(await detail.getAttribute('aria-modal'), 'false'); assert.equal(await window.evaluate(node => node instanceof HTMLElement && node.inert), true);
   await page.keyboard.press('Tab');
   assert(await page.evaluate(() => Boolean(document.activeElement?.closest('#hud-detail-window,#hud-dock'))), 'Tab never enters the inert underlying list or canvas');
   await wheelTo(page.locator('#hud-detail-body'), page, 700); let bodyTop = await top(page.locator('#hud-detail-body'));
