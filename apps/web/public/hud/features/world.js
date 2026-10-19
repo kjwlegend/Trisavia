@@ -1,2 +1,17 @@
-import {el} from './shared.js';
-export function createWorldFeature(){const node=el('section','hud-feature');node.id='hud-feature-world';const controls=document.querySelector('.world-controls');const row=(label,...children)=>{const line=el('div','hud-world-row'),actions=el('div','hud-world-actions');actions.append(...children);line.append(el('span','',label),actions);return line;};const zoom=document.querySelector('.world-zoom-controls'),fit=document.querySelector('#world-fit'),pause=document.querySelector('#world-pause'),list=document.querySelector('#world-open-list');const footer=el('div','hud-world-footer');footer.append(document.querySelector('#world-explore'),document.querySelector('#world-reset'),document.querySelector('#world-learn'));controls.replaceChildren(row('视角',zoom,fit),row('演示动态',pause),row('场所',list),footer);node.append(el('p','hud-muted','人物与环境为场景演示。'),controls);return{node,activate(){},setContext(){},back(){return false;}};}
+import {el,button} from './shared.js';
+
+// Reuse the renderer's controls and listeners; World itself opens no panel.
+export function createWorldControls(root){
+  const controls=document.querySelector('.world-controls'),zoom=document.querySelector('.world-zoom-controls'),fit=document.querySelector('#world-fit'),list=document.querySelector('#world-open-list');
+  const menu=el('div','hud-map-menu'),more=button('更多',()=>toggle());menu.id='hud-map-menu';menu.hidden=true;menu.setAttribute('role','group');menu.setAttribute('aria-label','更多地图工具');
+  more.id='hud-map-more';more.setAttribute('aria-controls',menu.id);more.setAttribute('aria-expanded','false');list.textContent='场所';
+  menu.append(document.querySelector('#world-explore'),document.querySelector('#world-reset'),document.querySelector('#world-pause'),document.querySelector('#world-learn'));
+  controls.classList.add('hud-map-tools');controls.replaceChildren(zoom,fit,list,more,menu);root.append(controls);
+  function close(restore=false){if(menu.hidden)return;menu.hidden=true;more.setAttribute('aria-expanded','false');if(restore)more.focus({preventScroll:true});}
+  function toggle(){menu.hidden=!menu.hidden;more.setAttribute('aria-expanded',String(!menu.hidden));}
+  menu.addEventListener('click',event=>{if(event.target.closest('button,a'))close(true);});
+  const outside=event=>{if(!controls.contains(event.target))close();};document.addEventListener('pointerdown',outside);
+  function labels(){const pause=document.querySelector('#world-pause'),text=pause.getAttribute('aria-pressed')==='true'?'播放动画':'暂停动画';if(pause.textContent!==text)pause.textContent=text;const status=document.querySelector('#world-motion-status');if(status.textContent.startsWith('静止展示'))status.textContent=status.textContent.includes('减少动态')?'已按系统设置减少动画':'画布动画已暂停';}
+  const observer=new MutationObserver(labels);observer.observe(document.querySelector('#world-pause'),{childList:true,attributes:true,attributeFilter:['aria-pressed']});observer.observe(document.querySelector('#world-motion-status'),{childList:true});labels();
+  return{node:controls,get menuOpen(){return !menu.hidden;},closeMenu:close,setVisible(value){controls.hidden=!value;if(!value)close();},destroy(){observer.disconnect();document.removeEventListener('pointerdown',outside);}};
+}

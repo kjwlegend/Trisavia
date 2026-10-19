@@ -1,24 +1,109 @@
 import {icon,illustration} from '../icons.js';
-import {el,button,demoLabel,feedback,contextKey,focusNode} from './shared.js';
-export function createMailFeature(provider,onEnterDemo=()=>{}){const node=el('section','hud-feature');node.id='hud-feature-mail';let key='',demo=false,tab='private',filter='全部通知',selected={private:'',world:''},detailOnly=false,sourcePreview=null,compact=false,state={phase:'idle'};
-  function focusMessage(){focusNode([...node.querySelectorAll('[data-message-id]')].find(control=>control.dataset.messageId===selected[tab]));}
-  function render(){node.replaceChildren();
-    if(!demo){node.append(el('p','','此内容尚未接入。'),el('p','hud-muted','尚未接入真实通知，也未确认私人消息阅读范围。'),button('查看演示信箱',()=>{demo=true;render();onEnterDemo();provider.load();}));return;}
-    node.append(demoLabel('演示数据 · 示例阅读者，不是当前账号的消息'),el('p','hud-muted','示例阅读者：lin · 获准通知摘要（演示）'));
-    if(state.phase!=='ready'){node.append(feedback(state,provider,onEnterDemo));return;}
-    if(sourcePreview){node.append(button('返回信箱详情',()=>{sourcePreview=null;render();focusNode(node.querySelector('#hud-mail-detail button'));},'hud-back'),el('h3','',sourcePreview.name),illustration(sourcePreview.art),el('p','',sourcePreview.description),el('p','hud-muted','这是该通知引用的演示作品。'));return;}
-    const toolbar=el('div','hud-filters');for(const [value,label]of [['private','私人通知'],['world','世界动态（公开）']]){const control=button(label,()=>{tab=value;detailOnly=false;render();focusNode([...node.querySelectorAll('[data-tab]')].find(control=>control.dataset.tab===value));});control.dataset.tab=value;control.setAttribute('aria-pressed',String(tab===value));toolbar.append(control);}node.append(toolbar);
-    if(tab==='private'){const label=el('label','hud-filter-label','通知筛选'),select=el('select');select.setAttribute('aria-label','通知筛选');for(const text of ['全部通知','待处理']){const option=el('option','',text);option.value=text;option.selected=filter===text;select.append(option);}select.addEventListener('change',()=>{filter=select.value;detailOnly=false;render();focusNode(node.querySelector('select'));});label.append(select);node.append(label);}
-    const messages=tab==='private'?state.data.messages.filter(message=>filter==='全部通知'||message.status==='待处理'&&message.available):state.data.announcements;
-    if(!messages.some(message=>message.id===selected[tab]))selected[tab]=messages[0]?.id||'';
-    const message=messages.find(message=>message.id===selected[tab]);const columns=el('div','hud-columns'),list=el('div','hud-messages');list.setAttribute('aria-label',tab==='private'?'示例私人通知':'示例公共公告');list.hidden=detailOnly;
-    for(const entry of messages){const control=button('',()=>{selected[tab]=entry.id;detailOnly=compact;render();if(compact)focusNode(node.querySelector('#hud-mail-detail button')||node.querySelector('#hud-mail-detail h3'));else focusMessage();});control.dataset.messageId=entry.id;control.setAttribute('aria-pressed',String(entry.id===selected[tab]));const text=el('span');text.append(el('strong','',entry.source),el('span','',entry.title));control.append(icon(entry.source==='资料服务'?'document':'notice'),text,el('time','',entry.time));list.append(control);}
-    const details=el('section','hud-mail-detail');details.id='hud-mail-detail';details.hidden=!message||(compact&&!detailOnly);
-    if(message){if(detailOnly)details.append(button('返回通知列表',()=>{detailOnly=false;render();focusMessage();},'hud-back'));details.append(el('h3','',message.available?message.title:'此示例内容不可查看'));
-      if(message.available){details.append(el('p','',`来源：${message.source} · 示例时刻 ${message.time}`),el('p','',message.body),el('p','hud-muted',message.status));const source=state.data.items.find(item=>item.id===message.sourceItemId);if(source)details.append(button('查看内容',()=>{sourcePreview=source;render();focusNode(node.querySelector('.hud-back'));}));}
-      else details.append(el('p','hud-muted','正文、图像及来源动作当前不可用。返回列表可选择其他示例。'));
-    }
-    if(!messages.length)columns.append(el('p','hud-feedback','此筛选下暂无示例通知'));else columns.append(list,details);node.append(columns);
+import {projectMailView,projectMessageDetail} from '../view-model.js';
+import {el,button,demoLabel,feedback,focusNode} from './shared.js';
+
+export function createMailFeature(provider,onEnterDemo=()=>{},{store,context,detailHost}={}){
+  const node=el('section','hud-feature hud-mail'),list=el('div','hud-mail-list'),feedbackSlot=el('div','hud-mail-feedback-slot'),feedbackNode=el('div','hud-mail-feedback');
+  node.id='hud-feature-mail';list.id='hud-mail-results';feedbackSlot.id='hud-mail-feedback-slot';feedbackNode.setAttribute('role','status');feedbackNode.hidden=true;
+  const undoText=el('span');feedbackNode.append(undoText);let undoButton=null,feedbackLease=null;
+  let local=store.snapshot(),revision=local.revision,source={phase:'idle'},demo=false,active=false,disposed=false;
+  let detailId='',detailChannel='',detailIndex=0,sourcePreview=false,readOnSuccess=false,detailGeneration=0,scrollTimer=0,bodyTimer=0,undoTimer=0,listLease=null,detailLease=null;
+  const view=()=>projectMailView(local,source);
+  const message=()=>projectMessageDetail(local,source,detailChannel,detailId);
+  function rememberScroll(){clearTimeout(scrollTimer);if(demo&&source.phase==='ready'&&local.scope)store.mailView(store.lease(),{scrollTop:list.scrollTop});}
+  list.addEventListener('scroll',()=>{if(!demo||source.phase!=='ready'||!listLease||!store.isCurrent(listLease))return;clearTimeout(scrollTimer);const lease=listLease,top=list.scrollTop,channel=local.state.mail.channel;scrollTimer=setTimeout(()=>store.mailView(lease,{channel,scrollTop:top}),100);},{passive:true});
+  function restoreScroll(){list.scrollTop=local.state.mail.scrollTop[local.state.mail.channel];}
+  function rememberBody(){clearTimeout(bodyTimer);if(detailId&&!sourcePreview&&detailLease)store.mailPosition(detailLease,detailChannel,detailId,detailHost.body.scrollTop);}
+  detailHost.body.addEventListener('scroll',()=>{if(!detailHost.isOpen||!detailId||sourcePreview||!detailLease||source.phase!=='ready')return;clearTimeout(bodyTimer);const lease=detailLease,id=detailId,channel=detailChannel,top=detailHost.body.scrollTop;bodyTimer=setTimeout(()=>store.mailPosition(lease,channel,id,top),100);},{passive:true});
+  function restoreFocus(){
+    if(!active)return;const rows=[...list.querySelectorAll('[data-message-open]')];
+    focusNode(rows.find(row=>row.dataset.messageOpen===detailId)||rows[Math.min(detailIndex,rows.length-1)]||node.querySelector('#hud-mail-list-title'));
   }
-  provider.subscribe(value=>{state=value;render();});return{node,activate(){},setCompact(value){if(compact!==value){compact=value;if(!compact)detailOnly=false;render();}},setContext(value){const next=contextKey(value);if(next!==key){key=next;demo=false;tab='private';filter='全部通知';selected={private:'',world:''};detailOnly=false;sourcePreview=null;render();}},back(){if(sourcePreview){sourcePreview=null;render();focusNode(node.querySelector('#hud-mail-detail button'));return true;}if(detailOnly){detailOnly=false;render();focusMessage();return true;}return false;}};
+  function closeDetail(restore=true){detailHost.close(restore);}
+  function updateFeedback(){
+    clearTimeout(undoTimer);const group=local.state.mail.undo,remaining=group.expiresAt-Date.now();
+    feedbackNode.hidden=!demo||!local.scope||!group.entries.length||remaining<=0;
+    if(feedbackNode.hidden)return;
+    undoText.textContent=group.entries.length===1?'已从演示信箱移除':'已移除 '+group.entries.length+' 条示例通知';
+    const lease=store.lease();if(!feedbackLease||!store.isCurrent(feedbackLease)){undoButton?.remove();feedbackLease=lease;undoButton=button('撤销',()=>undo(lease));feedbackNode.append(undoButton);}undoTimer=setTimeout(()=>{if(store.expireUndo(lease))updateFeedback();},remaining+10);
+  }
+  function undo(lease){if(!store.undoRemoval(lease))return;render();updateFeedback();if(active)restoreFocus();else focusNode(document.querySelector('#hud-open-mail'));}
+  function remove(entry,channel,lease){
+    if(!entry||!store.isCurrent(lease)||!projectMessageDetail(local,source,channel,entry.id))return;
+    rememberScroll();if(!store.removeMessage(lease,channel,entry.id))return;
+    if(detailId===entry.id&&detailChannel===channel)closeDetail(false);render();restoreScroll();restoreFocus();updateFeedback();
+  }
+  function mark(entry,channel,lease){
+    if(!entry||!store.isCurrent(lease)||!projectMessageDetail(local,source,channel,entry.id))return;
+    rememberScroll();if(!store.markRead(lease,channel,entry.id,!entry.humanRead))return;
+    if(detailHost.isOpen){patchRows();renderDetail();focusNode(detailHost.body.querySelector('[data-detail-read]'));}else{render();restoreScroll();const row=[...list.querySelectorAll('.hud-message-row')].find(row=>row.querySelector('[data-message-open]').dataset.messageOpen===entry.id);if(row)focusNode(row.querySelector('[data-row-read]'));else restoreFocus();}
+  }
+  function patchRows(){
+    const projection=view(),visible=new Map(projection.messages.map(entry=>[entry.id,entry]));
+    if(projection.selectedId!==local.state.mail.selectedIds[projection.channel])store.mailView(store.lease(),{selectedId:projection.selectedId});
+    for(const row of list.querySelectorAll('.hud-message-row')){const open=row.querySelector('[data-message-open]'),entry=visible.get(open.dataset.messageOpen);if(!entry){row.remove();continue;}open.setAttribute('aria-pressed',String(entry.id===projection.selectedId));row.dataset.read=String(entry.humanRead);row.querySelector('.hud-message-read').textContent=entry.humanRead?'已读':'未读';const action=row.querySelector('[data-row-read]'),label=entry.humanRead?'标为未读':'标为已读';action.setAttribute('aria-label',label);action.replaceChildren(icon(entry.humanRead?'unread':'read'),el('span','hud-row-action-label',label));}
+    if(!projection.messages.length&&!list.querySelector('.hud-feedback'))list.append(el('p','hud-feedback','没有符合条件的通知'));
+  }
+  function detailContent(){
+    const content=el('section','hud-mail-reader'),entry=message(),lease=store.lease(),generation=detailGeneration;
+    content.append(demoLabel('示例通知 · 非真实消息'));
+    if(source.phase==='loading'){content.append(el('p','hud-feedback','正在读取内容…'));return content;}
+    if(source.phase!=='ready'||!entry||entry.available===true&&typeof entry.body!=='string'){
+      content.append(el('p','hud-feedback','暂时打不开这条内容'),button('重试',async()=>{if(!store.isCurrent(lease)||generation!==detailGeneration)return;rememberScroll();readOnSuccess=true;await provider.load({reload:true});if(store.isCurrent(lease)&&generation===detailGeneration)renderDetail();}));return content;
+    }
+    if(!entry.available){content.append(el('h3','','此示例内容不可查看'),el('p','hud-muted','正文、图像及来源动作当前不可用。'));}
+    else{
+      if(readOnSuccess){readOnSuccess=false;store.markRead(lease,detailChannel,entry.id,true);}
+      const item=source.data.items.find(value=>value.id===entry.sourceItemId);
+      if(sourcePreview&&item){content.append(button('返回通知',()=>{if(!store.isCurrent(lease))return;sourcePreview=false;renderDetail(false);focusNode(detailHost.body.querySelector('button'));},'hud-back'),el('h3','',item.name),illustration(item.art),el('p','',item.description),el('p','hud-muted','这是该通知引用的演示作品。'));return content;}
+      sourcePreview=false;content.append(el('h3','',entry.title),el('p','hud-muted',`来源：${entry.source} · ${entry.time}`),el('p','hud-muted',detailChannel==='private'?'你正在阅读示例 Agent 的演示通知。':'你正在阅读公开公告的示例列表。'),el('p','hud-message-body',entry.body));
+      if(item)content.append(button('查看内容',()=>{if(!store.isCurrent(lease))return;rememberBody();sourcePreview=true;renderDetail(false);detailHost.body.scrollTop=0;focusNode(detailHost.body.querySelector('.hud-back'));}));
+      if(entry.status)content.append(el('p','hud-muted',entry.status));
+    }
+    const current=message(),actions=el('div','button-row'),read=button(current?.humanRead?'标为未读':'标为已读',()=>mark(current,detailChannel,lease));read.dataset.detailRead='';actions.append(read,button('删除',()=>remove(current,detailChannel,lease)));
+    content.append(actions,el('p','hud-muted','删除仅从你的列表移除，不改变来源内容或事项；网页阅读不推进 Agent 的进度。'));return content;
+  }
+  function renderDetail(remember=true){if(!detailHost.isOpen||!detailId)return;if(remember)rememberBody();detailHost.update(sourcePreview?'相关内容':'通知详情',detailContent());if(!sourcePreview)detailHost.body.scrollTop=local.state.mail.bodyScrollTop[detailChannel][detailId]||0;}
+  function openMessage(entry,index,lease){
+    if(!store.isCurrent(lease))return;rememberScroll();detailId=entry.id;detailChannel=local.state.mail.channel;detailIndex=index;sourcePreview=false;readOnSuccess=true;detailGeneration++;
+    store.mailView(lease,{selectedId:entry.id});detailLease=lease;
+    detailHost.open('通知详情',detailContent(),restore=>{rememberBody();detailGeneration++;sourcePreview=false;readOnSuccess=false;patchRows();restoreScroll();if(restore&&store.isCurrent(lease))restoreFocus();detailId='';detailChannel='';detailLease=null;});
+    detailHost.body.scrollTop=local.state.mail.bodyScrollTop[detailChannel][detailId]||0;patchRows();
+  }
+  function rowAction(label,name,handler){const control=button('',event=>{event.stopPropagation();handler();},'hud-mail-row-action');control.setAttribute('aria-label',label);control.append(icon(name),el('span','hud-row-action-label',label));return control;}
+  function render(){
+    if(disposed)return;node.replaceChildren();listLease=null;
+    try{
+    if(!demo){const lease=store.lease(),enter=button('查看演示信箱',()=>{if(!store.isCurrent(lease))return;demo=true;render();updateFeedback();onEnterDemo();provider.load();});enter.disabled=!local.scope;node.append(el('p','','此内容尚未接入。'),el('p','hud-muted','尚未接入真实通知。示例信箱不代表你或当前 Agent 的真实收件。'),enter);if(!local.scope){const status=context.snapshot();node.append(el('p','hud-feedback',status.phase==='error'?'演示内容暂不可用。':status.phase==='pending'?'请先确认当前账号状态，再查看演示。':'正在准备演示内容…'));if(status.phase==='error')node.append(button('重试演示内容',()=>context.load()));}return;}
+    node.append(demoLabel('示例信箱 · 阅读标记保存在此浏览器'));
+    if(!local.scope){const status=context.snapshot();node.append(el('p','hud-feedback',status.phase==='error'?'演示内容暂不可用。':status.phase==='pending'?'请先确认当前账号状态，再查看演示。':'正在准备演示内容…'));if(status.phase==='error')node.append(button('重试演示内容',()=>context.load()));return;}
+    if(local.persistence==='memory')node.append(el('p','hud-muted','此浏览器暂时无法保存演示记录，本次更改只保留在当前页面。'));
+    if(source.phase!=='ready'){node.append(feedback(source,provider,onEnterDemo));return;}
+    const projection=view(),lease=store.lease(),toolbar=el('div','hud-filters');
+    for(const [channel,label]of [['private','私人通知'],['world','世界动态']]){const control=button(label,()=>{if(!store.isCurrent(lease))return;rememberScroll();store.mailView(lease,{channel});render();focusNode(node.querySelector(`[data-tab="${channel}"]`));});control.dataset.tab=channel;control.setAttribute('aria-pressed',String(projection.channel===channel));toolbar.append(control);}
+    const filters=el('div','hud-mail-filters');for(const [read,label]of [['all','全部'],['unread','未读'],['read','已读']]){const control=button(label,()=>{if(store.mailView(lease,{read,scrollTop:0})){render();focusNode(node.querySelector(`[data-read-filter="${read}"]`));}});control.dataset.readFilter=read;control.setAttribute('aria-pressed',String(local.state.mail.filters[projection.channel].read===read));filters.append(control);}
+    if(projection.channel==='private'){const control=button('待处理',()=>{if(store.mailView(lease,{pending:!local.state.mail.filters.private.pending,scrollTop:0})){render();focusNode(node.querySelector('[data-pending-filter]'));}});control.dataset.pendingFilter='';control.setAttribute('aria-pressed',String(local.state.mail.filters.private.pending));filters.append(control);}
+    const heading=el('h3','hud-list-heading',projection.channel==='private'?'示例私人通知':'示例世界动态');heading.id='hud-mail-list-title';heading.tabIndex=-1;list.replaceChildren();list.setAttribute('aria-labelledby',heading.id);
+    if(projection.selectedId!==local.state.mail.selectedIds[projection.channel])store.mailView(lease,{selectedId:projection.selectedId});
+    projection.messages.forEach((entry,index)=>{
+      const row=el('div','hud-message-row'),open=button('',()=>openMessage(entry,index,lease),'hud-message-open');open.dataset.messageOpen=entry.id;open.dataset.messageId=entry.id;open.setAttribute('aria-pressed',String(entry.id===projection.selectedId));
+      const text=el('span','hud-message-summary');text.append(el('strong','',entry.title),el('span','hud-muted',entry.source));open.append(icon(entry.source==='资料服务'?'document':'notice'),text);
+      const read=el('span','hud-message-read',entry.humanRead?'已读':'未读'),markControl=rowAction(entry.humanRead?'标为未读':'标为已读',entry.humanRead?'unread':'read',()=>{detailIndex=index;const current=projectMessageDetail(local,source,projection.channel,entry.id);mark(current,projection.channel,lease);});markControl.dataset.rowRead='';row.dataset.read=String(entry.humanRead);row.append(open,read,el('time','',entry.time),markControl,rowAction('删除','trash',()=>{detailIndex=index;remove(entry,projection.channel,lease);}));list.append(row);
+    });
+    if(!projection.messages.length){const all=projectMailView({...local,state:{...local.state,mail:{...local.state.mail,filters:{...local.state.mail.filters,[projection.channel]:{read:'all',pending:false}}}}},source);list.append(el('p','hud-feedback',all.messages.length?'没有符合条件的通知':'这里还没有通知'));if(all.messages.length)list.append(button('显示全部',()=>{if(store.mailView(lease,{read:'all',...(projection.channel==='private'?{pending:false}:{}),scrollTop:0}))render();}));}
+    node.append(toolbar,filters,heading,list,feedbackSlot);listLease=lease;restoreScroll();
+    }finally{node.append(feedbackSlot);}
+  }
+  const stops=[store.subscribe(value=>{
+    if(disposed)return;
+    const changed=value.revision!==revision;local=value;
+    if(changed){revision=value.revision;clearTimeout(scrollTimer);clearTimeout(bodyTimer);listLease=null;closeDetail(false);detailHost.clear();demo=false;detailId='';detailChannel='';sourcePreview=false;readOnSuccess=false;render();}
+    updateFeedback();
+  }),context.subscribe(()=>{if(!local.scope)render();}),provider.subscribe(value=>{source=value;render();renderDetail();})];
+  return{
+    node,feedbackNode,feedbackSlot,
+    activate(){active=true;restoreScroll();},deactivate(){rememberScroll();active=false;closeDetail(false);},setCompact(){},setContext(){},
+    back(){if(!detailHost.isOpen)return false;if(sourcePreview){sourcePreview=false;renderDetail(false);return true;}closeDetail();return true;},
+    dispose(){closeDetail(false);disposed=true;clearTimeout(scrollTimer);clearTimeout(bodyTimer);clearTimeout(undoTimer);for(const stop of stops)stop?.();},
+  };
 }

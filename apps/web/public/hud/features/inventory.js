@@ -1,57 +1,58 @@
 import {illustration} from '../icons.js';
-import {el,button,demoLabel,feedback,contextKey,focusNode} from './shared.js';
+import {projectInventoryView} from '../view-model.js';
+import {el,button,demoLabel,feedback,focusNode} from './shared.js';
 
-export function createInventoryFeature(provider,onEnterDemo=()=>{}){
-  const node=el('section','hud-feature'),results=el('div');
-  node.id='hud-feature-inventory';results.id='hud-item-results';
-  let demo=false,key='',filter='全部',query='',selected='',detailOnly=false,preview=false,compact=false,state={phase:'idle'};
-  const visibleItems=()=>state.data.items.filter(item=>(filter==='全部'||item.category===filter)&&item.name.includes(query));
-  function selectVisible(items){if(!items.some(item=>item.id===selected))selected=items[0]?.id||'';return items.find(item=>item.id===selected);}
-  function focusItem(){focusNode([...node.querySelectorAll('[data-item-id]')].find(control=>control.dataset.itemId===selected));}
-  function returnToDetail(){preview=false;render();focusNode(node.querySelector('#hud-item-detail button'));}
-
-  // Search updates only the results: keep the focused input and IME composition intact.
+export function createInventoryFeature(provider,onEnterDemo=()=>{},{store,context}={}){
+  const node=el('section','hud-feature hud-inventory'),results=el('div','hud-inventory-grid-scroll'),details=el('section','hud-item-detail');
+  node.id='hud-feature-inventory';results.id='hud-item-results';details.id='hud-item-detail';
+  let local=store.snapshot(),source={phase:'idle'},demo=false,preview=false,revision=local.revision,scrollTimer=0,detailTimer=0,resultsLease=null,disposed=false;
+  const view=()=>projectInventoryView(local,source);
+  function rememberScroll(){clearTimeout(scrollTimer);clearTimeout(detailTimer);const lease=store.lease();store.inventory(lease,{scrollTop:results.scrollTop,detailScrollTop:details.scrollTop});}
+  results.addEventListener('scroll',()=>{if(!demo||preview||source.phase!=='ready'||!resultsLease)return;clearTimeout(scrollTimer);const lease=resultsLease,top=results.scrollTop;scrollTimer=setTimeout(()=>store.inventory(lease,{scrollTop:top}),100);},{passive:true});
+  details.addEventListener('scroll',()=>{if(!demo||preview||source.phase!=='ready'||!resultsLease)return;clearTimeout(detailTimer);const lease=resultsLease,top=details.scrollTop;detailTimer=setTimeout(()=>store.inventory(lease,{detailScrollTop:top}),100);},{passive:true});
+  function restoreScroll(){results.scrollTop=local.state.inventory.scrollTop;details.scrollTop=local.state.inventory.detailScrollTop;}
+  function focusItem(){focusNode([...results.querySelectorAll('[data-item-id]')].find(control=>control.dataset.itemId===view().selectedId));}
+  function unavailable(){
+    const current=context.snapshot();
+    if(current.phase==='error')node.append(el('p','hud-feedback','演示内容暂不可用。'),button('重试演示内容',()=>context.load()));
+    else node.append(el('p','hud-feedback',current.phase==='pending'?'请先确认当前账号状态，再查看演示。':'正在准备演示内容…'));
+  }
   function renderResults(){
-    const items=visibleItems(),item=selectVisible(items),columns=el('div','hud-columns'),grid=el('div','hud-items');
-    grid.setAttribute('aria-label','示例物品');grid.hidden=detailOnly;
-    for(const entry of items){
-      const control=button('',()=>{selected=entry.id;detailOnly=compact;renderResults();if(compact)focusNode(node.querySelector('#hud-item-detail button'));else focusItem();});
-      control.dataset.itemId=entry.id;control.setAttribute('aria-pressed',String(entry.id===selected));
-      const slot=el('span','hud-item-slot');slot.append(illustration(entry.art,Number(entry.id.split('-')[1])));
-      control.append(slot,el('span','hud-item-name',entry.name));grid.append(control);
+    const projection=view(),lease=store.lease();resultsLease=null;results.replaceChildren();details.replaceChildren();
+    if(!projection.ready)return;
+    if(projection.selectedId!==local.state.inventory.selectedId){clearTimeout(detailTimer);store.inventory(lease,{selectedId:projection.selectedId,detailScrollTop:0});}
+    const grid=el('div','hud-items');grid.setAttribute('aria-label','示例物品');
+    for(const item of projection.items){
+      const control=button('',()=>{if(!store.isCurrent(lease))return;rememberScroll();store.inventory(lease,{selectedId:item.id,detailScrollTop:0});renderResults();restoreScroll();focusItem();});
+      control.dataset.itemId=item.id;control.title=item.name;control.setAttribute('aria-label',item.name);control.setAttribute('aria-pressed',String(item.id===projection.selectedId));
+      const slot=el('span','hud-item-slot');slot.append(illustration(item.art,Number(item.id.split('-')[1])));control.append(slot,el('span','hud-item-name',item.name),el('span','hud-item-full-name',item.name));grid.append(control);
     }
-    const details=el('section','hud-item-detail');details.id='hud-item-detail';details.hidden=!item||(compact&&!detailOnly);
-    if(item){
-      if(detailOnly)details.append(button('返回物品列表',()=>{detailOnly=false;renderResults();focusItem();},'hud-back'));
-      details.append(el('h3','',item.name),illustration(item.art,Number(item.id.split('-')[1])),el('p','',`类别：${item.category}`),el('p','',`来源：${item.source}`),el('p','',`作者声明：${item.author}`),el('p','',item.description));
-      if(item.category==='作品')details.append(button('查看作品',()=>{preview=true;render();focusNode(node.querySelector('.hud-back'));}));
-    }
-    if(!items.length)columns.append(el('p','hud-feedback','此筛选下暂无示例物品'));else columns.append(grid,details);
-    results.replaceChildren(columns);
+    if(!projection.items.length){results.append(el('p','hud-feedback','没有找到符合条件的物品'),button('清除筛选',()=>{if(store.inventory(lease,{category:'all',query:'',scrollTop:0})){render();focusNode(node.querySelector('#hud-item-search'));}}));return;}
+    results.append(grid);resultsLease=lease;const item=projection.selected;
+    details.append(illustration(item.art,Number(item.id.split('-')[1])),el('h3','',item.name),el('p','hud-item-category',item.category),el('p','',item.description));
+    if(item.author)details.append(el('p','hud-muted',`作者声明：${item.author}`));if(item.source)details.append(el('p','hud-muted',`来源：${item.source}`));
+    if(item.category==='作品'&&item.description)details.append(button('查看作品',()=>{if(!store.isCurrent(lease))return;rememberScroll();preview=true;render();focusNode(node.querySelector('.hud-back'));}));
   }
   function render(){
+    if(disposed)return;
     node.replaceChildren();
-    if(!demo){node.append(el('p','','此内容尚未接入。'),el('p','hud-muted','尚无真实持有物来源，不显示资产数量或余额。'),button('查看演示背包',()=>{demo=true;render();onEnterDemo();provider.load();}));return;}
-    node.append(demoLabel('演示数据 · 示例持有物，非当前账号或 Agent 的资产'));
-    if(state.phase!=='ready'){node.append(feedback(state,provider,onEnterDemo));return;}
-    const item=selectVisible(visibleItems());
-    if(preview&&item){node.append(button('返回背包详情',returnToDetail,'hud-back'),el('h3','',item.name),illustration(item.art,Number(item.id.split('-')[1])),el('p','',item.description),el('p','hud-muted','示例作品预览 · 作者声明不证明版权或交易权。'));return;}
+    if(!demo){const lease=store.lease(),enter=button('查看演示背包',()=>{if(!store.isCurrent(lease))return;demo=true;render();onEnterDemo();provider.load();});enter.disabled=!local.scope;node.append(el('p','','此内容尚未接入。'),el('p','hud-muted','示例物品不代表当前账号或 Agent 的真实资产。'),enter);if(!local.scope)unavailable();return;}
+    node.append(demoLabel('示例物品 · 非真实资产'));
+    if(!local.scope){unavailable();return;}
+    if(local.persistence==='memory')node.append(el('p','hud-muted','此浏览器暂时无法保存演示记录，本次更改只保留在当前页面。'));
+    if(source.phase!=='ready'){node.append(feedback(source,provider,onEnterDemo));return;}
+    const projection=view(),lease=store.lease();
+    if(preview&&projection.selected){const item=projection.selected;node.append(button('返回背包详情',()=>{if(!store.isCurrent(lease))return;preview=false;render();restoreScroll();focusItem();},'hud-back'),el('h3','',item.name),illustration(item.art),el('p','',item.description),el('p','hud-muted','示例作品预览 · 作者声明不证明版权或交易权。'));return;}
     preview=false;
-    const toolbar=el('div','hud-filters');
-    for(const text of ['全部','作品','虚拟道具']){
-      const control=button(text,()=>{filter=text;detailOnly=false;render();focusNode([...node.querySelectorAll('[data-filter]')].find(control=>control.dataset.filter===text));});
-      control.dataset.filter=text;control.setAttribute('aria-pressed',String(filter===text));toolbar.append(control);
+    const columns=el('div','hud-inventory-layout'),browser=el('div','hud-inventory-browser'),toolbar=el('div','hud-filters');
+    for(const [category,label]of [['all','全部'],['artwork','作品'],['item','虚拟道具']]){
+      const control=button(label,()=>{if(!store.isCurrent(lease))return;rememberScroll();if(!store.inventory(lease,{category,scrollTop:0}))return;render();focusNode(node.querySelector(`[data-filter="${category}"]`));});
+      control.dataset.filter=category;control.setAttribute('aria-pressed',String(local.state.inventory.category===category));toolbar.append(control);
     }
-    const searchLabel=el('label','hud-search','搜索示例物品'),search=el('input');
-    search.type='search';search.value=query;search.id='hud-item-search';
-    search.addEventListener('input',()=>{query=search.value;detailOnly=false;renderResults();});
-    searchLabel.append(search);node.append(toolbar,searchLabel,results);renderResults();
+    const searchLabel=el('label','hud-search','搜索示例物品'),search=el('input');search.type='search';search.id='hud-item-search';search.maxLength=100;search.value=local.state.inventory.query;
+    search.addEventListener('input',()=>{if(!store.isCurrent(lease))return;rememberScroll();if(!store.inventory(lease,{query:search.value,scrollTop:0}))return;renderResults();results.scrollTop=0;details.scrollTop=local.state.inventory.detailScrollTop;});
+    searchLabel.append(search);browser.append(toolbar,searchLabel,results);columns.append(browser,details);node.append(columns);renderResults();restoreScroll();
   }
-  provider.subscribe(value=>{state=value;render();});
-  return{
-    node,activate(){},
-    setCompact(value){if(compact!==value){compact=value;if(!compact)detailOnly=false;render();}},
-    setContext(value){const next=contextKey(value);if(next!==key){key=next;demo=false;filter='全部';query='';selected='';detailOnly=false;preview=false;render();}},
-    back(){if(preview){returnToDetail();return true;}if(detailOnly){detailOnly=false;renderResults();focusItem();return true;}return false;},
-  };
+  const stops=[store.subscribe(value=>{if(disposed)return;const changed=value.revision!==revision;local=value;if(changed){revision=value.revision;clearTimeout(scrollTimer);clearTimeout(detailTimer);resultsLease=null;demo=false;preview=false;results.replaceChildren();details.replaceChildren();render();}}),context.subscribe(()=>{if(!local.scope)render();}),provider.subscribe(value=>{source=value;render();})];
+  return{node,activate(){if(demo&&!preview)restoreScroll();},deactivate(){if(demo&&!preview&&local.scope)rememberScroll();},setCompact(){},setContext(){},back(){if(!preview)return false;preview=false;render();restoreScroll();focusItem();return true;},dispose(){disposed=true;clearTimeout(scrollTimer);clearTimeout(detailTimer);for(const stop of stops)stop?.();}};
 }

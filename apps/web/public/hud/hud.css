@@ -49,3 +49,71 @@
   .world-detail-body>p{font-size:14px;line-height:20px;color:var(--hud-muted);margin:0 0 12px}.world-detail-body .world-detail-note{padding-top:12px}
 }
 @media(prefers-reduced-motion:reduce){.hud-dock-plate,.hud-dock-button:after{transition:none!important}}
+
+/* WS07 v0.4: example browsing stays separate from the live world and account. */
+.hud-detail-window{z-index:4;width:680px}
+.hud-detail-window .hud-window-header{padding-left:20px}
+.hud-detail-window .hud-window-header h2{font-size:18px;line-height:26px}
+.hud-detail-window .hud-window-header button{width:44px;height:44px;padding:10px;border:0;border-radius:0;background:transparent;flex:0 0 44px}
+.hud-detail-window .hud-window-body{padding:20px;overflow:auto;min-height:0}
+.hud-detail-window .hud-message-body{white-space:pre-wrap}
+.hud-detail-window .hud-illustration{max-height:240px}
+.hud-inventory,.hud-mail{display:flex;flex-direction:column;gap:0;min-height:0;height:100%;overflow:hidden}
+.hud-inventory-layout{display:grid;grid-template-columns:minmax(0,1fr) 288px;gap:24px;flex:1;min-height:0}
+.hud-inventory-browser{display:flex;flex-direction:column;min-width:0;min-height:0}
+.hud-inventory .hud-filters{flex-shrink:0;margin-bottom:12px;gap:8px}
+.hud-inventory .hud-filters button{flex:0 0 auto;min-width:88px}
+.hud-inventory .hud-search{flex-shrink:0;margin-bottom:16px}
+.hud-inventory-grid-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:0 4px 4px 0;scrollbar-gutter:stable}
+.hud-inventory .hud-items{grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.hud-inventory .hud-items>button{position:relative;gap:8px;border:0;padding:0;min-width:0;align-self:start}
+.hud-inventory .hud-item-slot{width:64px;height:64px;flex:0 0 64px}
+.hud-inventory .hud-item-slot>.hud-illustration{width:40px;height:40px;max-width:40px;max-height:40px}
+.hud-inventory .hud-item-name{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;line-height:20px;height:40px;min-height:40px;text-wrap:balance;overflow-wrap:anywhere}
+.hud-item-full-name{display:none;position:absolute;z-index:2;top:68px;left:50%;translate:-50% 0;max-width:180px;width:max-content;padding:4px 8px;border:1px solid var(--hud-border);background:var(--hud-surface);font-size:14px;line-height:20px;border-radius:6px;pointer-events:none}
+.hud-items>button:is(:hover,:focus-visible) .hud-item-full-name{display:block}
+.hud-inventory .hud-item-detail{border-left:1px solid var(--hud-line);padding-left:20px;overflow:auto;min-height:0;overscroll-behavior:contain;scrollbar-gutter:stable}
+.hud-inventory .hud-item-detail>.hud-illustration{max-height:180px;flex-shrink:0}
+.hud-inventory:has(>.hud-back){overflow:auto;overscroll-behavior:contain}
+.hud-inventory:has(>.hud-back)>.hud-illustration{min-height:140px;flex-shrink:0}
+.hud-mail .hud-filters{gap:8px;flex-shrink:0;margin-bottom:12px}
+.hud-mail .hud-filters button{flex:0 0 auto;min-width:120px}
+.hud-mail-filters{display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0;margin-bottom:12px}
+.hud-mail-filters button[aria-pressed=true]{background:var(--hud-selected);border-color:var(--hud-accent)}
+.hud-window .hud-list-heading{flex-shrink:0;margin:0 0 8px}
+.hud-mail-list{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+.hud-message-row{display:grid;grid-template-columns:minmax(0,1fr) 40px 88px 44px 44px;gap:12px;align-items:center;min-height:72px;padding:8px 16px;border-bottom:1px solid var(--hud-line)}
+.hud-message-open{display:flex;align-items:center;gap:12px;min-width:0;min-height:56px;border:0!important;background:transparent!important;padding:0!important;text-align:left}
+.hud-message-open>.hud-icon{width:20px;height:20px;flex:0 0 20px}
+.hud-message-summary{min-width:0;display:flex;flex-direction:column;gap:2px}
+.hud-message-summary strong{font-size:14px;line-height:20px;font-weight:400;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere}
+.hud-message-summary>.hud-muted{font-size:12px;line-height:18px}
+.hud-message-row[data-read=false] .hud-message-summary strong{font-weight:650}
+.hud-message-read,.hud-message-row time{font-size:12px;line-height:18px;color:var(--hud-muted);white-space:nowrap}
+.hud-message-row time{text-align:right;font-variant-numeric:tabular-nums}
+.hud-message-read{display:flex;align-items:center;gap:4px}
+.hud-message-row[data-read=false] .hud-message-read:before{content:'';width:5px;height:5px;border-radius:50%;background:var(--hud-accent)}
+.hud-root .hud-mail-row-action{position:relative;display:grid;place-items:center;width:44px;height:44px;padding:10px;border:0;background:transparent}
+.hud-mail-row-action .hud-icon{width:20px;height:20px}
+.hud-row-action-label{display:none;position:absolute;z-index:3;right:0;top:44px;white-space:nowrap;padding:4px 8px;color:var(--hud-surface);background:var(--hud-text);font-size:12px;line-height:18px;border-radius:6px;pointer-events:none}
+.hud-mail-row-action:is(:hover,:focus-visible) .hud-row-action-label{display:block}
+.hud-mail-feedback-slot{flex-shrink:0;min-height:44px;margin-top:12px}
+.hud-mail-feedback{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:0 8px 0 12px;border:1px solid var(--hud-border);border-radius:8px;background:var(--hud-surface);font-size:14px;line-height:20px;pointer-events:auto}
+.hud-mail-feedback button{flex:0 0 auto;border:0;color:var(--hud-accent);padding:8px}
+.hud-floating-feedback{position:absolute;left:calc(50% + 136px);bottom:60px;transform:translateY(50%);width:min(360px,calc(50% - 160px));z-index:3;pointer-events:none}
+.hud-root .world-controls.hud-map-tools{position:absolute;left:auto;right:24px;top:var(--world-panel-top,88px);bottom:auto;transform:none;width:360px;height:56px;max-width:calc(100% - 48px);display:flex;align-items:center;gap:4px;padding:6px;border:1px solid var(--hud-border);border-radius:10px;background:var(--hud-surface);box-shadow:0 3px 10px rgba(35,66,53,.10);pointer-events:auto;z-index:1}
+.hud-map-tools .world-zoom-controls{flex:1;justify-content:space-between;margin:0}
+.hud-root .hud-map-tools button,.hud-root .hud-map-tools a{min-height:44px;min-width:44px;padding:8px;border:0;font-size:14px;background:transparent;white-space:nowrap}
+.hud-map-tools .world-zoom-controls output{width:44px;text-align:center}
+.hud-map-menu{position:absolute;right:0;top:62px;display:flex;flex-direction:column;width:208px;padding:6px;border:1px solid var(--hud-border);border-radius:10px;background:var(--hud-surface);box-shadow:0 3px 10px rgba(35,66,53,.10)}
+.hud-map-menu button,.hud-map-menu a{text-align:left;text-decoration:none;display:flex;align-items:center}
+@media(min-width:760px){
+  .hud-root .hud-window[data-feature=inventory]{width:960px}
+  .hud-root .hud-window[data-feature=mail]{width:880px}
+  .hud-root .hud-window:is([data-feature=inventory],[data-feature=mail]){height:min(676px,var(--world-panel-height,676px));max-height:min(676px,var(--world-panel-height,676px))}
+  .hud-window:is([data-feature=inventory],[data-feature=mail])>.hud-window-header,.hud-detail-window>.hud-window-header{height:54px;min-height:54px;padding-left:20px}
+  .hud-window:is([data-feature=inventory],[data-feature=mail]) .hud-window-header h2{font-size:18px;line-height:26px}
+  .hud-window:is([data-feature=inventory],[data-feature=mail])>.hud-window-body{display:flex;flex:1;flex-direction:column;overflow:hidden;padding:20px;min-height:0}
+  .hud-root .hud-detail-window{height:min(620px,var(--world-panel-height,620px));max-height:min(620px,var(--world-panel-height,620px))}
+  .hud-detail-window>.hud-window-body{flex:1}
+}
