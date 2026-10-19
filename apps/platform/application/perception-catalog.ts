@@ -1,4 +1,5 @@
 import type { JsonObject, M1Store, M1Transaction } from '../contracts/store.ts';
+import { fail } from '../domains/common/errors.ts';
 import { HTTP_GUIDE, operationSchema } from '../domains/perception/schemas.ts';
 import { CATEGORIES, OPERATIONS, TYPE_DEFINITIONS, key, refId, RULES_REF } from '../domains/perception/protocol.ts';
 
@@ -34,8 +35,17 @@ export function publishPerceptionCatalog(store:M1Store,options:{revision:string;
   if(!/^[a-zA-Z0-9_-]{1,100}$/.test(options.revision)||!Number.isSafeInteger(options.guideVersion)||options.guideVersion<1)throw new Error('Invalid catalog publication');
   store.transaction(tx=>publishCatalogInTransaction(tx,options));
 }
+function plainGuideText(value:unknown):unknown {return value&&typeof value==='object'&&'text' in value?value.text:undefined;}
 export function publishCatalogInTransaction(tx:M1Transaction,options:{revision:string;guideVersion:number;guideText?:string}):void {
-  initializePerceptionCatalog(tx);const current=tx.get('perception_catalog','current')!;if(options.guideVersion<Number(current.data.guideVersion))throw new Error('Guide version cannot regress');storeDocuments(tx,options.guideVersion,options.guideText??guide);if(current.data.catalogRevision!==options.revision||current.data.guideVersion!==options.guideVersion)tx.update('perception_catalog',{...current,version:current.version+1,data:{...current.data,catalogRevision:options.revision,skillCatalogRevision:`skills-${options.revision}`,guideVersion:options.guideVersion}},current.version);
+  initializePerceptionCatalog(tx);const current=tx.get('perception_catalog','current')!;
+  if(options.guideVersion<Number(current.data.guideVersion))fail('version_conflict',409,'Guide version cannot regress');
+  // A changed declaration must be discoverable through both catalog and Skill revisions.
+  if(options.revision===current.data.catalogRevision){
+    const document=tx.get('perception_catalog',`guide:world:${current.data.guideVersion}`);
+    if(options.guideVersion!==current.data.guideVersion||(options.guideText!==undefined&&plainGuideText(document?.data.document)!==options.guideText))fail('version_conflict',409,'Guide changes require a new catalog revision');
+  }
+  storeDocuments(tx,options.guideVersion,options.guideText??guide);
+  if(current.data.catalogRevision!==options.revision||current.data.guideVersion!==options.guideVersion)tx.update('perception_catalog',{...current,version:current.version+1,data:{...current.data,catalogRevision:options.revision,skillCatalogRevision:`skills-${options.revision}`,guideVersion:options.guideVersion}},current.version);
 }
 export function catalogData(tx:M1Transaction):JsonObject {
   const current=tx.get('perception_catalog','current')!,guideVersion=Number(current.data.guideVersion);

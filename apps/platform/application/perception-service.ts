@@ -27,16 +27,18 @@ export function createPerceptionService(store:M1Store,auth:PerceptionAuth,option
   const r:ObjectRef={moduleId:'profiles',type:'profiles.agent@1',id};return {ref:r,row:{id:refId(r),version:Number(row.data.publishedVersion),data:{ref:r,categoryId:'people',metricId:'agents',channel:'world',sourceId:'profiles-public',title:p.displayName,body:JSON.stringify(fields),fields,public:true,active:true,available:true,dataMode:'real',attachments:[],source:{kind:'published_profile'}}}};
  }
  function readable(tx:M1Transaction,a:Actor,r:ObjectRef,channel:string,metadataOnly=false):Candidate {
-  if(r.moduleId==='profiles'&&r.type==='profiles.agent@1'){checkSource(tx,'profiles-public');const c=publicAgent(tx,r.id);if(c&&channel==='world')return c;fail('target_not_accessible',404,'Target is not accessible');}
+  if(r.moduleId==='profiles'&&r.type==='profiles.agent@1'){const c=publicAgent(tx,r.id);if(c&&channel==='world'){checkSource(tx,'profiles-public');return c;}fail('target_not_accessible',404,'Target is not accessible');}
   if(r.moduleId==='inventory'&&r.type==='inventory.holding@1'){
    if(a.kind!=='runtime'||channel!=='inventory')fail('target_not_accessible',404,'Target is not accessible');const g=tx.get('perception_grants',r.id);if(!g||g.data.agentId!==a.agentId||g.data.kind!=='holding'||g.data.active!==true)fail('target_not_accessible',404,'Target is not accessible');
    const item=tx.get('perception_objects',String(g.data.objectId));if(!item||item.data.active!==true||item.data.available!==true)fail('target_not_accessible',404,'Target is not accessible');checkSource(tx,'holdings');
    return {ref:r,grant:g,row:{id:g.id,version:g.version,data:{ref:r,categoryId:'holdings',metricId:'held',channel:'inventory',sourceId:'holdings',title:item.data.title!,body:'明确标识的示例持有记录，不代表经济资产、货币或交易权。',itemRef:item.data.ref!,quantity:g.data.quantity??1,public:false,active:true,available:true,dataMode:g.data.dataMode??'demo',attachments:[],source:{kind:'demo_holding'}}}};
   }
+  // Check the actual reader's grant before exposing even source failure state.
+  const grant=channel==='inbox'&&a.kind==='runtime'?tx.get('perception_grants',grantId(a.agentId!,refId(r),'delivery')):undefined;
+  if(channel==='inbox'&&(!grant||grant.data.active!==true||grant.data.agentId!==a.agentId))fail('target_not_accessible',404,'Target is not accessible');
   const row=tx.get('perception_objects',refId(r));if(!row||row.data.channel!==channel||row.data.active!==true||(!metadataOnly&&row.data.available!==true)||key(row.data.ref)!==key(r))fail('target_not_accessible',404,'Target is not accessible');
-  checkSource(tx,String(row.data.sourceId));
-  if(row.data.public===true&&channel==='world')return {row,ref:r};
-  if(channel==='inbox'&&a.kind==='runtime'){const g=tx.get('perception_grants',grantId(a.agentId!,row.id,'delivery'));if(g?.data.active===true&&g.data.agentId===a.agentId)return {row,ref:r,grant:g};}
+  if(row.data.public===true&&channel==='world'){checkSource(tx,String(row.data.sourceId));return {row,ref:r};}
+  if(channel==='inbox'&&grant){checkSource(tx,String(row.data.sourceId));return {row,ref:r,grant};}
   fail('target_not_accessible',404,'Target is not accessible');
  }
  function readState(tx:M1Transaction,a:Actor,c:Candidate):JsonObject {const s=tx.get('perception_states',key({agentId:a.agentId,objectId:c.row.id}));return {ref:c.ref,currentContentVersion:c.row.version,confirmedContentVersion:s?.data.confirmedContentVersion??null,stateVersion:s?.version??0,confirmedAt:s?.data.confirmedAt??null};}
@@ -50,15 +52,15 @@ export function createPerceptionService(store:M1Store,auth:PerceptionAuth,option
   if(categoryId==='people'&&metricId==='humans')return {candidates,complete:true,scanned:0,authorization};
   if(['notifications','holdings'].includes(categoryId)){
    if(a.kind!=='runtime')fail('insufficient_scope',403,'This view belongs to the Agent');
-   const kind=categoryId==='notifications'?'delivery':'holding',rows=tx.scan('perception_grants',{agentId:a.agentId!,kind},{limit:max+1});complete=rows.length<=max;authorization=key(rows.slice(0,max).map(g=>({id:g.id,version:g.version,active:g.data.active})));
+   const kind=categoryId==='notifications'?'delivery':'holding',rows=tx.scan('perception_grants',{agentId:a.agentId!,kind},{limit:max});complete=rows.length<max;authorization=key(rows.slice(0,max).map(g=>({id:g.id,version:g.version,active:g.data.active})));
    for(const g of rows.slice(0,max)){scanned++;if(g.data.active!==true)continue;const row=tx.get('perception_objects',String(g.data.objectId));if(!row||row.data.active!==true||(unconfirmed&&row.data.available!==true))continue;
     const c=categoryId==='holdings'?readable(tx,a,{moduleId:'inventory',type:'inventory.holding@1',id:g.id},'inventory'):{row,ref:ref(row.data.ref),grant:g};
     if(unconfirmed&&readState(tx,a,c).confirmedContentVersion===row.version)continue;candidates.push(c);
    }
   }else if(categoryId==='people'){
-   const rows=tx.scan('profiles',{}, {limit:max+1});complete=rows.length<=max;for(const row of rows.slice(0,max)){scanned++;const c=publicAgent(tx,row.id);if(c)candidates.push(c);}
+   const rows=tx.scan('profiles',{}, {limit:max});complete=rows.length<max;for(const row of rows.slice(0,max)){scanned++;const c=publicAgent(tx,row.id);if(c)candidates.push(c);}
   }else{
-   const rows=tx.scan('perception_objects',{categoryId},{limit:max+1});complete=rows.length<=max;
+   const rows=tx.scan('perception_objects',{categoryId},{limit:max});complete=rows.length<max;
    for(const row of rows.slice(0,max)){scanned++;if(row.data.public!==true||row.data.active!==true||row.data.available!==true||(metricId&&row.data.metricId!==metricId))continue;candidates.push({row,ref:ref(row.data.ref)});}
   }
   candidates.sort((a,b)=>key(a.ref).localeCompare(key(b.ref)));return {candidates,complete,scanned,authorization};
@@ -86,11 +88,19 @@ export function createPerceptionService(store:M1Store,auth:PerceptionAuth,option
   const id=`ps_${randomUUID()}`;tx.insert('perception_sessions',{id,version:1,data:{...data,kind,actorId:a.id,actorKind:a.kind,permissionVersion:permission(tx,a),epoch:store.recoveryEpoch,expiresAt:now()+ttl}});return id;
  }
  function resume(tx:M1Transaction,a:Actor,id:unknown,kind:string):StoredRow {const token=text(id,'pageToken',8,100),s=tx.get('perception_sessions',token);if(!s||s.data.kind!==kind||s.data.actorId!==a.id||s.data.actorKind!==a.kind||s.data.epoch!==store.recoveryEpoch)fail(kind==='completion'?'completion_expired':'page_expired',410,'Read session is not available');if(Number(s.data.expiresAt)<=now())fail(kind==='completion'?'completion_expired':'page_expired',410,'Read session expired');if(s.data.permissionVersion!==permission(tx,a))fail('read_scope_changed',409,'Reading permissions or source states changed');return s;}
- function record(tx:M1Transaction,a:Actor,action:string,requestId:string,data:JsonObject,targets:ObjectRef[],privateRead:boolean,decision:unknown):void {
+ /** Retain only the prepared scope and versions, never source text or read proofs. */
+ function preparedObservation(action:string,data:JsonObject,input:Record<string,unknown>):JsonObject {
+  const context:JsonObject={...(typeof input.consumerId==='string'?{consumerId:input.consumerId}:{}),...(typeof input.purpose==='string'?{purpose:input.purpose}:{})};
+  if(action==='perceptionOverview')return {kind:'overview',...context,observationId:data.observationId!,worldId:data.worldId!,sections:(data.sections as JsonObject[]).map(section=>({categoryId:section.categoryId!,channel:section.channel!,resolvedScope:section.resolvedScope!,metrics:(section.metrics as JsonObject[]).map(metric=>({metricId:metric.metricId!,status:metric.status!,count:metric.count!,presence:metric.presence!,sourceStates:metric.sourceStates!,sourceCoverage:metric.sourceCoverage!,scopeKey:metric.scopeKey!,contentRevision:metric.contentRevision!,observedAt:metric.observedAt!,freshness:metric.freshness!}))})),coverage:data.coverage!,budgetUsed:data.budgetUsed!};
+  if(action==='perceptionList')return {kind:'list',...context,channel:data.channel!,categoryId:data.categoryId!,metricId:data.metricId!,selection:data.selection!,scope:data.scope!,scopeHash:data.scopeHash!,sourceStates:data.sourceStates!,page:{preparedCount:(data.records as JsonObject[]).length,complete:data.complete!},objects:(data.records as JsonObject[]).map(record=>({ref:record.ref!,version:record.version!,detailAvailable:record.detailAvailable!}))};
+  if(action==='perceptionDetail')return {kind:'detail',...context,channel:input.channel as string,scope:{worldId:'default',...(input.channel==='world'?{spatial:{kind:'world'},filters:{}}:{subject:'authenticated-agent',spatialApplied:false})},ref:data.ref!,version:data.version!,sourceId:data.sourceId!,segment:data.segment!,contentComplete:data.contentComplete!,schema:data.schema!};
+  return {kind:action==='perceptionDiscovery'?'catalog':'document',...(data.catalogRevision?{catalogRevision:data.catalogRevision,skillCatalogRevision:data.skillCatalogRevision!}:{}),...(data.schemaId?{schemaId:data.schemaId}:{}),...(data.moduleId?{moduleId:data.moduleId}:{}),...(data.version?{version:data.version}:{}),...(data.complete!==undefined?{complete:data.complete}:{})};
+ }
+ function record(tx:M1Transaction,a:Actor,action:string,requestId:string,data:JsonObject,targets:ObjectRef[],privateRead:boolean,input:Record<string,unknown>):void {
   if(a.kind!=='runtime')return;capacity(tx,a);
   const binding=privateRead?undefined:tx.scan('bindings',{agentId:a.agentId!,active:true},{limit:1})[0];
   const id=`${String(now()).padStart(16,'0')}_${randomUUID()}`;
-  const fact:StoredRow={id,version:1,data:{recordId:id,agentId:a.agentId!,agentRef:{moduleId:'profiles',type:'profiles.agent@1',id:a.agentId!},actor:{kind:'runtime',agentId:a.agentId!},requestId,operationRef:action,receivedAt:now(),recordedAt:now(),humanAudienceOwnerId:binding?.data.ownerId??null,targets,scopePrivate:privateRead,result:{status:'data_provided',recordedAt:now(),preparedCount:Array.isArray(data.records)?data.records.length:null,contentVersion:data.version??null,segment:data.segment??null},declaration:null,declarationStatus:decision===undefined?'not_declared':'not_retained',relatedRecordIds:[]}};
+  const fact:StoredRow={id,version:1,data:{recordId:id,agentId:a.agentId!,agentRef:{moduleId:'profiles',type:'profiles.agent@1',id:a.agentId!},actor:{kind:'runtime',agentId:a.agentId!},requestId,operationRef:action,receivedAt:now(),recordedAt:now(),humanAudienceOwnerId:binding?.data.ownerId??null,targets,scopePrivate:privateRead,result:{status:'data_provided',recordedAt:now(),preparedCount:Array.isArray(data.records)?data.records.length:null,contentVersion:data.version??null,segment:data.segment??null,prepared:preparedObservation(action,data,input)},declaration:null,declarationStatus:input.decision===undefined?'not_declared':'not_retained',relatedRecordIds:[]}};
   if(Buffer.byteLength(JSON.stringify(fact))>16_384)fail('storage_capacity',503,'Access fact byte budget is exhausted');
   tx.insert('perception_access',fact);
  }
@@ -132,8 +142,29 @@ export function createPerceptionService(store:M1Store,auth:PerceptionAuth,option
   response(tx,a,'budget_measure',data,maxBytes);return data;
  }
  function readBudget(input:Record<string,unknown>):{maxResponseBytes:number;maxScannedRows:number;deadlineMs:number} {const b=input.budget===undefined?{}:object(input.budget,['maxResponseBytes','maxScannedRows','deadlineMs']);return {maxResponseBytes:bounded(b.maxResponseBytes,65_536,65_536,'maxResponseBytes'),maxScannedRows:bounded(b.maxScannedRows,2000,2000,'maxScannedRows'),deadlineMs:bounded(b.deadlineMs,250,250,'deadlineMs')};}
+ function meteredRead(tx:M1Transaction,limits:{maxScannedRows:number;deadlineMs:number}) {
+  const started=Date.now(),cache=new Map<string,StoredRow|undefined>();let scanned=0;
+  const tracked=new Set(['profiles','memberships','perception_objects','perception_grants','perception_states']);
+  const check=()=>{if(Date.now()-started>limits.deadlineMs)fail('budget_too_small',422,'Read preparation exceeded the deadline');};
+  const reserve=(count:number)=>{check();if(scanned+count>limits.maxScannedRows)fail('budget_too_small',422,'Read source row budget is exhausted');};
+  const reader:M1Transaction={
+   get:<T extends JsonObject>(table:Parameters<M1Transaction['get']>[0],id:string)=>{
+    check();if(!tracked.has(table))return tx.get<T>(table,id);const ck=`${table}:${id}`;if(cache.has(ck))return cache.get(ck) as StoredRow<T>|undefined;
+    reserve(1);const row=tx.get<T>(table,id);scanned++;cache.set(ck,row);check();return row;
+   },
+   scan:<T extends JsonObject>(table:Parameters<M1Transaction['scan']>[0],filters:Parameters<M1Transaction['scan']>[1],options:Parameters<M1Transaction['scan']>[2])=>{
+    check();if(!tracked.has(table))return tx.scan<T>(table,filters,options);if(scanned>=limits.maxScannedRows)fail('budget_too_small',422,'Read source row budget is exhausted');
+    // Never issue a source scan whose permitted result size exceeds what remains.
+    const limit=Math.min(options.limit,limits.maxScannedRows-scanned),rows=tx.scan<T>(table,filters,{...options,limit});scanned+=rows.length;for(const row of rows)cache.set(`${table}:${row.id}`,row);check();
+    // A clamped full page cannot prove exhaustion for the original scan request.
+    if(limit<options.limit&&rows.length===limit)fail('budget_too_small',422,'Read source row budget cannot prove selection completion');return rows;
+   },
+   find:tx.find.bind(tx),count:tx.count.bind(tx),insert:tx.insert.bind(tx),update:tx.update.bind(tx),remove:tx.remove.bind(tx),
+  };
+  return {reader,check};
+ }
  function list(tx:M1Transaction,a:Actor,input:Record<string,unknown>):JsonObject {
-  const limits=readBudget(input),started=Date.now();
+  const limits=readBudget(input),meter=meteredRead(tx,limits);tx=meter.reader;
   const ctx=validateContext(input,a),categoryId=text(input.categoryId,'categoryId',1,60),category=CATEGORIES.find(c=>c.categoryId===categoryId);if(!category||input.channel!==category.channel)fail('invalid_request',422,'Category does not belong to the channel');
   const metricId=input.metricId===undefined?null:text(input.metricId,'metricId',1,60);if(metricId&&!category.metrics.some(m=>m.metricId===metricId))fail('invalid_request',422,'Unknown category metric');
   if(input.selection!==undefined&&(categoryId!=='notifications'||input.selection!=='unconfirmed'))fail('invalid_request',422,'Selection is not supported');
@@ -141,13 +172,15 @@ export function createPerceptionService(store:M1Store,auth:PerceptionAuth,option
   if(categoryId==='people'&&metricId==='humans')fail('channel_not_enabled',409,'Public human identity source is not enabled');
   const limit=bounded(input.limit,20,50),query={...ctx,categoryId,channel:category.channel,metricId,selection:input.selection??null,limit};
   let records:JsonObject[],offset=0,readSessionId:string,grantVersions:JsonObject={};
-  if(input.pageToken!==undefined){const s=resume(tx,a,input.pageToken,'list');if(key(s.data.query)!==key(query))fail('read_scope_changed',409,'List arguments changed');records=s.data.records as JsonObject[];offset=Number(s.data.offset);readSessionId=String(s.data.readSessionId);grantVersions=plain(s.data.grantVersions);for(const record of records){try{const c=readable(tx,a,ref(record.ref),category.channel,true);if((c.grant?.version??null)!==grantVersions[key(c.ref)])fail('read_scope_changed',409,'Selected grant changed');}catch{fail('read_scope_changed',409,'A selected object is no longer readable');}}}
+  if(input.pageToken!==undefined){const s=resume(tx,a,input.pageToken,'list');if(key(s.data.query)!==key(query))fail('read_scope_changed',409,'List arguments changed');records=s.data.records as JsonObject[];offset=Number(s.data.offset);readSessionId=String(s.data.readSessionId);grantVersions=plain(s.data.grantVersions);for(const record of records){try{const c=readable(tx,a,ref(record.ref),category.channel,true);if((c.grant?.version??null)!==grantVersions[key(c.ref)])fail('read_scope_changed',409,'Selected grant changed');}catch(error){if(error instanceof M1Error&&error.code==='budget_too_small')throw error;fail('read_scope_changed',409,'A selected object is no longer readable');}}}
   else{const result=selection(tx,a,categoryId,metricId,input.selection==='unconfirmed'||metricId==='unconfirmed',limits.maxScannedRows);if(!result.complete)fail('budget_too_small',422,'The bounded list selection cannot prove completion');records=result.candidates.map(c=>summary(tx,a,c));for(const c of result.candidates)grantVersions[key(c.ref)]=c.grant?.version??null;readSessionId=`list_${randomUUID()}`;}
-  if(Date.now()-started>limits.deadlineMs)fail('budget_too_small',422,'List preparation exceeded the deadline');
+  meter.check();
   const page=records.slice(offset,offset+limit).map(r=>category.channel==='inbox'?{...r,agentReadState:r.detailAvailable===true?readState(tx,a,readable(tx,a,ref(r.ref),'inbox')):null}:r),next=offset+page.length;
+  meter.check();
   return {channel:category.channel,consumerId:ctx.consumerId,categoryId,metricId,selection:input.selection??null,scope:ctx.scope,scopeHash:key(ctx.scope),readSessionId,sourceSetVersion:permission(tx,a),sourceStates:category.sourceIds.map(sourceId=>({sourceId,state:currentSource(tx,sourceId)})),records:page,nextPageToken:next<records.length?session(tx,a,'list',{query,records,grantVersions,offset:next,readSessionId}):null,complete:next>=records.length,checkpoint:null};
  }
  function detail(tx:M1Transaction,a:Actor,input:Record<string,unknown>):JsonObject {
+  const limits=readBudget(input),started=Date.now();
   const ctx=validateContext(input,a),r=ref(input.ref),channel=text(input.channel,'channel',1,30),c=readable(tx,a,r,channel);let offset=0,readSessionId=`body_${randomUUID()}`;
   if(input.knownVersion!==undefined)version(input.knownVersion,'knownVersion');
   if(input.contentToken!==undefined){const s=resume(tx,a,input.contentToken,'detail');if(key(s.data.ref)!==key(r)||s.data.channel!==channel||key(s.data.context)!==key(ctx))fail('read_scope_changed',409,'Detail context changed');if(s.data.contentVersion!==c.row.version)fail('content_changed',409,'Content version changed');if(s.data.grantVersion!==(c.grant?.version??null))fail('read_scope_changed',409,'Content grant changed');offset=Number(s.data.offset);readSessionId=String(s.data.readSessionId);}
@@ -155,6 +188,7 @@ export function createPerceptionService(store:M1Store,auth:PerceptionAuth,option
   if(attachments.length>50||Buffer.byteLength(JSON.stringify(attachments))>8000)fail('source_unavailable',503,'Attachment descriptions exceed the bounded source contract');
   const data:JsonObject={ref:r,version:c.row.version,schema:{id:`${TYPE_DEFINITIONS.find(t=>t.type===r.type)!.prefix}-detail`,version:1},sourceId:c.row.data.sourceId!,content:{text:body.slice(offset,end),dataMode:c.row.data.dataMode!,source:c.row.data.source??{kind:'unknown'},...(c.row.data.fields?{fields:c.row.data.fields}:{}),...(c.row.data.itemRef?{itemRef:c.row.data.itemRef,quantity:c.row.data.quantity??1}:{}),...(c.row.data.sourceId==='platform-publications'?{publication:{actor:c.row.data.actor!,occurredAt:c.row.data.occurredAt!,publishedRefs:c.row.data.publishedRefs!}}:{})},segment:{start:offset,end,total:body.length,unit:'utf16-code-units'},attachments:complete?attachments:[],actions:[],contentComplete:complete,nextContentToken:complete?null:session(tx,a,'detail',{ref:r,channel,context:ctx,contentVersion:c.row.version,grantVersion:c.grant?.version??null,offset:end,readSessionId}),readSessionId};
   if(channel==='inbox'){data.agentReadState=readState(tx,a,c);if(complete)data.completionToken=session(tx,a,'completion',{ref:r,channel,contentVersion:c.row.version,grantVersion:c.grant?.version??null,readSessionId},settings.completionTtlMs);}
+  if(Date.now()-started>limits.deadlineMs)fail('budget_too_small',422,'Detail preparation exceeded the deadline');
   return data;
  }
  function confirm(tx:M1Transaction,a:Actor,input:Record<string,unknown>):JsonObject {
@@ -188,8 +222,8 @@ export function createPerceptionService(store:M1Store,auth:PerceptionAuth,option
   else records=tx.scan('perception_access',{agentId:ar.id,humanAudienceOwnerId:a.ownerId!},{limit:settings.accessPerAgentLimit+1}).map(row=>row.data);
   // A public ref does not make the log public; both audience-at-write and current source rights apply.
   const originalLength=records.length;
-  records=records.filter(r=>r.humanAudienceOwnerId===a.ownerId&&r.scopePrivate===false&&(r.targets as JsonObject[]).every(target=>{try{return readable(tx,a,ref(target),'world').row.data.public===true;}catch{return false;}}));
-  if(input.pageToken!==undefined&&records.length!==originalLength)fail('read_scope_changed',409,'Activity disclosure rights changed');
+  records=records.filter(r=>typeof r.recordedAt==='number'&&r.recordedAt>=now()-settings.accessRetentionMs&&r.recordedAt<=cut&&r.humanAudienceOwnerId===a.ownerId&&r.scopePrivate===false&&(r.targets as JsonObject[]).every(target=>{try{return readable(tx,a,ref(target),'world').row.data.public===true;}catch{return false;}}));
+  if(input.pageToken!==undefined&&records.length!==originalLength)fail('read_scope_changed',409,'Activity disclosure rights or retention window changed');
   const page=records.slice(offset,offset+limit).map(r=>{const {humanAudienceOwnerId,scopePrivate,...safe}=r;return safe;});const next=offset+page.length;
   return {agentRef:ar,records:page,nextPageToken:next<records.length?session(tx,a,'activity',{agentRef:ar,records,offset:next,cut,limit}):null,complete:next>=records.length,checkpoint:null,historyCoverage:{from:null,to:cut,complete:false,olderDetailsExpired:null}};
  }
@@ -215,7 +249,7 @@ export function createPerceptionService(store:M1Store,auth:PerceptionAuth,option
    if(!['perceptionActivity','confirmAgentRead','queryAgentRead'].includes(action)){
     const targets=action==='perceptionDetail'||action==='queryAgentRead'?[ref(input.ref)]:Array.isArray(data.records)?data.records.map(v=>ref(plain(v).ref)):[];
     const privateRead=input.channel==='inbox'||input.channel==='inventory'||action==='queryAgentRead'||(action==='perceptionOverview'&&(data.sections as JsonObject[]).some(s=>s.channel!=='world'));
-    record(tx,a,action,requestId,data,targets,privateRead,input.decision);
+    record(tx,a,action,requestId,data,targets,privateRead,input);
    }
    return result;
   });
