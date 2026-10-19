@@ -27,6 +27,14 @@ test('overview has bounded category metrics rather than bodies, separates people
   const occurrences = await f.listAll(requestBase('world', { categoryId: 'events', metricId: 'occurrences', limit: 5 }));
   assert.equal(f.metric(view, 'events', 'occurrences').count.value, occurrences.records.length);
   assert(occurrences.records.length >= 1, 'Explicitly labeled example occurrences are distinct from plans');
+  const publication = occurrences.records.find(row => row.sourceId === 'platform-publications'); assert(publication);
+  const publicationBody = await f.detail(publication.ref, 'world');
+  assert.equal(publicationBody.final.content.dataMode, 'platform');
+  assert.equal(publicationBody.final.content.publication.actor.kind, 'administrator');
+  assert.equal(publicationBody.final.content.publication.actor.id, 'isolated-test-administrator');
+  assert(publicationBody.final.content.publication.publishedRefs.length > 0);
+  const demonstration = occurrences.records.find(row => row.sourceId === 'demo-events'); assert(demonstration);
+  assert.equal((await f.detail(demonstration.ref, 'world')).final.content.dataMode, 'demo');
   assert.equal(view.checkpoint == null, true);
   noPrivateFields(view, ['completionToken', '"body"', '"records"', f.owner.email, f.owner.ownerId, f.a.runtimeToken]);
   const all = await f.listAll(inbox());
@@ -43,11 +51,22 @@ test('overview has bounded category metrics rather than bodies, separates people
   assert.equal((await f.unread()).count.value, 30);
   const tiny = await f.call('POST', '/overview', { protocolVersion: 1, consumerId: 'isolated-http-consumer', purpose: 'agent-perception', budget: { maxResponseBytes: 1 } });
   assert.equal(tiny.error.code, 'budget_too_small'); assert.equal(tiny.data == null, true, 'A budget failure cannot pretend to be an empty or complete overview');
+  const items = await f.listAll(requestBase('world', { categoryId: 'items', limit: 5 }));
+  assert.equal(items.records.filter(row => row.summary.itemKind === 'work').length, 6);
+  assert.equal(items.records.filter(row => row.summary.itemKind === 'prop').length, 8);
+  assert.equal((await f.listAll(requestBase('inventory', { categoryId: 'holdings', limit: 5 }))).records.length, 14);
   const prepared = await f.detail(unread.records[0]!.ref);
   await f.read('PUT', '/agent-read-state', confirmation(unread.records[0]!.ref, prepared.final));
   const again = await f.listAll(inbox());
   assert.equal(again.records.length, 31, 'Omitting metricId and selection still enumerates confirmed messages');
   assert.equal((await f.unread()).count.value, 29);
+  f.storage(store => store.transaction(tx => {
+    const row = tx.get('perception_catalog', 'current')!;
+    assert(tx.update('perception_catalog', { ...row, version: row.version + 1,
+      data: { ...row.data, sourceStates: { ...(row.data.sourceStates as Json), 'demo-items': 'unavailable' } } }, row.version));
+  }));
+  const failedSource = (await f.overview(undefined, { categoryIds: ['items'] })).sections[0].metrics[0];
+  assert.equal(failedSource.status, 'unavailable'); assert.equal(failedSource.count.value, null); assert.equal(failedSource.presence, null);
 });
 
 test('thirty confirmable messages permit five summaries, three complete reads and exactly three explicit confirmations', async t => {
@@ -86,6 +105,8 @@ test('completed confirmations replay before expiry checks, current reads detect 
   const committed = await f.read('PUT', '/agent-read-state', input);
   f.advance(2000);
   assert.deepEqual(await f.read('PUT', '/agent-read-state', input), committed, 'The exact prior command survives completion proof expiry');
+  const expired = await f.call('PUT', '/agent-read-state', { ...input, operationId: randomUUID() });
+  assert.equal(expired.status, 410); assert.equal(expired.error.code, 'completion_expired');
   const receipt = await ok(f.m1, 'GET', `/operations/${input.operationId}?${new URLSearchParams({ scope: `perception-agent:${f.a.agentId}`, action: 'confirmAgentRead' })}`, undefined, f.a.runtimeToken);
   assert.equal(receipt.operationId, input.operationId);
   const object = f.storage(store => store.read(tx => tx.find('perception_objects').find(row => refKey(row.data.ref as unknown as Ref) === refKey(ref))));
@@ -118,6 +139,14 @@ test('completed confirmations replay before expiry checks, current reads detect 
 
 test('seed is idempotent, preserves source edits and inactive grants, and later registrations receive the same source set exactly once', async t => {
   const f = await fixture(t);
+  assert.equal(f.manifest.counts.deduplicatedObjects, f.manifest.objects.length);
+  assert.equal(new Set(f.manifest.objects.map((row: Json) => refKey(row.ref))).size, f.manifest.objects.length);
+  assert.deepEqual(f.manifest.counts.items, { works: 6, props: 8 });
+  assert.equal(f.manifest.counts.demonstrationOccurrences, 1); assert.equal(f.manifest.counts.administrativePublications, 1);
+  assert.equal(f.manifest.objects.filter((row: Json) => row.sourceId === 'profiles-public').length, 3);
+  const agentManifest = f.manifest.agents.find((row: Json) => row.agentId === f.a.agentId); assert(agentManifest);
+  assert.equal(agentManifest.holdingRecords.length, 14); assert.equal(agentManifest.deliveryRecords.length, 31);
+  assert.equal(agentManifest.deliveryRecords.filter((row: Json) => row.detailAvailable).length, 30);
   const object = f.storage(store => store.read(tx => tx.find('perception_objects').find(row => row.data.sourceId === 'demo-items'))); assert(object);
   const beforeView = await f.overview(undefined, { categoryIds: ['items'] });
   const beforeMetric = beforeView.sections[0].metrics[0];
@@ -165,8 +194,9 @@ test('versioned catalog guides keep prior versions readable and a partial direct
     list: ['protocolVersion', 'consumerId', 'purpose', 'channel', 'categoryId'],
     detail: ['protocolVersion', 'consumerId', 'purpose', 'channel', 'ref'],
     'agent-read-state-query': ['protocolVersion', 'ref'],
-    'agent-read-state-confirm': ['protocolVersion', 'operationId', 'ref', 'contentVersion', 'completionToken'],
-    'activity-query': ['protocolVersion', 'agentRef'] };
+    'agent-read-state-confirm': ['protocolVersion', 'operationId', 'ref', 'contentVersion', 'completionToken'] };
+  assert(!catalog.operations.some((row: Json) => row.id === 'activity-query'), 'Runtime discovery does not grant owner history access');
+  assert(!catalog.operations.some((row: Json) => ['updateDemoObject', 'publishGuide', 'seedWs02DemoData'].includes(row.id)), 'Administrative process helpers are not Agent capabilities');
   for (const [id, fields] of Object.entries(requirements)) {
     const operation = catalog.operations.find((row: Json) => row.id === id); assert(operation, `A published operation resolves ${id}`);
     assert(operation.path.startsWith('/v1/perception/'));
@@ -177,6 +207,13 @@ test('versioned catalog guides keep prior versions readable and a partial direct
       assert(schema.document.required.includes(field), `The public schema identifies required ${id}.${field}`);
     }
   }
+  const human = await f.read('GET', '/discovery?limit=50', undefined, f.owner.sessionToken);
+  assert.equal(human.complete, true);
+  assert(!human.operations.some((row: Json) => row.id === 'agent-read-state-confirm'));
+  assert(!human.operations.some((row: Json) => ['updateDemoObject', 'publishGuide', 'seedWs02DemoData'].includes(row.id)), 'Owner sessions do not grant administrative publication');
+  const activity = human.operations.find((row: Json) => row.id === 'activity-query'); assert(activity);
+  const activitySchema = await f.read('GET', `/schemas/${encodeURIComponent(activity.inputSchema.id)}?version=${activity.inputSchema.version}`, undefined, f.owner.sessionToken);
+  assert.equal(activitySchema.document.additionalProperties, false); assert(activitySchema.document.required.includes('agentRef'));
   const guide1 = await f.read('GET', '/guides/world?version=1');
   for (const field of ['protocolVersion', 'consumerId', 'contentToken', 'completionToken', 'operationId']) {
     assert(JSON.stringify(guide1.document).includes(field), `A reader without source code can find ${field} in the public guide`);

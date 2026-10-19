@@ -87,6 +87,10 @@ test('failed confirmation keys remain failures and altered retries cannot consum
   const correct = await f.detail(ref), repeated = await f.call('PUT', '/agent-read-state', input);
   assert.equal(repeated.status, rejected.status);
   assert(JSON.stringify(repeated.error) === JSON.stringify(rejected.error), 'The same failed operation key replays the original safe error');
+  const receiptPath = `/operations/${input.operationId}?${new URLSearchParams({ scope: `perception-agent:${f.a.agentId}`, action: 'confirmAgentRead' })}`;
+  const failedReceipt = await f.m1('GET', receiptPath, undefined, f.a.runtimeToken);
+  assert.equal(failedReceipt.status, rejected.status); assert.equal(failedReceipt.body.error.code, rejected.error.code);
+  assert.equal((await f.m1('GET', receiptPath, undefined, f.b.runtimeToken)).status, 404);
   const altered = await f.call('PUT', '/agent-read-state', { ...input, completionToken: correct.final.completionToken });
   assert.equal(altered.status, 409); assert.equal(altered.error.code, 'operation_id_conflict');
   const successful = await f.read('PUT', '/agent-read-state', { ...input, operationId: randomUUID(), completionToken: correct.final.completionToken });

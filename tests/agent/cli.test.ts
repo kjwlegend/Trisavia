@@ -10,6 +10,9 @@ import { once } from 'node:events';
 import test from 'node:test';
 import { newAgentMaterial, newCredential, newOperationId } from '../../scripts/m1-client.ts';
 import { ownerFixture, type Api } from '../../scripts/agent-manager-qa-fixture.ts';
+import { openM1Store } from '../../apps/platform/infrastructure/relational/sqlite-store.ts';
+import { seedWs02DemoData } from '../../apps/platform/application/perception-seed.ts';
+import { publishPerceptionCatalog } from '../../apps/platform/application/perception-catalog.ts';
 
 type Json = Record<string, any>;
 const serverEntry = fileURLToPath(new URL('../../apps/platform/server.ts', import.meta.url));
@@ -23,7 +26,7 @@ async function server(directory: string, instanceId = 'agent-process-test', envi
   const child = spawn(process.execPath, [serverEntry], { cwd: directory, env: { ...process.env,
     M1_HOST: '127.0.0.1', M1_PORT: '0', M1_DATABASE_PATH: join(directory, 'test.sqlite'),
     M1_IDENTITY_PATH: join(directory, 'identity.json'), M1_INSTANCE_ID: instanceId, M1_RECOVERY_EPOCH: 'agent-test-epoch',
-    ...environment,
+    M1_EMAIL_MODE: 'experience', RESEND_API_KEY: '', M1_EMAIL_FROM: '', M1_PUBLIC_ORIGIN: '', M1_EMAIL_CODE_SECRET: '', ...environment,
   }, stdio: 'pipe' });
   let address = '';
   try {
@@ -74,11 +77,24 @@ function safeOutput(output: string, state: Json) {
 }
 async function initializeOwner(origin: string, state: Json) {
   const setupToken = newCredential('setup'), sessionToken = newCredential('session'), recoveryToken = newCredential('recovery');
+  const preview = await api(origin, 'GET', `/v1/owner-handoffs/${state.handoff.token.split('.')[0]}`, undefined, state.handoff.token);
   await api(origin, 'POST', '/v1/owner-setups', { operationId: newOperationId(), setupToken }, state.handoff.token);
-  await api(origin, 'POST', '/v1/owner/setup/complete', { operationId: newOperationId(), password: 'process-test-password',
+  await registerOwner(origin, { attemptId: randomUUID(), password: 'process-test-password',
     username: `Process_${randomUUID().replaceAll('-', '').slice(0, 12)}`, email: `process-${randomUUID()}@example.test`,
-    recoveryToken, sessionToken, credentialsSaved: true }, setupToken);
+    recoveryToken, sessionToken }, { agentId: preview.agentId, expectedGeneration: preview.generation, setupToken });
   return sessionToken;
+}
+
+async function registerOwner(origin: string, input: Json, target?: Json) {
+  const browserToken = newCredential('browser'), { username, email, credentialsSaved: _saved, ...completion } = input;
+  await api(origin, 'POST', '/v1/owner/registration-attempts', { operationId: newOperationId(), attemptId: input.attemptId,
+    browserToken, username, email, ...target });
+  const sendOperationId = newOperationId();
+  await api(origin, 'POST', `/v1/owner/registration-attempts/${input.attemptId}/email-challenges`, { operationId: sendOperationId }, browserToken);
+  await api(origin, 'POST', `/v1/owner/registration-attempts/${input.attemptId}/email-verifications`, { operationId: newOperationId(), sendOperationId, code: '1234' }, browserToken);
+  return api(origin, 'POST', target ? '/v1/owner/setup/complete' : '/v1/owner/accounts', {
+    ...completion, operationId: input.operationId ?? newOperationId(), ...(target?.setupToken ? { setupToken: target.setupToken } : {}),
+  }, browserToken);
 }
 
 async function privateInput(directory: string, value: Json) {
@@ -338,7 +354,7 @@ test('downloaded client requests owner assistance without gaining owner authorit
   const running = await server(directory); t.after(() => stop(running.child)); await download(directory, running.address);
   const ownerId = randomUUID(), sessionToken = newCredential('session'), recoveryToken = newCredential('recovery');
   await privateInput(directory, { ownerId, sessionToken, recoveryToken });
-  await api(running.address, 'POST', '/v1/owner/accounts', { operationId: newOperationId(), attemptId: ownerId,
+  await registerOwner(running.address, { operationId: newOperationId(), attemptId: ownerId,
     username: `Assist_${randomUUID().replaceAll('-', '').slice(0, 12)}`, email: `${randomUUID()}@example.test`,
     password: 'assistance-test-password', sessionToken, recoveryToken, credentialsSaved: true });
   const paths = [join(directory, 'a1.json'), join(directory, 'a2.json')];
@@ -504,7 +520,7 @@ test('legal owner claim is adopted from authenticated self after process reopen 
   await writeFile(join(directory, 'owner.private.json'), JSON.stringify({ sessionToken, recoveryToken,
     ownerId: attemptId, pendingOperation: { operationId: registrationOperationId,
       scope: `owner-registration:${attemptId}`, action: 'registerOwner' } }), { mode: 0o600 });
-  const owner = await api(running.address, 'POST', '/v1/owner/accounts', { operationId: registrationOperationId, attemptId,
+  const owner = await registerOwner(running.address, { operationId: registrationOperationId, attemptId,
     username: `Process_${randomUUID().replaceAll('-', '').slice(0, 10)}`, email: `${randomUUID()}@example.test`,
     password: `Synthetic-${randomUUID()}`, sessionToken, recoveryToken, credentialsSaved: true });
   await api(running.address, 'POST', '/v1/owner/agent-claims', { operationId: newOperationId(), agentId: before.agentId,
@@ -526,12 +542,12 @@ test('legal owner claim is adopted from authenticated self after process reopen 
   }
 });
 
-test('registration, draft and handoff response loss plus backend restart resume each original complete command', { timeout: 30_000 }, async t => {
+test('registration, initial public save and handoff response loss plus backend restart resume each original complete command', { timeout: 30_000 }, async t => {
   const directory = await mkdtemp(join(tmpdir(), 'm1-agent-loss-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   let running = await server(directory); t.after(() => stop(running.child));
-  let upstream = running.address, lossIndex = 0, registrations = 0, handoffs = 0, drafts = 0;
-  const discardPaths = ['/v1/registrations', '/profile/draft', '/v1/agent/self/handoffs'];
+  let upstream = running.address, lossIndex = 0, registrations = 0, handoffs = 0, profiles = 0;
+  const discardPaths = ['/v1/registrations', '/profile', '/v1/agent/self/handoffs'];
   const proxy = createServer(async (request, response) => {
     const chunks: Buffer[] = []; for await (const chunk of request) chunks.push(Buffer.from(chunk));
     const body = Buffer.concat(chunks);
@@ -545,7 +561,7 @@ test('registration, draft and handoff response loss plus backend restart resume 
         registrations++;
       }
       if (request.url === '/v1/agent/self/handoffs' && request.method === 'POST') handoffs++;
-      if (request.url?.endsWith('/profile/draft') && request.method === 'PUT') drafts++;
+      if (request.url?.endsWith('/profile') && request.method === 'PUT') profiles++;
       if (discardPaths[lossIndex] && request.url?.endsWith(discardPaths[lossIndex]!) && forwarded.status === 200) {
         lossIndex++; response.destroy(); return;
       }
@@ -564,13 +580,13 @@ test('registration, draft and handoff response loss plus backend restart resume 
   const created = await api(origin, 'GET', '/v1/agent/self', undefined, before.runtimeToken);
   safeOutput(lost.stdout + lost.stderr, before);
   await stop(running.child); running = await server(directory); upstream = running.address;
-  assert.equal((await cli(directory, ['status', '--state', statePath])).code, 1, 'Lost draft response stays pending');
+  assert.equal((await cli(directory, ['status', '--state', statePath])).code, 1, 'Lost initial public-save response stays pending');
   assert.equal((await cli(directory, ['status', '--state', statePath])).code, 1, 'Lost handoff response stays pending');
   const continued = await cli(directory, ['status', '--state', statePath]);
   assert.equal(continued.code, 0, 'A restarted downloaded client must continue the original registration');
   assert.equal(JSON.parse(continued.stdout).agentId, created.agentId);
   assert.equal(registrations, 1, 'A readable original receipt must avoid another registration POST');
-  assert.equal(drafts, 1, 'Draft continuation must query the original command');
+  assert.equal(profiles, 1, 'Initial public-save continuation must query the original command');
   assert.equal(handoffs, 1, 'Handoff continuation must not mint another generation');
   assert.equal((await json(statePath)).commands.registration.body.operationId, before.commands.registration.body.operationId);
   const otherDirectory = await mkdtemp(join(tmpdir(), 'm1-different-instance-'));
@@ -592,7 +608,7 @@ test('registration, draft and handoff response loss plus backend restart resume 
   }
 });
 
-test('owner-required publication remains pending and resumes joining only after authenticated owner publication', { timeout: 20_000 }, async t => {
+test('owner-required publication stays pending until authenticated owner preparation and explicit publication', { timeout: 20_000 }, async t => {
   const directory = await mkdtemp(join(tmpdir(), 'm1-agent-proposal-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const running = await server(directory); t.after(() => stop(running.child));
@@ -614,6 +630,12 @@ test('owner-required publication remains pending and resumes joining only after 
         await api(running.address, 'PUT', `/v1/owner/agents/${registered.agentId}/profile-policy`, {
           operationId: newOperationId(), expectedVersion: 1, expectedPolicyVersion: 1, mode: 'proposal_required', lockedFields: [],
         }, ownerSession);
+        const profile = await api(running.address, 'GET', `/v1/agents/${registered.agentId}/profile`, undefined, ownerSession);
+        // New registrations are already public. A real owner withdrawal creates
+        // the unpublished state this authorization story is intended to protect.
+        await api(running.address, 'POST', `/v1/agents/${registered.agentId}/profile/unpublish`, {
+          operationId: newOperationId(), expectedVersion: profile.version, expectedPolicyVersion: profile.policyVersion,
+        }, ownerSession);
       }
       response.writeHead(forwarded.status, { 'content-type': forwarded.headers.get('content-type') ?? 'text/plain' }); response.end(payload);
     } catch { response.writeHead(503); response.end('{}'); }
@@ -628,14 +650,21 @@ test('owner-required publication remains pending and resumes joining only after 
   assert.equal(pending.code, 0);
   const pendingSummary = JSON.parse(pending.stdout), state = await json(statePath);
   assert.equal(pendingSummary.registration, 'completed'); assert.equal(pendingSummary.profile, 'pending');
-  assert.equal(pendingSummary.membership, 'not_joined'); assert.equal(pendingSummary.pendingReason, 'owner_confirmation_required');
+  assert.equal(pendingSummary.membership, 'joined'); assert.equal(pendingSummary.pendingReason, 'owner_confirmation_required');
   assert.equal(state.profile.published, null);
-  await api(running.address, 'POST', `/v1/agents/${state.agentId}/profile/publish`, {
+  assert.equal((await fetch(`${running.address}/v1/public/agents/${state.agentId}`)).status, 404);
+  assert.equal(state.commands.initialProfile, undefined, 'The CLI must not prepare a direct write after the owner changed the policy');
+  const prepared = await api(running.address, 'PUT', `/v1/agents/${state.agentId}/profile/draft`, {
     operationId: newOperationId(), expectedVersion: state.profile.version, expectedPolicyVersion: state.profile.policyVersion,
+    fields: { displayName: 'Owner reviewed proposal' },
+  }, ownerSession);
+  await api(running.address, 'POST', `/v1/agents/${state.agentId}/profile/publish`, {
+    operationId: newOperationId(), expectedVersion: prepared.version, expectedPolicyVersion: prepared.policyVersion,
   }, ownerSession);
   const continued = await cli(directory, ['status', '--state', statePath]);
   assert.equal(continued.code, 0); assert.equal(JSON.parse(continued.stdout).membership, 'joined');
   assert.equal((await json(statePath)).profile.confirmationSource, 'owner_authenticated');
+  assert.equal((await api(running.address, 'GET', `/v1/public/agents/${state.agentId}`)).profile.displayName, 'Owner reviewed proposal');
 });
 
 test('corrupt, public or symlink client state never turns into a new registration', { timeout: 20_000 }, async t => {
@@ -717,7 +746,7 @@ globalThis.fetch = async (input, options = {}) => {
   await writeFile(path, original, { mode: 0o600 });
   for (const command of ['onboard', 'status', 'handoff', 'import-runtime', 'avatar-catalog', 'capabilities', 'profile-read', 'profile-update',
     'profile-clear', 'profile-publish', 'profile-unpublish', 'membership-read', 'membership-join', 'membership-leave',
-    'recovery-request-create', 'recovery-request-read', 'recovery-request-cancel']) {
+    'recovery-request-create', 'recovery-request-read', 'recovery-request-cancel', 'check-updates']) {
     const result = await probe([command, '--state', path]);
     assert.equal(result.code, 1); assert(result.stderr.startsWith('invalid_origin;'));
     assert.equal(result.attempts.length, 0, 'Saved public HTTP must be rejected for every command before transport');
@@ -725,4 +754,86 @@ globalThis.fetch = async (input, options = {}) => {
   }
   const bypass = await probe(['onboard', '--url', 'https://example.test', '--state', join(directory, 'not-created.json'), '--name', 'Origin test', '--insecure']);
   assert.equal(bypass.code, 1); assert(bypass.stderr.startsWith('invalid_arguments;')); assert.equal(bypass.attempts.length, 0);
+});
+
+test('manual discovery reuses the downloaded Agent identity, preserves complete versions on failures and never resumes a pending business write', { timeout: 45_000 }, async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'ws02-cli-discovery-'));
+  const running = await server(directory, 'ws02-cli-discovery');
+  let failDiscovery = true, forcePages = false, failGuide = false, rejectDraft = false, discoveries = 0;
+  const writes: { path: string; method: string }[] = [];
+  const proxy = createServer(async (request, response) => {
+    try {
+      const chunks: Buffer[] = []; for await (const chunk of request) chunks.push(Buffer.from(chunk));
+      const body = Buffer.concat(chunks), target = new URL(request.url!, running.address);
+      const isDiscovery = target.pathname === '/v1/perception/discovery';
+      if (isDiscovery) discoveries++;
+      if (request.method !== 'GET') writes.push({ path: target.pathname, method: request.method! });
+      if ((isDiscovery && failDiscovery) || (forcePages && isDiscovery && target.searchParams.has('pageToken'))
+        || (failGuide && target.pathname.startsWith('/v1/perception/guides/'))) {
+        response.writeHead(503, { 'content-type': 'application/json' }); response.end('{"error":{"code":"source_unavailable"}}'); return;
+      }
+      if (rejectDraft && request.method === 'PUT' && target.pathname.endsWith('/profile/draft')) { response.destroy(); return; }
+      // Only the transport query bound changes: every successful directory page
+      // and token comes from the real service, never a fabricated success.
+      if (forcePages && isDiscovery) target.searchParams.set('limit', '1');
+      const forwarded = await fetch(target, { method: request.method!, headers: {
+        ...(request.headers.authorization ? { authorization: request.headers.authorization } : {}),
+        ...(body.length ? { 'content-type': 'application/json' } : {}),
+      }, ...(body.length ? { body } : {}) });
+      response.writeHead(forwarded.status, { 'content-type': forwarded.headers.get('content-type') ?? 'application/json' }); response.end(await forwarded.text());
+    } catch { response.writeHead(503); response.end('{}'); }
+  });
+  t.after(async () => {
+    try { await new Promise<void>(resolve => proxy.close(() => resolve())); }
+    finally { try { await stop(running.child); } finally { await rm(directory, { recursive: true, force: true }); } }
+  });
+  await new Promise<void>(resolve => proxy.listen(0, '127.0.0.1', resolve));
+  const address = proxy.address(); assert(address && typeof address !== 'string'); const origin = `http://127.0.0.1:${address.port}`;
+  await download(directory, origin);
+  const path = join(directory, 'agent.private.json');
+  const first = await cli(directory, ['onboard', '--url', origin, '--state', path, '--name', 'Manual perception Agent']);
+  assert.equal(first.code, 0); const state = await json(path); safeOutput(first.stdout + first.stderr, state);
+  assert.equal(JSON.parse(first.stdout).discovery.status, 'unknown'); assert(discoveries > 0);
+  assert.equal(state.commands.registration.status, 'committed'); assert(state.handoff?.privateFile);
+  assert.equal((await stat(state.handoff.privateFile)).mode & 0o777, 0o600);
+  assert.equal((await api(running.address, 'GET', '/v1/agent/self', undefined, state.runtimeToken)).agentId, state.agentId);
+  const administrative = (version?: number) => {
+    const store = openM1Store({ databasePath: join(directory, 'test.sqlite'), instanceId: 'ws02-cli-discovery', recoveryEpoch: 'agent-test-epoch' });
+    try {
+      if (version) publishPerceptionCatalog(store, { revision: `cli-catalog-${version}`, guideVersion: version });
+      else seedWs02DemoData(store, { actorId: 'isolated-cli-administrator' });
+    } finally { store.close(); }
+  };
+  administrative(); failDiscovery = false;
+  const updated = await command(directory, path, 'check-updates'); assert.equal(updated.discovery.status, 'updated');
+  const cachePath = `${path}.discovery.json`, baseline = await json(cachePath);
+  assert.equal(baseline.complete, true); assert.equal(baseline.agentId, state.agentId); assert.equal(baseline.origin, origin);
+  assert.equal((await stat(cachePath)).mode & 0o777, 0o600);
+  const beforeRead = discoveries; await command(directory, path, 'profile-read'); assert.equal(discoveries, beforeRead, 'Ordinary local reads do not start another discovery cycle');
+  rejectDraft = true;
+  const intent = await privateInput(directory, { fields: { bio: 'This unsubmitted business command must stay pending' } });
+  const pendingResult = await cli(directory, ['profile-update', '--state', path, '--input-file', intent]); assert.equal(pendingResult.code, 1);
+  const pending = await json(path), originalWrites = writes.length;
+  const preserve = async () => {
+    const current = await json(path);
+    assert(current.runtimeToken === pending.runtimeToken && current.continuationToken === pending.continuationToken, 'Discovery cannot rotate identity proofs');
+    assert.equal(current.agentId, pending.agentId); assert.equal(current.instanceId, pending.instanceId);
+    assert(JSON.stringify(current.commands) === JSON.stringify(pending.commands), 'The exact business command and receipt history remain untouched');
+    assert(JSON.stringify(current.pendingMutation) === JSON.stringify(pending.pendingMutation)); assert.equal(writes.length, originalWrites);
+  };
+  administrative(2); const second = await command(directory, path, 'check-updates'); assert.equal(second.discovery.status, 'updated');
+  const cache2 = await readFile(cachePath, 'utf8'); assert.equal(JSON.parse(cache2).catalogRevision, 'cli-catalog-2');
+  assert(JSON.parse(cache2).documents.some((document: Json) => document.kind === 'guide' && document.version === 2)); await preserve();
+  administrative(3); forcePages = true;
+  const incomplete = await cli(directory, ['check-updates', '--state', path]); assert.equal(incomplete.code, 1); safeOutput(incomplete.stdout + incomplete.stderr, pending);
+  assert((await readFile(cachePath, 'utf8')) === cache2, 'An actual first directory page followed by failure cannot replace the complete baseline'); await preserve();
+  forcePages = false; await command(directory, path, 'check-updates'); const cache3 = await readFile(cachePath, 'utf8');
+  administrative(4); failGuide = true;
+  const missingGuide = await cli(directory, ['check-updates', '--state', path]); assert.equal(missingGuide.code, 1); safeOutput(missingGuide.stdout + missingGuide.stderr, pending);
+  assert((await readFile(cachePath, 'utf8')) === cache3, 'A complete directory without reliable exact guides is still an incomplete update'); await preserve();
+  failGuide = false; await command(directory, path, 'check-updates');
+  assert.equal((await command(directory, path, 'check-updates')).discovery.status, 'unchanged'); await preserve();
+  assert.equal((await api(running.address, 'GET', `/v1/public/agents/${state.agentId}`)).profile.displayName, 'Manual perception Agent');
+  assert.equal(writes.filter(write => write.path === '/v1/registrations').length, 1);
+  assert(!writes.some(write => write.path.startsWith('/v1/perception/')), 'Update checks never confirm a message or submit another business action');
 });
