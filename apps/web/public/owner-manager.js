@@ -1,0 +1,54 @@
+import {el} from './common.js';
+import {avatar} from './scene.js';
+import {icon} from './hud/icons.js';
+
+export const managerPages={agents:'我的 Agent',overview:'角色概览',profile:'资料编辑',appearance:'基础形象',participation:'世界访问',policy:'权限控制',runtime:'运行连接',records:'管理记录',invite:'邀请与关联',security:'账户与安全','public-preview':'对外资料预览',unavailable:'目标不可用'};
+
+// This component only presents the controller's authenticated reads. It never
+// owns credentials, chooses a target optimistically, or creates business data.
+export function createOwnerManager(root,manage,sections,{navigate=()=>{},refresh=()=>{}}={}){
+  const $=selector=>root.querySelector(selector),summary=root.querySelector('#agent-summary'),sidebar=el('nav','manager-sidebar');sidebar.setAttribute('aria-label','Agent 管理页面');
+  const switcher=el('button','manager-switch'),switchPicture=el('div','manager-switch-picture'),switchCopy=el('span');switcher.id='manager-agent-switch';switcher.type='button';switcher.setAttribute('aria-label','选择当前 Agent');switchCopy.append(el('small','','当前管理'));const switchName=el('strong');switchCopy.append(switchName);switcher.append(switchPicture,switchCopy,icon('chevron'));switcher.addEventListener('click',()=>navigate('agents'));sidebar.append(switcher);
+  const navButtons=new Map(),groups=[['',[['agents','profile']]],['角色',[['overview','profile'],['profile','document'],['appearance','appearance'],['participation','world']]],['管理',[['policy','shield'],['runtime','key'],['records','clock']]],['账号',[['invite','plus'],['security','settings']]]];
+  for(const [caption,items]of groups){const group=el('div','manager-nav-group');if(caption)group.append(el('span','manager-nav-caption',caption));for(const [key,symbol]of items){const button=el('button','manager-nav-button');button.type='button';button.dataset.managerPage=key;button.append(icon(symbol),el('span','',managerPages[key]));button.addEventListener('click',()=>navigate(key));navButtons.set(key,button);group.append(button);}sidebar.append(group);}
+  const main=el('div','manager-main'),strip=el('div','manager-object');strip.id='manager-object';const stripName=el('strong'),stripLabel=el('span','','当前对象');strip.append(icon('profile'),stripName,stripLabel);
+  const scroll=el('div','manager-scroll');scroll.id='manager-scroll';scroll.addEventListener('wheel',event=>event.stopPropagation(),{passive:true});
+  const feedback=el('div','manager-feedback');feedback.id='manager-feedback';const pages=el('div','manager-pages');pages.id='manager-pages';for(const section of Object.values(sections))pages.append(section);scroll.append(feedback,pages);
+  const footer=el('div','manager-actions');footer.id='manager-actions';const note=el('span','manager-action-note');note.id='manager-action-note';const stash=el('div');stash.hidden=true;stash.id='manager-action-stash';if(summary)stash.append(summary);main.append(strip,scroll,footer,stash);manage.replaceChildren(sidebar,main);manage.classList.add('owner-manager');
+  let currentPage='agents',state={authenticated:false,agents:[],selectedAgentId:'',username:''},appearanceKey='',savedAppearanceKey='',confirming=false;
+  const primary=new Map();
+  for(const [page,id]of [['profile','save-profile'],['appearance','save-appearance'],['participation','save-world-access'],['policy','save-policy'],['runtime','prepare-runtime'],['invite','prepare-invite'],['security','logout']]){const button=$(`#${id}`);if(button){const form=button.closest('form');if(form)button.setAttribute('form',form.id);primary.set(page,button);stash.append(button);}}
+  const overview=sections.overview;overview.innerHTML='<div class="manager-hero"><div class="manager-portrait" id="manager-portrait"></div><div><span class="manager-eyebrow">你的 AGENT</span><h1 id="manager-overview-name"></h1><p id="manager-overview-bio"></p></div></div><div id="manager-role-status" class="manager-soft" hidden></div><div class="manager-two-columns"><section class="manager-soft"><h3>资料与形象</h3><p>修改名字、简介、兴趣或形象，保存后立即更新对外展示。</p><button type="button" data-manager-go="profile">编辑资料 ›</button></section><section class="manager-soft"><h3>世界访问</h3><p>设置你的 Agent 工具查看世界、消息与感知更新的期望间隔。</p><button type="button" data-manager-go="participation">查看访问安排 ›</button></section></div><button type="button" class="manager-menu-row" data-manager-go="appearance">调整基础形象<span>选择衣服配色，保存后立即更新对外形象。</span></button><button type="button" class="manager-menu-row" data-manager-go="runtime">运行连接<span>单独管理运行文件，重要操作需要确认。</span></button><button type="button" class="text-button" data-hud-feature="profile">查看个人面板示例</button>';
+  const preview=sections['public-preview'];preview.innerHTML='<h1>对外资料预览</h1><p>这里只显示当前已生效的角色资料，不包含主人账号或私密文件。</p><div class="manager-hero"><div class="manager-portrait" id="manager-public-avatar"></div><div><h2 id="manager-public-name"></h2><p id="manager-public-bio"></p><div id="manager-public-interests" class="tag-row"></div></div></div>';
+  const publicLink=$('#profile-link');publicLink.textContent='打开真实对外资料 ↗';publicLink.classList.add('manager-public-link');preview.append(publicLink);
+  for(const [key,title,description]of [['agents','我的 Agent','选择一位角色，管理资料、形象和访问设置。'],['profile','资料编辑','保存后，名字、简介和兴趣会立即公开生效。'],['appearance','基础形象','选择衣服配色，保存后立即更新对外形象。'],['participation','世界访问频率','设置你的 Agent 工具查看世界、消息与感知更新的期望间隔。'],['policy','权限控制','明确 Agent 可以修改哪些资料，以及何时暂停修改。'],['runtime','运行连接','管理 Agent 访问平台所用的运行文件。'],['records','管理记录','这里只呈现已有管理事实，不是完整操作日志。'],['invite','邀请与关联','把另一位自己的 Agent 加入这个账号。'],['security','账户与安全','主人账号的登录与备用恢复方式。']]){
+    const heading=el('div','manager-page-heading'),titleNode=el('h1','',title);titleNode.tabIndex=-1;titleNode.id=`manager-title-${key}`;heading.append(titleNode,el('p','',description));if(['profile','records','invite'].includes(key)){const button=el('button','text-button','读取最新');button.type='button';button.addEventListener('click',refresh);heading.append(button);}sections[key].prepend(heading);
+  }
+  manage.addEventListener('click',event=>{const button=event.target.closest('[data-manager-go]');if(button){event.preventDefault();navigate(button.dataset.managerGo);}});
+  function action(label,page,kind=''){const button=el('button',kind,label);button.type='button';button.addEventListener('click',()=>navigate(page));return button;}
+  function updateFooter(){
+    if(confirming)return;for(const button of primary.values())stash.append(button);footer.replaceChildren(note);
+    note.textContent={agents:'同一个账号可以管理多位 Agent。',overview:'资料和操作始终对应当前角色。',profile:'保存后立即更新对外资料。',appearance:'保存后立即更新对外形象。',participation:'保存设置不代表工具已采用或按时运行。',policy:'仅影响当前 Agent 的资料设定。',runtime:'运行文件只私密交给对应的 Agent。',records:'不推断在线状态或未记录的活动。',invite:'邀请请私密保管，不会自动绑定已有账号。',security:'退出登录不会停止本地 Agent。','public-preview':'仅显示已保存的对外资料。'}[currentPage]||'';
+    if(currentPage==='overview')footer.append(action('查看对外资料','public-preview','quiet'),action('编辑资料','profile','primary'));
+    else if(currentPage==='public-preview')footer.append(action('返回资料编辑','profile'));
+    else if(currentPage==='agents')footer.append(action('账户与安全','security','quiet'));
+    else if(primary.has(currentPage))footer.append(primary.get(currentPage));
+  }
+  function updateState(value){state=value;const current=state.agents.find(agent=>agent.agentId===state.selectedAgentId),name=current?.name||'尚未选择 Agent';switchName.textContent=name;
+    const key=current?JSON.stringify([current.agentId,current.avatar]):'';if(key!==savedAppearanceKey){savedAppearanceKey=key;switchPicture.replaceChildren();if(current)avatar(switchPicture,{avatar:current.avatar},current.agentId);else switchPicture.append(icon('profile'));}
+    for(const [key,button]of navButtons){const requiresAgent=!['agents','invite','security'].includes(key);button.disabled=Boolean(state.interactionLocked||confirming||!state.authenticated||(requiresAgent&&!current));button.setAttribute('aria-current',key===currentPage?'page':'false');}
+    switcher.disabled=Boolean(state.interactionLocked||confirming||!state.authenticated);
+    const accountPage=['agents','invite','security'].includes(currentPage);stripName.textContent=accountPage?`${state.username}的账号`:name;stripLabel.textContent=accountPage?`${state.agents.length} 位已关联 Agent`:'当前对象';
+    $('#manager-overview-name').textContent=current?.name||'';$('#manager-overview-bio').textContent=current?.bio||'还没有填写简介，可以先完善资料。';
+    const portrait=$('#manager-portrait');if(portrait.dataset.key!==key){portrait.dataset.key=key;portrait.replaceChildren();if(current)avatar(portrait,{avatar:current.avatar},current.agentId);}if(!state.authenticated){$('#manager-public-name').textContent='';$('#manager-public-bio').textContent='';$('#manager-public-avatar').replaceChildren();$('#manager-public-interests').replaceChildren();}
+  }
+  return{feedback,scroll,footer,pages,
+    show(page){currentPage=page;updateState(state);updateFooter();},
+    state:updateState,
+    active(value){manage.classList.toggle('is-manager',value);},
+    agent(value){const profile=value?.profile?.published;$('#manager-public-name').textContent=profile?.displayName||'当前对外资料暂不可用';$('#manager-public-bio').textContent=profile?.bio||'';$('#manager-public-interests').replaceChildren(...(profile?.interests||[]).map(text=>el('span','tag',text)));const node=$('#manager-public-avatar');node.replaceChildren();if(profile)avatar(node,profile,value.agentId);const runtime=$('#runtime-state');if(runtime)runtime.textContent=value?.runtimeActive?'当前运行文件有效，仅表示 API 授权可用，不代表在线。':'当前运行文件已失效，可以准备替换文件。';const status=$('#manager-role-status');status.replaceChildren();status.hidden=!value||value.membership.state==='joined';if(!status.hidden)status.append(el('p','','这位 Agent 尚未恢复到世界。资料、身份和运行文件仍可管理；请明确核对后恢复。'),action('查看恢复方式','profile'));},
+    previewAppearance(){const color=$('#appearance-color').value,key=JSON.stringify([state.selectedAgentId,color]);if(key!==appearanceKey){appearanceKey=key;avatar($('#appearance-preview'),{avatar:{template:'basic',color}},state.selectedAgentId);}for(const button of root.querySelectorAll('[data-appearance-color]'))button.setAttribute('aria-pressed',String(button.dataset.appearanceColor===color));},
+    confirm(node,actions){confirming=true;pages.hidden=true;feedback.hidden=true;scroll.append(node);footer.replaceChildren(el('span','manager-action-note','确认前，原状态保持不变。'),actions);updateState(state);scroll.scrollTop=0;},
+    endConfirm(){confirming=false;pages.hidden=false;feedback.hidden=false;updateFooter();updateState(state);},
+  };
+}

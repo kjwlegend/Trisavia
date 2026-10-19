@@ -1,5 +1,6 @@
 import {validToken,tokenId} from './common.js';
 import {accountFields,normalizeIdentifier} from './owner-account.js';
+import {managerActions,managerInput} from './owner-manager-commands.js';
 export class BackupError extends Error {
   constructor(code, originalOrigin=null){super(code);this.code=code;this.originalOrigin=originalOrigin;}
 }
@@ -64,6 +65,9 @@ export function parseOwnerBackup(text,origin){
         const c=next.claimContext;
         if(!next.sessionToken||p.scope!==`owner:${next.ownerId}`||!c||input?.agentId!==c.agentId||input.expectedGeneration!==c.generation)invalid();
         clean={agentId:c.agentId,expectedGeneration:c.generation};
+      }else if(managerActions.has(p.action)){
+        if(!next.sessionToken||p.scope!==`owner:${next.ownerId}`||!validId(p.targetId))invalid();
+        clean=managerInput(p.action,input);
       }else if(p.action==='unpublishProfile'){
         if(!next.sessionToken||p.scope!==`owner:${next.ownerId}`||!validId(p.targetId)||!generation(input?.expectedVersion)||!generation(input?.expectedPolicyVersion))invalid();
         clean={expectedVersion:input.expectedVersion,expectedPolicyVersion:input.expectedPolicyVersion};
@@ -74,7 +78,7 @@ export function parseOwnerBackup(text,origin){
       }else invalid();
     }catch{invalid();}
     // Imported files never choose request paths, methods, passwords or actions.
-    next.pendingOperation={operationId:p.operationId,scope:p.scope,action:p.action,...(['unpublishProfile','rejectRecoveryRequest'].includes(p.action)?{targetId:p.targetId}:{}),...(clean?{input:clean}:{}),uncertain:true};
+    next.pendingOperation={operationId:p.operationId,scope:p.scope,action:p.action,...((['unpublishProfile','rejectRecoveryRequest'].includes(p.action)||managerActions.has(p.action))?{targetId:p.targetId}:{}),...(clean?{input:clean}:{}),uncertain:true};
   }else if(loginOnly)invalid();
   return next;
 }
