@@ -153,3 +153,12 @@ R5／514ca56 的 TaskSpace45 已 finish，始终访客、无账户写入：先 p
 | QA 收尾 | 核对 18892／PID 92640 的固定 source1471 工作目录、listener 与无子进程后正常 SIGTERM，已确认无监听；同一合成库／identity、fixture、快照、日志／截图／证据及 worktree 全保留，无删除／重置，其他端口未动。见 [清理证据](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-agent-manager/qa-20261019T033745Z/qa-cleanup-after-R3.json) |
 
 回退遵循已验证的旧 514 兼容源码继续使用 **当前** 数据库与 identity，不把本次或更旧备份回灌覆盖后续写入。作者三组定点、独立静态审查、普通模拟与服务就绪各保留自身范围；没有追加全量／移动／真实邮件验收，也不声称期望间隔已由工具采用或实际调度。本作者最后仅静态整理既有交付回执，没有重新运行测试、浏览器、服务或数据库操作。
+
+## 接入提示与自然交付 · d836a4a（2026-10-19）
+
+- 范围：父 main `3ef62aa` → `d836a4af6ab4376c1050fabddbdc410fd8f4f941`，9 文件、173+/192-；原 web `5103c2d`／整合 `aba1132` 与原 WS01 四稿 `e4e71fb` 共用同源 prompt 唯一短块、动态 origin。API／CLI／测试／依赖未改；原独审接受 d836，作者仅做 4 JS nodecheck／diffcheck，未跑用例。
+- [独立模拟](../validation/user-simulation/m1-round-01.md#2026-10-19-接入指引可读性增量--d836a4a)：TaskSpace53 访客 HUD 入口及旧合成 A 登录后自动续接的同入口，两次正常点击＋原生粘贴均得 129 字符，与页面逐字一致，第二次先用一个公开字符排除剪贴板残留；四项指引清楚。A logout、53 finish、两页全关；未另测登录世界收起后重开按钮，未注册、未验证模型实际回复、未跑矩阵。
+- 交付：mainAtSwitch／runtime 准确 d836，旧 PID 4670 正常 SIGTERM 后新 PID 39183 运行于 [8789](http://127.0.0.1:8789/)；固定快照 `/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-onboarding-copy/user-delivery-d836a4a`，705 项既有 filehash 保持、stage 空。本交接仅文档后继，不另建运行快照。
+- 保数：原 DB／identity／实例 `instance_6ee4d865-1e1a-4b40-90eb-2dbe6c46165f`、schema4／14 表与停机→新启动全行指纹保持，原七键环境 experience／1234、真实时钟，无旧库回灌。fresh 备份 `user-8789-backup-before-onboarding-copy-20261019T075505Z` 的 live／stopped／after-start 三份 consistent.sqlite 均有效，live／stopped identity 配对，详见[交付实据](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-onboarding-copy/user-8789-delivery.json)。
+- 就绪：97 个 runtime 文件及 12 项只读 HTTP／改动资源字节、no-store／nosniff 已由技术总监核对；用户库无注册或账号提交。总指挥 actual8789 最后 HTTP 确认仍待回，不记为已确认；本作者未重跑验证。
+- QA：核对 18892／PID35825 的 d836 工作目录及无子进程后正常 SIGTERM、确认无监听；合成副本、原 R3 库／identity、fixture、快照和证据全保留，见[清理回执](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-onboarding-copy/qa-20261019T074050Z/cleanup-evidence.json)。回退用原 9d 源码继续 **CURRENT DB／identity**，不回灌旧备份。
