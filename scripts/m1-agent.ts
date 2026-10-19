@@ -410,20 +410,58 @@ function documentDigest(value: unknown): string {
   return createHash('sha256').update(JSON.stringify(canonical(value))).digest('hex');
 }
 
+const discoveryCollections=['worlds','modules','types','sources','categories','skills','operations'] as const;
+type DiscoveryDocument={kind:'schema'|'guide';id:string;version:number};
+function discoveryReferences(value:unknown):Map<string,DiscoveryDocument> {
+ const directory=object(value),requested=new Map<string,DiscoveryDocument>(),versions=new Map<string,number>();
+ const invalid=():never=>{throw new AgentError('unsupported_perception_protocol');};
+ const id=(value:unknown)=>typeof value==='string'&&/^[A-Za-z0-9_.@-]{1,100}$/.test(value)?value:invalid();
+ const sets=new Map<string,Set<string>>();
+ for(const [index,name]of discoveryCollections.entries()){
+  const entries=directory[name];if(!Array.isArray(entries)||!entries.length||entries.length>2500)invalid();
+  const field=['worldId','moduleId','type','sourceId','categoryId','skillId','id'][index]!,seen=new Set<string>();
+  for(const value of entries as unknown[]){const key=id(object(value)[field]);if(seen.has(key))invalid();seen.add(key);}sets.set(name,seen);
+ }
+ const add=(kind:'schema'|'guide',value:unknown)=>{const r=object(value),name=id(kind==='schema'?r.id:r.moduleId);if(!Number.isSafeInteger(r.version)||Number(r.version)<1)invalid();const identity=`${kind}:${name}`,v=Number(r.version);if(versions.has(identity)&&versions.get(identity)!==v)invalid();versions.set(identity,v);requested.set(`${identity}:${v}`,{kind,id:name,version:v});};
+ const linked=(collection:string,value:unknown)=>{if(!sets.get(collection)!.has(id(value)))invalid();};
+ for(const value of directory.modules as unknown[])add('guide',object(value).usageGuide);
+ for(const value of directory.types as unknown[]){const row=object(value);linked('modules',row.moduleId);add('schema',row.summarySchema);add('schema',row.detailSchema);}
+ for(const value of directory.operations as unknown[]){const row=object(value);if(!['GET','POST','PUT'].includes(String(row.method))||typeof row.path!=='string'||!row.path.startsWith('/v1/perception/')||/[?#]/u.test(row.path))invalid();add('schema',row.inputSchema);add('schema',row.outputSchema);}
+ for(const value of directory.skills as unknown[]){const row=object(value);linked('modules',row.moduleId);add('guide',row.guideRef);if(!Array.isArray(row.capabilityRefs))invalid();for(const ref of row.capabilityRefs as unknown[])linked('operations',ref);}
+ for(const value of directory.sources as unknown[]){const row=object(value);linked('modules',row.moduleId);if(!Array.isArray(row.types)||!Array.isArray(row.categoryIds)||!Array.isArray(row.schemaRefs))invalid();for(const type of row.types as unknown[])linked('types',type);for(const category of row.categoryIds as unknown[])linked('categories',category);for(const schema of row.schemaRefs as unknown[])add('schema',schema);}
+ for(const value of directory.categories as unknown[]){const row=object(value);if(!Array.isArray(row.sourceIds)||!Array.isArray(row.metrics)||!row.metrics.length)invalid();for(const source of row.sourceIds as unknown[])linked('sources',source);const metrics=new Set<string>();for(const value of row.metrics as unknown[]){const metric=object(value),name=id(metric.metricId);if(metrics.has(name)||!Array.isArray(metric.sourceIds))invalid();metrics.add(name);for(const source of metric.sourceIds as unknown[])linked('sources',source);}}
+ if(requested.size>100)throw new AgentError('discovery_budget_exhausted');return requested;
+}
+function validateDiscoveryCache(cache:Json):void {
+ try {
+  if(cache.complete!==true||typeof cache.catalogRevision!=='string'||!cache.catalogRevision||typeof cache.skillCatalogRevision!=='string'||!cache.skillCatalogRevision||!Array.isArray(cache.documents))throw new Error();
+  const requested=discoveryReferences(cache.directory),seen=new Set<string>();
+  for(const value of cache.documents){const d=object(value),identity=`${d.kind}:${d.id}:${d.version}`,expected=requested.get(identity),document=object(d.document);
+   if(!expected||seen.has(identity)||typeof d.digest!=='string'||!/^[a-f0-9]{64}$/.test(d.digest)||d.digest!==documentDigest(d.document)||(d.kind==='guide'?(document.moduleId!==d.id||document.version!==d.version):document.$id!==d.id))throw new Error();seen.add(identity);
+  }
+  if(seen.size!==requested.size)throw new Error();
+ }catch{throw new AgentError('discovery_cache_invalid');}
+}
+function discoveryBridge(capabilities:Json,state:State):Json {
+ if(capabilities.instanceId!==state.instanceId)throw new AgentError('instance_or_identity_mismatch');
+ const bridge=object(capabilities.perceptionApi),reader=object(bridge.discovery);
+ if(capabilities.apiVersion!=='v1'||capabilities.perception!==true||bridge.protocolVersion!==1||reader.method!=='GET'||reader.path!=='/v1/perception/discovery'||typeof bridge.catalogRevision!=='string'||!bridge.catalogRevision||typeof bridge.skillCatalogRevision!=='string'||!bridge.skillCatalogRevision)throw new AgentError('unsupported_perception_protocol');
+ return bridge;
+}
+
 /** Separate advisory cache. Never resumes commands or modifies identity/role/handoff. */
 async function checkDiscovery(path: string, state: State, capabilities: Json): Promise<Json> {
   if (capabilities.perception !== true) return { status: 'not_enabled', scheduling: false };
-  const bridge = object(capabilities.perceptionApi), discovery = object(bridge.discovery);
-  if (bridge.protocolVersion !== 1 || discovery.method !== 'GET' || discovery.path !== '/v1/perception/discovery') throw new AgentError('unsupported_perception_protocol');
+  const bridge=discoveryBridge(capabilities,state);
   const self = await http(state.origin, 'GET', '/v1/agent/self', undefined, state.runtimeToken);
   if (self.instanceId !== state.instanceId || (state.agentId && self.agentId !== state.agentId)) throw new AgentError('instance_or_identity_mismatch');
   const cachePath = `${path}.discovery.json`;
   let previous: Json | undefined;
   try { previous = await readPrivateJson(cachePath); } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
   if (previous && (previous.format !== 'connet-perception-discovery-v1' || previous.origin !== state.origin || previous.instanceId !== state.instanceId || previous.agentId !== self.agentId)) throw new AgentError('instance_or_identity_mismatch');
-  if (previous && (previous.complete !== true || !Array.isArray(previous.documents) || previous.documents.map(object).some(d => typeof d.digest !== 'string' || d.digest !== documentDigest(d.document)))) throw new AgentError('discovery_cache_invalid');
+  if(previous)validateDiscoveryCache(previous);
   if (previous?.catalogRevision === bridge.catalogRevision && previous?.skillCatalogRevision === bridge.skillCatalogRevision) return { status: 'unchanged', catalogRevision: bridge.catalogRevision, skillCatalogRevision: bridge.skillCatalogRevision, privateDiscoveryFile: cachePath, scheduling: false };
-  const directory: Json = {}, collections = ['worlds', 'modules', 'types', 'sources', 'categories', 'skills', 'operations'];
+  const directory: Json = {}, collections = discoveryCollections;
   for (const name of collections) directory[name] = [];
   let next: unknown, complete = false;
   for (let page = 0; page < 50 && !complete; page++) {
@@ -435,12 +473,7 @@ async function checkDiscovery(path: string, state: State, capabilities: Json): P
     if (complete ? next !== null : typeof next !== 'string') throw new AgentError('unsupported_perception_protocol');
   }
   if (!complete) throw new AgentError('discovery_budget_exhausted');
-  const requested = new Map<string, { kind: 'schema' | 'guide'; id: string; version: number }>();
-  const add = (kind: 'schema' | 'guide', value: unknown) => { const r = object(value), id = kind === 'schema' ? r.id : r.moduleId; if (typeof id !== 'string' || !/^[A-Za-z0-9_.@-]{1,100}$/.test(id) || !Number.isSafeInteger(r.version) || Number(r.version) < 1) throw new AgentError('unsupported_perception_protocol'); requested.set(`${kind}:${id}:${r.version}`, { kind, id, version: Number(r.version) }); };
-  for (const item of directory.modules as Json[]) if (item.usageGuide) add('guide', item.usageGuide);
-  for (const item of directory.types as Json[]) { add('schema', item.summarySchema); add('schema', item.detailSchema); }
-  for (const item of directory.operations as Json[]) { add('schema', item.inputSchema); add('schema', item.outputSchema); }
-  if (requested.size > 100) throw new AgentError('discovery_budget_exhausted');
+  const requested=discoveryReferences(directory);
   const documents: Json[] = [];
   for (const item of requested.values()) {
     const response = await http(state.origin, 'GET', `/v1/perception/${item.kind === 'guide' ? 'guides' : 'schemas'}/${encodeURIComponent(item.id)}?version=${item.version}`, undefined, state.runtimeToken), data = object(response.data);
@@ -449,8 +482,9 @@ async function checkDiscovery(path: string, state: State, capabilities: Json): P
     if (old && old.digest !== data.digest) throw new AgentError('document_integrity_failed');
     documents.push({ ...item, digest: data.digest, document: data.document });
   }
-  const current = object((await http(state.origin, 'GET', '/v1/capabilities')).perceptionApi);
+  const current=discoveryBridge(await http(state.origin,'GET','/v1/capabilities'),state);
   if (current.catalogRevision !== bridge.catalogRevision || current.skillCatalogRevision !== bridge.skillCatalogRevision) throw new AgentError('catalog_changed_retry');
+  validateDiscoveryCache({complete:true,catalogRevision:bridge.catalogRevision,skillCatalogRevision:bridge.skillCatalogRevision,directory,documents});
   await writePrivateJson(cachePath, { format: 'connet-perception-discovery-v1', origin: state.origin, instanceId: state.instanceId, agentId: self.agentId, complete: true, catalogRevision: bridge.catalogRevision, skillCatalogRevision: bridge.skillCatalogRevision, directory, documents, updatedAt: Date.now() });
   return { status: 'updated', catalogRevision: bridge.catalogRevision, skillCatalogRevision: bridge.skillCatalogRevision, documents: documents.length, privateDiscoveryFile: cachePath, scheduling: false };
 }
