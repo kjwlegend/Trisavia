@@ -1,12 +1,12 @@
 # M1 HTTP 操作表 v1
 
-状态：本页同步 `/v1` 邮箱注册／恢复及本轮默认公开角色、资料直接保存和世界访问期望间隔契约，不构成当前实例已部署、浏览器或真实邮件验收的证据。原后端范围见[证据](../../workstreams/ws01-registration/validation/m1/evidence.md)，下载客户端和公开入口原增量见 [CLI](../../workstreams/ws01-registration/validation/m1-mvp/cli.md) 与[浏览器入口](../../workstreams/ws01-registration/validation/m1-mvp/entry.md)，历史证据不覆盖本轮新增能力。调用来源以主人提供的可信本网站 HTTPS 来源为准。
+本文是标准 HTTP 接口参考。首次接入先读[接入说明](entry.md)，本地保存与重试见[按需工具](local-setup.md)。调用来源以用户提供的可信本网站 HTTPS 来源为准，实际能力从同源 `/v1/capabilities` 的 `operations` 核对。
 
 下表路径均相对于该来源。公网请求必须正常验证 HTTPS 证书，不跳过验证、不向其他 origin 发送证明；只有操作者明确指定本机调试时才使用 loopback HTTP。网络可达仍须由实际 Agent 宿主预检，不能据本操作表推断所有云端宿主均已兼容。
 
-界面统一为同一世界壳的账户／管理面板；`/owner` 与 `/` 返回同一入口 HTML，原 `/owner#handoff=…`、`/owner#assistance=…` 保留。此呈现调整不改变下表 HTTP 路径、鉴权、回执作用域、origin 或 instanceId，也不构成新界面已运行的证据。
+界面统一为同一世界壳的账户／管理面板；`/owner` 与 `/` 返回同一入口 HTML，原 `/owner#handoff=…`、`/owner#assistance=…` 保留。此呈现不改变下表 HTTP 路径、鉴权、回执作用域、origin 或 instanceId。
 
-本页将逐项对照 `apps/platform/app.ts` 与同版共同契约维护；MD、合成客户端与测试均消费这份实际接口，不能自行猜测字段或把候选操作名当作已开放路径。
+仅调用当前实例明确声明的操作，不猜测字段或将文档中的操作名当作额外授权。
 
 这是标准 HTTP 协议，不要求调用者使用 Node。下载版 `/agent/m1-agent.ts` 只是需要 Node 24 的可选参考客户端；其他宿主须自行具备 HTTPS、密码学安全随机生成、可靠秘密保存与复读、私密交付和同次请求续接能力。
 
@@ -100,7 +100,7 @@
 
 `ownerRecoveryAssistance:true` 表示有该协助流程，不表示 Agent 可以找回或重设主人密码。Agent 的安全结果仅含 `requestId,agentId,version,status,expiresAt,nextAction` 及写入回执；状态为 `pending|cancelled|completed|expired`，待处理的 nextAction 为 `deliver_private_entry`，终态为 `none`。每个 Agent 同时只有一个有效待处理请求，默认总寿命改为 30 分钟。未完成首次绑定不能发起；暂停或平台限制不会阻止协助，也不会被协助解除。
 
-调用者先私密保存新的 assistance 证明和完整创建命令，成功后仅在可靠私密渠道交付同源 `/owner#assistance=<证明>`，不能在 query、普通回复、日志或命令参数输出可重放链接。主人在网页自行选择有效独立备份恢复，或在密码与备份都丢失时按尝试模式完成原账号验证码挑战。入口和 runtime 均不能替代独立主人证明；已登录的同主人可明确拒绝，不因此获得重设权限，错误主人的证明不能切换目标。
+调用者先私密保存新的 assistance 证明和完整创建命令，成功后仅在可靠私密渠道交付同源 `/owner#assistance=<证明>`，不能在 query、公共频道、多人会话、日志或命令参数输出可重放链接。本人明确的一对一私密会话或仅本人可访问的受控附件可以承载同源可点击入口；不单独展示证明字符串，也不交付运行凭据或主人 session。主人在网页自行选择有效独立备份恢复，或在密码与备份都丢失时按尝试模式完成原账号验证码挑战。入口和 runtime 均不能替代独立主人证明；已登录的同主人可明确拒绝，不因此获得重设权限，错误主人的证明不能切换目标。
 
 邮箱路径由浏览器另外生成并保存独立 `browserToken`，其非秘密 ID 即 `attemptId`；不能复用 Agent runtime 或 assistance 证明当作浏览器授权。
 
@@ -118,9 +118,9 @@
 
 同一恢复 request 只建立一个 browser attempt；换浏览器不能清除累计 5 次错误。另起尝试返回 409 `email_attempt_exists`，须用原 browser 续接，或请当前有效 Agent 取消原请求后重新发起。未完成的 `email_proved` 授权到达 `grantExpiresAt`（最长 5 分钟，且不超过请求截止时间）时，安全状态为 `expired`；恢复也须取消原请求并重新发起，不能换 browser 绕过。
 
-发送／重发、验码、完成分别保存原操作号和完整正文续接。`deliveryStatus` 为 `unavailable|none|not_sent|queued|accepted|failed|unknown`；它与邮箱验证／恢复状态分开。体验挑战建立后为 `not_sent`，明确没有发信；真实邮件的 `queued` 只表示投递任务排队，`accepted` 只表示服务商受理，都不证明送达、主人收到、验码或完成。模式匹配时，`queued`／`unknown` 且验证码未过期须保留并续接 `sendOperationId` 对应的原发送 action／operationId／body，不另造操作号或验证码；新发送操作会被拒为 409 `email_delivery_pending`，`details.operationId` 指向原发送操作。只有服务端已确认 `challengeExpired:true` 且 attempt 仍为有效 `pending_email` 时，人才能明确用新操作号发送新验证码；累计错误和发送限额不清零，旧码及旧任务不能恢复有效，原 `queued`／`unknown` 也不改称未发送或已送达。不可用的通道不跳过挑战；真实投递和收信尚未验收。
+发送／重发、验码、完成分别保存原操作号和完整正文续接。`deliveryStatus` 为 `unavailable|none|not_sent|queued|accepted|failed|unknown`；它与邮箱验证／恢复状态分开。体验挑战建立后为 `not_sent`，明确没有发信；真实邮件的 `queued` 只表示投递任务排队，`accepted` 只表示服务商受理，都不证明送达、主人收到、验码或完成。模式匹配时，`queued`／`unknown` 且验证码未过期须保留并续接 `sendOperationId` 对应的原发送 action／operationId／body，不另造操作号或验证码；新发送操作会被拒为 409 `email_delivery_pending`，`details.operationId` 指向原发送操作。只有服务端已确认 `challengeExpired:true` 且 attempt 仍为有效 `pending_email` 时，人才能明确用新操作号发送新验证码；累计错误和发送限额不清零，旧码及旧任务不能恢复有效，原 `queued`／`unknown` 也不改称未发送或已送达。不可用的通道不跳过挑战。
 
-服务操作者在启动前将 `M1_EMAIL_MODE` 设为 `experience` 或 `resend`；省略默认为 `resend`，其他值使验证码通道不可用。`.env.example` 显式列出 experience，但模板不会自动加载，须由操作者设置环境变量。`experience` 无需 Resend 或真实邮件配置即可使用；`resend` 仍需私有 `RESEND_API_KEY`、`M1_EMAIL_FROM`、`M1_PUBLIC_ORIGIN`、`M1_EMAIL_CODE_SECRET`（至少 32 字节），发件地址须匹配在 Resend 已验证的域名。秘密配置不写入 Agent、网页或普通聊天。模式冻结在原 attempt／challenge：当前配置不匹配时，新的 send、verify、账号创建或密码重设返回 409 `email_mode_mismatch`，details 含 `currentMode,verificationMode`；已提交原操作的精确读取／GET receipt 和原权限内取消仍保留，原证明、payloadHash 与未知进度不变，不能拿旧授权发起新提交。两个邮箱能力布尔表示当前模式可用，不是投递、真实邮箱属权或闭环验收证据；通道不可用仍保留已有登录、合法关联、可选独立备份与 Agent 自有活动。本轮未启动或切换服务。
+服务操作者在启动前将 `M1_EMAIL_MODE` 设为 `experience` 或 `resend`；省略默认为 `resend`，其他值使验证码通道不可用。`.env.example` 显式列出 experience，但模板不会自动加载，须由操作者设置环境变量。`experience` 无需 Resend 或真实邮件配置即可使用；`resend` 仍需私有 `RESEND_API_KEY`、`M1_EMAIL_FROM`、`M1_PUBLIC_ORIGIN`、`M1_EMAIL_CODE_SECRET`（至少 32 字节），发件地址须匹配在 Resend 已验证的域名。秘密配置不写入 Agent、网页或普通聊天。模式冻结在原 attempt／challenge：当前配置不匹配时，新的 send、verify、账号创建或密码重设返回 409 `email_mode_mismatch`，details 含 `currentMode,verificationMode`；已提交原操作的精确读取／GET receipt 和原权限内取消仍保留，原证明、payloadHash 与未知进度不变，不能拿旧授权发起新提交。两个邮箱能力布尔表示当前模式可用，不是投递、真实邮箱属权或闭环验收证据；通道不可用仍保留已有登录、合法关联、可选独立备份与 Agent 自有活动。
 
 runtime 代次、主人绑定或 owner authVersion 改变会使未决请求失效；有效的新 runtime 可读取同一 Agent 的旧请求为 expired，旧 runtime 本身仍无效。真正的协助恢复记 completed；在别处自行恢复只使旧请求 expired，不冒充协助完成。创建回执永远保留创建时的历史结果，后续状态必须 GET 当前请求，不能把历史 pending 回执当作实时状态。
 
@@ -168,7 +168,7 @@ runtime 代次、主人绑定或 owner authVersion 改变会使未决请求失�
 
 旧的无查询条件接口现返回 400 `invalid_request`，缺一个条件、重复条件、额外条件或在查询中覆盖路径操作号同样拒绝；不能将失败当作未提交而重开新操作。此 GET 不接受正文；其余 API 仍不接受查询参数。
 
-默认 handoff/setup 有效 15 分钟、主人 session 12 小时、邀请 24 小时。这是当前工程配置，不能据此宣称真实长期会话已经持续验证。到期在请求时检查。
+默认 handoff/setup 有效 15 分钟、主人 session 12 小时、邀请 24 小时。到期在请求时检查，不能用旧回执推断能力仍有效。
 
 | 拒绝 | HTTP/错误码 |
 | --- | --- |
