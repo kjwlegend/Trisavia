@@ -4,9 +4,10 @@
 .hud-window.is-manager>.hud-window-body{padding:0!important;overflow:hidden;display:flex;flex-direction:column;flex:1;scrollbar-gutter:auto}
 .account-root[data-layout=manager]{flex:1;min-height:0;display:flex;flex-direction:column}
 .account-root[data-layout=manager]>.account-content{flex:1;min-height:0;display:flex;flex-direction:column}
-.account-root[data-layout=manager] #manage-view{display:grid!important;grid-template-columns:176px minmax(0,1fr);flex:1;min-height:0;overflow:hidden;margin:0}
+.account-root[data-layout=manager] #manage-view{display:grid!important;grid-template-columns:176px minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:0;align-items:stretch;flex:1;min-width:0;min-height:0;overflow:hidden;margin:0}
 .account-root[data-layout=manager]>.account-content>.page-heading{display:none}
-.account-root .manager-sidebar{padding:16px 12px 12px;border-right:1px solid var(--hud-line);background:#f2f3e7;overflow:auto;min-height:0;scrollbar-width:thin}
+.account-root .manager-sidebar{display:flex;flex-direction:column;align-items:stretch;gap:0;padding:16px 12px 12px;border-right:1px solid var(--hud-line);background:#f2f3e7;overflow-x:hidden;overflow-y:auto;min-width:0;min-height:0;scrollbar-width:thin}
+.manager-sidebar>.manager-switch,.manager-sidebar>.manager-nav-group{flex-shrink:0;min-width:0}
 .account-root .manager-switch{display:flex;align-items:center;gap:10px;width:100%;padding:0 4px 15px;border:0;background:transparent;text-align:left;min-height:64px}
 .manager-switch-picture{width:38px;flex:none}.manager-switch-picture .avatar{width:38px;height:48px;object-fit:contain;border-radius:0}
 .manager-switch>span{flex:1;min-width:0}.manager-switch small{display:block;font-size:11px;color:var(--hud-muted);line-height:16px}.manager-switch strong{display:block;font-size:16px;line-height:24px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.manager-switch>.hud-icon{width:14px;height:14px}
