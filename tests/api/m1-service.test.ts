@@ -19,7 +19,7 @@ const string = (data: JsonObject, key: string) => {
 function fixture(options: Parameters<typeof createM1Service>[1] = {}) {
   const store = openM1Store({ databasePath: ":memory:", instanceId: "test-instance", recoveryEpoch: "epoch-1" });
   let time = 1_000_000;
-  const service = createM1Service(store, { now: () => time, ...options });
+  const service = createM1Service(store, { now: () => time, email: { mode: 'experience' }, ...options });
   return { store, service, tick: (delta: number) => { time += delta; } };
 }
 type Fixture = ReturnType<typeof fixture>;
@@ -31,17 +31,25 @@ function registration(f: Fixture, inviteToken?: string) {
 }
 type Registration = ReturnType<typeof registration>;
 
+function finishSetup(f: Fixture, agent: Registration, setupToken: string, generation: number, username = `Owner_${randomUUID().slice(0, 8)}`) {
+  const attemptId = randomUUID(), browserToken = token(), email = `${randomUUID()}@example.test`;
+  f.service.invoke('startRegistration', { operationId: operationId(), attemptId, browserToken, username, email,
+    agentId: agent.agentId, expectedGeneration: generation, setupToken });
+  const sendOperationId = operationId();
+  f.service.invoke('sendRegistrationCode', { operationId: sendOperationId, attemptId }, browserToken);
+  f.service.invoke('verifyRegistrationEmail', { operationId: operationId(), attemptId, sendOperationId, code: '1234' }, browserToken);
+  const sessionToken = token(), recoveryToken = token(), password = 'test-owner-password-123';
+  const input = { operationId: operationId(), attemptId, password, recoveryToken, sessionToken, setupToken };
+  const result = f.service.invoke('completeSetup', input, browserToken);
+  return { sessionToken, recoveryToken, password, username, result, input, attemptId };
+}
+
 function setup(f: Fixture, agent: Registration) {
   const handoffToken = token();
   const handoff = f.service.invoke("issueHandoff", { operationId: operationId(), expectedGeneration: 0, handoffToken }, agent.input.continuationToken);
   const setupToken = token();
   f.service.invoke("exchangeSetup", { operationId: operationId(), setupToken }, handoffToken);
-  const sessionToken = token();
-  const recoveryToken = token();
-  const password = "test-owner-password-123";
-  const input = { operationId: operationId(), username: `Owner_${randomUUID().slice(0, 8)}`, email: `${randomUUID()}@example.test`, password, recoveryToken, sessionToken, credentialsSaved: true };
-  const result = f.service.invoke("completeSetup", input, setupToken);
-  return { sessionToken, recoveryToken, password, result, input, setupToken, handoffToken, handoff };
+  return { ...finishSetup(f, agent, setupToken, Number(handoff.generation)), setupToken, handoffToken, handoff };
 }
 
 function publish(f: Fixture, agent: Registration, proof = agent.input.runtimeToken) {
@@ -100,10 +108,9 @@ test("preview is non-consuming; refresh supersedes expired handoff and setup; bi
   const setupToken = token();
   f.service.invoke("exchangeSetup", { operationId: operationId(), setupToken }, third);
   error("insufficient_scope", () => f.service.invoke("managedAgent", { agentId: agent.agentId }, setupToken));
-  const sessionToken = token();
-  const completeId = operationId();
-  const complete = f.service.invoke("completeSetup", { operationId: completeId, username: "Independent_Owner", email: "independent@example.test", password: "independent-owner-password", recoveryToken: token(), sessionToken, credentialsSaved: true }, setupToken);
-  const completeQuery = { operationId: completeId, scope: `setup:${setupToken.split(".")[0]}`, action: "completeSetup" };
+  const completed = finishSetup(f, agent, setupToken, 3, 'Independent_Owner');
+  const { sessionToken, result: complete } = completed;
+  const completeQuery = { operationId: completed.input.operationId, scope: `owner-registration:${completed.attemptId}`, action: "completeSetup" };
   for (const proof of [first, second, third, oldSetup, setupToken, agent.input.continuationToken]) error("authentication_failed", () => f.service.invoke("receipt", completeQuery, proof));
   assert.deepEqual(f.service.invoke("receipt", completeQuery, sessionToken), complete);
   error("target_not_accessible", () => f.service.invoke("receipt", completeQuery, agent.input.runtimeToken));
@@ -217,8 +224,8 @@ test("recovery activates pre-saved successors, closes old management and invites
   error("authentication_failed", () => f.service.invoke("listAgents", {}, owner.sessionToken));
   error("authentication_failed", () => f.service.invoke("recover", { operationId: operationId() }, owner.recoveryToken));
   error("authentication_failed", () => registration(f, inviteToken));
-  error("authentication_failed", () => f.service.invoke("login", { operationId: operationId(), identifier: owner.input.username, password: owner.password, sessionToken: token() }));
-  f.service.invoke("login", { operationId: operationId(), identifier: owner.input.username, password: "next-password-for-owner", sessionToken: token() });
+  error("authentication_failed", () => f.service.invoke("login", { operationId: operationId(), identifier: owner.username, password: owner.password, sessionToken: token() }));
+  f.service.invoke("login", { operationId: operationId(), identifier: owner.username, password: "next-password-for-owner", sessionToken: token() });
   assert.equal(f.service.invoke("self", {}, agent.input.runtimeToken).agentId, agent.agentId);
 });
 
@@ -228,7 +235,7 @@ test("copied old authorization state cannot authenticate into a new recovery epo
   const restored: M1Store = { instanceId: f.store.instanceId, recoveryEpoch: "epoch-restored", read: f.store.read.bind(f.store), transaction: f.store.transaction.bind(f.store), close() {} };
   const service = createM1Service(restored);
   error("restore_access_unsupported", () => service.invoke("self", {}, agent.input.runtimeToken));
-  error("restore_access_unsupported", () => service.invoke("login", { operationId: operationId(), identifier: owner.input.username, password: owner.password, sessionToken: token() }));
+  error("restore_access_unsupported", () => service.invoke("login", { operationId: operationId(), identifier: owner.username, password: owner.password, sessionToken: token() }));
   assert.equal(f.store.read((tx) => tx.get("agents", agent.agentId)?.id), agent.agentId);
 });
 

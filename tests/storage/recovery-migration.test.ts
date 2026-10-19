@@ -30,14 +30,14 @@ function seed(database: DatabaseSync) {
 function originalRows(database: DatabaseSync) {
   return JSON.stringify(['agents', 'owners', 'credentials', 'bindings', 'profiles', 'memberships', 'registrations', 'operations', 'facts'].map((table) => database.prepare(`SELECT id,version,data FROM ${table} ORDER BY id`).all()));
 }
-for (const version of [1, 2]) test(`append-only migration3 upgrades a synthetic v${version} database without changing original identity, bindings, credentials or profile bytes`, (t) => {
+for (const version of [1, 2]) test(`append-only current migrations upgrade a synthetic v${version} database without changing original identity, bindings, credentials or profile bytes`, (t) => {
   const databasePath = path(t), database = new DatabaseSync(databasePath); migrateDatabase(database, migrations.slice(0, version)); seed(database);
   const before = originalRows(database), history = database.prepare('SELECT version,name,checksum FROM schema_migrations ORDER BY version').all(); database.close();
   const store = openM1Store({ ...identity, databasePath });
   assert.equal(store.read((tx) => tx.find('recovery_requests')).length, 0); assert.equal(store.read((tx) => tx.get('bindings', 'original-binding'))?.data.active, true); store.close();
   const after = new DatabaseSync(databasePath); assert.equal(originalRows(after) === before, true);
   assert.deepEqual(after.prepare('SELECT version,name,checksum FROM schema_migrations ORDER BY version LIMIT ?').all(version), history);
-  assert.equal(after.prepare('SELECT count(*) AS count FROM schema_migrations').get()?.count, 3);
+  assert.equal(after.prepare('SELECT count(*) AS count FROM schema_migrations').get()?.count, migrations.length);
   // A binary that knows only old definitions refuses an unknown later migration.
   assert.throws(() => migrateDatabase(after, migrations.slice(0, 2)), conflict); after.close();
   const reopened = openM1Store({ ...identity, databasePath }); assert.equal(reopened.read((tx) => tx.get('profiles', 'original-agent'))?.data.published !== null, true); reopened.close();
