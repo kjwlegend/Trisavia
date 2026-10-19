@@ -62,7 +62,7 @@ test('every origin/instance/identity/source axis isolates persisted views and nu
   const originalLease = state.lease(); state.markRead(originalLease, 'private', 'message-a');
   const originalKey = backing.writes[0]!;
   const variants = [{ origin: 'https://other.example.test' }, { instanceId: 'other-instance' }, { ownerId: 'other-owner' },
-    { agentId: 'other-agent' }, { sourceId: 'other-source' }, { sourceVersion: '3' }, { kind: 'guest', ownerId: '', agentId: '' }];
+    { agentId: 'other-agent' }, { sourceId: 'other-source' }, { sourceVersion: '3' }, { kind: 'guest', ownerId: '', agentId: '', visitorId: 'visitor-a' }];
   for (const change of variants) {
     state.setContext({ ...scope, ...change }); assert.deepEqual(state.snapshot().state.mail.readIds.private, []);
     assert.equal(state.markRead(originalLease, 'private', 'stale-write'), false);
@@ -120,7 +120,7 @@ test('the real context bridge uses the latest verified identity, rejects late di
   const read = deferred<Json>(); let reads = 0;
   const bridge = createHudContextBridge(identity, { origin: scope.origin, ...DEMO_SOURCE, readInstance: () => { reads++; return read.promise; } });
   const local = createLocalHudState({ storage: storage() }), phases: string[] = [];
-  bridge.subscribe((value: Json) => { phases.push(value.phase); local.setContext(value.scope); });
+  bridge.subscribe((value: Json) => { phases.push(value.phase); local.setContext(value.scope, { persistent: value.persistent }); });
   t.after(() => bridge.dispose()); const loading = bridge.load(); void bridge.load(); await Promise.resolve(); assert.equal(reads, 1);
   identity.update({ kind: 'owner', ownerId: 'owner-b', agentId: 'agent-b' }); read.resolve({ instanceId: 'real-capability-instance' }); await loading;
   assert.equal(bridge.snapshot().phase, 'ready'); assert.equal(bridge.snapshot().scope.ownerId, 'owner-b');
@@ -141,4 +141,106 @@ test('the real context bridge uses the latest verified identity, rejects late di
   await failed.load(); assert.equal(failed.snapshot().phase, 'error'); assert.equal(failed.snapshot().scope, null); failed.dispose();
   assert(phases.includes('loading') && phases.includes('pending') && phases.includes('ready'));
   const invalidSource = createDemoProvider(); records.sourceVersion = 'wrong'; assert.equal(await invalidSource.load(), null);
+});
+
+test('removal undo resumes its real deadline after refresh, restores original reading states and expires without restoring hidden items', () => {
+  let time = 1_000;
+  const backing = storage(), store = () => createLocalHudState({ storage: backing, now: () => time });
+  const first = store(); first.setContext(scope); const lease = first.lease();
+  first.mailView(lease, { channel: 'private', read: 'unread', pending: true, scrollTop: 240 });
+  first.markRead(lease, 'private', 'read-before-removal');
+  first.removeMessage(lease, 'private', 'read-before-removal');
+  assert.equal(first.snapshot().state.mail.undo.expiresAt, 11_000);
+  time = 4_500; first.removeMessage(lease, 'world', 'unread-before-removal');
+  const removed = first.snapshot().state.mail;
+  assert.equal(removed.undo.expiresAt, 14_500, 'A later deletion, rather than a refresh, starts the new ten-second group');
+  assert.equal(removed.undo.entries.length, 2);
+  assert.deepEqual(removed.hiddenIds, { private: ['read-before-removal'], world: ['unread-before-removal'] });
+  time = 10_000; const refreshed = store(); refreshed.setContext(scope);
+  assert.equal(refreshed.snapshot().state.mail.undo.expiresAt, 14_500, 'Refreshing preserves the absolute deadline and its remaining 4.5 seconds');
+  assert.equal(refreshed.expireUndo(refreshed.lease()), false);
+  // A local reading-state change cannot alter the reading state captured for undo.
+  refreshed.markRead(refreshed.lease(), 'private', 'read-before-removal', false);
+  refreshed.markRead(refreshed.lease(), 'world', 'unread-before-removal');
+  time = 14_499; assert.equal(refreshed.undoRemoval(refreshed.lease()), true);
+  const undone = refreshed.snapshot().state.mail;
+  assert.deepEqual(undone.hiddenIds, { private: [], world: [] });
+  assert.deepEqual(undone.readIds, { private: ['read-before-removal'], world: [] });
+  assert.equal(undone.scrollTop.private, 240); assert.equal(undone.filters.private.pending, true);
+  assert.equal(undone.filters.private.read, 'unread'); assert.deepEqual(undone.undo, { entries: [], expiresAt: 0 });
+  time = 20_000; refreshed.removeMessage(refreshed.lease(), 'private', 'stays-hidden');
+  time = 30_000; const expired = store(); expired.setContext(scope);
+  assert.equal(expired.undoRemoval(expired.lease()), false, 'The exact expiry boundary cannot restore a removed item');
+  assert.equal(expired.expireUndo(expired.lease()), true); assert.equal(expired.expireUndo(expired.lease()), false);
+  const afterExpiry = store(); afterExpiry.setContext(scope);
+  assert.deepEqual(afterExpiry.snapshot().state.mail.hiddenIds.private, ['stays-hidden']);
+  assert.deepEqual(afterExpiry.snapshot().state.mail.undo, { entries: [], expiresAt: 0 });
+});
+
+test('saved grid, detail and per-message body positions do not mark a message read, and source reconciliation removes only obsolete references', () => {
+  const backing = storage(), state = createLocalHudState({ storage: backing, now: () => 1_000 }); state.setContext(scope);
+  const lease = state.lease();
+  state.inventory(lease, { category: 'artwork', query: '纪念', selectedId: 'item-keep', scrollTop: 230, detailScrollTop: 410 });
+  state.mailView(lease, { channel: 'private', selectedId: 'mail-keep', scrollTop: 330, read: 'unread' });
+  state.mailPosition(lease, 'private', 'mail-keep', 415); state.mailPosition(lease, 'private', 'mail-gone', 125);
+  state.mailView(lease, { channel: 'world', selectedId: 'world-keep', scrollTop: 145 });
+  state.mailPosition(lease, 'world', 'mail-keep', 80); state.markRead(lease, 'private', 'mail-gone');
+  state.removeMessage(lease, 'private', 'mail-gone'); state.removeMessage(lease, 'world', 'world-hidden');
+  const reopened = createLocalHudState({ storage: backing, now: () => 2_000 }); reopened.setContext(scope);
+  const saved = reopened.snapshot().state;
+  assert.equal(saved.inventory.scrollTop, 230); assert.equal(saved.inventory.detailScrollTop, 410);
+  assert.equal(saved.mail.bodyScrollTop.private['mail-keep'], 415); assert.equal(saved.mail.bodyScrollTop.world['mail-keep'], 80);
+  assert.equal(saved.mail.selectedIds.private, 'mail-keep'); assert.equal(saved.mail.scrollTop.private, 330);
+  assert.deepEqual(saved.mail.readIds.private, ['mail-gone'], 'Restoring positions and selection itself never marks a body read');
+  assert.deepEqual(saved.mail.readIds.world, []);
+  const catalogue = Object.freeze({ items: Object.freeze(['item-keep']), private: Object.freeze(['mail-keep']), world: Object.freeze(['world-keep', 'world-hidden', 'mail-keep']) });
+  const source = JSON.stringify(catalogue);
+  assert.equal(reopened.reconcile(reopened.lease(), catalogue), true);
+  const current = reopened.snapshot().state;
+  assert.equal(current.inventory.selectedId, 'item-keep'); assert.equal(current.inventory.detailScrollTop, 410);
+  assert.deepEqual(current.mail.readIds.private, []); assert.deepEqual(current.mail.hiddenIds.private, []);
+  assert.deepEqual(current.mail.bodyScrollTop.private, { 'mail-keep': 415 });
+  assert.equal(current.mail.undo.entries.length, 1); assert.equal(current.mail.undo.entries[0].id, 'world-hidden');
+  assert.equal(current.mail.undo.expiresAt, 11_000); assert.equal(JSON.stringify(catalogue), source);
+  reopened.reconcile(reopened.lease(), { items: [], private: [], world: [] });
+  const empty = reopened.snapshot().state;
+  assert.equal(empty.inventory.selectedId, ''); assert.equal(empty.inventory.detailScrollTop, 0);
+  assert.equal(empty.mail.selectedIds.private, ''); assert.deepEqual(empty.mail.bodyScrollTop.private, {});
+  assert.deepEqual(empty.mail.undo, { entries: [], expiresAt: 0 });
+  assert.equal(empty.inventory.scrollTop, 230, 'The view, rather than the store, clamps saved position to its current rendered range');
+  assert.equal(reopened.mailPosition(reopened.lease(), 'private', 'bad-position', -1), false);
+});
+
+test('persistent guest visitor identity has its own domain, while unavailable visitor storage never restores another visitor or owner view', async () => {
+  const backing = storage(), identity = session({ kind: 'guest', ownerId: '', agentId: '' });
+  const options = { origin: scope.origin, ...DEMO_SOURCE, storage: backing, readInstance: () => ({ instanceId: scope.instanceId }) };
+  let generated = 0;
+  const first = createHudContextBridge(identity, { ...options, newVisitorId: () => `visitor-${++generated}` });
+  assert.equal(first.snapshot().scope, null); assert.equal(generated, 0, 'A guest identity is not read or created before the instance is known');
+  await first.load(); const guest = first.snapshot();
+  assert.equal(guest.scope.visitorId, 'visitor-1'); assert.equal(guest.persistent, true);
+  const state = createLocalHudState({ storage: backing }); state.setContext(guest.scope, { persistent: guest.persistent });
+  state.markRead(state.lease(), 'private', 'guest-read');
+  first.dispose(); const refreshed = createHudContextBridge(identity, { ...options, newVisitorId: () => `visitor-${++generated}` });
+  await refreshed.load(); assert.equal(refreshed.snapshot().scope.visitorId, 'visitor-1'); assert.equal(generated, 1);
+  const reopened = createLocalHudState({ storage: backing }); reopened.setContext(refreshed.snapshot().scope);
+  assert.deepEqual(reopened.snapshot().state.mail.readIds.private, ['guest-read']);
+  reopened.setContext({ ...guest.scope, visitorId: 'different-browser-visitor' });
+  assert.deepEqual(reopened.snapshot().state.mail.readIds.private, []);
+  reopened.setContext(scope); reopened.markRead(reopened.lease(), 'private', 'owner-only');
+  reopened.setContext(guest.scope); assert.deepEqual(reopened.snapshot().state.mail.readIds.private, ['guest-read']);
+  identity.update({ kind: 'owner', ownerId: scope.ownerId, agentId: '' });
+  assert.equal(refreshed.snapshot().scope.kind, 'owner'); assert.equal('visitorId' in refreshed.snapshot().scope, false);
+  assert.equal(refreshed.snapshot().scope.agentId, '', 'An owner without a selected Agent stays in its own empty-Agent scope');
+  refreshed.dispose();
+  const blocked = { getItem() { throw new Error('storage blocked'); }, setItem() { throw new Error('storage blocked'); } };
+  identity.update({ kind: 'guest', ownerId: '', agentId: '' });
+  const memoryGuest = createHudContextBridge(identity, { ...options, storage: blocked, newVisitorId: () => 'memory-visitor' });
+  await memoryGuest.load(); assert.equal(memoryGuest.snapshot().persistent, false);
+  const writes = backing.writes.length, memory = createLocalHudState({ storage: backing });
+  memory.setContext(memoryGuest.snapshot().scope, { persistent: memoryGuest.snapshot().persistent });
+  memory.markRead(memory.lease(), 'private', 'page-only'); assert.equal(memory.snapshot().persistence, 'memory');
+  assert.equal(backing.writes.length, writes, 'An unconfirmed persistent visitor key cannot adopt or modify a saved namespace');
+  const lateLease = memory.lease(); memory.setContext(null); assert.equal(memory.undoRemoval(lateLease), false);
+  memoryGuest.dispose(); assert.equal(backing.values.get('unrelated.preference'), 'keep');
 });
