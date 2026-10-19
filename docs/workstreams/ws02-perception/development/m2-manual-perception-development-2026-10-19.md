@@ -42,4 +42,11 @@ node node_modules/typescript/bin/tsc --noEmit
 - main 已 FF 至 `0abe18dac8d0e888bf4f290b0b82c50b0832b4e4`，d125 后仅交接／reviewer 报告；32 路径合入并保留既有非目标内容、状态和索引，见同域 `main-merge.json`。实际 8789 运行源码仍 **d12553a**、PID **16555**，快照 `outputs/ws02-real-perception/user-delivery-d12553a`，不是后继文档提交。
 - TD 新一致备份目录为 `outputs/ws02-real-perception/user-8789-backup-before-ws02-real-20261019T170735Z`；live／stopped／after-start 均 integrity ok、identity 配对。原 DB／identity／实例 `instance_6ee4d865-1e1a-4b40-90eb-2dbe6c46165f` 保留，experience1234／真实时钟沿用；副本迁移／seed 先验证，实际升为 schema5／20 表。stopped→after-start 原 14 表按保全口径核对，`schema_migrations` 原 1–4 不变、仅追加 5，无旧库回灌。
 - 实际 seed68＋原公开角色 1＝69 去重对象，14 holdings／31 deliveries／30 可读未确认／1 不可读，真实管理发布 1 条；私有 manifest 留在上述备份目录。健康／能力、首页／owner、四份 MD、CLI／公开 fixture 共 10 项只读 HTTP 核对通过，未新开浏览器。交付证据为同域 `user-8789-delivery.json`、备份目录 `switch-progress.json`。
-- 当前目录冻结为 `catalog-demo-1-schema-2`／`skills-catalog-demo-1-schema-2`，主库未提前做内容／guide 管理更新；独立 Agent HTTP R02 仍待原会话，工程／交付不冒充其通过。三份 WS01 已审接入文案在 4fe 后未改。schema5 回退只用兼容源码＋**CURRENT DB／identity**，禁止退回 schema4 源码或用旧库覆盖后续写入。
+- 交付时目录冻结为 `catalog-demo-1-schema-2`／`skills-catalog-demo-1-schema-2`，主库未提前做内容／guide 管理更新；后续独立 HTTP 及受控更新结果见下节。三份 WS01 已审接入文案在 4fe 后未改。schema5 回退只用兼容源码＋**CURRENT DB／identity**，禁止退回 schema4 源码或用旧库覆盖后续写入。
+
+## 独立 Agent HTTP（原小序 R02／R03）
+
+- [R02 正式报告](../validation/user-simulation/xiaoxu-http-r02-20261020T012437.md)记录从公开入口、沿原身份完成发现与读取：83 refs＝69 内容＋14 holding，82 项完整正文＋1 项获准但不可读元数据，40 份精确文档 digest 通过；未确认 30 → 读摘要／正文仍 30 → 显式确认 3 条为 27 → 原操作重放仍 27。TD 事后对类别、可读性、版本逐项匹配 manifest，见 integration `outputs/ws02-real-perception/r02-independent-coverage-reconciliation.json`，没有把管理员清单预先当作 Agent 的发现入口。
+- R03 前 TD 经已审本机管理函数／CAS 将 `test-message-09` 正文 v1→v2，旧确认保持 v1；guide1→2，目录更新为 `catalog-r03-20261020-e29b7a68`／`skills-catalog-r03-20261020-e29b7a68`，schema2／APIv1／protocol1 不变、旧文档保全。回执在同域 `r03-controlled-update-20261019T173331Z/change-receipt.json`，同目录保留 before-consistent.sqlite＋配对 identity；未重新 seed、重启或读取 runtime 凭据。
+- [R03 正式报告](../validation/user-simulation/xiaoxu-http-r03-20261020T013603.md)记录 101 次结构化 HTTP 全 200、127 项 schema 输入／输出校验零错；实际取得 5 新 guide／5 旧 guide／35 schema。唯一消息新版完整重读后未确认仍 28 → 显式新版确认 27 → 同操作重放 27。83 refs 无增减：81 项详情沿用 R02 同 ref／版本证据，1 项新版正文重读、1 项仅元数据，不能写成新版 82 项全部重读。收尾压缩后另有 6 次只读 GET，报告单列、合计 107，不计入 101／127；无注册、删除或额外业务写入，正式报告整理后未新发 HTTP。
+- 本次回执时 main 为纯文档后继 `15544be2efb3e104013220ae7c9eb1aaf2e3c9ce`，实际运行仍 `d12553a0d962751e8551926341441917b5ced7e7`／PID16555；后续文档整合不换 runtime。独立 owner-only activity 仍未测；上述结果不扩大为全平台、定时／Skill 执行、真实邮件、浏览器或手机验收。
