@@ -29,16 +29,38 @@ async function demo(page: Page, name: '背包' | '信箱', probes?: Json[]) {
   return window;
 }
 async function top(node: Locator) { return node.evaluate(element => element.scrollTop); }
+async function pointer(page: Page, control: Locator) {
+  await expect(control).toBeVisible(); const box = (await control.boundingBox())!, size = page.viewportSize()!;
+  assert(box.x >= 0 && box.y >= 0 && box.x + box.width <= size.width && box.y + box.height <= size.height,
+    'The action must be visibly reachable without implicit document scrolling');
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+}
+async function hoverReadingRegion(page: Page, region: Locator) {
+  const box = (await region.boundingBox())!, size = page.viewportSize()!;
+  assert(box.x >= 0 && box.y >= 0 && box.x + box.width <= size.width && box.y + box.height <= size.height,
+    'The reading region itself fits before native mouse movement and wheel input');
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+}
+async function revealByWheel(page: Page, region: Locator, control: Locator) {
+  for (let turn = 0; turn < 16; turn++) {
+    const item = (await control.boundingBox())!, frame = (await region.boundingBox())!;
+    if (item.y >= frame.y && item.y + item.height <= frame.y + frame.height) return;
+    const delta = item.y < frame.y ? item.y - frame.y - 8 : item.y + item.height - frame.y - frame.height + 8;
+    const before = await top(region); await hoverReadingRegion(page, region); await page.mouse.wheel(0, Math.max(-600, Math.min(600, delta)));
+    await expect.poll(() => top(region), { intervals: [1, 5, 10], message: 'The native wheel reaches the intended list or reader action' }).not.toBe(before);
+  }
+  assert.fail('The action could not be reached within its own scroll region');
+}
 function commandIntent(value: Json) {
   const { operationId, scope, action, targetId, input, uncertain } = value;
   return { operationId, scope, action, targetId, input, uncertain };
 }
 async function wheelTo(node: Locator, page: Page, delta = 480) {
-  await node.hover(); await page.mouse.wheel(0, delta);
+  await hoverReadingRegion(page, node); await page.mouse.wheel(0, delta);
   await expect.poll(() => top(node), { message: 'Native wheel input scrolls the intended reading region' }).toBeGreaterThan(80);
 }
 async function captureScroll(page: Page, node: Locator, delta: number) {
-  await node.hover();
+  await hoverReadingRegion(page, node);
   await node.evaluate(element => {
     const observer = window as typeof window & { ws02LastScroll: { top: number; at: number } | null };
     observer.ws02LastScroll = null;
@@ -129,8 +151,8 @@ test('WS02 mailbox detail preserves filters, focus and body position while read/
   const f = await ws02Fixture(t, { viewport: { width: 1280, height: 800 } }), { page } = f;
   await longExamples(page); await page.goto(f.origin); const window = await demo(page, '信箱'); await shellFits(page);
   const list = page.locator('#hud-mail-results'), detail = page.locator('#hud-detail-window');
-  await window.getByRole('button', { name: '未读', exact: true }).click();
-  const selected = list.getByRole('button', { name: /滚动示例通知 10/ }); await selected.scrollIntoViewIfNeeded();
+  await pointer(page, window.getByRole('button', { name: '未读', exact: true }));
+  const selected = list.getByRole('button', { name: /滚动示例通知 10/ }); await revealByWheel(page, list, selected);
   const listTop = await top(list); assert(listTop > 80); await selected.press('Enter');
   await expect(detail).toBeVisible(); await expect(page.locator('#hud-detail-title')).toBeFocused();
   assert.equal(await detail.getAttribute('aria-modal'), 'false'); assert.equal(await window.evaluate(node => node instanceof HTMLElement && node.inert), true);
@@ -144,23 +166,25 @@ test('WS02 mailbox detail preserves filters, focus and body position while read/
   assert(Math.abs(await top(list) - listTop) < 3, 'Removing the now-read row from the filter does not reset list position');
   const lastListTop = await refreshOnScroll(page, list, -120); await demo(page, '信箱');
   await expect(detail).toBeHidden(); await expect.poll(() => top(list)).toBeCloseTo(lastListTop, 0);
-  await window.getByRole('button', { name: '已读', exact: true }).click();
-  await list.getByRole('button', { name: /滚动示例通知 10/ }).click();
+  await pointer(page, window.getByRole('button', { name: '已读', exact: true }));
+  await pointer(page, list.getByRole('button', { name: /滚动示例通知 10/ }));
   await expect.poll(() => top(page.locator('#hud-detail-body'))).toBeCloseTo(bodyTop, 0);
   bodyTop = await refreshOnScroll(page, page.locator('#hud-detail-body'), 150); await demo(page, '信箱');
-  await expect(detail).toBeHidden(); await list.getByRole('button', { name: /滚动示例通知 10/ }).click();
+  await expect(detail).toBeHidden(); await pointer(page, list.getByRole('button', { name: /滚动示例通知 10/ }));
   await expect.poll(() => top(page.locator('#hud-detail-body'))).toBeCloseTo(bodyTop, 0);
-  await detail.getByRole('button', { name: '标为未读', exact: true }).click();
+  await revealByWheel(page, page.locator('#hud-detail-body'), detail.getByRole('button', { name: '标为未读', exact: true }));
+  await pointer(page, detail.getByRole('button', { name: '标为未读', exact: true }));
   await expect(detail.getByRole('button', { name: '标为已读', exact: true })).toBeVisible();
-  await page.keyboard.press('Escape'); await window.getByRole('button', { name: '全部', exact: true }).click();
-  await window.getByRole('button', { name: '未读', exact: true }).click();
+  await page.keyboard.press('Escape'); await pointer(page, window.getByRole('button', { name: '全部', exact: true }));
+  await pointer(page, window.getByRole('button', { name: '未读', exact: true }));
   for (const title of ['滚动示例通知 10', '滚动示例通知 19']) {
-    const trigger = list.locator(`[data-message-open="scroll-message-${title.endsWith('10') ? '10' : '19'}"]`); await trigger.scrollIntoViewIfNeeded();
+    const trigger = list.locator(`[data-message-open="scroll-message-${title.endsWith('10') ? '10' : '19'}"]`); await revealByWheel(page, list, trigger);
     const position = () => list.evaluate(node => ({ top: node.scrollTop, height: node.scrollHeight, visible: node.clientHeight }));
     const order = await list.locator('[data-message-open]').evaluateAll(nodes => nodes.map(node => (node as HTMLElement).dataset.messageOpen));
     const before = await position(), beforeTop = before.top; await trigger.press('Enter');
     await expect(trigger).toHaveCount(0); const afterRead = await position();
-    await detail.getByRole('button', { name: '标为未读', exact: true }).click(); const afterUnread = await position();
+    await revealByWheel(page, page.locator('#hud-detail-body'), detail.getByRole('button', { name: '标为未读', exact: true }));
+    await pointer(page, detail.getByRole('button', { name: '标为未读', exact: true })); const afterUnread = await position();
     await page.keyboard.press('Escape'); await expect(trigger).toBeFocused();
     assert.deepEqual(await list.locator('[data-message-open]').evaluateAll(nodes => nodes.map(node => (node as HTMLElement).dataset.messageOpen)), order,
       'Returning an unread middle or last row restores the original source order');
@@ -171,29 +195,32 @@ test('WS02 mailbox detail preserves filters, focus and body position while read/
     assert(Math.abs(afterTop - beforeTop) < 3, `Unread return keeps the scroll position: ${JSON.stringify({ title, beforeTop, afterTop,
       range: await list.evaluate(node => ({ height: node.scrollHeight, visible: node.clientHeight })) })}`);
   }
-  await window.getByRole('button', { name: '待处理', exact: true }).click();
+  await pointer(page, window.getByRole('button', { name: '待处理', exact: true }));
   const only = list.locator('[data-message-open]'); await expect(only).toHaveCount(1); await only.press('Enter');
-  await expect(list).toContainText('没有符合条件的通知'); await detail.getByRole('button', { name: '标为未读', exact: true }).click();
+  await expect(list).toContainText('没有符合条件的通知'); await pointer(page, detail.getByRole('button', { name: '标为未读', exact: true }));
   await page.keyboard.press('Escape'); await expect(only).toHaveCount(1); await expect(only).toBeFocused();
   await expect(list).not.toContainText('没有符合条件的通知');
-  await window.getByRole('button', { name: '待处理', exact: true }).click(); await window.getByRole('button', { name: '全部', exact: true }).click();
+  await pointer(page, window.getByRole('button', { name: '待处理', exact: true })); await pointer(page, window.getByRole('button', { name: '全部', exact: true }));
   const row = list.locator('.hud-message-row').filter({ hasText: '作品说明有更新' });
-  await row.getByRole('button', { name: '删除', exact: true }).click();
+  await pointer(page, row.getByRole('button', { name: '删除', exact: true }));
   await expect(detail).toBeHidden(); await expect(list.getByRole('button', { name: /作品说明有更新/ })).toHaveCount(0);
   await expect(window).toContainText('已从演示信箱移除');
   await returnToWorld(page); await expect(page.getByRole('button', { name: '撤销', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: '撤销', exact: true }).click();
+  await pointer(page, page.getByRole('button', { name: '撤销', exact: true }));
   await demo(page, '信箱'); await expect(list.getByRole('button', { name: /作品说明有更新/ })).toBeVisible();
-  await row.getByRole('button', { name: '删除', exact: true }).click();
+  t.diagnostic(JSON.stringify({ beforeSecondRemovalScrollY: await page.evaluate(() => scrollY) }));
+  assert.equal(await page.evaluate(() => scrollY), 0, 'Reading and local mail actions never scroll the document behind the window');
+  await pointer(page, row.getByRole('button', { name: '删除', exact: true }));
+  t.diagnostic(JSON.stringify({ afterSecondRemovalScrollY: await page.evaluate(() => scrollY) }));
   await page.reload(); await expect(detail).toBeHidden(); await expect(hudWindow(page)).toBeHidden(); await demo(page, '信箱');
   await expect(list.getByRole('button', { name: /作品说明有更新/ })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: '撤销', exact: true })).toBeVisible(); await page.getByRole('button', { name: '撤销', exact: true }).click();
-  await window.getByRole('button', { name: '待处理', exact: true }).click(); await expect(list.locator('[data-message-open]')).toHaveCount(1);
-  await window.getByRole('button', { name: '世界动态', exact: true }).click(); await expect(window.getByRole('button', { name: '待处理', exact: true })).toHaveCount(0);
-  await window.getByRole('button', { name: '私人通知', exact: true }).click();
+  await expect(page.getByRole('button', { name: '撤销', exact: true })).toBeVisible(); await pointer(page, page.getByRole('button', { name: '撤销', exact: true }));
+  await pointer(page, window.getByRole('button', { name: '待处理', exact: true })); await expect(list.locator('[data-message-open]')).toHaveCount(1);
+  await pointer(page, window.getByRole('button', { name: '世界动态', exact: true })); await expect(window.getByRole('button', { name: '待处理', exact: true })).toHaveCount(0);
+  await pointer(page, window.getByRole('button', { name: '私人通知', exact: true }));
   await expect(window.getByRole('button', { name: '待处理', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await window.getByRole('button', { name: '待处理', exact: true }).click();
-  await list.getByRole('button', { name: /旧内容已不可查看/ }).click();
+  await pointer(page, window.getByRole('button', { name: '待处理', exact: true }));
+  const unavailable = list.getByRole('button', { name: /旧内容已不可查看/ }); await revealByWheel(page, list, unavailable); await pointer(page, unavailable);
   await expect(detail).toContainText('正文、图像及来源动作当前不可用'); await expect(detail.getByRole('button', { name: '查看内容', exact: true })).toHaveCount(0);
   await returnToWorld(page); assert.deepEqual(f.writes, []);
 });
@@ -306,5 +333,34 @@ test('WS02 World returns to a live owned-Agent canvas, retains usable map tools 
   assert(!overlap(hit, overlay) && !overlap(name, overlay), 'Real locate and the visible name avoid the open mail reader');
   await returnToWorld(page); await expect(hudWindow(page)).toBeHidden(); await expect(page.locator('#hud-detail-window')).toBeHidden();
   await expect(hudButton(page, '世界')).toBeFocused(); await expect(page.getByRole('heading', { name: '世界', exact: true })).toHaveCount(0);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect.poll(async () => (await state()).camera.width).toBe(1280);
+  const beforeEntry = await camera(page), selectedName = await page.locator('#hud-agent-select').innerText();
+  await worldMenu(page); await pointer(page, page.locator('#world-learn'));
+  await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(200);
+  const anchorY = await page.evaluate(() => scrollY);
+  await page.evaluate(() => {
+    const observer = window as typeof window & { ws02WheelEnded: boolean }; observer.ws02WheelEnded = false;
+    let moved = false;
+    const scroll = () => { moved = true; };
+    const end = () => { if (moved) { observer.ws02WheelEnded = true; document.removeEventListener('scroll', scroll); document.removeEventListener('scrollend', end); } };
+    document.addEventListener('scroll', scroll); document.addEventListener('scrollend', end);
+  });
+  // Keep the real lower-page state: wheel over the visible explanation, then
+  // use the still-visible dock. No scrollTo or test reset can mask VR02.
+  await page.mouse.move(100, 400); await page.mouse.wheel(0, -120);
+  await page.waitForFunction(() => (window as typeof window & { ws02WheelEnded: boolean }).ws02WheelEnded);
+  const lowerY = await page.evaluate(() => scrollY); assert(lowerY > 100 && lowerY < anchorY, 'Native wheel input changes the lower-page reading position');
+  await pointer(page, hudButton(page, '世界'));
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
+  await expect(hudWindow(page)).toBeHidden(); await expect(page.locator('#hud-detail-window')).toBeHidden();
+  assert.equal((await page.locator('#world-layout').boundingBox())!.y, 0, 'Explicit World returns the actual canvas into the viewport');
+  const afterEntry = await camera(page);
+  for (const key of ['x', 'y', 'scale'] as const) assert(Math.abs(afterEntry[key] - beforeEntry[key]) < 0.001, 'Returning from the explanation keeps the camera and zoom');
+  await expect(page.locator('#hud-agent-select')).toHaveText(selectedName); assert.equal((await state()).paused, true);
+  await demo(page, '背包'); await shellFits(page);
+  await expect(page.locator('#hud-title')).toBeInViewport(); await pointer(page, page.locator('#hud-close'));
+  await expect(hudWindow(page)).toBeHidden();
+  t.diagnostic(JSON.stringify({ worldReturn: { viewport: page.viewportSize(), anchorY, lowerY, returnedY: await page.evaluate(() => scrollY) } }));
   await noPageOverflow(page); await f.logout();
 });
