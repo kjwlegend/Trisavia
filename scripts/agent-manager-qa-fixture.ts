@@ -62,10 +62,16 @@ export async function agentFixture(api:Api,owner:Json,name:string,color:string,p
 
 async function main(){
  const args:Record<string,string>={};
- for(let i=2;i<process.argv.length;i+=2){const key=process.argv[i],value=process.argv[i+1];if(!key||!['--candidate','--out'].includes(key)||!value||value.startsWith('--')||args[key])fail('invalid_arguments');args[key]=value;}
- if(!args['--candidate']||!args['--out']||!isAbsolute(args['--candidate'])||!isAbsolute(args['--out']))fail('absolute_candidate_and_new_output_required');
+ for(let i=2;i<process.argv.length;i+=2){
+  const key=process.argv[i],value=process.argv[i+1];
+  if(!key||!value)return fail('invalid_arguments');
+  if(!['--candidate','--out'].includes(key)||value.startsWith('--')||args[key])return fail('invalid_arguments');
+  args[key]=value;
+ }
+ const candidateArgument=args['--candidate'],outputArgument=args['--out'];
+ if(!candidateArgument||!outputArgument||!isAbsolute(candidateArgument)||!isAbsolute(outputArgument))return fail('absolute_candidate_and_new_output_required');
  if(Number(process.versions.node.split('.')[0])!==24)fail('node_24_required');
- const candidate=await realpath(args['--candidate']),requested=resolve(args['--out']),parent=await realpath(dirname(requested));
+ const candidate=await realpath(candidateArgument),requested=resolve(outputArgument),parent=await realpath(dirname(requested));
  if(parent!==dirname(requested)||(await lstat(candidate)).isDirectory()!==true)fail('unsafe_directory');
  const out=join(parent,basename(requested));
  try{await mkdir(out,{mode:0o700});}catch{fail('new_output_directory_required');}
@@ -84,8 +90,8 @@ async function main(){
   // Explicit configuration never inherits a user's database, identity or Resend secrets.
   const config=loadBackendConfig({M1_EMAIL_MODE:'experience',M1_DATABASE_PATH:join(out,'fixture.sqlite'),M1_IDENTITY_PATH:join(out,'fixture.sqlite.identity.json')},out);
   Object.assign(state,{databasePath:config.databasePath,identityPath:config.identityPath,instanceId:config.instanceId,recoveryEpoch:config.recoveryEpoch});await save();
-  app=buildApp({databasePath:config.databasePath,instanceId:config.instanceId,recoveryEpoch:config.recoveryEpoch,email:config.email});
-  const api=injectApi(app!,async command=>{if(!state.commands.includes(command))state.commands.push(command);await save();});
+  const activeApp:Injector=buildApp({databasePath:config.databasePath,instanceId:config.instanceId,recoveryEpoch:config.recoveryEpoch,email:config.email});app=activeApp;
+  const api=injectApi(activeApp,async command=>{if(!state.commands.includes(command))state.commands.push(command);await save();});
   const capabilities=await ok(api,'GET','/capabilities');if(capabilities.emailMode!=='experience'||capabilities.ownerEmailVerification!==true)fail('experience_candidate_required');
   for(const label of ['A','B','Empty']){
    const owner=await ownerFixture(api,label,async value=>{state.owners.push({...value,agents:[]});await save();});
@@ -112,7 +118,7 @@ async function main(){
    const list=await ok(api,'GET','/owner/agents',undefined,owner.sessionToken);
    if(list.agents.length!==saved.agents.length||saved.agents.some((agent:Json)=>!list.agents.some((row:Json)=>row.agentId===agent.agentId)))fail('unexpected_owner_list');
   }
-  state.phase='ready';await save();await app.close();app=undefined;
+  state.phase='ready';await save();await activeApp.close();app=undefined;
   process.stdout.write(`${JSON.stringify({fixturePath,owners:state.owners.map((owner:Json)=>({label:owner.label,ownerId:owner.ownerId,agentIds:owner.agents.map((agent:Json)=>agent.agentId)}))})}\n`);
  }finally{await app?.close();process.umask(previousMask);}
 }
