@@ -9,7 +9,7 @@ import { openM1Store } from '../../apps/platform/infrastructure/relational/sqlit
 import { seedWs02DemoData } from '../../apps/platform/application/perception-seed.ts';
 import { agentFixture, injectApi, ownerFixture, type Json } from '../../scripts/agent-manager-qa-fixture.ts';
 
-export interface Ref { moduleId: string; type: string; id: string }
+export type Ref = { moduleId: string; type: string; id: string };
 export const refKey = (ref: Ref) => JSON.stringify([ref.moduleId, ref.type, ref.id]);
 export const requestBase = (channel = 'world', extra: Json = {}) => ({
   protocolVersion: 1, channel, consumerId: 'isolated-http-consumer', purpose: 'agent-perception', ...extra,
