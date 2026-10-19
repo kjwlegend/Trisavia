@@ -84,3 +84,38 @@ test('seed rejects mismatched identity and invalid operator before any writable 
     await assert.rejects(stat(manifest), { code: 'ENOENT' });
   }
 });
+
+test('administrative edits and guide publication roll back source history, current version, receipt and fact on real SQL faults', async t => {
+  const f = await fixture(t), items = await f.listAll(requestBase('world', { categoryId: 'items', limit: 5 }));
+  const ref = items.records[0]!.ref as Ref;
+  const source = f.storage(store => store.read(tx => tx.find('perception_objects').find(row => JSON.stringify(row.data.ref) === JSON.stringify(ref)))); assert(source);
+  const snapshot = () => f.storage(store => store.read(tx => createHash('sha256').update(JSON.stringify({
+    objects: tx.find('perception_objects'), catalog: tx.find('perception_catalog'), access: tx.find('perception_access'),
+  })).digest('hex')));
+  const edit = { operationId: randomUUID(), actorId: 'isolated-administrator', ref, expectedVersion: source.version, body: 'A transactional new body.' };
+  const catalog = await f.read('GET', '/discovery?limit=50');
+  const guide = { operationId: randomUUID(), actorId: 'isolated-administrator', expectedCatalogRevision: catalog.catalogRevision,
+    revision: 'atomic-guide-2', guideVersion: 2, guideText: 'This new guide and its publication fact must commit together.' };
+  const cases = [
+    { table: 'perception_access', when: "json_extract(NEW.data,'$.actor.kind')='administrator'", run: () => f.storage(store => updatePerceptionDemoObject(store, edit)), input: edit },
+    { table: 'perception_catalog', when: "json_extract(NEW.data,'$.kind')='administrative_receipt'", run: () => f.storage(store => publishPerceptionGuide(store, guide)), input: guide },
+  ];
+  for (const operation of cases) {
+    const before = snapshot(), database = new DatabaseSync(f.options.databasePath);
+    try { database.exec(`CREATE TRIGGER isolated_admin_fault BEFORE INSERT ON ${operation.table} WHEN ${operation.when} BEGIN SELECT RAISE(ABORT,'isolated-admin-write-fault'); END`); }
+    finally { database.close(); }
+    try { assert.throws(operation.run); assert.equal(snapshot(), before, 'Source/history/catalog and the administrative receipt/fact must all roll back'); }
+    finally {
+      const cleanup = new DatabaseSync(f.options.databasePath);
+      try { cleanup.exec('DROP TRIGGER isolated_admin_fault'); } finally { cleanup.close(); }
+    }
+    const committed = operation.run(); assert.equal(committed.outcome, 'committed');
+    assert.deepEqual(operation.run(), committed, 'The same original command can retry after a rolled-back storage fault');
+    assert.equal(f.storage(store => store.read(tx => tx.find('perception_access', { operationId: operation.input.operationId }).length)), 1);
+  }
+  const history = f.storage(store => store.read(tx => tx.find('perception_catalog', { kind: 'object_history', objectId: source.id, contentVersion: source.version })));
+  assert.equal(history.length, 1); assert.deepEqual(history[0]!.data.content, source.data);
+  assert.throws(() => f.storage(store => updatePerceptionDemoObject(store, { ...edit, operationId: randomUUID() })), { code: 'version_conflict' });
+  assert.throws(() => f.storage(store => updatePerceptionDemoObject(store, { ...edit, body: 'A different payload must not replace the committed operation.' })), { code: 'operation_id_conflict' });
+  assert.throws(() => f.storage(store => publishPerceptionGuide(store, { ...guide, operationId: randomUUID(), revision: 'stale-guide-3', guideVersion: 3 })), { code: 'version_conflict' });
+});

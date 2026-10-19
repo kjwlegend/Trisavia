@@ -758,14 +758,21 @@ globalThis.fetch = async (input, options = {}) => {
 
 test('manual discovery reuses the downloaded Agent identity, preserves complete versions on failures and never resumes a pending business write', { timeout: 45_000 }, async t => {
   const directory = await mkdtemp(join(tmpdir(), 'ws02-cli-discovery-'));
-  const running = await server(directory, 'ws02-cli-discovery');
+  let running = await server(directory, 'ws02-cli-discovery');
   let failDiscovery = true, forcePages = false, failGuide = false, rejectDraft = false, discoveries = 0;
+  let tailMutation: ((capabilities: Json) => void) | undefined, readDocument = false;
+  let probeRequests: Record<string, number> = {};
   const writes: { path: string; method: string }[] = [];
   const proxy = createServer(async (request, response) => {
     try {
       const chunks: Buffer[] = []; for await (const chunk of request) chunks.push(Buffer.from(chunk));
       const body = Buffer.concat(chunks), target = new URL(request.url!, running.address);
       const isDiscovery = target.pathname === '/v1/perception/discovery';
+      if (tailMutation) {
+        const path = target.pathname.replace(/\/(guides|schemas)\/[^/]+$/, '/$1/:document');
+        const key = `${request.method} ${path}`; probeRequests[key] = (probeRequests[key] ?? 0) + 1;
+      }
+      if (target.pathname.startsWith('/v1/perception/guides/') || target.pathname.startsWith('/v1/perception/schemas/')) readDocument = true;
       if (isDiscovery) discoveries++;
       if (request.method !== 'GET') writes.push({ path: target.pathname, method: request.method! });
       if ((isDiscovery && failDiscovery) || (forcePages && isDiscovery && target.searchParams.has('pageToken'))
@@ -780,7 +787,11 @@ test('manual discovery reuses the downloaded Agent identity, preserves complete 
         ...(request.headers.authorization ? { authorization: request.headers.authorization } : {}),
         ...(body.length ? { 'content-type': 'application/json' } : {}),
       }, ...(body.length ? { body } : {}) });
-      response.writeHead(forwarded.status, { 'content-type': forwarded.headers.get('content-type') ?? 'application/json' }); response.end(await forwarded.text());
+      let payload = await forwarded.text();
+      if (tailMutation && readDocument && target.pathname === '/v1/capabilities' && forwarded.status === 200) {
+        const changed = JSON.parse(payload) as Json; tailMutation(changed); payload = JSON.stringify(changed);
+      }
+      response.writeHead(forwarded.status, { 'content-type': forwarded.headers.get('content-type') ?? 'application/json' }); response.end(payload);
     } catch { response.writeHead(503); response.end('{}'); }
   });
   t.after(async () => {
@@ -833,6 +844,53 @@ test('manual discovery reuses the downloaded Agent identity, preserves complete 
   assert((await readFile(cachePath, 'utf8')) === cache3, 'A complete directory without reliable exact guides is still an incomplete update'); await preserve();
   failGuide = false; await command(directory, path, 'check-updates');
   assert.equal((await command(directory, path, 'check-updates')).discovery.status, 'unchanged'); await preserve();
+  const completeCache = await readFile(cachePath, 'utf8');
+  const invalidCaches: ((cache: Json) => void)[] = [
+    cache => { delete cache.directory; },
+    cache => { for (const key of Object.keys(cache.directory)) cache.directory[key] = []; },
+    cache => { cache.documents = []; },
+    cache => { cache.documents.splice(cache.documents.findIndex((document: Json) => document.kind === 'guide'), 1); },
+    cache => { cache.documents.splice(cache.documents.findIndex((document: Json) => document.kind === 'schema'), 1); },
+    cache => { cache.documents.push({ ...cache.documents[0] }); },
+    cache => { cache.documents[0].id = 'mismatched-document-id'; },
+  ];
+  for (const damage of invalidCaches) {
+    const cache = JSON.parse(completeCache) as Json; damage(cache);
+    const damaged = JSON.stringify(cache); await writeFile(cachePath, damaged, { mode: 0o600 });
+    const before = discoveries, refused = await cli(directory, ['check-updates', '--state', path]);
+    assert.equal(refused.code, 1); assert(refused.stderr.startsWith('discovery_cache_invalid;'));
+    assert((await readFile(cachePath, 'utf8')) === damaged, 'A damaged cache must be preserved for inspection, never silently repaired or declared unchanged');
+    assert.equal(discoveries, before, 'Invalid local completeness must not be hidden by refetching a replacement directory');
+    await preserve(); safeOutput(refused.stdout + refused.stderr, pending);
+  }
+  // Restore only this test's deliberately damaged private fixture. The product
+  // must never perform this repair or replace another identity's material.
+  await writeFile(cachePath, completeCache, { mode: 0o600 });
+  const tailCases: { error: string; mutate: (capabilities: Json) => void }[] = [
+    { error: 'instance_or_identity_mismatch', mutate: value => { value.instanceId = 'different-tail-instance'; } },
+    { error: 'unsupported_perception_protocol', mutate: value => { value.apiVersion = 'unsupported'; } },
+    { error: 'unsupported_perception_protocol', mutate: value => { value.perception = false; } },
+    { error: 'unsupported_perception_protocol', mutate: value => { value.perceptionApi.protocolVersion = 2; } },
+    { error: 'unsupported_perception_protocol', mutate: value => { value.perceptionApi.discovery.method = 'POST'; } },
+    { error: 'unsupported_perception_protocol', mutate: value => { value.perceptionApi.discovery.path = '/v1/perception/untrusted-discovery'; } },
+  ];
+  for (const [index, probe] of tailCases.entries()) {
+    // Each bounded transport probe gets a new owned backend process over the
+    // same private database/identity. Keep the production IP limiter intact.
+    await stop(running.child); running = await server(directory, 'ws02-cli-discovery');
+    probeRequests = {};
+    administrative(index + 5); tailMutation = probe.mutate; readDocument = false;
+    const refused = await cli(directory, ['check-updates', '--state', path]);
+    assert(readDocument, 'Each identity/protocol probe occurs only after the real directory and exact documents were read');
+    safeOutput(refused.stdout + refused.stderr, pending);
+    const code = /^[a-z_]+;/.exec(refused.stderr)?.[0].slice(0, -1) ?? 'unexpected_error_format';
+    t.diagnostic(JSON.stringify({ phase: 'tail-capabilities', probe: index, backendRestart: index + 1,
+      expectedCode: probe.error, actualCode: code, requests: probeRequests }));
+    assert.equal(refused.code, 1); assert.equal(code, probe.error, `Tail capability case ${index} returns the expected safe classification`);
+    assert((await readFile(cachePath, 'utf8')) === completeCache, 'The full tail capability binding must pass before replacing the last complete baseline');
+    await preserve(); safeOutput(refused.stdout + refused.stderr, pending);
+  }
+  tailMutation = undefined; await command(directory, path, 'check-updates'); await preserve();
   assert.equal((await api(running.address, 'GET', `/v1/public/agents/${state.agentId}`)).profile.displayName, 'Manual perception Agent');
   assert.equal(writes.filter(write => write.path === '/v1/registrations').length, 1);
   assert(!writes.some(write => write.path.startsWith('/v1/perception/')), 'Update checks never confirm a message or submit another business action');
