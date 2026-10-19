@@ -13,8 +13,16 @@ async function demo(page: Page, name: '背包' | '信箱', probes?: Json[]) {
   const window = await openHud(page, name);
   const enter = window.getByRole('button', { name: `查看演示${name}`, exact: true });
   await sample('after open before demo click');
-  if (probes) probes.push({ step: 'demo entry box', box: await enter.boundingBox() });
-  if (await enter.isVisible()) await enter.click();
+  if (probes && await enter.isVisible()) probes.push({ step: 'demo entry box', box: await enter.boundingBox() });
+  if (await enter.isVisible()) {
+    await expect(window).toHaveAttribute('data-panel-state', 'open');
+    const box = (await enter.boundingBox())!, size = page.viewportSize()!;
+    assert(box.x >= 0 && box.y >= 0 && box.x + box.width <= size.width && box.y + box.height <= size.height,
+      `The explicit demo entry is directly visible before a native pointer click: ${JSON.stringify({ box, size, scrollY: await page.evaluate(() => scrollY) })}`);
+    // A physical pointer does not invoke locator.click's implicit browser
+    // scrollIntoView on a replacing overlay. Never reset document scroll.
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  }
   await expect(window.locator('.hud-demo-label:visible')).toContainText(name === '背包' ? '示例物品' : '示例信箱');
   await expect(window.locator(name === '背包' ? '[data-item-id]' : '[data-message-open]').first()).toBeVisible();
   await sample('after demo source ready');
@@ -56,7 +64,7 @@ async function shellFits(page: Page) {
     return { scrollY, root: root.getBoundingClientRect().toJSON(), hud: hud.getBoundingClientRect().toJSON(), variables: (root as HTMLElement).style.cssText,
       active: { tag: document.activeElement?.tagName, id: document.activeElement?.id },
       scrolling: ['html', 'body', '.hud-window-body', '#hud-feature-inventory', '#hud-item-results', '#hud-item-detail'].map(selector => {
-        const node = document.querySelector(selector)!; return { selector, scrollTop: node.scrollTop, anchor: getComputedStyle(node).overflowAnchor };
+        const node = document.querySelector(selector); return node ? { selector, scrollTop: node.scrollTop, anchor: getComputedStyle(node).overflowAnchor } : { selector, present: false };
       }), title: document.querySelector('#hud-title')!.getBoundingClientRect().toJSON() }; });
   assert(window.x >= 23 && window.x + window.width <= viewport.width - 23);
   assert(window.y >= 87 && window.y + window.height <= dock.y - 39,
@@ -72,7 +80,7 @@ async function longExamples(page: Page) {
     data.items[0].description = '这段虚构作品说明只用于检查阅读位置。'.repeat(160);
     for (let i = 0; i < 36; i++) data.items.push({ ...data.items[i % 3], id: `scroll-item-${i}`, name: `滚动示例物品 ${i}` });
     for (let i = 0; i < 20; i++) data.messages.push({ ...data.messages[1], id: `scroll-message-${i}`, title: `滚动示例通知 ${i}`,
-      body: '这是虚构长正文，不代表真实投递或 Agent 处理。'.repeat(150), sourceItemId: undefined });
+      status: '仅供知晓', body: '这是虚构长正文，不代表真实投递或 Agent 处理。'.repeat(150), sourceItemId: undefined });
     await route.fulfill({ json: data });
   });
 }
@@ -194,8 +202,17 @@ test('WS02 guest, owner and selected-Agent records stay separate and World never
     await returnToWorld(page);
   }
   await select(a.agents[0]!.agentId); await demo(page, '背包'); await expect(page.getByLabel('搜索示例物品', { exact: true })).toHaveValue('');
+  await page.evaluate(name => {
+    const sampled = window as typeof window & { ws02ContextChangedAt: number | null }; sampled.ws02ContextChangedAt = null;
+    const control = document.querySelector('#hud-agent-select')!;
+    const observer = new MutationObserver(() => { if (control.textContent === name) { sampled.ws02ContextChangedAt = performance.now(); observer.disconnect(); } });
+    observer.observe(control, { childList: true, subtree: true, characterData: true });
+  }, a.agents[1]!.name);
   const lastScroll = await captureScroll(page, page.locator('#hud-item-results'), 430);
-  await select(a.agents[1]!.agentId); await withinDebounce(page, lastScroll); await demo(page, '背包');
+  await select(a.agents[1]!.agentId);
+  const changedAt = await page.evaluate(() => (window as typeof window & { ws02ContextChangedAt: number | null }).ws02ContextChangedAt);
+  assert(changedAt !== null && changedAt - lastScroll.at < 100, 'The verified visible Agent scope changes before the captured scroll debounce expires');
+  await demo(page, '背包');
   await expect.poll(() => top(page.locator('#hud-item-results'))).toBe(0);
   await select(a.agents[0]!.agentId); await demo(page, '背包');
   await expect.poll(() => top(page.locator('#hud-item-results'))).toBeCloseTo(lastScroll.top, 0);
