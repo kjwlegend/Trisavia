@@ -1,6 +1,6 @@
 # M2 手动感知开发交接
 
-批次约定日期为 2026-10-19，以下作者执行发生于 2026-10-20（Asia/Shanghai）。基线 `878a0cab60a28027f3b30facaa0860dc56dd2ca3`；API 与验收作者均按本轮已核配置 `gpt-6.1-sol/xhigh` 分工。本文不记录尚未发生的 main 合入或 8789 交付。
+批次约定日期为 2026-10-19，以下作者执行发生于 2026-10-20（Asia/Shanghai）。基线 `878a0cab60a28027f3b30facaa0860dc56dd2ca3`；API 与验收作者均按本轮已核配置 `gpt-6.1-sol/xhigh` 分工。作者阶段与后续工程复核／本地交付分节记录。
 
 ## 实现与边界
 
@@ -30,8 +30,16 @@ node node_modules/typescript/bin/tsc --noEmit
 
 ## 后续 GitHub 开发基础
 
-- 运行需要 Node `>=24 <25`，依已提交 `package.json`／`package-lock.json` 执行 `npm ci`，直接 `npm start`，无构建前置。文中本机 Node 绝对路径仅是作者执行环境，不是应用依赖；独立 `git archive` 初始化核验由 TD 负责，本文不提前记通过。
+- 运行需要 Node `>=24 <25`，依已提交 `package.json`／`package-lock.json` 执行 `npm ci`，直接 `npm start`，无构建前置。文中本机 Node 绝对路径仅是作者执行环境，不是应用依赖；后续 TD 的独立 `git archive` 初始化结果见下节。
 - 运行网页／公开接入文件随候选提交；seed 的输入来自已提交 `apps/web/public/hud/demo-fixtures.json` 与 `apps/platform/domains/perception/demo-data.ts`，入口为 `scripts/ws02-demo-data.ts`，不读个人 `docs/design`、ignored 测试输出或真实 Agent 凭据。管理员须显式给 database、配对 identity、operator 及新 manifest 路径；发布函数仅本机管理调用。
 - DB、配对 identity 和秘密材料留在私有运行目录，不进 Git；现有实例必须沿用配对文件，不能拿 QA 库／身份替换。体验环境显式配置 `M1_EMAIL_MODE=experience`（1234、无真实发信）及自身 host/port/DB/identity；真实时钟为默认，作者测试固定时钟不得带入用户运行。用户库迁移、备份及服务切换均由 TD 另行记录。
 
-以上均为作者测试，独立代码审查与原本地 Agent 的公开入口 HTTP 验收由统筹另行安排；本作者未读取真实 Agent 凭据、操作用户 8789／原库、执行浏览器／真实邮件／手机或旧全量回归。当前 UI 人类演示已读不推进 Agent 确认；本轮没有新增人类业务写入接口。
+以上为作者阶段证据；本作者未读取真实 Agent 凭据、操作用户 8789／原库、执行浏览器／真实邮件／手机或旧全量回归。当前 UI 人类演示已读不推进 Agent 确认；本轮没有新增人类业务写入接口。
+
+## 工程复核与本地交付（原 reviewer／TD 回执）
+
+- 原 reviewer R5 正式接受 `878a0cab → d12553a0d962751e8551926341441917b5ced7e7`，CR01–09／T01／T02 按指定范围关闭，见[原报告 §9](../validation/m2-manual-perception-code-review-2026-10-20.md#9-r5-固定增量独审0bf33df--d12553a)。TD 从 d125 纯 `git archive` 导出并核对 286 文件，独立 `npm ci --ignore-scripts` 后 typecheck 退出 0、新 WS02 20/20、affected＋CLI 46/46 无 skip；空库 schema5／20 表、seed68／幂等及自有 port0 公开 HTTP 通过。证据：integration `outputs/ws02-real-perception/archive-validation-d12553a-20261019T170546Z/verification.json`。
+- main 已 FF 至 `0abe18dac8d0e888bf4f290b0b82c50b0832b4e4`，d125 后仅交接／reviewer 报告；32 路径合入并保留既有非目标内容、状态和索引，见同域 `main-merge.json`。实际 8789 运行源码仍 **d12553a**、PID **16555**，快照 `outputs/ws02-real-perception/user-delivery-d12553a`，不是后继文档提交。
+- TD 新一致备份目录为 `outputs/ws02-real-perception/user-8789-backup-before-ws02-real-20261019T170735Z`；live／stopped／after-start 均 integrity ok、identity 配对。原 DB／identity／实例 `instance_6ee4d865-1e1a-4b40-90eb-2dbe6c46165f` 保留，experience1234／真实时钟沿用；副本迁移／seed 先验证，实际升为 schema5／20 表。stopped→after-start 原 14 表按保全口径核对，`schema_migrations` 原 1–4 不变、仅追加 5，无旧库回灌。
+- 实际 seed68＋原公开角色 1＝69 去重对象，14 holdings／31 deliveries／30 可读未确认／1 不可读，真实管理发布 1 条；私有 manifest 留在上述备份目录。健康／能力、首页／owner、四份 MD、CLI／公开 fixture 共 10 项只读 HTTP 核对通过，未新开浏览器。交付证据为同域 `user-8789-delivery.json`、备份目录 `switch-progress.json`。
+- 当前目录冻结为 `catalog-demo-1-schema-2`／`skills-catalog-demo-1-schema-2`，主库未提前做内容／guide 管理更新；独立 Agent HTTP R02 仍待原会话，工程／交付不冒充其通过。三份 WS01 已审接入文案在 4fe 后未改。schema5 回退只用兼容源码＋**CURRENT DB／identity**，禁止退回 schema4 源码或用旧库覆盖后续写入。
