@@ -7,14 +7,17 @@ export function createMailFeature(provider,onEnterDemo=()=>{},{store,context,det
   node.id='hud-feature-mail';list.id='hud-mail-results';feedbackSlot.id='hud-mail-feedback-slot';feedbackNode.setAttribute('role','status');feedbackNode.hidden=true;
   const undoText=el('span');feedbackNode.append(undoText);let undoButton=null,feedbackLease=null;
   let local=store.snapshot(),revision=local.revision,source={phase:'idle'},demo=false,active=false,disposed=false;
-  let detailId='',detailChannel='',detailIndex=0,sourcePreview=false,readOnSuccess=false,detailGeneration=0,scrollTimer=0,bodyTimer=0,undoTimer=0,listLease=null,detailLease=null;
+  let detailId='',detailChannel='',detailIndex=0,sourcePreview=false,readOnSuccess=false,detailGeneration=0,scrollTimer=0,bodyTimer=0,undoTimer=0,listLease=null,detailLease=null,pendingScroll=null,pendingBody=null;
   const view=()=>projectMailView(local,source);
   const message=()=>projectMessageDetail(local,source,detailChannel,detailId);
-  function rememberScroll(){clearTimeout(scrollTimer);if(demo&&source.phase==='ready'&&local.scope)store.mailView(store.lease(),{scrollTop:list.scrollTop});}
-  list.addEventListener('scroll',()=>{if(!demo||source.phase!=='ready'||!listLease||!store.isCurrent(listLease))return;clearTimeout(scrollTimer);const lease=listLease,top=list.scrollTop,channel=local.state.mail.channel;scrollTimer=setTimeout(()=>store.mailView(lease,{channel,scrollTop:top}),100);},{passive:true});
+  function flushScroll(){clearTimeout(scrollTimer);const pending=pendingScroll;pendingScroll=null;if(pending)store.mailView(pending.lease,{channel:pending.channel,scrollTop:pending.top});}
+  function flushBody(){clearTimeout(bodyTimer);const pending=pendingBody;pendingBody=null;if(pending)store.mailPosition(pending.lease,pending.channel,pending.id,pending.top);}
+  function flush(){flushScroll();flushBody();}
+  function rememberScroll(){flushScroll();if(demo&&source.phase==='ready'&&listLease&&store.isCurrent(listLease)&&node.getClientRects().length)store.mailView(listLease,{scrollTop:list.scrollTop});}
+  list.addEventListener('scroll',()=>{if(!demo||source.phase!=='ready'||!listLease||!store.isCurrent(listLease)||!node.getClientRects().length)return;clearTimeout(scrollTimer);pendingScroll={lease:listLease,top:list.scrollTop,channel:local.state.mail.channel};scrollTimer=setTimeout(flushScroll,100);},{passive:true});
   function restoreScroll(){list.scrollTop=local.state.mail.scrollTop[local.state.mail.channel];}
-  function rememberBody(){clearTimeout(bodyTimer);if(detailId&&!sourcePreview&&detailLease)store.mailPosition(detailLease,detailChannel,detailId,detailHost.body.scrollTop);}
-  detailHost.body.addEventListener('scroll',()=>{if(!detailHost.isOpen||!detailId||sourcePreview||!detailLease||source.phase!=='ready')return;clearTimeout(bodyTimer);const lease=detailLease,id=detailId,channel=detailChannel,top=detailHost.body.scrollTop;bodyTimer=setTimeout(()=>store.mailPosition(lease,channel,id,top),100);},{passive:true});
+  function rememberBody(){flushBody();if(detailId&&!sourcePreview&&detailLease&&store.isCurrent(detailLease)&&detailHost.body.getClientRects().length)store.mailPosition(detailLease,detailChannel,detailId,detailHost.body.scrollTop);}
+  detailHost.body.addEventListener('scroll',()=>{if(!detailHost.isOpen||!detailId||sourcePreview||!detailLease||!store.isCurrent(detailLease)||source.phase!=='ready'||!detailHost.body.getClientRects().length)return;clearTimeout(bodyTimer);pendingBody={lease:detailLease,id:detailId,channel:detailChannel,top:detailHost.body.scrollTop};bodyTimer=setTimeout(flushBody,100);},{passive:true});
   function restoreFocus(){
     if(!active)return;const rows=[...list.querySelectorAll('[data-message-open]')];
     focusNode(rows.find(row=>row.dataset.messageOpen===detailId)||rows[Math.min(detailIndex,rows.length-1)]||node.querySelector('#hud-mail-list-title'));
@@ -114,13 +117,13 @@ export function createMailFeature(provider,onEnterDemo=()=>{},{store,context,det
   const stops=[store.subscribe(value=>{
     if(disposed)return;
     const changed=value.revision!==revision;local=value;
-    if(changed){revision=value.revision;clearTimeout(scrollTimer);clearTimeout(bodyTimer);listLease=null;closeDetail(false);detailHost.clear();demo=false;detailId='';detailChannel='';sourcePreview=false;readOnSuccess=false;render();}
+    if(changed){revision=value.revision;clearTimeout(scrollTimer);clearTimeout(bodyTimer);pendingScroll=null;pendingBody=null;listLease=null;closeDetail(false);detailHost.clear();demo=false;detailId='';detailChannel='';sourcePreview=false;readOnSuccess=false;render();}
     updateFeedback();
   }),context.subscribe(()=>{if(!local.scope)render();}),provider.subscribe(value=>{source=value;render();renderDetail();})];
   return{
-    node,feedbackNode,feedbackSlot,
+    node,feedbackNode,feedbackSlot,flush,
     activate(){active=true;restoreScroll();},deactivate(){rememberScroll();active=false;closeDetail(false);},setCompact(){},setContext(){},
     back(){if(!detailHost.isOpen)return false;if(sourcePreview){sourcePreview=false;renderDetail(false);return true;}closeDetail();return true;},
-    dispose(){closeDetail(false);disposed=true;clearTimeout(scrollTimer);clearTimeout(bodyTimer);clearTimeout(undoTimer);for(const stop of stops)stop?.();},
+    dispose(){flush();closeDetail(false);disposed=true;clearTimeout(scrollTimer);clearTimeout(bodyTimer);clearTimeout(undoTimer);for(const stop of stops)stop?.();},
   };
 }

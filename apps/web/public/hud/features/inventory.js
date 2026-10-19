@@ -5,11 +5,14 @@ import {el,button,demoLabel,feedback,focusNode} from './shared.js';
 export function createInventoryFeature(provider,onEnterDemo=()=>{},{store,context}={}){
   const node=el('section','hud-feature hud-inventory'),results=el('div','hud-inventory-grid-scroll'),details=el('section','hud-item-detail');
   node.id='hud-feature-inventory';results.id='hud-item-results';details.id='hud-item-detail';
-  let local=store.snapshot(),source={phase:'idle'},demo=false,preview=false,revision=local.revision,scrollTimer=0,detailTimer=0,resultsLease=null,disposed=false;
+  let local=store.snapshot(),source={phase:'idle'},demo=false,preview=false,revision=local.revision,scrollTimer=0,detailTimer=0,resultsLease=null,disposed=false,pendingScroll=null,pendingDetail=null;
   const view=()=>projectInventoryView(local,source);
-  function rememberScroll(){clearTimeout(scrollTimer);clearTimeout(detailTimer);const lease=store.lease();store.inventory(lease,{scrollTop:results.scrollTop,detailScrollTop:details.scrollTop});}
-  results.addEventListener('scroll',()=>{if(!demo||preview||source.phase!=='ready'||!resultsLease)return;clearTimeout(scrollTimer);const lease=resultsLease,top=results.scrollTop;scrollTimer=setTimeout(()=>store.inventory(lease,{scrollTop:top}),100);},{passive:true});
-  details.addEventListener('scroll',()=>{if(!demo||preview||source.phase!=='ready'||!resultsLease)return;clearTimeout(detailTimer);const lease=resultsLease,top=details.scrollTop;detailTimer=setTimeout(()=>store.inventory(lease,{detailScrollTop:top}),100);},{passive:true});
+  function flushScroll(){clearTimeout(scrollTimer);const pending=pendingScroll;pendingScroll=null;if(pending)store.inventory(pending.lease,{scrollTop:pending.top});}
+  function flushDetail(){clearTimeout(detailTimer);const pending=pendingDetail;pendingDetail=null;if(pending)store.inventory(pending.lease,{detailScrollTop:pending.top});}
+  function flush(){flushScroll();flushDetail();}
+  function rememberScroll(){flush();if(demo&&!preview&&source.phase==='ready'&&resultsLease&&store.isCurrent(resultsLease)&&node.getClientRects().length)store.inventory(resultsLease,{scrollTop:results.scrollTop,detailScrollTop:details.scrollTop});}
+  results.addEventListener('scroll',()=>{if(!demo||preview||source.phase!=='ready'||!resultsLease||!store.isCurrent(resultsLease)||!node.getClientRects().length)return;clearTimeout(scrollTimer);pendingScroll={lease:resultsLease,top:results.scrollTop};scrollTimer=setTimeout(flushScroll,100);},{passive:true});
+  details.addEventListener('scroll',()=>{if(!demo||preview||source.phase!=='ready'||!resultsLease||!store.isCurrent(resultsLease)||!node.getClientRects().length)return;clearTimeout(detailTimer);pendingDetail={lease:resultsLease,top:details.scrollTop};detailTimer=setTimeout(flushDetail,100);},{passive:true});
   function restoreScroll(){results.scrollTop=local.state.inventory.scrollTop;details.scrollTop=local.state.inventory.detailScrollTop;}
   function focusItem(){focusNode([...results.querySelectorAll('[data-item-id]')].find(control=>control.dataset.itemId===view().selectedId));}
   function unavailable(){
@@ -20,7 +23,7 @@ export function createInventoryFeature(provider,onEnterDemo=()=>{},{store,contex
   function renderResults(){
     const projection=view(),lease=store.lease();resultsLease=null;results.replaceChildren();details.replaceChildren();
     if(!projection.ready)return;
-    if(projection.selectedId!==local.state.inventory.selectedId){clearTimeout(detailTimer);store.inventory(lease,{selectedId:projection.selectedId,detailScrollTop:0});}
+    if(projection.selectedId!==local.state.inventory.selectedId){clearTimeout(detailTimer);pendingDetail=null;store.inventory(lease,{selectedId:projection.selectedId,detailScrollTop:0});}
     const grid=el('div','hud-items');grid.setAttribute('aria-label','示例物品');
     for(const item of projection.items){
       const control=button('',()=>{if(!store.isCurrent(lease))return;rememberScroll();store.inventory(lease,{selectedId:item.id,detailScrollTop:0});renderResults();restoreScroll();focusItem();});
@@ -53,6 +56,6 @@ export function createInventoryFeature(provider,onEnterDemo=()=>{},{store,contex
     search.addEventListener('input',()=>{if(!store.isCurrent(lease))return;rememberScroll();if(!store.inventory(lease,{query:search.value,scrollTop:0}))return;renderResults();results.scrollTop=0;details.scrollTop=local.state.inventory.detailScrollTop;});
     searchLabel.append(search);browser.append(toolbar,searchLabel,results);columns.append(browser,details);node.append(columns);renderResults();restoreScroll();
   }
-  const stops=[store.subscribe(value=>{if(disposed)return;const changed=value.revision!==revision;local=value;if(changed){revision=value.revision;clearTimeout(scrollTimer);clearTimeout(detailTimer);resultsLease=null;demo=false;preview=false;results.replaceChildren();details.replaceChildren();render();}}),context.subscribe(()=>{if(!local.scope)render();}),provider.subscribe(value=>{source=value;render();})];
-  return{node,activate(){if(demo&&!preview)restoreScroll();},deactivate(){if(demo&&!preview&&local.scope)rememberScroll();},setCompact(){},setContext(){},back(){if(!preview)return false;preview=false;render();restoreScroll();focusItem();return true;},dispose(){disposed=true;clearTimeout(scrollTimer);clearTimeout(detailTimer);for(const stop of stops)stop?.();}};
+  const stops=[store.subscribe(value=>{if(disposed)return;const changed=value.revision!==revision;local=value;if(changed){revision=value.revision;clearTimeout(scrollTimer);clearTimeout(detailTimer);pendingScroll=null;pendingDetail=null;resultsLease=null;demo=false;preview=false;results.replaceChildren();details.replaceChildren();render();}}),context.subscribe(()=>{if(!local.scope)render();}),provider.subscribe(value=>{source=value;render();})];
+  return{node,flush,activate(){if(demo&&!preview)restoreScroll();},deactivate(){if(demo&&!preview&&local.scope)rememberScroll();},setCompact(){},setContext(){},back(){if(!preview)return false;preview=false;render();restoreScroll();focusItem();return true;},dispose(){flush();disposed=true;clearTimeout(scrollTimer);clearTimeout(detailTimer);for(const stop of stops)stop?.();}};
 }

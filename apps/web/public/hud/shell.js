@@ -19,11 +19,13 @@ export function createHud({session,accountNode,onOpenAccount=()=>{},onLocateAgen
   const tooltip=el('div','hud-tooltip');tooltip.id='hud-tooltip';tooltip.setAttribute('role','tooltip');tooltip.hidden=true;
   const transition=createPanelTransition(windowNode),tipTransition=createPanelTransition(tooltip,{variant:'tooltip'});
   const provider=createDemoProvider(),store=createLocalHudState(),context=createHudContextBridge(session,DEMO_SOURCE),detailHost=createDetailHost(root,windowNode);
-  let providerState={phase:'idle'};
+  let providerState={phase:'idle'},flushViews=()=>{};
   const reconcile=()=>{const scope=store.snapshot().scope;if(!scope||providerState.phase!=='ready'||providerState.data.sourceId!==scope.sourceId||providerState.data.sourceVersion!==scope.sourceVersion)return;store.reconcile(store.lease(),{items:providerState.data.items.map(item=>item.id),private:providerState.data.messages.map(item=>item.id),world:providerState.data.announcements.map(item=>item.id)});};
-  const stopContext=context.subscribe(value=>{store.setContext(value.scope,{persistent:value.persistent});reconcile();});provider.subscribe(value=>{providerState=value;reconcile();});void context.load();
+  // Flush captured positions under the old lease before the context revision changes.
+  const stopContext=context.subscribe(value=>{flushViews();store.setContext(value.scope,{persistent:value.persistent});reconcile();});provider.subscribe(value=>{providerState=value;reconcile();});void context.load();
   const enterDemo=key=>()=>{if(current===key&&!windowNode.hidden)title.focus({preventScroll:true});};
   const features={profile:createProfileFeature(provider,enterDemo('profile')),inventory:createInventoryFeature(provider,enterDemo('inventory'),{store,context}),mail:createMailFeature(provider,enterDemo('mail'),{store,context,detailHost})};
+  flushViews=()=>{for(const feature of Object.values(features))feature.flush?.();};
   const names={profile:'个人',inventory:'背包',mail:'信箱',world:'世界'},buttons={};let current='',trigger=null,hoverTimer=0;
   const worldControls=createWorldControls(root),floatingFeedback=el('div','hud-floating-feedback');root.append(floatingFeedback);
   function moveFeedback(){(current==='mail'?features.mail.feedbackSlot:floatingFeedback).append(features.mail.feedbackNode);}
@@ -46,7 +48,7 @@ export function createHud({session,accountNode,onOpenAccount=()=>{},onLocateAgen
   root.append(dock,windowNode,tooltip,selector,locate,exploreExit);
   const panelLayout=createPanelLayout($('#world-layout'),dock,$('header'));
   const placeObserver=new MutationObserver(worldState);placeObserver.observe($('#world-layout'),{attributes:true,attributeFilter:['class']});worldState();moveFeedback();
-  window.addEventListener('pagehide',event=>{if(!event.persisted){for(const feature of Object.values(features))feature.dispose?.();stopContext();context.dispose();store.dispose();worldControls.destroy();placeObserver.disconnect();detailHost.destroy();transition.destroy();tipTransition.destroy();panelLayout.destroy();}});
+  window.addEventListener('pagehide',event=>{flushViews();if(!event.persisted){for(const feature of Object.values(features))feature.dispose?.();stopContext();context.dispose();store.dispose();worldControls.destroy();placeObserver.disconnect();detailHost.destroy();transition.destroy();tipTransition.destroy();panelLayout.destroy();}});
   const nav=$('header nav'),accountButton=el('button','hud-account'),entry=el('button','hud-entry','接入 Agent');accountButton.id='hud-account';accountButton.type='button';accountButton.setAttribute('aria-controls','hud-window');entry.type='button';entry.id='hud-agent-entry';nav.replaceChildren(accountButton,entry);
   accountButton.setAttribute('aria-expanded','false');entry.setAttribute('aria-controls','hud-window');selector.setAttribute('aria-controls','hud-window');
   accountButton.addEventListener('click',()=>openAccount(session.snapshot().accountIntent==='resume'?'resume':'account','',accountButton));entry.addEventListener('click',()=>openAccount('entry','',entry));
