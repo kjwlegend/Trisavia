@@ -123,3 +123,33 @@ R5／514ca56 的 TaskSpace45 已 finish，始终访客、无账户写入：先 p
 | QA 收尾 | 18892 此前保留待上述确认；技术总监核对 PID 17820、固定 source-514ca56 工作目录及无子进程后，仅对该 PID 正常 SIGTERM，确认 18892 无监听。全部 fixture、快照、报告、备份与 worktree 保留，8789／其他服务未动；运行源码仍 514ca56、PID 23948 |
 
 可回退至同 backend／schema 4 的原 dde598 用户快照，继续使用当前数据库及 identity，不能还原旧备份覆盖后来写入。交付未操作真实账号、真实邮件、公网或其他端口。当前不含新提出的注册／保存即公开、参与状态与访问频率业务／API 变化，全面 Agent 管理新版及原型仍是设计产物。以上不等于完整 M1、真实邮件、手机、其他尺寸或性能验收；本作者仅静态整理，没有重跑验证或操作服务／账号／数据库。
+
+## 新版 Agent 管理交付 · 9d99501（2026-10-19）
+
+本轮基线 `fd4bf0d25623bcd281d893ad941b91e5cfbf89ee`，首轮候选 `06029799a405e8cf6531e12cd728591f464c842a`；来源为设计 `6a68791`、API `4be9e6f`、CLI `9899f01`、网页 `ce1e8d7`，网页后续修订至 `6b0c968`。实现 880px 管理窗与 176px 导航，仍复用原账户宿主／控制器。新注册原子生成默认公开资料及 joined 成员状态；主人与获直接权限的 runtime 保存资料／形象即生效，独立提议仍须主人明确采用，模式／锁／暂停／跨对象与版本边界不放宽。世界访问安排初始未设置，主人保存正整秒或清回 null，自身 runtime 只读；只是私有偏好，不启动实际调度。
+
+实际管理宿主为 `#manage-view.owner-manager`；资料／形象使用 canonical `saveProfile`，世界访问使用独立版本的 `saveWorldAccess`，提议另列确认，历史 left／not_joined 异常保留明确恢复路径。下载版可选 CLI 为 pristine 注册默认保存一次完整初始意图；已有主人改动不覆盖，未知结果沿原操作键／正文续接。
+
+作者验证分别保留基准，不合写同版 9/9 或整轮回归：`ad2ee96` 在 API `4be9e6f`＋fixture `ff62b69` 执行 `node --test tests/integration/agent-manager.test.ts`，**8/8**；覆盖默认公开／幂等、直接保存与提议隔离、权限／锁／暂停／CAS／精确回执、私有访问安排与 SQLite 重开、历史恢复分支。首次 7/8 是旧 avatar 验证错误码期待不符，修为实际 422 后通过，未改产品。`77fd11e` 在上述 API＋CLI `9899f01` 仅按唯一 name-pattern 执行 CLI 组合故事，**1/1**；覆盖 HTTP 下载、显式初始资料公开、已提交丢响应及服务重启、主人先改／版本竞争保护。两次均用 Node 24.16.0 与隔离合成数据；未跑旧套件、全量回归、typecheck、build 或浏览器。
+
+技术总监另在真实用户一致备份的独立副本，以新版 backend 及旧 514 快照分别 ready／close，无监听或账户请求；schema 4、14 表全行指纹与配对 identity 保持，见 [副本兼容证据](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-agent-manager/qa-20261019T033745Z/compatibility-preflight/evidence.json)。本轮无新迁移，旧行读取未设置偏好不回填；该副本检查只证明启动兼容，不替代频率运行验证。
+
+首轮隔离 QA 为固定 `source-0602979`、18892／PID 80214；全新 `fixture-0602979/fixture.private.json` 提供 A 两位可写 direct Agent、B 一位历史 left 受限对象及 Empty 空账号。实例 `instance_49b2a8c3-9f3b-4e50-82b9-42b573c2157e`，真实时钟／experience，无 Resend；当时 101 项源码与 Git 字节、14 项只读 HTTP ready 已由技术总监核对。私密 fixture 仅供获授权隔离验收，不是用户身份。首轮完整独审因 AM-R01 布局、AM-R02 权限未知续接、AM-R03 提议采用丢脏输入而阻断；原模拟布局失败与有限可见保存事实保留，不由后续作者测试改记整轮通过。
+
+新增作者测试 `3f5f59b` 在网页 `6b0c968`＋上述 API 基准执行 `node --test tests/e2e/agent-manager-regressions.node.ts`，真实 Chromium／独立随机 loopback／每例新临时库与 context **6/6**：权限与暂停两动作各含未达／已提交丢响应、刷新、可见下载退出／重登／导入，原键正文续交或精确回执恢复且不替换新 session；另验脏政策与采用提议、输入后不先 Tab 的原生鼠标保存。过程中实际发现内联确认摘下保存节点导致 controls TypeError，原作者 `6b0c968` 保留节点修复；`02bd280` 修复输入 change 重挂 footer 造成鼠标保存丢动作。失败日志保留，不把测试入口期待修正或原失败抹成产品通过。临时服务／浏览器均已清理，未操作正式 QA 或用户账号；六例不等于完整布局／业务验收。
+
+准确组合 `1471b8132496f275df31dfa2f4afb1dc57277b4b` 的生产文件与上述测试固定源完全一致，**6/6 仅为等价源码执行证据，未在该组合重跑**；隔离 QA 18892／PID 92640 使用固定 `source-1471b81`，沿同一合成库／identity／实例。后续设计／公开接入说明收口后，[原独审](../validation/m1-agent-manager-static-code-review-2026-10-19.md)最终接受准确 `d293955`；原报告逐字归档为纯文档后继 `9d9950174d744f4d4c57dffd9297620b9ae4c675`，未改变已审生产／测试或递归重审。
+
+已归档的[原普通模拟报告](../validation/user-simulation/m1-agent-manager-desktop-round-01.md)分版保留 R1／R2 失败及 R3：A 的单次鼠标保存、真实公开刷新、形象／7 分钟期望间隔重开刷新、脏输入切页／切 Agent 保护通过，AM-D02／03 fixed/verified；B 从正常可见入口恢复历史退出状态，并以同一 Agent ID 核对实际公开资料。A／B 均退出，TaskSpace51 finish、三页全关。一次返回公开标签后首次形象导航只重读、再次可达的非阻断观察保留；R2 的 1024px／正文滚动不改写为 R3 重测。以上仅为合成 QA 的指定桌面任务，不扩写为完整 M1、手机、所有异常路径或真实邮件验收。
+
+原设计最终对象 `5a60b4d` 的两笔差异已整合为 `c45a59c`／`44c450d`，主目录效果稿／合同与该对象一致；原 WS01 四份公开接入补丁已逐字整合为 `436c3a0`，并获原独审接受。本次实际交付按 [user-8789-delivery.json](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-agent-manager/user-8789-delivery.json) 记录：
+
+| 项目 | 最终交付事实与边界 |
+| --- | --- |
+| main／运行源码 | main 快进到准确 9d99501，704 项既有文件逐项 hash 不变、stage 空。快照 `/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-agent-manager/user-delivery-9d99501`；旧 PID 23948 正常 SIGTERM、无子进程，新 PID 4670 在 [本地 8789](http://127.0.0.1:8789/) 运行。本交接是文档后继，不另换运行快照 |
+| 数据与环境 | 沿用原 `data/m1-account-v2.sqlite`、配对 identity、实例 `instance_6ee4d865-1e1a-4b40-90eb-2dbe6c46165f`；schema 4／14 表保持，无新迁移、业务 SQL 或旧库回灌。live、stopped 与 after-start 的全表行指纹及 identity 一致；沿原七键显式环境、experience／1234 与真实系统时钟 |
+| 当前一致备份 | 新目录 `/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-agent-manager/user-8789-backup-before-agent-manager-20261019T045121Z`。有效文件为 `live-consistent.sqlite`、`stopped-consistent-rw.sqlite`、`after-start-consistent-rw.sqlite`，live／stopped 有配对 identity。readonly WAL 连接失败产物原样保留，其中 `stopped-consistent.sqlite` 不完整、不可用于恢复；正常 local 连接的 SQLite backup 重试解决 |
+| 只读就绪 | 19 项 HTTP 全 200：health／capabilities 核对状态及能力，根／owner、10 个 JS／CSS、4 份公开 MD 与下载 CLI 核对固定资源字节及 no-store／nosniff。总指挥最终访客浏览器确认仍待回执，不冒写已完成 |
+| QA 收尾 | 核对 18892／PID 92640 的固定 source1471 工作目录、listener 与无子进程后正常 SIGTERM，已确认无监听；同一合成库／identity、fixture、快照、日志／截图／证据及 worktree 全保留，无删除／重置，其他端口未动。见 [清理证据](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-agent-manager/qa-20261019T033745Z/qa-cleanup-after-R3.json) |
+
+回退遵循已验证的旧 514 兼容源码继续使用 **当前** 数据库与 identity，不把本次或更旧备份回灌覆盖后续写入。作者三组定点、独立静态审查、普通模拟与服务就绪各保留自身范围；没有追加全量／移动／真实邮件验收，也不声称期望间隔已由工具采用或实际调度。本作者最后仅静态整理既有交付回执，没有重新运行测试、浏览器、服务或数据库操作。
