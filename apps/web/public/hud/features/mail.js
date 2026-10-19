@@ -13,8 +13,9 @@ export function createMailFeature(provider,onEnterDemo=()=>{},{store,context,det
   function flushScroll(){clearTimeout(scrollTimer);const pending=pendingScroll;pendingScroll=null;if(pending)store.mailView(pending.lease,{channel:pending.channel,scrollTop:pending.top});}
   function flushBody(){clearTimeout(bodyTimer);const pending=pendingBody;pendingBody=null;if(pending)store.mailPosition(pending.lease,pending.channel,pending.id,pending.top);}
   function flush(){flushScroll();flushBody();}
-  function rememberScroll(){flushScroll();if(demo&&source.phase==='ready'&&listLease&&store.isCurrent(listLease)&&node.getClientRects().length)store.mailView(listLease,{scrollTop:list.scrollTop});}
-  list.addEventListener('scroll',()=>{if(!demo||source.phase!=='ready'||!listLease||!store.isCurrent(listLease)||!node.getClientRects().length)return;clearTimeout(scrollTimer);pendingScroll={lease:listLease,top:list.scrollTop,channel:local.state.mail.channel};scrollTimer=setTimeout(flushScroll,100);},{passive:true});
+  function rememberScroll(){flushScroll();if(!detailHost.isOpen&&demo&&source.phase==='ready'&&listLease&&store.isCurrent(listLease)&&node.getClientRects().length)store.mailView(listLease,{scrollTop:list.scrollTop});}
+  // Read filtering can temporarily shorten the inert list; that clamp is not user scrolling.
+  list.addEventListener('scroll',()=>{if(detailHost.isOpen||!demo||source.phase!=='ready'||!listLease||!store.isCurrent(listLease)||!node.getClientRects().length)return;clearTimeout(scrollTimer);pendingScroll={lease:listLease,top:list.scrollTop,channel:local.state.mail.channel};scrollTimer=setTimeout(flushScroll,100);},{passive:true});
   function restoreScroll(){list.scrollTop=local.state.mail.scrollTop[local.state.mail.channel];}
   function rememberBody(){flushBody();if(detailId&&!sourcePreview&&detailLease&&store.isCurrent(detailLease)&&detailHost.body.getClientRects().length)store.mailPosition(detailLease,detailChannel,detailId,detailHost.body.scrollTop);}
   detailHost.body.addEventListener('scroll',()=>{if(!detailHost.isOpen||!detailId||sourcePreview||!detailLease||!store.isCurrent(detailLease)||source.phase!=='ready'||!detailHost.body.getClientRects().length)return;clearTimeout(bodyTimer);pendingBody={lease:detailLease,id:detailId,channel:detailChannel,top:detailHost.body.scrollTop};bodyTimer=setTimeout(flushBody,100);},{passive:true});
@@ -61,7 +62,7 @@ export function createMailFeature(provider,onEnterDemo=()=>{},{store,context,det
     if(all.messages.length)list.append(button('显示全部',()=>{if(store.mailView(lease,{read:'all',...(projection.channel==='private'?{pending:false}:{}),scrollTop:0}))render();}));
   }
   function patchRows(){
-    const projection=view(),lease=store.lease(),top=list.scrollTop,visible=new Set(projection.messages.map(entry=>entry.id));
+    const projection=view(),lease=store.lease(),top=detailHost.isOpen?local.state.mail.scrollTop[projection.channel]:list.scrollTop,visible=new Set(projection.messages.map(entry=>entry.id));
     if(projection.selectedId!==local.state.mail.selectedIds[projection.channel])store.mailView(lease,{selectedId:projection.selectedId});
     const rows=new Map();
     for(const child of [...list.children]){if(child.matches('.hud-message-row')&&visible.has(child.dataset.messageRow))rows.set(child.dataset.messageRow,child);else child.remove();}
