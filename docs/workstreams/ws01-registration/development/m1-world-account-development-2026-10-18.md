@@ -162,3 +162,13 @@ R5／514ca56 的 TaskSpace45 已 finish，始终访客、无账户写入：先 p
 - 保数：原 DB／identity／实例 `instance_6ee4d865-1e1a-4b40-90eb-2dbe6c46165f`、schema4／14 表与停机→新启动全行指纹保持，原七键环境 experience／1234、真实时钟，无旧库回灌。fresh 备份 `user-8789-backup-before-onboarding-copy-20261019T075505Z` 的 live／stopped／after-start 三份 consistent.sqlite 均有效，live／stopped identity 配对，详见[交付实据](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-onboarding-copy/user-8789-delivery.json)。
 - 就绪：97 个 runtime 文件及 12 项只读 HTTP／改动资源字节、no-store／nosniff 已由技术总监核对；用户库无注册或账号提交。总指挥已只读确认 actual8789 的 9 资源与 d836 一致及原实例健康，无真实注册；本作者未重跑验证。
 - QA：核对 18892／PID35825 的 d836 工作目录及无子进程后正常 SIGTERM、确认无监听；合成副本、原 R3 库／identity、fixture、快照和证据全保留，见[清理回执](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/m1-onboarding-copy/qa-20261019T074050Z/cleanup-evidence.json)。回退用原 9d 源码继续 **CURRENT DB／identity**，不回灌旧备份。
+
+## WS02 HUD 作者定点验证 · 3de1234（2026-10-19）
+
+本轮桌面增量为演示背包网格、信箱附加详情与本人本地读／隐藏／撤销状态；按实例、主人／访客、Agent 和来源隔离并持久化。世界按钮关闭内容回持续动态画布，不新增静态世界面板或真实 M2 后端。以下仅为测试作者证据，不代替独立代码审查、设计或普通用户验收，尚不记录本轮 main／8789 交付。
+
+- 纯状态基准：测试 `9c06222651c9d41bcb7579312ad06d3d39dc0f6b` 在生产 `373ee447b68c800a3595b0f9f96fe2235f1084aa` 上执行 `node --test tests/site/hud-local-state.test.ts`，**7/7**；覆盖持久化、真实撤销截止、正文／列表位置、上下文与旧 lease、访客及坏存储退路。[原证据](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-acceptance/outputs/ws02-hud/local-state-373ee44.tap) 不是最终 UI 组合重跑。
+- 最终四故事：生产 public 精确 `3de1234430fd60e76fa74e40ccdee237663b4b0f`＋测试 `b1611651a4c23a0b73323abee4bb2d0dd457a769`，Node 24.16.0／既定 Chromium 1243 执行 `node --test --test-reporter=tap tests/e2e/ws02-hud.node.ts`，同次 **4/4**、19.341 秒，无 skip；1440×900／1280×800 覆盖背包独立滚动、信箱读／撤销与刷新、访客／A／两 Agent／B 隔离、M1 脏资料／未知原键续接、动态画布／工具／暂停／reduced／可见遮挡。[最终输出](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-acceptance/outputs/ws02-hud/browser-3de1234-four-stories-final.tap)；该组合 `tsc --noEmit` exit 0，未合并旧批次局部结果充当四例通过。
+- 问题范围：保留原几何失败及测试驱动／通知夹具纠正记录；M2-CR01 未读补行／空态与末项返回、M2-CR02 末 100ms 滚动刷新／旧 scope 隔离已在四例覆盖。末项 1629→临时合法 clamp 1564→未读／关闭恢复 1629；WS07-VR02 用可见鼠标与真实滚轮得到说明页 737→617→世界 0，再开背包标题／关闭可达，镜头、缩放、当前 Agent 与暂停保持；没有测试 scrollTo／reset 掩盖缺陷。
+
+每例独占随机 loopback、全新合成库／identity／浏览器 context，结束正常关闭并清理自身临时材料；未操作共享 QA、真实用户服务或账号。未重跑旧 spec、全量、手机、真实邮件、真实 M2／调度或模型回复验收；旧受影响 spec 仅保留意图地适配，不能按本次四例宣称全部通过。
