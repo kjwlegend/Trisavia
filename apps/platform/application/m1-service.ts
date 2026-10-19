@@ -3,7 +3,7 @@ import type { JsonObject, JsonValue, M1ReadSession, M1Store, M1Table, M1Transact
 import { checkPassword, equalDigest, hashPassword, parseToken, payloadHash, verifier } from "../domains/access/credentials.ts";
 import { loginIdentifier } from "../domains/access/account-identifiers.ts";
 import { boolean, fail, M1Error, object, text, version } from "../domains/common/errors.ts";
-import { AVATAR_COLORS, PROFILE_FIELDS, REMOVABLE_PROFILE_FIELDS, validateFields, validatePublication, validateRemoveFields } from "../domains/profile/profile-rules.ts";
+import { AVATAR_COLORS, PROFILE_FIELDS, REMOVABLE_PROFILE_FIELDS, defaultPublicProfile, validateFields, validatePublication, validateRemoveFields } from "../domains/profile/profile-rules.ts";
 import { createEmailOnboarding } from "./email-onboarding.ts";
 import type { EmailConfig } from "../infrastructure/email/resend.ts";
 import { FOUNDATION_HTTP_OPERATIONS } from "../contracts/foundation-operations.ts";
@@ -13,10 +13,11 @@ export type M1Action =
   | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup" | "readRecovery"
   | "registerOwner" | "readAccount" | "claimAgent"
   | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites"
-  | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveDraft" | "publishProfile" | "unpublishProfile" | "profilePolicy"
+  | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveProfile" | "saveDraft" | "publishProfile" | "unpublishProfile" | "profilePolicy"
   | "createRecoveryRequest" | "readRecoveryRequest" | "cancelRecoveryRequest" | "recoveryAssistance" | "verifyRecoveryRequest" | "rejectRecoveryRequest"
   | "startRegistration" | "readRegistrationAttempt" | "sendRegistrationCode" | "verifyRegistrationEmail" | "cancelRegistration"
   | "startEmailRecovery" | "readEmailRecoveryAttempt" | "sendRecoveryCode" | "verifyRecoveryEmail" | "recoverByEmail" | "enableRecoveryBackup"
+  | "readWorldAccess" | "saveWorldAccess"
   | "readMembership" | "join" | "leave" | "participation" | "receipt";
 
 export interface M1Options {
@@ -177,8 +178,17 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
   }
 
   function profileView(row: StoredRow): JsonObject {
-    const confirmationSource = row.data.published !== null && ["runtime_declaration", "owner_authenticated"].includes(row.data.confirmationSource as string) ? row.data.confirmationSource! : null;
-    return { agentId: row.data.agentId!, version: row.version, policyVersion: row.data.policyVersion!, mode: row.data.mode!, lockedFields: row.data.lockedFields!, draft: row.data.draft!, published: row.data.published!, publishedVersion: row.data.publishedVersion!, confirmationSource };
+    const confirmationSource = row.data.published !== null && ["platform_default", "runtime_declaration", "owner_authenticated"].includes(row.data.confirmationSource as string) ? row.data.confirmationSource! : null;
+    return { agentId: row.data.agentId!, version: row.version, policyVersion: row.data.policyVersion!, mode: row.data.mode!, lockedFields: row.data.lockedFields!, draft: row.data.draft!, published: row.data.published!, publishedVersion: row.data.publishedVersion!, confirmationSource, proposalPending: payloadHash(dataObject(row.data.draft)) !== payloadHash(dataObject(row.data.published)) };
+  }
+
+  function worldAccessView(agent: StoredRow, asOf: number): JsonObject {
+    const stored = dataObject(agent.data.worldAccess);
+    const currentVersion = stored.version ?? 1;
+    const intervalSeconds = stored.intervalSeconds ?? null;
+    if (!Number.isSafeInteger(currentVersion) || (currentVersion as number) < 1
+      || (intervalSeconds !== null && (!Number.isSafeInteger(intervalSeconds) || (intervalSeconds as number) < 1))) throw new Error("Stored world access preference is invalid");
+    return { agentId: agent.id, version: currentVersion, intervalSeconds, asOf };
   }
 
   function membershipView(row: StoredRow): JsonObject {
@@ -198,6 +208,15 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     const member = required(tx, "memberships", agentId);
     if (actor.data.kind === "runtime" && member.data.ownerPaused) fail("participation_paused", 403, "Owner paused platform participation");
     if (member.data.platformRestricted) fail("platform_restricted", 403, "Platform participation is restricted");
+  }
+
+  function directSavePermission(tx: M1ReadSession, actor: CredentialRow, agentId: string, profile: StoredRow): void {
+    businessWrite(tx, actor, agentId);
+    if (actor.data.kind === "runtime" && profile.data.mode !== "agent_autonomous") fail("confirmation_required", 403, "Owner confirmation is required for publication");
+    const member = required(tx, "memberships", agentId);
+    if (member.data.state !== "joined" || (actor.data.kind === "runtime" && profile.data.published === null)) {
+      fail("role_not_public", 409, "Restore the explicit public role before using direct save", { membershipState: member.data.state!, published: profile.data.published !== null });
+    }
   }
 
   function publicationPermission(profile: StoredRow, actor: CredentialRow, unpublish: boolean): void {
@@ -278,6 +297,8 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     const locked = profile.data.lockedFields as string[];
     return {
       readProfile: check(() => {}), readMembership: check(() => {}),
+      saveProfile: { ...check(() => directSavePermission(tx, actor, agentId, profile)), writableFields: PROFILE_FIELDS.filter((field) => !locked.includes(field)), removableFields: REMOVABLE_PROFILE_FIELDS.filter((field) => !locked.includes(field)) },
+      readWorldAccess: check(() => {}), saveWorldAccess: { allowed: false, blockedBy: ["insufficient_scope"] },
       saveDraft: { ...check(write), writableFields: PROFILE_FIELDS.filter((field) => !locked.includes(field)), removableFields: REMOVABLE_PROFILE_FIELDS.filter((field) => !locked.includes(field)) },
       publishProfile: check(() => { write(); publicationPermission(profile, actor, false); }),
       unpublishProfile: check(() => { write(); publicationPermission(profile, actor, true); }),
@@ -310,7 +331,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
 
   function ownerView(tx: M1ReadSession, actor: CredentialRow, agentId: string, asOf: number): JsonObject {
     const agent = target(tx, actor, agentId);
-    return { agentId, ownerId: actor.data.ownerId!, runtimeVersion: agent.data.runtimeVersion!, runtimeActive: agent.data.runtimeActive!, profile: profileView(required(tx, "profiles", agentId)), membership: membershipView(required(tx, "memberships", agentId)), profileUrl: profileUrl(agentId), management: managementView(tx, agent), asOf };
+    return { agentId, ownerId: actor.data.ownerId!, runtimeVersion: agent.data.runtimeVersion!, runtimeActive: agent.data.runtimeActive!, profile: profileView(required(tx, "profiles", agentId)), membership: membershipView(required(tx, "memberships", agentId)), worldAccess: worldAccessView(agent, asOf), profileUrl: profileUrl(agentId), management: managementView(tx, agent), asOf };
   }
 
   const email = createEmailOnboarding(store, { authenticate, newCredential, command, pendingRecovery, recoveryContext }, {
@@ -318,7 +339,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
   });
 
   function invoke(action: M1Action, raw: unknown = {}, token?: string, context: { clientIp?: string } = {}): JsonObject {
-    if (action === "capabilities") return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, ownerRecoveryAssistance: true, ownerEmailVerification: email.configured, ownerEmailRecovery: email.configured, emailMode: email.mode, runtimeReplacement: true, scheduling: false, perception: false, interaction: false, operations: FOUNDATION_HTTP_OPERATIONS.map((operation) => ({ ...operation, actors: [...operation.actors], receiptScopes: { ...operation.receiptScopes }, requiredVersions: [...operation.requiredVersions] })) };
+    if (action === "capabilities") return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, ownerRecoveryAssistance: true, ownerEmailVerification: email.configured, ownerEmailRecovery: email.configured, emailMode: email.mode, runtimeReplacement: true, defaultPublicRole: true, profileSave: "immediate-public", worldAccessPreference: true, scheduling: false, perception: false, interaction: false, operations: FOUNDATION_HTTP_OPERATIONS.map((operation) => ({ ...operation, actors: [...operation.actors], receiptScopes: { ...operation.receiptScopes }, requiredVersions: [...operation.requiredVersions] })) };
     if (action === "catalog") return { version: 1, templates: [{ id: "basic", colors: [...AVATAR_COLORS] }], requiredFields: ["displayName", "avatar"] };
     if (email.handles(action)) return email.invoke(action, raw, token, context.clientIp);
     return store.transaction((tx) => {
@@ -401,7 +422,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
           const ownerId = invite?.data.ownerId ?? randomUUID();
           const stamp = now();
           if (!invite) tx.insert("owners", { id: ownerId, version: 1, data: { status: "pending_setup", epoch: store.recoveryEpoch, authVersion: 1, handoffGeneration: 0, createdAt: stamp } });
-          tx.insert("agents", { id: agentId, version: 1, data: { runtimeVersion: 1, runtimeActive: true, createdAt: stamp, managementKind: invite ? "invited" : "initial", managementInitializedAt: invite ? stamp : null } });
+          tx.insert("agents", { id: agentId, version: 1, data: { runtimeVersion: 1, runtimeActive: true, createdAt: stamp, managementKind: invite ? "invited" : "initial", managementInitializedAt: invite ? stamp : null, worldAccess: { version: 1, intervalSeconds: null } } });
           newCredential(tx, input.runtimeToken, "runtime", { agentId, runtimeVersion: 1 });
           newCredential(tx, input.continuationToken, invite ? "registration_receipt" : "bootstrap", { agentId, ownerId, attemptId });
           if (invite) {
@@ -410,8 +431,9 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
           }
           const registration: StoredRow = { id: attemptId, version: 1, data: { agentId, ownerId, continuationCredentialId: continuation.id, managementStatus: invite ? "managed" : "pending_setup", requestHash: payloadHash(input) } };
           tx.insert("registrations", registration);
-          tx.insert("profiles", { id: agentId, version: 1, data: { agentId, policyVersion: 1, mode: "agent_autonomous", lockedFields: [], draft: {}, published: null, publishedVersion: 0 } });
-          tx.insert("memberships", { id: agentId, version: 1, data: { agentId, worldId: "default", state: "not_joined", ownerPaused: false, ownerPauseVersion: 1, platformRestricted: false, platformVersion: 1 } });
+          const initialProfile = defaultPublicProfile(agentId);
+          tx.insert("profiles", { id: agentId, version: 1, data: { agentId, policyVersion: 1, mode: "agent_autonomous", lockedFields: [], draft: initialProfile, published: initialProfile, publishedVersion: 1, confirmationSource: "platform_default" } });
+          tx.insert("memberships", { id: agentId, version: 1, data: { agentId, worldId: "default", state: "joined", ownerPaused: false, ownerPauseVersion: 1, platformRestricted: false, platformVersion: 1 } });
           return registrationView(registration);
         });
       }
@@ -431,7 +453,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         const actor = authenticate(tx, token, ["runtime"]);
         const agentId = actor.data.agentId!;
         const registration = tx.find("registrations", { agentId })[0]!;
-        return { agentId, ownerId: scalarString(registration, "ownerId"), instanceId: store.instanceId, runtimeVersion: actor.data.runtimeVersion!, profile: profileView(required(tx, "profiles", agentId)), membership: membershipView(required(tx, "memberships", agentId)), profileUrl: profileUrl(agentId), management: managementView(tx, required(tx, "agents", agentId)), effectiveActions: effectiveActions(tx, actor, agentId), asOf };
+        return { agentId, ownerId: scalarString(registration, "ownerId"), instanceId: store.instanceId, runtimeVersion: actor.data.runtimeVersion!, profile: profileView(required(tx, "profiles", agentId)), membership: membershipView(required(tx, "memberships", agentId)), profileUrl: profileUrl(agentId), management: managementView(tx, required(tx, "agents", agentId)), worldAccess: worldAccessView(required(tx, "agents", agentId), asOf), effectiveActions: effectiveActions(tx, actor, agentId), asOf };
       }
 
       if (action === "issueHandoff") {
@@ -613,8 +635,28 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         });
       }
 
-      if (["readProfile", "saveDraft", "publishProfile", "unpublishProfile", "profilePolicy"].includes(action)) {
-        const keys = action === "readProfile" ? ["agentId"] : action === "saveDraft" ? ["operationId", "agentId", "expectedVersion", "expectedPolicyVersion", "fields", "removeFields"] : action === "profilePolicy" ? ["operationId", "agentId", "expectedVersion", "expectedPolicyVersion", "mode", "lockedFields"] : ["operationId", "agentId", "expectedVersion", "expectedPolicyVersion"];
+      if (action === "readWorldAccess" || action === "saveWorldAccess") {
+        const input = object(raw, action === "readWorldAccess" ? ["agentId"] : ["operationId", "agentId", "expectedVersion", "intervalSeconds"]);
+        const actor = authenticate(tx, token, action === "readWorldAccess" ? ["runtime", "owner_session"] : ["owner_session"]);
+        const agentId = text(input.agentId, "agentId", 8, 100);
+        const agent = target(tx, actor, agentId);
+        const current = worldAccessView(agent, asOf);
+        if (action === "readWorldAccess") return current;
+        return command(tx, `owner:${actor.data.ownerId!}`, action, input, () => {
+          if (version(input.expectedVersion) !== current.version) fail("version_conflict", 409, "World access preference changed", { version: current.version! });
+          businessWrite(tx, actor, agentId);
+          const intervalSeconds = input.intervalSeconds;
+          if (intervalSeconds !== null && (!Number.isSafeInteger(intervalSeconds) || (intervalSeconds as number) < 1)) fail("invalid_request", 400, "Expected a positive safe integer number of seconds or null", { field: "intervalSeconds" });
+          if (intervalSeconds === current.intervalSeconds) return { ...current, changed: false };
+          const nextVersion = (current.version as number) + 1;
+          if (!Number.isSafeInteger(nextVersion)) fail("state_conflict", 409, "Preference version cannot advance");
+          const next = update(tx, "agents", agent, { worldAccess: { version: nextVersion, intervalSeconds: intervalSeconds as number | null } });
+          return { ...worldAccessView(next, asOf), changed: true };
+        });
+      }
+
+      if (["readProfile", "saveProfile", "saveDraft", "publishProfile", "unpublishProfile", "profilePolicy"].includes(action)) {
+        const keys = action === "readProfile" ? ["agentId"] : (action === "saveDraft" || action === "saveProfile") ? ["operationId", "agentId", "expectedVersion", "expectedPolicyVersion", "fields", "removeFields"] : action === "profilePolicy" ? ["operationId", "agentId", "expectedVersion", "expectedPolicyVersion", "mode", "lockedFields"] : ["operationId", "agentId", "expectedVersion", "expectedPolicyVersion"];
         const input = object(raw, keys);
         const actor = authenticate(tx, token, action === "profilePolicy" ? ["owner_session"] : ["runtime", "owner_session"]);
         const agentId = text(input.agentId, "agentId", 8, 100);
@@ -628,13 +670,29 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
             if (!["agent_autonomous", "owner_specified", "proposal_required"].includes(input.mode as string) || !Array.isArray(input.lockedFields) || input.lockedFields.length > PROFILE_FIELDS.length || input.lockedFields.some((field) => !PROFILE_FIELDS.includes(field as typeof PROFILE_FIELDS[number])) || new Set(input.lockedFields).size !== input.lockedFields.length) fail("invalid_request", 400, "Invalid profile policy");
             return profileView(update(tx, "profiles", profile, { mode: input.mode as string, lockedFields: input.lockedFields as string[], policyVersion: numberValue(profile, "policyVersion") + 1 }));
           }
-          businessWrite(tx, actor, agentId);
-          if (action === "saveDraft") {
+          if (action === "saveProfile") directSavePermission(tx, actor, agentId, profile);
+          else businessWrite(tx, actor, agentId);
+          if (action === "saveDraft" || action === "saveProfile") {
             const fields = validateFields(input.fields) as JsonObject;
             const removeFields = validateRemoveFields(input.removeFields);
             if (removeFields.some((field) => Object.hasOwn(fields, field))) fail("invalid_request", 400, "A field cannot be set and removed together", { field: "removeFields" });
             const locked = profile.data.lockedFields as string[];
             if (actor.data.kind === "runtime" && [...Object.keys(fields), ...removeFields].some((field) => locked.includes(field))) fail("field_locked", 403, "Owner locked a requested field");
+            if (action === "saveProfile") {
+              const current = profile.data.published === null ? defaultPublicProfile(agentId) : dataObject(profile.data.published);
+              const combined = { ...current, ...fields } as JsonObject;
+              for (const field of removeFields) delete combined[field];
+              validatePublication(combined);
+              const published = validateFields(combined) as JsonObject;
+              if (profile.data.published !== null && payloadHash(published) === payloadHash(current)) return { ...profileView(profile), changed: false, saveEffect: "public" };
+              // Preserve separately saved proposals. A direct partial save must
+              // neither adopt nor discard fields that were not explicitly confirmed.
+              const draftMatchesActive = payloadHash(dataObject(profile.data.draft)) === payloadHash(dataObject(profile.data.published));
+              const next = update(tx, "profiles", profile, { published, publishedVersion: numberValue(profile, "publishedVersion") + 1,
+                confirmationSource: actor.data.kind === "runtime" ? "runtime_declaration" : "owner_authenticated",
+                ...(draftMatchesActive ? { draft: published } : {}) });
+              return { ...profileView(next), changed: true, saveEffect: "public" };
+            }
             const draft = { ...dataObject(profile.data.draft), ...fields };
             for (const field of removeFields) delete draft[field];
             return profileView(update(tx, "profiles", profile, { draft }));

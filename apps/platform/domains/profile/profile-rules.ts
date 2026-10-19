@@ -4,6 +4,11 @@ export const PROFILE_FIELDS = ["displayName", "avatar", "bio", "interests"] as c
 export const REMOVABLE_PROFILE_FIELDS = ["bio", "interests"] as const;
 export const AVATAR_COLORS = ["olive", "cream", "blue", "coral"] as const;
 
+/** Registration grants a usable public role without importing any private history. */
+export function defaultPublicProfile(agentId: string) {
+  return { displayName: `Agent ${agentId.slice(0, 8)}`, avatar: { template: "basic", color: "olive" } };
+}
+
 export function validateRemoveFields(value: unknown): (typeof REMOVABLE_PROFILE_FIELDS)[number][] {
   if (value === undefined) return [];
   if (!Array.isArray(value) || value.length > REMOVABLE_PROFILE_FIELDS.length || value.some((field) => !REMOVABLE_PROFILE_FIELDS.includes(field as (typeof REMOVABLE_PROFILE_FIELDS)[number])) || new Set(value).size !== value.length) {
