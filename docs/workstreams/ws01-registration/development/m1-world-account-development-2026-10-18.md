@@ -165,10 +165,19 @@ R5／514ca56 的 TaskSpace45 已 finish，始终访客、无账户写入：先 p
 
 ## WS02 HUD 作者定点验证 · 3de1234（2026-10-19）
 
-本轮桌面增量为演示背包网格、信箱附加详情与本人本地读／隐藏／撤销状态；按实例、主人／访客、Agent 和来源隔离并持久化。世界按钮关闭内容回持续动态画布，不新增静态世界面板或真实 M2 后端。以下仅为测试作者证据，不代替独立代码审查、设计或普通用户验收，尚不记录本轮 main／8789 交付。
+本轮桌面增量为演示背包网格、信箱附加详情与本人本地读／隐藏／撤销状态；按实例、主人／访客、Agent 和来源隔离并持久化。世界按钮关闭内容回持续动态画布，不新增静态世界面板或真实 M2 后端。以下仅为测试作者证据，不代替独立代码审查、设计或普通用户验收；本地交付另记于下。
 
 - 纯状态基准：测试 `9c06222651c9d41bcb7579312ad06d3d39dc0f6b` 在生产 `373ee447b68c800a3595b0f9f96fe2235f1084aa` 上执行 `node --test tests/site/hud-local-state.test.ts`，**7/7**；覆盖持久化、真实撤销截止、正文／列表位置、上下文与旧 lease、访客及坏存储退路。[原证据](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-acceptance/outputs/ws02-hud/local-state-373ee44.tap) 不是最终 UI 组合重跑。
 - 最终四故事：生产 public 精确 `3de1234430fd60e76fa74e40ccdee237663b4b0f`＋测试 `b1611651a4c23a0b73323abee4bb2d0dd457a769`，Node 24.16.0／既定 Chromium 1243 执行 `node --test --test-reporter=tap tests/e2e/ws02-hud.node.ts`，同次 **4/4**、19.341 秒，无 skip；1440×900／1280×800 覆盖背包独立滚动、信箱读／撤销与刷新、访客／A／两 Agent／B 隔离、M1 脏资料／未知原键续接、动态画布／工具／暂停／reduced／可见遮挡。[最终输出](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-acceptance/outputs/ws02-hud/browser-3de1234-four-stories-final.tap)；该组合 `tsc --noEmit` exit 0，未合并旧批次局部结果充当四例通过。
 - 问题范围：保留原几何失败及测试驱动／通知夹具纠正记录；M2-CR01 未读补行／空态与末项返回、M2-CR02 末 100ms 滚动刷新／旧 scope 隔离已在四例覆盖。末项 1629→临时合法 clamp 1564→未读／关闭恢复 1629；WS07-VR02 用可见鼠标与真实滚轮得到说明页 737→617→世界 0，再开背包标题／关闭可达，镜头、缩放、当前 Agent 与暂停保持；没有测试 scrollTo／reset 掩盖缺陷。
 
 每例独占随机 loopback、全新合成库／identity／浏览器 context，结束正常关闭并清理自身临时材料；未操作共享 QA、真实用户服务或账号。未重跑旧 spec、全量、手机、真实邮件、真实 M2／调度或模型回复验收；旧受影响 spec 仅保留意图地适配，不能按本次四例宣称全部通过。
+
+### 本地交付 · 3664297
+
+[原代码独审](../../ws02-perception/validation/m2-hud-static-code-review-2026-10-19.md)已接受 cdd2c30／0028b26；WS07 与[独立模拟](../../ws02-perception/validation/user-simulation/m2-hud-desktop-round-01.md)在 6948788 完成最终必要定点，保留各版实际范围、4px 非阻断与未测组合，不合称新版全量验收。三份最终报告及 15 份规划原件已精确整合。
+
+- main／运行源码为 `36642976757c97863e8e59b9a97b71515ca6fe62`；旧 PID39183 正常停止，新 PID7137 运行于 [8789](http://127.0.0.1:8789/)，固定快照 `/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/ws02-hud/user-delivery-3664297`。合入 44 路径，原有其他 685 项状态、837 个非本轮路径及其索引保持；本交接是文档后继，不另换运行源码。
+- 原 DB／identity／实例 `instance_6ee4d865-1e1a-4b40-90eb-2dbe6c46165f`、schema4／14 表保持，stopped→after-start 全行指纹相同，无迁移或旧库回灌；原七键显式环境 experience／1234 与真实时钟沿用。全新备份目录 `outputs/ws02-hud/user-8789-backup-before-ws02-hud-20261019T102528Z`（integration 下）保留三份 integrity ok 的 live／stopped／after-start consistent.sqlite 及 live／stopped 配对 identity，详见 [switch-evidence.json](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/ws02-hud/user-8789-backup-before-ws02-hud-20261019T102528Z/switch-evidence.json)。回退仍用兼容源码继续 **当前 DB／identity**，不覆盖后来写入。
+- 技术总监核对 19 项 HTTP：health、两个入口及 16 个变更资源；16 资源与固定源码字节一致、no-store。合 main 后 typecheck、状态单文件 **7/7**、14 个变更 JS 语法与 diffcheck 通过，见 [postmerge 检查](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/ws02-hud/postmerge-3664297-checks.txt)；未重跑四故事，沿精确生产 3de1234＋测试 b161165 的等价执行证据，不把只读就绪写成新浏览器验收。
+- 技术总监核对 QA PID1627 的固定 source-6948788 工作目录及无子进程后正常 SIGTERM，确认 18892 无监听；合成库、identity、fixture、快照、证据及 worktree 全保留，其他端口未动。随后确认 8789／PID7137 health ok、原实例不变，见 [QA 收尾](/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/ws02-hud/qa-20261019T090855Z/stopped-final-6948788.json)。本作者仅读取既有回执整理，未重新运行测试、服务或账号操作。
