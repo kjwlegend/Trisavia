@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { randomBytes, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { open, lstat, readFile, rename, unlink, mkdir, realpath } from 'node:fs/promises';
 import { dirname } from 'node:path';
 
@@ -404,10 +404,61 @@ function summary(path: string, state: State) {
     privateStateFile: path, privateHandoffFile: state.handoff?.privateFile ?? null };
 }
 
+function documentDigest(value: unknown): string {
+  const canonical = (entry: unknown): unknown => Array.isArray(entry) ? entry.map(canonical)
+    : entry !== null && typeof entry === 'object' ? Object.fromEntries(Object.entries(entry).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => [k, canonical(v)])) : entry;
+  return createHash('sha256').update(JSON.stringify(canonical(value))).digest('hex');
+}
+
+/** Separate advisory cache. Never resumes commands or modifies identity/role/handoff. */
+async function checkDiscovery(path: string, state: State, capabilities: Json): Promise<Json> {
+  if (capabilities.perception !== true) return { status: 'not_enabled', scheduling: false };
+  const bridge = object(capabilities.perceptionApi), discovery = object(bridge.discovery);
+  if (bridge.protocolVersion !== 1 || discovery.method !== 'GET' || discovery.path !== '/v1/perception/discovery') throw new AgentError('unsupported_perception_protocol');
+  const self = await http(state.origin, 'GET', '/v1/agent/self', undefined, state.runtimeToken);
+  if (self.instanceId !== state.instanceId || (state.agentId && self.agentId !== state.agentId)) throw new AgentError('instance_or_identity_mismatch');
+  const cachePath = `${path}.discovery.json`;
+  let previous: Json | undefined;
+  try { previous = await readPrivateJson(cachePath); } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+  if (previous && (previous.format !== 'connet-perception-discovery-v1' || previous.origin !== state.origin || previous.instanceId !== state.instanceId || previous.agentId !== self.agentId)) throw new AgentError('instance_or_identity_mismatch');
+  if (previous && (previous.complete !== true || !Array.isArray(previous.documents) || previous.documents.map(object).some(d => typeof d.digest !== 'string' || d.digest !== documentDigest(d.document)))) throw new AgentError('discovery_cache_invalid');
+  if (previous?.catalogRevision === bridge.catalogRevision && previous?.skillCatalogRevision === bridge.skillCatalogRevision) return { status: 'unchanged', catalogRevision: bridge.catalogRevision, skillCatalogRevision: bridge.skillCatalogRevision, privateDiscoveryFile: cachePath, scheduling: false };
+  const directory: Json = {}, collections = ['worlds', 'modules', 'types', 'sources', 'categories', 'skills', 'operations'];
+  for (const name of collections) directory[name] = [];
+  let next: unknown, complete = false;
+  for (let page = 0; page < 50 && !complete; page++) {
+    const query = new URLSearchParams({ limit: '50', ...(typeof next === 'string' ? { pageToken: next } : {}) });
+    const envelope = await http(state.origin, 'GET', `/v1/perception/discovery?${query}`, undefined, state.runtimeToken), data = object(envelope.data);
+    if (envelope.protocolVersion !== 1 || envelope.instanceId !== state.instanceId || data.catalogRevision !== bridge.catalogRevision || data.skillCatalogRevision !== bridge.skillCatalogRevision) throw new AgentError('catalog_changed_retry');
+    for (const name of collections) { if (!Array.isArray(data[name])) throw new AgentError('unsupported_perception_protocol'); (directory[name] as unknown[]).push(...data[name]); }
+    complete = data.complete === true; next = data.nextPageToken;
+    if (complete ? next !== null : typeof next !== 'string') throw new AgentError('unsupported_perception_protocol');
+  }
+  if (!complete) throw new AgentError('discovery_budget_exhausted');
+  const requested = new Map<string, { kind: 'schema' | 'guide'; id: string; version: number }>();
+  const add = (kind: 'schema' | 'guide', value: unknown) => { const r = object(value), id = kind === 'schema' ? r.id : r.moduleId; if (typeof id !== 'string' || !/^[A-Za-z0-9_.@-]{1,100}$/.test(id) || !Number.isSafeInteger(r.version) || Number(r.version) < 1) throw new AgentError('unsupported_perception_protocol'); requested.set(`${kind}:${id}:${r.version}`, { kind, id, version: Number(r.version) }); };
+  for (const item of directory.modules as Json[]) if (item.usageGuide) add('guide', item.usageGuide);
+  for (const item of directory.types as Json[]) { add('schema', item.summarySchema); add('schema', item.detailSchema); }
+  for (const item of directory.operations as Json[]) { add('schema', item.inputSchema); add('schema', item.outputSchema); }
+  if (requested.size > 100) throw new AgentError('discovery_budget_exhausted');
+  const documents: Json[] = [];
+  for (const item of requested.values()) {
+    const response = await http(state.origin, 'GET', `/v1/perception/${item.kind === 'guide' ? 'guides' : 'schemas'}/${encodeURIComponent(item.id)}?version=${item.version}`, undefined, state.runtimeToken), data = object(response.data);
+    if (response.protocolVersion !== 1 || response.instanceId !== state.instanceId || data.version !== item.version || data[item.kind === 'guide' ? 'moduleId' : 'schemaId'] !== item.id || data.digest !== documentDigest(data.document)) throw new AgentError('document_integrity_failed');
+    const old = Array.isArray(previous?.documents) ? previous.documents.map(object).find(d => d.kind === item.kind && d.id === item.id && d.version === item.version) : undefined;
+    if (old && old.digest !== data.digest) throw new AgentError('document_integrity_failed');
+    documents.push({ ...item, digest: data.digest, document: data.document });
+  }
+  const current = object((await http(state.origin, 'GET', '/v1/capabilities')).perceptionApi);
+  if (current.catalogRevision !== bridge.catalogRevision || current.skillCatalogRevision !== bridge.skillCatalogRevision) throw new AgentError('catalog_changed_retry');
+  await writePrivateJson(cachePath, { format: 'connet-perception-discovery-v1', origin: state.origin, instanceId: state.instanceId, agentId: self.agentId, complete: true, catalogRevision: bridge.catalogRevision, skillCatalogRevision: bridge.skillCatalogRevision, directory, documents, updatedAt: Date.now() });
+  return { status: 'updated', catalogRevision: bridge.catalogRevision, skillCatalogRevision: bridge.skillCatalogRevision, documents: documents.length, privateDiscoveryFile: cachePath, scheduling: false };
+}
+
 export async function runAgent(args: string[]): Promise<Json> {
   const command = args[0];
   const publicReads = ['avatar-catalog', 'capabilities'], reads = ['profile-read', 'membership-read', 'recovery-request-read'];
-  if (!['onboard', 'status', 'handoff', 'import-runtime', ...publicReads, ...reads, ...Object.keys(mutations)].includes(command ?? '')) throw new AgentError('invalid_command');
+  if (!['onboard', 'status', 'handoff', 'import-runtime', 'check-updates', ...publicReads, ...reads, ...Object.keys(mutations)].includes(command ?? '')) throw new AgentError('invalid_command');
   const options: Record<string, string> = {};
   let declareDelivered = false;
   const allowed = ['--url', '--state', '--name', '--bio', '--color', '--invite-file', '--runtime-file', '--out', '--input-file', '--fields', '--request-id'];
@@ -417,7 +468,7 @@ export async function runAgent(args: string[]): Promise<Json> {
     if (!allowed.includes(key) || options[key] !== undefined || !args[i + 1] || args[i + 1]!.startsWith('--')) throw new AgentError('invalid_arguments');
     options[key] = args[++i]!;
   }
-  if (publicReads.includes(command!) || reads.includes(command!) || command! in mutations) {
+  if (publicReads.includes(command!) || reads.includes(command!) || command === 'check-updates' || command! in mutations) {
     const accepted = ['--url', '--state', ...(command === 'profile-update' ? ['--input-file'] : []), ...(command === 'profile-clear' ? ['--fields'] : []),
       ...(command === 'recovery-request-create' ? ['--out'] : []), ...(['recovery-request-read', 'recovery-request-cancel'].includes(command!) ? ['--request-id'] : [])];
     if (declareDelivered || Object.keys(options).some(key => !accepted.includes(key))) throw new AgentError('invalid_arguments');
@@ -468,6 +519,7 @@ export async function runAgent(args: string[]): Promise<Json> {
     if (capabilities.instanceId !== state.instanceId || capabilities.apiVersion !== 'v1') throw new AgentError('instance_or_identity_mismatch');
     if (publicReads.includes(command!)) return command === 'capabilities' ? capabilities
       : { instanceId: state.instanceId, apiVersion: 'v1', catalog: await http(state.origin, 'GET', '/v1/avatar-catalog') };
+    if (command === 'check-updates') return { instanceId: state.instanceId, agentId: state.agentId ?? null, discovery: await checkDiscovery(path, state, capabilities) };
     if (command === 'import-runtime') {
       if (!options['--runtime-file'] || !state.agentId) throw new AgentError('runtime_file_required');
       const replacement = await readPrivateJson(resolve(options['--runtime-file']));
@@ -516,7 +568,9 @@ export async function runAgent(args: string[]): Promise<Json> {
     }
     await initialize(path, state, capabilities.defaultPublicRole === true);
     await handoff(path, state, resolve(options['--out'] ?? state.handoff?.privateFile ?? `${path}.handoff.json`), declareDelivered);
-    return summary(path, state);
+    let discovery: Json;
+    try { discovery = await checkDiscovery(path, state, capabilities); } catch (error) { discovery = { status: 'unknown', error: error instanceof AgentError ? error.code : 'discovery_unavailable', previousCompleteBaselinePreserved: true }; }
+    return { ...summary(path, state), discovery };
   } finally { await release(); }
 }
 

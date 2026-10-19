@@ -19,7 +19,8 @@ function filterSql(filters: ExactFilters): { sql: string; values: SQLInputValue[
   for (const [key, value] of Object.entries(filters)) {
     if (value !== null && !['string', 'number', 'boolean'].includes(typeof value)) throw new StorageError('invalid_usage', 'Exact filters require scalars');
     const path = (/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) ? `$.${key}` : `$.${JSON.stringify(key)}`).replaceAll("'", "''");
-    clauses.push(`json_type(data, '${path}') IS NOT NULL AND json_extract(data, '${path}') IS ?`);
+    const type = value === null ? "= 'null'" : typeof value === 'boolean' ? `= '${value ? 'true' : 'false'}'` : typeof value === 'number' ? "IN ('integer', 'real')" : "= 'text'";
+    clauses.push(`json_type(data, '${path}') ${type} AND json_extract(data, '${path}') IS ?`);
     values.push(typeof value === 'boolean' ? Number(value) : value);
   }
   return { sql: clauses.join(' AND ') || '1', values };

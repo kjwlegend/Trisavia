@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import type { JsonObject, JsonValue, M1Store, M1Transaction, StoredRow } from '../contracts/store.ts';
-import { fail, object, text, version } from '../domains/common/errors.ts';
+import { fail, M1Error, object, text, version } from '../domains/common/errors.ts';
 import { CATEGORIES, OPERATIONS, TYPE_DEFINITIONS, RULES_REF, bounded, key, plain, ref, refId, type ObjectRef, type PerceptionAction } from '../domains/perception/protocol.ts';
 import { catalogData, initializePerceptionCatalog } from './perception-catalog.ts';
 import { grantId } from './perception-seed.ts';
 
-export interface PerceptionOptions { now?:()=>number; pageTtlMs?:number; completionTtlMs?:number; accessRetentionMs?:number; accessPerAgentLimit?:number; accessTotalLimit?:number; receiptLimit?:number; detailSegmentChars?:number }
+export interface PerceptionOptions { now?:()=>number; pageTtlMs?:number; completionTtlMs?:number; accessRetentionMs?:number; accessPerAgentLimit?:number; accessTotalLimit?:number; receiptLimit?:number; receiptPerAgentLimit?:number; statePerAgentLimit?:number; stateTotalLimit?:number; detailSegmentChars?:number }
 export interface PerceptionAuth { authenticate(tx:M1Transaction,token:unknown,kinds:readonly string[]):StoredRow }
 type Actor={id:string;kind:'runtime'|'owner_session';agentId:string|null;ownerId:string|null;generation:JsonValue};
 type Candidate={row:StoredRow;ref:ObjectRef;grant?:StoredRow};
@@ -13,8 +13,8 @@ const common=['protocolVersion','channel','purpose','consumerId','scope','limit'
 
 export function createPerceptionService(store:M1Store,auth:PerceptionAuth,options:PerceptionOptions={}) {
  const now=options.now??Date.now;
- const settings={pageTtlMs:options.pageTtlMs??300_000,completionTtlMs:options.completionTtlMs??600_000,accessRetentionMs:options.accessRetentionMs??7*86_400_000,accessPerAgentLimit:options.accessPerAgentLimit??1000,accessTotalLimit:options.accessTotalLimit??20_000,receiptLimit:options.receiptLimit??10_000,detailSegmentChars:options.detailSegmentChars??512};
- if(Object.values(settings).some(n=>!Number.isSafeInteger(n)||n<1)||settings.receiptLimit>100_000||settings.accessTotalLimit>100_000||settings.accessPerAgentLimit>100_000||settings.detailSegmentChars>2000)throw new Error('Invalid perception limits');
+ const settings={pageTtlMs:options.pageTtlMs??300_000,completionTtlMs:options.completionTtlMs??600_000,accessRetentionMs:options.accessRetentionMs??7*86_400_000,accessPerAgentLimit:options.accessPerAgentLimit??1000,accessTotalLimit:options.accessTotalLimit??20_000,receiptLimit:options.receiptLimit??10_000,receiptPerAgentLimit:options.receiptPerAgentLimit??1000,statePerAgentLimit:options.statePerAgentLimit??2000,stateTotalLimit:options.stateTotalLimit??20_000,detailSegmentChars:options.detailSegmentChars??512};
+ if(Object.values(settings).some(n=>!Number.isSafeInteger(n)||n<1)||settings.receiptLimit>100_000||settings.receiptPerAgentLimit>100_000||settings.statePerAgentLimit>100_000||settings.stateTotalLimit>100_000||settings.accessTotalLimit>100_000||settings.accessPerAgentLimit>100_000||settings.detailSegmentChars>2000)throw new Error('Invalid perception limits');
  store.transaction(initializePerceptionCatalog);
  function actor(tx:M1Transaction,token:unknown):Actor {const c=auth.authenticate(tx,token,['runtime','owner_session']);return {id:String(c.data.agentId??c.data.ownerId),kind:c.data.kind as Actor['kind'],agentId:typeof c.data.agentId==='string'?c.data.agentId:null,ownerId:typeof c.data.ownerId==='string'?c.data.ownerId:null,generation:c.data.runtimeVersion??c.data.ownerAuthVersion??1};}
  function permission(tx:M1Transaction,a:Actor):string {const config=tx.get('perception_catalog','current')!;return key({actor:a.id,kind:a.kind,generation:a.generation,epoch:store.recoveryEpoch,sources:config.data.sourceStates});}
@@ -45,12 +45,12 @@ export function createPerceptionService(store:M1Store,auth:PerceptionAuth,option
   for(const field of ['itemKind','author','area','quantity','itemRef','eventKind','status','fields'])if(d[field]!==undefined)fields[field]=d[field]!;
   return {op:'upsert',sourceId:d.sourceId!,ref:c.ref,version:c.row.version,schema:{id:`${TYPE_DEFINITIONS.find(t=>t.type===c.ref.type)!.prefix}-summary`,version:1},summary:fields,detailAvailable:d.available===true,...(d.available!==true?{unavailableReason:'content_unavailable'}:{}),...(d.channel==='inbox'?{agentReadState:d.available===true?readState(tx,a,c):null}:{})};
  }
- function selection(tx:M1Transaction,a:Actor,categoryId:string,metricId:string|null,unconfirmed:boolean,max:number):{candidates:Candidate[];complete:boolean;scanned:number} {
-  const candidates:Candidate[]=[];let scanned=0,complete=true;
-  if(categoryId==='people'&&metricId==='humans')return {candidates,complete:true,scanned:0};
+ function selection(tx:M1Transaction,a:Actor,categoryId:string,metricId:string|null,unconfirmed:boolean,max:number):{candidates:Candidate[];complete:boolean;scanned:number;authorization:string} {
+  const candidates:Candidate[]=[];let scanned=0,complete=true,authorization='public';
+  if(categoryId==='people'&&metricId==='humans')return {candidates,complete:true,scanned:0,authorization};
   if(['notifications','holdings'].includes(categoryId)){
    if(a.kind!=='runtime')fail('insufficient_scope',403,'This view belongs to the Agent');
-   const kind=categoryId==='notifications'?'delivery':'holding',rows=tx.scan('perception_grants',{agentId:a.agentId!,kind},{limit:max+1});complete=rows.length<=max;
+   const kind=categoryId==='notifications'?'delivery':'holding',rows=tx.scan('perception_grants',{agentId:a.agentId!,kind},{limit:max+1});complete=rows.length<=max;authorization=key(rows.slice(0,max).map(g=>({id:g.id,version:g.version,active:g.data.active})));
    for(const g of rows.slice(0,max)){scanned++;if(g.data.active!==true)continue;const row=tx.get('perception_objects',String(g.data.objectId));if(!row||row.data.active!==true||(unconfirmed&&row.data.available!==true))continue;
     const c=categoryId==='holdings'?readable(tx,a,{moduleId:'inventory',type:'inventory.holding@1',id:g.id},'inventory'):{row,ref:ref(row.data.ref),grant:g};
     if(unconfirmed&&readState(tx,a,c).confirmedContentVersion===row.version)continue;candidates.push(c);
@@ -61,7 +61,7 @@ export function createPerceptionService(store:M1Store,auth:PerceptionAuth,option
    const rows=tx.scan('perception_objects',{categoryId},{limit:max+1});complete=rows.length<=max;
    for(const row of rows.slice(0,max)){scanned++;if(row.data.public!==true||row.data.active!==true||row.data.available!==true||(metricId&&row.data.metricId!==metricId))continue;candidates.push({row,ref:ref(row.data.ref)});}
   }
-  candidates.sort((a,b)=>key(a.ref).localeCompare(key(b.ref)));return {candidates,complete,scanned};
+  candidates.sort((a,b)=>key(a.ref).localeCompare(key(b.ref)));return {candidates,complete,scanned,authorization};
  }
  function validateContext(input:Record<string,unknown>,a:Actor):{consumerId:string;purpose:string;scope:JsonObject} {
   const consumerId=text(input.consumerId,'consumerId',1,100),purpose=text(input.purpose,'purpose',1,60);
@@ -82,25 +82,30 @@ export function createPerceptionService(store:M1Store,auth:PerceptionAuth,option
  function capacity(tx:M1Transaction,a:Actor):void {cleanup(tx);if(tx.count('perception_access',{},settings.accessTotalLimit+1)>=settings.accessTotalLimit||tx.count('perception_access',{agentId:a.agentId},settings.accessPerAgentLimit+1)>=settings.accessPerAgentLimit)fail('storage_capacity',503,'Access record capacity is exhausted');}
  function session(tx:M1Transaction,a:Actor,kind:string,data:JsonObject,ttl=settings.pageTtlMs):string {
   if(tx.count('perception_sessions',{actorId:a.id},201)>=200||tx.count('perception_sessions',{},10_001)>=10_000)fail('storage_capacity',503,'Read session capacity is exhausted');
+  if(Buffer.byteLength(JSON.stringify(data))>262_144)fail('budget_too_small',422,'The frozen selection exceeds the session byte budget');
   const id=`ps_${randomUUID()}`;tx.insert('perception_sessions',{id,version:1,data:{...data,kind,actorId:a.id,actorKind:a.kind,permissionVersion:permission(tx,a),epoch:store.recoveryEpoch,expiresAt:now()+ttl}});return id;
  }
- function resume(tx:M1Transaction,a:Actor,id:unknown,kind:string):StoredRow {const token=text(id,'pageToken',8,100),s=tx.get('perception_sessions',token);if(!s||s.data.kind!==kind||s.data.actorId!==a.id||s.data.actorKind!==a.kind||s.data.epoch!==store.recoveryEpoch)fail('page_expired',410,'Read session is not available');if(Number(s.data.expiresAt)<=now())fail(kind==='completion'?'completion_expired':'page_expired',410,'Read session expired');if(s.data.permissionVersion!==permission(tx,a))fail('read_scope_changed',409,'Reading permissions or source states changed');return s;}
+ function resume(tx:M1Transaction,a:Actor,id:unknown,kind:string):StoredRow {const token=text(id,'pageToken',8,100),s=tx.get('perception_sessions',token);if(!s||s.data.kind!==kind||s.data.actorId!==a.id||s.data.actorKind!==a.kind||s.data.epoch!==store.recoveryEpoch)fail(kind==='completion'?'completion_expired':'page_expired',410,'Read session is not available');if(Number(s.data.expiresAt)<=now())fail(kind==='completion'?'completion_expired':'page_expired',410,'Read session expired');if(s.data.permissionVersion!==permission(tx,a))fail('read_scope_changed',409,'Reading permissions or source states changed');return s;}
  function record(tx:M1Transaction,a:Actor,action:string,requestId:string,data:JsonObject,targets:ObjectRef[],privateRead:boolean,decision:unknown):void {
   if(a.kind!=='runtime')return;capacity(tx,a);
   const binding=privateRead?undefined:tx.scan('bindings',{agentId:a.agentId!,active:true},{limit:1})[0];
   const id=`${String(now()).padStart(16,'0')}_${randomUUID()}`;
-  tx.insert('perception_access',{id,version:1,data:{recordId:id,agentId:a.agentId!,agentRef:{moduleId:'profiles',type:'profiles.agent@1',id:a.agentId!},actor:{kind:'runtime',agentId:a.agentId!},requestId,operationRef:action,receivedAt:now(),recordedAt:now(),humanAudienceOwnerId:binding?.data.ownerId??null,targets,scopePrivate:privateRead,result:{status:'data_provided',recordedAt:now(),preparedCount:Array.isArray(data.records)?data.records.length:null,contentVersion:data.version??null,segment:data.segment??null},declaration:null,declarationStatus:decision===undefined?'not_declared':'not_retained',relatedRecordIds:[]}});
+  const fact:StoredRow={id,version:1,data:{recordId:id,agentId:a.agentId!,agentRef:{moduleId:'profiles',type:'profiles.agent@1',id:a.agentId!},actor:{kind:'runtime',agentId:a.agentId!},requestId,operationRef:action,receivedAt:now(),recordedAt:now(),humanAudienceOwnerId:binding?.data.ownerId??null,targets,scopePrivate:privateRead,result:{status:'data_provided',recordedAt:now(),preparedCount:Array.isArray(data.records)?data.records.length:null,contentVersion:data.version??null,segment:data.segment??null},declaration:null,declarationStatus:decision===undefined?'not_declared':'not_retained',relatedRecordIds:[]}};
+  if(Buffer.byteLength(JSON.stringify(fact))>16_384)fail('storage_capacity',503,'Access fact byte budget is exhausted');
+  tx.insert('perception_access',fact);
  }
  function response(tx:M1Transaction,a:Actor,requestId:string,data:JsonObject,maxBytes=65_536):JsonObject {const r={protocolVersion:1,instanceId:store.instanceId,requestId,permissionVersion:permission(tx,a),data};if(Buffer.byteLength(JSON.stringify(r))>maxBytes)fail('budget_too_small',422,'The response cannot fit the requested budget');return r;}
  function discover(tx:M1Transaction,a:Actor,input:Record<string,unknown>):JsonObject {
   const limit=bounded(input.limit===undefined?undefined:Number(input.limit),50,50),catalog=catalogData(tx),query={limit};
+  catalog.operations=(catalog.operations as JsonObject[]).filter(o=>a.kind==='runtime'?o.id!=='activity-query':!['agent-read-state-query','agent-read-state-confirm'].includes(String(o.id)));
+  if(a.kind!=='runtime')catalog.skills=[];
   let snapshot=catalog,offset=0,saved:StoredRow|undefined;
   if(input.pageToken!==undefined){saved=resume(tx,a,input.pageToken,'discovery');if(key(saved.data.query)!==key(query))fail('read_scope_changed',409,'Discovery arguments changed');snapshot=plain(saved.data.snapshot);offset=Number(saved.data.offset);if(snapshot.catalogRevision!==catalog.catalogRevision||snapshot.skillCatalogRevision!==catalog.skillCatalogRevision)fail('read_scope_changed',409,'Catalog changed');}
   const collections=['worlds','modules','types','sources','categories','skills','operations'];const all=collections.flatMap(collection=>(snapshot[collection] as JsonValue[]).map(entry=>({collection,entry})));const page=all.slice(offset,offset+limit);const data:JsonObject={catalogRevision:snapshot.catalogRevision!,skillCatalogRevision:snapshot.skillCatalogRevision!,schemaReader:snapshot.schemaReader!,guideReader:snapshot.guideReader!,notEnabled:snapshot.notEnabled!};for(const name of collections)data[name]=page.filter(p=>p.collection===name).map(p=>p.entry);
   const next=offset+page.length;return {...data,nextPageToken:next<all.length?session(tx,a,'discovery',{query,snapshot,offset:next}):null,complete:next>=all.length};
  }
  function overview(tx:M1Transaction,a:Actor,input:Record<string,unknown>):JsonObject {
-  const ctx=validateContext(input,a),budget=input.budget===undefined?{}:object(input.budget,['maxSections','maxResponseBytes','maxSourceReads','maxScannedRows','deadlineMs']);
+  const ctx=validateContext(input,a);for(const field of ['knownCatalogRevision','knownSkillCatalogRevision'])if(input[field]!==undefined)text(input[field],field,1,100);const budget=input.budget===undefined?{}:object(input.budget,['maxSections','maxResponseBytes','maxSourceReads','maxScannedRows','deadlineMs']);
   const maxSections=bounded(budget.maxSections,8,8,'maxSections'),maxRows=bounded(budget.maxScannedRows,200,200,'maxScannedRows'),maxReads=bounded(budget.maxSourceReads,8,8,'maxSourceReads'),deadline=now()+bounded(budget.deadlineMs,250,250,'deadlineMs');
   const maxBytes=bounded(budget.maxResponseBytes,16_384,16_384,'maxResponseBytes');
   const categoryIds=input.categoryIds===undefined?CATEGORIES.filter(c=>c.categoryId!=='rules').map(c=>c.categoryId):input.categoryIds;
@@ -113,10 +118,10 @@ export function createPerceptionService(store:M1Store,auth:PerceptionAuth,option
    for(const metric of category.metrics){
     const sourceIds=[...metric.sourceIds] as string[],enabled=sourceIds.length>0&&sourceIds.every(id=>currentSource(tx,id)==='enabled'),unavailable=sourceIds.some(id=>currentSource(tx,id)==='unavailable');
     const omitted=reads>=maxReads||scanned>=maxRows||now()>=deadline||Date.now()-started>=bounded(budget.deadlineMs,250,250,'deadlineMs');
-    const status=!sourceIds.length?'not_enabled':unavailable?'unavailable':!enabled?'not_enabled':omitted?'not_requested':'available';let selected:{candidates:Candidate[];complete:boolean;scanned:number}|undefined;
-    if(status==='available'){reads++;selected=selection(tx,a,category.categoryId,metric.metricId,category.categoryId==='notifications',Math.max(1,maxRows-scanned));scanned+=selected.scanned;}
-    const complete=selected?.complete===true,scopeKey=selected?key({actor:a.id,kind:a.kind,purpose:ctx.purpose,categoryId,metricId:metric.metricId,scope:ctx.scope,permission:permission(tx,a),grants:selected.candidates.filter(c=>c.grant).map(c=>({id:c.grant!.id,version:c.grant!.version}))}):null;
-    const revision=complete?key(selected!.candidates.map(c=>({ref:c.ref,version:c.row.version,contentHash:key(c.row.data),grantVersion:c.grant?.version??null,state:category.channel==='inbox'?readState(tx,a,c):null}))):null;
+    const status=!sourceIds.length?'not_enabled':unavailable?'unavailable':!enabled?'not_enabled':omitted?'not_requested':'available';let selected:{candidates:Candidate[];complete:boolean;scanned:number;authorization:string}|undefined;
+    if(status==='available'){reads++;selected=selection(tx,a,category.categoryId,metric.metricId,category.categoryId==='notifications',Math.max(1,maxRows-scanned));scanned+=selected.scanned;if(Date.now()-started>bounded(budget.deadlineMs,250,250,'deadlineMs'))fail('budget_too_small',422,'Overview preparation exceeded the deadline');}
+    const complete=selected?.complete===true,scopeKey=complete?key({actor:a.id,kind:a.kind,purpose:ctx.purpose,categoryId,metricId:metric.metricId,scope:ctx.scope,permission:permission(tx,a),authorization:selected!.authorization}):null;
+    const revision=complete?key(selected!.candidates.map(c=>({ref:c.ref,version:c.row.version,grantVersion:c.grant?.version??null,state:category.channel==='inbox'?readState(tx,a,c):null}))):null;
     const baseline=known.find(v=>{const k=v as Record<string,unknown>;return k.categoryId===categoryId&&k.metricId===metric.metricId&&k.scopeKey===scopeKey;}) as Record<string,unknown>|undefined;
     metrics.push({metricId:metric.metricId,status,sourceStates:status==='not_requested'?[]:sourceIds.map(sourceId=>({sourceId,state:currentSource(tx,sourceId)})),sourceCoverage:{complete:status==='available'?complete:false,checkedSourceIds:status==='available'?sourceIds:[],omittedReason:status==='not_requested'||(selected&&!complete)?'budget':status==='unavailable'?'unavailable':null},count:{value:selected?selected.candidates.length:null,relation:complete?'exact':selected?'lower_bound':'unknown',unit:metric.unit},presence:selected?(selected.candidates.length>0?true:complete?false:null):null,observedAt:now(),freshness:complete?'fresh':'unknown',scopeKey,contentRevision:revision,contentChanged:baseline&&revision?baseline.revision!==revision:null,listEntry:enabled?{operationId:'list',arguments:{channel:category.channel,categoryId,metricId:metric.metricId,scope:ctx.scope,...(categoryId==='notifications'?{selection:'unconfirmed'}:{})}}:null});
    }
@@ -126,26 +131,29 @@ export function createPerceptionService(store:M1Store,auth:PerceptionAuth,option
   const data:JsonObject={observationId:`observation_${randomUUID()}`,worldId:'default',name:'connet.ai 世界',description:'获准真实存储内容，演示来源逐项标识',rulesRef:RULES_REF,rulesVersion:1,catalogRevision:catalog.data.catalogRevision!,skillCatalogRevision:catalog.data.skillCatalogRevision!,catalogChanged:input.knownCatalogRevision===undefined?null:input.knownCatalogRevision!==catalog.data.catalogRevision,skillsChanged:input.knownSkillCatalogRevision===undefined?null:input.knownSkillCatalogRevision!==catalog.data.skillCatalogRevision,sections,coverage:{requested:categoryIds as string[],returned:sections.map(s=>s.categoryId!),omitted:categoryIds.slice(maxSections).map(categoryId=>({categoryId,reason:'budget'}))},budgetUsed:{sourceReads:reads,scannedRows:scanned}};
   response(tx,a,'budget_measure',data,maxBytes);return data;
  }
+ function readBudget(input:Record<string,unknown>):{maxResponseBytes:number;maxScannedRows:number;deadlineMs:number} {const b=input.budget===undefined?{}:object(input.budget,['maxResponseBytes','maxScannedRows','deadlineMs']);return {maxResponseBytes:bounded(b.maxResponseBytes,65_536,65_536,'maxResponseBytes'),maxScannedRows:bounded(b.maxScannedRows,2000,2000,'maxScannedRows'),deadlineMs:bounded(b.deadlineMs,250,250,'deadlineMs')};}
  function list(tx:M1Transaction,a:Actor,input:Record<string,unknown>):JsonObject {
+  const limits=readBudget(input),started=Date.now();
   const ctx=validateContext(input,a),categoryId=text(input.categoryId,'categoryId',1,60),category=CATEGORIES.find(c=>c.categoryId===categoryId);if(!category||input.channel!==category.channel)fail('invalid_request',422,'Category does not belong to the channel');
   const metricId=input.metricId===undefined?null:text(input.metricId,'metricId',1,60);if(metricId&&!category.metrics.some(m=>m.metricId===metricId))fail('invalid_request',422,'Unknown category metric');
   if(input.selection!==undefined&&(categoryId!=='notifications'||input.selection!=='unconfirmed'))fail('invalid_request',422,'Selection is not supported');
   if(a.kind!=='runtime'&&category.channel!=='world')fail('insufficient_scope',403,'Agent private views are not granted');for(const source of category.sourceIds)checkSource(tx,source);
   if(categoryId==='people'&&metricId==='humans')fail('channel_not_enabled',409,'Public human identity source is not enabled');
   const limit=bounded(input.limit,20,50),query={...ctx,categoryId,channel:category.channel,metricId,selection:input.selection??null,limit};
-  let records:JsonObject[],offset=0,readSessionId:string;
-  if(input.pageToken!==undefined){const s=resume(tx,a,input.pageToken,'list');if(key(s.data.query)!==key(query))fail('read_scope_changed',409,'List arguments changed');records=s.data.records as JsonObject[];offset=Number(s.data.offset);readSessionId=String(s.data.readSessionId);for(const record of records){try{readable(tx,a,ref(record.ref),category.channel,true);}catch{fail('read_scope_changed',409,'A selected object is no longer readable');}}}
-  else{const result=selection(tx,a,categoryId,metricId,input.selection==='unconfirmed'||metricId==='unconfirmed',2000);if(!result.complete)fail('source_unavailable',503,'The bounded list selection cannot prove completion');records=result.candidates.map(c=>summary(tx,a,c));readSessionId=`list_${randomUUID()}`;}
+  let records:JsonObject[],offset=0,readSessionId:string,grantVersions:JsonObject={};
+  if(input.pageToken!==undefined){const s=resume(tx,a,input.pageToken,'list');if(key(s.data.query)!==key(query))fail('read_scope_changed',409,'List arguments changed');records=s.data.records as JsonObject[];offset=Number(s.data.offset);readSessionId=String(s.data.readSessionId);grantVersions=plain(s.data.grantVersions);for(const record of records){try{const c=readable(tx,a,ref(record.ref),category.channel,true);if((c.grant?.version??null)!==grantVersions[key(c.ref)])fail('read_scope_changed',409,'Selected grant changed');}catch{fail('read_scope_changed',409,'A selected object is no longer readable');}}}
+  else{const result=selection(tx,a,categoryId,metricId,input.selection==='unconfirmed'||metricId==='unconfirmed',limits.maxScannedRows);if(!result.complete)fail('budget_too_small',422,'The bounded list selection cannot prove completion');records=result.candidates.map(c=>summary(tx,a,c));for(const c of result.candidates)grantVersions[key(c.ref)]=c.grant?.version??null;readSessionId=`list_${randomUUID()}`;}
+  if(Date.now()-started>limits.deadlineMs)fail('budget_too_small',422,'List preparation exceeded the deadline');
   const page=records.slice(offset,offset+limit).map(r=>category.channel==='inbox'?{...r,agentReadState:r.detailAvailable===true?readState(tx,a,readable(tx,a,ref(r.ref),'inbox')):null}:r),next=offset+page.length;
-  return {channel:category.channel,consumerId:ctx.consumerId,categoryId,metricId,selection:input.selection??null,scope:ctx.scope,scopeHash:key(ctx.scope),readSessionId,sourceSetVersion:permission(tx,a),sourceStates:category.sourceIds.map(sourceId=>({sourceId,state:currentSource(tx,sourceId)})),records:page,nextPageToken:next<records.length?session(tx,a,'list',{query,records,offset:next,readSessionId}):null,complete:next>=records.length,checkpoint:null};
+  return {channel:category.channel,consumerId:ctx.consumerId,categoryId,metricId,selection:input.selection??null,scope:ctx.scope,scopeHash:key(ctx.scope),readSessionId,sourceSetVersion:permission(tx,a),sourceStates:category.sourceIds.map(sourceId=>({sourceId,state:currentSource(tx,sourceId)})),records:page,nextPageToken:next<records.length?session(tx,a,'list',{query,records,grantVersions,offset:next,readSessionId}):null,complete:next>=records.length,checkpoint:null};
  }
  function detail(tx:M1Transaction,a:Actor,input:Record<string,unknown>):JsonObject {
   const ctx=validateContext(input,a),r=ref(input.ref),channel=text(input.channel,'channel',1,30),c=readable(tx,a,r,channel);let offset=0,readSessionId=`body_${randomUUID()}`;
   if(input.knownVersion!==undefined)version(input.knownVersion,'knownVersion');
   if(input.contentToken!==undefined){const s=resume(tx,a,input.contentToken,'detail');if(key(s.data.ref)!==key(r)||s.data.channel!==channel||key(s.data.context)!==key(ctx))fail('read_scope_changed',409,'Detail context changed');if(s.data.contentVersion!==c.row.version)fail('content_changed',409,'Content version changed');if(s.data.grantVersion!==(c.grant?.version??null))fail('read_scope_changed',409,'Content grant changed');offset=Number(s.data.offset);readSessionId=String(s.data.readSessionId);}
-  const body=String(c.row.data.body??''),end=Math.min(offset+settings.detailSegmentChars,body.length),complete=end>=body.length,attachments=Array.isArray(c.row.data.attachments)?c.row.data.attachments:[];
+  const body=String(c.row.data.body??'');if(body.length>1_048_576)fail('source_unavailable',503,'Content exceeds the bounded source contract');const end=Math.min(offset+settings.detailSegmentChars,body.length),complete=end>=body.length,attachments=Array.isArray(c.row.data.attachments)?c.row.data.attachments:[];
   if(attachments.length>50||Buffer.byteLength(JSON.stringify(attachments))>8000)fail('source_unavailable',503,'Attachment descriptions exceed the bounded source contract');
-  const data:JsonObject={ref:r,version:c.row.version,schema:{id:`${TYPE_DEFINITIONS.find(t=>t.type===r.type)!.prefix}-detail`,version:1},sourceId:c.row.data.sourceId!,content:{text:body.slice(offset,end),dataMode:c.row.data.dataMode!,source:c.row.data.source??{kind:'unknown'},...(c.row.data.fields?{fields:c.row.data.fields}:{}),...(c.row.data.itemRef?{itemRef:c.row.data.itemRef,quantity:c.row.data.quantity??1}:{})},segment:{start:offset,end,total:body.length,unit:'utf16-code-units'},attachments:complete?attachments:[],actions:[],contentComplete:complete,nextContentToken:complete?null:session(tx,a,'detail',{ref:r,channel,context:ctx,contentVersion:c.row.version,grantVersion:c.grant?.version??null,offset:end,readSessionId}),readSessionId};
+  const data:JsonObject={ref:r,version:c.row.version,schema:{id:`${TYPE_DEFINITIONS.find(t=>t.type===r.type)!.prefix}-detail`,version:1},sourceId:c.row.data.sourceId!,content:{text:body.slice(offset,end),dataMode:c.row.data.dataMode!,source:c.row.data.source??{kind:'unknown'},...(c.row.data.fields?{fields:c.row.data.fields}:{}),...(c.row.data.itemRef?{itemRef:c.row.data.itemRef,quantity:c.row.data.quantity??1}:{}),...(c.row.data.sourceId==='platform-publications'?{publication:{actor:c.row.data.actor!,occurredAt:c.row.data.occurredAt!,publishedRefs:c.row.data.publishedRefs!}}:{})},segment:{start:offset,end,total:body.length,unit:'utf16-code-units'},attachments:complete?attachments:[],actions:[],contentComplete:complete,nextContentToken:complete?null:session(tx,a,'detail',{ref:r,channel,context:ctx,contentVersion:c.row.version,grantVersion:c.grant?.version??null,offset:end,readSessionId}),readSessionId};
   if(channel==='inbox'){data.agentReadState=readState(tx,a,c);if(complete)data.completionToken=session(tx,a,'completion',{ref:r,channel,contentVersion:c.row.version,grantVersion:c.grant?.version??null,readSessionId},settings.completionTtlMs);}
   return data;
  }
@@ -154,13 +162,20 @@ export function createPerceptionService(store:M1Store,auth:PerceptionAuth,option
   const prior=tx.scan('operations',{scope,action:'confirmAgentRead',operationId,epoch:store.recoveryEpoch},{limit:1})[0];
   if(prior){if(prior.data.payloadHash!==key(input))fail('operation_id_conflict',409,'Operation payload changed');return plain(prior.data.result);}
   validateDecision(input.decision);
-  if(tx.count('operations',{action:'confirmAgentRead'},settings.receiptLimit+1)>=settings.receiptLimit)fail('storage_capacity',503,'Confirmation receipt capacity is exhausted');
-  const completion=resume(tx,a,input.completionToken,'completion');if(key(completion.data.ref)!==key(r))fail('target_not_accessible',404,'Completion proof is not for this target');
-  if(completion.data.grantVersion!==(c.grant?.version??null))fail('read_scope_changed',409,'Completion grant changed');
-  if(version(input.contentVersion,'contentVersion')!==c.row.version||completion.data.contentVersion!==c.row.version)fail('content_changed',409,'The current message version changed');
+  if(tx.count('operations',{action:'confirmAgentRead'},settings.receiptLimit+1)>=settings.receiptLimit||tx.count('operations',{action:'confirmAgentRead',scope},settings.receiptPerAgentLimit+1)>=settings.receiptPerAgentLimit)fail('storage_capacity',503,'Confirmation receipt capacity is exhausted');
+  try {
+   const completion=resume(tx,a,input.completionToken,'completion');if(key(completion.data.ref)!==key(r))fail('target_not_accessible',404,'Completion proof is not for this target');
+   if(completion.data.grantVersion!==(c.grant?.version??null))fail('read_scope_changed',409,'Completion grant changed');
+   if(version(input.contentVersion,'contentVersion')!==c.row.version||completion.data.contentVersion!==c.row.version)fail('content_changed',409,'The current message version changed');
+  } catch(error) {
+   if(!(error instanceof M1Error)||error.statusCode>=500)throw error;
+   const result:JsonObject={agentId:a.agentId!,operationId,ref:r,outcome:'rejected',receiptId:randomUUID(),serverTime:now(),error:{code:error.code,statusCode:error.statusCode}};
+   tx.insert('operations',{id:randomUUID(),version:1,data:{scope,action:'confirmAgentRead',operationId,epoch:store.recoveryEpoch,payloadHash:key(input),result}});
+   return result;
+  }
   const stateId=key({agentId:a.agentId,objectId:c.row.id}),state=tx.get('perception_states',stateId),changed=state?.data.confirmedContentVersion!==c.row.version;
   const stateVersion=changed?(state?.version??0)+1:state!.version,confirmedAt=changed?now():state!.data.confirmedAt!;
-  if(changed){const row={id:stateId,version:stateVersion,data:{agentId:a.agentId!,objectId:c.row.id,confirmedContentVersion:c.row.version,confirmedAt}};if(state)tx.update('perception_states',row,state.version);else tx.insert('perception_states',row);}
+  if(changed){if(!state&&(tx.count('perception_states',{agentId:a.agentId!},settings.statePerAgentLimit+1)>=settings.statePerAgentLimit||tx.count('perception_states',{},settings.stateTotalLimit+1)>=settings.stateTotalLimit))fail('storage_capacity',503,'Confirmation state capacity is exhausted');const row={id:stateId,version:stateVersion,data:{agentId:a.agentId!,objectId:c.row.id,confirmedContentVersion:c.row.version,confirmedAt}};if(state)tx.update('perception_states',row,state.version);else tx.insert('perception_states',row);}
   const result:JsonObject={agentId:a.agentId!,operationId,ref:r,confirmedContentVersion:c.row.version,stateVersion,confirmedAt,changed,outcome:'committed',receiptId:randomUUID(),serverTime:now()};
   tx.insert('operations',{id:randomUUID(),version:1,data:{scope,action:'confirmAgentRead',operationId,epoch:store.recoveryEpoch,payloadHash:key(input),result}});
   tx.insert('facts',{id:randomUUID(),version:1,data:{action:'confirmAgentRead',operationId,receiptId:result.receiptId!,actor:{kind:'runtime',agentId:a.agentId!},agentId:a.agentId!,ref:r,contentVersion:c.row.version,changed,time:now(),visibility:'agent_private',epoch:store.recoveryEpoch}});
@@ -170,15 +185,19 @@ export function createPerceptionService(store:M1Store,auth:PerceptionAuth,option
   if(a.kind!=='owner_session')fail('insufficient_scope',403,'Human record-reading permission is required');const ar=ref(input.agentRef);if(ar.moduleId!=='profiles'||ar.type!=='profiles.agent@1'||!tx.scan('bindings',{agentId:ar.id,ownerId:a.ownerId!,active:true},{limit:1}).length)fail('target_not_accessible',404,'Target is not accessible');
   const limit=bounded(input.limit,20,50);let records:JsonObject[],offset=0,cut=now();
   if(input.pageToken!==undefined){const saved=resume(tx,a,input.pageToken,'activity');if(key(saved.data.agentRef)!==key(ar)||saved.data.limit!==limit)fail('read_scope_changed',409,'Activity query changed');records=saved.data.records as JsonObject[];offset=Number(saved.data.offset);cut=Number(saved.data.cut);}
-  else records=tx.scan('perception_access',{agentId:ar.id,humanAudienceOwnerId:a.ownerId!},{limit:Math.min(settings.accessPerAgentLimit,1000)}).map(row=>row.data);
+  else records=tx.scan('perception_access',{agentId:ar.id,humanAudienceOwnerId:a.ownerId!},{limit:settings.accessPerAgentLimit+1}).map(row=>row.data);
   // A public ref does not make the log public; both audience-at-write and current source rights apply.
+  const originalLength=records.length;
   records=records.filter(r=>r.humanAudienceOwnerId===a.ownerId&&r.scopePrivate===false&&(r.targets as JsonObject[]).every(target=>{try{return readable(tx,a,ref(target),'world').row.data.public===true;}catch{return false;}}));
+  if(input.pageToken!==undefined&&records.length!==originalLength)fail('read_scope_changed',409,'Activity disclosure rights changed');
   const page=records.slice(offset,offset+limit).map(r=>{const {humanAudienceOwnerId,scopePrivate,...safe}=r;return safe;});const next=offset+page.length;
   return {agentRef:ar,records:page,nextPageToken:next<records.length?session(tx,a,'activity',{agentRef:ar,records,offset:next,cut,limit}):null,complete:next>=records.length,checkpoint:null,historyCoverage:{from:null,to:cut,complete:false,olderDetailsExpired:null}};
  }
  function invoke(action:PerceptionAction,raw:unknown,token:unknown):JsonObject {
-  return store.transaction(tx=>{
-   const a=actor(tx,token),requestId=`request_${randomUUID()}`;cleanup(tx);
+  // Bounded retention can make progress even when the following new read is refused.
+  store.transaction(tx=>{actor(tx,token);cleanup(tx);});
+  const result = store.transaction(tx=>{
+   const a=actor(tx,token),requestId=`request_${randomUUID()}`;
    let allowed:string[];
    if(action==='perceptionDiscovery')allowed=['limit','pageToken','protocolVersion'];else if(action==='perceptionSchema')allowed=['schemaId','version'];else if(action==='perceptionGuide')allowed=['moduleId','version'];else if(action==='perceptionOverview')allowed=['protocolVersion','consumerId','purpose','scope','categoryIds','knownCatalogRevision','knownSkillCatalogRevision','knownContentRevisions','budget','decision'];else if(action==='perceptionList')allowed=[...common,'categoryId','metricId','selection'];else if(action==='perceptionDetail')allowed=[...common.filter(k=>!['limit','pageToken','scope'].includes(k)),'ref','knownVersion','contentToken'];else if(action==='queryAgentRead')allowed=['protocolVersion','ref'];else if(action==='confirmAgentRead')allowed=['protocolVersion','operationId','ref','contentVersion','completionToken','decision'];else allowed=['protocolVersion','agentRef','limit','pageToken'];
    const input=object(raw,allowed);if(!['perceptionDiscovery','perceptionSchema','perceptionGuide'].includes(action)&&input.protocolVersion!==1)fail('protocol_unsupported',422,'Protocol major 1 is required');if(action==='perceptionDiscovery'&&input.protocolVersion!==undefined&&Number(input.protocolVersion)!==1)fail('protocol_unsupported',422,'Protocol major 1 is required');
@@ -192,14 +211,16 @@ export function createPerceptionService(store:M1Store,auth:PerceptionAuth,option
    else if(action==='queryAgentRead'){if(a.kind!=='runtime')fail('insufficient_scope',403,'Only the actual Agent may query confirmation');data=readState(tx,a,readable(tx,a,ref(input.ref),'inbox'));}
    else if(action==='confirmAgentRead')data=confirm(tx,a,input);
    else data=activity(tx,a,input);
-   const result=response(tx,a,requestId,data,action==='perceptionOverview'?bounded(plain(input.budget as JsonValue).maxResponseBytes,16_384,16_384,'maxResponseBytes'):65_536);
-   if(action!=='perceptionActivity'&&action!=='confirmAgentRead'){
+   const result=response(tx,a,requestId,data,action==='perceptionOverview'?bounded(plain(input.budget as JsonValue).maxResponseBytes,16_384,16_384,'maxResponseBytes'):['perceptionList','perceptionDetail'].includes(action)?readBudget(input).maxResponseBytes:65_536);
+   if(!['perceptionActivity','confirmAgentRead','queryAgentRead'].includes(action)){
     const targets=action==='perceptionDetail'||action==='queryAgentRead'?[ref(input.ref)]:Array.isArray(data.records)?data.records.map(v=>ref(plain(v).ref)):[];
     const privateRead=input.channel==='inbox'||input.channel==='inventory'||action==='queryAgentRead'||(action==='perceptionOverview'&&(data.sections as JsonObject[]).some(s=>s.channel!=='world'));
     record(tx,a,action,requestId,data,targets,privateRead,input.decision);
    }
    return result;
   });
+  const rejection=plain(plain(result.data).error);if(typeof rejection.code==='string')fail(rejection.code,Number(rejection.statusCode),'The original confirmation was rejected');
+  return result;
  }
- return {invoke,handles:(action:string)=>OPERATIONS.some(o=>o.action===action),capabilities:()=>store.read(tx=>{const c=tx.get('perception_catalog','current')!;return {protocolVersion:1,discovery:{method:'GET',path:'/v1/perception/discovery'},catalogRevision:c.data.catalogRevision!,skillCatalogRevision:c.data.skillCatalogRevision!,manualOnly:true,snapshot:false,changes:false,activity:true,confirmation:true};}),readReceipt(tx:M1Transaction,token:unknown,row:StoredRow):JsonObject {const a=actor(tx,token);if(a.kind!=='runtime'||row.data.scope!==`perception-agent:${a.agentId}`||row.data.action!=='confirmAgentRead')fail('target_not_accessible',404,'Operation is not accessible');const result=plain(row.data.result);readable(tx,a,ref(result.ref),'inbox');return result;}};
+ return {invoke,handles:(action:string)=>OPERATIONS.some(o=>o.action===action),capabilities:()=>store.read(tx=>{const c=tx.get('perception_catalog','current')!;return {protocolVersion:1,discovery:{method:'GET',path:'/v1/perception/discovery'},catalogRevision:c.data.catalogRevision!,skillCatalogRevision:c.data.skillCatalogRevision!,manualOnly:true,snapshot:false,changes:false,activity:true,confirmation:true};}),readReceipt(tx:M1Transaction,token:unknown,row:StoredRow):JsonObject {const a=actor(tx,token);if(a.kind!=='runtime'||row.data.scope!==`perception-agent:${a.agentId}`||row.data.action!=='confirmAgentRead')fail('target_not_accessible',404,'Operation is not accessible');const result=plain(row.data.result);readable(tx,a,ref(result.ref),'inbox');const rejection=plain(result.error);if(typeof rejection.code==='string')fail(rejection.code,Number(rejection.statusCode),'The original confirmation was rejected');return result;}};
 }
