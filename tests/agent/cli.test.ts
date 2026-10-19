@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { once } from 'node:events';
 import test from 'node:test';
 import { newAgentMaterial, newCredential, newOperationId } from '../../scripts/m1-client.ts';
+import { ownerFixture, type Api } from '../../scripts/agent-manager-qa-fixture.ts';
 
 type Json = Record<string, any>;
 const serverEntry = fileURLToPath(new URL('../../apps/platform/server.ts', import.meta.url));
@@ -18,10 +19,11 @@ async function stop(child: ChildProcessWithoutNullStreams) {
   const timer = setTimeout(() => child.kill('SIGKILL'), 3000);
   try { await exited; } finally { clearTimeout(timer); }
 }
-async function server(directory: string, instanceId = 'agent-process-test') {
+async function server(directory: string, instanceId = 'agent-process-test', environment: NodeJS.ProcessEnv = {}) {
   const child = spawn(process.execPath, [serverEntry], { cwd: directory, env: { ...process.env,
     M1_HOST: '127.0.0.1', M1_PORT: '0', M1_DATABASE_PATH: join(directory, 'test.sqlite'),
     M1_IDENTITY_PATH: join(directory, 'identity.json'), M1_INSTANCE_ID: instanceId, M1_RECOVERY_EPOCH: 'agent-test-epoch',
+    ...environment,
   }, stdio: 'pipe' });
   let address = '';
   try {
@@ -89,6 +91,105 @@ async function command(directory: string, statePath: string, name: string, args:
   assert.equal(result.code, 0, `Reference client ${name} must succeed`);
   return JSON.parse(result.stdout);
 }
+
+test('downloaded CLI applies explicit initial public intent once and preserves it through loss and owner races', { timeout: 45_000 }, async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'm1-agent-manager-cli-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const environment = { M1_EMAIL_MODE: 'experience', RESEND_API_KEY: '', M1_EMAIL_FROM: '', M1_PUBLIC_ORIGIN: '', M1_EMAIL_CODE_SECRET: '' };
+  let running = await server(directory, 'manager-cli-isolated', environment), upstream = running.address;
+  t.after(() => stop(running.child));
+  const writes: { path: string; operationId: string }[] = [];
+  let discardProfile = true, beforeFirstRead: ((agentId: string) => Promise<void>) | undefined;
+  let afterFirstRead: ((agentId: string) => Promise<void>) | undefined;
+  const proxy = createServer(async (request, response) => {
+    try {
+      const chunks: Buffer[] = []; for await (const chunk of request) chunks.push(Buffer.from(chunk));
+      const body = Buffer.concat(chunks), path = request.url!;
+      const forwarded = await fetch(`${upstream}${path}`, { method: request.method!, headers: {
+        ...(request.headers.authorization ? { authorization: request.headers.authorization } : {}), ...(body.length ? { 'content-type': 'application/json' } : {}),
+      }, ...(body.length ? { body } : {}) });
+      const payload = await forwarded.text();
+      if (request.method !== 'GET') writes.push({ path, operationId: JSON.parse(body.toString()).operationId });
+      if (path === '/v1/registrations' && forwarded.status === 200 && beforeFirstRead) {
+        const change = beforeFirstRead; beforeFirstRead = undefined; await change(JSON.parse(payload).agentId);
+      }
+      if (path === '/v1/agent/self' && forwarded.status === 200 && afterFirstRead) {
+        const change = afterFirstRead; afterFirstRead = undefined; await change(JSON.parse(payload).agentId);
+      }
+      if (discardProfile && request.method === 'PUT' && /^\/v1\/agents\/[^/]+\/profile$/.test(path) && forwarded.status === 200) {
+        discardProfile = false; response.destroy(); return;
+      }
+      response.writeHead(forwarded.status, { 'content-type': forwarded.headers.get('content-type') ?? 'application/json' }); response.end(payload);
+    } catch { response.writeHead(503); response.end('{}'); }
+  });
+  await new Promise<void>(resolve => proxy.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise<void>(resolve => proxy.close(() => resolve())));
+  const address = proxy.address(); assert(address && typeof address !== 'string'); const origin = `http://127.0.0.1:${address.port}`;
+  await download(directory, origin);
+  const ownerApi: Api = async (method, path, body, token) => {
+    const response = await fetch(`${upstream}/v1${path}`, { method, headers: {
+      ...(body ? { 'content-type': 'application/json' } : {}), ...(token ? { authorization: `Bearer ${token}` } : {}),
+    }, ...(body ? { body: JSON.stringify(body) } : {}) });
+    return { status: response.status, body: await response.json() as Json };
+  };
+  const owner = await ownerFixture(ownerApi, 'CLI', async value => { await privateInput(directory, value); });
+  async function invite() {
+    const inviteToken = newCredential('invite');
+    const path = await privateInput(directory, { format: 'connet-invite-v1', origin, ownerId: owner.ownerId, inviteToken });
+    await api(upstream, 'POST', '/v1/owner/agent-invites', { operationId: newOperationId(), inviteToken }, owner.sessionToken);
+    return path;
+  }
+  async function ownerEdit(agentId: string, name: string) {
+    const profile = await api(upstream, 'GET', `/v1/agents/${agentId}/profile`, undefined, owner.sessionToken);
+    return api(upstream, 'PUT', `/v1/agents/${agentId}/profile`, { operationId: newOperationId(), expectedVersion: profile.version,
+      expectedPolicyVersion: profile.policyVersion, fields: { displayName: name, bio: 'Owner intent must survive CLI reopening', avatar: { template: 'basic', color: 'cream' } } }, owner.sessionToken);
+  }
+  const statePath = join(directory, 'initial.json');
+  const lost = await cli(directory, ['onboard', '--url', origin, '--state', statePath, '--name', 'Explicit CLI Agent', '--bio', 'Explicit initial biography', '--color', 'coral', '--invite-file', await invite()]);
+  assert.equal(lost.code, 1);
+  const initial = await json(statePath), saved = initial.commands.initialProfile;
+  safeOutput(lost.stdout + lost.stderr, initial);
+  assert.equal(saved.status, 'pending'); assert.equal(saved.action, 'saveProfile'); assert.equal(saved.scope, `agent:${initial.agentId}`);
+  assert.equal(saved.method, 'PUT'); assert.equal(saved.path, `/v1/agents/${initial.agentId}/profile`);
+  assert.equal(saved.body.expectedVersion, 1); assert.equal(saved.body.expectedPolicyVersion, 1); assert.deepEqual(saved.body.fields, initial.fields);
+  assert.equal((await stat(statePath)).mode & 0o777, 0o600);
+  let visible = await api(upstream, 'GET', `/v1/public/agents/${initial.agentId}`);
+  assert.equal(visible.profile.displayName, 'Explicit CLI Agent'); assert.equal(visible.profile.avatar.color, 'coral'); assert.equal(visible.profile.bio, 'Explicit initial biography');
+  await stop(running.child); running = await server(directory, 'manager-cli-isolated', environment); upstream = running.address;
+  await command(directory, statePath, 'status');
+  const resumed = await json(statePath);
+  assert.equal(resumed.commands.initialProfile.status, 'committed'); assert.deepEqual(resumed.commands.initialProfile.body, saved.body);
+  assert.equal(writes.filter(write => write.path === saved.path).length, 1, 'A committed lost response is recovered by its receipt, never a second profile write');
+  assert.equal(resumed.agentId, initial.agentId); assert.equal(resumed.ownerId, owner.ownerId);
+  assert(resumed.runtimeToken === initial.runtimeToken && resumed.continuationToken === initial.continuationToken, 'Reopening preserves both independent Agent proofs');
+  const edited = await ownerEdit(initial.agentId, 'Later owner profile');
+  const beforeReopen = writes.length;
+  await command(directory, statePath, 'status'); await command(directory, statePath, 'onboard');
+  visible = await api(upstream, 'GET', `/v1/public/agents/${initial.agentId}`);
+  assert.equal(visible.profile.displayName, 'Later owner profile'); assert.equal(visible.profile.avatar.color, 'cream');
+  assert.equal((await json(statePath)).profile.version, edited.version); assert.equal(writes.length, beforeReopen, 'Status and repeat onboard do not apply initial intent over a later owner edit');
+
+  const preemptedPath = join(directory, 'owner-first.json');
+  beforeFirstRead = agentId => ownerEdit(agentId, 'Owner edited before initialization').then(() => {});
+  const preempted = await command(directory, preemptedPath, 'onboard', ['--url', origin, '--name', 'Must not replace owner', '--invite-file', await invite()]);
+  const preemptedState = await json(preemptedPath);
+  assert.equal(preempted.pendingReason, 'initial_profile_requires_explicit_update'); assert.equal(preemptedState.commands.initialProfile, undefined);
+  assert.equal((await api(upstream, 'GET', `/v1/public/agents/${preemptedState.agentId}`)).profile.displayName, 'Owner edited before initialization');
+
+  const racePath = join(directory, 'owner-race.json');
+  afterFirstRead = agentId => ownerEdit(agentId, 'Owner wins version race').then(() => {});
+  const raced = await command(directory, racePath, 'onboard', ['--url', origin, '--name', 'Stale initial intent', '--invite-file', await invite()]);
+  const racedState = await json(racePath), originalRace = racedState.commands.initialProfile;
+  assert.equal(raced.pendingReason, 'version_conflict'); assert.equal(originalRace.status, 'pending'); assert.equal(originalRace.body.expectedVersion, 1);
+  assert.equal((await command(directory, racePath, 'status')).pendingReason, 'version_conflict');
+  const retried = await json(racePath);
+  assert.deepEqual(retried.commands.initialProfile.body, originalRace.body);
+  assert.equal(retried.commands.initialProfile.scope, originalRace.scope); assert.equal(retried.commands.initialProfile.action, originalRace.action);
+  const raceWrites = writes.filter(write => write.path === originalRace.path);
+  assert.equal(raceWrites.length, 2); assert(raceWrites.every(write => write.operationId === originalRace.body.operationId), 'A CAS conflict never creates a replacement operation or rebases the saved command');
+  assert.equal((await api(upstream, 'GET', `/v1/public/agents/${racedState.agentId}`)).profile.displayName, 'Owner wins version race');
+  assert(!writes.some(write => /\/profile\/(draft|publish)$|\/membership\/join$/.test(write.path)), 'Default-public onboarding does not fall back to the former publication workflow');
+});
 
 test('downloaded reference client manages its own draft, publication and membership without recreating an identity', { timeout: 30_000 }, async t => {
   const directory = await mkdtemp(join(tmpdir(), 'm1-agent-crud-'));
