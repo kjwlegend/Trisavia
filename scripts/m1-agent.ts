@@ -404,10 +404,12 @@ function summary(path: string, state: State) {
     privateStateFile: path, privateHandoffFile: state.handoff?.privateFile ?? null };
 }
 
-function documentDigest(value: unknown): string {
+function documentDigest(value: unknown, serialized?:unknown): string {
   const canonical = (entry: unknown): unknown => Array.isArray(entry) ? entry.map(canonical)
     : entry !== null && typeof entry === 'object' ? Object.fromEntries(Object.entries(entry).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => [k, canonical(v)])) : entry;
-  return createHash('sha256').update(JSON.stringify(canonical(value))).digest('hex');
+  const normalized=JSON.stringify(canonical(value));
+  if(serialized!==undefined){if(typeof serialized!=='string'||JSON.stringify(canonical(JSON.parse(serialized)))!==normalized)throw new AgentError('document_integrity_failed');return createHash('sha256').update(serialized,'utf8').digest('hex');}
+  return createHash('sha256').update(normalized).digest('hex');
 }
 
 const discoveryCollections=['worlds','modules','types','sources','categories','skills','operations'] as const;
@@ -426,7 +428,7 @@ function discoveryReferences(value:unknown):Map<string,DiscoveryDocument> {
  const linked=(collection:string,value:unknown)=>{if(!sets.get(collection)!.has(id(value)))invalid();};
  for(const value of directory.modules as unknown[])add('guide',object(value).usageGuide);
  for(const value of directory.types as unknown[]){const row=object(value);linked('modules',row.moduleId);add('schema',row.summarySchema);add('schema',row.detailSchema);}
- for(const value of directory.operations as unknown[]){const row=object(value);if(!['GET','POST','PUT'].includes(String(row.method))||typeof row.path!=='string'||!row.path.startsWith('/v1/perception/')||/[?#]/u.test(row.path))invalid();add('schema',row.inputSchema);add('schema',row.outputSchema);}
+ for(const value of directory.operations as unknown[]){const row=object(value);if(!['GET','POST','PUT'].includes(String(row.method))||typeof row.path!=='string'||!row.path.startsWith('/v1/perception/')||/[?#]/u.test(row.path))invalid();add('schema',row.inputSchema);add('schema',row.outputSchema);if(row.errorSchema!==undefined)add('schema',row.errorSchema);}
  for(const value of directory.skills as unknown[]){const row=object(value);linked('modules',row.moduleId);add('guide',row.guideRef);if(!Array.isArray(row.capabilityRefs))invalid();for(const ref of row.capabilityRefs as unknown[])linked('operations',ref);}
  for(const value of directory.sources as unknown[]){const row=object(value);linked('modules',row.moduleId);if(!Array.isArray(row.types)||!Array.isArray(row.categoryIds)||!Array.isArray(row.schemaRefs))invalid();for(const type of row.types as unknown[])linked('types',type);for(const category of row.categoryIds as unknown[])linked('categories',category);for(const schema of row.schemaRefs as unknown[])add('schema',schema);}
  for(const value of directory.categories as unknown[]){const row=object(value);if(!Array.isArray(row.sourceIds)||!Array.isArray(row.metrics)||!row.metrics.length)invalid();for(const source of row.sourceIds as unknown[])linked('sources',source);const metrics=new Set<string>();for(const value of row.metrics as unknown[]){const metric=object(value),name=id(metric.metricId);if(metrics.has(name)||!Array.isArray(metric.sourceIds))invalid();metrics.add(name);for(const source of metric.sourceIds as unknown[])linked('sources',source);}}
@@ -437,7 +439,7 @@ function validateDiscoveryCache(cache:Json):void {
   if(cache.complete!==true||typeof cache.catalogRevision!=='string'||!cache.catalogRevision||typeof cache.skillCatalogRevision!=='string'||!cache.skillCatalogRevision||!Array.isArray(cache.documents))throw new Error();
   const requested=discoveryReferences(cache.directory),seen=new Set<string>();
   for(const value of cache.documents){const d=object(value),identity=`${d.kind}:${d.id}:${d.version}`,expected=requested.get(identity),document=object(d.document);
-   if(!expected||seen.has(identity)||typeof d.digest!=='string'||!/^[a-f0-9]{64}$/.test(d.digest)||d.digest!==documentDigest(d.document)||(d.kind==='guide'?(document.moduleId!==d.id||document.version!==d.version):document.$id!==d.id))throw new Error();seen.add(identity);
+   if((d.canonicalDocument!==undefined&&d.digestAlgorithm!=='sha256-utf8-hex')||!expected||seen.has(identity)||typeof d.digest!=='string'||!/^[a-f0-9]{64}$/.test(d.digest)||d.digest!==documentDigest(d.document,d.canonicalDocument)||(d.kind==='guide'?(document.moduleId!==d.id||document.version!==d.version):document.$id!==d.id))throw new Error();seen.add(identity);
   }
   if(seen.size!==requested.size)throw new Error();
  }catch{throw new AgentError('discovery_cache_invalid');}
@@ -477,10 +479,10 @@ async function checkDiscovery(path: string, state: State, capabilities: Json): P
   const documents: Json[] = [];
   for (const item of requested.values()) {
     const response = await http(state.origin, 'GET', `/v1/perception/${item.kind === 'guide' ? 'guides' : 'schemas'}/${encodeURIComponent(item.id)}?version=${item.version}`, undefined, state.runtimeToken), data = object(response.data);
-    if (response.protocolVersion !== 1 || response.instanceId !== state.instanceId || data.version !== item.version || data[item.kind === 'guide' ? 'moduleId' : 'schemaId'] !== item.id || data.digest !== documentDigest(data.document)) throw new AgentError('document_integrity_failed');
+    if (response.protocolVersion !== 1 || response.instanceId !== state.instanceId || data.version !== item.version || data[item.kind === 'guide' ? 'moduleId' : 'schemaId'] !== item.id || data.digestAlgorithm!=='sha256-utf8-hex'||data.digest !== documentDigest(data.document,data.canonicalDocument)) throw new AgentError('document_integrity_failed');
     const old = Array.isArray(previous?.documents) ? previous.documents.map(object).find(d => d.kind === item.kind && d.id === item.id && d.version === item.version) : undefined;
     if (old && old.digest !== data.digest) throw new AgentError('document_integrity_failed');
-    documents.push({ ...item, digest: data.digest, document: data.document });
+    documents.push({ ...item, digest: data.digest, digestAlgorithm:data.digestAlgorithm, canonicalDocument:data.canonicalDocument, document: data.document });
   }
   const current=discoveryBridge(await http(state.origin,'GET','/v1/capabilities'),state);
   if (current.catalogRevision !== bridge.catalogRevision || current.skillCatalogRevision !== bridge.skillCatalogRevision) throw new AgentError('catalog_changed_retry');

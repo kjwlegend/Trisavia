@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import type { JsonObject, JsonValue, M1Store, M1Transaction, StoredRow } from '../contracts/store.ts';
 import { fail, M1Error, object, text, version } from '../domains/common/errors.ts';
-import { CATEGORIES, OPERATIONS, TYPE_DEFINITIONS, RULES_REF, bounded, key, plain, ref, refId, type ObjectRef, type PerceptionAction } from '../domains/perception/protocol.ts';
+import { CATEGORIES, OPERATIONS, TYPE_DEFINITIONS, RULES_REF, bounded, key, plain, ref, refId, type ObjectRef, type PerceptionAction, canonicalDocument } from '../domains/perception/protocol.ts';
 import { catalogData, initializePerceptionCatalog } from './perception-catalog.ts';
+import { PERCEPTION_SCHEMA_VERSION } from '../domains/perception/schemas.ts';
 import { grantId } from './perception-seed.ts';
 
 export interface PerceptionOptions { now?:()=>number; pageTtlMs?:number; completionTtlMs?:number; accessRetentionMs?:number; accessPerAgentLimit?:number; accessTotalLimit?:number; receiptLimit?:number; receiptPerAgentLimit?:number; statePerAgentLimit?:number; stateTotalLimit?:number; detailSegmentChars?:number }
@@ -45,7 +46,7 @@ export function createPerceptionService(store:M1Store,auth:PerceptionAuth,option
  function summary(tx:M1Transaction,a:Actor,c:Candidate):JsonObject {
   const d=c.row.data;const fields:JsonObject={title:d.title!,dataMode:d.dataMode!,source:d.source??{kind:'unknown'}};
   for(const field of ['itemKind','author','area','quantity','itemRef','eventKind','status','fields'])if(d[field]!==undefined)fields[field]=d[field]!;
-  return {op:'upsert',sourceId:d.sourceId!,ref:c.ref,version:c.row.version,schema:{id:`${TYPE_DEFINITIONS.find(t=>t.type===c.ref.type)!.prefix}-summary`,version:1},summary:fields,detailAvailable:d.available===true,...(d.available!==true?{unavailableReason:'content_unavailable'}:{}),...(d.channel==='inbox'?{agentReadState:d.available===true?readState(tx,a,c):null}:{})};
+  return {op:'upsert',sourceId:d.sourceId!,ref:c.ref,version:c.row.version,schema:{id:`${TYPE_DEFINITIONS.find(t=>t.type===c.ref.type)!.prefix}-summary`,version:PERCEPTION_SCHEMA_VERSION},summary:fields,detailAvailable:d.available===true,...(d.available!==true?{unavailableReason:'content_unavailable'}:{}),...(d.channel==='inbox'?{agentReadState:d.available===true?readState(tx,a,c):null}:{})};
  }
  function selection(tx:M1Transaction,a:Actor,categoryId:string,metricId:string|null,unconfirmed:boolean,max:number):{candidates:Candidate[];complete:boolean;scanned:number;authorization:string} {
   const candidates:Candidate[]=[];let scanned=0,complete=true,authorization='public';
@@ -187,7 +188,7 @@ export function createPerceptionService(store:M1Store,auth:PerceptionAuth,option
   if(input.contentToken!==undefined){const s=resume(tx,a,input.contentToken,'detail');if(key(s.data.ref)!==key(r)||s.data.channel!==channel||key(s.data.context)!==key(ctx))fail('read_scope_changed',409,'Detail context changed');if(s.data.contentVersion!==c.row.version)fail('content_changed',409,'Content version changed');if(s.data.grantVersion!==(c.grant?.version??null))fail('read_scope_changed',409,'Content grant changed');offset=Number(s.data.offset);readSessionId=String(s.data.readSessionId);}
   const body=String(c.row.data.body??'');if(body.length>1_048_576)fail('source_unavailable',503,'Content exceeds the bounded source contract');const end=Math.min(offset+settings.detailSegmentChars,body.length),complete=end>=body.length,attachments=Array.isArray(c.row.data.attachments)?c.row.data.attachments:[];
   if(attachments.length>50||Buffer.byteLength(JSON.stringify(attachments))>8000)fail('source_unavailable',503,'Attachment descriptions exceed the bounded source contract');
-  const data:JsonObject={ref:r,version:c.row.version,schema:{id:`${TYPE_DEFINITIONS.find(t=>t.type===r.type)!.prefix}-detail`,version:1},sourceId:c.row.data.sourceId!,content:{text:body.slice(offset,end),dataMode:c.row.data.dataMode!,source:c.row.data.source??{kind:'unknown'},...(c.row.data.fields?{fields:c.row.data.fields}:{}),...(c.row.data.itemRef?{itemRef:c.row.data.itemRef,quantity:c.row.data.quantity??1}:{}),...(c.row.data.sourceId==='platform-publications'?{publication:{actor:c.row.data.actor!,occurredAt:c.row.data.occurredAt!,publishedRefs:c.row.data.publishedRefs!}}:{})},segment:{start:offset,end,total:body.length,unit:'utf16-code-units'},attachments:complete?attachments:[],actions:[],contentComplete:complete,nextContentToken:complete?null:session(tx,a,'detail',{ref:r,channel,context:ctx,contentVersion:c.row.version,grantVersion:c.grant?.version??null,offset:end,readSessionId}),readSessionId};
+  const data:JsonObject={ref:r,version:c.row.version,schema:{id:`${TYPE_DEFINITIONS.find(t=>t.type===r.type)!.prefix}-detail`,version:PERCEPTION_SCHEMA_VERSION},sourceId:c.row.data.sourceId!,content:{text:body.slice(offset,end),dataMode:c.row.data.dataMode!,source:c.row.data.source??{kind:'unknown'},...(c.row.data.fields?{fields:c.row.data.fields}:{}),...(c.row.data.itemRef?{itemRef:c.row.data.itemRef,quantity:c.row.data.quantity??1}:{}),...(c.row.data.sourceId==='platform-publications'?{publication:{actor:c.row.data.actor!,occurredAt:c.row.data.occurredAt!,publishedRefs:c.row.data.publishedRefs!}}:{})},segment:{start:offset,end,total:body.length,unit:'utf16-code-units'},attachments:complete?attachments:[],actions:[],contentComplete:complete,nextContentToken:complete?null:session(tx,a,'detail',{ref:r,channel,context:ctx,contentVersion:c.row.version,grantVersion:c.grant?.version??null,offset:end,readSessionId}),readSessionId};
   if(channel==='inbox'){data.agentReadState=readState(tx,a,c);if(complete)data.completionToken=session(tx,a,'completion',{ref:r,channel,contentVersion:c.row.version,grantVersion:c.grant?.version??null,readSessionId},settings.completionTtlMs);}
   if(Date.now()-started>limits.deadlineMs)fail('budget_too_small',422,'Detail preparation exceeded the deadline');
   return data;
@@ -239,7 +240,7 @@ export function createPerceptionService(store:M1Store,auth:PerceptionAuth,option
    let data:JsonObject;
    if(action==='perceptionDiscovery')data=discover(tx,a,input);
    else if(action==='perceptionSchema'||action==='perceptionGuide'){
-    const field=action==='perceptionSchema'?'schemaId':'moduleId',id=text(input[field],field,1,100),v=Number(input.version);if(!Number.isSafeInteger(v)||v<1)fail('invalid_request',422,'An exact document version is required');const row=tx.get('perception_catalog',`${action==='perceptionSchema'?'schema':'guide'}:${id}:${v}`);if(!row)fail('target_not_accessible',404,'Document is not registered');data={...(action==='perceptionSchema'?{schemaId:id}:{moduleId:id}),version:v,document:row.data.document!,digest:row.data.digest!};
+    const field=action==='perceptionSchema'?'schemaId':'moduleId',id=text(input[field],field,1,100),v=Number(input.version);if(!Number.isSafeInteger(v)||v<1)fail('invalid_request',422,'An exact document version is required');const row=tx.get('perception_catalog',`${action==='perceptionSchema'?'schema':'guide'}:${id}:${v}`);if(!row)fail('target_not_accessible',404,'Document is not registered');data={...(action==='perceptionSchema'?{schemaId:id}:{moduleId:id}),version:v,document:row.data.document!,digest:row.data.digest!,digestAlgorithm:'sha256-utf8-hex',canonicalDocument:canonicalDocument(row.data.document)};
    }else if(action==='perceptionOverview')data=overview(tx,a,input);
    else if(action==='perceptionList')data=list(tx,a,input);
    else if(action==='perceptionDetail')data=detail(tx,a,input);

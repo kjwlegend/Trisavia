@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import type { JsonObject, M1Store, M1Transaction, StoredRow } from '../contracts/store.ts';
-import { initializePerceptionCatalog } from './perception-catalog.ts';
+import { initializePerceptionCatalog, rememberCatalogRevision } from './perception-catalog.ts';
 import { DEMO_PLACES } from '../domains/perception/demo-data.ts';
 import { key, plain, refId, RULES_REF, type ObjectRef } from '../domains/perception/protocol.ts';
 
@@ -47,7 +47,7 @@ export function seedWs02DemoData(store:M1Store,options:{actorId:string;now?:()=>
     const sourceStates={...plain(config.data.sourceStates)};
     for(const id of ['demo-items','holdings','direct-mail','demo-announcements','demo-events','demo-places','platform-publications'])if(sourceStates[id]==='not_enabled')sourceStates[id]='enabled';
     const changed=key(merged)!==key(previousIds)||key(sourceStates)!==key(config.data.sourceStates);
-    if(changed)tx.update('perception_catalog',{...config,version:config.version+1,data:{...config.data,sourceStates,seedObjectIds:merged,catalogRevision:'catalog-demo-1',skillCatalogRevision:'skills-demo-1'}},config.version);
+    if(changed){const revision=`catalog-demo-1-schema-${config.data.schemaVersion??1}`,next={...config.data,sourceStates,seedObjectIds:merged,catalogRevision:revision,skillCatalogRevision:`skills-${revision}`};rememberCatalogRevision(tx,config.data);rememberCatalogRevision(tx,next);tx.update('perception_catalog',{...config,version:config.version+1,data:next},config.version);}
     const agents:JsonObject[]=[];let afterId='';
     for(;;){const batch=tx.scan('agents',{}, {limit:200,afterId});if(!batch.length)break;for(const agent of batch){initializePerceptionAgent(tx,agent.id,stamp);agents.push(agentManifest(tx,agent.id));}afterId=batch.at(-1)!.id;}
     const seedObjects=[refId(RULES_REF),...merged].map(id=>tx.get('perception_objects',id)!).filter(Boolean);

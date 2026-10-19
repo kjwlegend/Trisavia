@@ -36,3 +36,9 @@ export function refId(value:ObjectRef):string { return key(value); }
 export function plain(value:JsonValue|undefined):JsonObject { return value&&typeof value==='object'&&!Array.isArray(value)?value:{}; }
 export function bounded(value:unknown,fallback:number,max:number,field='limit'):number { if(value===undefined)return fallback; if(!Number.isSafeInteger(value)||(value as number)<1||(value as number)>max)fail('invalid_request',422,'Invalid bounded number',{field}); return value as number; }
 export const RULES_REF:ObjectRef={moduleId:'world',type:'world.rules@1',id:'world-rules'};
+
+/** Exact legacy serialization bytes are exposed so HTTP hosts need no locale implementation. */
+export function canonicalDocument(value:unknown):string {
+ const canonical=(value:unknown):unknown=>Array.isArray(value)?value.map(canonical):value!==null&&typeof value==='object'?Object.fromEntries(Object.entries(value).sort(([a],[b])=>a.localeCompare(b)).map(([name,item])=>[name,canonical(item)])):value;
+ return JSON.stringify(canonical(value));
+}

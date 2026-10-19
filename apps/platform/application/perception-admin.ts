@@ -37,6 +37,6 @@ export function publishPerceptionGuide(store:M1Store,options:AdministrativeComma
  return command(store,options,payload,tx=>{
   const current=tx.get('perception_catalog','current');if(!current||current.data.catalogRevision!==options.expectedCatalogRevision)fail('version_conflict',409,'Catalog revision changed');
   const changed=current.data.catalogRevision!==options.revision||current.data.guideVersion!==options.guideVersion;
-  publishCatalogInTransaction(tx,options);return {catalogRevision:options.revision,skillCatalogRevision:`skills-${options.revision}`,guideVersion:options.guideVersion,changed};
+  publishCatalogInTransaction(tx,options);const published=tx.get('perception_catalog','current')!;return {catalogRevision:published.data.catalogRevision!,skillCatalogRevision:published.data.skillCatalogRevision!,guideVersion:published.data.guideVersion!,changed};
  });
 }
