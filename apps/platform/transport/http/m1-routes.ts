@@ -3,6 +3,7 @@ import type { M1Action, M1Service } from "../../application/m1-service.ts";
 import { M1Error, fail } from "../../domains/common/errors.ts";
 import { StorageError } from "../../contracts/store.ts";
 import { FOUNDATION_HTTP_OPERATIONS } from "../../contracts/foundation-operations.ts";
+import { randomUUID } from "node:crypto";
 
 type Definition = { method: "GET" | "POST" | "PUT"; url: string; action: M1Action };
 const routes: Definition[] = [
@@ -38,7 +39,14 @@ function headerToken(request: FastifyRequest): string | undefined {
 
 export function registerM1Routes(app: FastifyInstance, service: M1Service): void {
   // This also covers parser errors, before any handler has had a chance to run.
-  app.setErrorHandler((error, _request, reply) => {
+  app.setErrorHandler((error, request, reply) => {
+    if (request.url.startsWith('/v1/perception/')) {
+      const status = error instanceof M1Error ? error.statusCode : error instanceof StorageError ? 503 : typeof error === 'object' && error !== null && 'statusCode' in error && typeof error.statusCode === 'number' && error.statusCode < 500 ? error.statusCode === 413 ? 413 : 400 : 503;
+      const code = error instanceof M1Error ? error.code : status < 500 ? 'invalid_request' : 'source_unavailable';
+      reply.header('Cache-Control', 'no-store');
+      if (status === 429) reply.header('Retry-After', '60');
+      return reply.code(status).send({ protocolVersion: 1, requestId: `request_${randomUUID()}`, error: { code, retryable: status >= 500 || status === 429, resyncRequired: ['page_expired', 'read_scope_changed', 'content_changed'].includes(code), ...(code === 'page_expired' ? { historyGap: false } : {}) } });
+    }
     if (error instanceof M1Error) {
       return reply.code(error.statusCode).send({ error: { code: error.code, message: error.message, ...(error.details ? { details: error.details } : {}) } });
     }

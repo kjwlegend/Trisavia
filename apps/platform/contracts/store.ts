@@ -5,6 +5,7 @@ export interface JsonObject { [key: string]: JsonValue }
 export const M1_TABLES = [
   'agents', 'owners', 'credentials', 'bindings', 'registrations',
   'profiles', 'memberships', 'operations', 'facts', 'recovery_requests', 'email_attempts', 'mail_jobs',
+  'perception_objects', 'perception_grants', 'perception_states', 'perception_sessions', 'perception_access', 'perception_catalog',
 ] as const;
 export type M1Table = (typeof M1_TABLES)[number];
 
@@ -18,11 +19,15 @@ export type ExactFilters = Record<string, string | number | boolean | null>;
 export interface M1ReadSession {
   get<T extends JsonObject = JsonObject>(table: M1Table, id: string): StoredRow<T> | undefined;
   find<T extends JsonObject = JsonObject>(table: M1Table, filters?: ExactFilters): StoredRow<T>[];
+  /** Bounded, indexed keyset reads; unlike legacy find, filtering happens in SQLite. */
+  scan<T extends JsonObject = JsonObject>(table: M1Table, filters: ExactFilters, options: { limit: number; afterId?: string }): StoredRow<T>[];
+  count(table: M1Table, filters: ExactFilters, limit: number): number;
 }
 export interface M1Transaction extends M1ReadSession {
   insert(table: M1Table, row: StoredRow): void;
   /** row.version must equal expectedVersion + 1; false means the old version did not match. */
   update(table: M1Table, row: StoredRow, expectedVersion: number): boolean;
+  remove(table: M1Table, id: string, expectedVersion: number): boolean;
 }
 export interface M1Store {
   readonly instanceId: string;

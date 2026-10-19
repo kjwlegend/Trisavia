@@ -9,6 +9,22 @@ import {
 
 const tableNames: ReadonlySet<string> = new Set(M1_TABLES);
 
+function boundedLimit(limit: number): void {
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100_001) throw new StorageError('invalid_usage', 'Invalid bounded read limit');
+}
+
+function filterSql(filters: ExactFilters): { sql: string; values: SQLInputValue[] } {
+  objectJson(filters);
+  const clauses: string[] = [], values: SQLInputValue[] = [];
+  for (const [key, value] of Object.entries(filters)) {
+    if (value !== null && !['string', 'number', 'boolean'].includes(typeof value)) throw new StorageError('invalid_usage', 'Exact filters require scalars');
+    const path = (/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) ? `$.${key}` : `$.${JSON.stringify(key)}`).replaceAll("'", "''");
+    clauses.push(`json_type(data, '${path}') IS NOT NULL AND json_extract(data, '${path}') IS ?`);
+    values.push(typeof value === 'boolean' ? Number(value) : value);
+  }
+  return { sql: clauses.join(' AND ') || '1', values };
+}
+
 function sqliteError(error: unknown): unknown {
   if (error && typeof error === 'object' && 'code' in error && error.code === 'ERR_SQLITE_ERROR') {
     const primaryCode = Number('errcode' in error ? error.errcode : 0) & 0xff;
@@ -150,8 +166,8 @@ export class SqliteStore implements M1Store {
     try { return this.#statement(sql).get(...parameters); } catch (error) { throw sqliteError(error); }
   }
 
-  #all(sql: string) {
-    try { return this.#statement(sql).all(); } catch (error) { throw sqliteError(error); }
+  #all(sql: string, ...parameters: SQLInputValue[]) {
+    try { return this.#statement(sql).all(...parameters); } catch (error) { throw sqliteError(error); }
   }
 
   #scope<T>(write: boolean, work: (session: M1Transaction) => T): T {
@@ -183,6 +199,17 @@ export class SqliteStore implements M1Store {
           .map((row) => decode<T>(row)).filter((row) => Object.entries(normalized).every(([key, value]) =>
             Object.hasOwn(row.data, key) && isDeepStrictEqual(row.data[key], value)));
       },
+      scan: <T extends JsonObject = JsonObject>(table: M1Table, filters: ExactFilters, options: { limit: number; afterId?: string }) => {
+        const name = tableName(table), where = filterSql(filters);
+        boundedLimit(options.limit);
+        if (options.afterId !== undefined && typeof options.afterId !== 'string') throw new StorageError('invalid_usage', 'Invalid keyset position');
+        return this.#all(`SELECT id, version, data FROM ${name} WHERE ${where.sql} AND id > ? ORDER BY id LIMIT ?`,
+          ...where.values, options.afterId ?? '', options.limit).map(row => decode<T>(row));
+      },
+      count: (table, filters, limit) => {
+        const name = tableName(table), where = filterSql(filters); boundedLimit(limit);
+        return Number(this.#get(`SELECT count(*) AS total FROM (SELECT 1 FROM ${name} WHERE ${where.sql} LIMIT ?)`, ...where.values, limit)?.total ?? 0);
+      },
       insert: (table, row) => {
         const name = tableName(table);
         if (!write) throw new StorageError('invalid_usage', 'Read sessions cannot write');
@@ -204,6 +231,12 @@ export class SqliteStore implements M1Store {
         );
         return result.changes === 1;
       },
+      remove: (table, id, expectedVersion) => {
+        const name = tableName(table);
+        if (!write) throw new StorageError('invalid_usage', 'Read sessions cannot write');
+        checkId(id); checkVersion(expectedVersion);
+        return this.#run(`DELETE FROM ${name} WHERE id = ? AND version = ?`, id, expectedVersion).changes === 1;
+      },
     };
     try {
       this.#database.exec(write ? 'BEGIN IMMEDIATE' : 'BEGIN');
@@ -211,7 +244,7 @@ export class SqliteStore implements M1Store {
       if (!instance || instance.instance_id !== this.instanceId || instance.recovery_epoch !== this.recoveryEpoch) {
         throw new StorageError('conflict', 'Store instance or recovery epoch changed; reopen with current configuration');
       }
-      const exposed = write ? session : { get: session.get, find: session.find };
+      const exposed = write ? session : { get: session.get, find: session.find, scan: session.scan, count: session.count };
       const result = assertSynchronous(work(exposed as M1Transaction));
       this.#database.exec('COMMIT');
       return result;

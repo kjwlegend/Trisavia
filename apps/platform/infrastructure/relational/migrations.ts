@@ -119,6 +119,28 @@ export const migrations: readonly Migration[] = [{
     CREATE UNIQUE INDEX mail_jobs_idempotency_unique ON mail_jobs(json_extract(data, '$.idempotencyKey'));
     CREATE INDEX mail_jobs_owner_index ON mail_jobs(json_extract(data, '$.ownerKey'));
   `,
+}, {
+  version: 5,
+  name: 'ws02_manual_perception',
+  sql: `
+    CREATE TABLE perception_objects (id TEXT PRIMARY KEY NOT NULL, version INTEGER NOT NULL CHECK(version > 0), data TEXT NOT NULL CHECK(json_valid(data) AND json_type(data) = 'object')) STRICT;
+    CREATE TABLE perception_grants (id TEXT PRIMARY KEY NOT NULL, version INTEGER NOT NULL CHECK(version > 0), data TEXT NOT NULL CHECK(json_valid(data) AND json_type(data) = 'object'),
+      agent_id TEXT GENERATED ALWAYS AS (json_extract(data, '$.agentId')) STORED NOT NULL REFERENCES agents(id),
+      object_id TEXT GENERATED ALWAYS AS (json_extract(data, '$.objectId')) STORED NOT NULL REFERENCES perception_objects(id)) STRICT;
+    CREATE UNIQUE INDEX perception_grants_unique ON perception_grants(agent_id, object_id, json_extract(data, '$.kind'));
+    CREATE TABLE perception_states (id TEXT PRIMARY KEY NOT NULL, version INTEGER NOT NULL CHECK(version > 0), data TEXT NOT NULL CHECK(json_valid(data) AND json_type(data) = 'object'),
+      agent_id TEXT GENERATED ALWAYS AS (json_extract(data, '$.agentId')) STORED NOT NULL REFERENCES agents(id),
+      object_id TEXT GENERATED ALWAYS AS (json_extract(data, '$.objectId')) STORED NOT NULL REFERENCES perception_objects(id), UNIQUE(agent_id, object_id)) STRICT;
+    CREATE TABLE perception_sessions (id TEXT PRIMARY KEY NOT NULL, version INTEGER NOT NULL CHECK(version > 0), data TEXT NOT NULL CHECK(json_valid(data) AND json_type(data) = 'object')) STRICT;
+    CREATE TABLE perception_access (id TEXT PRIMARY KEY NOT NULL, version INTEGER NOT NULL CHECK(version > 0), data TEXT NOT NULL CHECK(json_valid(data) AND json_type(data) = 'object')) STRICT;
+    CREATE TABLE perception_catalog (id TEXT PRIMARY KEY NOT NULL, version INTEGER NOT NULL CHECK(version > 0), data TEXT NOT NULL CHECK(json_valid(data) AND json_type(data) = 'object')) STRICT;
+    CREATE INDEX perception_objects_category ON perception_objects(json_extract(data, '$.categoryId'), id);
+    CREATE INDEX perception_grants_actor ON perception_grants(json_extract(data, '$.agentId'), json_extract(data, '$.kind'), id);
+    CREATE INDEX perception_states_actor ON perception_states(agent_id);
+    CREATE INDEX perception_sessions_actor ON perception_sessions(json_extract(data, '$.actorId'), id);
+    CREATE INDEX perception_access_actor ON perception_access(json_extract(data, '$.agentId'), id);
+    CREATE INDEX perception_access_audience ON perception_access(json_extract(data, '$.humanAudienceOwnerId'), id);
+  `,
 }];
 
 function checksum(migration: Migration): string {

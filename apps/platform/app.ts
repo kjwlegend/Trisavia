@@ -5,8 +5,11 @@ import { createM1Service } from './application/m1-service.ts';
 import { openM1Store } from './infrastructure/relational/sqlite-store.ts';
 import { registerM1Routes } from './transport/http/m1-routes.ts';
 import { registerSiteRoutes } from './transport/http/site-routes.ts';
+import { registerPerceptionRoutes } from './transport/http/perception-routes.ts';
+import type { PerceptionOptions } from './application/perception-service.ts';
 
 export interface BuildAppOptions {
+  perception?: PerceptionOptions;
   email?: EmailConfig;
   databasePath?: string;
   instanceId?: string;
@@ -45,8 +48,9 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
         return reply.code(503).send({ status: 'unavailable', error: { code: 'storage_unavailable' } });
       }
     });
-    const service = createM1Service(store, { ...(options.clock ? { now: options.clock } : {}), ...(options.email ? { email: options.email } : {}) });
+    const service = createM1Service(store, { ...(options.clock ? { now: options.clock } : {}), ...(options.email ? { email: options.email } : {}), ...(options.perception ? { perception: options.perception } : {}) });
     registerM1Routes(app, service);
+    registerPerceptionRoutes(app, service);
     registerSiteRoutes(app);
     return app;
   } catch (error) {
