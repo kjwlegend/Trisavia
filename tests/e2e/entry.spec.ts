@@ -1,4 +1,4 @@
-import { openHud, closeHud } from './helpers/hud-ui.ts';
+import { openHud, closeHud, worldMenu } from './helpers/hud-ui.ts';
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { execFile } from 'node:child_process';
@@ -91,7 +91,7 @@ test('320px and reduced motion preserve the entry, venue controls and owner auth
   await expect(page.locator('#world-zoom')).toHaveText('125%');
   await page.locator('#world-canvas').focus(); await page.keyboard.press('Home');
   expect((await state()).mode).toBe('overview');
-  await page.locator('#world-reset').click();
+  await worldMenu(page); await page.locator('#world-reset').click();
   await expect(page.locator('#world-zoom')).toHaveText('100%');
   await page.locator('#world-place-directory > summary').click();
   await page.locator('#world-place-information-hall').click();
@@ -114,7 +114,7 @@ test('world map selection, movement and pause keep one accessible detail and sta
   const state=()=>page.evaluate(async()=>(await import(String('/assets/home.js'))).getWorldState());
   const initial=JSON.stringify((await state()).actors);
   await expect.poll(async()=>JSON.stringify((await state()).actors)).not.toBe(initial);
-  await openHud(page, '世界'); await page.locator('#world-pause').click();await expect(page.locator('#world-pause')).toHaveAttribute('aria-pressed','true');
+  await openHud(page, '世界'); await worldMenu(page); await page.locator('#world-pause').click();await expect(page.locator('#world-pause')).toHaveAttribute('aria-pressed','true');
   const frozen=JSON.stringify((await state()).actors);await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   expect(JSON.stringify((await state()).actors)).toBe(frozen);
   await page.locator('#world-fit').click();
@@ -123,7 +123,7 @@ test('world map selection, movement and pause keep one accessible detail and sta
   await page.locator('#world-canvas').click({position:{x:(576-camera.x)*camera.scale+box.width/2,y:(328-camera.y)*camera.scale+box.height/2}});
   await expect(page.locator('#world-detail-title')).toHaveText('河岸书馆');await expect(page.locator('#world-place-library')).toHaveAttribute('aria-pressed','true');
   await page.keyboard.press('Escape');await expect(page.locator('#world-canvas')).toBeFocused();
-  await openHud(page, '世界'); await page.locator('#world-reset').click();
+  await openHud(page, '世界'); await worldMenu(page); await page.locator('#world-reset').click();
   await page.locator('#world-zoom-in').click();await expect(page.locator('#world-zoom')).toHaveText('125%');
   await page.locator('#world-fit').click();expect((await state()).mode).toBe('overview');
   await fits(page);expect(observed.issues).toEqual([]);
@@ -134,6 +134,7 @@ test('world asset failure retains venue descriptions and ordinary M1 links, and 
   const atlas='**/assets/world-town/assets/characters/sheet.svg';await page.route(atlas,route=>route.abort());
   await page.goto('/');await expect(page.locator('#world-fallback')).toBeVisible();
   await openHud(page, '世界');
+  await worldMenu(page);
   for (const id of ['world-zoom-out', 'world-zoom-in', 'world-fit', 'world-pause', 'world-explore', 'world-reset']) {
     const control = page.locator(`#${id}`);
     if (await control.isVisible()) await expect(control, 'Unavailable map actions are disabled while assets have failed').toBeDisabled();
@@ -142,7 +143,7 @@ test('world asset failure retains venue descriptions and ordinary M1 links, and 
   await page.locator('#world-place-information-hall').click();await expect(page.locator('#world-detail-title')).toHaveText('信息厅');
   await expect(page.locator('#world-detail-links a')).toHaveCount(2);await page.keyboard.press('Escape');
   await page.unroute(atlas);await page.locator('#world-retry').click();await expect(page.locator('#world-canvas')).toBeVisible();await expect(page.locator('#world-fallback')).toBeHidden();
-  await openHud(page, '世界'); await expect(page.locator('#world-fit')).toBeEnabled(); await expect(page.locator('#world-explore')).toBeEnabled();
+  await openHud(page, '世界'); await expect(page.locator('#world-fit')).toBeEnabled(); await worldMenu(page); await expect(page.locator('#world-explore')).toBeEnabled();
   expect(pageErrors).toBe(0);await fits(page);
 });
 

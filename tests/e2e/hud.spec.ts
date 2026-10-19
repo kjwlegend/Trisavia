@@ -16,7 +16,7 @@ async function ownerWithAgents(origin: string, directory: string, names: string[
   return { owner, agents };
 }
 
-test('the four dock controls disclose one panel, keep hover separate and restore focus without moving the world', async ({ page }, info) => {
+test('dock content controls disclose one panel and World returns to the canvas without changing the camera', async ({ page }, info) => {
   await page.goto('/');
   await expect(page.locator('#world-canvas')).toBeVisible();
   const dock = page.locator('#hud-dock');
@@ -37,6 +37,12 @@ test('the four dock controls disclose one panel, keep hover separate and restore
     }
     await trigger.focus(); await expect(page.getByRole('tooltip')).toHaveText(name);
     await trigger.press('Enter');
+    if (name === '世界') {
+      await expect(hudWindow(page)).toBeHidden(); await expect(page.locator('#hud-detail-window')).toBeHidden();
+      await expect(trigger).toHaveAttribute('aria-expanded', 'false'); await expect(trigger).toHaveAttribute('aria-pressed', 'true');
+      await expect(trigger).toBeFocused(); await expect(page.locator('.hud-map-tools')).toBeVisible();
+      continue;
+    }
     await expect(page.getByRole('dialog')).toHaveCount(1); await expect(hudWindow(page)).toBeVisible();
     await expect(trigger).toHaveAttribute('aria-expanded', 'true'); await expect(trigger).toHaveAttribute('aria-pressed', 'true');
     await expect.poll(() => page.evaluate(() => document.querySelector('#hud-window')!.contains(document.activeElement)), { message: 'Keyboard entry puts focus into the opened panel' }).toBe(true);
@@ -77,15 +83,23 @@ test('the four dock controls disclose one panel, keep hover separate and restore
         await page.getByRole('button', { name: '中央公共庭', exact: true }).click();
         await expect(page.locator('#world-detail-title')).toHaveText('中央公共庭');
         const placeBox = (await page.locator('#world-detail').boundingBox())!, dockBox = (await dock.boundingBox())!;
-        expect(placeBox.x + placeBox.width, 'The place card leaves at least 12px before the full dock').toBeLessThanOrEqual(dockBox.x - 12);
+        expect(placeBox.y + placeBox.height <= dockBox.y - 12 || placeBox.x + placeBox.width <= dockBox.x - 12
+          || placeBox.x >= dockBox.x + dockBox.width + 12, 'The place card leaves the full dock independently clickable').toBe(true);
         for (const action of hudNames) await expect(hudButton(page, action)).toBeInViewport();
         await hudButton(page, name).click();
-        await expect(hudWindow(page)).toBeVisible(); await expect(page.locator('#hud-title')).toHaveText(name);
-        await expect(page.getByRole('dialog')).toHaveCount(1);
+        if (name === '世界') {
+          await expect(hudWindow(page)).toBeHidden(); await expect(page.locator('.hud-map-tools')).toBeVisible();
+          await expect(hudButton(page, '世界')).toBeFocused();
+        } else {
+          await expect(hudWindow(page)).toBeVisible();
+          if (name === '个人') await expect(page.locator('#login-identifier')).toBeVisible();
+          else await expect(page.locator('#hud-title')).toHaveText(name);
+          await expect(page.getByRole('dialog')).toHaveCount(1);
+        }
         await expect(page.locator('#world-detail'), 'A place card does not intercept a different dock action').toBeHidden();
         const afterDetail = await camera(page);
         expect(afterDetail.x).toBeCloseTo(beforeDetail.x, 4); expect(afterDetail.y).toBeCloseTo(beforeDetail.y, 4); expect(afterDetail.scale).toBeCloseTo(beforeDetail.scale, 4);
-        await closeHud(page); await expect(hudButton(page, name)).toBeFocused();
+        if (name !== '世界') { await closeHud(page); await expect(hudButton(page, name)).toBeFocused(); }
       }
     }
   }

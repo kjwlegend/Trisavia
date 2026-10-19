@@ -17,7 +17,7 @@ async function demo(page: Page, feature: '个人' | '背包' | '信箱') {
   const window = await openHud(page, feature);
   const entry = window.getByRole('button', { name: `查看演示${feature === '个人' ? '资料' : feature}`, exact: true });
   await entry.focus(); await entry.press('Enter');
-  await expect(window.locator('.hud-demo-label:visible')).toContainText('演示数据');
+  await expect(window.locator('.hud-demo-label:visible')).toContainText(/演示数据|示例物品|示例信箱/);
   return window;
 }
 async function keyboardContinuesInPanel(page: Page) {
@@ -29,13 +29,13 @@ async function keyboardContinuesInPanel(page: Page) {
 }
 async function inventoryList(page: Page) {
   const window = hudWindow(page);
-  if (await window.getByRole('button', { name: '返回物品列表', exact: true }).isVisible()) await window.getByRole('button', { name: '返回物品列表', exact: true }).click();
+  if (await window.getByRole('button', { name: '返回背包详情', exact: true }).isVisible()) await window.getByRole('button', { name: '返回背包详情', exact: true }).click();
   await expect(window.getByLabel('搜索示例物品', { exact: true })).toBeVisible();
   return window;
 }
 async function mailList(page: Page) {
   const window = hudWindow(page);
-  if (await window.getByRole('button', { name: '返回通知列表', exact: true }).isVisible()) await window.getByRole('button', { name: '返回通知列表', exact: true }).click();
+  if (await page.locator('#hud-detail-window').isVisible()) await page.getByRole('button', { name: '关闭通知详情', exact: true }).click();
   return window;
 }
 
@@ -55,12 +55,12 @@ test('personal examples require an explicit demo context and their public previe
   const window = await demo(page, '个人');
   try {
     await entered; await keyboardContinuesInPanel(page);
-    await openHud(page, '世界'); await expect(page.locator('#hud-title')).toBeFocused();
+    await openHud(page, '世界'); await expect(hudButton(page, '世界')).toBeFocused();
     const loaded = page.waitForResponse(response => new URL(response.url()).pathname === '/assets/hud/demo-fixtures.json');
     release(); await finished; await (await loaded).finished();
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-    await expect(page.locator('#hud-title')).toHaveText('世界');
-    await expect(page.locator('#hud-title'), 'A late demo response cannot reclaim keyboard focus after its panel was left').toBeFocused();
+    await expect(window).toBeHidden();
+    await expect(hudButton(page, '世界'), 'A late demo response cannot reclaim keyboard focus after its panel was left').toBeFocused();
   } finally { release(); await page.unrouteAll({ behavior: 'wait' }); }
   await openHud(page, '个人');
   await expect(window.getByText('小岚', { exact: true })).toBeVisible();
@@ -98,7 +98,7 @@ test('inventory filters retain only visible selections, clear empty details and 
   await search.press('ArrowLeft'); await search.press('ArrowLeft'); await page.keyboard.type('不存在');
   await expect(search, 'Continuous editing at the existing caret preserves the full query').toHaveValue('不存在纪念');
   await expect(search).toBeFocused();
-  await expect(window).toContainText('此筛选下暂无示例物品');
+  await expect(window).toContainText('没有找到符合条件的物品');
   await expect(window.getByRole('heading', { name: '纪念明信片', exact: true })).toHaveCount(0);
   await expect(window.getByRole('button', { name: '查看作品', exact: true })).toHaveCount(0);
   await search.press('ControlOrMeta+A'); await page.keyboard.press('Backspace');
@@ -110,7 +110,7 @@ test('inventory filters retain only visible selections, clear empty details and 
   await expect(window.getByRole('heading', { name: '街区速写', exact: true })).toBeVisible();
   await expect(window.getByRole('button', { name: '查看作品', exact: true })).toBeVisible();
   await inventoryList(page); await expect(window.getByRole('button', { name: '街区速写', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await expect(window).toContainText('非当前账号或 Agent 的资产');
+  await expect(window.locator('.hud-demo-label')).toContainText('非真实资产');
   await expect(window.getByRole('button', { name: /购买|赠送|领取|装备|转让/ })).toHaveCount(0);
   if (info.project.name === 'mobile') {
     await page.setViewportSize({ width: 320, height: 568 }); await containedHud(page);
@@ -123,34 +123,36 @@ test('inventory filters retain only visible selections, clear empty details and 
 
 test('mail separates private pending examples from public announcements and removes unavailable source content', async ({ page }) => {
   await page.goto('/'); const window = await demo(page, '信箱');
-  await expect(window).toContainText('不是当前账号的消息'); await expect(window).toContainText('示例阅读者：lin');
+  const detail = page.locator('#hud-detail-window');
+  await expect(window).toContainText('示例信箱'); await expect(window).toContainText('阅读标记保存在此浏览器');
   await expect(window.getByRole('button', { name: '私人通知', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await expect(window.getByLabel('通知筛选', { exact: true })).toHaveValue('全部通知');
-  await expect(window.getByLabel('示例私人通知', { exact: true }).getByRole('button')).toHaveCount(6);
+  await expect(window.getByRole('button', { name: '全部', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(window.locator('[data-message-open]')).toHaveCount(6);
   await keyboardContinuesInPanel(page);
   await window.getByRole('button', { name: /作品说明有更新/ }).click();
-  await expect(window).toContainText('仅供知晓'); await window.getByRole('button', { name: '查看内容', exact: true }).click();
-  await expect(window.getByRole('heading', { name: '街区速写', exact: true })).toBeVisible();
-  await expect(window).toContainText('该通知引用的演示作品');
-  await page.keyboard.press('Escape'); await expect(window).toBeVisible(); await expect(window.getByRole('heading', { name: '作品说明有更新', exact: true })).toBeVisible();
-  await mailList(page); await window.getByLabel('通知筛选', { exact: true }).selectOption('待处理');
+  await expect(detail).toContainText('仅供知晓'); await detail.getByRole('button', { name: '查看内容', exact: true }).click();
+  await expect(detail.getByRole('heading', { name: '街区速写', exact: true })).toBeVisible();
+  await expect(detail).toContainText('该通知引用的演示作品');
+  await page.keyboard.press('Escape'); await expect(detail.getByRole('heading', { name: '作品说明有更新', exact: true })).toBeVisible();
+  await mailList(page); await window.getByRole('button', { name: '待处理', exact: true }).click();
   await expect(window.getByRole('button', { name: /资料有一项待确认/ })).toBeVisible();
-  await expect(window.getByLabel('示例私人通知', { exact: true }).getByRole('button')).toHaveCount(1);
+  await expect(window.locator('[data-message-open]')).toHaveCount(1);
   await expect(window.getByRole('button', { name: /作品说明有更新|旧提醒已到期|旧内容已不可查看/ })).toHaveCount(0);
-  await window.getByRole('button', { name: '世界动态（公开）', exact: true }).click();
-  await expect(window.getByLabel('通知筛选', { exact: true })).toHaveCount(0);
-  await expect(window.getByLabel('示例公共公告', { exact: true }).getByRole('button').first()).toBeVisible();
+  await window.getByRole('button', { name: '世界动态', exact: true }).click();
+  await expect(window.getByRole('button', { name: '待处理', exact: true })).toHaveCount(0);
+  await expect(window.locator('[data-message-open]').first()).toBeVisible();
   await expect(window.getByRole('button', { name: /资料有一项待确认/ })).toHaveCount(0);
   await window.getByRole('button', { name: '私人通知', exact: true }).click();
-  await expect(window.getByLabel('通知筛选', { exact: true })).toHaveValue('待处理');
+  await expect(window.getByRole('button', { name: '待处理', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(window.getByRole('button', { name: /资料有一项待确认/ })).toBeVisible();
-  await window.getByLabel('通知筛选', { exact: true }).selectOption('全部通知');
+  await window.getByRole('button', { name: '待处理', exact: true }).click();
   await window.getByRole('button', { name: /旧内容已不可查看/ }).click();
-  await expect(window.getByRole('heading', { name: '此示例内容不可查看', exact: true })).toBeVisible();
-  await expect(window).toContainText('正文、图像及来源动作当前不可用');
-  await expect(window.getByRole('button', { name: '查看内容', exact: true })).toHaveCount(0);
-  await expect(window.getByText('广场有新的作品说明。你可以打开查看。', { exact: true })).toHaveCount(0);
-  await expect(window.getByRole('button', { name: /发送|回复|接受|接单|标记已读/ })).toHaveCount(0);
+  await expect(detail.getByRole('heading', { name: '此示例内容不可查看', exact: true })).toBeVisible();
+  await expect(detail).toContainText('正文、图像及来源动作当前不可用');
+  await expect(detail.getByRole('button', { name: '查看内容', exact: true })).toHaveCount(0);
+  await expect(detail.getByText('广场有新的作品说明。你可以打开查看。', { exact: true })).toHaveCount(0);
+  await expect(detail.getByRole('button', { name: /发送|回复|接受|接单/ })).toHaveCount(0);
+  await mailList(page);
   await closeHud(page); await noPageOverflow(page);
 });
 
@@ -158,7 +160,7 @@ test('a failed example resource offers a real retry while successful empty fixtu
   const path = '/assets/hud/demo-fixtures.json'; privacy.allowStatus(path, 503);
   await page.route(`**${path}`, route => route.fulfill({ status: 503, contentType: 'application/json', body: '{}' }), { times: 1 });
   await page.goto('/'); const window = await demo(page, '背包');
-  await expect(window).toContainText('演示内容暂不可用'); await expect(window).not.toContainText('此筛选下暂无示例物品');
+  await expect(window).toContainText('演示内容暂不可用'); await expect(window).not.toContainText('没有找到符合条件的物品');
   await expect(window.getByRole('button', { name: '关闭窗口', exact: true })).toBeVisible();
   await window.getByRole('button', { name: '重试演示内容', exact: true }).click();
   await expect(window.getByRole('button', { name: '街区速写', exact: true })).toBeVisible();
@@ -167,9 +169,9 @@ test('a failed example resource offers a real retry while successful empty fixtu
     await route.fulfill({ json: { ...data, items: [], messages: [], announcements: [] } });
   }, { times: 1 });
   await page.reload(); await demo(page, '背包');
-  await expect(window).toContainText('此筛选下暂无示例物品');
+  await expect(window).toContainText('没有找到符合条件的物品');
   await expect(window.getByRole('heading', { name: '街区速写', exact: true })).toHaveCount(0);
-  await closeHud(page); await demo(page, '信箱'); await expect(window).toContainText('此筛选下暂无示例通知');
+  await closeHud(page); await demo(page, '信箱'); await expect(window).toContainText('这里还没有通知');
   await expect(window.getByRole('button', { name: '查看内容', exact: true })).toHaveCount(0);
   await closeHud(page); await expect(page.locator('#hud-account')).toBeVisible();
 });

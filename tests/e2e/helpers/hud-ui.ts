@@ -8,11 +8,27 @@ export const hudWindow = (page: Page) => page.locator('#hud-window');
 export const hudButton = (page: Page, name: HudName) => page.locator('#hud-dock').getByRole('button', { name, exact: true, includeHidden: true });
 
 export async function openHud(page: Page, name: HudName) {
+  if (name === '世界') { await returnToWorld(page); return hudWindow(page); }
   const trigger = hudButton(page, name);
   if (await trigger.getAttribute('aria-expanded') !== 'true') await trigger.click();
   await expect(hudWindow(page)).toBeVisible();
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   return hudWindow(page);
+}
+
+export async function returnToWorld(page: Page) {
+  await hudButton(page, '世界').click();
+  await expect(hudWindow(page)).toBeHidden();
+  await expect(page.locator('#hud-detail-window')).toBeHidden();
+  await expect(hudButton(page, '世界')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.hud-map-tools')).toBeVisible();
+}
+
+export async function worldMenu(page: Page) {
+  const trigger = page.locator('#hud-map-more');
+  if (await trigger.getAttribute('aria-expanded') !== 'true') await trigger.click();
+  await expect(page.locator('#hud-map-menu')).toBeVisible();
+  return page.locator('#hud-map-menu');
 }
 
 export async function closeHud(page: Page) {

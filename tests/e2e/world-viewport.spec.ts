@@ -1,4 +1,4 @@
-import { openHud, closeHud, hudButton } from './helpers/hud-ui.ts';
+import { openHud, closeHud, hudButton, worldMenu } from './helpers/hud-ui.ts';
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
@@ -112,7 +112,7 @@ test('full map is an explicit alternate view and closing details preserves the c
   await page.getByRole('button', { name: '关闭场所说明', exact: true }).click();
   const closed = (await worldState(page)).camera;
   expect(closed.x).toBeCloseTo(beforeDetail.x, 4); expect(closed.y).toBeCloseTo(beforeDetail.y, 4); expect(closed.scale).toBeCloseTo(beforeDetail.scale, 4);
-  await openHud(page, '世界'); await page.getByRole('button', { name: '返回初始视角', exact: true }).click(); await closeHud(page);
+  await openHud(page, '世界'); await worldMenu(page); await page.getByRole('button', { name: '返回初始视角', exact: true }).click(); await closeHud(page);
   await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
   await coverViewport(page);
 });
@@ -136,7 +136,7 @@ test('closing an overview detail after a wide-to-phone resize fits the current v
   expect(fitted.camera.scale * 1024).toBeLessThanOrEqual(fitted.camera.height + 2);
   await noOverflow(page);
 
-  await openHud(page, '世界'); await page.locator('#world-reset').click();
+  await openHud(page, '世界'); await worldMenu(page); await page.locator('#world-reset').click();
   await page.getByRole('button', { name: '放大地图', exact: true }).click();
   const custom = await worldState(page); expect(custom.mode).toBe('custom');
   await page.locator('#world-open-list').click();
@@ -164,6 +164,7 @@ test('mobile scrolls naturally, explores with two-dimensional touch drag, then r
   await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
   await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
   await openHud(page, '世界'); await page.getByRole('button', { name: '放大地图', exact: true }).click();
+  await worldMenu(page);
   await page.getByRole('button', { name: '探索地图', exact: true }).click();
   const before = (await worldState(page)).camera;
   await swipe(page, { x: size.width * 0.65, y: size.height * 0.58 }, { x: size.width * 0.35, y: size.height * 0.44 });
@@ -175,7 +176,7 @@ test('mobile scrolls naturally, explores with two-dimensional touch drag, then r
   await page.locator('#hud-exit-explore').click(); await downPage();
   await expect.poll(() => page.evaluate(() => scrollY), { message: 'Exit exploration restores normal scrolling' }).toBeGreaterThan(60);
   await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
-  await openHud(page, '世界'); await page.getByRole('button', { name: '探索地图', exact: true }).click();
+  await openHud(page, '世界'); await worldMenu(page); await page.getByRole('button', { name: '探索地图', exact: true }).click();
   await openHud(page, '世界'); await page.getByRole('button', { name: '全景', exact: true }).click();
   await expect(page.locator('#hud-exit-explore')).toBeHidden(); await closeHud(page);
   await downPage();
