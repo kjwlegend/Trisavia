@@ -156,13 +156,20 @@ test('WS02 mailbox detail preserves filters, focus and body position while read/
   await window.getByRole('button', { name: '未读', exact: true }).click();
   for (const title of ['滚动示例通知 10', '滚动示例通知 19']) {
     const trigger = list.locator(`[data-message-open="scroll-message-${title.endsWith('10') ? '10' : '19'}"]`); await trigger.scrollIntoViewIfNeeded();
+    const position = () => list.evaluate(node => ({ top: node.scrollTop, height: node.scrollHeight, visible: node.clientHeight }));
     const order = await list.locator('[data-message-open]').evaluateAll(nodes => nodes.map(node => (node as HTMLElement).dataset.messageOpen));
-    const beforeTop = await top(list); await trigger.press('Enter');
-    await expect(trigger).toHaveCount(0); await detail.getByRole('button', { name: '标为未读', exact: true }).click();
+    const before = await position(), beforeTop = before.top; await trigger.press('Enter');
+    await expect(trigger).toHaveCount(0); const afterRead = await position();
+    await detail.getByRole('button', { name: '标为未读', exact: true }).click(); const afterUnread = await position();
     await page.keyboard.press('Escape'); await expect(trigger).toBeFocused();
     assert.deepEqual(await list.locator('[data-message-open]').evaluateAll(nodes => nodes.map(node => (node as HTMLElement).dataset.messageOpen)), order,
       'Returning an unread middle or last row restores the original source order');
-    assert(Math.abs(await top(list) - beforeTop) < 3);
+    const afterTop = await top(list);
+    t.diagnostic(JSON.stringify({ mailReturn: { title, before, afterRead, afterUnread, afterClose: await position(),
+      focusedId: await page.evaluate(() => document.activeElement?.getAttribute('data-message-open')),
+      savedPrivateTop: await page.evaluate(() => Object.entries(localStorage).filter(([key]) => key.startsWith('connet.hud.demo.v1:')).map(([, raw]) => JSON.parse(raw).state.mail.scrollTop.private)) } }));
+    assert(Math.abs(afterTop - beforeTop) < 3, `Unread return keeps the scroll position: ${JSON.stringify({ title, beforeTop, afterTop,
+      range: await list.evaluate(node => ({ height: node.scrollHeight, visible: node.clientHeight })) })}`);
   }
   await window.getByRole('button', { name: '待处理', exact: true }).click();
   const only = list.locator('[data-message-open]'); await expect(only).toHaveCount(1); await only.press('Enter');

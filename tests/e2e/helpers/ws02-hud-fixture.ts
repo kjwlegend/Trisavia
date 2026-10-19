@@ -99,7 +99,10 @@ export async function ws02Fixture(t: TestContext, options: {
     await expect(page.locator('#login-identifier')).toBeVisible();
     await page.locator('#login-identifier').fill(owner.username); await page.locator('#login-password').fill(owner.password);
     const submitted = page.waitForResponse(response => new URL(response.url()).pathname === '/v1/owner/sessions' && response.request().method() === 'POST');
-    await page.locator('#login-submit').click(); assert.equal((await submitted).status(), 200);
+    await expect(page.locator('#hud-window')).toHaveAttribute('data-panel-state', 'open');
+    const submit = (await page.locator('#login-submit').boundingBox())!, size = page.viewportSize()!;
+    assert(submit.y >= 0 && submit.y + submit.height <= size.height, 'The real login submit action is visible before a native pointer click');
+    await page.mouse.click(submit.x + submit.width / 2, submit.y + submit.height / 2); assert.equal((await submitted).status(), 200);
     await expect(page.locator('#manage-view')).toBeVisible(); await expect(page.locator('#account-root')).toHaveAttribute('aria-busy', 'false');
     const current = await page.evaluate(() => JSON.parse(sessionStorage.getItem('connet.owner.v2') || '{}')) as Json;
     track(current.sessionToken, current.recoveryToken); assert.equal(current.ownerId, owner.ownerId);
