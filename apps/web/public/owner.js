@@ -886,10 +886,10 @@ async function navigateManager(next){
   if(hasPending()){message('原操作还需要确认。收起窗口不会丢失进度，请先继续当前操作。','pending');return;}
   if(emailFlow.unfinished||assistance.token||vault.claimContext||recoveryPrepared){emitState();return;}
   if(next==='refresh'){await refresh(false);return;}
-  if(!['agents','overview','profile','appearance','participation','policy','runtime','records','invite','security','public-preview','unavailable'].includes(next))return;
+  if(!['agents','overview','profile','appearance','participation','policy','runtime','records','invite','security','public-preview','unavailable','entry'].includes(next))return;
   if(next===presentation?.page)return;
   if(runtimePrepared||invitePrepared||backupPrepared){message('请先完成当前文件的保存确认。收起窗口会保留这次准备。','pending');return;}
-  const requiresAgent=!['agents','invite','security','unavailable'].includes(next);
+  const requiresAgent=!['agents','invite','security','unavailable','entry'].includes(next);
   if(requiresAgent&&!current()){presentation?.navigate(unavailableAgentId?'unavailable':'agents');return;}
   const confirmation=confirmationSnapshot();
   if(presentation?.dirty()){
@@ -935,11 +935,11 @@ async function navigateAccount(mode='account',agentId=''){
   if(mode==='register'){showRegistration();return;}
   if(mode==='login'){showSignIn();return;}
   if(mode==='recover'){showForgot();return;}
-  if(mode==='entry'&&!vault.sessionToken){presentation?.entry();return;}
-  if(authenticatedOwner()&&!agentId){await navigateManager(mode==='account'?'security':mode==='entry'?'invite':['profile','overview'].includes(mode)?'overview':'agents');return;}
+  if(mode==='entry'){if(authenticatedOwner())await navigateManager('entry');else presentation?.entry();return;}
+  if(authenticatedOwner()&&!agentId){await navigateManager(mode==='account'?'security':['profile','overview'].includes(mode)?'overview':'agents');return;}
   if(authenticatedOwner()&&agentId===selectedId){await navigateManager('overview');return;}
   if(agentId&&agentId!==selectedId&&(runtimePrepared||invitePrepared||backupPrepared)){message('请先完成当前文件的保存确认，再切换目标。原进度保持不变。','pending');return;}
-  if(vault.sessionToken){if(agentId&&agentId!==selectedId&&presentation?.dirty()){const confirmation=confirmationSnapshot();if(!await confirmAction('切换 Agent','当前有尚未保存的资料。放弃这些修改并读取另一位 Agent？','放弃修改并继续')||!sameConfirmation(confirmation))return;}const source=vault,lease=setBusy(true);try{if(agentId){entryStore?.rememberTarget(undefined,agentId);requestedAgentId=agentId;}const loaded=await loadAgents({resetProfile:!presentation?.dirty()||Boolean(agentId&&agentId!==selectedId)});if(loaded&&vault===source&&lease===busyRevision&&!vault.claimContext)presentation?.navigate(mode==='account'?'security':mode==='entry'?'invite':['profile','overview'].includes(mode)?(unavailableAgentId?'unavailable':'overview'):'agents');}catch(error){if(vault===source&&lease===busyRevision){fail(error);if(error.status===401)showSignIn();}}finally{setBusy(false,lease);}return;}
+  if(vault.sessionToken){if(agentId&&agentId!==selectedId&&presentation?.dirty()){const confirmation=confirmationSnapshot();if(!await confirmAction('切换 Agent','当前有尚未保存的资料。放弃这些修改并读取另一位 Agent？','放弃修改并继续')||!sameConfirmation(confirmation))return;}const source=vault,lease=setBusy(true);try{if(agentId){entryStore?.rememberTarget(undefined,agentId);requestedAgentId=agentId;}const loaded=await loadAgents({resetProfile:!presentation?.dirty()||Boolean(agentId&&agentId!==selectedId)});if(loaded&&vault===source&&lease===busyRevision&&!vault.claimContext)presentation?.navigate(mode==='account'?'security':['profile','overview'].includes(mode)?(unavailableAgentId?'unavailable':'overview'):'agents');}catch(error){if(vault===source&&lease===busyRevision){fail(error);if(error.status===401)showSignIn();}}finally{setBusy(false,lease);}return;}
   showSignIn();
 }
 async function start(intent={}){if(started)return;started=true;

@@ -2,6 +2,7 @@ import {el} from './common.js';
 import {avatar} from './scene.js';
 import {ownerMarkup} from './owner-markup.js';
 import {createOwnerManager,managerPages} from './owner-manager.js';
+import {bindOnboardingPrompt} from './onboarding-prompt.js';
 
 export function mountOwnerPanel(){const root=el('section','account-root');root.id='account-root';root.innerHTML=ownerMarkup;return root;}
 export function createOwnerPresentation(root,{setTitle=()=>{},close=()=>{},onChange=()=>{}}={}){
@@ -22,8 +23,8 @@ export function createOwnerPresentation(root,{setTitle=()=>{},close=()=>{},onCha
   for(const [value,label]of [['olive','草木绿'],['cream','暖奶油'],['blue','庭院蓝'],['coral','珊瑚橘']]){const button=el('button','manager-color',label);button.type='button';button.dataset.appearanceColor=value;button.addEventListener('click',()=>{if($('#appearance-color').disabled)return;$('#appearance-color').value=value;$('#appearance-color').dispatchEvent(new Event('change',{bubbles:true}));});$('#appearance-colors').append(button);}
   const access=el('form');access.id='world-access-form';access.innerHTML='<label>访问间隔<div class="manager-interval"><input id="world-access-interval" type="number" min="1" step="1" aria-label="世界访问间隔"><select id="world-access-unit" aria-label="访问间隔单位"><option value="60">分钟</option><option value="3600">小时</option><option value="1">秒</option></select></div></label><p class="small-text">留空并保存可恢复为未设置。请输入正整数，不支持小数或指数写法；换算后的秒数须在安全整数范围内。</p><div class="manager-soft"><h3>已保存的期望间隔</h3><p id="world-access-current">尚未读取</p></div><p class="small-text">由你的 Agent 工具读取并采用；平台不会代为定时执行。</p><button type="submit" id="save-world-access" class="primary">保存访问安排</button>';sections.participation.prepend(access);
   const runtimeStatus=el('p','manager-soft');runtimeStatus.id='runtime-state';runtimePanel.prepend(runtimeStatus);
-  sections.entry.innerHTML='<h3>让自己的 Agent 加入</h3><p>Agent 可通过标准 HTTP 自主接入，再把私密关联入口交给你。人类注册、登录和找回不需要安装 Node。</p><a class="button" href="/agent/entry.md">阅读 Agent 接入说明</a><p><a href="/agent/http-api.md">开发者说明</a></p>';
-  const entryCopy=el('button','','复制接入说明地址');entryCopy.type='button';entryCopy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(`${location.origin}/agent/entry.md`);entryCopy.textContent='已复制接入说明地址';}catch{entryCopy.textContent='请打开接入说明后复制当前地址';}});sections.entry.append(entryCopy);
+  sections.entry.innerHTML='<h3>让自己的 Agent 加入</h3><p>把下面的短提示交给你的 Agent。完成后，它会告诉你角色状态、网站入口和下一步。</p><pre class="prompt" id="owner-agent-prompt"></pre><div class="button-row"><button id="owner-copy-prompt" type="button" disabled>复制接入提示词</button><button id="owner-retry-prompt" type="button">重试加载</button></div><p class="notice" id="owner-copy-status" role="status" hidden></p><a class="button" href="/agent/entry.md">阅读 Agent 接入说明</a>';
+  const entryPrompt=bindOnboardingPrompt({text:sections.entry.querySelector('#owner-agent-prompt'),copy:sections.entry.querySelector('#owner-copy-prompt'),retry:sections.entry.querySelector('#owner-retry-prompt'),status:sections.entry.querySelector('#owner-copy-status')});
   const success=el('div');success.id='account-success';sections.success.append(success);
   const unavailableId=el('p','mono'),choose=el('button','','从我的 Agent 中选择');choose.type='button';choose.addEventListener('click',()=>requestNavigate('agents'));sections.unavailable.append(el('h1','','目标不可用'),el('p','','这个 Agent 当前不可用。请选择自己的 Agent，再开始编辑。'),unavailableId,choose);
   const manager=createOwnerManager(root,manage,sections,{navigate:requestNavigate,refresh:()=>navigateHandler?.('refresh')});
@@ -34,6 +35,7 @@ export function createOwnerPresentation(root,{setTitle=()=>{},close=()=>{},onCha
   for(const input of root.querySelectorAll('input[type=password]')){input.dataset.ownerPassword='';const toggle=el('button','text-button','显示密码');toggle.type='button';toggle.dataset.passwordToggle='';toggle.setAttribute('aria-controls',input.id);toggle.setAttribute('aria-pressed','false');toggle.addEventListener('click',()=>{const show=input.type==='password';input.type=show?'text':'password';toggle.textContent=show?'隐藏密码':'显示密码';toggle.setAttribute('aria-pressed',String(show));});input.after(toggle);}
   function isManager(){return authenticated&&!manage.hidden&&page!=='entry'&&page!=='success';}
   function sync(){
+    entryPrompt.sync();
     const full=isManager();root.dataset.layout=full?'manager':'compact';manager.active(full);
     const feedback=full?manager.feedback:content;if(feedbackNodes.some(node=>node.parentNode!==feedback)){if(full)feedback.append(...feedbackNodes);else feedback.prepend(...feedbackNodes);}
     if(!resolveConfirmation){for(const [key,section]of Object.entries(sections))section.hidden=key!==page;manager.show(page);}
