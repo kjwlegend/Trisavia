@@ -1,6 +1,7 @@
 /* Shared HUD tokens use CSS pixels; map art remains in the scene renderer. */
 .world-home{--hud-surface:#FAF8ED;--hud-text:#244C56;--hud-muted:#5C7373;--hud-border:#789387;--hud-line:#D9E0D2;--hud-hover:#EEF2E7;--hud-pressed:#DCE8DD;--hud-selected:#D7EAE0;--hud-accent:#397E80;--hud-focus:#2A7379}
-.hud-root{position:absolute;inset:0;z-index:5;pointer-events:none;color:var(--hud-text);font-size:14px;line-height:20px}
+/* Replacing overlay content must not move the document's scroll anchor. */
+.hud-root{position:absolute;inset:0;z-index:5;pointer-events:none;color:var(--hud-text);font-size:14px;line-height:20px;overflow-anchor:none}
 .hud-root button,.hud-root input,.hud-root select,.hud-account,.hud-entry,.hud-account-menu{font-size:14px;font-weight:400;color:var(--hud-text);line-height:20px}
 .hud-root button,.hud-account,.hud-entry{min-height:44px;background:var(--hud-surface);border:1px solid var(--hud-line);border-radius:6px;padding:8px 12px}
 .hud-root button:hover:not(:disabled),.hud-account:hover,.hud-entry:hover{background:var(--hud-hover);border-color:var(--hud-border)}
