@@ -119,3 +119,23 @@ test('administrative edits and guide publication roll back source history, curre
   assert.throws(() => f.storage(store => updatePerceptionDemoObject(store, { ...edit, body: 'A different payload must not replace the committed operation.' })), { code: 'operation_id_conflict' });
   assert.throws(() => f.storage(store => publishPerceptionGuide(store, { ...guide, operationId: randomUUID(), revision: 'stale-guide-3', guideVersion: 3 })), { code: 'version_conflict' });
 });
+
+test('a historical catalog revision cannot be reused with a new guide while its original operation still replays precisely', async t => {
+  const f = await fixture(t), initial = await f.read('GET', '/discovery?limit=50');
+  const version = initial.modules.find((row: Json) => row.moduleId === 'world').usageGuide.version;
+  const a = { operationId: randomUUID(), actorId: 'isolated-administrator', expectedCatalogRevision: initial.catalogRevision,
+    revision: 'immutable-revision-a', guideVersion: version + 1, guideText: 'Publication A.' };
+  const receiptA = f.storage(store => publishPerceptionGuide(store, a));
+  const b = { ...a, operationId: randomUUID(), expectedCatalogRevision: a.revision,
+    revision: 'immutable-revision-b', guideVersion: version + 2, guideText: 'Publication B.' };
+  f.storage(store => publishPerceptionGuide(store, b));
+  const snapshot = () => f.storage(store => store.read(tx => createHash('sha256').update(JSON.stringify({
+    catalog: tx.find('perception_catalog'), access: tx.find('perception_access'),
+  })).digest('hex')));
+  const before = snapshot();
+  assert.throws(() => f.storage(store => publishPerceptionGuide(store, { ...a, operationId: randomUUID(),
+    expectedCatalogRevision: b.revision, guideVersion: version + 3, guideText: 'Silently replacing the old revision A is forbidden.' })), { code: 'version_conflict' });
+  assert.equal(snapshot(), before, 'Rejected historical revision reuse cannot leave a guide, catalog, receipt or administrative fact');
+  assert.deepEqual(f.storage(store => publishPerceptionGuide(store, a)), receiptA, 'The original operation receipt remains a historical result before the newer catalog CAS');
+  assert.equal((await f.read('GET', '/discovery?limit=50')).catalogRevision, b.revision);
+});
