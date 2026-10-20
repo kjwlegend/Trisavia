@@ -246,3 +246,21 @@ stopped全库80表278行；显式关写门后从固定e93启动，closed-before�
 R29同时接受A`d7554e2 → 4e73c391d493fafebf0e9e4c609cf6509685b9d6`九路径读取修补，无新增实质问题；作者64/64含7新反例、full typecheck／diff0，原wallet-mail测试98行的pg并发弃用warning单列保留。TD核9固定文件／4日志hash，无冲突整合为`473e7ed2b5249396ebdc37361fc6553c2f002564`，后端／脚本／WS02测试与A固定内容一致。该后继仍在隔离组合检查，未在18893执行helper／发布；视觉e93仍保留原reader未开放，不能记空态通过。下一次维护等待原UI／Agent新安全点并再做fresh备份，不回灌本次dump。
 
 TD后继在准确473e7ed完成68/68、fail／cancel／skip0：WS02相关64及N1／N2真实HTTP4同次组合，full typecheck与diff0。仍使用明确私有runtime支持的隔离fixture／18894，没有访问正在独立验收的18893或connet；原wallet-mail测试98行warning保留。证据归`outputs/world-core/integration-473e7ed/`。待发布固定源码归档已准备于`outputs/world-core/readers-473e7ed/source`，archive SHA256 `19fb7ac374aa9fa743fa61dc9715e2936f06c1871da6b55c7e205b081ff82584`，依赖独立复制，前端与已发e93相同。尚未执行候选helper或第二次维护，等待总指挥安全点。
+
+### 6.12 已审源码合入main，读取修补待安全点
+
+在运行e93保持不动期间，TD按既有授权将main从`676c38a287d1c17a50c28ea9b59dbd9dcc610931`以ff-only推进到`c0752f1416a557463ae528d29a5a32ec3e2c2ece`（473e7ed代码及TD交付记录）。132个目标变更路径与原7193个修改／未跟踪路径无重叠。操作前私有保全原staged／unstaged补丁及文件指纹；操作后7193路径的字节hash、模式、缺失／symlink状态完全一致，原staged patch保持。证据在`outputs/world-core/main-integration-c0752f1/receipt.json`，私有保护文件同目录，不bulk stage、不回收原设计或其他WS文档。服务独立冻结源不随main变化，不因main已含修补而冒称目录已恢复。
+
+### 6.13 真实移动后fresh保全与读取修补实际发布
+
+总指挥正式交还两个安全点：原A于03:22:06.353完成20/20步、位置(15,6)／Avatar v22，四次HTTP全200且无未决动作，已停止；原UI约03:31完成像素、真实中途／终点、姓名／高亮、A/B切换、摘要布局及文案、缩放／窗口／减少动态的既定定点，交还同Owner／当前A、全景108%／日间／减少动态关闭、无内容窗及待提交。该回执用于维护安排；正式报告归原验收者，不由TD扩大为手机／容量或未测路径通过。总指挥明确不等离线报告整理即可维护。
+
+473e7ed归档已逐文件验证484文件与固定Git一致。TD再核PID25983及e93固定cwd，读取公开快照确认A(15,6)v22、worldRevision28，fresh live备份配对identity／配置；正常停服排空、确认18893无监听后另存stopped dump。两份逻辑备份均核清单，未作本次恢复演练。stopped为423903字节，SHA256 `e8e9ff25c11322e12915276b719281db2d992bf7624f0a7f0859ccc30c7e5cba`，保留在`outputs/world-core/readers-473e7ed/maintenance-private/`，不复用移动前dump。
+
+维护无运行应用时，显式处理写门并从固定473调用受审`ws02-implemented-readers.ts`，目标为原instance／epoch、预期catalog-1，actor为`td-reader-maintenance-20261021`、operationId为`reader-availability-20261021-01`。该次明确提交成功后立即关门；回执位于私有reader-publication-receipt.json，普通脱敏结果为reader-publication-stdout.json。catalog-1→**catalog-readers-1-schema-4**、Skill revision→**skills-catalog-readers-1-schema-4**、guide1→2，schema4不变。holdings／demo-items／direct-mail／demo-announcements／demo-events／platform-publications六来源从not_enabled变enabled；direct-messages原enabled及其他来源保持，未启用demo-places。只新增一个具名query-only声明，objects=[]且四对象层权限false，不新增通知内容或逐对象观察权。
+
+stopped→after-readers为80表403→414行。七个核定表变化：access_facts 2→3、catalog_current 1→1、catalog_releases 1→2、documents 48→55、observation_policies 0→1、source_states 11→11、administrative_receipts 0→1；其他73表语义指纹保持，instance_state仅机械开关／generation另列排除。旧48份精确文档、旧release及原两条access fact的全行hash保持，源状态逐行核对只有六来源改变；Owner／Agent身份、凭据／绑定／会话、正文／grant／确认、钱包及World／Interaction／Decision全部业务表未改。没有seed、迁移、身份重建或补余额。
+
+固定473闭门启动后，after-readers与after-start的80表414行全列指纹完全一致；identity文件SHA256、instance／epoch保持。29匿名GET均200／no-store，首页和owner字节匹配冻结index，实时capabilities已显示新catalog；两Avatar完整公开内容、A终点／v22、worldRevision28与维护前一致。21份旧World精确文档的document／digest保持。此处不借Owner凭据验证其私有列表；原人类与原Agent的reader定点由总指挥另派。
+
+北京时间2026-10-21 **03:34:24.230**重新开门并health ready，维护**100.67秒**。实际源码 **`473e7ed2b5249396ebdc37361fc6553c2f002564`**、PID **33604**、执行会话 **92595**、固定cwd **`/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/world-core/readers-473e7ed/source`**；入口仍**http://127.0.0.1:18893/**。原8789／connet及公网未动。当前恢复须保留473兼容源码、当前PG／identity与所有后续写入；不得覆盖回本次或更早dump，不将旧e93的catalog代码作为未评估回退。总指挥已收到实际版本、来源目录变化及连续性，原UI／Agent读取复验尚待其正式结果，不扩做整轮视觉或全量。
