@@ -1,3 +1,4 @@
+import {authenticateCredential} from '../domains/access/authentication.ts';
 import { mapAsync } from '../domains/common/async-collections.ts';
 import { requireRow as required, patchRow as update } from '../domains/common/repository.ts';
 import { profileRepository } from '../domains/profile/repository.ts';
@@ -104,38 +105,9 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         return row;
     }
     async function authenticate(tx: M1ReadSession, raw: unknown, kinds: readonly string[]): Promise<CredentialRow> {
-        const parsed = parseToken(raw);
-        const credential = await credentialRepository(tx).get<Credential>(parsed.id);
-        if (!credential || !equalDigest(credential.data.verifier, verifier(typeof credential.data.verifierKind === "string" ? credential.data.verifierKind : credential.data.kind, parsed)) || !credential.data.active) {
-            fail("authentication_failed", 401, "Authentication failed");
-        }
-        if (credential.data.epoch !== store.recoveryEpoch)
-            fail("restore_access_unsupported", 403, "Identity is retained; access cannot be restored from old credentials");
-        if (credential.data.expiresAt !== null && credential.data.expiresAt <= now())
-            fail("authentication_failed", 401, "Authentication failed");
-        if (!kinds.includes(credential.data.kind))
-            fail("insufficient_scope", 403, "Credential does not permit this action");
-        if (["owner_session", "owner_recovery", "invite"].includes(credential.data.kind)) {
-            const owner = await humanAccountRepository(tx).get(credential.data.ownerId ?? "");
-            if (!owner || owner.data.status !== "active" || owner.data.epoch !== store.recoveryEpoch || owner.data.authVersion !== credential.data.ownerAuthVersion) {
-                fail("authentication_failed", 401, "Authentication failed");
-            }
-        }
-        if (credential.data.kind === "runtime") {
-            const agent = await agentRepository(tx).get(credential.data.agentId ?? "");
-            if (!agent || agent.data.runtimeVersion !== credential.data.runtimeVersion)
-                fail("authentication_failed", 401, "Authentication failed");
-        }
-        if (["bootstrap", "handoff", "setup"].includes(credential.data.kind)) {
-            const owner = await humanAccountRepository(tx).get(credential.data.ownerId ?? "");
-            if (!owner || owner.data.status !== "pending_setup")
-                fail("authentication_failed", 401, "Authentication failed");
-            if (credential.data.kind !== "bootstrap" && owner.data.handoffGeneration !== credential.data.handoffGeneration) {
-                fail("authentication_failed", 401, "Authentication failed");
-            }
-        }
-        return credential;
+        return await authenticateCredential(tx, raw, kinds, { recoveryEpoch: store.recoveryEpoch, now });
     }
+
     async function revokeCredentials(tx: M1Transaction, subject: {ownerId:string}|{agentId:string}, kinds: readonly string[]): Promise<void> {
         for (const row of ('ownerId' in subject ? await credentialRepository(tx).findByOwnerId(subject.ownerId) : await credentialRepository(tx).findByAgentId(subject.agentId))) {
             if (kinds.includes(scalarString(row, "kind")) && row.data.active)
