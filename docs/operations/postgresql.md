@@ -31,6 +31,12 @@ node scripts/postgresql/database.ts /absolute/private/new-directory/runtime.json
 
 该命令只创建新目标库，已有名字明确失败，不自动删除或重用；连接秘密只写私有文件。正式转换必须使用TD冻结的schema6一致副本与配对identity，先复制到独立0700目录，原源只读。转换调用storage作者的正式分域migration／codec，不建永久原始JSON镜像；23张源表逐行可追溯，未知表／kind／字段、版本／digest或身份差异均阻断。每次演练使用新目标；失败目标隔离保留，不发布半成品。
 
+正式storage迁移之后、用应用凭据启动之前，必须显式运行最小授权步骤。`connet_app`仅取得14个已定schema的USAGE和业务／子表DML；`platform.module_migrations`、`legacy_schema_migrations`只读，`instance_state`只读并仅允许更新`write_generation`以取得守卫锁。应用无DDL、不可开写门或修改实例／recoveryEpoch。正式目标`connet`需维护者显式加`--cutover`，不是浏览器或运行用户的权限。
+
+```sh
+node scripts/postgresql/permissions.ts /absolute/private/new-directory/runtime.json connet_rehearsal_001
+```
+
 备份需包含角色、配置、basebackup＋连续WAL与配对identity，逻辑dump只作补充；恢复必须在新隔离目标实际演练并对账。具体转换及备份命令随同批已固定codec接缝补齐，不能把当前编排就绪当转换或恢复已完成。
 
 最终切换前重新取得当时一致备份与cutoff，停止并排空所有SQLite写者；沿用实例及业务recoveryEpoch，不借迁库换凭据。PG首次接收任何新持久写（包括读取会话／访问事实）前，可在写门关闭、原库仍是最终cutoff且源码兼容时恢复SQLite；之后须保全PG全部已提交写入并在PG侧修复，不回灌旧库或直接切旧SQLite。无已验证反向转换就不承诺迁回SQLite。
