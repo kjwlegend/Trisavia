@@ -28,7 +28,7 @@ function createContext(scope:PostgresScope,options:OpenRuntimeStoreOptions):Runt
   tasks:scope.write?core.tasks:Object.freeze({get:core.tasks.get,list:core.tasks.list,currentGeneration:core.tasks.currentGeneration}),
   outbox:scope.write?core.outbox:Object.freeze({get:core.outbox.get,list:core.outbox.list}),
  };
- const context=Object.freeze(scope.write?{...base,async attempt<T>(work:(context:RuntimeTransaction)=>Promise<T>):Promise<T>{sql.writable();invalidatePostgresSession(legacy);try{return await scope.attempt(()=>work(context as RuntimeTransaction));}finally{invalidatePostgresSession(legacy);}}}:base) as RuntimeTransaction;
+ const context=Object.freeze(scope.write?{...base,validateBeforeCommit(check:(ctx:RuntimeTransaction)=>Promise<void>){sql.writable();if(typeof check!=='function')throw new StorageError('invalid_usage','A commit validator is required');scope.beforeCommit(()=>check(context));},async attempt<T>(work:(context:RuntimeTransaction)=>Promise<T>):Promise<T>{sql.writable();invalidatePostgresSession(legacy);try{return await scope.attempt(()=>work(context as RuntimeTransaction));}finally{invalidatePostgresSession(legacy);}}}:base) as RuntimeTransaction;
  identities.set(context,{scope,session:Object.freeze({get:legacy.get,find:legacy.find,scan:legacy.scan,count:legacy.count,quotaCount:legacy.quotaCount})});
  return context;
 }

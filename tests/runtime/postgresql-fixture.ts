@@ -17,10 +17,10 @@ export async function worldFixture(){
  const config=await readRuntime(runtimeFile),directory=await mkdtemp(join(tmpdir(),'world-core-b-')),database='world_core_b_'+randomBytes(10).toString('hex');
  const identity={instanceId:'instance_'+randomUUID(),recoveryEpoch:'epoch_'+randomUUID()};let connections:string|undefined;
  const stores=new Set<{close():Promise<void>}>();let clock=1740000000000;
- const dispose=async()=>{for(const store of stores)await store.close();stores.clear();if(connections)await dropWorldTestDatabase(config,connections);await rm(directory,{recursive:true,force:true});};
+ const dispose=async()=>{for(const store of stores)await store.close();stores.clear();if(connections){await dropWorldTestDatabase(config,connections);console.info(JSON.stringify({resource:'world_core_test_database',database,creator:'b',closed:true,dropped:true}));}await rm(directory,{recursive:true,force:true});};
  try{
   connections=(await createWorldDatabase(config,database,join(directory,'connections'))).privateConnections;
-  const prepared=await prepareWorldCoreDatabase(config,connections,identity);
+  const prepared=await prepareWorldCoreDatabase(config,connections,identity);console.info(JSON.stringify({resource:'world_core_test_database',database,creator:'b',...identity,schemaSignature:prepared.schemaSignature,created:true}));
   const migrationOptions={connectionString:(await requirePrivateFile(join(connections,'migration-database-url'))).trim(),...identity};
   const options={...migrationOptions,connectionString:(await requirePrivateFile(join(connections,'application-database-url'))).trim(),now:()=>clock};
   const runtime=await openRuntimeStore(options);stores.add(runtime);const legacy=await openPostgresStore(options);stores.add(legacy);

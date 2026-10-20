@@ -26,3 +26,28 @@ test('same-context savepoint rollback saves business rejection without partial e
  await f.legacy.transaction(async tx=>{const credential=(await tx.find('credentials',{agentId:agent.agentId,kind:'runtime'}))[0]!;await tx.update('credentials',{...credential,version:credential.version+1,data:{...credential.data,active:false}},credential.version);});
  await assert.rejects(f.runtime.transaction(ctx=>commitRuntimeCommandIn(ctx,options)),code('authentication_failed'));
 });
+test('movement plan path/qualification are frozen, one active plan is unique, progress CAS is durable',async t=>{
+ const f=await worldFixture();t.after(f.dispose);await initialize(f);const agent=await f.register();
+ const plan=await f.runtime.transaction(async ctx=>{const repo=ctx.repository(WORLD_REPOSITORY);await repo.saveAvatar({id:'avatar',worldId:'default',agentId:agent.agentId,version:1,status:'idle',position:{x:0,y:0},placeId:'commons',rulesetVersion:1,createdAt:ctx.now(),updatedAt:ctx.now()},null);const value={id:'movement',worldId:'default',agentId:agent.agentId,avatarId:'avatar',version:1,state:'pending' as const,origin:{x:0,y:0},path:[{x:1,y:0},{x:2,y:0}],nextStep:0,expectedAvatarVersion:1,rulesetVersion:1,topologyVersion:1,policyVersion:1,stepIntervalMs:1000,createdAt:ctx.now(),updatedAt:ctx.now(),nextDueAt:ctx.now()+1000,completedAt:null,stoppedCode:null,commandId:'move',recoveryEpoch:ctx.recoveryEpoch,qualification:{runtimeVersion:1,ownerPauseVersion:1,platformVersion:1,sharingGeneration:1}};await repo.saveMovement(value,null);return value;});
+ assert.deepEqual(await f.runtime.read(ctx=>ctx.repository(WORLD_REPOSITORY).getMovement(plan.id)),plan);
+ await assert.rejects(f.runtime.transaction(ctx=>ctx.repository(WORLD_REPOSITORY).saveMovement({...plan,id:'duplicate'},null)),code('constraint'));
+ await assert.rejects(f.runtime.transaction(ctx=>ctx.repository(WORLD_REPOSITORY).saveMovement({...plan,version:2,path:[{x:9,y:9}]},1)),code('invalid_usage'));
+ await assert.rejects(f.runtime.transaction(ctx=>ctx.repository(WORLD_REPOSITORY).saveMovement({...plan,version:2,qualification:{...plan.qualification,sharingGeneration:2}},1)),code('constraint'));
+ f.tick(1000);await f.runtime.transaction(async ctx=>{const repo=ctx.repository(WORLD_REPOSITORY),avatar=(await repo.getAvatar('default',agent.agentId))!;await repo.saveAvatar({...avatar,version:2,position:{x:1,y:0},updatedAt:ctx.now()},1);await repo.saveMovement({...plan,version:2,state:'running',nextStep:1,expectedAvatarVersion:2,updatedAt:ctx.now(),nextDueAt:ctx.now()+1000},1);});
+ assert.equal((await f.runtime.read(ctx=>ctx.repository(WORLD_REPOSITORY).getActiveMovement('default',agent.agentId)))?.nextStep,1);
+ await assert.rejects(f.runtime.transaction(ctx=>ctx.repository(WORLD_REPOSITORY).saveMovement({...plan,version:2},1)),code('version_conflict'));
+});
+test('final commit validators refresh the injected clock and rolled-back child validators do not escape',async t=>{
+ const f=await worldFixture();t.after(f.dispose);await initialize(f);const agent=await f.register();
+ await f.legacy.transaction(async tx=>{const credential=(await tx.find('credentials',{agentId:agent.agentId,kind:'runtime'}))[0]!;await tx.update('credentials',{...credential,version:credential.version+1,data:{...credential.data,expiresAt:f.now()+5}},credential.version);});
+ await assert.rejects(f.runtime.transaction(async ctx=>{await f.access.authenticate(ctx,agent.runtimeToken,['runtime']);ctx.validateBeforeCommit(async current=>{await f.access.authenticate(current,agent.runtimeToken,['runtime']);});await ctx.repository(WORLD_REPOSITORY).advanceRevision('default',1);f.tick(6);}),code('authentication_failed'));
+ assert.equal((await f.runtime.read(ctx=>ctx.repository(WORLD_REPOSITORY).getWorld('default')))?.revision,1);
+ await f.runtime.transaction(async ctx=>{await assert.rejects(ctx.attempt(async current=>{current.validateBeforeCommit(async()=>{throw new Error('discarded child validator');});throw new Error('child rejected');}),/child rejected/);await ctx.repository(WORLD_REPOSITORY).advanceRevision('default',1);});
+ assert.equal((await f.runtime.read(ctx=>ctx.repository(WORLD_REPOSITORY).getWorld('default')))?.revision,2);
+});
+test('M1 revocation and runtime authorization serialize on the same instance guard across two pools',async t=>{
+ const f=await worldFixture();t.after(f.dispose);await initialize(f);const agent=await f.register();let release!:()=>void,entered!:()=>void;
+ const ready=new Promise<void>(resolve=>{entered=resolve;}),hold=new Promise<void>(resolve=>{release=resolve;});
+ const revoke=f.legacy.transaction(async tx=>{const row=(await tx.find('credentials',{agentId:agent.agentId,kind:'runtime'}))[0]!;await tx.update('credentials',{...row,version:row.version+1,data:{...row.data,active:false}},row.version);entered();await hold;});await ready;
+ const authorization=assert.rejects(f.runtime.read(async ctx=>{await f.access.authenticate(ctx,agent.runtimeToken,['runtime']);}),code('authentication_failed'));release();await revoke;await authorization;
+});

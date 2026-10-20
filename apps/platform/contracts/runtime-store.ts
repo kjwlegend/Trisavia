@@ -58,6 +58,7 @@ export interface RuntimeTaskRepository extends RuntimeTaskReader {
   claimDue(input: LeaseClaim & { kinds?: string[] }): Promise<RuntimeTask[]>;
   assertLease(lease: WorkLease, now: number): Promise<RuntimeTask>;
   complete(lease: WorkLease, now: number): Promise<void>;
+  /** dueAt is retry availability; it does not replace the original domain deadline. */
   retry(lease: WorkLease, input: { now: number; dueAt: number; errorCode: string }): Promise<void>;
   cancel(taskId: string, expectedVersion: number, now: number): Promise<boolean>;
 }
@@ -80,6 +81,7 @@ export interface OutboxRepository extends OutboxReader {
   assertLease(lease: WorkLease, now: number): Promise<OutboxEntry>;
   /** Delivery completion is neither an Agent content confirmation nor business acceptance. */
   complete(lease: WorkLease, now: number): Promise<void>;
+  /** dueAt is retry availability; it does not replace the original domain deadline. */
   retry(lease: WorkLease, input: { now: number; dueAt: number; errorCode: string }): Promise<void>;
   cancel(outboxId: string, expectedVersion: number, now: number): Promise<boolean>;
 }
@@ -102,6 +104,8 @@ export interface RuntimeReadContext {
   readonly tasks: RuntimeTaskReader; readonly outbox: OutboxReader;
 }
 export interface RuntimeTransaction extends RuntimeReadContext {
+  /** Fresh validation just before commit; rolled-back attempts discard their checks. */
+  validateBeforeCommit(check: (context: RuntimeTransaction) => Promise<void>): void;
   /** Same context/client; an error rolls back all work in this attempt. No external effects. */
   attempt<T>(work: (context: RuntimeTransaction) => Promise<T>): Promise<T>;
   repository<R, W extends R>(port: RuntimeRepositoryPort<R, W>): W;
