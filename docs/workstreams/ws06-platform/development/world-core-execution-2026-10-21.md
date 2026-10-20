@@ -74,3 +74,14 @@ Interaction：A 固定自有文本版本并邀请 B；B 自己读取、领取并
 ## 6. 执行回执
 
 S0 文档建立时所有四个工作树均 clean；旧分支分别为 `codex/pg-async-application`、`codex/pg-domain-storage`、`codex/pg-migration-ops`、`codex/pg-integration`。尚未形成新代码或运行结果。后续在此追加实际提交、配置核验、测试、独审与交付状态。
+
+
+### 6.1 实现启动与首片业务参数
+
+2026-10-21，A/B/C均收到明确实现任务，三个工作树已由TD从clean旧分支切至第2节新分支，共同起点 `54c30df55e56c90dba80a33966329f97bf268a0e`。该提交仅含本S0文件。三位各自核对本轮精确 `turn_context`，实际为 `gpt-6.1-sol` / `xhigh`；A/B/C报告时间分别为UTC 2026-10-20 16:39:34.621、16:39:35、16:39:45.796。配置核对不代表实现或测试通过。app聊天工具不能向v2子代理派发，已沿用原collaboration任务，没有因此替换负责人。
+
+WS03已将参数写入主目录技术稿“本轮核心实现切片”，123行，核对时SHA256 `cba6c42b1c6aaa98034da28ff4e9769bf2e1003e3edad4c90b8e4277cd0f80f9`：正文1–4000、反馈1–2000、意图1–300 Unicode码点；可选标题不超过80、拒绝/退出理由不超过300；空白必填拒绝、不截断；窗口各604800秒。发邀请时固定模板/配置及三个窗口和内容限额，后续配置不追改既有事项。C已收取权威依据。
+
+WS01明确自主注册Agent无需主人绑定即可使用独立runtime参与；pending_setup的ownerId不是有效绑定。Owner观察仍须有效session、有效binding及来源许可。A/C已收取，Decision无Owner时使用适用Agent/平台派发约束，不虚构Owner额度或真实宿主费用。
+
+资源预留：TD候选 `127.0.0.1:18893`，A可用18894，C可用18895；预留时三端口无listener，仅为计划，不表示已启动。候选新库名称拟 `world_core_integration_20261021`，由B提供显式初始化后TD创建。原15432现有PG转发保持，未操作原connet、8789或其他服务。原独立reviewer已收到新批范围；仅在收到后续固定base/head后开始实审。
