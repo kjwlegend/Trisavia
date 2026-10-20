@@ -5,7 +5,7 @@ import {
   M1_TABLES, StorageError,
   type ExactFilters, type JsonObject, type M1ReadSession, type M1Store,
   type M1Table, type M1Transaction, type OpenM1StoreOptions, type StoredRow,
-} from '../../contracts/store.ts';
+} from '../../contracts/legacy-store.ts';
 
 const tableNames: ReadonlySet<string> = new Set(M1_TABLES);
 
