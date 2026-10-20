@@ -971,7 +971,7 @@ async function readPerception(operation,input={}, {signal}={}){
   }else if(operation==='list'||operation==='detail'){
     const channel=input.channel,category=input.categoryId;
     if(!['world','inventory','inbox'].includes(channel))throw new ApiError('invalid_request',422);
-    if(operation==='list'&&!(channel==='world'?['items','announcements','events'].includes(category):channel==='inventory'?category==='holdings':category==='notifications'))throw new ApiError('invalid_request',422);
+    if(operation==='list'&&!(channel==='world'?['items','announcements','events'].includes(category):channel==='inventory'?category==='holdings':['messages','notifications'].includes(category)))throw new ApiError('invalid_request',422);
     if(channel!=='world'&&(!target||!agents.some(agent=>agent.agentId===target)))throw new ApiError('agent_required',409);
     body={protocolVersion:1,consumerId:'connet.owner.hud.v1',purpose:'human-inspect',channel,...(channel!=='world'?{agentRef:{moduleId:'profiles',type:'profiles.agent@1',id:target}}:{})};
     if(operation==='list')Object.assign(body,{categoryId:category,limit:20,...(typeof input.pageToken==='string'?{pageToken:input.pageToken}:{})});
@@ -984,7 +984,16 @@ async function readPerception(operation,input={}, {signal}={}){
   try{const result=await api(path,{method,body,token:session,signal});if(!current())throw new DOMException('Context changed','AbortError');return result;}
   catch(error){if(current()&&error.status===401)expireAuthenticatedSession(source,session,generation);throw error;}
 }
-return{start,open,select:selectAgent,refresh:refreshSummary,readPerception,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
+async function readWallet({signal}={}){
+  const source=vault,session=vault.sessionToken,generation=readGeneration,target=selectedId,revision=summary().observationRevision;
+  const current=()=>source===vault&&session===vault.sessionToken&&target===selectedId&&revision===summary().observationRevision&&authenticatedOwner();
+  if(!current())throw new ApiError(sessionPhase==='expired'?'session_expired':'authentication_required',401);
+  if(!target||!agents.some(agent=>agent.agentId===target))throw new ApiError('agent_required',409);
+  const body={protocolVersion:1,consumerId:'connet.owner.hud.v1',purpose:'human-inspect',agentRef:{moduleId:'profiles',type:'profiles.agent@1',id:target}};
+  try{const result=await api('/wallet/query',{method:'POST',body,token:session,signal});if(!current())throw new DOMException('Context changed','AbortError');return result;}
+  catch(error){if(current()&&error.status===401)expireAuthenticatedSession(source,session,generation);throw error;}
+}
+return{start,open,select:selectAgent,refresh:refreshSummary,readPerception,readWallet,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
   hudContext(){if(authenticatedOwner()&&['ready','refreshing'].includes(summary().phase))return{kind:'owner',ownerId:account.ownerId,agentId:agents.some(agent=>agent.agentId===selectedId)?selectedId:''};return sessionPhase==='anonymous'&&!vault.sessionToken?{kind:'guest',ownerId:'',agentId:''}:null;},
   attachPresentation(value){presentation=value;value.setNavigator(navigateManager);},
   notifyPresentation:controls,

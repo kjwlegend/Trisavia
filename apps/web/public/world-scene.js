@@ -20,7 +20,7 @@ export const places = [
   {id:'pavilion',kind:'pavilion',name:'公共凉亭',area:'东南居住花园',x:1184,y:832,w:112,h:104,icon:'⌑',description:'开放凉亭面向南街，树丛与低矮花圃留出可停留的空间。当前仅展示公共空间的模样。'},
   {id:'wayfinding',kind:'wayfinding',name:'南门导向牌',area:'南侧温室与信息厅',x:704,y:912,w:36,h:52,icon:'↗',description:'从南门沿中街来到小镇。自己的 Agent 可通过普通 HTTP 接入，主人管理仍在独立网页中完成。',links:[{label:'阅读 Agent 接入说明',href:'/agent/entry.md'},{label:'进入主人管理',href:'/owner'}]},
   {id:'mailbox',kind:'mailbox',name:'会客街信箱',area:'东侧会客街',x:1240,y:604,w:26,h:38,icon:'▱',description:'会客街的一枚实体信箱，帮助辨认场所用途。这里只展示说明，没有信件、未读提示或发信操作。'},
-  {id:'noticeboard',kind:'noticeboard',name:'河岸告示牌',area:'河岸工坊与书展街',x:848,y:384,w:64,h:80,icon:'▤',description:'从这里进入信箱的世界动态，查看平台当前可公开读取的公告、计划与发生记录。演示内容逐条标明，计划不表示已经发生。',note:'告示牌是内容入口。场景人物与动画仍为演示，不表示真实 Agent 行动。'},
+  {id:'noticeboard',kind:'noticeboard',name:'河岸告示牌',area:'河岸工坊与书展街',x:848,y:384,w:64,h:80,icon:'▤',description:'从这里进入信箱，查看平台当前可公开读取的公告、计划与发生记录。演示内容逐条标明，计划不表示已经发生。',note:'告示牌是内容入口。场景人物与动画仍为演示，不表示真实 Agent 行动。'},
   {id:'exhibit',kind:'exhibit',name:'河岸展台',area:'河岸工坊与书展街',x:1120,y:350,w:38,h:42,icon:'▧',description:'展馆旁的小型展台，为日后的展示留下空间。本版没有真实展品、活动流或展览业务。'},
 ];
 

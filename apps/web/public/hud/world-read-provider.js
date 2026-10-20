@@ -1,5 +1,5 @@
 // One manual HUD read at a time per surface. No timers, credentials or reader-state writes.
-export const WORLD_VIEWS={holdings:{channel:'inventory',categoryId:'holdings'},items:{channel:'world',categoryId:'items'},notifications:{channel:'inbox',categoryId:'notifications'},announcements:{channel:'world',categoryId:'announcements'},events:{channel:'world',categoryId:'events'}};
+export const WORLD_VIEWS={holdings:{channel:'inventory',categoryId:'holdings'},items:{channel:'world',categoryId:'items'},messages:{channel:'inbox',categoryId:'messages'},notifications:{channel:'inbox',categoryId:'notifications'},announcements:{channel:'world',categoryId:'announcements'},events:{channel:'world',categoryId:'events'}};
 const clone=value=>structuredClone(value),refKey=ref=>JSON.stringify([ref?.moduleId,ref?.type,ref?.id]);
 const problem=code=>Object.assign(new Error(code),{code});
 const structural=value=>JSON.stringify(value&&typeof value==='object'?Array.isArray(value)?value.map(item=>JSON.parse(structural(item))):Object.fromEntries(Object.keys(value).sort().map(key=>[key,JSON.parse(structural(value[key]))])):value);
@@ -48,14 +48,14 @@ export function createWorldReadProvider(session){
         if(!complete&&(typeof token!=='string'||seen.has(token)))throw problem('response_unknown');seen.add(token);
       }
       if(!complete)throw problem('response_unknown');
-      const value={stamp,cap,catalog,documents,instanceId:capabilities.instanceId};
+      const value={stamp,cap,capabilities,catalog,documents,instanceId:capabilities.instanceId};
       if(generation!==revision)throw new DOMException('Context changed','AbortError');metadata=value;return value;
   }
   async function ready(key,operation,signal){
     const meta=await prepare(signal),view=WORLD_VIEWS[key];
     if(view.channel!=='world'){
       const observation=meta.cap.ownerObservation;
-      if(!observation||observation.agentRefRequired!==true||(view.channel==='inventory'?observation.inventory!==true:observation.inbox!=='source-authorized'))throw problem('channel_not_enabled');
+      if(!observation||observation.agentRefRequired!==true||(view.channel==='inventory'?observation.inventory!==true:observation.inbox!=='source-authorized')||(key==='messages'&&observation.messages!=='source-authorized'))throw problem('channel_not_enabled');
       if(!session.snapshot().selectedAgentId)throw problem('agent_required');
     }
     const category=meta.catalog.categories.find(entry=>entry.categoryId===view.categoryId&&entry.channel===view.channel);
@@ -66,15 +66,24 @@ export function createWorldReadProvider(session){
     const declaration=meta.catalog.operations.find(entry=>entry.id===operation);
     if(!declaration||declaration.method!=='POST'||declaration.path!==`/v1/perception/${operation}`)throw problem('channel_not_enabled');
     const moduleId=view.channel==='inventory'?'inventory':view.channel==='inbox'?'mailbox':view.categoryId==='items'?'items':'world';
+    await readDeclaration(meta,declaration,moduleId,signal);
+    const input=meta.documents.get(JSON.stringify(['schema',declaration.inputSchema]));
+    if(view.channel!=='world'&&!input?.properties?.agentRef)throw problem('channel_not_enabled');
+    return meta;
+  }
+  async function readDeclaration(meta,declaration,moduleId,signal){
     const guide=meta.catalog.modules.find(entry=>entry.moduleId===moduleId)?.usageGuide;
     if(!guide)throw problem('response_unknown');
     const required=[['schema',declaration.inputSchema],['schema',declaration.outputSchema],['guide',guide]];
     for(const [kind,ref]of required){
       if(!ref||!Number.isSafeInteger(ref.version))throw problem('response_unknown');
       const id=JSON.stringify([kind,ref]);if(!meta.documents.has(id))meta.documents.set(id,await document(ref,kind,signal));
-      if(kind==='schema'&&ref===declaration.inputSchema&&view.channel!=='world'&&!meta.documents.get(id)?.properties?.agentRef)throw problem('channel_not_enabled');
     }
-    return meta;
+  }
+  async function prepareOperation(operation,moduleId,{signal}={}){
+    const meta=await prepare(signal),declaration=meta.catalog.operations.find(entry=>entry.id===operation);
+    if(!declaration)throw problem('channel_not_enabled');
+    await readDeclaration(meta,declaration,moduleId,signal);return meta;
   }
   async function load(key,{more=false}={}){
     if(disposed||!WORLD_VIEWS[key])return;
@@ -117,17 +126,17 @@ export function createWorldReadProvider(session){
   }
   async function detail(key,record,options={}){
     const generation=revision,scopeEpoch=epochs[key];
-    try{return await readDetail(key,record,options);}
+    try{const result=await readDetail(key,record,options);if(disposed||generation!==revision||scopeEpoch!==epochs[key]||options.signal?.aborted)throw new DOMException('Context changed','AbortError');if(key==='messages'){views[key]={...views[key],records:views[key].records.map(value=>refKey(value.ref)===refKey(record.ref)?{...value,summary:{...value.summary,sender:clone(result.content.sender??null)}}:value)};emit(key);}return result;}
     catch(error){if(!disposed&&generation===revision&&scopeEpoch===epochs[key]&&error.name!=='AbortError')reject(key,error);throw error;}
   }
   // A failed private read can mean the binding or whole source audience was revoked.
   // Clear both private surfaces before any retry; never retain other cached titles.
   function reject(key,error){
     const phase=readPhase(error);if(!['session','denied','resync'].includes(phase))return false;
-    const keys=phase==='session'?Object.keys(views):WORLD_VIEWS[key].channel!=='world'?['holdings','notifications']:[key];
+    const keys=phase==='session'?Object.keys(views):WORLD_VIEWS[key].channel!=='world'?['holdings','messages','notifications']:[key];
     for(const scope of keys){epochs[scope]++;requests.get(scope)?.abort();requests.delete(scope);views[scope]={...blank(),phase,errorCode:error.code||'response_unknown'};emit(scope);}
     return true;
   }
   function cancel(key){const request=requests.get(key);if(!request)return;request.abort();requests.delete(key);views[key]=views[key].records.length?{...views[key],phase:'ready',loadingMore:false}:empty(key);emit(key);}
-  return{snapshot,load,detail,cancel,subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},dispose(){disposed=true;stop();invalidate();listeners.clear();}};
+  return{snapshot,load,detail,cancel,prepareOperation,invalidatePrivate:error=>reject('holdings',error),subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},dispose(){disposed=true;stop();invalidate();listeners.clear();}};
 }

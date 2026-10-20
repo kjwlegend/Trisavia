@@ -55,6 +55,8 @@
 .hud-data-feature{display:flex;flex-direction:column;flex:1;min-height:0;height:100%;overflow:hidden}
 .hud-data-feature>.hud-feature,.hud-data-feature>.hud-platform-content{flex:1;min-height:0}
 .hud-platform-content{min-width:0}
+.hud-inventory-context{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px 16px;margin-bottom:12px;flex-shrink:0}.hud-inventory-context>p{margin:0}
+.hud-wallet-status{display:flex;align-items:center;flex-wrap:wrap;gap:8px;color:var(--hud-muted)}.hud-root .hud-wallet-retry{padding:4px 8px;min-height:44px;border:0;background:transparent}
 .hud-content-switch{flex-shrink:0;padding-top:8px;margin-top:8px;border-top:1px solid var(--hud-line)}
 .hud-content-switch button{min-height:44px}
 .hud-data-badge{display:inline-block;font-size:12px;line-height:18px;color:var(--hud-muted);overflow-wrap:anywhere}
