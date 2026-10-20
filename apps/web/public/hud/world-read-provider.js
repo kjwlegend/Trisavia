@@ -19,7 +19,7 @@ export function createWorldReadProvider(session){
   const snapshot=key=>clone(views[key]),emit=key=>{for(const listener of listeners)listener(key,snapshot(key));};
   function invalidate(){revision++;metadata=null;for(const request of requests.values())request.abort();requests.clear();for(const key of Object.keys(views)){views[key]=empty(key);emit(key);}}
   const stop=session.subscribe(state=>{if(identity===state.observationRevision)return;identity=state.observationRevision;invalidate();});
-  const invoke=(op,input,signal)=>session.readPerception(op,input,{signal});
+  const invoke=(op,input,signal)=>{if(disposed||signal?.aborted)throw new DOMException('Read cancelled','AbortError');return session.readPerception(op,input,{signal});};
   const unwrap=result=>{if(result?.protocolVersion!==1||!result.instanceId||!result.permissionVersion||!result.data)throw problem('response_unknown');return result;};
   async function document(ref,kind,signal){
     const result=unwrap(await invoke(kind,kind==='schema'?{schemaId:ref.id,version:ref.version}:{moduleId:ref.moduleId,version:ref.version},signal)).data;
@@ -114,5 +114,6 @@ export function createWorldReadProvider(session){
     throw problem('response_unknown');
   }
   function remove(key,record){views[key]={...views[key],phase:'partial',records:views[key].records.filter(value=>refKey(value.ref)!==refKey(record.ref)),complete:false,nextPageToken:null,errorCode:'read_scope_changed'};emit(key);}
-  return{snapshot,load,detail,remove,subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},dispose(){disposed=true;stop();invalidate();listeners.clear();}};
+  function cancel(key){const request=requests.get(key);if(!request)return;request.abort();requests.delete(key);views[key]=views[key].records.length?{...views[key],phase:'ready',loadingMore:false}:empty(key);emit(key);}
+  return{snapshot,load,detail,remove,cancel,subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},dispose(){disposed=true;stop();invalidate();listeners.clear();}};
 }
