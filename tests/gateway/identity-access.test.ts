@@ -37,6 +37,17 @@ test('an independent runtime needs no Owner binding and exposes no pending Owner
  await rejects(f.access.authorizeAgent(f.context,actor,'other-agent'),'target_not_accessible');
 });
 
+test('public observation requires the current published source and projects only the allowed profile',async()=>{
+ const f=fixture(),profile={displayName:'Public Agent',bio:'unused public biography',avatar:{template:'basic',color:'blue'},privateNote:'never projected'};
+ f.put('profiles',agentId,{agentId,published:profile,publishedVersion:2,draft:{displayName:'private draft'}});
+ const view=await f.access.readPublicAgent(f.context,agentId);
+ assert.deepEqual(view,{agentId,publishedVersion:2,displayName:'Public Agent',appearance:{template:'basic',color:'blue'}});
+ assert(!JSON.stringify(view).includes('private'));assert.equal(await f.access.readPublicAgent(f.context,'missing'),null);
+ for(const member of [{state:'left',platformRestricted:false},{state:'joined',platformRestricted:true}]){f.put('memberships',agentId,{agentId,...member});assert.equal(await f.access.readPublicAgent(f.context,agentId),null);}
+ f.put('memberships',agentId,{agentId,state:'joined',platformRestricted:false});f.put('profiles',agentId,{agentId,published:null,publishedVersion:3});assert.equal(await f.access.readPublicAgent(f.context,agentId),null);
+ f.put('profiles',agentId,{agentId,published:{...profile,avatar:{template:'unreleased',color:'blue'}},publishedVersion:4});assert.equal(await f.access.readPublicAgent(f.context,agentId),null);
+});
+
 test('Owner account references never substitute for a current active management binding',async()=>{
  const f=fixture(),ownerId='active-owner';f.put('owners',ownerId,{status:'active',epoch,authVersion:1});
  const owner=f.credential('owner_session',{ownerId,ownerAuthVersion:1}),actor=await f.access.authenticate(f.context,owner.token,['owner_session']);

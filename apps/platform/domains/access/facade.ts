@@ -4,6 +4,8 @@ import {agentRepository,credentialRepository,humanAccountRepository,managementBi
 import {payloadHash} from './credentials.ts';
 import {fail} from '../common/errors.ts';
 import type {IdentityAccess,Principal} from './public.ts';
+import {profileRepository} from '../profile/repository.ts';
+import {AVATAR_COLORS} from '../profile/profile-rules.ts';
 /** The composition root supplies the identity session from the SAME guarded PG client. */
 export function createIdentityAccess<Context extends object>(options:{session:(context:Context)=>M1ReadSession;recoveryEpoch:string;now?:()=>number}):IdentityAccess<Context>{
  const now=options.now??Date.now,issued=new WeakMap<Principal,Context>();
@@ -39,6 +41,13 @@ export function createIdentityAccess<Context extends object>(options:{session:(c
    const tx=options.session(context),agent=await agentRepository(tx).get(agentId),member=await membershipRepository(tx).get(agentId);
    if(!agent||!member)fail('target_not_accessible',404,'Target is not accessible');
    return Object.freeze({agentId,runtimeActive:agent.data.runtimeActive===true,runtimeVersion:Number(agent.data.runtimeVersion),membership:Object.freeze({worldId:String(member.data.worldId),version:member.version,state:String(member.data.state),ownerPaused:member.data.ownerPaused===true,ownerPauseVersion:Number(member.data.ownerPauseVersion),platformRestricted:member.data.platformRestricted===true,platformVersion:Number(member.data.platformVersion),sharingGeneration:Number(member.data.sharingGeneration??1)})});
+  },
+  async readPublicAgent(context,agentId){
+   const tx=options.session(context),agent=await agentRepository(tx).get(agentId),profile=await profileRepository(tx).get(agentId),member=await membershipRepository(tx).get(agentId);
+   if(!agent||!profile||!member||profile.data.published===null||member.data.state!=='joined'||member.data.platformRestricted!==false)return null;
+   const published=profile.data.published;if(!published||typeof published!=='object'||Array.isArray(published))return null;
+   const avatar=published.avatar;if(typeof published.displayName!=='string'||!published.displayName.trim()||!avatar||typeof avatar!=='object'||Array.isArray(avatar)||avatar.template!=='basic'||!AVATAR_COLORS.includes(avatar.color as typeof AVATAR_COLORS[number])||!Number.isSafeInteger(profile.data.publishedVersion))return null;
+   return Object.freeze({agentId,publishedVersion:Number(profile.data.publishedVersion),displayName:published.displayName,appearance:Object.freeze({template:'basic' as const,color:String(avatar.color)})});
   },
  };
 }
