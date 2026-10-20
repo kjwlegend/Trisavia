@@ -1,13 +1,12 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { TestContext } from 'node:test';
 import { chromium, expect, type Page } from '@playwright/test';
 import { buildApp } from '../../apps/platform/app.ts';
 import { loadBackendConfig } from '../../apps/platform/configuration/backend-config.ts';
 import type { M1Store, StoredRow } from '../../apps/platform/contracts/store.ts';
-import { openM1Store } from '../../apps/platform/infrastructure/relational/sqlite-store.ts';
+import { openPostgresStore } from '../../apps/platform/infrastructure/postgresql/postgres-store.ts';
 import { createM1Service } from '../../apps/platform/application/m1-service.ts';
 import { grantId, seedWs02DemoData } from '../../apps/platform/application/perception-seed.ts';
 import { authorizeWs02SeedOwnerObservation } from '../../apps/platform/application/perception-owner-observation.ts';
@@ -17,26 +16,30 @@ import { mailboxRepository, type MailboxReceipt } from '../../apps/platform/doma
 import { walletRepository, type WalletAccount } from '../../apps/platform/domains/wallet/repository.ts';
 import { refId, type ObjectRef } from '../../apps/platform/domains/perception/protocol.ts';
 import { agentFixture, injectApi, ownerFixture, type Json } from '../../scripts/agent-manager-qa-fixture.ts';
-import { privateDirectory, privateJson } from '../e2e/helpers/private-fixtures.ts';
+import { privateJson } from '../e2e/helpers/private-fixtures.ts';
+import { postgresFixture } from '../api/postgresql-fixture.ts';
 import { pointer } from '../e2e/helpers/ws02-owner-read-fixture.ts';
 import { returnToWorld } from '../e2e/helpers/hud-ui.ts';
 
 export async function walletMailFixture(t: TestContext, viewport = { width: 1440, height: 900 }) {
-  const directory = await privateDirectory('ws02-wallet-mail-');
-  const config = loadBackendConfig({ M1_EMAIL_MODE: 'experience', M1_DATABASE_PATH: join(directory, 'synthetic.sqlite'),
-    M1_IDENTITY_PATH: join(directory, 'synthetic.identity.json') }, directory);
+  const pg = await postgresFixture(), directory = pg.directory;
+  const config = loadBackendConfig({ M1_EMAIL_MODE: 'experience', M1_POSTGRES_CONNECTION_FILE: join(pg.privateConnections, 'application-database-url'),
+    M1_IDENTITY_PATH: pg.identityPath }, directory);
   const receivers = new Set<string>();
   // This server-owned synthetic upstream adapter authenticates a real M1 runtime
   // credential. Sender fields never come from a message body or browser input.
   const source: TrustedMailboxSource = { sourceId: 'isolated-authenticated-agent-source',
-    authenticate(tx, raw, authenticateCredential) {
+    async authenticate(tx, raw, authenticateCredential) {
       const context = raw as { runtimeToken?: string };
-      const credential = authenticateCredential(tx, context.runtimeToken, ['runtime']);
+      const credential = await authenticateCredential(tx, context.runtimeToken, ['runtime']);
       return { kind: 'agent', ref: { moduleId: 'profiles', type: 'profiles.agent@1', id: String(credential.data.agentId) } };
     },
-    authorizeRecipient(_tx, _actor, recipient) { return receivers.has(recipient); },
-    ownerObservation() { return { existence: true, summary: true, body: true, attachments: true }; } };
-  const perception = { mailboxSources: [source] }, app = buildApp({ ...config, perception }), api = injectApi(app);
+    async authorizeRecipient(_tx, _actor, recipient) { return receivers.has(recipient); },
+    async ownerObservation() { return { existence: true, summary: true, body: true, attachments: true }; } };
+  const perception = { mailboxSources: [source] };
+  let app: Awaited<ReturnType<typeof buildApp>>;
+  try { app = await buildApp({ ...config, perception }); } catch (error) { await pg.dispose(); throw error; }
+  const api = injectApi(app);
   let browser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
   const issues: string[] = [], secrets = new Set<string>(), expected = new Map<string, number>();
   const requests: { path: string; method: string; input: Json }[] = [], responses: { path: string; input: Json; status: number; body: Json }[] = [];
@@ -62,7 +65,7 @@ export async function walletMailFixture(t: TestContext, viewport = { width: 1440
           && Object.entries(value).some(([key, entry]) => ['agentReadState', 'completionToken'].includes(key) || forbidden(entry));
         assert.equal(forbidden(response.body), false, 'Human content and wallet results contain no Agent confirmation proof');
       }
-    } finally { try { await browser?.close(); } finally { try { await app.close(); } finally { await rm(directory, { recursive: true, force: true }); } } }
+    } finally { try { await browser?.close(); } finally { try { await app.close(); } finally { await pg.dispose(); } } }
   });
   const rememberOwner = async (value: Json) => { track(value.password, value.email, value.browserToken, value.sessionToken);
     await privateJson(directory, 'owner-command', { ownerId: value.ownerId, browserToken: value.browserToken, sessionToken: value.sessionToken }); };
@@ -71,14 +74,14 @@ export async function walletMailFixture(t: TestContext, viewport = { width: 1440
   const a = await agentFixture(api, owner, '钱包合成甲', 'blue', rememberAgent), sibling = await agentFixture(api, owner, '可信发件乙', 'coral', rememberAgent);
   const other = await agentFixture(api, otherOwner, '另一主人丙', 'cream', rememberAgent);
   for (const agent of [a, sibling, other]) receivers.add(agent.agentId);
-  const storage = <T>(work: (store: M1Store) => T): T => { const store = openM1Store(config); try { return work(store); } finally { store.close(); } };
+  const storage = async <T>(work: (store: M1Store) => Promise<T>): Promise<T> => { const store = await openPostgresStore(pg.options); try { return await work(store); } finally { await store.close(); } };
   const administrator = 'wallet-mail-synthetic-administrator';
-  storage(store => seedWs02DemoData(store, { actorId: administrator }));
-  storage(store => authorizeWs02SeedOwnerObservation(store, { actorId: administrator, operationId: randomUUID(), expectedSourceAdministrator: administrator }));
+  await storage(store => seedWs02DemoData(store, { actorId: administrator }));
+  await storage(store => authorizeWs02SeedOwnerObservation(store, { actorId: administrator, operationId: randomUUID(), expectedSourceAdministrator: administrator }));
   const marker = `隔离持有物-${randomUUID().slice(0, 8)}`;
-  const itemRef = storage(store => {
-    const item = store.read(tx => tx.find('perception_objects').find(row => row.data.categoryId === 'items'))!;
-    updatePerceptionDemoObject(store, { actorId: administrator, operationId: randomUUID(), ref: item.data.ref as ObjectRef, expectedVersion: item.version, title: marker });
+  const itemRef = await storage(async store => {
+    const item = await store.read(async tx => (await tx.find('perception_objects')).find(row => row.data.categoryId === 'items')); assert(item);
+    await updatePerceptionDemoObject(store, { actorId: administrator, operationId: randomUUID(), ref: item.data.ref as ObjectRef, expectedVersion: item.version, title: marker });
     return item.data.ref as ObjectRef;
   });
   const origin = await app.listen({ host: '127.0.0.1', port: 0 });
@@ -120,34 +123,34 @@ export async function walletMailFixture(t: TestContext, viewport = { width: 1440
     assert.equal(result.status, 200); assert.equal(result.body.data.complete, true); return result.body.data.records as Json[];
   };
   return { page, context, origin, owner, otherOwner, a, sibling, other, marker, itemRef, api, storage, requests, responses, login, select, logout, records,
-    addHoldings(count: number, agent = a) { assert(Number.isSafeInteger(count) && count > 0 && count <= 30);
+    async addHoldings(count: number, agent = a) { assert(Number.isSafeInteger(count) && count > 0 && count <= 30);
       // No public mint API exists. These extra authoritative, explicitly
       // synthetic records exercise normal HTTP pagination, not fake responses.
-      storage(store => store.transaction(tx => {
-        const original = tx.find('perception_objects').find(row => row.data.categoryId === 'items')!; assert(original);
+      await storage(store => store.transaction(async tx => {
+        const original = (await tx.find('perception_objects')).find(row => row.data.categoryId === 'items'); assert(original);
         for (let index = 0; index < count; index++) {
           const ref = { moduleId: 'items', type: 'items.item@1', id: `isolated-pagination-${randomUUID()}` }, objectId = refId(ref);
-          tx.insert('perception_objects', { id: objectId, version: 1, data: { ...original.data, ref, refId: ref.id,
+          await tx.insert('perception_objects', { id: objectId, version: 1, data: { ...original.data, ref, refId: ref.id,
             title: `隔离分页持有物 ${index + 1}`, body: '仅用于隔离浏览器分页验证的明确合成内容。', itemKind: 'prop' } });
-          tx.insert('perception_grants', { id: grantId(agent.agentId, objectId, 'holding'), version: 1,
+          await tx.insert('perception_grants', { id: grantId(agent.agentId, objectId, 'holding'), version: 1,
             data: { agentId: agent.agentId, objectId, kind: 'holding', active: true, quantity: 1, dataMode: 'demo',
               createdAt: Date.now(), sourceId: 'holdings' } });
         }
       }));
     },
-    deliver(title: string, body: string, recipient = a) { return storage(store => createM1Service(store, { perception }).receiveTrustedMessage(source.sourceId,
-      { sourceMessageKey: randomUUID(), recipientAgentId: recipient.agentId, title, body }, { runtimeToken: sibling.runtimeToken })) as Json; },
-    readStates() { return storage(store => store.read(tx => ({ notifications: tx.find('perception_states'),
-      messages: tx.find<MailboxReceipt>('mailbox_receipts').map(row => ({ id: row.id, confirmed: row.data.confirmedContentVersion, stateVersion: row.data.stateVersion, confirmedAt: row.data.confirmedAt })) }))); },
-    setBalance(agent: Json, balance: number) { assert(Number.isSafeInteger(balance) && balance >= 0); return storage(store => store.transaction(tx => {
-      const row = walletRepository(tx).get(agent.agentId)!; assert(row); tx.update('wallet_accounts', { ...row, version: row.version + 1, data: { ...row.data, balance } }, row.version);
+    async deliver(title: string, body: string, recipient = a): Promise<Json> { return await storage(store => createM1Service(store, { perception }).receiveTrustedMessage(source.sourceId,
+      { sourceMessageKey: randomUUID(), recipientAgentId: recipient.agentId, title, body }, { runtimeToken: sibling.runtimeToken })); },
+    readStates() { return storage(store => store.read(async tx => ({ notifications: await tx.find('perception_states'),
+      messages: (await tx.find<MailboxReceipt>('mailbox_receipts')).map(row => ({ id: row.id, confirmed: row.data.confirmedContentVersion, stateVersion: row.data.stateVersion, confirmedAt: row.data.confirmedAt })) }))); },
+    setBalance(agent: Json, balance: number) { assert(Number.isSafeInteger(balance) && balance >= 0); return storage(store => store.transaction(async tx => {
+      const row = await walletRepository(tx).get(agent.agentId); assert(row); await tx.update('wallet_accounts', { ...row, version: row.version + 1, data: { ...row.data, balance } }, row.version);
     })); },
-    removeWallet(agent = a) { return storage(store => store.transaction(tx => { const row = walletRepository(tx).get(agent.agentId)!; assert(row); tx.remove('wallet_accounts', row.id, row.version); return row; })); },
-    restoreWallet(row: StoredRow<WalletAccount>) { storage(store => store.transaction(tx => tx.insert('wallet_accounts', row))); },
-    revokeMessage(ref: ObjectRef, recipient = a) { storage(store => store.transaction(tx => { const row = mailboxRepository(tx).receipt(ref.id, recipient.agentId)!; assert(row);
-      tx.update('mailbox_receipts', { ...row, version: row.version + 1, data: { ...row.data, active: false } }, row.version); })); },
-    revokeItem(ref: ObjectRef) { storage(store => store.transaction(tx => { const row = tx.get('perception_objects', refId(ref))!; assert(row);
-      tx.update('perception_objects', { ...row, version: row.version + 1, data: { ...row.data, public: false } }, row.version); })); },
+    removeWallet(agent = a) { return storage(store => store.transaction(async tx => { const row = await walletRepository(tx).get(agent.agentId); assert(row); await tx.remove('wallet_accounts', row.id, row.version); return row; })); },
+    restoreWallet(row: StoredRow<WalletAccount>) { return storage(store => store.transaction(tx => tx.insert('wallet_accounts', row))); },
+    revokeMessage(ref: ObjectRef, recipient = a) { return storage(store => store.transaction(async tx => { const row = await mailboxRepository(tx).receipt(ref.id, recipient.agentId); assert(row);
+      await tx.update('mailbox_receipts', { ...row, version: row.version + 1, data: { ...row.data, active: false } }, row.version); })); },
+    revokeItem(ref: ObjectRef) { return storage(store => store.transaction(async tx => { const row = await tx.get('perception_objects', refId(ref)); assert(row);
+      await tx.update('perception_objects', { ...row, version: row.version + 1, data: { ...row.data, public: false } }, row.version); })); },
     allowStatus(path: string, status: number, count = 1) { allow('response', path, String(status), count); allow('console', path, String(status), count); },
     allowAbort(path: string) { allow('network', path, 'failed', 1); allow('console', path, 'failed', 1); } };
 }

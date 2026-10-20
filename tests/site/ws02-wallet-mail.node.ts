@@ -43,7 +43,7 @@ test('wallet/backpack shows only actual holdings, restores a manually loaded lat
   await expect(wallet(page)).toHaveAttribute('data-phase', 'ready'); await expect(wallet(page)).toContainText('星币 0');
   await expect.poll(() => f.responses.some(response => response.path === '/v1/wallet/query' && response.status === 200
     && response.body.data.agentRef.id === f.a.agentId && response.body.data.balance === 0)).toBe(true);
-  assert.equal(f.storage(store => store.read(tx => tx.find('wallet_accounts', { agentId: f.a.agentId })[0]!.data.balance)), 0);
+  assert.equal(await f.storage(store => store.read(async tx => (await tx.find('wallet_accounts', { agentId: f.a.agentId }))[0]!.data.balance)), 0);
   await pointer(page, inventory(page).getByRole('button', { name: '作品', exact: true })); await expect(cells(page)).toHaveCount(works.length);
   assert.deepEqual(await cells(page).evaluateAll(nodes => nodes.map(node => node.getAttribute('data-platform-item'))), works.map(row => row.ref.id));
   await pointer(page, inventory(page).getByRole('button', { name: '虚拟道具', exact: true })); await expect(cells(page)).toHaveCount(props.length);
@@ -53,7 +53,7 @@ test('wallet/backpack shows only actual holdings, restores a manually loaded lat
   await expect(inventory(page).locator(`[data-platform-item="${selected.ref.id}"]`)).toHaveAttribute('aria-pressed', 'true');
   // A non-zero balance is an explicit isolated authority-row fixture, never a
   // production credit endpoint or a quantity inferred from held objects.
-  f.setBalance(f.a, 17); await returnToWorld(page); await openHud(page, '背包'); await expect(wallet(page)).toContainText('星币 17');
+  await f.setBalance(f.a, 17); await returnToWorld(page); await openHud(page, '背包'); await expect(wallet(page)).toContainText('星币 17');
   await page.reload(); await expect(page.locator('#hud-agent-select')).toContainText(f.a.name); await openHud(page, '背包');
   await expect(wallet(page)).toContainText('星币 17'); await expect(cells(page)).toHaveCount(props.length);
   await expect(inventory(page).getByRole('button', { name: '虚拟道具', exact: true })).toHaveAttribute('aria-pressed', 'true');
@@ -75,7 +75,8 @@ test('wallet/backpack shows only actual holdings, restores a manually loaded lat
   await search.fill(privateQuery); await f.select(f.sibling); await openHud(page, '背包'); await expect(search).toHaveValue('');
   await f.select(f.a); await openHud(page, '背包'); await expect(search).toHaveValue('');
 
-  f.addHoldings(13); await returnToWorld(page); await openHud(page, '背包');
+  // Close the consumer before the isolated authoritative fixture writes.
+  await returnToWorld(page); await f.addHoldings(13); await openHud(page, '背包');
   await pointer(page, inventory(page).getByRole('button', { name: '全部', exact: true }));
   const all = await f.records('inventory', 'holdings'); assert.equal(all.length, 27);
   await expect(cells(page)).toHaveCount(20);
@@ -110,8 +111,8 @@ test('mail has four peer categories, starts with genuinely empty messages and re
   await expect.poll(() => f.responses.some(response => response.path.endsWith('/list') && response.input.categoryId === 'messages'
     && response.status === 200 && response.body.data.complete && response.body.data.records.length === 0)).toBe(true);
   const title = `受信上游真实来信-${crypto.randomUUID().slice(0, 8)}`, body = '这封长来信由经过实际 runtime 认证的合成 Agent 通过受信上游接收。'.repeat(40);
-  const received = f.deliver(title, body), before = f.readStates();
-  const receivedAt = f.storage(store => store.read(tx => mailboxRepository(tx).receipt(received.ref.id, f.a.agentId)!.data.receivedAt));
+  const received = await f.deliver(title, body), before = await f.readStates();
+  const receivedAt = await f.storage(store => store.read(async tx => (await mailboxRepository(tx).receipt(received.ref.id, f.a.agentId))!.data.receivedAt));
   const displayedTime = await page.evaluate(stamp => new Date(stamp).toLocaleString('zh-CN', { hour12: false }), receivedAt);
   await pointer(page, mail(page).getByRole('button', { name: '消息', exact: true })); await expect(rows(page)).toHaveCount(1);
   const row = mail(page).locator(`[data-platform-message="${received.ref.id}"]`); await expect(row).toContainText(title);
@@ -136,11 +137,11 @@ test('mail has four peer categories, starts with genuinely empty messages and re
   await returnToWorld(page); await openHud(page, '信箱'); await expect(mail(page).getByRole('button', { name: '公告', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.reload(); await expect(page.locator('#hud-agent-select')).toContainText(f.a.name); await openHud(page, '信箱');
   await expect(mail(page).getByRole('button', { name: '公告', exact: true })).toHaveAttribute('aria-pressed', 'true'); await expect(rows(page)).toHaveCount(2);
-  assert.deepEqual(f.readStates(), before); await f.logout();
+  assert.deepEqual(await f.readStates(), before); await f.logout();
 });
 
 test('missing/failed wallet reads never show zero, and delayed balances or revoked messages cannot repopulate a different Agent context', { timeout: 65_000 }, async t => {
-  const f = await walletMailFixture(t), { page } = f; f.setBalance(f.a, 17); f.setBalance(f.sibling, 42); await start(f);
+  const f = await walletMailFixture(t), { page } = f; await f.setBalance(f.a, 17); await f.setBalance(f.sibling, 42); await start(f);
   const entered = defer(), release = defer(), delivered = defer(); let delay = true;
   await page.route('**/v1/wallet/query', async route => {
     if (delay && route.request().postDataJSON()?.agentRef?.id === f.a.agentId) { delay = false; const response = await route.fetch(); entered.resolve(); await release.promise;
@@ -155,19 +156,19 @@ test('missing/failed wallet reads never show zero, and delayed balances or revok
     const expected = await f.records('inventory', 'holdings', f.sibling); await expect(cells(page)).toHaveCount(expected.length);
     assert.deepEqual(await cells(page).evaluateAll(nodes => nodes.map(node => node.getAttribute('data-platform-item'))), expected.map(row => row.ref.id));
   } finally { release.resolve(); await page.unroute('**/v1/wallet/query'); }
-  await f.select(f.a); const account = f.removeWallet(); f.allowStatus('/v1/wallet/query', 409); await openHud(page, '背包');
+  await f.select(f.a); const account = await f.removeWallet(); f.allowStatus('/v1/wallet/query', 409); await openHud(page, '背包');
   await expect(wallet(page)).toHaveAttribute('data-phase', 'not_initialized'); await expect(wallet(page)).toContainText('暂未取得余额');
   await expect(wallet(page)).not.toContainText('星币 0'); await expect(wallet(page)).not.toContainText('17'); await expect(cells(page)).toHaveCount(14);
-  f.restoreWallet(account); await pointer(page, wallet(page).getByRole('button', { name: '重试', exact: true })); await expect(wallet(page)).toContainText('星币 17');
+  await f.restoreWallet(account); await pointer(page, wallet(page).getByRole('button', { name: '重试', exact: true })); await expect(wallet(page)).toContainText('星币 17');
   let fail = true; await page.route('**/v1/wallet/query', async route => { if (fail) { fail = false; f.allowAbort('/v1/wallet/query'); await route.abort('failed'); } else await route.continue(); });
   await returnToWorld(page); await openHud(page, '背包'); await expect(wallet(page)).toHaveAttribute('data-phase', 'error');
   await expect(wallet(page)).toContainText('暂时无法读取'); await expect(wallet(page)).not.toContainText('星币 0'); await expect(cells(page)).toHaveCount(14);
   await pointer(page, wallet(page).getByRole('button', { name: '重试', exact: true })); await expect(wallet(page)).toContainText('星币 17');
-  const received = f.deliver('隔离撤权来信', '此正文撤权后不能沿用旧标题或发件人。'); const before = f.readStates();
-  await openHud(page, '信箱'); await expect(rows(page)).toHaveCount(1); f.revokeMessage(received.ref as ObjectRef); f.allowStatus('/v1/perception/detail', 404);
+  const received = await f.deliver('隔离撤权来信', '此正文撤权后不能沿用旧标题或发件人。'); const before = await f.readStates();
+  await openHud(page, '信箱'); await expect(rows(page)).toHaveCount(1); await f.revokeMessage(received.ref as ObjectRef); f.allowStatus('/v1/perception/detail', 404);
   await pointer(page, rows(page).first()); await expect(page.locator('#hud-detail-window')).toBeHidden(); await expect(rows(page)).toHaveCount(0);
   await expect(mail(page)).not.toContainText('隔离撤权来信'); await expect(mail(page)).not.toContainText(f.sibling.name);
-  assert.deepEqual(f.readStates(), before);
+  assert.deepEqual(await f.readStates(), before);
   await pointer(page, mail(page).getByRole('button', { name: '公告', exact: true })); await expect(rows(page)).toHaveCount(2);
   await f.logout(); await returnToWorld(page);
   await f.login(f.otherOwner); await returnToWorld(page); await f.select(f.other); await openHud(page, '背包');
@@ -189,7 +190,7 @@ test('related item entry and detail use the actual authorized name, prop content
   await wheelToControl(page, page.locator('#hud-detail-body'), linked); await pointer(page, linked);
   await expect(page.locator('#hud-detail-title')).toHaveText(f.marker); await expect(page.locator('#hud-detail-body').getByRole('heading', { name: f.marker, exact: true })).toBeVisible();
   await pointer(page, page.getByRole('button', { name: '返回原内容', exact: true })); await expect(page.locator('#hud-detail-body')).toContainText(publication.summary.title);
-  f.revokeItem(f.itemRef); f.allowStatus('/v1/perception/detail', 404);
+  await f.revokeItem(f.itemRef); f.allowStatus('/v1/perception/detail', 404);
   await wheelToControl(page, page.locator('#hud-detail-body'), linked); await pointer(page, linked);
   await expect(page.locator('#hud-detail-body')).toContainText('不可查看'); await expect(page.locator('#hud-detail-title')).not.toHaveText(f.marker);
   await pointer(page, page.getByRole('button', { name: '返回原内容', exact: true })); await expect(linked).toHaveCount(0);
