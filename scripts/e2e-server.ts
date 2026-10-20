@@ -13,7 +13,8 @@ function close(): Promise<void> {
 for (const signal of ['SIGTERM', 'SIGINT'] as const) process.once(signal, () => { void close().catch(() => { process.exitCode = 1; }); });
 try {
   app = await buildApp({ ...pg.options, ...(email ? { email } : {}) });
-  await app.listen({ host: '127.0.0.1', port });
+  const origin = await app.listen({ host: '127.0.0.1', port });
+  console.log(JSON.stringify({ kind: 'isolated_e2e_ready', origin, database: new URL(pg.options.connectionString).pathname.slice(1) }));
 } catch {
   await close(); console.error('Isolated PostgreSQL browser test service could not start.'); process.exitCode = 1;
 }

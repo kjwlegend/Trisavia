@@ -234,7 +234,8 @@ test('owner detail retry refreshes a stale summary before reading the newly comm
 
 test('owner retry after an expired page starts a fresh list instead of recycling an expired continuation token', { timeout: 45_000 }, async t => {
   const f = await ownerReadFixture(t), { page } = f;
-  await page.goto(f.origin); await f.login(f.a.owner); await returnToWorld(page); await openHud(page, '信箱'); await expect(messages(page)).toHaveCount(20);
+  await page.goto(f.origin); await f.login(f.a.owner); await returnToWorld(page); await openHud(page, '信箱');
+  await pointer(page, mail(page).getByRole('button', { name: '通知', exact: true })); await expect(messages(page)).toHaveCount(20);
   await f.storage(store => store.transaction(async tx => { for (const session of await tx.find('perception_sessions', { kind: 'list' }))
     await tx.update('perception_sessions', { ...session, version: session.version + 1, data: { ...session.data, expiresAt: Date.now() - 1 } }, session.version);
   }));
@@ -252,7 +253,8 @@ test('owner retry after an expired page starts a fresh list instead of recycling
 
 test('a denied private detail removes all previously visible private summaries instead of leaving other revoked titles cached', { timeout: 45_000 }, async t => {
   const f = await ownerReadFixture(t), { page } = f;
-  await page.goto(f.origin); await f.login(f.a.owner); await returnToWorld(page); await openHud(page, '信箱'); await expect(messages(page)).toHaveCount(20);
+  await page.goto(f.origin); await f.login(f.a.owner); await returnToWorld(page); await openHud(page, '信箱');
+  await pointer(page, mail(page).getByRole('button', { name: '通知', exact: true })); await expect(messages(page)).toHaveCount(20);
   const oldTitles = await messages(page).allTextContents(); await f.observer(false); f.allowStatus('/v1/perception/detail', 404);
   await pointer(page, messages(page).first()); await expect(page.locator('#hud-detail-window')).toBeHidden();
   await expect(messages(page)).toHaveCount(0); await expect(mail(page)).toContainText('当前账号无权查看这类内容');
