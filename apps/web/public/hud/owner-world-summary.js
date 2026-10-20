@@ -64,15 +64,15 @@ export function createOwnerWorldSummaryReader(session){
 
 export function mountOwnerWorldSummary(node,session){
   if(!node)return{dispose(){}};
-  const reader=createOwnerWorldSummaryReader(session),body=el('div'),status=el('p','small-text'),refresh=el('button','text-button','读取互动摘要'),more=el('button','text-button','继续载入互动摘要');
+  const reader=createOwnerWorldSummaryReader(session),body=el('div'),status=el('p','small-text'),refresh=el('button','text-button','刷新'),more=el('button','text-button','继续载入');
   refresh.type=more.type='button';refresh.id='owner-world-summary-refresh';more.id='owner-world-summary-more';status.setAttribute('role','status');
-  node.append(el('h3','','世界互动摘要'),el('p','small-text','仅显示当前绑定主人获准观察的互动事实；不含对方身份或私密正文。阅读不会确认反馈。'),status,body,refresh,more);
+  node.append(el('h3','','最近互动'),el('p','small-text','这里显示可供你查看的互动记录'),status,body,refresh,more);
   refresh.addEventListener('click',()=>void reader.refresh());more.addEventListener('click',()=>void reader.loadMore());
-  const invitationLabels={pending:'待回应',accepted:'已接受',declined:'已拒绝',withdrawn:'已撤回',expired:'已到期',unavailable:'当前不可用'},activityLabels={waiting_feedback:'等待反馈',waiting_ack:'等待 Agent 确认',closed:'已结束',cancelled:'已取消',expired:'已到期',unavailable:'当前不可用'},outcomeLabels={received_confirmed:'反馈已收到并确认',submitted_unconfirmed:'反馈已提交，尚未确认',no_feedback:'尚无反馈'};
+  const invitationLabels={pending:'邀请待回应',accepted:'已接受邀请',declined:'已拒绝邀请',withdrawn:'邀请已撤回',expired:'邀请已到期',unavailable:'邀请当前不可用'},activityLabels={waiting_feedback:'等待反馈',waiting_ack:'等待 Agent 确认收到',closed:'互动已结束',cancelled:'互动已取消',expired:'互动已到期',unavailable:'互动当前不可用'},outcomeLabels={received_confirmed:'反馈已确认收到',submitted_unconfirmed:'反馈已提交，待确认收到',no_feedback:'暂无反馈'};
   reader.subscribe(value=>{
     node.dataset.summaryPhase=value.phase;body.replaceChildren();refresh.disabled=value.phase==='loading';more.hidden=value.phase!=='partial';
-    status.textContent=value.phase==='loading'?'正在读取当前 Agent 的互动事实…':value.phase==='unavailable'?'当前服务未开放主人互动摘要。':value.phase==='unauthorized'?'请登录并选择当前已关联的 Agent。':value.phase==='error'?'互动摘要暂不可用，旧摘要已清除。请重新读取。':value.phase==='ready'&&value.items.length===0?'当前没有获准观察的互动事实。':value.phase==='partial'?`已载入 ${value.items.length} 条，尚未完整。`:value.phase==='ready'?`已完整读取 ${value.items.length} 条 · ${new Date(value.asOf).toLocaleString('zh-CN',{hour12:false})}`:'打开角色概览后读取当前互动事实。';
-    for(const item of value.items){const row=el('div','hud-record owner-world-summary-record');row.dataset.interactionId=item.invitationId;const time=el('time','',new Date(item.createdAt).toLocaleString('zh-CN',{hour12:false}));time.dateTime=new Date(item.createdAt).toISOString();row.append(time,el('span','',`邀请：${invitationLabels[item.invitationState]} · 活动：${item.activityState===null?'尚无活动':activityLabels[item.activityState]} · ${outcomeLabels[item.outcome]}`));body.append(row);}
+    status.textContent=value.phase==='loading'?'正在载入最近互动…':value.phase==='unavailable'?'当前服务未开放互动记录。':value.phase==='unauthorized'?'请登录并选择当前已关联的 Agent。':value.phase==='error'?'最近互动暂不可用，请稍后刷新。':value.phase==='ready'&&value.items.length===0?'暂无可查看的互动记录。':value.phase==='partial'?`${value.items.length} 条互动记录 · 尚未全部载入`:value.phase==='ready'?`${value.items.length} 条互动记录 · 更新于 ${new Date(value.asOf).toLocaleString('zh-CN',{hour12:false})}`:'打开角色概览后载入最近互动。';
+    for(const item of value.items){const row=el('div','hud-record owner-world-summary-record');row.dataset.interactionId=item.invitationId;const time=el('time','',new Date(item.createdAt).toLocaleString('zh-CN',{hour12:false}));time.dateTime=new Date(item.createdAt).toISOString();row.append(time,el('span','',`${invitationLabels[item.invitationState]} · ${item.activityState===null?'尚无活动':activityLabels[item.activityState]} · ${outcomeLabels[item.outcome]}`));body.append(row);}
   });
   function sync(){reader.setActive(!document.hidden&&!node.closest('[hidden],[data-panel-state="closing"],[data-panel-state="closed"]')&&node.getClientRects().length>0);}
   // The Owner controller mounts before the shell moves its panel into the HUD.
