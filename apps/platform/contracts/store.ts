@@ -16,12 +16,18 @@ export interface StoredRow<T extends JsonObject = JsonObject> {
   data: T;
 }
 export type ExactFilters = Record<string, string | number | boolean | null>;
+/** Internal bounded retention query, accepted only for the matching perception source. */
+export interface RetentionCutoff {
+  field: 'expiresAt' | 'recordedAt';
+  at: number;
+  inclusive: boolean;
+}
 
 export interface M1ReadSession {
   get<T extends JsonObject = JsonObject>(table: M1Table, id: string): Promise<StoredRow<T> | undefined>;
   find<T extends JsonObject = JsonObject>(table: M1Table, filters?: ExactFilters): Promise<StoredRow<T>[]>;
   /** Bounded keyset reads with source filtering performed by PostgreSQL. */
-  scan<T extends JsonObject = JsonObject>(table: M1Table, filters: ExactFilters, options: { limit: number; afterId?: string }): Promise<StoredRow<T>[]>;
+  scan<T extends JsonObject = JsonObject>(table: M1Table, filters: ExactFilters, options: { limit: number; afterId?: string; cutoff?: RetentionCutoff }): Promise<StoredRow<T>[]>;
   count(table: M1Table, filters: ExactFilters, limit: number): Promise<number>;
 }
 export interface M1Transaction extends M1ReadSession {
