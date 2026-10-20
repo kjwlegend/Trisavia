@@ -27,6 +27,7 @@ export type QuotaCountQuery =
   | { kind: 'email_attempts_recent'; since: number; sourceKeys?: string[]; limit: number }
   | { kind: 'code_mail_recent'; since: number; related?: { ownerKey: string; emailKey: string }; sourceKeys?: string[]; limit: number }
   | { kind: 'recovery_requests_recent'; since: number; ownerId?: string; sourceKey?: string; limit: number }
+  | { kind: 'pending_recovery'; agentId: string; epoch: string; after: number; limit: 1 }
   | { kind: 'active_invites'; ownerId: string; after: number; limit: number };
 
 export interface M1ReadSession {
