@@ -26,7 +26,7 @@
 | A，`01a1576d-e964-7323-a8df-fec8881db720` | `m1-api` / `codex/world-gateway-decision` | `apps/platform/domains/decision/**`、`application/decision-service.ts`、`application/agent-gateway*.ts`、`transport/http/agent-gateway*.ts`；`app.ts`、`server.ts`、`configuration/**` 组合根；身份接入适配及必要 M1 最小抽取；能力、schema/guide、`docs/access/v1/**` 与初始公开指引；`tests/gateway/**`、`tests/decision/**`。 |
 | B，`01a13916-86a5-7dc0-af80-efabb15c492d` | `m1-storage` / `codex/world-persistence-scheduler` | `infrastructure/postgresql/**`、`infrastructure/scheduling/**`、`contracts/runtime-store.ts` 及 `domains/runtime/**` 公共事务/回执/事件/Outbox/任务端口；`tests/runtime/**`、`tests/storage/**`；隔离本地数据库初始化/检查脚本 `scripts/world-core-*.ts` 与必要 ops 文件。 |
 | C，`01a13917-146c-7aa2-91ff-c6bd5d2501ce` | `m1-acceptance` / `codex/world-interaction` | `domains/world/**`、`domains/interaction/**` 及其 `repository.ts` 业务端口；`application/world-service.ts`、`application/interaction-service.ts`；`tests/world/**`、`tests/interaction/**`。本轮是代码作者，自测不能作为独立验收。 |
-| D，`01a1576e-5a22-79a2-8752-daa9b3a4e36e` | `m1-web` / `codex/world-core-web` | `apps/web/public/**` 中现有画布/HUD的真实状态适配，具体生产路径由作者先回报；`tests/site/world-core*.test.ts`、`tests/e2e/world-core*.{spec,node}.ts` 及同名helper。不制作新素材、另定视觉或修改平台HTTP/组合根。 |
+| D，`01a1576e-5a22-79a2-8752-daa9b3a4e36e` | `m1-web` / `codex/world-core-web` | `apps/web/public/`下`hud/world-scene-provider.js`、`hud/world-scene-projection.js`、`hud/scene-renderer.js`、`world-scene.js`、`world-owned-layer.js`、`hud/owned-agents.js`六个生产路径；`tests/site/world-core*.test.ts`、`tests/e2e/world-core*.{spec,node}.ts`及同名helper。后继Owner摘要必要接缝另报。不制作新素材、另定视觉或修改平台HTTP/组合根。 |
 | TD，`01a138f6-2c0e-75a1-87fe-ee0735493f4f` | `m1-integration` / `codex/world-core-integration` | 本执行记录、资源生命周期、作者提交整合、固定差异送审、交付证据；不代写业务实现。 |
 
 根 `package.json`、锁文件及 `tsconfig.json` 由 A 唯一写入，先向 TD 报必要性；B/C 的需求回派 A。`contracts/store.ts` 和现存 M1 具名仓储默认不扩写为新世界总表，若确需公共接缝由 B 所有、先通知 A。A 的身份抽取文件与 B 存储适配文件分开。其他路径发现必要变更先报 TD 分配，不抢写。
@@ -126,3 +126,17 @@ R6已静态接受B `122b52f → 630b95b05d217cc51f76bc23fd1c68196520ba70`的16�
 A/C冻结公开读取为候选同源`GET /v1/world/scene`和`GET /v1/world/rules`。场景返回当前获准公开Avatar、白名单资料、权威逻辑位置及版本/时间/分页；不含完整路径、movementId或私有暂停原因。D仅投影这些真实位置，插值不是业务动作；不把旧地图道路/场所或演示漫游冒充新引擎事实。Owner互动摘要必须使用有效Owner session、有效binding和来源许可，不用Agent runtime身份代读。
 
 候选交接将同时注明新隔离Owner正常网页注册/绑定是否可用、实际测试验证码/邮件模式及人类允许观察范围。总指挥安排两个独立Agent先无Owner绑定完成N1/N2，随后可由一个新Owner绑定两者。Agent给主人的私密绑定链接由测试会话另存0600交接文件，只传路径给获授权UI模拟者，不转交runtime凭据。N1交付后保留新身份、绑定材料和业务状态供N2续验，不能静默重建。上述流程尚未执行，独立AgentHTTP与人类UI不记PASS。
+
+### 6.4 N1 HTTP固定稿与后继审查
+
+原reviewer R7在`33598a5`关闭WC-CR02，WC-CR01保持关闭；八个World路径单独静态接受。Interaction新增WC-CR03/P2：`listCurrent`过滤不可见邀请后仍用其明文ID续页。其余七个Interaction路径尚未整体接受，A拟议的Gateway游标包装不能替代域public port修复。B完成后停止编辑释放资源，TD已派原C在335固定基准修复，并要求与A协调新游标签名、保留隐藏整页/页尾及基础设施故障反例。
+
+R8接受A原`7a69a294`、`553a28b6`两个自身身份diff；R9接受原`8dc9527`三路径提交前认证复核。各轮未把作者树其他cherry-pick混入接受。B后继及A Decision/HTTP仍待报告，不由已审World推定整条N1通过。
+
+A固定N1为`c1ce50e8ca2095fe36b32b2d4fb3febe15b9076b`，自身13路径294增19删，依B1754、C335及A8dc/8f。N1只发布World模块，不启用Interaction/Decision业务能力，也不在GET/readiness中初始化模板。TD已读作者`m1-api/outputs/pg-async/world-gateway-n1-manifest.json`及普通日志：准确18/18＝2真实HTTP故事、4Decision PG、8auth、3config、1driver，无skip，full typecheck/diff-check通过；18包含此前Decision4项，不重复相加。HTTP证据包括独立HTTP注册和身份、发现精确接口、Avatar及pending路径在服务器驱动下完成、公开来源撤回隐藏，另含闭门build/health/public/wallet不持久写。作者18894服务、pool及逐例库已关闭清理，未给外部测试者交付。
+
+B最终固定`1754a36e9262578374ae05a5ca07295d01485b62`，clean停止编辑。真实关联反例先在旧5ff schema失败，再追加Interaction v2复合FK修复；旧迁移字节保持。最终schema signature为`d130a37cf5a1a0de1951c585b09c5c860b545e9e171fa01dadc3e25903888d38`。准确HEAD的22/22无skip/cancel、完整typecheck和diff-check为0，manifest/普通日志/命令归`m1-storage/outputs/world-core/final-1754a36/`。保留B初始化库在旧5a源码创建真实合成Agent/Avatar/pending路径后原地升级，79表98行语义hash、配对identity、instance及epoch保持，机械write_generation及迁移history单列排除，最终写门关闭。该结果是B隔离作者验证，非正式connet或独立Agent验收。
+
+候选初始化使用最终受审整合源码调用B显式维护入口；先以关门状态启动同一源码检查readiness，再明确开写门。N1入口不初始化Interaction；后继N2用独立模板维护入口并保留候选身份/数据。TD仍未创建`world_core_integration_20261021`或启动18893。
+
+D实际轮次`01a15a58-dd2d-73b0-ad34-7068c82e7fd7`，UTC `2026-10-20T17:29:45.887Z`，已回执`gpt-6.1-sol`/`xhigh`。已冻结六生产路径。页面可见时允许不快于1秒的有界只读刷新，无重叠、失败退避、切页/hidden/destroy取消；恢复先新读，迟回不能覆盖新轮，撤回/权限变化清旧资料。此刷新服务于人类正在看的场景，不是外部Agent定时执行或业务动作；不增加访问频率设置，不把失败缓存继续动画为实时行为。
