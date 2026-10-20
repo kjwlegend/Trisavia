@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { CommandKey, CommandReceipt, RuntimeEvent, RuntimeReadContext, RuntimeTransaction } from '../contracts/runtime-store.ts';
+import type { CommandKey, CommandReceipt, RuntimeEvent, RuntimeReadContext, RuntimeTask, RuntimeTransaction } from '../contracts/runtime-store.ts';
 import type { JsonObject } from '../contracts/store.ts';
 import type { IdentityAccess, Principal } from '../domains/access/public.ts';
 import { fail, M1Error, object, version } from '../domains/common/errors.ts';
@@ -8,7 +8,7 @@ import { commitRuntimeCommandIn, hashRuntimeRequest } from '../domains/runtime/c
 import { createWorldCursor } from '../domains/world/cursor.ts';
 import { WORLD_REPOSITORY } from '../domains/world/repository.ts';
 import { assertCell, assertRuleset, containingPlace, DEFAULT_WORLD_RULES, validatePath } from '../domains/world/rules.ts';
-import type { GridPoint, WorldAvatar, WorldRuleset } from '../domains/world/types.ts';
+import { MOVEMENT_POLICY_V1, type GridPoint, type WorldAvatar, type WorldMovement, type WorldRuleset } from '../domains/world/types.ts';
 
 /** Explicit maintenance initialization. Opening the store or serving HTTP never seeds a world. */
 export async function bootstrapWorld(context: RuntimeTransaction, rules: WorldRuleset = structuredClone(DEFAULT_WORLD_RULES)): Promise<void> {
@@ -23,7 +23,7 @@ export async function verifyWorldReadiness(context: RuntimeReadContext, worldId 
   if (!rules || await context.tasks.currentGeneration('world') < 1) fail('world_not_available', 503, 'World rules or task generation are unavailable');
   assertRuleset(rules);
 }
-const actions = ['world.avatar.create', 'world.avatar.move', 'world.avatar.leave'];
+const actions = ['world.avatar.create', 'world.avatar.move', 'world.avatar.leave', 'world.movement.stop'];
 export function createWorldService(identity: IdentityAccess<RuntimeReadContext>) {
   const cursors = createWorldCursor();
   async function authorize(context: RuntimeReadContext, principal: Principal): Promise<string> {
@@ -45,7 +45,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
   async function fact(context: RuntimeTransaction, key: CommandKey, avatar: WorldAvatar, kind: string, worldRevision: number): Promise<string[]> {
     const eventId = randomUUID(), generation = await context.tasks.currentGeneration('world');
     await context.events.append({ eventId, domain: 'world', kind, schemaVersion: 1, subject: { type: 'avatar', id: avatar.id, version: avatar.version },
-      worldId: avatar.worldId, actor: key.principal, source: 'external_agent', occurredAt: context.now(), causationId: key.commandId, correlationId: key.commandId,
+      worldId: avatar.worldId, actor: key.principal, source: key.principal.kind === 'system' ? 'rules' : 'external_agent', occurredAt: context.now(), causationId: key.commandId, correlationId: key.commandId,
       audience: { kind: 'public', agentIds: [] }, payload: { avatarId: avatar.id, agentId: avatar.agentId, worldId: avatar.worldId, avatarVersion: avatar.version,
         worldRevision, rulesetVersion: avatar.rulesetVersion, position: { x: avatar.position.x, y: avatar.position.y }, placeId: avatar.placeId, status: avatar.status } });
     await context.outbox.enqueue({ outboxId: randomUUID(), eventId, consumerId: 'world-projection', dedupeKey: eventId, generation, dueAt: context.now(), maxAttempts: 5 });
@@ -61,18 +61,70 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
       }
     }
   }
+  async function scheduleStep(context: RuntimeTransaction, movement: WorldMovement): Promise<void> {
+    if (movement.nextDueAt === null) return;
+    await context.tasks.schedule({ taskId: randomUUID(), domain: 'world', kind: 'world.movement.step', handlerVersion: 1, dedupeKey: movement.id + ':' + movement.version,
+      target: { type: 'movement', id: movement.id, version: movement.version }, timeKind: 'utc', dueAt: movement.nextDueAt,
+      generation: await context.tasks.currentGeneration('world'), maxAttempts: 5, payloadVersion: 1, payload: {} });
+  }
+  async function movementFact(context: RuntimeTransaction, key: CommandKey, movement: WorldMovement, revision: number): Promise<string[]> {
+    const eventId = randomUUID(); await context.events.append({ eventId, domain: 'world', kind: 'world.movement.' + movement.state, schemaVersion: 1,
+      subject: { type: 'movement', id: movement.id, version: movement.version }, worldId: movement.worldId, actor: key.principal,
+      source: key.principal.kind === 'system' ? 'rules' : 'external_agent', occurredAt: context.now(), causationId: key.commandId, correlationId: movement.commandId,
+      audience: { kind: 'agents', agentIds: [movement.agentId] }, payload: movementResult(movement, revision) });
+    await context.outbox.enqueue({ outboxId: randomUUID(), eventId, consumerId: 'world-projection', dedupeKey: eventId, generation: await context.tasks.currentGeneration('world'), dueAt: context.now(), maxAttempts: 5 }); return [eventId];
+  }
+  async function handleTask(context: RuntimeTransaction, scheduled: RuntimeTask): Promise<void> {
+    if (!scheduled.lease) fail('invalid_task', 400, 'World movement requires a current lease');
+    const task = await context.tasks.assertLease(scheduled.lease, context.now());
+    if (task.domain !== 'world' || task.kind !== 'world.movement.step' || task.target.type !== 'movement' || task.handlerVersion !== 1 || task.payloadVersion !== 1) fail('invalid_task', 400, 'Unsupported World task');
+    const repository = context.repository(WORLD_REPOSITORY), movement = await repository.getMovement(task.target.id);
+    if (!movement || movement.version !== task.target.version || !['pending', 'running'].includes(movement.state)) return;
+    const world = await repository.lockWorld(movement.worldId); if (!world) fail('world_not_available', 503, 'World is not available');
+    const key: CommandKey = { domain: 'world', action: task.kind, commandId: task.taskId, principal: { kind: 'system', id: 'world-rules' }, recoveryEpoch: context.recoveryEpoch };
+    let rules: WorldRuleset, avatar: WorldAvatar, destination: GridPoint;
+    try {
+      await participation(context, movement.agentId, movement.worldId, true);
+      const status = await identity.readParticipation(context, movement.agentId), q = movement.qualification;
+      if (movement.recoveryEpoch !== context.recoveryEpoch || status.runtimeVersion !== q.runtimeVersion || status.membership.ownerPauseVersion !== q.ownerPauseVersion
+        || status.membership.platformVersion !== q.platformVersion || status.membership.sharingGeneration !== q.sharingGeneration) fail('movement_qualification_changed', 409, 'Movement qualification has changed');
+      const current = await rulesFor(context, movement.worldId); rules = current.rules;
+      if (movement.rulesetVersion !== rules.version || movement.topologyVersion !== rules.topologyVersion || movement.policyVersion !== MOVEMENT_POLICY_V1.version || movement.stepIntervalMs !== MOVEMENT_POLICY_V1.stepIntervalMs) fail('movement_rules_changed', 409, 'Movement rules have changed');
+      const existing = await repository.getAvatar(movement.worldId, movement.agentId); if (!existing || existing.id !== movement.avatarId || existing.status !== 'idle' || existing.version !== movement.expectedAvatarVersion) fail('movement_avatar_changed', 409, 'Avatar has changed'); avatar = existing;
+      const cell = movement.path[movement.nextStep]; if (!cell || movement.nextDueAt === null || task.dueAt !== movement.nextDueAt || context.now() < movement.nextDueAt) fail('movement_plan_invalid', 409, 'Movement plan is not executable');
+      destination = validatePath(rules, avatar.position, [cell])[0]!; await capacity(context, rules, [destination], movement.agentId);
+    } catch (error) {
+      if (!(error instanceof M1Error) || error.statusCode >= 500) throw error;
+      const next = stopped(movement, context.now(), error.code); await repository.saveMovement(next, movement.version); const revision = await repository.advanceRevision(movement.worldId, world.revision); await movementFact(context, key, next, revision); return;
+    }
+    const now = context.now(), nextAvatar: WorldAvatar = { ...avatar, version: avatar.version + 1, position: { ...destination }, placeId: containingPlace(rules, destination)?.id ?? null, rulesetVersion: rules.version, updatedAt: now };
+    const finished = movement.nextStep + 1 === movement.path.length;
+    const next: WorldMovement = { ...movement, version: movement.version + 1, state: finished ? 'completed' : 'running', nextStep: movement.nextStep + 1,
+      expectedAvatarVersion: nextAvatar.version, updatedAt: now, nextDueAt: finished ? null : now + movement.stepIntervalMs, completedAt: finished ? now : null };
+    await repository.saveAvatar(nextAvatar, avatar.version); await repository.saveMovement(next, movement.version); await scheduleStep(context, next);
+    const revision = await repository.advanceRevision(movement.worldId, world.revision); await fact(context, key, nextAvatar, 'world.avatar.moved', revision); await movementFact(context, key, next, revision);
+    // Controlled scheduler completes the same lease only after this handler's writes succeed.
+  }
   async function execute(context: RuntimeTransaction, principal: Principal, key: CommandKey, input: JsonObject): Promise<CommandReceipt> {
     if (key.domain !== 'world' || !actions.includes(key.action) || principal.kind !== 'agent' || key.principal.kind !== 'agent' || key.principal.id !== principal.agentId) fail('invalid_request', 400, 'Invalid world command identity');
     const keys = key.action === 'world.avatar.create' ? ['worldId', 'expectedRulesetVersion'] : key.action === 'world.avatar.move'
-      ? ['worldId', 'expectedVersion', 'expectedRulesetVersion', 'expectedTopologyVersion', 'path'] : ['worldId', 'expectedVersion'];
+      ? ['worldId', 'expectedVersion', 'expectedRulesetVersion', 'expectedTopologyVersion', 'path'] : key.action === 'world.movement.stop' ? ['worldId', 'movementId', 'expectedVersion'] : ['worldId', 'expectedVersion'];
     const request = object(input, keys), worldId = identifier(request.worldId, 'worldId');
     return commitRuntimeCommandIn(context, { key, requestHash: hashRuntimeRequest(input), authorize: async current => { await participation(current, await authorize(current, principal), worldId, false); },
       classifyRejection: error => error instanceof M1Error && error.statusCode < 500 ? { outcome: error.statusCode === 409 ? 'conflict' : error.statusCode === 410 ? 'expired' : 'rejected', result: { code: error.code } } : undefined,
       handle: async current => {
         const agentId = principal.agentId, repository = current.repository(WORLD_REPOSITORY);
-        await participation(current, agentId, worldId, true);
+        await participation(current, agentId, worldId, key.action !== 'world.movement.stop');
         const locked = await repository.lockWorld(worldId); if (!locked?.active) fail('world_not_accessible', 404, 'World is not available');
         const { world, rules } = await rulesFor(current, worldId), old = await repository.getAvatar(worldId, agentId), now = current.now();
+        if (key.action === 'world.movement.stop') {
+          const movement = await repository.getMovement(identifier(request.movementId, 'movementId'));
+          if (!movement || movement.agentId !== agentId || movement.worldId !== worldId) fail('movement_not_found', 404, 'Movement is not available');
+          if (version(request.expectedVersion) !== movement.version) fail('version_conflict', 409, 'Movement has changed');
+          if (!['pending', 'running'].includes(movement.state)) return { result: movementResult(movement, world.revision), eventIds: [] };
+          const next = stopped(movement, now, 'agent_stopped'); await repository.saveMovement(next, movement.version);
+          const revision = await repository.advanceRevision(worldId, world.revision); return { result: movementResult(next, revision), eventIds: await movementFact(current, key, next, revision) };
+        }
         let avatar: WorldAvatar, kind: string;
         if (key.action === 'world.avatar.create') {
           if (version(request.expectedRulesetVersion, 'expectedRulesetVersion') !== rules.version) fail('version_conflict', 409, 'World rules have changed');
@@ -83,11 +135,19 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
         } else {
           if (!old || old.status === 'left') fail('avatar_not_found', 404, 'Avatar is not available');
           if (version(request.expectedVersion) !== old.version) fail('version_conflict', 409, 'Avatar has changed');
-          if (key.action === 'world.avatar.leave') { avatar = { ...old, version: old.version + 1, status: 'left', placeId: null, updatedAt: now }; kind = 'world.avatar.left'; }
+          if (key.action === 'world.avatar.leave') { const active = await repository.getActiveMovement(worldId, agentId); if (active) await repository.saveMovement(stopped(active, now, 'avatar_left'), active.version); avatar = { ...old, version: old.version + 1, status: 'left', placeId: null, updatedAt: now }; kind = 'world.avatar.left'; }
           else {
             if (version(request.expectedRulesetVersion, 'expectedRulesetVersion') !== rules.version || version(request.expectedTopologyVersion, 'expectedTopologyVersion') !== rules.topologyVersion) fail('version_conflict', 409, 'World rules have changed');
-            const path = validatePath(rules, old.position, request.path); await capacity(current, rules, path, agentId); const destination = path.at(-1)!;
-            avatar = { ...old, version: old.version + 1, position: { ...destination }, placeId: containingPlace(rules, destination)?.id ?? null, rulesetVersion: rules.version, status: 'idle', updatedAt: now }; kind = 'world.avatar.moved';
+            if (await repository.getActiveMovement(worldId, agentId)) fail('movement_in_progress', 409, 'The Avatar already has an active movement');
+            const path = validatePath(rules, old.position, request.path); await capacity(current, rules, path, agentId);
+            const status = await identity.readParticipation(current, agentId);
+            const movement: WorldMovement = { id: randomUUID(), worldId, agentId, avatarId: old.id, version: 1, state: 'pending', origin: { ...old.position }, path,
+              nextStep: 0, expectedAvatarVersion: old.version, rulesetVersion: rules.version, topologyVersion: rules.topologyVersion, policyVersion: MOVEMENT_POLICY_V1.version,
+              stepIntervalMs: MOVEMENT_POLICY_V1.stepIntervalMs, createdAt: now, updatedAt: now, nextDueAt: now + MOVEMENT_POLICY_V1.stepIntervalMs, completedAt: null, stoppedCode: null,
+              commandId: key.commandId, recoveryEpoch: current.recoveryEpoch, qualification: { runtimeVersion: status.runtimeVersion, ownerPauseVersion: status.membership.ownerPauseVersion,
+                platformVersion: status.membership.platformVersion, sharingGeneration: status.membership.sharingGeneration } };
+            await repository.saveMovement(movement, null); await scheduleStep(current, movement); const revision = await repository.advanceRevision(worldId, world.revision);
+            return { result: movementResult(movement, revision), eventIds: await movementFact(current, key, movement, revision) };
           }
         }
         await repository.saveAvatar(avatar, old?.version ?? null); const revision = await repository.advanceRevision(worldId, world.revision);
@@ -102,7 +162,13 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
     if (!avatar || avatar.status === 'left') fail('avatar_not_found', 404, 'Avatar is not available');
     return { worldId, worldRevision: world.revision, asOf: context.now(), avatar: structuredClone(avatar) };
   }
-  return { execute, readAvatar,
+  return { execute, readAvatar, handleTask,
+    async readMovement(context: RuntimeReadContext, principal: Principal, worldId: string, movementId?: string): Promise<JsonObject> {
+      const actor = await authorize(context, principal); await participation(context, actor, worldId, false); const { world } = await rulesFor(context, worldId), repository = context.repository(WORLD_REPOSITORY);
+      const movement = movementId === undefined ? await repository.getActiveMovement(worldId, actor) : await repository.getMovement(identifier(movementId, 'movementId'));
+      if (!movement || movement.agentId !== actor || movement.worldId !== worldId) fail('movement_not_found', 404, 'Movement is not available');
+      return { ...movementResult(movement, world.revision), asOf: context.now() };
+    },
     async authorizeReceipt(context: RuntimeReadContext, principal: Principal, receipt: CommandReceipt) {
       const actor = await authorize(context, principal);
       if (receipt.key.domain !== 'world' || receipt.key.principal.kind !== 'agent' || receipt.key.principal.id !== actor || !actions.includes(receipt.key.action)) fail('target_not_accessible', 404, 'Receipt is not accessible');
@@ -112,6 +178,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
     async authorizeEvent(context: RuntimeReadContext, principal: Principal, event: RuntimeEvent) {
       const actor = await authorize(context, principal); if (event.domain !== 'world' || !event.worldId) fail('target_not_accessible', 404, 'Event is not accessible');
       await participation(context, actor, event.worldId, false);
+      if (event.subject.type === 'movement' && !event.audience.agentIds.includes(actor)) fail('target_not_accessible', 404, 'Event is not accessible');
       if (typeof event.payload.agentId !== 'string') fail('target_not_accessible', 404, 'Event is not accessible');
       await participation(context, event.payload.agentId, event.worldId, false);
     },
@@ -139,4 +206,13 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
 function avatarResult(avatar: WorldAvatar, worldRevision: number, changed: boolean): JsonObject {
   return { worldId: avatar.worldId, avatarId: avatar.id, agentId: avatar.agentId, version: avatar.version, status: avatar.status,
     position: { x: avatar.position.x, y: avatar.position.y }, placeId: avatar.placeId, rulesetVersion: avatar.rulesetVersion, worldRevision, changed };
+}
+
+function stopped(movement: WorldMovement, now: number, code: string): WorldMovement {
+  return { ...movement, version: movement.version + 1, state: 'stopped', updatedAt: now, nextDueAt: null, stoppedCode: code };
+}
+function movementResult(movement: WorldMovement, worldRevision: number): JsonObject {
+  return { movementId: movement.id, worldId: movement.worldId, agentId: movement.agentId, avatarId: movement.avatarId, version: movement.version,
+    state: movement.state, nextStep: movement.nextStep, pathLength: movement.path.length, nextDueAt: movement.nextDueAt, completedAt: movement.completedAt,
+    stoppedCode: movement.stoppedCode, policyVersion: movement.policyVersion, stepIntervalMs: movement.stepIntervalMs, avatarVersion: movement.expectedAvatarVersion, worldRevision };
 }

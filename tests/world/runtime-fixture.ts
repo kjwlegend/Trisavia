@@ -1,6 +1,6 @@
 import { RuntimeError, type CommandKey, type CommandReceipt, type RuntimeEvent, type RuntimeEventDraft, type RuntimeReadContext, type RuntimeStore, type RuntimeTask, type RuntimeTaskDraft, type RuntimeTransaction, type WorkLease, type OutboxEntry, type OutboxDraft, type RuntimeRepositoryPort } from '../../apps/platform/contracts/runtime-store.ts';
 import type { AgentParticipation, IdentityAccess, Principal } from '../../apps/platform/domains/access/public.ts';
-import type { WorldAvatar, WorldRuleset, WorldState } from '../../apps/platform/domains/world/types.ts';
+import type { WorldAvatar, WorldMovement, WorldRuleset, WorldState } from '../../apps/platform/domains/world/types.ts';
 import type { WorldRepository } from '../../apps/platform/domains/world/repository.ts';
 import type { InteractionRepository } from '../../apps/platform/domains/interaction/repository.ts';
 import type { ArtifactRevision, FeedbackActivity, FeedbackConfiguration, FeedbackContribution, InteractionInvitation, InteractionPairPolicy } from '../../apps/platform/domains/interaction/types.ts';
@@ -12,7 +12,7 @@ const copy = <T>(value: T): T => structuredClone(value);
 const keyOf = (key: CommandKey) => JSON.stringify(key);
 const pairKey = (a: string, b: string) => JSON.stringify([a, b]);
 interface State {
-  worlds: Map<string, WorldState>; rules: Map<string, WorldRuleset>; avatars: Map<string, WorldAvatar>;
+  movements: Map<string, WorldMovement>; worlds: Map<string, WorldState>; rules: Map<string, WorldRuleset>; avatars: Map<string, WorldAvatar>;
   configs: Map<number, FeedbackConfiguration>; artifacts: Map<string, ArtifactRevision>; pairs: Map<string, InteractionPairPolicy>;
   invitations: Map<string, InteractionInvitation>; activities: Map<string, FeedbackActivity>; feedback: Map<string, FeedbackContribution>;
   receipts: Map<string, CommandReceipt>; events: RuntimeEvent[]; outbox: Map<string, OutboxEntry>; tasks: Map<string, RuntimeTask>; generations: Map<string, number>;
@@ -20,7 +20,7 @@ interface State {
 }
 /** Pure in-memory public-port fixture. It verifies C business logic, not PostgreSQL locks or A credential authentication. */
 export function coreFixture() {
-  let stamp = 1_000_000, state: State = { worlds: new Map(), rules: new Map(), avatars: new Map(), configs: new Map(), artifacts: new Map(), pairs: new Map(),
+  let stamp = 1_000_000, state: State = { movements: new Map(), worlds: new Map(), rules: new Map(), avatars: new Map(), configs: new Map(), artifacts: new Map(), pairs: new Map(),
     invitations: new Map(), activities: new Map(), feedback: new Map(), receipts: new Map(), events: [], outbox: new Map(), tasks: new Map(), generations: new Map(), decisions: new Map(), participants: new Map() };
   let failAt = '';
   function fault(at: string) { if (failAt === at) throw new Error('injected storage failure: ' + at); }
@@ -34,6 +34,8 @@ export function coreFixture() {
     async advanceRevision(id, expected) { const old = state.worlds.get(id); if (!old || old.revision !== expected) throw new RuntimeError('version_conflict', 'World changed'); old.revision++; return old.revision; },
     async getAvatar(w, a) { return copy(state.avatars.get(pairKey(w, a))); },
     async saveAvatar(a, expected) { fault('avatar'); save(state.avatars, pairKey(a.worldId, a.agentId), a, expected); },
+    async getMovement(id) { return copy(state.movements.get(id)); }, async getActiveMovement(w,a) { return copy([...state.movements.values()].find(m=>m.worldId===w&&m.agentId===a&&['pending','running'].includes(m.state))); },
+    async saveMovement(m,expected) { fault('movement'); save(state.movements,m.id,m,expected); },
     async countAtPlace(w, p, excluding) { return [...state.avatars.values()].filter(a => a.worldId === w && a.placeId === p && a.agentId !== excluding && a.status !== 'left').length; },
     async listAvatars(w, o) { return copy([...state.avatars.values()].filter(a => a.worldId === w && a.status !== 'left' && (!o.afterAgentId || a.agentId > o.afterAgentId)).sort((a,b) => a.agentId.localeCompare(b.agentId)).slice(0,o.limit)); },
   };
