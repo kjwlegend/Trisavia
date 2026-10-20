@@ -6,7 +6,8 @@ const structural=value=>JSON.stringify(value&&typeof value==='object'?Array.isAr
 const blank=()=>({phase:'idle',records:[],complete:false,nextPageToken:null,errorCode:'',permissionVersion:'',instanceId:''});
 export function readPhase(error){
   if(error?.status===401||['authentication_required','session_expired'].includes(error?.code))return 'session';
-  if(error?.status===403||['insufficient_scope','target_not_accessible','read_scope_changed'].includes(error?.code))return 'denied';
+  if(['content_changed','page_expired','read_scope_changed'].includes(error?.code))return 'resync';
+  if(error?.status===403||['insufficient_scope','target_not_accessible'].includes(error?.code))return 'denied';
   if(error?.code==='agent_required')return 'no_agent';
   if(error?.code==='channel_not_enabled')return 'not_enabled';
   if(error?.code==='source_unavailable')return 'unavailable';
@@ -15,7 +16,7 @@ export function readPhase(error){
 export function createWorldReadProvider(session){
   let identity=session.snapshot().observationRevision,revision=0,disposed=false,metadata=null;
   const empty=key=>({...blank(),phase:!session.snapshot().authenticated?'session':WORLD_VIEWS[key].channel!=='world'&&!session.snapshot().selectedAgentId?'no_agent':'idle'});
-  const views=Object.fromEntries(Object.keys(WORLD_VIEWS).map(key=>[key,empty(key)])),listeners=new Set(),requests=new Map();
+  const views=Object.fromEntries(Object.keys(WORLD_VIEWS).map(key=>[key,empty(key)])),epochs=Object.fromEntries(Object.keys(WORLD_VIEWS).map(key=>[key,0])),listeners=new Set(),requests=new Map();
   const snapshot=key=>clone(views[key]),emit=key=>{for(const listener of listeners)listener(key,snapshot(key));};
   function invalidate(){revision++;metadata=null;for(const request of requests.values())request.abort();requests.clear();for(const key of Object.keys(views)){views[key]=empty(key);emit(key);}}
   const stop=session.subscribe(state=>{if(identity===state.observationRevision)return;identity=state.observationRevision;invalidate();});
@@ -79,9 +80,9 @@ export function createWorldReadProvider(session){
     if(disposed||!WORLD_VIEWS[key])return;
     const previous=views[key];
     if(more&&(!previous.nextPageToken||previous.complete))return;
-    requests.get(key)?.abort();const request=new AbortController();requests.set(key,request);const generation=revision;
+    requests.get(key)?.abort();const request=new AbortController();requests.set(key,request);const generation=revision,scopeEpoch=epochs[key];
     views[key]={...(more?previous:blank()),phase:'loading',loadingMore:more};emit(key);
-    const current=()=>!disposed&&generation===revision&&requests.get(key)===request;
+    const current=()=>!disposed&&generation===revision&&scopeEpoch===epochs[key]&&requests.get(key)===request;
     try{
       const meta=await ready(key,'list',request.signal);if(!current())return;
       const result=unwrap(await invoke('list',{...WORLD_VIEWS[key],...(more?{pageToken:previous.nextPageToken}:{})},request.signal)),data=result.data;
@@ -93,17 +94,18 @@ export function createWorldReadProvider(session){
       views[key]={phase:'ready',records,complete:data.complete,nextPageToken:data.nextPageToken??null,errorCode:'',permissionVersion:result.permissionVersion,instanceId:result.instanceId};emit(key);
     }catch(error){
       if(!current()||error.name==='AbortError')return;
+      if(reject(key,error))return;
       const phase=readPhase(error),preserve=more&&['error','unavailable'].includes(phase)&&previous.records.length>0;
       views[key]={...(preserve?previous:blank()),phase:preserve?'partial':phase,errorCode:error.code||'response_unknown',complete:false};emit(key);
     }finally{if(requests.get(key)===request)requests.delete(key);}
   }
-  async function detail(key,record,{signal}={}){
-    const generation=revision,meta=await ready(key,'detail',signal),view=WORLD_VIEWS[key];
-    if(disposed||generation!==revision||signal?.aborted)throw new DOMException('Context changed','AbortError');
+  async function readDetail(key,record,{signal}={}){
+    const generation=revision,scopeEpoch=epochs[key],meta=await ready(key,'detail',signal),view=WORLD_VIEWS[key];
+    if(disposed||generation!==revision||scopeEpoch!==epochs[key]||signal?.aborted)throw new DOMException('Context changed','AbortError');
     let token=null,text='',first=null,complete=false,offset=0,expectedVersion=record.version;const seen=new Set();
     for(let index=0;index<2049&&!complete;index++){
       const result=unwrap(await invoke('detail',{channel:view.channel,ref:record.ref,...(Number.isSafeInteger(expectedVersion)?{knownVersion:expectedVersion}:{}),...(token?{contentToken:token}:{})},signal)),data=result.data;
-      if(disposed||generation!==revision)throw new DOMException('Context changed','AbortError');
+      if(disposed||generation!==revision||scopeEpoch!==epochs[key])throw new DOMException('Context changed','AbortError');
       if(result.instanceId!==meta.instanceId||refKey(data.ref)!==refKey(record.ref)||!Number.isSafeInteger(data.version)||(expectedVersion!==undefined&&data.version!==expectedVersion)||typeof data.content?.text!=='string'||data.segment?.unit!=='utf16-code-units'||data.segment.start!==offset||data.segment.end!==offset+data.content.text.length||!Number.isSafeInteger(data.segment.total)||data.segment.total>1048576)throw problem('content_changed');
       expectedVersion??=data.version;
       if(first&&(result.permissionVersion!==first.permissionVersion||data.segment.total!==first.data.segment.total||data.readSessionId!==first.data.readSessionId))throw problem('read_scope_changed');
@@ -113,7 +115,19 @@ export function createWorldReadProvider(session){
     }
     throw problem('response_unknown');
   }
-  function remove(key,record){views[key]={...views[key],phase:'partial',records:views[key].records.filter(value=>refKey(value.ref)!==refKey(record.ref)),complete:false,nextPageToken:null,errorCode:'read_scope_changed'};emit(key);}
+  async function detail(key,record,options={}){
+    const generation=revision,scopeEpoch=epochs[key];
+    try{return await readDetail(key,record,options);}
+    catch(error){if(!disposed&&generation===revision&&scopeEpoch===epochs[key]&&error.name!=='AbortError')reject(key,error);throw error;}
+  }
+  // A failed private read can mean the binding or whole source audience was revoked.
+  // Clear both private surfaces before any retry; never retain other cached titles.
+  function reject(key,error){
+    const phase=readPhase(error);if(!['session','denied','resync'].includes(phase))return false;
+    const keys=phase==='session'?Object.keys(views):WORLD_VIEWS[key].channel!=='world'?['holdings','notifications']:[key];
+    for(const scope of keys){epochs[scope]++;requests.get(scope)?.abort();requests.delete(scope);views[scope]={...blank(),phase,errorCode:error.code||'response_unknown'};emit(scope);}
+    return true;
+  }
   function cancel(key){const request=requests.get(key);if(!request)return;request.abort();requests.delete(key);views[key]=views[key].records.length?{...views[key],phase:'ready',loadingMore:false}:empty(key);emit(key);}
-  return{snapshot,load,detail,remove,cancel,subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},dispose(){disposed=true;stop();invalidate();listeners.clear();}};
+  return{snapshot,load,detail,cancel,subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},dispose(){disposed=true;stop();invalidate();listeners.clear();}};
 }
