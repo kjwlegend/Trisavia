@@ -8,7 +8,7 @@ export function createWalletService(store:M1Store,authenticate:(tx:M1ReadSession
  return {capabilities:()=>walletCapability,query:(raw:unknown,token:unknown):JsonObject=>store.read(tx=>{
   const input=object(raw,['protocolVersion','consumerId','purpose','agentRef']);if(input.protocolVersion!==1)fail('protocol_unsupported',422,'Protocol major 1 is required');text(input.consumerId,'consumerId',1,100);
   const actor=authenticate(tx,token,['runtime','owner_session']),runtime=actor.data.kind==='runtime';
-  if(!(runtime?['agent-inspect','agent-perception']:['human-inspect']).includes(String(input.purpose)))fail('insufficient_scope',403,'Purpose is not permitted');
+  const purpose=text(input.purpose,'purpose',1,60);if(!(runtime?['agent-inspect','agent-perception']:['human-inspect']).includes(purpose))fail('insufficient_scope',403,'Purpose is not permitted');
   let agentId:string,binding:StoredRow|undefined;
   if(runtime){agentId=String(actor.data.agentId);if(input.agentRef!==undefined){const ar=ref(input.agentRef);if(ar.moduleId!=='profiles'||ar.type!=='profiles.agent@1'||ar.id!==agentId)fail('target_not_accessible',404,'Target is not accessible');}}
   else{if(input.agentRef===undefined)fail('target_not_accessible',404,'Target is not accessible');const ar=ref(input.agentRef);if(ar.moduleId!=='profiles'||ar.type!=='profiles.agent@1')fail('target_not_accessible',404,'Target is not accessible');agentId=ar.id;binding=tx.scan('bindings',{agentId,ownerId:String(actor.data.ownerId),active:true},{limit:1})[0];if(!binding)fail('target_not_accessible',404,'Target is not accessible');}
