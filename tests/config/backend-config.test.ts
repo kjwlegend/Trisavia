@@ -1,66 +1,49 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync, chmodSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { loadBackendConfig } from '../../apps/platform/configuration/backend-config.ts';
-
-test('persistent identity survives restart and is not regenerated after damage or conflicts', () => {
-  const cwd = mkdtempSync(join(tmpdir(), 'm1-config-'));
-  try {
-    const first = loadBackendConfig({}, cwd);
-    const second = loadBackendConfig({}, cwd);
+function fixture() { const directory = mkdtempSync(join(tmpdir(), 'connet-pg-config-')), identity = join(directory, 'identity.json'), connection = join(directory, 'connection'); writeFileSync(identity, JSON.stringify({ version: 1, instanceId: 'configuration-instance', recoveryEpoch: 'configuration-epoch' }), { mode: 0o600 }); writeFileSync(connection, 'postgresql://configuration:synthetic@127.0.0.1:15432/configuration_tests\n', { mode: 0o600 }); return { directory, identity, connection, env: { M1_POSTGRES_CONNECTION_FILE: connection, M1_IDENTITY_PATH: identity } }; }
+await test('PG configuration reads exact existing identity and never generates, rotates or repairs metadata', () => { const f = fixture(); try {
+    const before = readFileSync(f.identity);
+    const first = loadBackendConfig(f.env), second = loadBackendConfig(f.env);
     assert.equal(first.instanceId, second.instanceId);
     assert.equal(first.recoveryEpoch, second.recoveryEpoch);
-    assert.ok(first.identityPath);
-    assert.equal(statSync(first.identityPath).mode & 0o777, 0o600);
-    const original = readFileSync(first.identityPath, 'utf8');
-    assert.throws(() => loadBackendConfig({ M1_RECOVERY_EPOCH: 'different-epoch' }, cwd), /conflicts/);
-    assert.equal(readFileSync(first.identityPath, 'utf8'), original);
-    writeFileSync(first.identityPath, 'broken metadata');
-    assert.throws(() => loadBackendConfig({}, cwd), /refusing to regenerate/);
-    assert.equal(readFileSync(first.identityPath, 'utf8'), 'broken metadata');
-  } finally { rmSync(cwd, { recursive: true, force: true }); }
-});
-
-test('rejects external binding, malformed ports and unsafe identity configuration', () => {
-  assert.throws(() => loadBackendConfig({ M1_HOST: '0.0.0.0' }), /loopback/);
-  for (const M1_PORT of ['abc', '-1', '65536', '1.5', '']) {
-    assert.throws(() => loadBackendConfig({ M1_PORT }), /M1_PORT/);
-  }
-  assert.throws(() => loadBackendConfig({ M1_INSTANCE_ID: 'with spaces' }), /identifier/);
-  const cwd = mkdtempSync(join(tmpdir(), 'm1-config-'));
-  try {
-    assert.throws(() => loadBackendConfig({ M1_DATABASE_PATH: 'same', M1_IDENTITY_PATH: 'same' }, cwd), /separate/);
-  } finally { rmSync(cwd, { recursive: true, force: true }); }
-});
-
-test('memory databases require no identity file and accept explicit test identity', () => {
-  const result = loadBackendConfig({
-    M1_DATABASE_PATH: ':memory:', M1_INSTANCE_ID: 'test-instance', M1_RECOVERY_EPOCH: 'test-epoch', M1_PORT: '0',
-  });
-  assert.equal(result.identityPath, null);
-  assert.equal(result.instanceId, 'test-instance');
-  assert.equal(result.recoveryEpoch, 'test-epoch');
-  assert.equal(result.port, 0);
-});
-
-test('does not invent new identity metadata beside an existing database', () => {
-  const cwd = mkdtempSync(join(tmpdir(), 'm1-config-'));
-  try {
-    writeFileSync(join(cwd, 'existing.sqlite'), 'existing database stand-in');
-    assert.throws(() => loadBackendConfig({ M1_DATABASE_PATH: 'existing.sqlite' }, cwd), /explicit recovery/);
-    assert.throws(() => readFileSync(join(cwd, 'existing.sqlite.identity.json')), { code: 'ENOENT' });
-  } finally { rmSync(cwd, { recursive: true, force: true }); }
-});
-
-test('proxy trust requires explicit opt-in and never permits a public bind', () => {
-  const env = { M1_DATABASE_PATH: ':memory:' };
-  assert.equal(loadBackendConfig(env).trustProxyLoopback, false);
-  assert.equal(loadBackendConfig({ ...env, M1_TRUST_PROXY_LOOPBACK: '0' }).trustProxyLoopback, false);
-  assert.equal(loadBackendConfig({ ...env, M1_TRUST_PROXY_LOOPBACK: '1' }).trustProxyLoopback, true);
-  for (const value of ['true', 'false', 'yes', '', ' 1', '2']) {
-    assert.throws(() => loadBackendConfig({ ...env, M1_TRUST_PROXY_LOOPBACK: value }), /M1_TRUST_PROXY_LOOPBACK/);
-  }
-  assert.throws(() => loadBackendConfig({ ...env, M1_HOST: '0.0.0.0', M1_TRUST_PROXY_LOOPBACK: '1' }), /loopback/);
-});
+    assert.equal(first.identityPath, f.identity);
+    assert.deepEqual(readFileSync(f.identity), before);
+    assert.throws(() => loadBackendConfig({ ...f.env, M1_RECOVERY_EPOCH: 'different-epoch' }), /conflicts/);
+    assert.deepEqual(readFileSync(f.identity), before);
+    writeFileSync(f.identity, 'broken metadata');
+    assert.throws(() => loadBackendConfig(f.env), /refusing to regenerate/);
+    assert.equal(readFileSync(f.identity, 'utf8'), 'broken metadata');
+}
+finally {
+    rmSync(f.directory, { recursive: true, force: true });
+} });
+await test('PG-only startup requires one private connection and a paired identity without inventing files', () => { const f = fixture(); try {
+    for (const bad of [{}, { M1_DATABASE_URL: 'postgresql://synthetic@localhost/test' }, { ...f.env, M1_DATABASE_URL: 'postgresql://synthetic@localhost/test' }, { ...f.env, M1_DATABASE_PATH: ':memory:' }, { ...f.env, M1_IDENTITY_PATH: join(f.directory, 'missing.json') }])
+        assert.throws(() => loadBackendConfig(bad));
+    assert.equal(existsSync(join(f.directory, 'missing.json')), false);
+    chmodSync(f.connection, 0o644);
+    assert.throws(() => loadBackendConfig(f.env), /private|Private/);
+    chmodSync(f.connection, 0o600);
+    writeFileSync(f.connection, 'sqlite:legacy');
+    assert.throws(() => loadBackendConfig(f.env), /PostgreSQL/);
+}
+finally {
+    rmSync(f.directory, { recursive: true, force: true });
+} });
+await test('binding, port and proxy boundaries remain explicit with PostgreSQL', () => { const f = fixture(); try {
+    assert.throws(() => loadBackendConfig({ ...f.env, M1_HOST: '0.0.0.0' }), /loopback/);
+    for (const M1_PORT of ['abc', '-1', '65536', '1.5', ''])
+        assert.throws(() => loadBackendConfig({ ...f.env, M1_PORT }), /M1_PORT/);
+    assert.equal(loadBackendConfig({ ...f.env, M1_PORT: '0' }).port, 0);
+    assert.equal(loadBackendConfig(f.env).trustProxyLoopback, false);
+    assert.equal(loadBackendConfig({ ...f.env, M1_TRUST_PROXY_LOOPBACK: '1' }).trustProxyLoopback, true);
+    for (const value of ['true', 'false', 'yes', '', ' 1', '2'])
+        assert.throws(() => loadBackendConfig({ ...f.env, M1_TRUST_PROXY_LOOPBACK: value }), /M1_TRUST_PROXY_LOOPBACK/);
+}
+finally {
+    rmSync(f.directory, { recursive: true, force: true });
+} });
