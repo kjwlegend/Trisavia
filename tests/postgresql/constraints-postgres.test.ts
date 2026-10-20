@@ -34,9 +34,22 @@ test('wallet bounds are exact safe integers in both codec and relational constra
     assert.equal((await store.read(tx=>tx.get('wallet_accounts','star_coin:max')))?.data.balance,Number.MAX_SAFE_INTEGER);
     for(const balance of [0.5,Number.MAX_SAFE_INTEGER+1,NaN])await assert.rejects(store.transaction(tx=>tx.update('wallet_accounts',row('star_coin:zero',{...wallet('zero',0).data,balance},2),1)),errorCode('invalid_usage'));
     for(const sql of ["UPDATE wallet.accounts SET balance=-1 WHERE id='star_coin:zero'","UPDATE wallet.accounts SET balance=9007199254740992 WHERE id='star_coin:zero'","UPDATE wallet.accounts SET currency_code='other' WHERE id='star_coin:zero'","UPDATE wallet.accounts SET id='wrong' WHERE id='star_coin:zero'"])await assert.rejects(dml.query(sql),errorCode('23514'));
-    const outcomes=await Promise.allSettled([store.transaction(tx=>tx.insert('wallet_accounts',wallet('zero',0))),store.transaction(tx=>tx.insert('wallet_accounts',wallet('zero',0)))]);
-    assert.equal(outcomes.filter(item=>item.status==='rejected').length,2);
-    assert.equal(await store.read(tx=>tx.count('wallet_accounts',{agentId:'zero'},10)),1);
+    await store.transaction(tx=>tx.insert('agents',row('racing')));
+    const outcomes=await Promise.allSettled([store.transaction(tx=>tx.insert('wallet_accounts',wallet('racing',0))),store.transaction(tx=>tx.insert('wallet_accounts',wallet('racing',0)))]);
+    assert.equal(outcomes.filter(item=>item.status==='fulfilled').length,1);assert.equal(outcomes.filter(item=>item.status==='rejected').length,1);
+    assert.equal(await store.read(tx=>tx.count('wallet_accounts',{agentId:'racing'},10)),1);
+  }finally{await store.close();}
+});
+
+test('legacy object kinds route to their domains while holdings and notifications remain distinct',async()=>{
+  const store=await testStore(),types=[['world.rules@1','rules.documents'],['items.item@1','items.items'],['mailbox.message@1','notifications.notifications'],['world.announcement@1','announcements.announcements'],['world.place@1','spaces.places'],['world.plan@1','events.plans'],['world.occurrence@1','events.occurrences']] as const;
+  try{await store.transaction(async tx=>{await tx.insert('agents',row('a'));for(const[type]of types)await tx.insert('perception_objects',row(type,{ref:{moduleId:type.split('.')[0]!,type,id:type},type,title:'synthetic source'}));await tx.insert('perception_grants',row('holding',{agentId:'a',objectId:'items.item@1',kind:'holding',active:true,quantity:0}));await tx.insert('perception_grants',row('delivery',{agentId:'a',objectId:'mailbox.message@1',kind:'delivery',active:true}));await tx.insert('perception_grants',row('read',{agentId:'a',objectId:'world.place@1',kind:'read',active:true}));});
+    for(const[type,table]of types){assert.equal((await store.read(tx=>tx.get('perception_objects',type)))?.data.type,type);assert.equal((await dml.query(`SELECT count(*)::integer n FROM ${table}`)).rows[0].n,1);}
+    assert.equal(await store.read(tx=>tx.count('mailbox_messages',{},10)),0);
+    assert.equal((await dml.query('SELECT count(*)::integer n FROM inventory.holdings')).rows[0].n,1);
+    await assert.rejects(store.transaction(tx=>tx.insert('perception_grants',row('duplicate',{agentId:'a',objectId:'items.item@1',kind:'holding',active:true}))),errorCode('constraint'));
+    await assert.rejects(store.transaction(tx=>tx.insert('perception_grants',row('orphan',{agentId:'a',objectId:'missing',kind:'read',active:true}))),errorCode('constraint'));
+    await assert.rejects(dml.query("UPDATE inventory.holdings SET quantity=-1 WHERE id='holding'"),errorCode('23514'));
   }finally{await store.close();}
 });
 

@@ -97,6 +97,33 @@ test('DML role cannot migrate, alter deployment identity, or enable the write ga
   }finally{await connection.end();}
 });
 
+test('40001 retries the complete callback at most three times and leaves no partial receipt',async()=>{
+  const store=await testStore();let callbacks=0;
+  await admin.query(`CREATE FUNCTION platform.storage_test_serialization_failure() RETURNS trigger LANGUAGE plpgsql AS $$
+    BEGIN IF NEW.id='retry-exhausted' THEN RAISE EXCEPTION 'isolated serialization fixture' USING ERRCODE='40001'; END IF; RETURN NEW; END;
+    $$;
+    CREATE TRIGGER storage_test_serialization_failure BEFORE INSERT ON iam.agents FOR EACH ROW EXECUTE FUNCTION platform.storage_test_serialization_failure();`);
+  try{
+    const before=(await admin.query('SELECT write_generation FROM platform.instance_state')).rows[0].write_generation;
+    await assert.rejects(store.transaction(async tx=>{callbacks++;await tx.insert('operations',row('before-retry',{scope:'test',action:'retry',operationId:'same-operation',epoch:options.recoveryEpoch}));await tx.insert('agents',row('retry-exhausted'));}),errorCode('busy'));
+    assert.equal(callbacks,3);assert.equal(await store.read(tx=>tx.get('operations','before-retry')),undefined);
+    assert.equal((await admin.query('SELECT write_generation FROM platform.instance_state')).rows[0].write_generation,before);
+    await store.transaction(tx=>tx.insert('agents',row('usable-after-exhaustion')));
+    assert.ok(await store.read(tx=>tx.get('agents','usable-after-exhaustion')));
+  }finally{await admin.query('DROP TRIGGER storage_test_serialization_failure ON iam.agents; DROP FUNCTION platform.storage_test_serialization_failure()');await store.close();}
+});
+
+test('close rejects new scopes and drains active and already queued app-role scopes before resolving',async()=>{
+  const store=await openPostgresStore({...applicationOptions,poolMax:1});let release!:()=>void,entered!:()=>void,closed=false;
+  const ready=new Promise<void>(resolve=>{entered=resolve;}),hold=new Promise<void>(resolve=>{release=resolve;});
+  try{await store.transaction(tx=>tx.insert('agents',row('a')));
+    const reading=store.read(async tx=>{entered();await hold;return tx.get('agents','a');});await ready;
+    let queuedEntered=false;const queued=store.read(async tx=>{queuedEntered=true;return tx.get('agents','a');});
+    const closing=store.close().then(()=>{closed=true;});await assert.rejects(store.read(async()=>true),errorCode('closed'));
+    await new Promise(resolve=>setTimeout(resolve,25));assert.equal(closed,false);assert.equal(queuedEntered,false);release();assert.equal((await reading)?.id,'a');assert.equal((await queued)?.id,'a');await closing;assert.equal(closed,true);assert.equal(queuedEntered,true);await store.close();
+  }finally{release?.();await store.close();}
+});
+
 test('lost real COMMIT acknowledgement is unknown_commit and original receipt remains exactly once',async()=>{
   const destination=new URL(applicationOptions.connectionString),sockets=new Set<net.Socket>();let dropped=false;
   const proxy=net.createServer(front=>{
