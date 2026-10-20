@@ -395,13 +395,14 @@ async function checkResult(){
 }
 async function previewHandoff(){
   const source=vault,proof=source.claimContext?.handoffToken||source.handoffToken;
-  if(!validToken(proof)){delete vault.claimContext;save();showSignIn();message('私密入口无效。请让 Agent 在首次管理完成前重新交付有效入口，或使用已有管理方式。','error');return;}
-  const busyLease=setBusy(true);
+  if(!validToken(proof)){delete vault.claimContext;save();showSignIn();message('这个关联入口无效，请让你的 Agent 重新提供一个入口。已有账号可正常登录。','error');return;}
+  const busyLease=setBusy(true);let previewRead=false;
   try{const result=await api(`/owner-handoffs/${encodeURIComponent(tokenId(proof))}`,{token:proof});if(vault!==source||busyLease!==busyRevision)return;
+    previewRead=true;
     setupInfo=result;const saved=findSetupProgress({agentId:result.agentId,generation:result.generation});if(saved){activateSavedSetup(saved);const active=vault;try{await resume();}finally{if(vault===active)setBusy(false,busyLease);}return;}vault.claimContext={agentId:result.agentId,generation:result.generation,handoffToken:proof};save();
     if(vault.sessionToken){try{const loaded=await loadAgents();if(loaded&&vault===source)showClaim();return;}catch(error){if(![401,403].includes(error.status))throw error;}}
     if(vault!==source)return;renderSetup(false);emailFlow.openRegistration(registrationTarget());message('请核对此次 Agent 并填写注册资料。完成验证并确认提交前不会创建账号；已有账号可登录后确认关联。');
-  }catch(error){if(vault!==source||busyLease!==busyRevision)return;if(!isUnknown(error)&&!vault.claimContext?.agentId){delete vault.claimContext;save();}showSignIn();fail(error);}
+  }catch(error){if(vault!==source||busyLease!==busyRevision)return;if(!isUnknown(error)&&!vault.claimContext?.agentId){delete vault.claimContext;save();}showSignIn();if(!previewRead&&!isUnknown(error)&&['authentication_failed','insufficient_scope','target_not_accessible','generation_conflict'].includes(error.code))message('这个关联入口已失效，请让你的 Agent 重新提供一个入口。已有账号可正常登录。','error');else fail(error);}
   finally{if(vault===source)setBusy(false,busyLease);}
 }
 async function readSetupPublic(){

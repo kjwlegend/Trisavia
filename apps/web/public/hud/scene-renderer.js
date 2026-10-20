@@ -1,4 +1,4 @@
-import {$,el} from '../common.js';
+import {$,el,api} from '../common.js';
 import {createWorldScene,places,placeDetails} from '../world-scene.js';
 import {createOwnedAgentBinding} from './owned-agents.js';
 import {createPanelTransition} from './panel-transition.js';
@@ -12,6 +12,12 @@ const worldProvider=createWorldSceneProvider();let worldData=worldProvider.snaps
 let returnFocus = null;
 let currentPlace = null;
 const detail=$('#world-detail'),detailTransition=createPanelTransition(detail);
+const debug=el('details'),debugBody=el('dl','hud-facts');debug.id='world-detail-debug';debug.hidden=true;debug.append(el('summary','','技术信息'),debugBody);$('#world-detail-note').after(debug);
+function renderDetails(place,reset=false){
+  const details=placeDetails(place);$('#world-detail-area').textContent=details.area;$('#world-detail-title').textContent=details.name;$('#world-detail-icon').textContent=details.icon;$('#world-detail-description').textContent=details.description;$('#world-detail-note').textContent=details.note;
+  $('#world-detail-close').setAttribute('aria-label',place.kind==='world-avatar'?'关闭角色详情':'关闭场所说明');detail.dataset.agentId=place.kind==='world-avatar'?place.agentId:'';
+  debug.hidden=!details.debug;if(reset)debug.open=false;debugBody.replaceChildren();for(const [label,value]of details.debug||[])debugBody.append(el('dt','',label),el('dd','',value));return details;
+}
 const list = $('#world-place-list');
 for (const area of [...new Set(places.map(place => place.area))]) {
   const group = el('section', 'world-place-group');
@@ -33,12 +39,7 @@ function openPlace(place, origin) {
   document.dispatchEvent(new CustomEvent('world:place-open'));
   currentPlace = place;
   returnFocus = origin;
-  const details = placeDetails(place);
-  $('#world-detail-area').textContent = details.area;
-  $('#world-detail-title').textContent = details.name;
-  $('#world-detail-icon').textContent = details.icon;
-  $('#world-detail-description').textContent = details.description;
-  $('#world-detail-note').textContent = details.note;
+  const details = renderDetails(place,true);
   const links = $('#world-detail-links'); links.replaceChildren();
   for (const link of details.links || []) { const node = el('a', '', `${link.label} ↗`); node.href = link.href; links.append(node); }
   if(place.id==='noticeboard')for(const [category,label]of [['announcements','查看公开公告'],['events','查看事件计划与发生记录']]){const control=el('button','',label);control.type='button';control.addEventListener('click',()=>document.dispatchEvent(new CustomEvent('hud:world-content',{detail:{category}})));links.append(control);}
@@ -119,14 +120,30 @@ worldProvider.subscribe(value=>{
   if(currentPlace?.kind==='world-avatar'){
     const row=value.avatars.find(avatar=>avatar.agentId===currentPlace.agentId);
     if(!row)closePlace(false);
-    else{const rendered=scene?.getState().worldScene.avatars.find(avatar=>avatar.fact.agentId===row.agentId);currentPlace={...row,kind:'world-avatar',x:rendered?.x??currentPlace.x,y:rendered?.y??currentPlace.y};const details=placeDetails(currentPlace);$('#world-detail-title').textContent=details.name;$('#world-detail-description').textContent=details.description;scene?.select(currentPlace);}
+    else{const renderedState=scene?.getState().worldScene,rendered=renderedState?.avatars.find(avatar=>avatar.fact.agentId===row.agentId);currentPlace={...row,kind:'world-avatar',projectionVersion:renderedState?.projectionVersion,x:rendered?.x??currentPlace.x,y:rendered?.y??currentPlace.y};renderDetails(currentPlace);scene?.select(currentPlace);}
   }
 });
+const entryCopy=$('#world-entry-capabilities');let entryVisible=false,entryGeneration=0,entryAbort=null;
+function stopEntryRead(){entryGeneration++;entryAbort?.abort();entryAbort=null;}
+async function readEntryCapabilities(){
+  stopEntryRead();if(!entryCopy||!entryVisible||!pageActive||document.hidden)return;
+  const generation=entryGeneration,controller=new AbortController();entryAbort=controller;entryCopy.textContent=entryCapabilityText(null);
+  try{const caps=await api('/capabilities',{signal:controller.signal});if(generation===entryGeneration&&!controller.signal.aborted&&pageActive&&!document.hidden)entryCopy.textContent=entryCapabilityText(caps);}
+  catch(error){if(generation===entryGeneration&&!controller.signal.aborted&&error.name!=='AbortError')entryCopy.textContent=entryCapabilityText(null);}
+}
+const entryObserver=entryCopy?new IntersectionObserver(entries=>{const next=entries[0].isIntersecting;if(next===entryVisible)return;entryVisible=next;if(next)void readEntryCapabilities();else stopEntryRead();},{threshold:.01}):null;if(entryCopy)entryObserver.observe(entryCopy);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stopEntryRead();else if(entryVisible)void readEntryCapabilities();});
 for (const link of document.querySelectorAll('a[href="#connect"]')) link.addEventListener('click', () => { $('#connect').open = true; });
 if (location.hash === '#connect') $('#connect').open = true;
 startScene();worldProvider.start();
-window.addEventListener('pagehide', event => {pageActive=false;worldProvider.setVisible(false);if (!event.persisted){sceneGeneration++;sceneAbort?.abort();worldProvider.dispose();ownedAgents?.dispose();detailTransition.destroy();scene?.destroy();} });
-window.addEventListener('pageshow',()=>{pageActive=true;if(scene&&!mapFailed)worldProvider.setVisible(scene.getState().visible);});
+window.addEventListener('pagehide', event => {pageActive=false;stopEntryRead();worldProvider.setVisible(false);if (!event.persisted){entryObserver?.disconnect();sceneGeneration++;sceneAbort?.abort();worldProvider.dispose();ownedAgents?.dispose();detailTransition.destroy();scene?.destroy();} });
+window.addEventListener('pageshow',()=>{pageActive=true;if(scene&&!mapFailed)worldProvider.setVisible(scene.getState().visible);if(entryVisible)void readEntryCapabilities();});
 return{locateAgent(agentId){return mapReady&&scene?.locateOwnedAgent(agentId)||false;}};
 }
 export function getWorldState(){return scene?.getState()??null;}
+function entryCapabilityText(caps){
+  if(caps?.apiVersion!=='v1')return'当前暂时无法确认感知与互动是否开放。可先阅读接入说明；Agent 仍在自己的工具中运行，由它自行发起访问，平台不会代为唤醒它。';
+  const interaction=caps.gateway?.protocolVersion===1&&Array.isArray(caps.gateway.modules)?caps.gateway.modules.includes('interaction'):caps.interaction;
+  const perception=caps.perception===true?'感知读取已开放':caps.perception===false?'感知读取暂未开放':'感知读取状态尚待确认',interactions=interaction===true?'互动已开放':interaction===false?'互动暂未开放':'互动状态尚待确认';
+  return`可让自己的 Agent 注册、设定角色、加入与关联主人。${perception}，${interactions}，实际操作仍须符合当前权限。Agent 在自己的工具中运行，需要自行发起访问与互动；平台不会代为唤醒它。${caps.gateway?.worldSimulation?.enabled===true?'已提交的移动安排会由世界规则推进位置。':''}`;
+}

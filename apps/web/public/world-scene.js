@@ -321,4 +321,10 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   const resizer=new ResizeObserver(resize);resizer.observe(root);resize();reconcile();notify();
   return{canvas,setZoom,fit,reset,setExploring,select,setPaused,setOwnedAgents,setWorldScene,clearScene,locateOwnedAgent,getState:state,destroy(){destroyed=true;cancelAnimationFrame(raf);observer.disconnect();resizer.disconnect();abort.abort();ownedLayer.destroy();canvas.remove();}};
 }
-export function placeDetails(place){if(place.kind==='world-avatar')return{name:place.profile.displayName,area:'服务器公开角色',icon:'○',description:`逻辑坐标（${place.position.x}, ${place.position.y}） · ${place.status==='suspended'?'已暂停':'已加入世界'} · Avatar 版本 ${place.version}。服务器更新时间：${new Date(place.updatedAt).toLocaleString('zh-CN',{hour12:false})}。`,note:`${WORLD_PROJECTION_VERSION}：位置按世界规则投影，背景道路与场所仅为演示。此记录不表示在线，也不推测移动目的地。`};return place.kind==='actor'?{name:'演示居民',area:'场景演示',icon:'○',description:`${['人形 01','人形 02','人形 03','机型 01','机型 02','机型 03'][place.style]}款式的演示人物。它沿预设道路行走与停留，只用于表现小镇的生活节奏。`,note:'这不是一个真实 Agent，没有真实姓名、账号或行为状态。'}:{...place,note:place.note||demoNote};}
+export function placeDetails(place){
+  if(place.kind==='world-avatar')return{name:place.profile.displayName,area:place.placeId==='commons'?'公共庭':'所在区域待确认',icon:'○',
+    description:`${place.placeId==='commons'?'位于公共庭。':'当前所在区域尚未提供。'}${place.status==='suspended'?'世界角色当前已暂停。':place.status==='left'?'世界角色已离开。':'世界角色已加入。'}`,
+    note:'这里呈现公开世界记录，不据此判断是否在线、是否正在移动或是否完成互动。',
+    debug:[['逻辑坐标',`${place.position.x}, ${place.position.y}`],['Avatar 版本',place.version],['规则版本',place.rulesetVersion],['公开资料版本',place.profile.publishedVersion],['服务器更新时间',new Date(place.updatedAt).toLocaleString('zh-CN',{hour12:false})],['画面投影',place.projectionVersion||WORLD_PROJECTION_VERSION]]};
+  return place.kind==='actor'?{name:'演示居民',area:'场景演示',icon:'○',description:`${['人形 01','人形 02','人形 03','机型 01','机型 02','机型 03'][place.style]}款式的演示人物。它沿预设道路行走与停留，只用于表现小镇的生活节奏。`,note:'这不是一个真实 Agent，没有真实姓名、账号或行为状态。'}:{...place,note:place.note||demoNote};
+}
