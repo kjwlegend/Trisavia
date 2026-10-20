@@ -140,3 +140,37 @@ B最终固定`1754a36e9262578374ae05a5ca07295d01485b62`，clean停止编辑。�
 候选初始化使用最终受审整合源码调用B显式维护入口；先以关门状态启动同一源码检查readiness，再明确开写门。N1入口不初始化Interaction；后继N2用独立模板维护入口并保留候选身份/数据。TD仍未创建`world_core_integration_20261021`或启动18893。
 
 D实际轮次`01a15a58-dd2d-73b0-ad34-7068c82e7fd7`，UTC `2026-10-20T17:29:45.887Z`，已回执`gpt-6.1-sol`/`xhigh`。已冻结六生产路径。页面可见时允许不快于1秒的有界只读刷新，无重叠、失败退避、切页/hidden/destroy取消；恢复先新读，迟回不能覆盖新轮，撤回/权限变化清旧资料。此刷新服务于人类正在看的场景，不是外部Agent定时执行或业务动作；不增加访问频率设置，不把失败缓存继续动画为实时行为。
+
+### 6.5 N1固定整合、隔离启动与实际交接
+
+原reviewer R10—R15分别接受A Decision、B后继与关联约束修复、A N1、C密文续页及A模块／文档版本后继。WC-CR01—04均关闭，具体固定差异和证据以唯一独审报告为准。TD仅无冲突cherry-pick各作者已审自有提交；至`917d4e7101de2cac98145a77d478f18739e5c476`完成A/B/C组合，后继A `1ffc322`整合为`b55fc04f7bae92ecda848890fea911241881f968`。未手写新增业务代码，未把作者分支中的其他依赖重复并入。
+
+TD在917d4e7运行70/70、fail／cancel／skip均0，包括A18、B22、C30同次组合；完整typecheck及diff-check退出0。随后在b55fc04仅运行模块注册与N1 HTTP受影响4/4、fail／cancel／skip0，完整typecheck与diff-check退出0。两份固定版本分别记录，不称同版74项或全量回归。普通命令、日志及manifest分别在integration的`outputs/world-core/integration-917d4e7/`与`outputs/world-core/integration-b55fc04/`。真实PG测试使用作者隔离fixture，不操作正式connet；这些工程结果不替代独立会话Agent。
+
+N1实际运行资源如下：
+
+| 项目 | 实际值 |
+| --- | --- |
+| 固定源码 | `b55fc04f7bae92ecda848890fea911241881f968` |
+| origin／公开入门 | `http://127.0.0.1:18893`；`http://127.0.0.1:18893/agent/entry.md` |
+| 新隔离PG库 | `world_core_integration_20261021`，使用既有专用PG的loopback15432；不使用正式connet |
+| instance／epoch | `instance_f7bc19f2-4ce2-4804-a746-c686eed723e8`；`epoch_185c2209-fa9c-4fd1-8ab5-87dc6dbac5cd` |
+| schema signature | `d130a37cf5a1a0de1951c585b09c5c860b545e9e171fa01dadc3e25903888d38` |
+| 进程／固定cwd | PID`92107`；`/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/world-core/n1-b55fc04/source` |
+| 固定源码包 | 上级目录的`source.tar`，SHA256 `eead405bd4b091a7a4ce788fdb135ceb5ce4a2b630d0c46c07fc419c1a5f5109`；依赖独立复制，非共享symlink |
+| 运行私有目录 | `/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/world-core/private-td-20261021`；配对identity、连接与backend.env保留，秘密不进入普通记录 |
+| 状态与生命周期 | 显式初始化、关门启动、匿名就绪检查后显式开门；N1验收期间保持运行，不自动drop／重建 |
+
+TD使用已核当前0600维护配置`/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-acceptance/outputs/postgresql/private-local/runtime.json`，从上述固定归档调用显式World初始化；未使用旧physical-backup配置。初始化只建立catalog／World／domain generations，Interaction模板未初始化。关门状态的health、首页、owner、entry、capabilities、discovery、scene、rules八条匿名GET均200且no-store；初始scene为0 Avatar，未由TD注册。原始响应与修正后的header解析记录在`outputs/world-core/n1-b55fc04/closed-*`。入口SHA256为`09c039458e219a79b56187c361e9a2122e6958f4ce26a51aa8a5bced3cc19567`；能力仅发布World，catalogRevision为`gateway-fc612a985bde83788ce44b4d`，实际启用字段为`caps.gateway.worldSimulation.enabled`。开门CLI明确返回writesEnabled=true，随后health仍ready。
+
+总指挥已收到固定入口和资源，并回执启动原独立Agent验收负责人及其A/B。各自通过公开指引与实时能力自行发现、注册、创建Avatar和移动；TD不提供隐藏命令或代执行。N1身份／状态和同origin／instance／epoch保留供N2；等待总指挥双边安全检查点再短停原地发布。原8789／正式connet、旧身份、其他端口和公网未动。
+
+当前运行页面仍旧前端。D真实事实适配尚未部署，不能以旧演示推断真实Avatar或UI通过。Owner正常网页注册／绑定源码已有，但本候选未做独立浏览器提交；实际experience邮件模式的公开测试码为四位`1234`，不是真实邮箱验证或真实发信。绑定私密链接由各Agent保存在0600交接文件，仅给获授权模拟者路径，不传runtime凭据。
+
+### 6.6 后继独审、前端合同缺陷与视觉并行
+
+R17接受B `1754a36 → cb17ce9`两路径顺序解码修正，R18接受A `bb61653 → 758266a`九路径显式N2装配与Owner最小摘要，R19接受D `da39c02 → 24f162a`四路径Owner摘要界面。R16与R20曾接受D N1适配及未运行浏览器脚本，后因TD读取实际候选capabilities发现层级接错，原reviewer在R21正式记WC-CR05／P1并撤回这两项接受；保留原审查历史与错误fixture下的20项结果，不追改为已正确接通。实际后端在gateway内返回worldSimulation，而D旧provider和脚本读取顶层，阻断真实场景显示。该D代码未部署，不影响已开放N1后端。
+
+原D以`08dbebf → ebe76777c15b68d2e465853b934844d9c161630c`三路径修复provider、真实嵌套形状正反例及待运行E2E断言；定点9/9、语法、full typecheck／diff-check通过，证据在`m1-web/outputs/world-core-web/td-n1-ui01/`。已送原reviewer复核，本文不提前关闭WC-CR05。D七项Owner摘要和浏览器脚本静态结果分别守自身范围；尚无D真实HTTP／浏览器或独立UI通过。
+
+用户后继已明确“继续视觉制作与整合（推荐）”。原设计总监继续原430素材的完整像素小镇预览／适配与生产合同，人物先左右朝向。TD已同步实时World 16×16整数逻辑格、版本1、spawn(0,0)、无blocked、唯一commons场所、每规则步1秒及公开白名单DTO；格未定义米。D临时中央投影仅为视觉映射，可随合同更换，不能改变服务器位置、障碍、场所／路径规则；若涉及规则由C/B负责固定送审。环境可动，真实Avatar不能补假漫游／在线。核心N1／N2与视觉并行，不等待新美术才开始独立验证。
