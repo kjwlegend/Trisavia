@@ -85,11 +85,11 @@ test('locked human body gives independent native sheets, synchronized frames, fi
 
 test('visual movement is finite between received adjacent positions and snaps on pause without predicting another cell',()=>{
  const fact=(x:number,y:number,version:number)=>({version,status:'idle',position:{x,y}}),entry:any={};const first={x:264,y:136,fact:fact(0,0,1)};
- receivePosition(entry,first);entry.fact=first.fact;assert.equal(entry.x,264);assert.equal(entry.walking,false);
- const second={x:280,y:136,fact:fact(1,0,2)};receivePosition(entry,second);entry.fact=second.fact;advancePosition(entry,.09,{});assert.equal(entry.x,272);assert.equal(entry.walking,true);
- advancePosition(entry,1,{});assert.equal(entry.x,280);assert.equal(entry.transition,null);assert.equal(entry.walking,false);advancePosition(entry,99,{});assert.equal(entry.x,280);
- const third={x:280,y:152,fact:fact(1,1,3)};receivePosition(entry,third);entry.fact=third.fact;assert.equal(entry.facing,'right');advancePosition(entry,0,{paused:true});assert.equal(entry.y,152);assert.equal(entry.walking,false);
- const jump={x:312,y:152,fact:fact(3,1,4)};receivePosition(entry,jump);assert.equal(entry.x,312);assert.equal(entry.transition,null);
+ receivePosition(entry,first,{now:1000});entry.fact=first.fact;assert.equal(entry.x,264);assert.equal(entry.walking,false);
+ const second={x:280,y:136,fact:fact(1,0,2)};receivePosition(entry,second,{now:1000});entry.fact=second.fact;advancePosition(entry,1090,{});assert.equal(entry.x,272);assert.equal(entry.walking,true);
+ advancePosition(entry,1250,{});assert.equal(entry.x,280);assert.equal(entry.transition,null);assert.equal(entry.walking,false);advancePosition(entry,2000,{});assert.equal(entry.x,280);
+ const third={x:280,y:152,fact:fact(1,1,3)};receivePosition(entry,third,{now:2000});entry.fact=third.fact;assert.equal(entry.facing,'right');advancePosition(entry,2000,{paused:true});assert.equal(entry.y,152);assert.equal(entry.walking,false);
+ const jump={x:312,y:152,fact:fact(3,1,4)};receivePosition(entry,jump,{now:2000});assert.equal(entry.x,312);assert.equal(entry.transition,null);
 });
 
 test('newer same-revision filtered snapshots replace the set while older or incompatible facts fail closed',()=>{

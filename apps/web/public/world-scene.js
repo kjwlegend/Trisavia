@@ -219,7 +219,8 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
     if(lastTime===null){lastTime=time;lastDraw=time;}
     const dt=Math.min((time-lastTime)/1000,.05);lastTime=time;elapsed+=dt;
     for(const actor of actors.slice(0,actorLimit))updateActor(actor,dt,graph);
-    ownedLayer.step(dt,{paused,visible:visible&&!document.hidden});
+    // The sprite tick is capped; received positions use the untruncated monotonic clock.
+    ownedLayer.step(dt,{now:time,paused,visible:visible&&!document.hidden});
     if(!mobile||time-lastDraw>=1000/30-1){
       const interval=time-lastDraw;lastDraw=time;draw();if(interval>0)slowSamples.push(interval);
       if(slowSamples.length>=120){const mean=slowSamples.reduce((a,b)=>a+b,0)/slowSamples.length;metrics={fps:Math.round(1000/mean),meanDrawMs:Math.round(drawMs/Math.max(frames,1)*100)/100};slowSamples=[];

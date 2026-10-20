@@ -73,3 +73,26 @@ test('synthetic bounded pagination displays no partial person set and manual con
  await expect.poll(async()=>(await state(page))?.worldScene.phase).toBe('partial');assert.deepEqual((await state(page)).worldScene.avatars,[]);await expect(page.getByRole('button',{name:/服务器角色/})).toHaveCount(0);await expect(page.locator('.world-demo')).toContainText('完整后显示');
  await tool(page,'继续载入角色');await expect.poll(async()=>(await state(page)).worldScene.avatars.length).toBe(11);assert.equal((await state(page)).worldScene.complete,true);assert.deepEqual((await state(page)).worldScene.avatars.map((row:any)=>[row.x,row.y]),Array.from({length:11},(_,i)=>[264+16*i,136]));assert.deepEqual(data.auth,[]);assert.deepEqual(data.outside,[]);await page.close();await context.close();
 });
+
+test('synthetic actual scene loop reaches received positions by the monotonic deadline even at low FPS or after pause and hidden resume',async t=>{
+ const browser=await launch();t.after(()=>browser.close());const context=await browser.newContext({viewport:{width:1440,height:900}});t.after(()=>context.close());const data=await fixture(context);
+ await context.addInitScript(()=>{
+  let now=1000,sequence=0,hidden=false;const frames=new Map<number,FrameRequestCallback>();
+  Object.defineProperty(performance,'now',{value:()=>now});Object.defineProperty(document,'hidden',{get:()=>hidden});
+  window.requestAnimationFrame=callback=>{frames.set(++sequence,callback);return sequence;};window.cancelAnimationFrame=id=>frames.delete(id);
+  (window as any).__worldTestFrame=(time:number)=>{now=time;const batch=[...frames.values()];frames.clear();for(const callback of batch)callback(now);};
+  (window as any).__worldTestHidden=(value:boolean)=>{hidden=value;document.dispatchEvent(new Event('visibilitychange'));};
+ });
+ const page=await context.newPage();await page.goto(origin);await expect.poll(async()=>(await state(page))?.worldScene.avatars.length).toBe(3);
+ const frame=(time:number)=>page.evaluate(value=>(window as any).__worldTestFrame(value),time),read=async()=>{const value=await state(page);return value.worldScene.avatars.find((entry:any)=>entry.fact.agentId==='A');};
+ const move=async(x:number,version:number)=>{data.setRows([{...avatar('A',x,0),version}]);await page.evaluate(()=>document.querySelector<HTMLButtonElement>('#world-refresh')!.click());await expect.poll(async()=>(await read())?.fact.version).toBe(version);};
+ try{
+  await frame(1000);await move(1,2);assert.equal((await read()).x,264,'The newly received target starts at the last visible position');
+  await frame(1250);const afterStall=await read();console.log('actual-scene-loop-low-fps',JSON.stringify({receivedX:afterStall.fact.position.x,renderedX:afterStall.x,frameGapMs:250}));assert.equal(afterStall.x,280,'A 250ms main-loop gap must not become only 50ms of position catch-up');
+  await move(2,3);assert.equal((await read()).x,280);await page.evaluate(()=>document.querySelector<HTMLButtonElement>('#world-pause')!.click());assert.equal((await read()).x,296,'Pausing an in-flight transition snaps to the received target');
+  await page.evaluate(()=>document.querySelector<HTMLButtonElement>('#world-pause')!.click());await move(3,4);await frame(2250);assert.equal((await read()).x,312,'The first frame after reconcile cannot restart the position deadline');
+  await move(4,5);await page.evaluate(()=>(window as any).__worldTestHidden(true));assert.deepEqual((await state(page)).worldScene.avatars,[],'Hidden clears public facts immediately');
+  await frame(10000);await page.evaluate(()=>(window as any).__worldTestHidden(false));await expect.poll(async()=>(await read())?.fact.version).toBe(5);assert.equal((await read()).x,328,'Resuming starts at the fresh received position, with no hidden-time route');
+  assert.deepEqual(data.outside,[]);assert.deepEqual(data.auth,[]);
+ }catch(error){await mkdir(out,{recursive:true});await page.screenshot({path:resolve(out,'synthetic-deadline-failure.png')});throw error;}finally{await page.close();await context.close();}
+});

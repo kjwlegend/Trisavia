@@ -13,16 +13,16 @@ export function drawHumanFoot(ctx,entry,selected=false,theme='day'){
   if(selected){ctx.fillStyle=theme==='dusk'?'#e5e8a9':'#f9f7c4';for(const rect of [[-7,-2,3,1],[4,-2,3,1],[-8,-1,1,3],[7,-1,1,3],[-6,3,12,1]])ctx.fillRect(...rect);ctx.fillStyle='#4c7c65';ctx.fillRect(-5,4,10,1);}ctx.restore();
 }
 // A bounded transition is allowed only between two received adjacent facts.
-export function receivePosition(entry,agent,{animate=true}={}){
+export function receivePosition(entry,agent,{animate=true,now=performance.now()}={}){
   const previous=entry.fact,dx=previous?agent.fact.position.x-previous.position.x:0,dy=previous?agent.fact.position.y-previous.position.y:0;
   const compatible=animate&&previous&&agent.fact.version>previous.version&&Math.abs(dx)+Math.abs(dy)===1&&previous.status!=='suspended'&&agent.fact.status!=='suspended';
   if(dx)entry.facing=dx<0?'left':'right';else entry.facing||='right';
   const changed=!previous||dx!==0||dy!==0;
-  if(compatible){entry.transition={from:{x:entry.x,y:entry.y},to:{x:agent.x,y:agent.y},elapsed:0};entry.walking=true;}
+  if(compatible){entry.transition={from:{x:entry.x,y:entry.y},to:{x:agent.x,y:agent.y},startedAt:now,deadline:now+180};entry.walking=true;}
   else if(changed||!animate||agent.fact.status==='suspended'){entry.x=agent.x;entry.y=agent.y;entry.transition=null;entry.walking=false;}
   entry.target={x:agent.x,y:agent.y};
 }
-export function advancePosition(entry,dt,{paused=false,visible=true}={}){
+export function advancePosition(entry,now=performance.now(),{paused=false,visible=true}={}){
   if(!entry.transition)return;if(paused||!visible){Object.assign(entry,entry.transition.to);entry.transition=null;entry.walking=false;return;}
-  const move=entry.transition;move.elapsed+=dt;const t=Math.min(1,move.elapsed/.18);entry.x=move.from.x+(move.to.x-move.from.x)*t;entry.y=move.from.y+(move.to.y-move.from.y)*t;if(t===1){entry.transition=null;entry.walking=false;}
+  const move=entry.transition,t=Math.max(0,Math.min(1,(now-move.startedAt)/(move.deadline-move.startedAt)));entry.x=move.from.x+(move.to.x-move.from.x)*t;entry.y=move.from.y+(move.to.y-move.from.y)*t;if(t===1){entry.transition=null;entry.walking=false;}
 }

@@ -54,7 +54,7 @@ export function createOwnedAgentLayer(root,graph,{blockedRects=[],onSelect=()=>{
     labels.setAttribute('aria-label',authoritative?'服务器公开角色地图操作':'我的 Agent 地图操作');
     for(const [id,entry]of entries)if(!ids.has(id)){entry.button.remove();entries.delete(id);}
     if(!ids.has(focusedId))focusedId='';if(!ids.has(hoveredId))hoveredId='';
-    for(const agent of projection.agents){
+    const now=performance.now();for(const agent of projection.agents){
       let entry=entries.get(agent.agentId);if(!authoritative&&!motion.read(agent.agentId))continue;
       if(!entry){
         const button=el('button','world-owned-hit');button.type='button';labels.append(button);entry={agentId:agent.agentId,kind:'owned-agent',button,sprites:new Map()};entries.set(agent.agentId,entry);
@@ -65,7 +65,7 @@ export function createOwnedAgentLayer(root,graph,{blockedRects=[],onSelect=()=>{
       }
       const spriteKey=JSON.stringify(agent.avatar);if(entry.spriteKey!==spriteKey){entry.sprites.clear();entry.spriteKey=spriteKey;}entry.avatar=agent.avatar;entry.nameValue=agent.name;
       entry.owned=authoritative?agent.owned:true;
-      if(authoritative){if(renderer)receivePosition(entry,agent,{animate:projection.animate!==false});else Object.assign(entry,{x:agent.x,y:agent.y,walking:false,frame:0,direction:'down'});entry.projectionVersion=agent.projectionVersion;}
+      if(authoritative){if(renderer)receivePosition(entry,agent,{animate:projection.animate!==false,now});else Object.assign(entry,{x:agent.x,y:agent.y,walking:false,frame:0,direction:'down'});entry.projectionVersion=agent.projectionVersion;}
       entry.fact=authoritative?agent.fact:null;
       entry.button.dataset.agentId=entry.agentId;entry.button.dataset.worldSource=authoritative?'server':'demo';
       entry.button.setAttribute('aria-label',authoritative?`${agent.name}，服务器角色，${agent.fact.placeId==='commons'?'公共庭，':''}${agent.fact.status==='suspended'?'已暂停':'已加入'}${entry.owned?'，我的 Agent，选择并管理':'，查看公开事实'}`:`${agent.name}，${agent.agentId===selectedId?'当前 Agent':'我的 Agent'}，选择并管理`);entry.button.setAttribute('aria-pressed',String(agent.agentId===selectedId));
@@ -74,7 +74,7 @@ export function createOwnedAgentLayer(root,graph,{blockedRects=[],onSelect=()=>{
   }
   return{
     set,actors:()=>[...entries.values()],
-    step(dt,options){if(authoritative){if(renderer)for(const entry of entries.values())advancePosition(entry,dt,options);return;}motion.step(dt,{...options,heldIds:[focusedId,hoveredId]});copyPositions();},
+    step(dt,options={}){if(authoritative){if(renderer)for(const entry of entries.values())advancePosition(entry,options.now??performance.now(),options);return;}motion.step(dt,{...options,heldIds:[focusedId,hoveredId]});copyPositions();},
     draw(ctx,entry,scale,frame={}){
       if(entry.agentId===selectedId){if(renderer)renderer.drawSelection(ctx,entry,scale,frame);else{const rx=Math.max(24,12/scale),ry=Math.max(9,5/scale);ctx.fillStyle='#C7E8DC';ctx.globalAlpha=.24;ctx.beginPath();ctx.ellipse(entry.x,entry.y+2,rx,ry,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;ctx.lineWidth=2;ctx.strokeStyle='#397E80';ctx.stroke();}}
       if(renderer){renderer.drawAvatar(ctx,entry,frame);return;}
