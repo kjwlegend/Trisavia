@@ -102,6 +102,8 @@ export interface RuntimeReadContext {
   readonly tasks: RuntimeTaskReader; readonly outbox: OutboxReader;
 }
 export interface RuntimeTransaction extends RuntimeReadContext {
+  /** Same context/client; an error rolls back all work in this attempt. No external effects. */
+  attempt<T>(work: (context: RuntimeTransaction) => Promise<T>): Promise<T>;
   repository<R, W extends R>(port: RuntimeRepositoryPort<R, W>): W;
   readonly commands: CommandReceiptRepository; readonly events: RuntimeEventRepository;
   readonly tasks: RuntimeTaskRepository; readonly outbox: OutboxRepository;
@@ -119,5 +121,6 @@ export interface RuntimeCommandParticipant<Input, Output extends JsonObject = Js
 }
 export type RuntimeErrorCode = 'command_conflict' | 'version_conflict' | 'lease_lost' | 'invalid_usage' | 'task_failed';
 export class RuntimeError extends Error {
-  constructor(readonly code: RuntimeErrorCode, message: string, options?: ErrorOptions) { super(message, options); this.name = 'RuntimeError'; }
+  readonly code: RuntimeErrorCode;
+  constructor(code: RuntimeErrorCode, message: string, options?: ErrorOptions) { super(message, options); this.name = 'RuntimeError'; this.code = code; }
 }
