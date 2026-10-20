@@ -147,8 +147,8 @@ export async function openPostgresStore(options:OpenPostgresStoreOptions):Promis
         }finally{usable=false;connection.removeListener('error',connectionError);connection.release(destroy);}
         // Retry only after releasing the failed transaction and its client.
         // Jitter prevents concurrent scopes from repeatedly rebuilding the
-        // same stale RR snapshot in lock-step. At most 150ms + 300ms total.
-        await delay(randomInt(50,151)*attempt);
+        // same stale RR snapshot in lock-step. At most 200ms + 600ms total.
+        await delay(randomInt(100,201)*3**(attempt-1));
       }
       throw new StorageError('busy','Transaction retry budget was exhausted');
     });
