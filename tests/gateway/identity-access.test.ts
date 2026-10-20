@@ -83,6 +83,13 @@ test('a Principal is confined to the context that authenticated it and stale/for
  await rejects(f.access.authenticate(f.context,runtime.token,['runtime']),'authentication_failed');
 });
 
+test('a write composition can reject a credential that expires while an authorized handler is running',async()=>{
+ const f=fixture(),runtime=f.credential('runtime',{agentId,runtimeVersion:1,expiresAt:now+10}),checks:Array<()=>Promise<void>>=[];let clock=now;
+ const access=createIdentityAccess({session:(ctx:typeof f.context)=>ctx.session,recoveryEpoch:epoch,now:()=>clock,registerCommitValidation:(_ctx,check)=>{checks.push(check);}});
+ const p=await access.authenticate(f.context,runtime.token,['runtime']);await access.authorizeAgent(f.context,p,agentId);assert.equal(checks.length,1);
+ clock=now+10;await rejects(checks[0]!(),'authentication_failed');
+});
+
 test('extracted M1 authentication preserves proof purpose, expiry, handoff generation and Owner auth versions',async()=>{
  const f=fixture(),pending='pending-owner';f.put('owners',pending,{status:'pending_setup',epoch,authVersion:1,handoffGeneration:2});
  const handoff=f.credential('handoff',{ownerId:pending,handoffGeneration:2,expiresAt:now+1});

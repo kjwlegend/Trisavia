@@ -7,7 +7,7 @@ import type {IdentityAccess,Principal} from './public.ts';
 import {profileRepository} from '../profile/repository.ts';
 import {AVATAR_COLORS} from '../profile/profile-rules.ts';
 /** The composition root supplies the identity session from the SAME guarded PG client. */
-export function createIdentityAccess<Context extends object>(options:{session:(context:Context)=>M1ReadSession;recoveryEpoch:string;now?:()=>number}):IdentityAccess<Context>{
+export function createIdentityAccess<Context extends object>(options:{session:(context:Context)=>M1ReadSession;recoveryEpoch:string;now?:()=>number;registerCommitValidation?:(context:Context,check:()=>Promise<void>)=>void}):IdentityAccess<Context>{
  const now=options.now??Date.now,issued=new WeakMap<Principal,Context>();
  async function current(context:Context,principal:Principal){
   if(issued.get(principal)!==context)fail('authentication_failed',401,'Authenticate in the current transaction');
@@ -27,7 +27,9 @@ export function createIdentityAccess<Context extends object>(options:{session:(c
    const tx=options.session(context),row=await authenticateCredential(tx,bearer,allowedKinds,{recoveryEpoch:options.recoveryEpoch,now});
    const common={credentialId:row.id,credentialVersion:row.version,recoveryEpoch:options.recoveryEpoch,expiresAt:row.data.expiresAt??null,authorizationVersion:payloadHash({credentialId:row.id,version:row.version,epoch:options.recoveryEpoch,runtimeVersion:row.data.runtimeVersion??null,ownerAuthVersion:row.data.ownerAuthVersion??null})};
    const principal:Principal=Object.freeze(row.data.kind==='runtime'?{...common,kind:'agent',agentId:row.data.agentId!,runtimeVersion:Number(row.data.runtimeVersion),source:'external_agent'}:{...common,kind:'owner',ownerId:row.data.ownerId!,ownerAuthVersion:Number(row.data.ownerAuthVersion),source:'owner'});
-   issued.set(principal,context);await current(context,principal);return principal;
+   issued.set(principal,context);await current(context,principal);
+   // Recheck only identity/expiry at commit. A legitimate withdraw/block may change target visibility.
+   options.registerCommitValidation?.(context,async()=>{await current(context,principal);});return principal;
   },
   async authorizeAgent(context,principal,agentId){
    const tx=await current(context,principal);
