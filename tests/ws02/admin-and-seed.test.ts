@@ -46,7 +46,7 @@ test('administrative publications require a fresh catalog revision and persist o
 test('seed rejects mismatched identity and invalid operator before any writable migration or recovery-epoch change', async t => {
   const f = await fixture(t), path = join(f.directory, 'unseeded-schema4.sqlite'), paired = join(f.directory, 'paired.identity.json');
   const source = new DatabaseSync(f.options.databasePath, { readOnly: true }), copy = new DatabaseSync(path);
-  const tables = M1_TABLES.filter(table => !table.startsWith('perception_'));
+  const tables = M1_TABLES.filter(table => !table.startsWith('perception_')&&!['wallet_accounts','mailbox_messages','mailbox_receipts'].includes(table));
   try {
     migrateDatabase(copy, migrations.slice(0, 4));
     copy.exec('PRAGMA foreign_keys=ON; BEGIN; PRAGMA defer_foreign_keys=ON');

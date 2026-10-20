@@ -40,7 +40,7 @@ function headerToken(request: FastifyRequest): string | undefined {
 export function registerM1Routes(app: FastifyInstance, service: M1Service): void {
   // This also covers parser errors, before any handler has had a chance to run.
   app.setErrorHandler((error, request, reply) => {
-    if (request.url.startsWith('/v1/perception/')) {
+    if (request.url.startsWith('/v1/perception/')||request.url.startsWith('/v1/wallet/')) {
       const status = error instanceof M1Error ? error.statusCode : error instanceof StorageError ? 503 : typeof error === 'object' && error !== null && 'statusCode' in error && typeof error.statusCode === 'number' && error.statusCode < 500 ? error.statusCode === 413 ? 413 : 400 : 503;
       const code = error instanceof M1Error ? error.code : status < 500 ? 'invalid_request' : 'source_unavailable';
       reply.header('Cache-Control', 'no-store');

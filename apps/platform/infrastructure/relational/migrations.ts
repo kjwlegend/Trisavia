@@ -141,6 +141,55 @@ export const migrations: readonly Migration[] = [{
     CREATE INDEX perception_access_actor ON perception_access(json_extract(data, '$.agentId'), id);
     CREATE INDEX perception_access_audience ON perception_access(json_extract(data, '$.humanAudienceOwnerId'), id);
   `,
+}, {
+  version: 6,
+  name: 'ws02_wallet_and_original_mailbox',
+  sql: `
+    CREATE TABLE wallet_accounts (
+      id TEXT PRIMARY KEY NOT NULL, version INTEGER NOT NULL CHECK(version > 0), data TEXT NOT NULL CHECK(json_valid(data) AND json_type(data) = 'object'),
+      agent_id TEXT GENERATED ALWAYS AS (json_extract(data, '$.agentId')) STORED NOT NULL REFERENCES agents(id),
+      currency_code TEXT GENERATED ALWAYS AS (json_extract(data, '$.currencyCode')) STORED NOT NULL,
+      CHECK(currency_code = 'star_coin'), CHECK(id = 'star_coin:' || agent_id),
+      CHECK(json_type(data, '$.currencyName') IS 'text' AND length(json_extract(data, '$.currencyName')) BETWEEN 1 AND 100),
+      CHECK(json_type(data, '$.scale') IS 'integer' AND json_extract(data, '$.scale') IS 0),
+      CHECK(json_type(data, '$.balance') IS 'integer' AND json_extract(data, '$.balance') BETWEEN 0 AND 9007199254740991),
+      CHECK(json_type(data, '$.initializedAt') IS 'integer' AND json_extract(data, '$.initializedAt') >= 0),
+      CHECK(COALESCE(json_extract(data, '$.initializationSource') IN ('migration','registration'),0)),
+      UNIQUE(agent_id, currency_code)
+    ) STRICT;
+    INSERT INTO wallet_accounts(id,version,data)
+      SELECT 'star_coin:' || id,1,json_object('agentId',id,'currencyCode','star_coin','currencyName','星币','scale',0,'balance',0,'initializedAt',CAST(strftime('%s','now') AS INTEGER)*1000,'initializationSource','migration') FROM agents;
+    CREATE TABLE mailbox_messages (
+      id TEXT PRIMARY KEY NOT NULL, version INTEGER NOT NULL CHECK(version = 1), data TEXT NOT NULL CHECK(json_valid(data) AND json_type(data) = 'object'),
+      logical_message_id TEXT GENERATED ALWAYS AS (json_extract(data, '$.messageId')) STORED NOT NULL,
+      source_id TEXT GENERATED ALWAYS AS (json_extract(data, '$.sourceId')) STORED NOT NULL,
+      source_message_key TEXT GENERATED ALWAYS AS (json_extract(data, '$.sourceMessageKey')) STORED NOT NULL,
+      content_version INTEGER GENERATED ALWAYS AS (json_extract(data, '$.contentVersion')) STORED NOT NULL CHECK(content_version > 0 AND content_version <= 9007199254740991),
+      sender_agent_id TEXT GENERATED ALWAYS AS (CASE WHEN json_extract(data,'$.sender.kind') = 'agent' THEN json_extract(data,'$.sender.ref.id') ELSE NULL END) STORED REFERENCES agents(id),
+      CHECK(json_type(data,'$.contentVersion') IS 'integer'),
+      CHECK(json_type(data, '$.title') IS 'text' AND length(json_extract(data, '$.title')) BETWEEN 1 AND 180),
+      CHECK(json_type(data, '$.body') IS 'text' AND length(json_extract(data, '$.body')) <= 100000),
+      CHECK(json_type(data, '$.attachments') IS 'array'),
+      CHECK(COALESCE(json_extract(data, '$.sender.kind') IN ('human','agent'),0)),
+      CHECK(json_type(data, '$.sender.ref') IS 'object' AND json_type(data, '$.sender.displayName') IS 'text'),
+      UNIQUE(source_id, source_message_key, content_version), UNIQUE(id, logical_message_id)
+    ) STRICT;
+    CREATE TRIGGER mailbox_messages_immutable BEFORE UPDATE ON mailbox_messages BEGIN SELECT RAISE(ABORT,'Original mailbox content versions are immutable'); END;
+    CREATE TABLE mailbox_receipts (
+      id TEXT PRIMARY KEY NOT NULL, version INTEGER NOT NULL CHECK(version > 0), data TEXT NOT NULL CHECK(json_valid(data) AND json_type(data) = 'object'),
+      message_id TEXT GENERATED ALWAYS AS (json_extract(data, '$.messageId')) STORED NOT NULL,
+      message_version_id TEXT GENERATED ALWAYS AS (json_extract(data, '$.messageVersionId')) STORED NOT NULL,
+      agent_id TEXT GENERATED ALWAYS AS (json_extract(data, '$.agentId')) STORED NOT NULL REFERENCES agents(id),
+      CHECK(COALESCE(json_type(data, '$.active') IN ('true','false'),0)),
+      CHECK(json_type(data, '$.ownerObservation') IS 'object'),
+      CHECK(json_type(data, '$.stateVersion') IS 'integer' AND json_extract(data, '$.stateVersion') >= 0),
+      CHECK(json_type(data, '$.confirmedAt') IS 'null' OR (json_type(data, '$.confirmedAt') IS 'integer' AND json_extract(data,'$.confirmedAt') >= 0)),
+      CHECK(json_type(data, '$.confirmedContentVersion') IS 'null' OR (json_type(data, '$.confirmedContentVersion') IS 'integer' AND json_extract(data, '$.confirmedContentVersion') > 0)),
+      FOREIGN KEY(message_version_id,message_id) REFERENCES mailbox_messages(id,logical_message_id), UNIQUE(message_id, agent_id)
+    ) STRICT;
+    CREATE INDEX mailbox_receipts_recipient ON mailbox_receipts(json_extract(data, '$.agentId'),id);
+  `,
+
 }];
 
 function checksum(migration: Migration): string {

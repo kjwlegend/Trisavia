@@ -5,6 +5,7 @@ export interface JsonObject { [key: string]: JsonValue }
 export const M1_TABLES = [
   'agents', 'owners', 'credentials', 'bindings', 'registrations',
   'profiles', 'memberships', 'operations', 'facts', 'recovery_requests', 'email_attempts', 'mail_jobs',
+  'wallet_accounts', 'mailbox_messages', 'mailbox_receipts',
   'perception_objects', 'perception_grants', 'perception_states', 'perception_sessions', 'perception_access', 'perception_catalog',
 ] as const;
 export type M1Table = (typeof M1_TABLES)[number];

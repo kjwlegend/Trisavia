@@ -56,7 +56,7 @@ test('HTTP-discovered exact schemas validate actual envelopes and content, and p
     assert.equal(page.complete, true);
     for (const record of page.records) {
       const type = directory.types.find((row: Json) => row.type === record.ref.type); assert(type);
-      assert.equal(record.schema.version, 3); assert.deepEqual(record.schema, type.summarySchema);
+      assert.equal(record.schema.version, 4); assert.deepEqual(record.schema, type.summarySchema);
       await validates(record.schema, record.summary);
       if (!record.detailAvailable || inspectedTypes.has(record.ref.type)) continue;
       inspectedTypes.add(record.ref.type);
@@ -64,8 +64,8 @@ test('HTTP-discovered exact schemas validate actual envelopes and content, and p
       for (let index = 0; index < 128; index++) {
         const body = { ...requestBase(channel, { purpose: 'agent-inspect' }), ref: record.ref, ...(contentToken ? { contentToken } : {}) };
         const detail = await receive('detail', 'POST', '/detail', body);
-        assert.deepEqual(detail.schema, type.detailSchema); assert.equal(detail.schema.version, 3);
-        await validates(detail.schema, detail.content);
+        assert.deepEqual(detail.schema, type.detailSchema); assert.equal(detail.schema.version, 4);
+        await validates(detail.schema, detail.content);assert.equal(detail.content.title,record.summary.title);
         if (detail.contentComplete) {
           if (channel === 'inbox') completeMessage = detail;
           break;
@@ -98,7 +98,7 @@ test('HTTP-discovered exact schemas validate actual envelopes and content, and p
   for (const expected of invalidResponses) {
     const response = await f.call(expected.method, expected.path, expected.body, expected.token);
     assert.equal(response.status, expected.status);
-    const schema = operations.get(expected.id)!.errorSchema; assert(schema); assert.equal(schema.version, 3);
+    const schema = operations.get(expected.id)!.errorSchema; assert(schema); assert.equal(schema.version, 4);
     await validates(schema, response.envelope);
   }
   // Document endpoints are themselves checked against their actual advertised

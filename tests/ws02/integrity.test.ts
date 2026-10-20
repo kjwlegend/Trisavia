@@ -16,7 +16,7 @@ const confirm = (ref: Ref, final: Json) => ({ protocolVersion: 1, operationId: r
 test('a synthesized schema-4 copy migrates without changing M1 identity, binding, row contents or the original runtime proof', async t => {
   const f = await fixture(t), legacyPath = join(f.directory, 'legacy-schema-4.sqlite');
   const original = new DatabaseSync(f.options.databasePath, { readOnly: true }), legacy = new DatabaseSync(legacyPath);
-  const tables = M1_TABLES.filter(table => !table.startsWith('perception_'));
+  const tables = M1_TABLES.filter(table => !table.startsWith('perception_')&&!['wallet_accounts','mailbox_messages','mailbox_receipts'].includes(table));
   const rows = new Map(tables.map(table => [table, original.prepare(`SELECT id,version,data FROM ${table} ORDER BY id`).all()]));
   const identity = original.prepare('SELECT * FROM instance_state').get(); assert(identity); original.close();
   try {
@@ -40,7 +40,7 @@ test('a synthesized schema-4 copy migrates without changing M1 identity, binding
       const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
       for (const [table, before] of rows) assert.equal(hash(migrated.prepare(`SELECT id,version,data FROM ${table} ORDER BY id`).all()), hash(before), `Migration preserves existing ${table} records`);
       assert.deepEqual(migrated.prepare('SELECT * FROM instance_state').get(), identity);
-      assert.equal(migrated.prepare('SELECT max(version) AS version FROM schema_migrations').get()?.version, 5);
+      assert.equal(migrated.prepare('SELECT max(version) AS version FROM schema_migrations').get()?.version, 6);
       assert.equal(migrated.prepare('PRAGMA quick_check').get()?.quick_check, 'ok');
     } finally { migrated.close(); }
     const api = injectApi(app), self = await ok(api, 'GET', '/agent/self', undefined, f.a.runtimeToken);

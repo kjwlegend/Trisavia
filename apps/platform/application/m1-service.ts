@@ -7,6 +7,9 @@ import { AVATAR_COLORS, PROFILE_FIELDS, REMOVABLE_PROFILE_FIELDS, defaultPublicP
 import { createEmailOnboarding } from "./email-onboarding.ts";
 import type { EmailConfig } from "../infrastructure/email/resend.ts";
 import { FOUNDATION_HTTP_OPERATIONS } from "../contracts/foundation-operations.ts";
+import { createWalletService } from "./wallet-service.ts";
+import { initializeWalletAccount } from "../domains/wallet/repository.ts";
+import { createTrustedMailboxReceiver } from "./mailbox-service.ts";
 import { createPerceptionService, type PerceptionOptions } from "./perception-service.ts";
 import { initializePerceptionAgent } from "./perception-seed.ts";
 import type { PerceptionAction } from "../domains/perception/protocol.ts";
@@ -39,6 +42,8 @@ export interface M1Options {
 }
 
 export interface M1Service {
+  /** Process-only trusted-source reception; never registered as HTTP authority. */
+  receiveTrustedMessage(sourceId:string,input:unknown,context:unknown):JsonObject;
   invoke(action: M1Action, input?: unknown, token?: string, context?: { clientIp?: string }): JsonObject;
   invokeHttp(action: M1Action, input?: unknown, token?: string, context?: { clientIp?: string }): Promise<JsonObject>;
 }
@@ -338,15 +343,18 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     return { agentId, ownerId: actor.data.ownerId!, runtimeVersion: agent.data.runtimeVersion!, runtimeActive: agent.data.runtimeActive!, profile: profileView(required(tx, "profiles", agentId)), membership: membershipView(required(tx, "memberships", agentId)), worldAccess: worldAccessView(agent, asOf), profileUrl: profileUrl(agentId), management: managementView(tx, agent), asOf };
   }
 
+  const wallet=createWalletService(store,authenticate,now);
+  const receiveTrustedMessage=createTrustedMailboxReceiver(store,options.perception?.mailboxSources??[],authenticate,now);
   const perception = createPerceptionService(store, { authenticate }, { ...options.perception, now });
   const email = createEmailOnboarding(store, { authenticate, newCredential, command, pendingRecovery, recoveryContext }, {
     now, sessionTtl: limits.session, ownerLimit: limits.ownerRegistrations, ...(options.email ? { config: options.email } : {}),
   });
 
   function invoke(action: M1Action, raw: unknown = {}, token?: string, context: { clientIp?: string } = {}): JsonObject {
-    if (action === "capabilities") return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, ownerRecoveryAssistance: true, ownerEmailVerification: email.configured, ownerEmailRecovery: email.configured, emailMode: email.mode, runtimeReplacement: true, defaultPublicRole: true, profileSave: "immediate-public", worldAccessPreference: true, scheduling: false, perception: true, perceptionApi: perception.capabilities(), interaction: false, operations: FOUNDATION_HTTP_OPERATIONS.map((operation) => ({ ...operation, actors: [...operation.actors], receiptScopes: { ...operation.receiptScopes }, requiredVersions: [...operation.requiredVersions] })) };
+    if (action === "capabilities") return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, ownerRecoveryAssistance: true, ownerEmailVerification: email.configured, ownerEmailRecovery: email.configured, emailMode: email.mode, runtimeReplacement: true, defaultPublicRole: true, profileSave: "immediate-public", worldAccessPreference: true, scheduling: false, perception: true, perceptionApi: perception.capabilities(), walletApi:wallet.capabilities(), interaction: false, operations: FOUNDATION_HTTP_OPERATIONS.map((operation) => ({ ...operation, actors: [...operation.actors], receiptScopes: { ...operation.receiptScopes }, requiredVersions: [...operation.requiredVersions] })) };
     if (action === "catalog") return { version: 1, templates: [{ id: "basic", colors: [...AVATAR_COLORS] }], requiredFields: ["displayName", "avatar"] };
     if (email.handles(action)) return email.invoke(action, raw, token, context.clientIp);
+    if (action === "walletQuery") return wallet.query(raw,token);
     if (perception.handles(action)) return perception.invoke(action as PerceptionAction, raw, token);
     return store.transaction((tx) => {
       // This is the server's state-read time, never evidence that a local Agent is online.
@@ -440,6 +448,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
           const initialProfile = defaultPublicProfile(agentId);
           tx.insert("profiles", { id: agentId, version: 1, data: { agentId, policyVersion: 1, mode: "agent_autonomous", lockedFields: [], draft: initialProfile, published: initialProfile, publishedVersion: 1, confirmationSource: "platform_default" } });
           tx.insert("memberships", { id: agentId, version: 1, data: { agentId, worldId: "default", state: "joined", ownerPaused: false, ownerPauseVersion: 1, platformRestricted: false, platformVersion: 1 } });
+          initializeWalletAccount(tx,agentId,stamp);
           initializePerceptionAgent(tx, agentId, stamp);
           return registrationView(registration);
         });
@@ -771,5 +780,5 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     }
     return result;
   }
-  return { invoke, invokeHttp };
+  return { invoke, invokeHttp, receiveTrustedMessage };
 }

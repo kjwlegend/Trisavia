@@ -164,7 +164,7 @@ test('the local CLI checks actor and paired identity before writes, emits an exa
 
 test('an existing schema2 R03 catalog upgrades without recomputing its frozen declaration or changing historical schema/guide bytes',async t=>{
  const f=await fixture(t),modules=['perception','world','profiles','items','inventory','mailbox'];
- const legacySchemas=[...OPERATIONS.flatMap(o=>[`perception.${o.id}-query`,`perception.${o.id}-result`]),...TYPE_DEFINITIONS.flatMap(o=>[`${o.prefix}-summary`,`${o.prefix}-detail`]),'perception.error-result'];
+ const legacySchemas=[...OPERATIONS.filter(o=>o.id!=='wallet-query').flatMap(o=>[`perception.${o.id}-query`,`perception.${o.id}-result`]),...TYPE_DEFINITIONS.filter(o=>o.type!=='mailbox.direct-message@1').flatMap(o=>[`${o.prefix}-summary`,`${o.prefix}-detail`]),'perception.error-result'];
  assert.equal(legacySchemas.length,37); // Preserve all operation/type/error documents, including owner activity schemas.
  f.storage(store=>store.transaction(tx=>{
   for(const row of tx.find('perception_catalog'))if(row.id.startsWith('schema:')||row.id.startsWith('guide:')||row.id.startsWith('catalog-revision:'))tx.remove('perception_catalog',row.id,row.version);
@@ -179,19 +179,19 @@ test('an existing schema2 R03 catalog upgrades without recomputing its frozen de
  }));
  const snapshot=()=>f.storage(store=>store.read(tx=>tx.find('perception_catalog').filter(row=>row.id.endsWith(':2')||row.id.endsWith(':1')||row.id===`catalog-revision:${key('catalog-r03-isolated')}`)));
  const before=snapshot();await f.restart();assert.deepEqual(snapshot(),before);
- const discovery=await f.read('GET','/discovery?limit=50');assert.equal(discovery.catalogRevision,'catalog-r03-isolated-schema-3');
- assert(discovery.operations.every((o:Json)=>o.inputSchema.version===3));assert(discovery.modules.every((m:Json)=>m.usageGuide.version===3));
+ const discovery=await f.read('GET','/discovery?limit=50');assert.equal(discovery.catalogRevision,'catalog-r03-isolated-schema-4');
+ assert(discovery.operations.every((o:Json)=>o.inputSchema.version===4));assert(discovery.modules.every((m:Json)=>m.usageGuide.version===3));
  const old=await f.read('GET','/guides/world?version=2');assert.equal(old.document.text,'Frozen R03 guide world v2');
  assert.equal(createHash('sha256').update(old.canonicalDocument).digest('hex'),old.digest);
  const guide=await f.read('GET','/guides/world?version=3');assert(JSON.stringify(guide.document).includes('human-inspect'));
  const current=f.storage(store=>store.read(tx=>tx.get('perception_catalog','current')!));
- f.storage(store=>store.transaction(tx=>tx.update('perception_catalog',{...current,version:current.version+1,data:{...current.data,schemaVersion:4}},current.version)));
+ f.storage(store=>store.transaction(tx=>tx.update('perception_catalog',{...current,version:current.version+1,data:{...current.data,schemaVersion:5}},current.version)));
  const protectedCatalog=f.storage(store=>store.read(tx=>tx.find('perception_catalog')));
  assert.throws(()=>f.storage(store=>store.transaction(initializePerceptionCatalog)),{code:'protocol_unsupported'});
  assert.deepEqual(f.storage(store=>store.read(tx=>tx.find('perception_catalog'))),protectedCatalog);
 });
 
-test('HTTP-discovered strict schema3 describes owner target context and validates actual read-only owner responses',async t=>{
+test('HTTP-discovered strict schema4 describes owner target context and validates actual read-only owner responses',async t=>{
  const f=await fixture(t);authorize(f);
  const directory=await f.read('GET','/discovery?limit=50',undefined,f.owner.sessionToken),ajv=new Ajv2020({strict:false,allErrors:true});
  const schemas=new Map<string,any>();
@@ -204,8 +204,8 @@ test('HTTP-discovered strict schema3 describes owner target context and validate
   const detail={...requestBase(channel,{purpose:'human-inspect'}),agentRef:agentRef(f.a.agentId),ref:row.ref};await validate(detailOp.inputSchema,detail);
   const result=await f.call('POST','/detail',detail,f.owner.sessionToken);assert.equal(result.status,200);await validate(detailOp.outputSchema,result.envelope);await validate(result.data.schema,result.data.content);
  }
- const schema=await f.read('GET',`/schemas/${listOp.inputSchema.id}?version=3`),run=ajv.compile({...schema.document,$id:'owner-schema-negative'});
+ const schema=await f.read('GET',`/schemas/${listOp.inputSchema.id}?version=4`),run=ajv.compile({...schema.document,$id:'owner-schema-negative'});
  const input=ownerInput(f.a.agentId),{agentRef:omitted,...noTarget}=input;
  assert.equal(run(noTarget),false);assert.equal(run({...input,unexpected:'strict'}),false);assert.equal(run({...input,selection:'unconfirmed'}),false);
- const capabilities=await f.m1('GET','/capabilities',undefined,f.owner.sessionToken);assert.equal(capabilities.status,200);assert.deepEqual(capabilities.body.perceptionApi?.ownerObservation??capabilities.body.data?.perceptionApi?.ownerObservation,{agentRefRequired:true,inventory:true,inbox:'source-authorized',readerState:false,confirmation:false});
+ const capabilities=await f.m1('GET','/capabilities',undefined,f.owner.sessionToken);assert.equal(capabilities.status,200);assert.deepEqual(capabilities.body.perceptionApi?.ownerObservation??capabilities.body.data?.perceptionApi?.ownerObservation,{agentRefRequired:true,inventory:true,inbox:'source-authorized',messages:'source-authorized',readerState:false,confirmation:false});
 });
