@@ -77,6 +77,12 @@ const emailAllowed=MODELS.find(model=>model.table==='iam.email_attempts')!.field
 POSTGRES_MIGRATIONS.push({moduleId:'iam',version:2,name:'preserve_email_attempt_verification_declaration',sql:`ALTER TABLE iam.email_attempts ADD COLUMN email_verified boolean;
   ALTER TABLE iam.email_attempts DROP CONSTRAINT email_attempts__present_check;
   ALTER TABLE iam.email_attempts ADD CONSTRAINT email_attempts__present_check CHECK(_present <@ ARRAY[${emailAllowed.join(',')}]::text[]);`,dependencies:['iam']});
+// Content identities are append-only at the database boundary as well as in
+// the adapter. DML credentials must not be able to rewrite archived content.
+POSTGRES_MIGRATIONS.push({moduleId:'platform',version:2,name:'immutable_versioned_content',sql:`CREATE FUNCTION platform.reject_immutable_content_change() RETURNS trigger LANGUAGE plpgsql AS $$
+  BEGIN RAISE EXCEPTION 'Versioned content is immutable' USING ERRCODE='23514'; END;
+  $$;
+  ${MODELS.filter(model=>model.immutable).map(model=>`CREATE TRIGGER immutable_versioned_content BEFORE UPDATE OR DELETE ON ${model.table} FOR EACH ROW EXECUTE FUNCTION platform.reject_immutable_content_change();`).join('\n')}`,dependencies:[...modules]});
 export const POSTGRES_SCHEMA_SIGNATURE=createHash('sha256').update(POSTGRES_MIGRATIONS.map(item=>`${item.moduleId}:${createHash('sha256').update(item.sql).digest('hex')}`).join('\n')).digest('hex');
 
 /** Explicit DDL-role operation; openPostgresStore never calls this. */
