@@ -1,4 +1,4 @@
-/** The deliberately small persistence port for the first M1 backend candidate. */
+/** Internal asynchronous persistence/codec seam; application use cases access named domain repositories. */
 export type JsonValue = string | number | boolean | null | JsonObject | JsonValue[];
 export interface JsonObject { [key: string]: JsonValue }
 
@@ -18,33 +18,28 @@ export interface StoredRow<T extends JsonObject = JsonObject> {
 export type ExactFilters = Record<string, string | number | boolean | null>;
 
 export interface M1ReadSession {
-  get<T extends JsonObject = JsonObject>(table: M1Table, id: string): StoredRow<T> | undefined;
-  find<T extends JsonObject = JsonObject>(table: M1Table, filters?: ExactFilters): StoredRow<T>[];
-  /** Bounded, indexed keyset reads; unlike legacy find, filtering happens in SQLite. */
-  scan<T extends JsonObject = JsonObject>(table: M1Table, filters: ExactFilters, options: { limit: number; afterId?: string }): StoredRow<T>[];
-  count(table: M1Table, filters: ExactFilters, limit: number): number;
+  get<T extends JsonObject = JsonObject>(table: M1Table, id: string): Promise<StoredRow<T> | undefined>;
+  find<T extends JsonObject = JsonObject>(table: M1Table, filters?: ExactFilters): Promise<StoredRow<T>[]>;
+  /** Bounded keyset reads with source filtering performed by PostgreSQL. */
+  scan<T extends JsonObject = JsonObject>(table: M1Table, filters: ExactFilters, options: { limit: number; afterId?: string }): Promise<StoredRow<T>[]>;
+  count(table: M1Table, filters: ExactFilters, limit: number): Promise<number>;
 }
 export interface M1Transaction extends M1ReadSession {
-  insert(table: M1Table, row: StoredRow): void;
+  insert(table: M1Table, row: StoredRow): Promise<void>;
   /** row.version must equal expectedVersion + 1; false means the old version did not match. */
-  update(table: M1Table, row: StoredRow, expectedVersion: number): boolean;
-  remove(table: M1Table, id: string, expectedVersion: number): boolean;
+  update(table: M1Table, row: StoredRow, expectedVersion: number): Promise<boolean>;
+  remove(table: M1Table, id: string, expectedVersion: number): Promise<boolean>;
 }
 export interface M1Store {
   readonly instanceId: string;
   readonly recoveryEpoch: string;
-  /** Callbacks are synchronous. A promise/thenable callback must be rejected. */
-  read<T>(work: (session: M1ReadSession) => T): T;
-  transaction<T>(work: (session: M1Transaction) => T): T;
-  close(): void;
+  /** Short read-only RR transaction. The callback and every storage operation must be awaited. */
+  read<T>(work: (session: M1ReadSession) => Promise<T>): Promise<T>;
+  /** Whole callbacks may retry on serialization/deadlock only; never perform external effects inside. */
+  transaction<T>(work: (session: M1Transaction) => Promise<T>): Promise<T>;
+  close(): Promise<void>;
 }
-export interface OpenM1StoreOptions {
-  databasePath: string;
-  instanceId: string;
-  recoveryEpoch: string;
-  busyTimeoutMs?: number;
-}
-export type StorageErrorCode = 'constraint' | 'conflict' | 'busy' | 'closed' | 'invalid_usage';
+export type StorageErrorCode = 'constraint' | 'conflict' | 'busy' | 'closed' | 'invalid_usage' | 'unavailable' | 'unknown_commit';
 export class StorageError extends Error {
   readonly code: StorageErrorCode;
   constructor(code: StorageErrorCode, message: string, options?: ErrorOptions) {
