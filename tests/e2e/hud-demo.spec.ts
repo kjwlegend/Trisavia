@@ -35,7 +35,7 @@ async function inventoryList(page: Page) {
 }
 async function mailList(page: Page) {
   const window = hudWindow(page);
-  if (await page.locator('#hud-detail-window').isVisible()) await page.getByRole('button', { name: '关闭通知详情', exact: true }).click();
+  if (await page.locator('#hud-detail-window').isVisible()) await page.getByRole('button', { name: '关闭详情', exact: true }).click();
   return window;
 }
 
