@@ -4,7 +4,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createWorldDatabase,dropWorldTestDatabase} from '../../scripts/world-core-database.ts';
 import {prepareWorldCoreDatabase} from '../../scripts/world-core-prepare.ts';
-import {readRuntime,requirePrivateFile} from '../../scripts/postgresql/runtime.ts';
+import {privateFile,readRuntime,requirePrivateFile} from '../../scripts/postgresql/runtime.ts';
 import {openPostgresRuntimeStore} from '../../apps/platform/infrastructure/postgresql/runtime-store.ts';
 import {openPostgresStore,setPostgresWriteGate} from '../../apps/platform/infrastructure/postgresql/postgres-store.ts';
 import {bootstrapPlatformCatalog} from '../../apps/platform/application/bootstrap.ts';
@@ -29,6 +29,7 @@ export async function gatewayFixture(){
   await runtime.transaction(async ctx=>{await bootstrapWorld(ctx);await bootstrapInteraction(ctx);if(await ctx.tasks.currentGeneration('decision')===0)await ctx.tasks.advanceGeneration('decision',0);});
   const service=createM1Service(legacy,{now:()=>clock,email:{mode:'experience'}}),access=createRuntimeIdentity(identity.recoveryEpoch,()=>clock);
   const register=async()=>{const runtimeToken=randomUUID()+'.'+randomBytes(32).toString('base64url'),continuationToken=randomUUID()+'.'+randomBytes(32).toString('base64url');const result=await service.invoke('register',{operationId:randomUUID(),attemptId:randomUUID(),runtimeToken,continuationToken});return {agentId:result.agentId as string,ownerId:result.ownerId as string,runtimeToken};};
-  return {database,identity,options,runtime,legacy,service,access,register,now:()=>clock,tick:(ms:number)=>{clock+=ms;},gate:(enabled:boolean)=>setPostgresWriteGate(maintenance,{enabled}),dispose};
+  const savePrivate=async(name:string,value:unknown)=>{if(!/^[a-z0-9-]+\.json$/.test(name))throw new Error('Invalid private fixture material name');const path=join(directory,name);await privateFile(path,JSON.stringify(value)+'\n');return path;};
+  return {database,identity,options,runtime,legacy,service,access,register,savePrivate,now:()=>clock,tick:(ms:number)=>{clock+=ms;},gate:(enabled:boolean)=>setPostgresWriteGate(maintenance,{enabled}),dispose};
  }catch(error){await dispose();throw error;}
 }

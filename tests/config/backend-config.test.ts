@@ -41,6 +41,10 @@ await test('binding, port and proxy boundaries remain explicit with PostgreSQL',
     assert.equal(loadBackendConfig({ ...f.env, M1_PORT: '0' }).port, 0);
     assert.equal(loadBackendConfig(f.env).trustProxyLoopback, false);
     assert.equal(loadBackendConfig({ ...f.env, M1_TRUST_PROXY_LOOPBACK: '1' }).trustProxyLoopback, true);
+    assert.equal(loadBackendConfig(f.env).worldCoreEnabled, false);
+    assert.equal(loadBackendConfig({ ...f.env, WORLD_CORE_ENABLED: '1' }).worldCoreEnabled, true);
+    for (const value of ['true', 'false', 'yes', '', ' 1', '2'])
+        assert.throws(() => loadBackendConfig({ ...f.env, WORLD_CORE_ENABLED: value }), /WORLD_CORE_ENABLED/);
     for (const value of ['true', 'false', 'yes', '', ' 1', '2'])
         assert.throws(() => loadBackendConfig({ ...f.env, M1_TRUST_PROXY_LOOPBACK: value }), /M1_TRUST_PROXY_LOOPBACK/);
 }

@@ -22,6 +22,8 @@ import type { PerceptionAction } from "../domains/perception/protocol.ts";
 export type M1Action = PerceptionAction | "capabilities" | "catalog" | "register" | "registrationResult" | "self" | "publicProfile" | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup" | "readRecovery" | "registerOwner" | "readAccount" | "claimAgent" | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites" | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveProfile" | "saveDraft" | "publishProfile" | "unpublishProfile" | "profilePolicy" | "createRecoveryRequest" | "readRecoveryRequest" | "cancelRecoveryRequest" | "recoveryAssistance" | "verifyRecoveryRequest" | "rejectRecoveryRequest" | "startRegistration" | "readRegistrationAttempt" | "sendRegistrationCode" | "verifyRegistrationEmail" | "cancelRegistration" | "startEmailRecovery" | "readEmailRecoveryAttempt" | "sendRecoveryCode" | "verifyRecoveryEmail" | "recoverByEmail" | "enableRecoveryBackup" | "readWorldAccess" | "saveWorldAccess" | "readMembership" | "join" | "leave" | "participation" | "receipt";
 export interface M1Options {
     perception?: PerceptionOptions;
+    /** Composition-owned module discovery. M1 does not implement those modules. */
+    gateway?: () => JsonObject;
     now?: () => number;
     email?: EmailConfig;
     handoffTtlMs?: number;
@@ -137,7 +139,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         return result;
     }
     function registrationView(row: StoredRow): JsonObject {
-        return { registrationAttemptId: row.id, agentId: row.data.agentId!, ownerId: row.data.ownerId!, managementStatus: row.data.managementStatus!, profileUrl: profileUrl(scalarString(row, "agentId")) };
+        return { registrationAttemptId: row.id, agentId: row.data.agentId!, ownerId: row.data.ownerId!, managementStatus: row.data.managementStatus!, ...(options.gateway ? { gateway: { capabilities: "/v1/capabilities", discovery: "/v1/gateway/discovery", ownerBindingRequired: false } } : {}), profileUrl: profileUrl(scalarString(row, "agentId")) };
     }
     function accountComplete(owner: StoredRow): boolean {
         return typeof owner.data.usernameKey === "string" && typeof owner.data.emailKey === "string";
@@ -321,8 +323,10 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     async function invoke(action: M1Action, raw: unknown = {}, token?: string, context: {
         clientIp?: string;
     } = {}): Promise<JsonObject> {
-        if (action === "capabilities")
-            return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, ownerRecoveryAssistance: true, ownerEmailVerification: email.configured, ownerEmailRecovery: email.configured, emailMode: email.mode, runtimeReplacement: true, defaultPublicRole: true, profileSave: "immediate-public", worldAccessPreference: true, scheduling: false, perception: true, perceptionApi: await perception.capabilities(), walletApi: wallet.capabilities(), interaction: false, operations: FOUNDATION_HTTP_OPERATIONS.map((operation) => ({ ...operation, actors: [...operation.actors], receiptScopes: { ...operation.receiptScopes }, requiredVersions: [...operation.requiredVersions] })) };
+        if (action === "capabilities") {
+            const gateway = options.gateway?.();
+            return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, ownerRecoveryAssistance: true, ownerEmailVerification: email.configured, ownerEmailRecovery: email.configured, emailMode: email.mode, runtimeReplacement: true, defaultPublicRole: true, profileSave: "immediate-public", worldAccessPreference: true, scheduling: false, perception: true, perceptionApi: await perception.capabilities(), walletApi: wallet.capabilities(), interaction: Array.isArray(gateway?.modules) && gateway.modules.includes("interaction"), ...(gateway ? { gateway } : {}), operations: FOUNDATION_HTTP_OPERATIONS.map((operation) => ({ ...operation, actors: [...operation.actors], receiptScopes: { ...operation.receiptScopes }, requiredVersions: [...operation.requiredVersions] })) };
+        }
         if (action === "catalog")
             return { version: 1, templates: [{ id: "basic", colors: [...AVATAR_COLORS] }], requiredFields: ["displayName", "avatar"] };
         if (email.handles(action))
