@@ -73,8 +73,7 @@ async function request<T>(app: FastifyInstance, method: HTTPMethods, url: string
     }
     return { status: response.statusCode, body };
 }
-async function ok<T>(app: FastifyInstance, method: HTTPMethods, url: string, payload?: Record<string, unknown>, bearer?: string): Promise<T> {
-    const result = await request<T>(app, method, url, payload, bearer);
+function successful<T>(result: Result<T>, method: HTTPMethods, url: string, payload?: Record<string, unknown>, bearer?: string): T {
     assert.equal(result.status, 200, `Expected successful HTTP status at ${method} ${url}`);
     noSecrets(result.body, [bearer, ...Object.entries(payload ?? {})
             .filter(([key]) => /token|password/i.test(key)).map(([, value]) => typeof value === 'string' ? value : undefined)]
@@ -85,6 +84,9 @@ async function ok<T>(app: FastifyInstance, method: HTTPMethods, url: string, pay
         assert.equal(typeof receipt.receiptId, 'string', 'Successful writes require a receipt reference');
     }
     return result.body;
+}
+async function ok<T>(app: FastifyInstance, method: HTTPMethods, url: string, payload?: Record<string, unknown>, bearer?: string): Promise<T> {
+    return successful(await request<T>(app, method, url, payload, bearer), method, url, payload, bearer);
 }
 async function rejected(app: FastifyInstance, method: HTTPMethods, url: string, payload?: Record<string, unknown>, bearer?: string): Promise<string> {
     const result = await request<{
@@ -224,7 +226,7 @@ await test('INT-02: discarded registration response and concurrent retries resol
     t.diagnostic(JSON.stringify({ concurrentRegistrationRetries: attempts.map(result => ({ status: result.status, ...(result.status === 503 ? { code: (result.body as any).error?.code } : {}) })) }));
     const repeated: Registration[] = [];
     for (const result of attempts) {
-        if (result.status === 200) repeated.push(result.body as Registration);
+        if (result.status === 200) repeated.push(successful(result, 'POST', '/v1/registrations', payload));
         else {
             assert.equal(result.status, 503);
             assert.equal((result.body as any).error?.code, 'retry_same_operation');
