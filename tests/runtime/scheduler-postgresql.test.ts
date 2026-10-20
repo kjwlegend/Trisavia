@@ -42,3 +42,9 @@ test('Outbox event/consumer is deduplicated; delivery completion is fenced and s
  await assert.rejects(f.runtime.transaction(ctx=>ctx.outbox.complete(claimed.lease!,ctx.now())),code('lease_lost'));await f.runtime.transaction(ctx=>ctx.outbox.complete(reclaimed.lease!,ctx.now()));
  assert.equal((await f.runtime.read(ctx=>ctx.outbox.get('delivery')))?.state,'completed');assert.equal((await f.runtime.read(ctx=>ctx.events.get('outbox-event')))?.eventId,'outbox-event');assert.equal(await f.legacy.read(tx=>tx.count('perception_states',{},10)),0);
 });
+test('only registered module kinds are claimed; a disabled/empty registry leaves all pending work untouched',async t=>{
+ const f=await setup();t.after(f.dispose);await f.runtime.transaction(async ctx=>{await ctx.tasks.schedule(draft(ctx.now()));await ctx.tasks.schedule({...draft(ctx.now()),taskId:'other-module',kind:'interaction.expire',dedupeKey:'other-module'});});
+ const empty=createDeterministicScheduler({store:f.runtime,workerId:'empty',handlers:[]});assert.equal((await empty.runDue()).claimed,0);await empty.close();
+ const only=createDeterministicScheduler({store:f.runtime,workerId:'enabled',handlers:[{kind:'test.step',version:1,run:async()=>{}}]});try{assert.equal((await only.runDue()).completed,1);}finally{await only.close();}
+ assert.equal((await f.runtime.read(ctx=>ctx.tasks.get('other-module')))?.state,'pending');assert.equal((await f.runtime.read(ctx=>ctx.tasks.get('other-module')))?.attempts,0);
+});

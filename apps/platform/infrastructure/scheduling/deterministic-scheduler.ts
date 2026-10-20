@@ -17,11 +17,14 @@ function bounded(value:number,min:number,max:number){if(!Number.isSafeInteger(va
 export function createDeterministicScheduler(options:SchedulerOptions){
  const leaseMs=bounded(options.leaseMs??30000,1,300000),batchLimit=bounded(options.batchLimit??10,1,100),base=bounded(options.retryBaseMs??1000,1,60000),maximum=bounded(options.retryMaxMs??60000,base,3600000);
  if(!/^[A-Za-z0-9_.:-]{1,128}$/.test(options.workerId))throw new RuntimeError('invalid_usage','Invalid worker identity');
- const handlers=new Map<string,DeterministicTaskHandler>();for(const handler of options.handlers){if(!/^[a-z][a-z0-9_.-]{0,127}$/.test(handler.kind)||typeof handler.run!=='function')throw new RuntimeError('invalid_usage','Invalid deterministic handler');bounded(handler.version,1,1000000);const key=handler.kind+':'+handler.version;if(handlers.has(key))throw new RuntimeError('invalid_usage','Duplicate deterministic handler');handlers.set(key,handler);}
+ if(options.handlers.length>100)throw new RuntimeError('invalid_usage','Too many deterministic handlers');
+ const handlers=new Map<string,DeterministicTaskHandler>();for(const handler of options.handlers){if(!/^[a-z][a-z0-9_.-]{0,127}$/.test(handler.kind)||typeof handler.run!=='function')throw new RuntimeError('invalid_usage','Invalid deterministic handler');bounded(handler.version,1,1000000);const key=handler.kind+':'+handler.version;if(handlers.has(key))throw new RuntimeError('invalid_usage','Duplicate deterministic handler');handlers.set(key,Object.freeze({...handler}));}
+ const kinds=[...new Set([...handlers.values()].map(handler=>handler.kind))];
  let stopped=false,inFlight:Promise<SchedulerRun>|undefined;
  async function execute(limit:number):Promise<SchedulerRun>{
   const result:SchedulerRun={claimed:0,completed:0,retried:0,failed:0,leaseLost:0};
-  const tasks=await options.store.transaction(async ctx=>ctx.tasks.claimDue({now:ctx.now(),workerId:options.workerId,leaseMs,limit}));result.claimed=tasks.length;
+  if(!kinds.length)return result;
+  const tasks=await options.store.transaction(async ctx=>ctx.tasks.claimDue({now:ctx.now(),workerId:options.workerId,leaseMs,limit,kinds}));result.claimed=tasks.length;
   for(const task of tasks){const lease=task.lease!;
    try{
     await options.store.transaction(async ctx=>{const current=await ctx.tasks.assertLease(lease,ctx.now()),handler=handlers.get(current.kind+':'+current.handlerVersion);if(!handler)throw new RuntimeError('task_failed','Deterministic handler is not registered');await handler.run(ctx,current);await ctx.tasks.complete(lease,ctx.now());});result.completed++;

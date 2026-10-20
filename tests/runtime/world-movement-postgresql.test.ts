@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { randomUUID } from 'node:crypto';
+import { worldFixture } from './postgresql-fixture.ts';
+import { bootstrapWorld, createWorldService } from '../../apps/platform/application/world-service.ts';
+import { createDeterministicScheduler } from '../../apps/platform/infrastructure/scheduling/deterministic-scheduler.ts';
+import { WORLD_REPOSITORY } from '../../apps/platform/domains/world/repository.ts';
+import type { CommandKey } from '../../apps/platform/contracts/runtime-store.ts';
+const code=(value:string)=>(error:unknown)=>Boolean(error&&typeof error==='object'&&'code'in error&&error.code===value);
+test('real domain movement persists path, reclaims a lease, advances one step per second, and resumes after store restart',async t=>{
+ const f=await worldFixture();t.after(f.dispose);await f.runtime.transaction(bootstrapWorld);const agent=await f.register();
+ const metadata=await f.legacy.read(async tx=>({member:(await tx.find('memberships',{agentId:agent.agentId}))[0]!,profile:(await tx.find('profiles',{agentId:agent.agentId}))[0]!}));
+ await f.service.invoke('join',{operationId:randomUUID(),agentId:agent.agentId,expectedVersion:metadata.member.version,expectedProfileVersion:metadata.profile.version},agent.runtimeToken);
+ const world=createWorldService(f.access),key=(action:string):CommandKey=>({domain:'world',action,commandId:randomUUID(),principal:{kind:'agent',id:agent.agentId},recoveryEpoch:f.identity.recoveryEpoch});
+ const create=await f.runtime.transaction(async ctx=>world.execute(ctx,await f.access.authenticate(ctx,agent.runtimeToken,['runtime']),key('world.avatar.create'),{worldId:'default',expectedRulesetVersion:1}));assert.equal(create.outcome,'committed');
+ const moveKey=key('world.avatar.move'),input={worldId:'default',expectedVersion:1,expectedRulesetVersion:1,expectedTopologyVersion:1,path:[{x:1,y:0},{x:2,y:0}]};
+ const moving=await f.runtime.transaction(async ctx=>world.execute(ctx,await f.access.authenticate(ctx,agent.runtimeToken,['runtime']),moveKey,input));assert.equal(moving.outcome,'committed');assert.equal(moving.result.state,'pending');assert.equal(await f.runtime.read(async ctx=>(await ctx.repository(WORLD_REPOSITORY).getAvatar('default',agent.agentId))!.position.x),0);
+ const scheduler=createDeterministicScheduler({store:f.runtime,workerId:'replacement',leaseMs:10000,handlers:[{kind:'world.movement.step',version:1,run:world.handleTask}]});t.after(()=>scheduler.close());assert.equal((await scheduler.runDue()).claimed,0);
+ f.tick(1000);const abandoned=(await f.runtime.transaction(ctx=>ctx.tasks.claimDue({now:ctx.now(),workerId:'abandoned',leaseMs:10,limit:1})))[0]!;f.tick(11);
+ assert.equal((await scheduler.runDue()).completed,1);await assert.rejects(f.runtime.transaction(ctx=>world.handleTask(ctx,abandoned)),code('lease_lost'));
+ assert.equal(await f.runtime.read(async ctx=>(await ctx.repository(WORLD_REPOSITORY).getAvatar('default',agent.agentId))!.position.x),1);assert.equal((await scheduler.runDue()).claimed,0);
+ await scheduler.close();await f.runtime.close();const restarted=await f.openRuntime(),next=createDeterministicScheduler({store:restarted,workerId:'restarted',handlers:[{kind:'world.movement.step',version:1,run:world.handleTask}]});t.after(()=>next.close());f.tick(1000);assert.equal((await next.runDue()).completed,1);
+ const end=await restarted.read(async ctx=>({avatar:(await ctx.repository(WORLD_REPOSITORY).getAvatar('default',agent.agentId))!,movement:(await ctx.repository(WORLD_REPOSITORY).getMovement(moving.result.movementId as string))!}));assert.deepEqual(end.avatar.position,{x:2,y:0});assert.equal(end.avatar.version,3);assert.equal(end.movement.nextStep,2);assert.equal(end.movement.state,'completed');
+ const replay=await restarted.transaction(async ctx=>world.execute(ctx,await f.access.authenticate(ctx,agent.runtimeToken,['runtime']),moveKey,input));assert.deepEqual(replay,moving);assert.equal((await next.runDue()).claimed,0);
+});
