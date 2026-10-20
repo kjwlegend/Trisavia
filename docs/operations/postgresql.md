@@ -43,12 +43,20 @@ Node 24直接运行工具。源必须是已停止并排空全部写者后由TD�
 
 ```sh
 node scripts/postgresql/prepare-sqlite.ts /private/cutoff/stopped.sqlite /private/cutoff/identity.json /private/new-schema6-copy
-node scripts/postgresql/convert.ts /private/new-schema6-copy/schema6.sqlite /private/new-schema6-copy/identity.json /private/rehearsal/migration-database-url /private/new-conversion
+# 提前从已审7b提交制作源码归档并以其锁文件装依赖；不得指向流动工作树。
+mkdir /private/frozen-7b
+git archive --format=tar --output=/private/frozen-7b.tar 7b748ab94ff944e3c54f98b8a112d0a3a7727791
+tar -xf /private/frozen-7b.tar -C /private/frozen-7b
+npm ci --prefix /private/frozen-7b --ignore-scripts
+node scripts/postgresql/prepare-catalog.ts /private/new-schema6-copy/schema6.sqlite /private/new-schema6-copy/identity.json /private/frozen-7b /private/new-catalog4-copy
+node scripts/postgresql/convert.ts /private/new-catalog4-copy/catalog4.sqlite /private/new-catalog4-copy/identity.json /private/rehearsal/migration-database-url /private/new-conversion
 node scripts/postgresql/permissions.ts /private/runtime/runtime.json connet_rehearsal_001
 node scripts/postgresql/gate.ts /private/rehearsal/migration-database-url /private/new-schema6-copy/identity.json status
 ```
 
 转换使用storage正式typed codec整批事务；23表（21业务＋实例／迁移历史）逐行回构对账，保留id、version、null／0／false、原正文与历史canonical digest。私有临时snapshot／行证据不是PG永久shadow表。未知kind／字段、完整性／身份或任一差异均失败，目标不发布；真实SQL中途失败整批回滚。对账成功仍是`validated-not-published`，写门关闭，不执行bootstrap、seed、重发凭据或业务重试。
+
+schema迁移与目录升级是两个显式阶段：最终fresh cutoff的schema5仍可包含catalog schema3／guide3，不能拿早期已升schema4的820行副本代替。`prepare-catalog`先按已提交SHA256 manifest验证冻结7b全部platform源码，再仅对另一新副本调用7b `buildApp.ready/close`，无listener／seed／认证请求；原catalog除`current`逐行保留，只追加schema4／下一版guide及其不可变revision声明。对真实guide3输入，结果为guide4。它验证所有非catalog表、实例与原迁移记录不变；最终相对schema5 cutoff的保全口径是原20表中除`schema_migrations`／`perception_catalog`外的18表（含instance_state）不变、原迁移1–5原样加6、旧catalog除current保留。不得在PG业务写门打开后补做bootstrap。
 
 最终切换仅TD执行：正式`connet`须已存在且所有业务表为空，沿当时fresh cutoff重新准备／转换，不能复用早期演练数据。使用正式私有migration连接，把上面convert末尾显式加`--cutover`；permissions对`connet`也须`--cutover`。用原配对identity及application连接在闭门状态运行纯read readiness／health；不得把会持久化读取事实的感知请求当闭门探针。应用配置由模板复制到0600私有文件，数据库URL只在0600连接文件，运行角色为connet_app。所有检查及停机边界记录后，仅TD执行以下显式开门，随后按其交付流程启用应用：
 
