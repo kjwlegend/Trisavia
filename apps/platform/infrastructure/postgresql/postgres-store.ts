@@ -5,6 +5,7 @@ import { StorageError, M1_TABLES, type M1Store, type M1ReadSession, type M1Trans
 import { checkedJson, decode, encode, safeInteger, writeChildren } from './codec.ts';
 import { column, MODELS, modelsFor, resolveModel, type Model } from './model.ts';
 import { POSTGRES_MIGRATIONS, sqlType } from './migrations.ts';
+import { quotaSelection } from './quota.ts';
 
 export interface OpenPostgresStoreOptions {
   connectionString:string; instanceId:string; recoveryEpoch:string;
@@ -69,6 +70,7 @@ export function createPostgresSession(client:PoolClient,write:boolean,alive:()=>
     find:async <T extends JsonObject=JsonObject>(table:M1Table,filters:ExactFilters={})=>execute(()=>rows<T>(table,filters)),
     scan:async <T extends JsonObject=JsonObject>(table:M1Table,filters:ExactFilters,options:SelectionOptions&{limit:number})=>execute(async()=>{bounded(options.limit,1,100_001);if(options.afterId!==undefined&&typeof options.afterId!=='string')throw new StorageError('invalid_usage','Invalid stable keyset');return rows<T>(table,filters,options);}),
     count:async(table,filters,limit)=>execute(async()=>{bounded(limit,1,100_001);const query=selection(table,filters,{limit});const result=await client.query(`SELECT count(*)::integer AS total FROM (${query.sql}) bounded_count`,query.values);return result.rows[0].total as number;}),
+    quotaCount:async query=>execute(async()=>{const selected=quotaSelection(query);const result=await client.query(selected.sql,selected.values);return result.rows[0].total as number;}),
     insert:async(table,row)=>execute(async()=>{writable();tableName(table);const model=resolveModel(table,row),encoded=encode(model,row);
       await client.query(`INSERT INTO ${model.table}(${encoded.columns.join(',')}) VALUES(${encoded.values.map((_,index)=>`$${index+1}`).join(',')})`,encoded.values);
       await writeChildren(client,model,row);await auxiliary(client,model,row);
@@ -125,7 +127,7 @@ export async function openPostgresStore(options:OpenPostgresStoreOptions):Promis
           const result=await connection.query(`SELECT instance_id,recovery_epoch,writes_enabled FROM platform.instance_state WHERE singleton=1 FOR ${write?'UPDATE':'SHARE'}`);
           const guard=result.rows[0];if(!guard||guard.instance_id!==options.instanceId||guard.recovery_epoch!==options.recoveryEpoch)throw new StorageError('conflict','PostgreSQL deployment identity changed; reopen the store');
           if(write){if(!guard.writes_enabled)throw new StorageError('unavailable','Business writes are closed');await connection.query('UPDATE platform.instance_state SET write_generation=write_generation+1 WHERE singleton=1');}
-          const session=createPostgresSession(connection,write,()=>usable),readSession:M1ReadSession={get:session.get,find:session.find,scan:session.scan,count:session.count};
+          const session=createPostgresSession(connection,write,()=>usable),readSession:M1ReadSession={get:session.get,find:session.find,scan:session.scan,count:session.count,quotaCount:session.quotaCount};
           const value=work((write?session:readSession) as M1Transaction);
           if(!value||typeof value.then!=='function')throw new StorageError('invalid_usage','PostgreSQL callbacks must be asynchronous');
           const output=await value;usable=false;commitSent=true;await connection.query('COMMIT');return output;
