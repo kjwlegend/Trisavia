@@ -33,3 +33,8 @@
 .account-root .manager-confirm-target{padding:13px 15px;background:#edf1e4;border-radius:8px}.manager-confirm-target small,.manager-confirm-target strong{display:block}.account-root[data-layout=manager] .account-confirm{border:0;background:transparent;padding:8px 0;display:flex;flex-direction:column;gap:18px}.account-confirm>p{max-width:470px}
 .account-root #legacy-world-state{border:1px solid #c8ae91;background:#f8f1e3;border-radius:8px;padding:16px;margin:0 0 20px}.account-root #proposal-review{border:1px solid #b4c6b6;border-radius:8px;padding:16px;margin-top:20px}.account-root #proposal-review-body{white-space:pre-wrap;overflow-wrap:anywhere}.account-root .manager-public-link{display:flex;min-height:38px;align-items:center}
 .account-root[data-layout=compact] .manager-sidebar,.account-root[data-layout=compact] .manager-object,.account-root[data-layout=compact] .manager-actions{display:none}.account-root[data-layout=compact] .manager-scroll{padding:0;overflow:visible}.account-root[data-layout=compact] #manage-view{display:block}.account-root[data-layout=manager] .manager-pages>[hidden]{display:none!important}
+
+/* Date and facts occupy separate rows even inside a compact role overview. */
+.owner-world-summary-record{display:flex;flex-direction:column;align-items:stretch;gap:4px}
+.owner-world-summary-record time{position:static;min-width:0;white-space:normal;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.owner-world-summary-record>span{min-width:0;white-space:normal;overflow-wrap:anywhere}
