@@ -180,3 +180,17 @@ R22随后静态接受D `ebe7677`并关闭WC-CR05，D最终11指定路径获接�
 TD在固定b5f0285运行受影响38/38、fail／cancel／skip0：两N1 HTTP、两N2 HTTP、两registry、三config、一真实PG邀请分页、九修正后公开场景、七Owner摘要、十二既有owned／map检查；full typecheck与diff-check0。命令与日志在`outputs/world-core/integration-b5f0285/`，仅使用隔离A/B fixture及18894，不访问正在独立验收的18893或正式connet。前序70／4及作者结果保持各自版本，不累计称一次全量。
 
 N2固定包已准备于`outputs/world-core/n2-b5f0285/source`，archive SHA256 `49fb1d6e596b258d8e6e47698869c542fe3c91d8edee8e42f525ceddd01cb087`，package-lock SHA256 `3bc1406cc0c0febcdfa49a95dc0c6661534a8883f83dcb06a00e27e62753d7b0`，依赖独立复制。此时尚未运行N2；18893仍为b55 N1。TD另只读保全N1公开目录引用的21份精确schema／guide响应，均200／no-store，见`n1-public-documents.json`，供升级后核对旧文档摘要。等待总指挥双边安全检查点后再备份当前库及identity／配置、显式初始化模板和原地发布。
+
+### 6.7 N2原地切换与继续独立验收
+
+总指挥回执独立A/B均达到N1安全检查点并停止HTTP：A位置(1,0)、B(0,1)，双方经完整公开场景发现对方；B首次pending后真实回读completed，正式脱敏报告仍在整理。此回执用于安排维护，不冒称TD独立完成其验收。总指挥明确允许同origin／instance／epoch原地发布已审N2与D事实适配，保留两身份及数据。
+
+TD先保存当前新库live一致逻辑dump及配对identity／私有配置，再核对PID92107的固定cwd后SIGTERM排空，确认18893无监听；另保存stopped一致dump。两dump均经`pg_restore --list`成功，未执行本次dump恢复演练。秘密文件留在0700目录／0600文件`outputs/world-core/n2-b5f0285/maintenance-private/`，普通索引`preflight-backup.json`、`maintenance.json`不含凭据。stopped dump为402857字节，SHA256 `ec4cbccabbef596aa331213ed0b4e72fe36627e372dbcc3056f2fc1a7cd5c24d`。
+
+对唯一目标`world_core_integration_20261021`只读采集完整80张用户表、168行的全列SHA256；显式调用已审`world-core-initialize-interaction.ts`后为169行，仅`interaction.configurations`由0到1。其余79表语义hash保持，`platform.instance_state`的write_generation／writes_enabled两机械字段单列排除；instance／epoch及identity文件SHA256保持。模板维护返回text_feedback／templateVersion1／configVersion1、写门关闭。没有迁移、World／目录重seed或身份重建。
+
+私有backend.env显式追加`WORLD_CORE_INTERACTION_ENABLED=1`，使用固定b5f0285归档关门启动。health、首页、owner、entry、capabilities、discovery、scene、rules均200／no-store；闭门启动前后80表169行全列hash完全相同。两Avatar完整公开事实及worldRevision7与切换前一致，旧21份精确World schema／guide内容和digest不变，D八个生产资源HTTP字节与固定源完全匹配／no-store。上述文件分别保存在`stopped-before-continuity.json`、`after-template-continuity.json`、`after-start-continuity.json`、`closed-readiness.json`及原始响应。
+
+北京时间2026-10-21 **02:14:29.557**明确重新开写门，health ready；从正常停服到完成为96.09秒。当前PID **907**、固定cwd **`/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/world-core/n2-b5f0285/source`**，源码 **`b5f0285b1f5c4cd850689c86a2fbf8eb216ec942`**。origin／公开入口、库名、instance和epoch沿第6.5节不变。公开模块实际从`[world]`变为`[world,interaction,decision]`，catalogRevision为`gateway-26efefe55243d028819b88ae`。总指挥已收到实际可恢复时间及资源，只需提示原A/B重新发现实时能力；没有重发身份或私密操作捷径。
+
+原D收到运行已审公开浏览器故事的任务，限新空context、匿名首页／owner和公开事实、使用现有双Avatar，不创建账户或借凭据。此时脚本尚未回报，独立N2／Owner UI和新视觉仍未记通过。N2后所有新增状态继续保留，不回灌本次维护前dump；任何后继切换再做fresh备份。原8789／正式connet、其他端口、历史资料及公网未操作。
