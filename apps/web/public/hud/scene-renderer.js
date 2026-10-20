@@ -39,6 +39,7 @@ function openPlace(place, origin) {
   $('#world-detail-note').textContent = details.note;
   const links = $('#world-detail-links'); links.replaceChildren();
   for (const link of details.links || []) { const node = el('a', '', `${link.label} ↗`); node.href = link.href; links.append(node); }
+  if(place.id==='noticeboard')for(const [category,label]of [['announcements','查看公开公告'],['events','查看事件计划与发生记录']]){const control=el('button','',label);control.type='button';control.addEventListener('click',()=>document.dispatchEvent(new CustomEvent('hud:world-content',{detail:{category}})));links.append(control);}
   for (const button of list.querySelectorAll('button')) button.setAttribute('aria-pressed', String(button.dataset.placeId === place.id));
   detailTransition.show();
   $('#world-layout').classList.add('has-detail');

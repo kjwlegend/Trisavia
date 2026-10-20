@@ -1,8 +1,13 @@
 import {icon,illustration} from '../icons.js';
 import {projectMailView,projectMessageDetail} from '../view-model.js';
 import {el,button,demoLabel,feedback,focusNode} from './shared.js';
+import {createPlatformMail,createContentSwitcher} from './platform-content.js';
 
-export function createMailFeature(provider,onEnterDemo=()=>{},{store,context,detailHost}={}){
+export function createMailFeature(provider,onEnterDemo=()=>{},options={}){
+  const example=createExampleMailFeature(provider,onEnterDemo,options),platform=createPlatformMail(options.worldProvider,options);
+  return createContentSwitcher(example,platform,{session:options.session,onEnterDemo,id:'hud-feature-mail'});
+}
+function createExampleMailFeature(provider,onEnterDemo=()=>{},{store,context,detailHost}={}){
   const node=el('section','hud-feature hud-mail'),list=el('div','hud-mail-list'),feedbackSlot=el('div','hud-mail-feedback-slot'),feedbackNode=el('div','hud-mail-feedback');
   node.id='hud-feature-mail';list.id='hud-mail-results';feedbackSlot.id='hud-mail-feedback-slot';feedbackNode.setAttribute('role','status');feedbackNode.hidden=true;
   const undoText=el('span');feedbackNode.append(undoText);let undoButton=null,feedbackLease=null;
@@ -122,7 +127,7 @@ export function createMailFeature(provider,onEnterDemo=()=>{},{store,context,det
     updateFeedback();
   }),context.subscribe(()=>{if(!local.scope)render();}),provider.subscribe(value=>{source=value;render();renderDetail();})];
   return{
-    node,feedbackNode,feedbackSlot,flush,
+    node,feedbackNode,feedbackSlot,flush,enterDemo(){demo=true;render();updateFeedback();provider.load();},
     activate(){active=true;restoreScroll();},deactivate(){rememberScroll();active=false;closeDetail(false);},setCompact(){},setContext(){},
     back(){if(!detailHost.isOpen)return false;if(sourcePreview){sourcePreview=false;renderDetail(false);return true;}closeDetail();return true;},
     dispose(){flush();closeDetail(false);disposed=true;clearTimeout(scrollTimer);clearTimeout(bodyTimer);clearTimeout(undoTimer);for(const stop of stops)stop?.();},

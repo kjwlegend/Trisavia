@@ -1,8 +1,13 @@
 import {illustration} from '../icons.js';
 import {projectInventoryView} from '../view-model.js';
 import {el,button,demoLabel,feedback,focusNode} from './shared.js';
+import {createPlatformInventory,createContentSwitcher} from './platform-content.js';
 
-export function createInventoryFeature(provider,onEnterDemo=()=>{},{store,context}={}){
+export function createInventoryFeature(provider,onEnterDemo=()=>{},options={}){
+  const example=createExampleInventoryFeature(provider,onEnterDemo,options),platform=createPlatformInventory(options.worldProvider,options);
+  return createContentSwitcher(example,platform,{session:options.session,onEnterDemo,id:'hud-feature-inventory'});
+}
+function createExampleInventoryFeature(provider,onEnterDemo=()=>{},{store,context}={}){
   const node=el('section','hud-feature hud-inventory'),results=el('div','hud-inventory-grid-scroll'),details=el('section','hud-item-detail');
   node.id='hud-feature-inventory';results.id='hud-item-results';details.id='hud-item-detail';
   let local=store.snapshot(),source={phase:'idle'},demo=false,preview=false,revision=local.revision,scrollTimer=0,detailTimer=0,resultsLease=null,disposed=false,pendingScroll=null,pendingDetail=null;
@@ -57,5 +62,5 @@ export function createInventoryFeature(provider,onEnterDemo=()=>{},{store,contex
     searchLabel.append(search);browser.append(toolbar,searchLabel,results);columns.append(browser,details);node.append(columns);renderResults();restoreScroll();
   }
   const stops=[store.subscribe(value=>{if(disposed)return;const changed=value.revision!==revision;local=value;if(changed){revision=value.revision;clearTimeout(scrollTimer);clearTimeout(detailTimer);pendingScroll=null;pendingDetail=null;resultsLease=null;demo=false;preview=false;results.replaceChildren();details.replaceChildren();render();}}),context.subscribe(()=>{if(!local.scope)render();}),provider.subscribe(value=>{source=value;render();})];
-  return{node,flush,activate(){if(demo&&!preview)restoreScroll();},deactivate(){if(demo&&!preview&&local.scope)rememberScroll();},setCompact(){},setContext(){},back(){if(!preview)return false;preview=false;render();restoreScroll();focusItem();return true;},dispose(){flush();disposed=true;clearTimeout(scrollTimer);clearTimeout(detailTimer);for(const stop of stops)stop?.();}};
+  return{node,flush,enterDemo(){demo=true;render();provider.load();},activate(){if(demo&&!preview)restoreScroll();},deactivate(){if(demo&&!preview&&local.scope)rememberScroll();},setCompact(){},setContext(){},back(){if(!preview)return false;preview=false;render();restoreScroll();focusItem();return true;},dispose(){flush();disposed=true;clearTimeout(scrollTimer);clearTimeout(detailTimer);for(const stop of stops)stop?.();}};
 }
