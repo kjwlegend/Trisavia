@@ -103,12 +103,12 @@ export async function openPostgresStore(options:OpenPostgresStoreOptions):Promis
   const client=await pool.connect().catch(async error=>{await pool.end();throw storageError(error);});
   const bootstrapError=()=>{};client.on('error',bootstrapError);
   try{await verifySchema(client,options);}catch(error){client.removeListener('error',bootstrapError);client.release(true);await pool.end();throw storageError(error);}client.removeListener('error',bootstrapError);client.release();
-  const context=new AsyncLocalStorage<boolean>();let closed=false;let closing:Promise<void>|undefined;
+  const context=new AsyncLocalStorage<boolean>(),accepted=new Set<Promise<unknown>>();let closed=false;let closing:Promise<void>|undefined;
   async function scope<T>(write:boolean,work:(session:M1Transaction)=>Promise<T>):Promise<T>{
     if(closed)throw new StorageError('closed','PostgreSQL store is closing');
     if(context.getStore())throw new StorageError('invalid_usage','Nested store scopes are not supported');
     if(typeof work!=='function')throw new StorageError('invalid_usage','A storage callback is required');
-    return context.run(true,async()=>{
+    const pending=context.run(true,async()=>{
       for(let attempt=1;attempt<=retries;attempt++){
         const connection=await pool.connect().catch(error=>{throw storageError(error);});let usable=true,commitSent=false,destroy=false;
         const connectionError=()=>{destroy=true;};connection.on('error',connectionError);
@@ -133,8 +133,9 @@ export async function openPostgresStore(options:OpenPostgresStoreOptions):Promis
       }
       throw new StorageError('busy','Transaction retry budget was exhausted');
     });
+    accepted.add(pending);try{return await pending;}finally{accepted.delete(pending);}
   }
-  return {instanceId:options.instanceId,recoveryEpoch:options.recoveryEpoch,read:work=>scope(false,work),transaction:work=>scope(true,work),close(){if(context.getStore())return Promise.reject(new StorageError('invalid_usage','Cannot close a store inside its active scope'));closed=true;closing??=pool.end();return closing;}};
+  return {instanceId:options.instanceId,recoveryEpoch:options.recoveryEpoch,read:work=>scope(false,work),transaction:work=>scope(true,work),close(){if(context.getStore())return Promise.reject(new StorageError('invalid_usage','Cannot close a store inside its active scope'));closed=true;closing??=(async()=>{await Promise.allSettled([...accepted]);await pool.end();})();return closing;}};
 }
 
 /** Explicit maintenance-role action; importing/opening never enables business writes. */
