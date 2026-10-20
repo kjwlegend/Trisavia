@@ -85,3 +85,21 @@ WS03已将参数写入主目录技术稿“本轮核心实现切片”，123行�
 WS01明确自主注册Agent无需主人绑定即可使用独立runtime参与；pending_setup的ownerId不是有效绑定。Owner观察仍须有效session、有效binding及来源许可。A/C已收取，Decision无Owner时使用适用Agent/平台派发约束，不虚构Owner额度或真实宿主费用。
 
 资源预留：TD候选 `127.0.0.1:18893`，A可用18894，C可用18895；预留时三端口无listener，仅为计划，不表示已启动。候选新库名称拟 `world_core_integration_20261021`，由B提供显式初始化后TD创建。原15432现有PG转发保持，未操作原connet、8789或其他服务。原独立reviewer已收到新批范围；仅在收到后续固定base/head后开始实审。
+
+### 6.2 公共接缝固定审查与首次整合
+
+原reviewer在主目录 `docs/workstreams/ws06-platform/validation/world-core-code-review-2026-10-21.md` 已完成三轮静态接受，无待修项：
+
+| 轮次 | 固定范围 | 实际结论 |
+| --- | --- | --- |
+| R1 | `54c30df → 970e06e`，A身份抽取/facade四路径 | 保留原M1鉴权语义，新增当前身份接缝；尚不证明真实PG或业务接线。 |
+| R2 | `54c30df → 122b52f`，B六路径 | 公共事务、命令/回执及旧M1存储复用host；PG attempt和新域adapter仍待后续。 |
+| R3 | `54c30df → 70cb742`，A/C七路径 | World/Interaction/Decision接口与auth单测；业务service未在该范围。 |
+
+TD依次整合已审原提交 `970e06e`、`cf7d432`、`f7eac22`、`c52d842`、`cb49b42`、`122b52f`、`6977d608`，当前整合代码 `6a8b145`。所有cherry-pick无冲突，`git diff 70cb742 HEAD -- apps tests` 为空，无额外整合代码差异。
+
+TD在该固定组合运行 `node --test tests/gateway/identity-access.test.ts tests/runtime/command.test.ts`，7/7通过、0失败、0skip；其中5项auth与2项command，不再相加成额外检查。第一次typecheck因integration旧node_modules缺`pg`及类型依赖失败，按既有lockfile仅重建本worktree依赖后重跑 `npm run typecheck` 退出0；package/lockfile未改。diff-check通过，工作树clean。以上是合成端口/命令工程检查，不是PG、HTTP、独立Agent或主人UI验收。
+
+B已创建独立开发库 `world_core_b_20261021_01`，记录OID并使用0600私有配置；未操作原connet。N1候选与正式切换尚未发生。N1拟由显式 `WORLD_CORE_ENABLED=1` 启用新组合，公开指引保持候选同源，只发布实际已装配能力；不在GET或readiness中初始化schema。
+
+A/C发现并按所有权实施leave→rejoin旧共享不能复活的边界：新增身份sharingGeneration，仅实际leave递增，pause与重新join不回退共享代次。Decision旧领取另绑定暂停/限制等当前资格版本。该后继修改尚未纳入上述R1—R3接受。
