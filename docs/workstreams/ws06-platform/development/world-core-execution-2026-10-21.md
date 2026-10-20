@@ -216,3 +216,15 @@ D工作树随后无冲突merge已审b5f0285，HEAD`3c889ce68cec2828438572fadb192
 原reviewer R23接受D`3c889ce → 4df5d8`九路径可注入像素基础，R24接受`4df5d8 → d278d59`六路径公开能力说明、角色详情层级和首次拒绝入口引导。TD无冲突cherry-pick为`db19bb5`与`04705feb2ea1e7b9dad18320c68b0330dcf22cb8`，生产／测试路径与D固定d278一致；未新增整合逻辑。此时尚未在047运行TD组合检查或部署，实际18893仍b5。D两路径摘要排版修复`d278 → e6bf1cb`已送原reviewer；完整像素激活仍由D实现，不继承上述静态接受或旧b5浏览器通过。
 
 A/D只读定位Owner未开放：676→b5既有感知读取源及对应前端门控未改；fresh catalog默认禁用部分已实现来源，UI由category／source缺失或not_enabled进入未开放分支，区别于真正空集合及403。通知另依赖历史31条demo来源策略，旧固定31refs授权helper不能用于新空实例。匿名实际capabilities仍声明Owner读取API，perception revision为catalog-1／skills-1；匿名discovery401后未借Owner材料继续，不冒称已读取候选私有目录或私密业务行。最小修补准备是分离reader可用性与示例内容、显式版本目录发布；通知collection-query许可交回WS02确认，逐对象来源授权保持，不seed、不改grant、不用前端假空掩盖。该修补尚未实施、受审或发布。
+
+### 6.10 像素激活固定送审与WS02修补合同
+
+原reviewer R25接受D`d278 → e6bf1cb63c1a52b321fbd468b338567258f3196e`两路径摘要日期／状态分行，R26接受`e6bf → 3b14215cd2305e179b8a9d41b420dfa8fe9eb553`单路径“最近互动”文案。后者按总指挥明确要求，只在这一块用简短人类表述，received_confirmed为“反馈已确认收到”，不解释为赞同／采纳／满意；接口、权限、状态和失败／空态区分不变。TD无冲突整合为`8dc94b1`、`77f6c422c2e3ab5f182927d0fac3681ae53864d1`；CORE-UI-O01仍待实际发布后原UI复验，不借静态接受关闭。
+
+D完整像素激活固定`3b14215 → 75bbb857e8dfa015618ca271c0e205817188be35`，工作树clean，34路径为32个生产文件及两个测试文件，已送原reviewer，尚未得到本片审查结论。实际provider、Owner查询／账号、背包／钱包／四类信箱接口保持；真实完整场景投影消费已批准布局、人体帧和脚点，外围7建筑／94景观不成为新的服务器场所或碰撞规则。实际收到的相邻位置最多补间180ms，不生成下一步或推断在线。
+
+作者普通manifest及日志归`m1-web/outputs/world-core-web/pixel-activation/`：同次site32/32＝11pixel／实际字典＋9公开reader＋10owned＋2旧town helper；最终synthetic browser run06为3/3、无skip，8JS语法、full typecheck及diff0。浏览器全路由拦截至`https://pixel-world.invalid`，空身份、无真实网络／账号操作，1440×900与1361×765桌面；覆盖19PNG校验／解码、fit／2×／3×、拖动、同格原生指针与键盘选择、日间／黄昏、减少动态、撤回及404清理、资产失败重试、pagehide回收和11人有界分页完整收口。不是18893实际HTTP、真实移动或独立UI通过。
+
+失败run01—04保留：初始近景角色在固定顶栏下，后续选择先把目标拖到可见区；locator.click自动scrollIntoView导致在close handler入场前滚页。最终按语义定位可见按钮rect、等既有打开动画完成再原生mouse点按，page scroll和camera仍严格相等，未放宽断言或为此改变生产关闭逻辑。run05两故事通过与run06新增分页后的三故事分别归档，不累计。TD核22采用文件含19PNG与冻结包逐字节一致、12普通日志hash一致，读取通过日志并看过1361全景日间及1440近景黄昏截图；不代替原reviewer或实际产品视觉验收。
+
+WS02已正式补入[原接口合同§11.7](../../ws02-perception/world-perception-api.md#117-2026-10-21fresh实例读取可用性与主人集合查询裁定)，将此问题裁定为恢复既有主人读取的必要修复。集合查询许可与逐对象许可独立；通知来源可声明current_bound_owner查询获准集合，不授正文／附件／发件人或隐藏数量权限。过滤后空与真空同形；公告／事件仍按公开world、背包按有效holding、钱包读真实已初始化账户。helper只发布限定来源／声明新版本，保全旧精确文档和业务事实，不seed、不补grant／投递／余额，不从GET／readiness初始化。TD冻结原合同到`outputs/world-core/ws02-reader-contract-20261021/world-perception-api.md`，全文SHA256为`ccceb3566813535d18a22ba7cec0d4ac0d552b114beb97dafea945171d350932`，第405行起为裁定；A据此准备修补和反例，最终固定差异及审查尚待交付，18893仍b5。
