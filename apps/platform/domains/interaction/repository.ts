@@ -1,7 +1,9 @@
 import type { ArtifactRef, ArtifactRevision, FeedbackActivity, FeedbackConfiguration, FeedbackContribution, InteractionInvitation, InteractionPairPolicy } from './types.ts';
+import { defineRuntimeRepository } from '../../contracts/runtime-store.ts';
 
 /** B implements these named ports; business code does not query another domain's tables. */
 export interface InteractionRepository {
+  initializeConfiguration(configuration: FeedbackConfiguration): Promise<void>;
   getConfiguration(version: number): Promise<FeedbackConfiguration | undefined>;
   getArtifact(ref: ArtifactRef): Promise<ArtifactRevision | undefined>;
   saveArtifact(artifact: ArtifactRevision, expectedVersion: number | null): Promise<void>;
@@ -19,3 +21,5 @@ export interface InteractionRepository {
   /** Bounded stable ID enumeration; C computes current effective state/visibility. */
   listInvitations(agentId: string, options: { afterId?: string; limit: number }): Promise<InteractionInvitation[]>;
 }
+export type InteractionReader = Pick<InteractionRepository, 'getConfiguration' | 'getArtifact' | 'getPair' | 'getInvitation' | 'getActivity' | 'getActivityByInvitation' | 'getFeedback' | 'listInvitations'>;
+export const INTERACTION_REPOSITORY = defineRuntimeRepository<InteractionReader, InteractionRepository>('interaction');
