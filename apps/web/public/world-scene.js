@@ -1,6 +1,7 @@
 // The world consumes one local design-kit subset; character frames share one sheet.
 import {townAssets} from './world-town/assets.js';
 import {createOwnedAgentLayer} from './world-owned-layer.js';
+import {projectWorldAvatars,WORLD_PROJECTION_VERSION} from './hud/world-scene-projection.js';
 import {freeAreas,worldOverlayRects} from './world-safe-area.js';
 export const WORLD_SIZE = Object.freeze({ width: 1536, height: 1024 });
 const W = WORLD_SIZE.width, H = WORLD_SIZE.height;
@@ -145,7 +146,7 @@ function drawActor(ctx,a,images) {
   ctx.drawImage(images.get('character-sheet'),r.x,r.y,r.width,r.height,a.x-anchor.x,a.y-anchor.y,r.width,r.height);
 }
 
-export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{},onChange=()=>{},onError=()=>{},signal}={}){
+export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{},onChange=()=>{},onError=()=>{},signal,worldSource='demo'}={}){
   const images=await loadAssets();
   if(signal?.aborted)throw new DOMException('Scene loading cancelled','AbortError');
   const canvas=document.createElement('canvas');canvas.id='world-canvas';canvas.dataset.worldWidth=String(W);canvas.dataset.worldHeight=String(H);canvas.dataset.buildingCount='11';canvas.className='world-canvas';canvas.tabIndex=0;canvas.setAttribute('role','img');canvas.setAttribute('aria-label','清昼小镇演示地图。可用场所列表查看说明；聚焦后方向键平移，加减号缩放，Home 恢复全景。');
@@ -164,14 +165,16 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   // Only the existing bridge centre corridors can cross the river. The road
   // graph supplies their north/south entry ports; no route is made over water.
   blockedRects.push(...[[0,376],[392,1144],[1160,W]].map(([left,right])=>({left,right,top:96,bottom:192})));
-  const ownedLayer=createOwnedAgentLayer(root,graph,{blockedRects,onSelect:onOwnedSelect,onOverlayChange:()=>{if(!destroyed)refreshOwnedHover();}});
+  const ownedLayer=createOwnedAgentLayer(root,graph,{blockedRects,onSelect:selectAgent,onOverlayChange:()=>{if(!destroyed)refreshOwnedHover();}});
   const camera={x:W/2,y:H/2,zoom:1,base:1,width:0,height:0,dpr:1};
   let hoverPointer=null,hoverProjection='';
   let mode='initial',exploring=false;
-  let paused=reduced.matches,pauseReason=reduced.matches?'reduced':'user',visible=true,destroyed=false,broken=false,selected=null,raf=0,lastTime=null,lastDraw=0,elapsed=0,environment=true,actorLimit=actors.length,quality=0;
+  let worldView={phase:worldSource==='demo'?'demo':'loading',enabled:null,rules:null,avatars:[],complete:false,asOf:null,worldRevision:null},ownedProjection={agents:[],selectedAgentId:''};
+  let paused=reduced.matches,pauseReason=reduced.matches?'reduced':'user',visible=true,destroyed=false,broken=false,selected=null,raf=0,lastTime=null,lastDraw=0,elapsed=0,environment=true,actorLimit=worldSource==='demo'?actors.length:0,quality=0;
   let frames=0,drawMs=0,slowSamples=[],metrics={fps:0,meanDrawMs:0};
   const abort=new AbortController(),eventOptions={signal:abort.signal};
-  const state=()=>({mode,exploring,minZoom:overviewScale()/camera.base,zoom:camera.zoom,paused,pauseReason,visible:visible&&!document.hidden,actorCount:actorLimit,quality,frames,...metrics,camera:{x:camera.x,y:camera.y,scale:camera.base*camera.zoom,width:camera.width,height:camera.height},actors:actors.slice(0,actorLimit).map(a=>({id:a.id,x:a.x,y:a.y,pause:a.pause})),selectedId:selected?.id??null});
+  const state=()=>({mode,exploring,minZoom:overviewScale()/camera.base,zoom:camera.zoom,paused,pauseReason,visible:visible&&!document.hidden,actorCount:actorLimit,quality,frames,...metrics,camera:{x:camera.x,y:camera.y,scale:camera.base*camera.zoom,width:camera.width,height:camera.height},actors:actors.slice(0,actorLimit).map(a=>({id:a.id,x:a.x,y:a.y,pause:a.pause})),selectedId:selected?.id??null,
+    worldScene:{phase:worldView.phase,enabled:worldView.enabled,asOf:worldView.asOf,worldRevision:worldView.worldRevision,complete:worldView.complete,projectionVersion:WORLD_PROJECTION_VERSION,avatars:ownedLayer.actors().filter(row=>row.fact).map(row=>({fact:structuredClone(row.fact),x:row.x,y:row.y}))}});
   // Projection uses the whole viewport; overview reserves room for the two overlays.
   function overviewInsets(){const phone=camera.width<760;return {top:phone?112:88,bottom:phone?116:126,left:16,right:16};}
   function overviewScale(){const i=overviewInsets();return Math.max(.01,Math.min((camera.width-i.left-i.right)/W,(camera.height-i.top-i.bottom)/H));}
@@ -190,9 +193,12 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
       const canvasBox=canvas.getBoundingClientRect(),projection=[camera.x,camera.y,scale,center.x,center.y,camera.width,camera.height,canvasBox.left,canvasBox.top].join(':');
       if(projection!==hoverProjection){hoverProjection=projection;refreshOwnedHover();}
       if(environment){for(let i=0;i<25;i++){const x=(i*137+elapsed*3)%W,y=115+(i*29)%61;line(ctx,x,y,x+18+(i%3)*6,y,'#cce1d8',2);}}
-      const sorted=[...objects,...actors.slice(0,actorLimit),...ownedLayer.actors()].sort((a,b)=>a.y-b.y||Number(a.kind==='actor')-Number(b.kind==='actor')||String(a.id||a.kind).localeCompare(String(b.id||b.kind)));
+      const sorted=[...objects,...actors.slice(0,actorLimit),...(worldView.phase==='demo'?ownedLayer.actors():[])].sort((a,b)=>a.y-b.y||Number(a.kind==='actor')-Number(b.kind==='actor')||String(a.id||a.kind).localeCompare(String(b.id||b.kind)));
       for(const o of sorted){if(o.kind==='actor')drawActor(ctx,o,images);else if(o.kind==='owned-agent')ownedLayer.draw(ctx,o,scale);else ctx.drawImage(o.sprite.canvas,o.x-o.sprite.ax,o.y-o.sprite.ay);}
-      if(selected){const isActor=selected.kind==='actor';ctx.strokeStyle='#557f9a';ctx.lineWidth=2/Math.max(scale,.4);ctx.setLineDash([5/scale,4/scale]);ctx.beginPath();ctx.ellipse(selected.x,selected.y+3,isActor?13:Math.min(selected.w/2+12,70),isActor?6:16,0,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);}
+      // Real logical positions are drawn above decorative scenery; scenery does
+      // not grant a path, hide an Avatar or determine its authoritative place.
+      if(worldView.phase!=='demo')for(const entry of ownedLayer.actors())ownedLayer.draw(ctx,entry,scale);
+      if(selected){const isActor=['actor','world-avatar'].includes(selected.kind);ctx.strokeStyle='#557f9a';ctx.lineWidth=2/Math.max(scale,.4);ctx.setLineDash([5/scale,4/scale]);ctx.beginPath();ctx.ellipse(selected.x,selected.y+3,isActor?13:Math.min(selected.w/2+12,70),isActor?6:16,0,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);}
       ctx.restore();
       ownedLayer.layout({scale,point:(x,y)=>({x:(x-camera.x)*scale+center.x,y:(y-camera.y)*scale+center.y})});
       frames++;drawMs+=performance.now()-start;
@@ -209,7 +215,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
       const interval=time-lastDraw;lastDraw=time;draw();if(interval>0)slowSamples.push(interval);
       if(slowSamples.length>=120){const mean=slowSamples.reduce((a,b)=>a+b,0)/slowSamples.length;metrics={fps:Math.round(1000/mean),meanDrawMs:Math.round(drawMs/Math.max(frames,1)*100)/100};slowSamples=[];
         if(mean>48&&quality===0){quality=1;environment=false;notify();}
-        else if(mean>64&&quality===1){quality=2;actorLimit=mobile?8:10;notify();}
+        else if(mean>64&&quality===1){quality=2;actorLimit=worldView.phase==='demo'?(mobile?8:10):0;notify();}
         else if(mean>90&&quality===2){quality=3;paused=true;pauseReason='performance';notify();}
       }
     }
@@ -231,7 +237,13 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   // Opening, switching or closing a reading panel never takes the camera.
   function select(place){selected=place??null;draw();notify();}
   function setPaused(value){paused=Boolean(value)||reduced.matches;pauseReason=reduced.matches?'reduced':'user';reconcile();notify();}
-  function setOwnedAgents(projection){if(destroyed)return;ownedLayer.set(projection);draw();}
+  function applyAgents(){
+    if(worldView.phase==='demo')ownedLayer.set(ownedProjection);
+    else{const ids=new Set(ownedProjection.agents.map(row=>row.agentId));ownedLayer.set({source:'server',selectedAgentId:ownedProjection.selectedAgentId,agents:worldView.rules?projectWorldAvatars(worldView.avatars,worldView.rules,WORLD_SIZE).map(row=>({...row,owned:ids.has(row.agentId)})):[]});}
+  }
+  function setOwnedAgents(projection){if(destroyed)return;ownedProjection=structuredClone(projection);applyAgents();draw();}
+  function setWorldScene(value){if(destroyed)return;worldView=structuredClone(value);actorLimit=value.phase==='demo'?(quality>=2?(mobile?8:10):actors.length):0;canvas.dataset.worldSource=value.phase==='demo'?'demo':'server';canvas.setAttribute('aria-label',value.phase==='demo'?'清昼小镇演示地图。人物与环境为演示。':'清昼小镇世界画布。角色来自服务器逻辑坐标投影；背景场所为演示，不代表在线。');applyAgents();draw();notify();}
+  function selectAgent(agentId,origin){const entry=ownedLayer.actors().find(row=>row.agentId===agentId);if(!entry)return;if(entry.owned)onOwnedSelect(agentId,origin);else if(entry.fact)onSelect({...structuredClone(entry.fact),kind:'world-avatar',x:entry.x,y:entry.y},origin);}
   function locateOwnedAgent(agentId){
     const point=ownedLayer.point(agentId);if(!point||destroyed||broken)return false;
     const scale=camera.base*camera.zoom,bounds=root.getBoundingClientRect();
@@ -281,7 +293,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   function finishPointer(e,cancelled=false){
     if(!pointers.has(e.pointerId))return;const p=local(e),clicked=!cancelled&&drag&&!drag.moved&&pointers.size===1;
     pointers.delete(e.pointerId);if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);
-    if(clicked){const place=hit(p.x,p.y);canvas.focus({preventScroll:true});if(place?.kind==='owned-agent')onOwnedSelect(place.agentId,canvas);else if(place)onSelect(place,canvas);}
+    if(clicked){const place=hit(p.x,p.y);canvas.focus({preventScroll:true});if(place?.kind==='owned-agent')selectAgent(place.agentId,canvas);else if(place)onSelect(place,canvas);}
     if(!pointers.size){drag=null;pinch=null;canvas.classList.remove('is-dragging');}else{pinch=null;if(drag){drag.moved=true;drag.last=[...pointers.values()][0];}}
   }
   canvas.addEventListener('pointerup',e=>finishPointer(e),eventOptions);canvas.addEventListener('pointercancel',e=>finishPointer(e,true),eventOptions);
@@ -298,6 +310,6 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   document.addEventListener('visibilitychange',()=>{reconcile();notify();},eventOptions);
   const observer=new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;reconcile();notify();},{threshold:.01});observer.observe(root);
   const resizer=new ResizeObserver(resize);resizer.observe(root);resize();reconcile();notify();
-  return{canvas,setZoom,fit,reset,setExploring,select,setPaused,setOwnedAgents,locateOwnedAgent,getState:state,destroy(){destroyed=true;cancelAnimationFrame(raf);observer.disconnect();resizer.disconnect();abort.abort();ownedLayer.destroy();canvas.remove();}};
+  return{canvas,setZoom,fit,reset,setExploring,select,setPaused,setOwnedAgents,setWorldScene,locateOwnedAgent,getState:state,destroy(){destroyed=true;cancelAnimationFrame(raf);observer.disconnect();resizer.disconnect();abort.abort();ownedLayer.destroy();canvas.remove();}};
 }
-export function placeDetails(place){return place.kind==='actor'?{name:'演示居民',area:'场景演示',icon:'○',description:`${['人形 01','人形 02','人形 03','机型 01','机型 02','机型 03'][place.style]}款式的演示人物。它沿预设道路行走与停留，只用于表现小镇的生活节奏。`,note:'这不是一个真实 Agent，没有真实姓名、账号或行为状态。'}:{...place,note:place.note||demoNote};}
+export function placeDetails(place){if(place.kind==='world-avatar')return{name:place.profile.displayName,area:'服务器公开角色',icon:'○',description:`逻辑坐标（${place.position.x}, ${place.position.y}） · ${place.status==='suspended'?'已暂停':'已加入世界'} · Avatar 版本 ${place.version}。服务器更新时间：${new Date(place.updatedAt).toLocaleString('zh-CN',{hour12:false})}。`,note:`${WORLD_PROJECTION_VERSION}：位置按世界规则投影，背景道路与场所仅为演示。此记录不表示在线，也不推测移动目的地。`};return place.kind==='actor'?{name:'演示居民',area:'场景演示',icon:'○',description:`${['人形 01','人形 02','人形 03','机型 01','机型 02','机型 03'][place.style]}款式的演示人物。它沿预设道路行走与停留，只用于表现小镇的生活节奏。`,note:'这不是一个真实 Agent，没有真实姓名、账号或行为状态。'}:{...place,note:place.note||demoNote};}

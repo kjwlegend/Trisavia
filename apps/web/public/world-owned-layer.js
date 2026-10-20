@@ -11,7 +11,7 @@ export function createOwnedAgentLayer(root,graph,{blockedRects=[],onSelect=()=>{
   const labels=el('div','world-owned-labels');labels.setAttribute('aria-label','我的 Agent 地图操作');root.append(labels);
   const tooltip=el('div','world-owned-tooltip');tooltip.id='world-owned-tooltip';tooltip.setAttribute('role','tooltip');tooltip.hidden=true;labels.append(tooltip);
   const motion=createOwnedAgentMotion(graph,{blockedRects}),entries=new Map();
-  let selectedId='',hoveredId='',focusedId='',lastProjection=null,destroyed=false,geometry=null;
+  let selectedId='',hoveredId='',focusedId='',lastProjection=null,destroyed=false,geometry=null,authoritative=false;
   function copyPositions(){for(const entry of entries.values()){const position=motion.read(entry.agentId);if(position)Object.assign(entry,position);}}
   function layout(project=lastProjection){
     if(destroyed||!project)return;lastProjection=project;
@@ -43,26 +43,30 @@ export function createOwnedAgentLayer(root,graph,{blockedRects=[],onSelect=()=>{
   const layoutRoot=document.querySelector('#world-layout');if(layoutRoot)observer.observe(layoutRoot,{attributes:true,attributeFilter:['style']});
   for(const selector of ['header','#hud-dock','#hud-agent','#hud-locate-agent','#hud-window','#world-detail','.world-demo']){const node=document.querySelector(selector);if(node)resizer.observe(node);}
   function set(projection){
-    if(destroyed)return;selectedId=projection.selectedAgentId;const ids=new Set(projection.agents.map(agent=>agent.agentId));motion.sync([...ids]);
+    if(destroyed)return;authoritative=projection.source==='server';selectedId=projection.selectedAgentId;const ids=new Set(projection.agents.map(agent=>agent.agentId));motion.sync(authoritative?[]:[...ids]);
+    labels.setAttribute('aria-label',authoritative?'服务器公开角色地图操作':'我的 Agent 地图操作');
     for(const [id,entry]of entries)if(!ids.has(id)){entry.button.remove();entries.delete(id);}
     if(!ids.has(focusedId))focusedId='';if(!ids.has(hoveredId))hoveredId='';
     for(const agent of projection.agents){
-      let entry=entries.get(agent.agentId);if(!motion.read(agent.agentId))continue;
+      let entry=entries.get(agent.agentId);if(!authoritative&&!motion.read(agent.agentId))continue;
       if(!entry){
         const button=el('button','world-owned-hit');button.type='button';labels.append(button);entry={agentId:agent.agentId,kind:'owned-agent',button,sprites:new Map()};entries.set(agent.agentId,entry);
         // Pointer hits stay on the canvas, where nearest live footpoint wins.
         // The stable transparent button supplies the equivalent keyboard entry.
-        button.addEventListener('click',()=>onSelect(agent.agentId,button));
+        button.addEventListener('click',()=>onSelect(entry.agentId,button));
         button.addEventListener('focus',()=>{focusedId=agent.agentId;layout();});button.addEventListener('blur',()=>{focusedId='';layout();});
       }
       const spriteKey=JSON.stringify(agent.avatar);if(entry.spriteKey!==spriteKey){entry.sprites.clear();entry.spriteKey=spriteKey;}entry.avatar=agent.avatar;entry.nameValue=agent.name;
-      entry.button.setAttribute('aria-label',`${agent.name}，${agent.agentId===selectedId?'当前 Agent':'我的 Agent'}，选择并管理`);entry.button.setAttribute('aria-pressed',String(agent.agentId===selectedId));
+      entry.owned=authoritative?agent.owned:true;entry.fact=authoritative?agent.fact:null;
+      if(authoritative)Object.assign(entry,{x:agent.x,y:agent.y,walking:false,frame:0,direction:'down',projectionVersion:agent.projectionVersion});
+      entry.button.dataset.agentId=entry.agentId;entry.button.dataset.worldSource=authoritative?'server':'demo';
+      entry.button.setAttribute('aria-label',authoritative?`${agent.name}，服务器角色，${agent.fact.status==='suspended'?'已暂停':'已加入'}，坐标 ${agent.fact.position.x}, ${agent.fact.position.y}${entry.owned?'，我的 Agent，选择并管理':'，查看公开事实'}`:`${agent.name}，${agent.agentId===selectedId?'当前 Agent':'我的 Agent'}，选择并管理`);entry.button.setAttribute('aria-pressed',String(agent.agentId===selectedId));
     }
-    copyPositions();labels.hidden=!entries.size;const note=document.querySelector('#world-owned-note');if(note)note.hidden=!entries.size;layout();
+    if(!authoritative)copyPositions();labels.hidden=!entries.size;const note=document.querySelector('#world-owned-note');if(note){note.hidden=!entries.size;note.textContent=authoritative?'角色位置来自服务器 · 背景为演示，不表示在线':'自有角色动画仅供展示，不代表在线';}layout();
   }
   return{
     set,actors:()=>[...entries.values()],
-    step(dt,options){motion.step(dt,{...options,heldIds:[focusedId,hoveredId]});copyPositions();},
+    step(dt,options){if(authoritative)return;motion.step(dt,{...options,heldIds:[focusedId,hoveredId]});copyPositions();},
     draw(ctx,entry,scale){
       if(entry.agentId===selectedId){const rx=Math.max(24,12/scale),ry=Math.max(9,5/scale);ctx.fillStyle='#C7E8DC';ctx.globalAlpha=.24;ctx.beginPath();ctx.ellipse(entry.x,entry.y+2,rx,ry,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;ctx.lineWidth=2;ctx.strokeStyle='#397E80';ctx.stroke();}
       const key=`${entry.direction}:${entry.walking?entry.frame:'idle'}`;
@@ -71,7 +75,7 @@ export function createOwnedAgentLayer(root,graph,{blockedRects=[],onSelect=()=>{
     },
     layout,hover(id){if(hoveredId===id)return;hoveredId=entries.has(id)?id:'';layout();},
     hit(point,scale){return[...entries.values()].map(entry=>({entry,d:Math.hypot(point.x-entry.x,point.y-entry.y)})).filter(({entry})=>Math.abs(point.x-entry.x)<=Math.max(16,22/scale)&&Math.abs(point.y-entry.y+16)<=Math.max(20,22/scale)).sort((a,b)=>a.d-b.d)[0]?.entry;},
-    point(id){const position=motion.read(id);return position?{x:position.x,y:position.y}:null;},
+    point(id){const position=authoritative?entries.get(id):motion.read(id);return position?{x:position.x,y:position.y}:null;},
     destroy(){destroyed=true;observer.disconnect();resizer.disconnect();motion.clear();entries.clear();labels.remove();const note=document.querySelector('#world-owned-note');if(note)note.hidden=true;},
   };
 }
