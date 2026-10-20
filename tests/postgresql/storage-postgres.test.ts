@@ -139,6 +139,17 @@ test('40001 retries the complete callback at most three times and leaves no part
   }finally{await admin.query('DROP TRIGGER storage_test_serialization_failure ON iam.agents; DROP FUNCTION platform.storage_test_serialization_failure()');await store.close();}
 });
 
+test('five waves of four competing scopes complete inside the bounded retry window',async t=>{
+  const store=await testStore(),durations:number[]=[];
+  try{for(let wave=0;wave<5;wave++)await Promise.all(Array.from({length:4},async(_,index)=>{
+    const started=performance.now();await store.transaction(async tx=>{await tx.insert('facts',row(`wave-${wave}-${index}`,{action:'bounded-contention'}));await new Promise(resolve=>setTimeout(resolve,10));});durations.push(performance.now()-started);
+  }));
+    assert.equal(await store.read(tx=>tx.count('facts',{action:'bounded-contention'},100)),20);
+    const p95=durations.toSorted((a,b)=>a-b)[Math.ceil(durations.length*.95)-1]!;assert.ok(p95<=5000,`p95 ${p95}ms exceeds the fixed 5s window`);
+    t.diagnostic(JSON.stringify({scopeTransactions:durations.length,waves:5,concurrency:4,p95Ms:Math.round(p95*100)/100,maximumMs:Math.round(Math.max(...durations)*100)/100}));
+  }finally{await store.close();}
+});
+
 test('close rejects new scopes and drains active and already queued app-role scopes before resolving',async()=>{
   const store=await openPostgresStore({...applicationOptions,poolMax:1});let release!:()=>void,entered!:()=>void,closed=false;
   const ready=new Promise<void>(resolve=>{entered=resolve;}),hold=new Promise<void>(resolve=>{release=resolve;});

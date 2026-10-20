@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { createHash } from 'node:crypto';
+import { createHash, randomInt } from 'node:crypto';
+import { setTimeout as delay } from 'node:timers/promises';
 import { Pool, type PoolClient } from 'pg';
 import { StorageError, M1_TABLES, type M1Store, type M1ReadSession, type M1Transaction, type M1Table, type StoredRow, type JsonObject, type ExactFilters } from '../../contracts/store.ts';
 import { checkedJson, decode, encode, safeInteger, writeChildren } from './codec.ts';
@@ -142,9 +143,12 @@ export async function openPostgresStore(options:OpenPostgresStoreOptions):Promis
           usable=false;const sqlState=state(error);
           if(commitSent&&(!sqlState||sqlState.startsWith('08')||sqlState.startsWith('57'))){destroy=true;throw new StorageError('unknown_commit','Commit result is unknown; recover with the original operation identity',{cause:error});}
           await connection.query('ROLLBACK').catch(()=>{destroy=true;});
-          if((sqlState==='40001'||sqlState==='40P01')&&attempt<retries)continue;
-          throw storageError(error);
+          if(!((sqlState==='40001'||sqlState==='40P01')&&attempt<retries))throw storageError(error);
         }finally{usable=false;connection.removeListener('error',connectionError);connection.release(destroy);}
+        // Retry only after releasing the failed transaction and its client.
+        // Jitter prevents concurrent scopes from repeatedly rebuilding the
+        // same stale RR snapshot in lock-step. At most 150ms + 300ms total.
+        await delay(randomInt(50,151)*attempt);
       }
       throw new StorageError('busy','Transaction retry budget was exhausted');
     });
