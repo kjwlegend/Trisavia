@@ -64,7 +64,7 @@ import type { TestContext } from 'node:test';
 const stamp=Date.UTC(2026,9,20),newTables=['wallet_accounts','mailbox_messages','mailbox_receipts'];
 const messages=(id?:string,extra:Json={})=>requestBase('inbox',{categoryId:'messages',...(id?{purpose:'human-inspect',agentRef:agentRef(id)}:{}),...extra});
 async function messageFixture(t:TestContext){
- const recipients=new Set<string>(),humanNames=new Map<string,string>();let observe=true;
+ const recipients=new Set<string>(),humanNames=new Map<string,string>();let observe=true,receiveTime=stamp;
  const source:TrustedMailboxSource={sourceId:'isolated-authenticated-upstream',
   authenticate(tx,context,authenticate){const credential=authenticate(tx,(context as {token?:string}).token,['runtime','owner_session']);return credential.data.kind==='runtime'?{kind:'agent',ref:agentRef(String(credential.data.agentId))}:{kind:'human',ref:{moduleId:'identities',type:'identities.human@1',id:String(credential.data.ownerId)}};},
   authorizeRecipient(_tx,_actor,recipient){return recipients.has(recipient);},
@@ -72,9 +72,9 @@ async function messageFixture(t:TestContext){
   humanIdentity(_tx,ar,recipient){const name=recipients.has(recipient)?humanNames.get(ar.id):undefined;return name?{ref:ar,displayName:name,authorityId:'isolated-explicit-disclosure',version:1}:null;},
  };
  const f=await fixture(t,{mailboxSources:[source],detailSegmentChars:32});recipients.add(f.a.agentId);recipients.add(f.sibling.agentId);
- const receive=(input:Json,token=f.sibling.runtimeToken)=>f.storage(store=>createM1Service(store,{now:()=>stamp,perception:{mailboxSources:[source]}}).receiveTrustedMessage(source.sourceId,input,{token}));
+ const receive=(input:Json,token=f.sibling.runtimeToken)=>f.storage(store=>createM1Service(store,{now:()=>receiveTime,perception:{mailboxSources:[source]}}).receiveTrustedMessage(source.sourceId,input,{token}));
  const input=(extra:Json={})=>({sourceMessageKey:`source-${randomUUID()}`,recipientAgentId:f.a.agentId,title:'来自受信来源的合成来信',body:'Only an authenticated upstream may provide this original body. '.repeat(12),attachments:[{name:'Authorized attachment',description:'A bounded description.'}],...extra});
- return {...f,source,receive,input,recipients,humanNames,setObserve(value:boolean){observe=value;}};
+ return {...f,source,receive,input,recipients,humanNames,setObserve(value:boolean){observe=value;},setReceiveTime(value:number){receiveTime=value;}};
 }
 
 test('wallet accounts are durable registration records; queries are pure reads, isolate actors, retain values across initialization/rebinding and never invent missing zero',async t=>{
@@ -208,4 +208,56 @@ test('wallet initialization is part of registration rollback and SQLite rejects 
  try{const failed=await f.m1('POST','/registrations',command);assert(failed.status>=400);assert.equal(snapshot(),before);}finally{const db=new DatabaseSync(f.options.databasePath);try{db.exec('DROP TRIGGER isolated_wallet_fault');}finally{db.close();}}
  const registered=await ok(f.m1,'POST','/registrations',command),account=f.storage(store=>store.read(tx=>tx.get('wallet_accounts',walletAccountId(registered.agentId))!));assert.equal(account.data.balance,0);await ok(f.m1,'POST','/registrations',command);assert.deepEqual(f.storage(store=>store.read(tx=>tx.get('wallet_accounts',account.id))),account);
  for(const balance of [-1,0.5,Number.MAX_SAFE_INTEGER+1]){assert.throws(()=>f.storage(store=>store.transaction(tx=>tx.update('wallet_accounts',{...account,version:account.version+1,data:{...account.data,balance}},account.version))));assert.deepEqual(f.storage(store=>store.read(tx=>tx.get('wallet_accounts',account.id))),account);}
+});
+
+for(const senderKind of ['agent','human'] as const)for(const readerKind of ['runtime','owner'] as const)test(`WM-CR04: ${readerKind} continuation rechecks ${senderKind} sender disclosure after rename and withdrawal`,async t=>{
+ const f=await messageFixture(t),human=senderKind==='human',token=human?f.owner.sessionToken:f.sibling.runtimeToken;
+ const oldName=human?'本次明确披露的人类旧名':'合成感知乙',newName=human?'本次明确披露的人类新名':'重新公开的合成Agent名称';
+ if(human)f.humanNames.set(f.owner.ownerId,oldName);
+ const received=f.receive(f.input(),token);f.receive(f.input(),token);
+ const originalBody=await f.detail(received.ref as any),confirmation=await f.read('PUT','/agent-read-state',{protocolVersion:1,operationId:randomUUID(),ref:received.ref,contentVersion:1,completionToken:originalBody.final.completionToken}),legacyCount=(await f.unread()).count.value;
+ const readerToken=readerKind==='owner'?f.owner.sessionToken:f.a.runtimeToken,input=messages(readerKind==='owner'?f.a.agentId:undefined,{limit:1}),bodyInput={...requestBase('inbox',{purpose:readerKind==='owner'?'human-inspect':'agent-inspect'}),...(readerKind==='owner'?{agentRef:agentRef(f.a.agentId)}:{}),ref:received.ref};
+ const page=await f.read('POST','/list',input,readerToken),part=await f.read('POST','/detail',bodyInput,readerToken);assert(page.nextPageToken);assert(part.nextContentToken);assert.equal(page.records[0].summary.sender.displayName,oldName);
+ if(human)f.humanNames.delete(f.owner.ownerId);else{const p=await ok(f.m1,'GET',`/agents/${f.sibling.agentId}/profile`,undefined,f.owner.sessionToken);await ok(f.m1,'POST',`/agents/${f.sibling.agentId}/profile/unpublish`,{operationId:randomUUID(),expectedVersion:p.version,expectedPolicyVersion:p.policyVersion},f.owner.sessionToken);}
+ const withdrawn=await f.call('POST','/list',{...input,pageToken:page.nextPageToken},readerToken);assert.equal(withdrawn.status,409);assert(!JSON.stringify(withdrawn.envelope).includes(oldName));assert(!JSON.stringify(withdrawn.envelope).includes(human?f.owner.ownerId:f.sibling.agentId));
+ assert.equal((await f.call('POST','/detail',{...bodyInput,contentToken:part.nextContentToken},readerToken)).status,409);
+ const restricted=await f.read('POST','/list',input,readerToken);assert.deepEqual(restricted.records[0].summary.sender,{kind:senderKind,ref:null,displayName:null});assert.equal(restricted.records[0].version,1);
+ const rename=async(name:string)=>{if(human)f.humanNames.set(f.owner.ownerId,name);else{const p=await ok(f.m1,'GET',`/agents/${f.sibling.agentId}/profile`,undefined,f.owner.sessionToken);await ok(f.m1,'PUT',`/agents/${f.sibling.agentId}/profile`,{operationId:randomUUID(),expectedVersion:p.version,expectedPolicyVersion:p.policyVersion,fields:{displayName:name}},f.owner.sessionToken);}};
+ await rename(newName);const fresh=await f.read('POST','/list',input,readerToken),newPart=await f.read('POST','/detail',bodyInput,readerToken);assert.equal(fresh.records[0].summary.sender.displayName,newName);assert.equal(fresh.records[0].version,1);
+ await rename(`${newName}二`);const renamed=await f.call('POST','/list',{...input,pageToken:fresh.nextPageToken},readerToken);assert.equal(renamed.status,409);assert(!JSON.stringify(renamed.envelope).includes(newName));
+ assert.equal((await f.call('POST','/detail',{...bodyInput,contentToken:newPart.nextContentToken},readerToken)).status,409);assert.equal((await f.read('POST','/list',input,readerToken)).records[0].summary.sender.displayName,`${newName}二`);
+ const current=await f.queryState(received.ref as any);assert.equal(current.confirmedContentVersion,confirmation.confirmedContentVersion);assert.equal(current.stateVersion,confirmation.stateVersion);assert.equal((await f.unread()).count.value,legacyCount);
+});
+
+test('WM-CR05: actual wallet HTTP rejects all schema-invalid purpose shapes without durable writes',async t=>{
+ const f=await fixture(t),directory=await f.read('GET','/discovery?limit=50'),operation=directory.operations.find((row:Json)=>row.id==='wallet-query'),schema=await f.read('GET',`/schemas/${operation.inputSchema.id}?version=${operation.inputSchema.version}`);
+ const {createRequire}=await import('node:module'),Ajv2020=createRequire(import.meta.url)('ajv/dist/2020.js').default,validate=new Ajv2020({strict:false}).compile(schema.document),snapshot=()=>f.storage(store=>store.read(tx=>key(M1_TABLES.map(table=>tx.find(table))))),before=snapshot();
+ for(const [token,purpose,target]of [[f.owner.sessionToken,'human-inspect',agentRef(f.a.agentId)],[f.a.runtimeToken,'agent-inspect',undefined]] as const){
+  const base={protocolVersion:1,consumerId:'wallet-invalid-purpose',...(target?{agentRef:target}:{})};
+  for(const invalid of [[purpose],null,{},17,'unknown-purpose']){const input={...base,purpose:invalid};assert.equal(validate(input),false);const response=await f.m1('POST','/wallet/query',input,token);assert(response.status>=400&&response.status<500,`invalid purpose ${JSON.stringify(invalid)} was accepted`);assert.equal(response.body.data,undefined);assert.equal(snapshot(),before);}
+ }
+ for(const [token,purpose,target]of [[f.owner.sessionToken,'human-inspect',agentRef(f.a.agentId)],[f.a.runtimeToken,'agent-inspect',undefined],[f.a.runtimeToken,'agent-perception',agentRef(f.a.agentId)]] as const){const input={protocolVersion:1,consumerId:'wallet-valid-purpose',purpose,...(target?{agentRef:target}:{})};assert(validate(input));assert.equal((await f.m1('POST','/wallet/query',input,token)).status,200);assert.equal(snapshot(),before);}
+});
+
+test('WM-CR06: message summary and body expose the same durable receipt receivedAt, never a guessed sentAt',async t=>{
+ const f=await messageFixture(t),input=f.input(),received=f.receive(input),receipt=f.storage(store=>store.read(tx=>mailboxRepository(tx).receipt((received.ref as Json).id,f.a.agentId)!));
+ const check=async()=>{const page=await f.read('POST','/list',messages(f.a.agentId),f.owner.sessionToken),record=page.records[0],body=await f.detail(received.ref as any,'inbox',f.owner.sessionToken,{purpose:'human-inspect',agentRef:agentRef(f.a.agentId)});assert.equal(record.summary.receivedAt,receipt.data.receivedAt);assert(body.segments.every(part=>part.content.receivedAt===receipt.data.receivedAt));assert.equal(record.summary.sentAt,undefined);assert(body.segments.every(part=>part.content.sentAt===undefined));
+  const {createRequire}=await import('node:module'),Ajv2020=createRequire(import.meta.url)('ajv/dist/2020.js').default;for(const [reference,value]of [[record.schema,record.summary],[body.final.schema,body.final.content]]){const schema=await f.read('GET',`/schemas/${reference.id}?version=${reference.version}`);assert(schema.document.required.includes('receivedAt'));assert.equal(schema.document.properties.receivedAt.type,'integer');const run=new Ajv2020({strict:false}).compile(schema.document);assert(run(value),JSON.stringify(run.errors));}
+ };
+ await check();f.advance(60_000);await f.restart();await check();f.setReceiveTime(stamp+120_000);f.receive({...input,contentVersion:2,body:'A later immutable content version without a new initial reception.'});await check();
+ const guide=await f.read('GET','/guides/mailbox?version=1');assert(JSON.stringify(guide.document.http.messages).includes('receivedAt'));assert(JSON.stringify(guide.document.http.messages).includes('sentAt'));
+});
+
+test('WM-CR07: publication target names obey bounded unique logical row reads and deadlines without committing partial read preparation',async t=>{
+ const f=await fixture(t,{detailSegmentChars:32}),items=await f.read('POST','/list',requestBase('world',{categoryId:'items',limit:50})),events=await f.read('POST','/list',requestBase('world',{categoryId:'events',limit:50})),publication=events.records.find((row:Json)=>row.sourceId==='platform-publications'),plan=events.records.find((row:Json)=>row.ref.type==='world.plan@1');
+ const target=items.records[0],references=[target.ref,target.ref,agentRef(f.sibling.agentId),agentRef(f.sibling.agentId),plan.ref];
+ f.storage(store=>store.transaction(tx=>{const row=tx.get('perception_objects',refId(publication.ref))!;tx.update('perception_objects',{...row,version:row.version+1,data:{...row.data,body:'A source publication body with several named target kinds. '.repeat(40),publishedRefs:references}},row.version);}));
+ const input={...requestBase('world',{purpose:'agent-inspect'}),ref:publication.ref},prepared=()=>f.storage(store=>store.read(tx=>({sessions:tx.find('perception_sessions'),access:tx.find('perception_access')})));
+ for(const maxScannedRows of [1,4]){const before=prepared(),denied=await f.call('POST','/detail',{...input,budget:{maxScannedRows}});assert.equal(denied.status,422);assert.equal(denied.error.code,'budget_too_small');assert.equal(denied.data,undefined);assert.deepEqual(prepared(),before);}
+ const full=await f.read('POST','/detail',{...input,budget:{maxScannedRows:5}});assert.equal(full.content.publication.relatedItems.length,5);assert.deepEqual(full.content.publication.publishedRefs,references);assert.equal(full.contentComplete,false);assert(full.nextContentToken);
+ const beforeDeadline=prepared();let calls=0;const wall=Date.now(),clock=t.mock.method(Date,'now',()=>++calls<=5?wall:wall+10);
+ try{const expired=await f.call('POST','/detail',{...input,budget:{maxScannedRows:5,deadlineMs:5}});assert.equal(expired.status,422);assert.equal(expired.error.code,'budget_too_small');assert.deepEqual(prepared(),beforeDeadline);}finally{clock.mock.restore();}
+ f.storage(store=>store.transaction(tx=>{const row=tx.get('perception_objects',refId(target.ref))!;tx.update('perception_objects',{...row,version:row.version+1,data:{...row.data,public:false}},row.version);}));
+ const withdrawn=await f.read('POST','/detail',{...input,budget:{maxScannedRows:5}});assert.equal(withdrawn.content.publication.relatedItems.length,3);assert(!JSON.stringify(withdrawn.content.publication).includes(target.ref.id));assert(!JSON.stringify(withdrawn.content.publication).includes(target.summary.title));
+ const single=await f.call('POST','/detail',{...requestBase('world',{purpose:'agent-inspect'}),ref:plan.ref,budget:{maxScannedRows:1}});assert.equal(single.status,200);
 });
