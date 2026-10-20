@@ -52,6 +52,20 @@
 @media(prefers-reduced-motion:reduce){.hud-dock-plate,.hud-dock-button:after{transition:none!important}}
 
 /* WS07 v0.4: example browsing stays separate from the live world and account. */
+.hud-data-feature{display:flex;flex-direction:column;flex:1;min-height:0;height:100%;overflow:hidden}
+.hud-data-feature>.hud-feature,.hud-data-feature>.hud-platform-content{flex:1;min-height:0}
+.hud-platform-content{min-width:0}
+.hud-content-switch{flex-shrink:0;padding-top:8px;margin-top:8px;border-top:1px solid var(--hud-line)}
+.hud-content-switch button{min-height:44px}
+.hud-data-badge{display:inline-block;font-size:12px;line-height:18px;color:var(--hud-muted);overflow-wrap:anywhere}
+.hud-platform-content .hud-item-slot>.hud-icon{width:32px;height:32px}
+.hud-platform-content .hud-item-detail .hud-message-body,.hud-platform-body .hud-message-body{white-space:pre-wrap}
+.hud-platform-content .hud-items>button{gap:4px}
+.hud-platform-message-row{grid-template-columns:minmax(0,1fr) 88px 176px}
+.hud-platform-message-row time{white-space:normal}
+.hud-page-state{padding:12px 0}
+.hud-page-state p{margin-bottom:8px}
+.hud-related-content{display:flex;gap:8px;flex-wrap:wrap}.hud-related-content h3{flex-basis:100%}
 .hud-detail-window{z-index:4;width:680px}
 .hud-detail-window .hud-window-header{padding-left:20px}
 .hud-detail-window .hud-window-header h2{font-size:18px;line-height:26px}

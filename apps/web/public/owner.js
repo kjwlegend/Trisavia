@@ -14,10 +14,11 @@ const $=(selector,scope=root)=>query(selector,scope);
 const $$=(selector,scope=root)=>queryAll(selector.replaceAll('main ',''),scope);
 let requestedAgentId='',unavailableAgentId='';
 let sessionPhase='anonymous';const subscribers=new Set();let presentation=null,started=false;
+let observationRevision=0,observationIdentity=null;
 function unfinishedTask(){return Boolean(vault.pendingOperation||vault.stage==='recovered'||emailFlow?.unfinished||assistance.token||vault.claimContext||vault.setupToken||recoveryPrepared||(recoveryIntent&&!$('#recovery-form').hidden)||runtimePrepared||invitePrepared||backupPrepared||presentation?.confirming);}
 function authTaskVisible(){return !$('#auth-view').hidden&&(!$('#forgot-view').hidden||!$('#setup-view').hidden||!$('#claim-view').hidden||!$('#backup-recovered-view').hidden||(emailFlow?.active&&!$('#email-view').hidden));}
 function accountIntent(){return hasPending()||unfinishedTask()||authTaskVisible()?'resume':'account';}
-function summary(){const ready=authenticatedOwner();return{authenticated:ready,phase:busy&&ready?'refreshing':ready?(sessionPhase==='error'?'error':'ready'):sessionPhase,username:ready?account.username:'',agents:ready?agents.map(agent=>{const profile=agent.profile.published||agent.profile.draft||{};return{agentId:agent.agentId,name:profile.displayName||'未命名 Agent',bio:profile.bio||'',interests:profile.interests||[],avatar:profile.avatar||{},profileSource:agent.profile.published?'published':'draft',membership:agent.membership.state,ownerPaused:agent.membership.ownerPaused,platformRestricted:agent.membership.platformRestricted,asOf:agent.asOf};}):[],selectedAgentId:ready?selectedId:'',accountIntent:accountIntent(),interactionLocked:busy||Boolean(vault.pendingOperation)||Boolean(emailFlow?.pending)||Boolean(presentation?.confirming),continuation:unfinishedTask()||authTaskVisible()||entryStore?.pending?'继续上次操作':''};}
+function summary(){const ready=authenticatedOwner();const identity=[ready,vault,ready?vault.sessionToken:'',ready?selectedId:''];if(!observationIdentity||identity.some((value,index)=>value!==observationIdentity[index])){observationIdentity=identity;observationRevision++;}return{authenticated:ready,observationRevision,phase:busy&&ready?'refreshing':ready?(sessionPhase==='error'?'error':'ready'):sessionPhase,username:ready?account.username:'',agents:ready?agents.map(agent=>{const profile=agent.profile.published||agent.profile.draft||{};return{agentId:agent.agentId,name:profile.displayName||'未命名 Agent',bio:profile.bio||'',interests:profile.interests||[],avatar:profile.avatar||{},profileSource:agent.profile.published?'published':'draft',membership:agent.membership.state,ownerPaused:agent.membership.ownerPaused,platformRestricted:agent.membership.platformRestricted,asOf:agent.asOf};}):[],selectedAgentId:ready?selectedId:'',accountIntent:accountIntent(),interactionLocked:busy||Boolean(vault.pendingOperation)||Boolean(emailFlow?.pending)||Boolean(presentation?.confirming),continuation:unfinishedTask()||authTaskVisible()||entryStore?.pending?'继续上次操作':''};}
 function safeTarget(){const context=emailFlow?.target||assistance.snapshot()||vault.claimContext;if(!context?.agentId)return null;const owned=agents.find(agent=>agent.agentId===context.agentId);return{agentId:context.agentId,name:context.agentId===setupInfo?.agentId?vault.setupAgentName||'':owned?.profile.published?.displayName||owned?.profile.draft?.displayName||'',avatar:context.agentId===setupInfo?.agentId?setupAvatar:owned?.profile.published?.avatar||owned?.profile.draft?.avatar,recovery:Boolean(context.recovery||assistance.token)};}
 function emitState(){presentation?.account(account);presentation?.target(safeTarget());const state=summary();presentation?.state(state);for(const listener of subscribers)listener(structuredClone(state));onState(state);presentation?.sync();onView();}
 const storageKey='connet.owner.v2';
@@ -954,7 +955,36 @@ async function start(intent={}){if(started)return;started=true;
   const lease=setBusy(true);sessionPhase=vault.sessionToken?'loading':'anonymous';emitState();
   try{await resume();}catch(error){fail(error);}finally{setBusy(false,lease);}
 }
-return{start,open,select:selectAgent,refresh:refreshSummary,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
+// The HUD can request only this read projection. Credentials never leave this controller.
+async function readPerception(operation,input={}, {signal}={}){
+  if(operation==='capabilities')return api('/capabilities',{signal});
+  const source=vault,session=vault.sessionToken,generation=readGeneration,target=selectedId,revision=summary().observationRevision;
+  const current=()=>source===vault&&session===vault.sessionToken&&target===selectedId&&revision===summary().observationRevision&&authenticatedOwner();
+  if(!current())throw new ApiError(sessionPhase==='expired'?'session_expired':'authentication_required',401);
+  let path,method='GET',body;
+  if(operation==='discovery'){
+    const query=new URLSearchParams({limit:'50'});if(input.pageToken)query.set('pageToken',input.pageToken);path=`/perception/discovery?${query}`;
+  }else if(operation==='schema'||operation==='guide'){
+    const name=operation==='schema'?input.schemaId:input.moduleId;
+    if(typeof name!=='string'||!/^[a-zA-Z0-9.@_-]{1,100}$/.test(name)||!Number.isSafeInteger(input.version)||input.version<1)throw new ApiError('invalid_request',422);
+    path=`/perception/${operation==='schema'?'schemas':'guides'}/${encodeURIComponent(name)}?version=${input.version}`;
+  }else if(operation==='list'||operation==='detail'){
+    const channel=input.channel,category=input.categoryId;
+    if(!['world','inventory','inbox'].includes(channel))throw new ApiError('invalid_request',422);
+    if(operation==='list'&&!(channel==='world'?['items','announcements','events'].includes(category):channel==='inventory'?category==='holdings':category==='notifications'))throw new ApiError('invalid_request',422);
+    if(channel!=='world'&&(!target||!agents.some(agent=>agent.agentId===target)))throw new ApiError('agent_required',409);
+    body={protocolVersion:1,consumerId:'connet.owner.hud.v1',purpose:'human-inspect',channel,...(channel!=='world'?{agentRef:{moduleId:'profiles',type:'profiles.agent@1',id:target}}:{})};
+    if(operation==='list')Object.assign(body,{categoryId:category,limit:20,...(typeof input.pageToken==='string'?{pageToken:input.pageToken}:{})});
+    else{
+      const ref=input.ref;if(!ref||!['moduleId','type','id'].every(key=>typeof ref[key]==='string'&&ref[key].length>0&&ref[key].length<=180))throw new ApiError('invalid_request',422);
+      Object.assign(body,{ref:{moduleId:ref.moduleId,type:ref.type,id:ref.id},...(typeof input.contentToken==='string'?{contentToken:input.contentToken}:{}),...(Number.isSafeInteger(input.knownVersion)?{knownVersion:input.knownVersion}:{})});
+    }
+    path=`/perception/${operation}`;method='POST';
+  }else throw new ApiError('insufficient_scope',403);
+  try{const result=await api(path,{method,body,token:session,signal});if(!current())throw new DOMException('Context changed','AbortError');return result;}
+  catch(error){if(current()&&error.status===401)expireAuthenticatedSession(source,session,generation);throw error;}
+}
+return{start,open,select:selectAgent,refresh:refreshSummary,readPerception,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
   hudContext(){if(authenticatedOwner()&&['ready','refreshing'].includes(summary().phase))return{kind:'owner',ownerId:account.ownerId,agentId:agents.some(agent=>agent.agentId===selectedId)?selectedId:''};return sessionPhase==='anonymous'&&!vault.sessionToken?{kind:'guest',ownerId:'',agentId:''}:null;},
   attachPresentation(value){presentation=value;value.setNavigator(navigateManager);},
   notifyPresentation:controls,
