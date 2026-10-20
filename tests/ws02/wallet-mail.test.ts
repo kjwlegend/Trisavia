@@ -261,3 +261,48 @@ test('WM-CR07: publication target names obey bounded unique logical row reads an
  const withdrawn=await f.read('POST','/detail',{...input,budget:{maxScannedRows:5}});assert.equal(withdrawn.content.publication.relatedItems.length,3);assert(!JSON.stringify(withdrawn.content.publication).includes(target.ref.id));assert(!JSON.stringify(withdrawn.content.publication).includes(target.summary.title));
  const single=await f.call('POST','/detail',{...requestBase('world',{purpose:'agent-inspect'}),ref:plan.ref,budget:{maxScannedRows:1}});assert.equal(single.status,200);
 });
+
+test('WM-CR08: a frozen runtime list continues after confirming frozen candidates and returns their latest confirmation projection',async t=>{
+ const f=await messageFixture(t);for(let n=0;n<3;n++)f.receive(f.input({title:`Stable source message ${n}`}));
+ const before=f.storage(store=>store.read(tx=>tx.find('perception_states'))),oldCount=(await f.unread()).count.value;
+ const expected=(await f.listAll(messages(undefined,{limit:50}))).records,input=messages(undefined,{limit:1}),first=await f.read('POST','/list',input),records=[...first.records];
+ for(const record of expected.slice(0,2)){const body=await f.detail(record.ref);await f.read('PUT','/agent-read-state',{protocolVersion:1,operationId:randomUUID(),ref:record.ref,contentVersion:1,completionToken:body.final.completionToken});}
+ let page=first;while(!page.complete){page=await f.read('POST','/list',{...input,pageToken:page.nextPageToken});records.push(...page.records);}
+ assert.deepEqual(records.map(row=>row.ref),expected.map(row=>row.ref));assert.equal(new Set(records.map(row=>row.ref.id)).size,3);
+ assert.equal(records[1].agentReadState.confirmedContentVersion,1);assert.equal(records[1].agentReadState.stateVersion,1);assert.equal(records[2].agentReadState.confirmedContentVersion,null);
+ assert.deepEqual(f.storage(store=>store.read(tx=>tx.find('perception_states'))),before);assert.equal((await f.unread()).count.value,oldCount);
+});
+
+test('WM-CR08: Agent confirmation does not interrupt an owner frozen list or an already-started body',async t=>{
+ const f=await messageFixture(t);f.receive(f.input());f.receive(f.input());
+ const input=messages(f.a.agentId,{limit:1}),first=await f.read('POST','/list',input,f.owner.sessionToken),ref=first.records[0].ref;
+ const detailInput={...requestBase('inbox',{purpose:'human-inspect'}),agentRef:agentRef(f.a.agentId),ref},part=await f.read('POST','/detail',detailInput,f.owner.sessionToken),pieces=[part.content.text];assert(part.nextContentToken);
+ const body=await f.detail(ref),confirmed=await f.read('PUT','/agent-read-state',{protocolVersion:1,operationId:randomUUID(),ref,contentVersion:1,completionToken:body.final.completionToken});
+ let current=part;while(!current.contentComplete){current=await f.read('POST','/detail',{...detailInput,contentToken:current.nextContentToken},f.owner.sessionToken);pieces.push(current.content.text);assert.equal(current.agentReadState,undefined);assert.equal(current.completionToken,undefined);}
+ assert.equal(pieces.join(''),body.segments.map(segment=>segment.content.text).join(''));
+ const second=await f.read('POST','/list',{...input,pageToken:first.nextPageToken},f.owner.sessionToken);assert.equal(second.complete,true);assert.notEqual(second.records[0].ref.id,ref.id);assert(second.records.every((row:Json)=>row.agentReadState===undefined));
+ const state=await f.queryState(ref);assert.equal(state.confirmedContentVersion,confirmed.confirmedContentVersion);assert.equal(state.stateVersion,1);
+});
+
+test('WM-CR08: independent full-body completion proofs survive pure confirmation without an extra state transition',async t=>{
+ const f=await messageFixture(t),received=f.receive(f.input()),ref=received.ref as any,detailInput={...requestBase('inbox',{purpose:'agent-inspect'}),ref};
+ const partial=await f.read('POST','/detail',detailInput),one=await f.detail(ref),two=await f.detail(ref),input={protocolVersion:1,operationId:randomUUID(),ref,contentVersion:1,completionToken:one.final.completionToken},first=await f.read('PUT','/agent-read-state',input);
+ const continued=await f.read('POST','/detail',{...detailInput,contentToken:partial.nextContentToken});assert.equal(continued.segment.start,partial.segment.end);assert.equal(continued.agentReadState.confirmedContentVersion,1);
+ const second=await f.read('PUT','/agent-read-state',{...input,operationId:randomUUID(),completionToken:two.final.completionToken});assert.equal(second.changed,false);assert.equal(second.stateVersion,first.stateVersion);assert.equal(second.confirmedAt,first.confirmedAt);assert.deepEqual(await f.read('PUT','/agent-read-state',input),first);
+});
+
+for(const change of ['delivery','owner-layer','binding','sender','body','source'] as const)test(`WM-CR08: ${change} changes still invalidate frozen message observations after a pure confirmation`,async t=>{
+ const f=await messageFixture(t),sourceInputs=[f.input(),f.input()];sourceInputs.forEach(input=>f.receive(input));
+ const runtimeInput=messages(undefined,{limit:1}),humanInput=messages(f.a.agentId,{limit:1}),runtimePage=await f.read('POST','/list',runtimeInput),humanPage=await f.read('POST','/list',humanInput,f.owner.sessionToken),ref=runtimePage.records[0].ref;
+ const runtimeBody={...requestBase('inbox',{purpose:'agent-inspect'}),ref},humanBody={...requestBase('inbox',{purpose:'human-inspect'}),agentRef:agentRef(f.a.agentId),ref},rp=await f.read('POST','/detail',runtimeBody),hp=await f.read('POST','/detail',humanBody,f.owner.sessionToken),full=await f.detail(ref),confirm={protocolVersion:1,operationId:randomUUID(),ref,contentVersion:1,completionToken:full.final.completionToken};
+ await f.read('PUT','/agent-read-state',confirm);const before=await f.queryState(ref);
+ if(change==='delivery'||change==='owner-layer')f.storage(store=>store.transaction(tx=>{const receipt=mailboxRepository(tx).receipt(ref.id,f.a.agentId)!;saveMailboxReceipt(tx,{...receipt,version:receipt.version+1,data:{...receipt.data,...(change==='delivery'?{active:false}:{ownerObservation:{existence:true,summary:true,body:false,attachments:false}})}},receipt);}));
+ if(change==='binding')f.storage(store=>store.transaction(tx=>{const row=tx.find('bindings',{agentId:f.a.agentId,active:true})[0]!;tx.update('bindings',{...row,version:row.version+1,data:{...row.data,ownerId:f.otherOwner.ownerId}},row.version);}));
+ if(change==='sender'){const p=await ok(f.m1,'GET',`/agents/${f.sibling.agentId}/profile`,undefined,f.owner.sessionToken);await ok(f.m1,'POST',`/agents/${f.sibling.agentId}/profile/unpublish`,{operationId:randomUUID(),expectedVersion:p.version,expectedPolicyVersion:p.policyVersion},f.owner.sessionToken);}
+ if(change==='body'){const sourceKey=f.storage(store=>store.read(tx=>{const repo=mailboxRepository(tx);return repo.message(repo.receipt(ref.id,f.a.agentId)!.data.messageVersionId)!.data.sourceMessageKey;})),original=sourceInputs.find(input=>input.sourceMessageKey===sourceKey)!;f.receive({...original,contentVersion:2,body:'A genuinely new immutable message body.'});}
+ if(change==='source')f.storage(store=>store.transaction(tx=>{const row=tx.get('perception_catalog','current')!;tx.update('perception_catalog',{...row,version:row.version+1,data:{...row.data,sourceStates:{...(row.data.sourceStates as JsonObject),'direct-messages':'not_enabled'}}},row.version);}));
+ const hpResult=await f.call('POST','/detail',{...humanBody,contentToken:hp.nextContentToken},f.owner.sessionToken),hlResult=await f.call('POST','/list',{...humanInput,pageToken:humanPage.nextPageToken},f.owner.sessionToken);assert(hpResult.status>=400);assert(hlResult.status>=400);assert.equal(hpResult.data,undefined);assert.equal(hlResult.data,undefined);
+ if(change!=='binding'){assert((await f.call('POST','/list',{...runtimeInput,pageToken:runtimePage.nextPageToken})).status>=400);if(change!=='owner-layer')assert((await f.call('POST','/detail',{...runtimeBody,contentToken:rp.nextContentToken})).status>=400);}
+ if(['delivery','owner-layer','body','source'].includes(change))assert((await f.call('PUT','/agent-read-state',{...confirm,operationId:randomUUID()})).status>=400);
+ const receipt=f.storage(store=>store.read(tx=>mailboxRepository(tx).receipt(ref.id,f.a.agentId)!));assert.equal(receipt.data.confirmedContentVersion,before.confirmedContentVersion);assert.equal(receipt.data.stateVersion,before.stateVersion);
+});

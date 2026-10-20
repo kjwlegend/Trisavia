@@ -6,6 +6,10 @@ export const mailboxMessageId=(sourceId:string,sourceMessageKey:string)=>key({so
 export const mailboxVersionId=(messageId:string,contentVersion:number)=>key({messageId,contentVersion});
 export const mailboxReceiptId=(messageId:string,agentId:string)=>key({messageId,agentId});
 export const mailboxRef=(messageId:string):ObjectRef=>({moduleId:'mailbox',type:'mailbox.direct-message@1',id:messageId});
+/** Optimistic row versions also advance on confirmation; read proofs bind only delivery authority. */
+export function mailboxReceiptAuthorizationVersion(row:StoredRow<MailboxReceipt>):string {
+ const d=row.data;return key({receiptId:row.id,messageId:d.messageId,messageVersionId:d.messageVersionId,agentId:d.agentId,active:d.active,receivedAt:d.receivedAt,ownerObservation:d.ownerObservation,ownerObservationAudience:d.ownerObservationAudience});
+}
 /** All original message and delivery/confirmation access goes through this domain repository. */
 export function mailboxRepository(session:M1ReadSession){return {
  message:(id:string)=>session.get<MailboxMessage>('mailbox_messages',id),
