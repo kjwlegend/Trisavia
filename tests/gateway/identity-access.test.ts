@@ -84,3 +84,26 @@ test('extracted M1 authentication preserves proof purpose, expiry, handoff gener
  const session=f.credential('owner_session',{ownerId:'owner',ownerAuthVersion:1});
  await rejects(authenticateCredential(f.session,session.token,['owner_session'],{recoveryEpoch:epoch,now:()=>now}),'authentication_failed');
 });
+
+test('the existing M1 registration/leave/rejoin path advances sharing generation only on actual leave',async()=>{
+ const {createM1Service}=await import('../../apps/platform/application/m1-service.ts');
+ const f=fixture(),transaction={...f.session,quotaCount:async()=>0,
+  insert:async(name:M1Table,row:StoredRow)=>{assert(!f.table(name).has(row.id));f.table(name).set(row.id,structuredClone(row));},
+  update:async(name:M1Table,row:StoredRow,expected:number)=>{if(f.table(name).get(row.id)?.version!==expected)return false;f.table(name).set(row.id,structuredClone(row));return true;},
+  remove:async(name:M1Table,id:string,expected:number)=>f.table(name).get(id)?.version===expected&&f.table(name).delete(id),
+ };
+ const store:import('../../apps/platform/contracts/store.ts').M1Store={instanceId:'isolated-auth-unit',recoveryEpoch:epoch,read:work=>work(f.session),transaction:work=>work(transaction),close:async()=>{}};
+ const service=createM1Service(store,{now:()=>now}),runtimeToken=`${randomUUID()}.${randomBytes(32).toString('base64url')}`,continuationToken=`${randomUUID()}.${randomBytes(32).toString('base64url')}`;
+ const registered=await service.invoke('register',{operationId:randomUUID(),attemptId:randomUUID(),runtimeToken,continuationToken}),id=String(registered.agentId);
+ const member=()=>f.table('memberships').get(id)!;
+ assert.equal(member().data.sharingGeneration,1);assert.equal((await service.invoke('self',{},runtimeToken)).agentId,id);
+ const leave={operationId:randomUUID(),agentId:id,expectedVersion:member().version};await service.invoke('leave',leave,runtimeToken);assert.equal(member().data.sharingGeneration,2);
+ await service.invoke('leave',leave,runtimeToken);assert.equal(member().data.sharingGeneration,2,'exact replay must not advance twice');
+ await service.invoke('join',{operationId:randomUUID(),agentId:id,expectedVersion:member().version,expectedProfileVersion:f.table('profiles').get(id)!.version},runtimeToken);
+ assert.equal(member().data.state,'joined');assert.equal(member().data.sharingGeneration,2,'rejoining never revives the previous sharing generation');
+ f.put('owners','bound-owner',{status:'active',epoch,authVersion:1});f.put('bindings','active-management',{agentId:id,ownerId:'bound-owner',active:true});
+ const owner=f.credential('owner_session',{ownerId:'bound-owner',ownerAuthVersion:1});
+ for(const paused of [true,false])await service.invoke('participation',{operationId:randomUUID(),agentId:id,expectedVersion:member().version,paused},owner.token);
+ assert.equal(member().data.sharingGeneration,2,'pause/resume is an execution gate, not a permanent sharing withdrawal');
+ await service.invoke('leave',{operationId:randomUUID(),agentId:id,expectedVersion:member().version},runtimeToken);assert.equal(member().data.sharingGeneration,3);
+});

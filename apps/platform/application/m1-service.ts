@@ -434,7 +434,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     await registrationRepository(tx).insert(registration);
                     const initialProfile = defaultPublicProfile(agentId);
                     await profileRepository(tx).insert({ id: agentId, version: 1, data: { agentId, policyVersion: 1, mode: "agent_autonomous", lockedFields: [], draft: initialProfile, published: initialProfile, publishedVersion: 1, confirmationSource: "platform_default" } });
-                    await membershipRepository(tx).insert({ id: agentId, version: 1, data: { agentId, worldId: "default", state: "joined", ownerPaused: false, ownerPauseVersion: 1, platformRestricted: false, platformVersion: 1 } });
+                    await membershipRepository(tx).insert({ id: agentId, version: 1, data: { agentId, worldId: "default", state: "joined", ownerPaused: false, ownerPauseVersion: 1, platformRestricted: false, platformVersion: 1, sharingGeneration: 1 } });
                     await initializeWalletAccount(tx, agentId, stamp);
                     await initializePerceptionAgent(tx, agentId, stamp);
                     return registrationView(registration);
@@ -749,7 +749,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     if (action === "participation")
                         return membershipView(await update(membershipRepository(tx), member, { ownerPaused: boolean(input.paused, "paused"), ownerPauseVersion: numberValue(member, "ownerPauseVersion") + 1 }));
                     if (action === "leave")
-                        return membershipView(member.data.state === "left" ? member : await update(membershipRepository(tx), member, { state: "left" }));
+                        return membershipView(member.data.state === "left" ? member : await update(membershipRepository(tx), member, { state: "left", sharingGeneration: Number(member.data.sharingGeneration ?? 1) + 1 }));
                     await businessWrite(tx, actor, agentId);
                     const profile = await required(profileRepository(tx), agentId);
                     if (version(input.expectedProfileVersion, "expectedProfileVersion") !== profile.version)

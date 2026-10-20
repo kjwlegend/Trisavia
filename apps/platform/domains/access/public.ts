@@ -6,7 +6,7 @@ export type Principal = Readonly<{
 export interface AgentAuthority {readonly agentId:string;readonly authorizationVersion:string;readonly binding:Readonly<{id:string;version:number}>|null}
 export interface AgentParticipation {
  readonly agentId:string;readonly runtimeActive:boolean;readonly runtimeVersion:number;
- readonly membership:Readonly<{worldId:string;version:number;state:string;ownerPaused:boolean;ownerPauseVersion:number;platformRestricted:boolean;platformVersion:number}>;
+ readonly membership:Readonly<{worldId:string;version:number;state:string;ownerPaused:boolean;ownerPauseVersion:number;platformRestricted:boolean;platformVersion:number;sharingGeneration:number}>;
 }
 /** Context is the current guarded transaction; principals must never be reused across contexts. */
 export interface IdentityAccess<Context extends object>{
