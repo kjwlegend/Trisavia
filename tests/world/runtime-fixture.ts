@@ -1,5 +1,5 @@
 import { RuntimeError, type CommandKey, type CommandReceipt, type RuntimeEvent, type RuntimeEventDraft, type RuntimeReadContext, type RuntimeStore, type RuntimeTask, type RuntimeTaskDraft, type RuntimeTransaction, type WorkLease, type OutboxEntry, type OutboxDraft, type RuntimeRepositoryPort } from '../../apps/platform/contracts/runtime-store.ts';
-import type { AgentParticipation, IdentityAccess, Principal } from '../../apps/platform/domains/access/public.ts';
+import type { AgentParticipation, IdentityAccess, Principal, PublicAgentView } from '../../apps/platform/domains/access/public.ts';
 import type { WorldAvatar, WorldMovement, WorldRuleset, WorldState } from '../../apps/platform/domains/world/types.ts';
 import type { WorldRepository } from '../../apps/platform/domains/world/repository.ts';
 import type { InteractionRepository } from '../../apps/platform/domains/interaction/repository.ts';
@@ -12,6 +12,7 @@ const copy = <T>(value: T): T => structuredClone(value);
 const keyOf = (key: CommandKey) => JSON.stringify(key);
 const pairKey = (a: string, b: string) => JSON.stringify([a, b]);
 interface State {
+  publicAgents: Map<string, PublicAgentView>;
   movements: Map<string, WorldMovement>; worlds: Map<string, WorldState>; rules: Map<string, WorldRuleset>; avatars: Map<string, WorldAvatar>;
   configs: Map<number, FeedbackConfiguration>; artifacts: Map<string, ArtifactRevision>; pairs: Map<string, InteractionPairPolicy>;
   invitations: Map<string, InteractionInvitation>; activities: Map<string, FeedbackActivity>; feedback: Map<string, FeedbackContribution>;
@@ -20,7 +21,7 @@ interface State {
 }
 /** Pure in-memory public-port fixture. It verifies C business logic, not PostgreSQL locks or A credential authentication. */
 export function coreFixture() {
-  let stamp = 1_000_000, state: State = { movements: new Map(), worlds: new Map(), rules: new Map(), avatars: new Map(), configs: new Map(), artifacts: new Map(), pairs: new Map(),
+  let stamp = 1_000_000, state: State = { publicAgents: new Map(), movements: new Map(), worlds: new Map(), rules: new Map(), avatars: new Map(), configs: new Map(), artifacts: new Map(), pairs: new Map(),
     invitations: new Map(), activities: new Map(), feedback: new Map(), receipts: new Map(), events: [], outbox: new Map(), tasks: new Map(), generations: new Map(), decisions: new Map(), participants: new Map() };
   let failAt = '';
   function fault(at: string) { if (failAt === at) throw new Error('injected storage failure: ' + at); }
@@ -70,9 +71,9 @@ export function coreFixture() {
     outbox: { async enqueue(e: OutboxDraft) { fault('outbox'); const row:OutboxEntry={...copy(e),version:1,state:'pending',attempts:0,fence:0,lease:null,lastErrorCode:null,completedAt:null};state.outbox.set(e.outboxId,row);return copy(row); }, async get(id){return copy(state.outbox.get(id));},async list(o){return copy([...state.outbox.values()].filter(x=>(!o.consumerId||x.consumerId===o.consumerId)&&(!o.state||x.state===o.state)&&(!o.afterId||x.outboxId>o.afterId)).slice(0,o.limit));},async claimDue(){return[];},async assertLease(){throw new RuntimeError('lease_lost','Not implemented in C fixture');},async complete(){throw new Error('Not used');},async retry(){throw new Error('Not used');},async cancel(){return false;} },
   };
   const store: RuntimeStore = { instanceId:context.instanceId,recoveryEpoch:context.recoveryEpoch,async read(work){return work(context);},async transaction(work){const before=copy(state);try{return await work(context);}catch(error){state=before;throw error;}},async close(){} };
-  const identity: IdentityAccess<RuntimeReadContext> = { async authenticate(){throw new Error('No credentials used in C pure tests');},async authorizeAgent(_context,p,id){if(p.expiresAt!==null&&p.expiresAt<=stamp||!state.participants.get(id)?.runtimeActive||p.kind==='agent'&&p.agentId!==id||p.kind==='owner'&&p.ownerId!=='owner-'+id)fail('insufficient_scope',403,'Not authorized');return {agentId:id,authorizationVersion:p.authorizationVersion,binding:p.kind==='owner'?{id:'binding',version:1}:null};},async readParticipation(_context,id){const p=state.participants.get(id);if(!p)fail('target_not_accessible',404,'Target is not accessible');return copy(p);} };
+  const identity: IdentityAccess<RuntimeReadContext> = { async readPublicAgent(_ctx,id){const p=state.participants.get(id);return p?.membership.state==='joined'&&!p.membership.platformRestricted?copy(state.publicAgents.get(id)??null):null;}, async authenticate(){throw new Error('No credentials used in C pure tests');},async authorizeAgent(_context,p,id){if(p.expiresAt!==null&&p.expiresAt<=stamp||!state.participants.get(id)?.runtimeActive||p.kind==='agent'&&p.agentId!==id||p.kind==='owner'&&p.ownerId!=='owner-'+id)fail('insufficient_scope',403,'Not authorized');return {agentId:id,authorizationVersion:p.authorizationVersion,binding:p.kind==='owner'?{id:'binding',version:1}:null};},async readParticipation(_context,id){const p=state.participants.get(id);if(!p)fail('target_not_accessible',404,'Target is not accessible');return copy(p);} };
   const decisions: DecisionIntentSink = {async ensure(_ctx,intent){fault('decision');const id=intent.agentId+':'+intent.deduplicationKey;state.decisions.set(id,copy(intent));return {decisionId:id,version:1};},async cancel(_ctx,id,key){state.decisions.delete(id+':'+key);} };
-  function addAgent(id:string):Principal {state.participants.set(id,{agentId:id,runtimeActive:true,runtimeVersion:1,membership:{worldId:'default',version:1,state:'joined',ownerPaused:false,ownerPauseVersion:1,platformRestricted:false,platformVersion:1,sharingGeneration:1}});return {kind:'agent',agentId:id,runtimeVersion:1,source:'external_agent',credentialId:'credential-'+id,credentialVersion:1,recoveryEpoch:context.recoveryEpoch,authorizationVersion:'auth-'+id,expiresAt:null};}
+  function addAgent(id:string):Principal {state.publicAgents.set(id,{agentId:id,publishedVersion:1,displayName:'Published '+id,appearance:{template:'basic',color:'cream'}});state.participants.set(id,{agentId:id,runtimeActive:true,runtimeVersion:1,membership:{worldId:'default',version:1,state:'joined',ownerPaused:false,ownerPauseVersion:1,platformRestricted:false,platformVersion:1,sharingGeneration:1}});return {kind:'agent',agentId:id,runtimeVersion:1,source:'external_agent',credentialId:'credential-'+id,credentialVersion:1,recoveryEpoch:context.recoveryEpoch,authorizationVersion:'auth-'+id,expiresAt:null};}
   let command=0;
   return {store,context,world,interaction,identity,decisions,addAgent, membership(id:string,patch:Partial<AgentParticipation['membership']>){const old=state.participants.get(id)!;state.participants.set(id,{...old,membership:{...old.membership,...patch}});},get state(){return state;},get now(){return stamp;},set now(value:number){stamp=value;},set failAt(value:string){failAt=value;},key(p:Principal,action:string,id='c-'+(++command)):CommandKey{return{domain:action.startsWith('world.')?'world':'interaction',action,commandId:id,principal:{kind:p.kind,id:p.kind==='agent'?p.agentId:p.ownerId},recoveryEpoch:context.recoveryEpoch};}};
 }

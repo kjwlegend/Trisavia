@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { CommandKey, CommandReceipt, RuntimeEvent, RuntimeReadContext, RuntimeTask, RuntimeTransaction } from '../contracts/runtime-store.ts';
 import type { JsonObject } from '../contracts/store.ts';
-import type { IdentityAccess, Principal } from '../domains/access/public.ts';
+import type { IdentityAccess, Principal, PublicAgentView } from '../domains/access/public.ts';
 import { fail, M1Error, object, version } from '../domains/common/errors.ts';
 import { identifier } from '../domains/interaction/rules.ts';
 import { commitRuntimeCommandIn, hashRuntimeRequest } from '../domains/runtime/command.ts';
@@ -105,6 +105,25 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
     const revision = await repository.advanceRevision(movement.worldId, world.revision); await fact(context, key, nextAvatar, 'world.avatar.moved', revision); await movementFact(context, key, next, revision);
     // Controlled scheduler completes the same lease only after this handler's writes succeed.
   }
+  async function sceneProjection(context: RuntimeReadContext, worldId: string, observer: string, options: { cursor?: string; limit?: number } = {}) {
+      const limit = options.limit ?? 50;
+      if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100 || options.cursor !== undefined && typeof options.cursor !== 'string') fail('invalid_request', 400, 'Invalid scene query');
+      const scope = { instanceId: context.instanceId, recoveryEpoch: context.recoveryEpoch, worldId, agentId: observer, limit };
+      let after = options.cursor === undefined ? undefined : cursors.decode(options.cursor, scope, context.now()), complete = false, scanned = 0;
+      const { world } = await rulesFor(context, worldId), avatars: (WorldAvatar & { profile: PublicAgentView })[] = [], repository = context.repository(WORLD_REPOSITORY);
+      while (avatars.length < limit && scanned < 500 && !complete) {
+        const batchSize = Math.min(50, 500 - scanned), candidates = await repository.listAvatars(worldId, { ...(after ? { afterAgentId: after } : {}), limit: batchSize });
+        if (!candidates.length) { complete = true; break; }
+        for (let index = 0; index < candidates.length; index++) {
+          const avatar = candidates[index]!; after = avatar.agentId; scanned++;
+          try { await participation(context, avatar.agentId, worldId, false); const profile = await identity.readPublicAgent(context, avatar.agentId); if (avatar.status !== 'left' && profile) avatars.push({ ...structuredClone(avatar), profile: structuredClone(profile) }); }
+          catch (error) { if (!(error instanceof M1Error) || error.statusCode >= 500) throw error; }
+          if (avatars.length === limit) { complete = index === candidates.length - 1 && candidates.length < batchSize; break; }
+        }
+        if (avatars.length < limit && candidates.length < batchSize) complete = true;
+      }
+      return { worldId, worldRevision: world.revision, asOf: context.now(), scope: 'world', avatars, complete, nextCursor: !complete && after ? cursors.encode(after, scope, context.now()) : null };
+  }
   async function execute(context: RuntimeTransaction, principal: Principal, key: CommandKey, input: JsonObject): Promise<CommandReceipt> {
     if (key.domain !== 'world' || !actions.includes(key.action) || principal.kind !== 'agent' || key.principal.kind !== 'agent' || key.principal.id !== principal.agentId) fail('invalid_request', 400, 'Invalid world command identity');
     const keys = key.action === 'world.avatar.create' ? ['worldId', 'expectedRulesetVersion'] : key.action === 'world.avatar.move'
@@ -157,7 +176,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
   async function readAvatar(context: RuntimeReadContext, principal: Principal, worldId: string, agentId?: string) {
     const actor = await authorize(context, principal); await participation(context, actor, worldId, false);
     const target = agentId ?? actor;
-    try { await participation(context, target, worldId, false); } catch (error) { if (error instanceof M1Error && error.statusCode < 500) fail('avatar_not_found', 404, 'Avatar is not available'); throw error; }
+    try { await participation(context, target, worldId, false); if (target !== actor && !await identity.readPublicAgent(context, target)) fail('avatar_not_found', 404, 'Avatar is not available'); } catch (error) { if (error instanceof M1Error && error.statusCode < 500) fail('avatar_not_found', 404, 'Avatar is not available'); throw error; }
     const { world } = await rulesFor(context, worldId), avatar = await context.repository(WORLD_REPOSITORY).getAvatar(worldId, target);
     if (!avatar || avatar.status === 'left') fail('avatar_not_found', 404, 'Avatar is not available');
     return { worldId, worldRevision: world.revision, asOf: context.now(), avatar: structuredClone(avatar) };
@@ -184,24 +203,11 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
     },
     async readRules(context: RuntimeReadContext, principal: Principal, worldId: string) { const actor = await authorize(context, principal); await participation(context, actor, worldId, false); const { world, rules } = await rulesFor(context, worldId); return { world: structuredClone(world), rules: structuredClone(rules), asOf: context.now() }; },
     async readScene(context: RuntimeReadContext, principal: Principal, worldId: string, options: { cursor?: string; limit?: number } = {}) {
-      const actor = await authorize(context, principal); await participation(context, actor, worldId, false); const limit = options.limit ?? 50;
-      if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100 || options.cursor !== undefined && typeof options.cursor !== 'string') fail('invalid_request', 400, 'Invalid scene query');
-      const scope = { instanceId: context.instanceId, recoveryEpoch: context.recoveryEpoch, worldId, agentId: actor, limit };
-      let after = options.cursor === undefined ? undefined : cursors.decode(options.cursor, scope, context.now()), complete = false, scanned = 0;
-      const { world } = await rulesFor(context, worldId), avatars: WorldAvatar[] = [], repository = context.repository(WORLD_REPOSITORY);
-      while (avatars.length < limit && scanned < 500 && !complete) {
-        const batchSize = Math.min(50, 500 - scanned), candidates = await repository.listAvatars(worldId, { ...(after ? { afterAgentId: after } : {}), limit: batchSize });
-        if (!candidates.length) { complete = true; break; }
-        for (let index = 0; index < candidates.length; index++) {
-          const avatar = candidates[index]!; after = avatar.agentId; scanned++;
-          try { await participation(context, avatar.agentId, worldId, false); if (avatar.status !== 'left') avatars.push(structuredClone(avatar)); }
-          catch (error) { if (!(error instanceof M1Error) || error.statusCode >= 500) throw error; }
-          if (avatars.length === limit) { complete = index === candidates.length - 1 && candidates.length < batchSize; break; }
-        }
-        if (avatars.length < limit && candidates.length < batchSize) complete = true;
-      }
-      return { worldId, worldRevision: world.revision, asOf: context.now(), scope: 'world', avatars, complete, nextCursor: !complete && after ? cursors.encode(after, scope, context.now()) : null };
-    } };
+      const actor = await authorize(context, principal); await participation(context, actor, worldId, false); return sceneProjection(context, worldId, 'agent:' + actor, options);
+    },
+    async readPublicScene(context: RuntimeReadContext, worldId: string, options: { cursor?: string; limit?: number } = {}) { return sceneProjection(context, worldId, 'public-world-observer', options); },
+    async readPublicRules(context: RuntimeReadContext, worldId: string) { const { world, rules } = await rulesFor(context, worldId); return { world: structuredClone(world), rules: structuredClone(rules), asOf: context.now() }; }
+  };
 }
 function avatarResult(avatar: WorldAvatar, worldRevision: number, changed: boolean): JsonObject {
   return { worldId: avatar.worldId, avatarId: avatar.id, agentId: avatar.agentId, version: avatar.version, status: avatar.status,

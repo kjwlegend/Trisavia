@@ -92,3 +92,11 @@ test('movement storage failure rolls back the step; re-claimed old lease cannot 
   await f.store.transaction(async ctx=>{await service.handleTask(ctx,task);await ctx.tasks.complete(task.lease!,ctx.now());});assert.deepEqual((await service.readAvatar(f.context,a,'default')).avatar.position,{x:1,y:0});
   const stop=await service.execute(f.context,a,f.key(a,'world.movement.stop'),{worldId:'default',movementId:planned.result.movementId!,expectedVersion:2});assert.equal(stop.result.state,'stopped');await runStep(f,service);assert.deepEqual((await service.readAvatar(f.context,a,'default')).avatar.position,{x:1,y:0});assert.equal(f.state.movements.get(planned.result.movementId as string)!.stoppedCode,'agent_stopped');
 });
+test('human public scene uses current published-source permission and never forges an Agent or reveals private movement intents',async()=>{
+  const {f,a,b,service}=await fixture();for(const p of [a,b])await service.execute(f.context,p,f.key(p,'world.avatar.create'),{worldId:'default',expectedRulesetVersion:1});
+  await service.execute(f.context,a,f.key(a,'world.avatar.move'),{worldId:'default',expectedVersion:1,expectedRulesetVersion:1,expectedTopologyVersion:1,path:[{x:1,y:0}]});
+  const publicScene=await service.readPublicScene(f.context,'default');assert.equal(publicScene.avatars.length,2);assert.equal(publicScene.avatars[0]!.profile.displayName,'Published agent-a');
+  assert.equal(JSON.stringify(publicScene).includes('movementId'),false);assert.equal(JSON.stringify(publicScene).includes('qualification'),false);
+  f.state.publicAgents.delete('agent-b');assert.deepEqual((await service.readPublicScene(f.context,'default')).avatars.map(x=>x.agentId),['agent-a']);await assert.rejects(service.readAvatar(f.context,a,'default','agent-b'),{code:'avatar_not_found'});
+  await assert.rejects(service.readMovement(f.context,b,'default',[...f.state.movements.values()][0]!.id),{code:'movement_not_found'});
+});
