@@ -42,7 +42,7 @@ export function registerM1Routes(app: FastifyInstance, service: M1Service): void
   app.setErrorHandler((error, request, reply) => {
     if (request.url.startsWith('/v1/perception/')||request.url.startsWith('/v1/wallet/')) {
       const status = error instanceof M1Error ? error.statusCode : error instanceof StorageError ? 503 : typeof error === 'object' && error !== null && 'statusCode' in error && typeof error.statusCode === 'number' && error.statusCode < 500 ? error.statusCode === 413 ? 413 : 400 : 503;
-      const code = error instanceof M1Error ? error.code : status < 500 ? 'invalid_request' : 'source_unavailable';
+      const code = error instanceof M1Error ? error.code : error instanceof StorageError && error.code === 'unknown_commit' ? 'commit_result_unknown' : status < 500 ? 'invalid_request' : 'source_unavailable';
       reply.header('Cache-Control', 'no-store');
       if (status === 429) reply.header('Retry-After', '60');
       return reply.code(status).send({ protocolVersion: 1, requestId: `request_${randomUUID()}`, error: { code, retryable: status >= 500 || status === 429, resyncRequired: ['page_expired', 'read_scope_changed', 'content_changed'].includes(code), ...(code === 'page_expired' ? { historyGap: false } : {}) } });
@@ -52,7 +52,7 @@ export function registerM1Routes(app: FastifyInstance, service: M1Service): void
     }
     if (error instanceof StorageError) {
       return reply.code(error.code === "constraint" || error.code === "conflict" ? 409 : 503).send({ error: {
-        code: error.code === "constraint" || error.code === "conflict" ? "state_conflict" : "retry_same_operation",
+        code: error.code === "constraint" || error.code === "conflict" ? "state_conflict" : error.code === "unknown_commit" ? "commit_result_unknown" : "retry_same_operation",
         message: error.code === "constraint" || error.code === "conflict" ? "State changed; read the current result" : "Service unavailable; retry the same operation",
       } });
     }
