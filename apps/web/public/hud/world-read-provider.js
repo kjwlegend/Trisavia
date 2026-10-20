@@ -19,7 +19,7 @@ export function createWorldReadProvider(session){
   const snapshot=key=>clone(views[key]),emit=key=>{for(const listener of listeners)listener(key,snapshot(key));};
   function invalidate(){revision++;metadata=null;for(const request of requests.values())request.abort();requests.clear();for(const key of Object.keys(views)){views[key]=empty(key);emit(key);}}
   const stop=session.subscribe(state=>{if(identity===state.observationRevision)return;identity=state.observationRevision;invalidate();});
-  const invoke=(op,input,signal)=>session.readPerception(op,input,{signal});
+  const invoke=(op,input,signal)=>{if(disposed||signal?.aborted)throw new DOMException('Read cancelled','AbortError');return session.readPerception(op,input,{signal});};
   const unwrap=result=>{if(result?.protocolVersion!==1||!result.instanceId||!result.permissionVersion||!result.data)throw problem('response_unknown');return result;};
   async function document(ref,kind,signal){
     const result=unwrap(await invoke(kind,kind==='schema'?{schemaId:ref.id,version:ref.version}:{moduleId:ref.moduleId,version:ref.version},signal)).data;
