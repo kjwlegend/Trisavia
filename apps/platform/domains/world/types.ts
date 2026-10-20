@@ -44,7 +44,7 @@ export interface MoveAvatarInput {
   path: GridPoint[];
 }
 export interface LeaveAvatarInput { worldId: string; expectedVersion: number }
-export type WorldAction = 'world.avatar.create' | 'world.avatar.move' | 'world.avatar.leave';
+export type WorldAction = 'world.avatar.create' | 'world.avatar.move' | 'world.avatar.leave' | 'world.movement.stop';
 export interface WorldFact {
   kind: 'world.avatar.created' | 'world.avatar.moved' | 'world.avatar.left';
   worldId: string;
@@ -54,4 +54,15 @@ export interface WorldFact {
   rulesetVersion: number;
   worldRevision: number;
   at: number;
+}
+/** Frozen deterministic development policy, independent of screen animation or Agent/model timers. */
+export const MOVEMENT_POLICY_V1 = Object.freeze({ version: 1, stepIntervalMs: 1000 });
+export interface WorldMovement {
+  id: string; worldId: string; agentId: string; avatarId: string; version: number;
+  state: 'pending' | 'running' | 'completed' | 'stopped';
+  origin: GridPoint; path: GridPoint[]; nextStep: number; expectedAvatarVersion: number;
+  rulesetVersion: number; topologyVersion: number; policyVersion: number; stepIntervalMs: number;
+  createdAt: number; updatedAt: number; nextDueAt: number | null; completedAt: number | null; stoppedCode: string | null;
+  commandId: string; recoveryEpoch: string;
+  qualification: { runtimeVersion: number; ownerPauseVersion: number; platformVersion: number; sharingGeneration: number };
 }

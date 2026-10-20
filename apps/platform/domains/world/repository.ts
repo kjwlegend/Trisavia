@@ -1,4 +1,4 @@
-import type { WorldAvatar, WorldRuleset, WorldState } from './types.ts';
+import type { WorldAvatar, WorldMovement, WorldRuleset, WorldState } from './types.ts';
 import { defineRuntimeRepository } from '../../contracts/runtime-store.ts';
 
 /** All methods participate in the caller's guarded transaction. No retained client. */
@@ -11,8 +11,11 @@ export interface WorldRepository {
   advanceRevision(worldId: string, expectedRevision: number): Promise<number>;
   getAvatar(worldId: string, agentId: string): Promise<WorldAvatar | undefined>;
   saveAvatar(avatar: WorldAvatar, expectedVersion: number | null): Promise<void>;
+  getMovement(id: string): Promise<WorldMovement | undefined>;
+  getActiveMovement(worldId: string, agentId: string): Promise<WorldMovement | undefined>;
+  saveMovement(movement: WorldMovement, expectedVersion: number | null): Promise<void>;
   countAtPlace(worldId: string, placeId: string, excludingAgentId: string): Promise<number>;
   listAvatars(worldId: string, options: { afterAgentId?: string; limit: number }): Promise<WorldAvatar[]>;
 }
-export type WorldReader = Pick<WorldRepository, 'getWorld' | 'getRuleset' | 'getAvatar' | 'listAvatars'>;
+export type WorldReader = Pick<WorldRepository, 'getWorld' | 'getRuleset' | 'getAvatar' | 'getMovement' | 'getActiveMovement' | 'listAvatars'>;
 export const WORLD_REPOSITORY = defineRuntimeRepository<WorldReader, WorldRepository>('world');
