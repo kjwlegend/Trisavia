@@ -50,8 +50,46 @@ export async function readRuntime(path: string): Promise<RuntimeConfig> {
   if (await realpath(dirname(resolve(path))) !== await realpath(config.privateDir)) throw new Error('Private configuration and secrets must share the same directory');
   return config;
 }
-export async function compose(config: RuntimeConfig, args: string[]): Promise<string> {
-  return docker(['compose', '--env-file', join(config.privateDir, 'compose.env'), '--file', composeFile, '--project-name', config.project, ...args], { output: true });
+export function composeEnvironment(config: RuntimeConfig, inherited: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  checkedProject(config.project); checkedImage(config.image);
+  const env = { ...inherited };
+  // A caller's shell is never an alternate source of Compose resource identity.
+  for (const key of Object.keys(env)) if (key.startsWith('COMPOSE_') || key === 'DOCKER_HOST' || key === 'DOCKER_CONTEXT') delete env[key];
+  return { ...env, DOCKER_CONTEXT: dockerContext, CONNET_PG_PROJECT: config.project, CONNET_PG_IMAGE: config.image,
+    CONNET_PG_PORT: String(config.port), CONNET_PG_PRIVATE_DIR: config.privateDir };
+}
+export async function compose(config: RuntimeConfig, args: string[], inherited: NodeJS.ProcessEnv = process.env): Promise<string> {
+  return docker(['compose', '--env-file', join(config.privateDir, 'compose.env'), '--file', composeFile, '--project-name', config.project, ...args], { output: true, env: composeEnvironment(config, inherited) });
+}
+export interface ContainerObservation {
+  Name: string; Image: string;
+  Config: { Image: string; Labels: Record<string, string> };
+  State: { Running: boolean; Health?: { Status: string } };
+  HostConfig: { PortBindings: Record<string, { HostIp: string; HostPort: string }[] | null> };
+  NetworkSettings: { Ports: Record<string, { HostIp: string; HostPort: string }[] | null> };
+  Mounts: { Type: string; Name?: string; Source: string; Destination: string; RW: boolean }[];
+}
+/** Actual Docker inspect values are compared, never reported as configuration facts. */
+export function runtimeObservation(config: RuntimeConfig, container: ContainerObservation, expectedImageId: string) {
+  const expected = { container: `${config.project}-server`, image: config.image, imageId: expectedImageId, project: config.project,
+    ports: { '5432/tcp': [{ HostIp: '127.0.0.1', HostPort: String(config.port) }] }, volume: `${config.project}-data`, privateDir: config.privateDir };
+  const observed = { container: container.Name.replace(/^\//, ''), image: container.Config.Image, imageId: container.Image,
+    project: container.Config.Labels['com.docker.compose.project'], service: container.Config.Labels['com.docker.compose.service'],
+    ports: container.HostConfig.PortBindings, activePorts: container.NetworkSettings.Ports,
+    volume: container.Mounts.find(mount => mount.Destination === '/var/lib/postgresql')?.Name,
+    secretSources: Object.fromEntries(container.Mounts.filter(mount => mount.Destination.startsWith('/run/secrets/')).map(mount => [mount.Destination.split('/').at(-1), mount.Source])) };
+  const mismatches: string[] = [];
+  for (const key of ['container', 'image', 'imageId', 'project', 'volume'] as const) if (observed[key] !== expected[key]) mismatches.push(key);
+  if (observed.service !== 'postgres') mismatches.push('service');
+  if (JSON.stringify(observed.ports) !== JSON.stringify(expected.ports)) mismatches.push('ports');
+  for (const kind of ['admin', 'migration', 'application', 'backup']) {
+    const mount = container.Mounts.find(value => value.Destination === `/run/secrets/${kind}-password`);
+    if (!mount || mount.Type !== 'bind' || mount.RW || mount.Source !== join(config.privateDir, `${kind}-password`)) mismatches.push(`${kind}-secret`);
+  }
+  const volume = container.Mounts.find(mount => mount.Destination === '/var/lib/postgresql');
+  if (!volume || volume.Type !== 'volume' || !volume.RW) mismatches.push('data-mount');
+  return { context: dockerContext, expected, observed, matches: mismatches.length === 0, mismatches,
+    running: container.State.Running, health: container.State.Health?.Status ?? null };
 }
 export async function initializeRuntime(path: string, project: string, port: number, image: string): Promise<string> {
   checkedProject(project); checkedImage(image); await ensureAvailablePort(port);

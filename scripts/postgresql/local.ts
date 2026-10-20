@@ -1,5 +1,5 @@
 import { pathToFileURL } from 'node:url';
-import { checkedImage, checkedProject, compose, docker, dockerContext, ensureAvailablePort, imageTag, initializeRuntime, readRuntime } from './runtime.ts';
+import { checkedImage, checkedProject, compose, docker, dockerContext, ensureAvailablePort, imageTag, initializeRuntime, readRuntime, runtimeObservation, type ContainerObservation } from './runtime.ts';
 
 export async function local(args: string[]): Promise<unknown> {
   const [action, file, ...extra] = args;
@@ -18,11 +18,12 @@ export async function local(args: string[]): Promise<unknown> {
   if (action === 'up') { await ensureAvailablePort(config.port); await compose(config, ['up', '-d', '--wait', '--wait-timeout', '90']); }
   else if (action === 'stop') { await compose(config, ['stop', '--timeout', '60']); }
   else if (action !== 'status') throw new Error('Unknown local runtime action');
-  const containers = JSON.parse(await docker(['inspect', `${config.project}-server`, '--format', '{{json .}}'])) as Record<string, any>;
-  return { context: dockerContext, project: config.project, image: config.image, running: containers.State.Running,
-    health: containers.State.Health?.Status ?? null, ports: containers.NetworkSettings.Ports,
-    mounts: containers.Mounts.map((mount: Record<string, unknown>) => ({ type: mount.Type, name: mount.Name, destination: mount.Destination, writable: mount.RW })) };
+  const container = JSON.parse(await docker(['inspect', `${config.project}-server`, '--format', '{{json .}}'])) as ContainerObservation;
+  const expectedImageId = (await docker(['image', 'inspect', config.image, '--format', '{{.Id}}'])).trim();
+  return runtimeObservation(config, container, expectedImageId);
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  local(process.argv.slice(2)).then(value => process.stdout.write(JSON.stringify(value) + '\n')).catch(() => { process.stderr.write('postgresql_local_failed: runtime operation did not complete; no secret configuration is printed\n'); process.exitCode = 1; });
+  local(process.argv.slice(2)).then(value => { process.stdout.write(JSON.stringify(value) + '\n');
+    if (value && typeof value === 'object' && 'matches' in value && value.matches === false) process.exitCode = 1;
+  }).catch(() => { process.stderr.write('postgresql_local_failed: runtime operation did not complete; no secret configuration is printed\n'); process.exitCode = 1; });
 }
