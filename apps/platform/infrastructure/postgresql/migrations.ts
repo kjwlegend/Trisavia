@@ -83,6 +83,7 @@ POSTGRES_MIGRATIONS.push({moduleId:'platform',version:2,name:'immutable_versione
   BEGIN RAISE EXCEPTION 'Versioned content is immutable' USING ERRCODE='23514'; END;
   $$;
   ${MODELS.filter(model=>model.immutable).map(model=>`CREATE TRIGGER immutable_versioned_content BEFORE UPDATE OR DELETE ON ${model.table} FOR EACH ROW EXECUTE FUNCTION platform.reject_immutable_content_change();`).join('\n')}`,dependencies:[...modules]});
+POSTGRES_MIGRATIONS.push({moduleId:'perception',version:2,name:'bounded_expired_access_lookup',sql:'CREATE INDEX access_facts_expiry_id ON perception.access_facts(recorded_at,id);',dependencies:['perception']});
 export const POSTGRES_SCHEMA_SIGNATURE=createHash('sha256').update(POSTGRES_MIGRATIONS.map(item=>`${item.moduleId}:${createHash('sha256').update(item.sql).digest('hex')}`).join('\n')).digest('hex');
 
 /** Explicit DDL-role operation; openPostgresStore never calls this. */

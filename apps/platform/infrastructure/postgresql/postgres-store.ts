@@ -28,11 +28,17 @@ function bounded(value:number,min:number,max:number){if(!Number.isSafeInteger(va
 function tableName(table:M1Table):void{if(!M1_TABLES.includes(table))throw new StorageError('invalid_usage','Unknown logical source table');}
 function id(value:string):void{if(typeof value!=='string'||!value.length)throw new StorageError('invalid_usage','Expected a nonempty stable identity');checkedJson(value);}
 
-function selection(table:M1Table,filters:ExactFilters,options:{id?:string;afterId?:string;limit?:number}={}):{sql:string;values:unknown[]}{
+interface SelectionOptions {id?:string;afterId?:string;limit?:number;cutoff?:{field:'expiresAt'|'recordedAt';at:number;inclusive:boolean}}
+function selection(table:M1Table,filters:ExactFilters,options:SelectionOptions={}):{sql:string;values:unknown[]}{
   tableName(table);checkedJson(filters);const values:unknown[]=[];
   function parameter(value:unknown){values.push(value);return `$${values.length}`;}
+  const cutoff=options.cutoff;
+  if(cutoff){
+    if(typeof cutoff!=='object'||Array.isArray(cutoff)||Object.keys(cutoff).some(key=>!['field','at','inclusive'].includes(key))||typeof cutoff.inclusive!=='boolean'||typeof cutoff.at!=='number'||safeInteger(cutoff.at)<0||!Number.isFinite(new Date(cutoff.at).getTime())||!(table==='perception_sessions'&&cutoff.field==='expiresAt'||table==='perception_access'&&cutoff.field==='recordedAt'))throw new StorageError('invalid_usage','Invalid controlled expiry cutoff');
+  }else if(cutoff!==undefined)throw new StorageError('invalid_usage','Invalid controlled expiry cutoff');
   const branches=modelsFor(table).map(model=>{
     const clauses:string[]=[];
+    if(cutoff){const field=model.fields.find(item=>item.path===cutoff.field);if(field?.kind!=='timestamp')throw new StorageError('invalid_usage','Expiry cutoff requires a timestamp column');clauses.push(`t.${column(field.path)} ${cutoff.inclusive?'<=':'<'} ${parameter(new Date(cutoff.at))}::timestamptz`);}
     for(const[key,value]of Object.entries(filters)){
       if(value!==null&&!['string','number','boolean'].includes(typeof value))throw new StorageError('invalid_usage','Filters require scalar JSON values');
       const field=model.fields.find(item=>item.path===key);
@@ -54,14 +60,14 @@ function selection(table:M1Table,filters:ExactFilters,options:{id?:string;afterI
 export function createPostgresSession(client:PoolClient,write:boolean,alive:()=>boolean):M1Transaction{
   async function execute<T>(work:()=>Promise<T>):Promise<T>{if(!alive())throw new StorageError('closed','Storage scope has ended');try{return await work();}catch(error){throw storageError(error);}}
   function writable(){if(!write)throw new StorageError('invalid_usage','Read scopes cannot persist data');}
-  async function rows<T extends JsonObject>(table:M1Table,filters:ExactFilters,options:{id?:string;afterId?:string;limit?:number}={}):Promise<StoredRow<T>[]>{
+  async function rows<T extends JsonObject>(table:M1Table,filters:ExactFilters,options:SelectionOptions={}):Promise<StoredRow<T>[]>{
     const query=selection(table,filters,options),result=await client.query(query.sql,query.values),output:StoredRow<T>[]=[];
     for(const row of result.rows){const model=MODELS.find(item=>item.table===row.model)!;output.push(await decode(client,model,row.stored) as StoredRow<T>);}return output;
   }
   return {
     get:async <T extends JsonObject=JsonObject>(table:M1Table,identifier:string)=>execute(async()=>{id(identifier);return (await rows<T>(table,{}, {id:identifier,limit:1}))[0];}),
     find:async <T extends JsonObject=JsonObject>(table:M1Table,filters:ExactFilters={})=>execute(()=>rows<T>(table,filters)),
-    scan:async <T extends JsonObject=JsonObject>(table:M1Table,filters:ExactFilters,options:{limit:number;afterId?:string})=>execute(async()=>{bounded(options.limit,1,100_001);if(options.afterId!==undefined&&typeof options.afterId!=='string')throw new StorageError('invalid_usage','Invalid stable keyset');return rows<T>(table,filters,options);}),
+    scan:async <T extends JsonObject=JsonObject>(table:M1Table,filters:ExactFilters,options:SelectionOptions&{limit:number})=>execute(async()=>{bounded(options.limit,1,100_001);if(options.afterId!==undefined&&typeof options.afterId!=='string')throw new StorageError('invalid_usage','Invalid stable keyset');return rows<T>(table,filters,options);}),
     count:async(table,filters,limit)=>execute(async()=>{bounded(limit,1,100_001);const query=selection(table,filters,{limit});const result=await client.query(`SELECT count(*)::integer AS total FROM (${query.sql}) bounded_count`,query.values);return result.rows[0].total as number;}),
     insert:async(table,row)=>execute(async()=>{writable();tableName(table);const model=resolveModel(table,row),encoded=encode(model,row);
       await client.query(`INSERT INTO ${model.table}(${encoded.columns.join(',')}) VALUES(${encoded.values.map((_,index)=>`$${index+1}`).join(',')})`,encoded.values);

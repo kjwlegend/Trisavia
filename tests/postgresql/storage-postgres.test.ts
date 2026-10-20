@@ -40,6 +40,31 @@ test('CAS is conditional, keyset ordering is explicit C, and filters are SQL lim
   }finally{await store.close();}
 });
 
+test('controlled SQL expiry selection filters before its limit and preserves the timestamp boundaries',async()=>{
+  const store=await testStore(),now=Date.now();
+  const expiry={limit:200,cutoff:{field:'expiresAt' as const,at:now,inclusive:true}},retention={limit:200,cutoff:{field:'recordedAt' as const,at:now,inclusive:false}};
+  try{
+    await store.transaction(async tx=>{
+      for(let index=0;index<200;index++){
+        const suffix=String(index).padStart(3,'0'),session={kind:'list',actorId:'fixture-reader',actorKind:'agent',permissionVersion:'fixture',epoch:options.recoveryEpoch};
+        await tx.insert('perception_sessions',row(`a-active-${suffix}`,{...session,expiresAt:now+60_000,records:[{ref:'still-valid'}]}));
+        await tx.insert('perception_sessions',row(`z-expired-${suffix}`,{...session,expiresAt:now}));
+        await tx.insert('perception_access',row(`a-current-${suffix}`,{recordedAt:now+1}));
+        await tx.insert('perception_access',row(`z-expired-${suffix}`,{recordedAt:now-1}));
+      }
+      await tx.insert('perception_access',row('boundary',{recordedAt:now}));await tx.insert('perception_access',row('missing'));await tx.insert('perception_access',row('null',{recordedAt:null}));
+    });
+    const sessions=await store.read(tx=>tx.scan('perception_sessions',{},expiry)),access=await store.read(tx=>tx.scan('perception_access',{},retention));
+    assert.equal(sessions.length,200);assert.ok(sessions.every(item=>item.id.startsWith('z-expired-')));
+    assert.equal(access.length,200);assert.ok(access.every(item=>item.id.startsWith('z-expired-')));
+    const inclusive={limit:2,cutoff:{field:'recordedAt' as const,at:now,inclusive:true}};assert.equal((await store.read(tx=>tx.scan('perception_access',{},inclusive)))[0]?.id,'boundary');
+    const strict={limit:200,cutoff:{field:'expiresAt' as const,at:now,inclusive:false}};assert.equal((await store.read(tx=>tx.scan('perception_sessions',{},strict))).length,0);
+    assert.deepEqual((await store.read(tx=>tx.get('perception_sessions','a-active-000')))?.data.records,[{ref:'still-valid'}]);
+    for(const invalid of [{...expiry,cutoff:{...expiry.cutoff,at:NaN}},{...expiry,cutoff:{...expiry.cutoff,at:-1}},{...expiry,cutoff:{...expiry.cutoff,field:'recordedAt' as const}}])await assert.rejects(store.read(tx=>tx.scan('perception_sessions',{},invalid)),errorCode('invalid_usage'));
+    await assert.rejects(store.read(tx=>tx.scan('agents',{},expiry)),errorCode('invalid_usage'));
+  }finally{await store.close();}
+});
+
 test('write gate closes before application open while pure reads do not persist guard changes',async()=>{
   await setPostgresWriteGate(options,{enabled:false});const store=await testStore();
   try{const before=(await admin.query('SELECT * FROM platform.instance_state')).rows[0];
