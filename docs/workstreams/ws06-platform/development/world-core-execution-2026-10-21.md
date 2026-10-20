@@ -230,3 +230,19 @@ D完整像素激活固定`3b14215 → 75bbb857e8dfa015618ca271c0e205817188be35`�
 WS02已正式补入[原接口合同§11.7](../../ws02-perception/world-perception-api.md#117-2026-10-21fresh实例读取可用性与主人集合查询裁定)，将此问题裁定为恢复既有主人读取的必要修复。集合查询许可与逐对象许可独立；通知来源可声明current_bound_owner查询获准集合，不授正文／附件／发件人或隐藏数量权限。过滤后空与真空同形；公告／事件仍按公开world、背包按有效holding、钱包读真实已初始化账户。helper只发布限定来源／声明新版本，保全旧精确文档和业务事实，不seed、不补grant／投递／余额，不从GET／readiness初始化。TD冻结原合同到`outputs/world-core/ws02-reader-contract-20261021/world-perception-api.md`，全文SHA256为`ccceb3566813535d18a22ba7cec0d4ac0d552b114beb97dafea945171d350932`，第405行起为裁定；A据此准备修补和反例，最终固定差异及审查尚待交付，18893仍b5。
 
 R27后继正式发现WC-CR06／P2：world-scene将帧间隔截到50ms后交位置补间，低帧率／长帧下不能守180ms上界，原单测直传大dt未覆盖实际链。75bbb暂不整体接受；原D据此修单调真实经过时间与实际RAF调用链反例，其余已核范围保持。上述资产失败、same-revision的表述按reviewer实际证据校正；作者被要求保留旧manifest并明确勘误，不通过补无关故事扩统计。总指挥已授权若前端先受审可单独fresh备份发布并并行验收，后端修补另在安全点维护；是否拆批按两原作者实际收口进度确定，不发布未审75bbb。
+
+### 6.11 像素截止修复接受与18893分批发布
+
+原reviewer R28接受D`75bbb → 71751edcc255e159a921719438fbdbff5b22fab6`五路径，并接受`3b14215 → 71751ed`完整34路径像素范围，WC-CR01—06均关闭。原装饰dt仍限50ms，位置改由接收事实时performance.now与180ms绝对截止、真实RAF时间驱动。作者实际主循环250ms反例在75得到268.444而非目标280，修后同故事1/1到280，另守pause／首帧截止／hidden清空恢复；该同次11site／1synthetic、full typecheck与语法检查独立于旧32／3，不累计冒充重跑。旧manifest保全为manifest-original-75bbb85.json，勘误及日志见`m1-web/outputs/world-core-web/pixel-deadline/`。
+
+TD无冲突整合75与717为`e6710d4`、**`e93b8f11748b6cc078543f7dfdfd98358ba52cfd`**；生产前端／相关测试与D717一致，后端／脚本／依赖／公开接口文档与运行b5完全无差异。本固定组合受影响39/39、fail／cancel／skip0，full typecheck及diff0；命令、日志、manifest归`outputs/world-core/integration-e93b8f1/`。总指挥已确认Owner与原Agent安全点，授权先交受审视觉，读取初始化另批；TD未等待后端审查才部署画面。
+
+视觉固定归档为`outputs/world-core/pixel-e93b8f1/source`，source.tar SHA256 `304fc46461ba778f01406edc5366824f0c124d1ef7dc7d5cca499e351938b8f9`，依赖独立复制，非共享symlink。切换前实际验证PID907及旧cwd，保存live一致逻辑dump、配对identity／配置，正常SIGTERM排空并确认18893无监听，再存stopped dump。两dump经清单验证，未作本次恢复演练；stopped为417479字节、SHA256 `9c06c6f4b9b226ebba1daecfe49dafe7d731348c93d9f82946170b9b849322ca`，秘密仅留0700／0600的maintenance-private。预检曾漏带worldId而得到一次400，补齐公开合同参数后通过，未因此修改服务或业务。
+
+stopped全库80表278行；显式关写门后从固定e93启动，closed-before与after-start的80表全列指纹完全一致，停服到闭门启动全部语义指纹保持（只排除instance_state开关／write_generation机械字段）。identity SHA256仍`da233bcdf1316505e28851bd673166164d000e9a8b701fcb19f7aec46038b612`，instance／epoch未变。67条匿名GET均200／no-store：八基础入口、38个实际变更生产资源逐字节匹配固定源、21旧精确World文档的document与digest保持。两Avatar完整公开事实、位置及worldRevision7保持。没有Owner借凭据读取或后台造业务。
+
+北京时间2026-10-21 **03:14:18.633**重新开门并health ready，维护**83.83秒**。当前PID **25983**、固定cwd **`/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/world-core/pixel-e93b8f1/source`**，origin仍**http://127.0.0.1:18893/**，执行会话67060。普通证据为该归档上级的preflight-backup、maintenance、三阶段continuity及closed-readiness。总指挥收到完成回执后接续原UI像素／文案／摘要定点及原A一次真实移动；此处尚无其最终结果。原8789／connet和公网未动；后续新移动与人类状态继续保留。
+
+R29同时接受A`d7554e2 → 4e73c391d493fafebf0e9e4c609cf6509685b9d6`九路径读取修补，无新增实质问题；作者64/64含7新反例、full typecheck／diff0，原wallet-mail测试98行的pg并发弃用warning单列保留。TD核9固定文件／4日志hash，无冲突整合为`473e7ed2b5249396ebdc37361fc6553c2f002564`，后端／脚本／WS02测试与A固定内容一致。该后继仍在隔离组合检查，未在18893执行helper／发布；视觉e93仍保留原reader未开放，不能记空态通过。下一次维护等待原UI／Agent新安全点并再做fresh备份，不回灌本次dump。
+
+TD后继在准确473e7ed完成68/68、fail／cancel／skip0：WS02相关64及N1／N2真实HTTP4同次组合，full typecheck与diff0。仍使用明确私有runtime支持的隔离fixture／18894，没有访问正在独立验收的18893或connet；原wallet-mail测试98行warning保留。证据归`outputs/world-core/integration-473e7ed/`。待发布固定源码归档已准备于`outputs/world-core/readers-473e7ed/source`，archive SHA256 `19fb7ac374aa9fa743fa61dc9715e2936f06c1871da6b55c7e205b081ff82584`，依赖独立复制，前端与已发e93相同。尚未执行候选helper或第二次维护，等待总指挥安全点。
