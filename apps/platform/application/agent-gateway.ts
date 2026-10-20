@@ -4,14 +4,14 @@ import type {IdentityAccess,Principal} from '../domains/access/public.ts';
 import {fail,object,text} from '../domains/common/errors.ts';
 import {hashRuntimeRequest} from '../domains/runtime/command.ts';
 export interface GatewayOperation {
- id:string;moduleId:string;kind:'query'|'command';actors:('agent'|'owner')[];description:string;
+ id:string;moduleId:string;schemaVersion:number;kind:'query'|'command';actors:('agent'|'owner')[];description:string;
  input:JsonObject;output:JsonObject;
  query?:(ctx:RuntimeReadContext,principal:Principal,input:JsonObject)=>Promise<JsonObject>;
  command?:(ctx:RuntimeTransaction,principal:Principal,key:CommandKey,input:JsonObject)=>Promise<CommandReceipt>;
  authorizeReceipt?:(ctx:RuntimeReadContext,principal:Principal,receipt:CommandReceipt)=>Promise<void>;
 }
 export interface GatewayGuide {moduleId:string;version:number;document:JsonObject}
-export interface GatewayPublicRead {id:string;moduleId:string;path:string;description:string;input:JsonObject;output:JsonObject;read:(ctx:RuntimeReadContext,input:JsonObject)=>Promise<JsonObject>}
+export interface GatewayPublicRead {id:string;moduleId:string;schemaVersion:number;path:string;description:string;input:JsonObject;output:JsonObject;read:(ctx:RuntimeReadContext,input:JsonObject)=>Promise<JsonObject>}
 export type GatewayValidator=(schema:JsonObject,input:unknown)=>boolean;
 export function canonicalGatewayDocument(value:JsonValue):string{
  if(value===null||typeof value!=='object')return JSON.stringify(value);
@@ -21,23 +21,31 @@ export function canonicalGatewayDocument(value:JsonValue):string{
 export const gatewayBaseInput:JsonObject={type:'object',additionalProperties:false,required:['protocolVersion','consumerId','purpose','operation','input'],properties:{protocolVersion:{const:1},consumerId:{type:'string',minLength:1,maxLength:100},purpose:{enum:['agent-manual','human-inspect']},operation:{type:'string',minLength:1,maxLength:100},input:{type:'object'},commandId:{type:'string',minLength:8,maxLength:100}}};
 export function gatewayEnvelope(data:JsonObject):JsonObject{return {type:'object',additionalProperties:false,required:['protocolVersion','requestId','instanceId','serverTime','data'],properties:{protocolVersion:{const:1},requestId:{type:'string'},instanceId:{type:'string'},serverTime:{type:'integer'},data}};}
 export function createAgentGateway(options:{store:RuntimeStore;identity:IdentityAccess<RuntimeReadContext>;operations:GatewayOperation[];guides:GatewayGuide[];publicReads?:GatewayPublicRead[]}){
- const operations=new Map<string,GatewayOperation>(),publicReads=new Map<string,GatewayPublicRead>(),documents=new Map<string,JsonObject>(),guides=new Map<string,GatewayGuide>();
+ const operations=new Map<string,GatewayOperation>(),publicReads=new Map<string,GatewayPublicRead>(),documents=new Map<string,{version:number;document:JsonObject}>(),guides=new Map<string,GatewayGuide>();
+ const validVersion=(value:number)=>Number.isSafeInteger(value)&&value>=1&&value<=1000000;
+ const moduleId=(id:string)=>/^[a-z][a-z0-9_.-]{0,95}$/.test(id);
  for(const operation of options.operations){
-  if(!/^[a-z][a-z0-9_.-]{1,99}$/.test(operation.id)||operations.has(operation.id)||operation.kind==='query'&&!operation.query||operation.kind==='command'&&(!operation.command||!operation.authorizeReceipt)||!operation.actors.length)throw new Error('Invalid Gateway operation registration');
+  if(!validVersion(operation.schemaVersion)||!moduleId(operation.moduleId)||!/^[a-z][a-z0-9_.-]{1,99}$/.test(operation.id)||operations.has(operation.id)||operation.kind==='query'&&!operation.query||operation.kind==='command'&&(!operation.command||!operation.authorizeReceipt)||!operation.actors.length)throw new Error('Invalid Gateway operation registration');
   operations.set(operation.id,Object.freeze(operation));
   const request=structuredClone(gatewayBaseInput),properties=request.properties as JsonObject;
   properties.operation={const:operation.id};properties.input=operation.input;
   if(operation.kind==='command')(request.required as string[]).push('commandId');else delete properties.commandId;
-  documents.set(`${operation.id}.input`,{$id:`gateway.${operation.id}.input@1`,...request});
-  documents.set(`${operation.id}.output`,{$id:`gateway.${operation.id}.output@1`,...gatewayEnvelope(operation.output)});
+  documents.set(`${operation.id}.input`,{version:operation.schemaVersion,document:{$id:`gateway.${operation.id}.input@${operation.schemaVersion}`,...request}});
+  documents.set(`${operation.id}.output`,{version:operation.schemaVersion,document:{$id:`gateway.${operation.id}.output@${operation.schemaVersion}`,...gatewayEnvelope(operation.output)}});
  }
- for(const read of options.publicReads??[]){if(!/^[a-z][a-z0-9_.-]{1,99}$/.test(read.id)||operations.has(read.id)||publicReads.has(read.id)||!/^\/v1\/world\/[a-z_-]+$/.test(read.path))throw new Error('Invalid public read registration');publicReads.set(read.id,Object.freeze(read));documents.set(`${read.id}.input`,{$id:`gateway.${read.id}.input@1`,...read.input});documents.set(`${read.id}.output`,{$id:`gateway.${read.id}.output@1`,...gatewayEnvelope(read.output)});}
+ for(const read of options.publicReads??[]){
+  if(!validVersion(read.schemaVersion)||!moduleId(read.moduleId)||!/^[a-z][a-z0-9_.-]{1,99}$/.test(read.id)||operations.has(read.id)||publicReads.has(read.id)||!/^\/v1\/[A-Za-z0-9/_-]+$/.test(read.path)||[...publicReads.values()].some(item=>item.path===read.path))throw new Error('Invalid public read registration');
+  publicReads.set(read.id,Object.freeze(read));
+  documents.set(`${read.id}.input`,{version:read.schemaVersion,document:{$id:`gateway.${read.id}.input@${read.schemaVersion}`,...read.input}});
+  documents.set(`${read.id}.output`,{version:read.schemaVersion,document:{$id:`gateway.${read.id}.output@${read.schemaVersion}`,...gatewayEnvelope(read.output)}});
+ }
  const all=[...options.operations,...options.publicReads??[]];
- for(const guide of options.guides){if(guides.has(guide.moduleId)||guide.version!==1||!all.some(op=>op.moduleId===guide.moduleId))throw new Error('Invalid Gateway guide registration');guides.set(guide.moduleId,structuredClone(guide));}
+ for(const guide of options.guides){if(guides.has(guide.moduleId)||!validVersion(guide.version)||!moduleId(guide.moduleId)||guide.document.version!==guide.version||!all.some(op=>op.moduleId===guide.moduleId))throw new Error('Invalid Gateway guide registration');guides.set(guide.moduleId,structuredClone(guide));}
  for(const operation of all)if(!guides.has(operation.moduleId))throw new Error('Missing exact Gateway module guide');
- const schemaRef=(id:string)=>({id,version:1,path:`/v1/gateway/schemas/${encodeURIComponent(id)}?version=1`});
- const descriptors=[...options.operations.map(op=>({id:op.id,moduleId:op.moduleId,kind:op.kind,actors:op.actors,description:op.description,http:{method:'POST',path:op.kind==='command'?'/v1/gateway/commands':'/v1/gateway/query'},inputSchema:schemaRef(`${op.id}.input`),outputSchema:schemaRef(`${op.id}.output`),usageGuide:{moduleId:op.moduleId,version:1,path:`/v1/gateway/guides/${op.moduleId}?version=1`}})),...[...publicReads.values()].map(read=>({id:read.id,moduleId:read.moduleId,kind:'query',actors:['public'],description:read.description,http:{method:'GET',path:read.path},inputSchema:schemaRef(`${read.id}.input`),outputSchema:schemaRef(`${read.id}.output`),usageGuide:{moduleId:read.moduleId,version:1,path:`/v1/gateway/guides/${read.moduleId}?version=1`}}))];
- const catalogRevision=`gateway-${hashRuntimeRequest({operations:descriptors,schemas:[...documents].map(([id,document])=>({id,digest:hashRuntimeRequest(document)})),guides:[...guides.values()].map(guide=>({moduleId:guide.moduleId,version:guide.version,digest:hashRuntimeRequest(guide.document)}))}).slice(0,24)}`;
+ const schemaRef=(id:string,version:number)=>({id,version,path:`/v1/gateway/schemas/${encodeURIComponent(id)}?version=${version}`});
+ const guideRef=(id:string)=>{const guide=guides.get(id)!;return {moduleId:id,version:guide.version,path:`/v1/gateway/guides/${id}?version=${guide.version}`};};
+ const descriptors=[...options.operations.map(op=>({id:op.id,moduleId:op.moduleId,kind:op.kind,actors:op.actors,description:op.description,http:{method:'POST',path:op.kind==='command'?'/v1/gateway/commands':'/v1/gateway/query'},inputSchema:schemaRef(`${op.id}.input`,op.schemaVersion),outputSchema:schemaRef(`${op.id}.output`,op.schemaVersion),usageGuide:guideRef(op.moduleId)})),...[...publicReads.values()].map(read=>({id:read.id,moduleId:read.moduleId,kind:'query',actors:['public'],description:read.description,http:{method:'GET',path:read.path},inputSchema:schemaRef(`${read.id}.input`,read.schemaVersion),outputSchema:schemaRef(`${read.id}.output`,read.schemaVersion),usageGuide:guideRef(read.moduleId)}))];
+ const catalogRevision=`gateway-${hashRuntimeRequest({operations:descriptors,schemas:[...documents].map(([id,entry])=>({id,version:entry.version,digest:hashRuntimeRequest(entry.document)})),guides:[...guides.values()].map(guide=>({moduleId:guide.moduleId,version:guide.version,digest:hashRuntimeRequest(guide.document)}))}).slice(0,24)}`;
  function definition(id:unknown,kind:'query'|'command'){const operation=operations.get(text(id,'operation',1,100));if(!operation||operation.kind!==kind)fail('capability_not_available',404,'Capability is not available');return operation;}
  function parse(raw:unknown,kind:'query'|'command',validate:GatewayValidator){
   const input=object(raw,kind==='command'?['protocolVersion','consumerId','purpose','operation','input','commandId']:['protocolVersion','consumerId','purpose','operation','input']);
@@ -57,8 +65,8 @@ export function createAgentGateway(options:{store:RuntimeStore;identity:Identity
   publicPaths:[...publicReads.values()].map(read=>({id:read.id,path:read.path})),
   capabilities(){return {protocolVersion:1,catalogRevision,discovery:{method:'GET',path:'/v1/gateway/discovery'},query:{method:'POST',path:'/v1/gateway/query'},command:{method:'POST',path:'/v1/gateway/commands'},receipt:{method:'POST',path:'/v1/gateway/receipts/query'},modules:[...guides.keys()],manualOnly:true,externalExecution:'host-controlled',ownerBindingRequiredForAgent:false};},
   discovery(){return {protocolVersion:1,catalogRevision,operations:descriptors,modules:[...guides.values()].map(guide=>({moduleId:guide.moduleId,usageGuide:{version:guide.version,path:`/v1/gateway/guides/${guide.moduleId}?version=${guide.version}`}})),schemaDialect:'JSON-Schema-draft-07',coverage:'activated-handlers-only'};},
-  schema(id:string,version:unknown){if(version!=='1')fail('unsupported_schema_version',400,'Request an exact supported schema version');const document=documents.get(id);if(!document)fail('capability_not_available',404,'Schema is not available');return {schemaId:id,version:1,document,canonicalDocument:canonicalGatewayDocument(document),digest:hashRuntimeRequest(document),digestAlgorithm:'sha256-utf8-hex'};},
-  guide(id:string,version:unknown){if(version!=='1')fail('unsupported_guide_version',400,'Request an exact supported guide version');const guide=guides.get(id);if(!guide)fail('capability_not_available',404,'Guide is not available');return {moduleId:id,version:1,document:guide.document,canonicalDocument:canonicalGatewayDocument(guide.document),digest:hashRuntimeRequest(guide.document),digestAlgorithm:'sha256-utf8-hex'};},
+  schema(id:string,version:unknown){if(typeof version!=='string'||!/^[1-9][0-9]{0,6}$/.test(version))fail('exact_schema_version_required',400,'Request an exact schema version from current discovery');const entry=documents.get(id);if(!entry)fail('capability_not_available',404,'Schema is not available');if(version!==String(entry.version))fail('schema_version_not_available',404,'That schema version is not available; rediscover the current registered version');return {schemaId:id,version:entry.version,document:entry.document,canonicalDocument:canonicalGatewayDocument(entry.document),digest:hashRuntimeRequest(entry.document),digestAlgorithm:'sha256-utf8-hex'};},
+  guide(id:string,version:unknown){if(typeof version!=='string'||!/^[1-9][0-9]{0,6}$/.test(version))fail('exact_guide_version_required',400,'Request an exact guide version from current discovery');const guide=guides.get(id);if(!guide)fail('capability_not_available',404,'Guide is not available');if(version!==String(guide.version))fail('guide_version_not_available',404,'That guide version is not available; rediscover the current registered version');return {moduleId:id,version:guide.version,document:guide.document,canonicalDocument:canonicalGatewayDocument(guide.document),digest:hashRuntimeRequest(guide.document),digestAlgorithm:'sha256-utf8-hex'};},
   async publicRead(id:string,input:unknown,validate:GatewayValidator){const read=publicReads.get(id);if(!read)fail('capability_not_available',404,'Public capability is not available');if(!validate(read.input,input))fail('invalid_request',400,'Query does not match the current public read schema');return await options.store.read(ctx=>read.read(ctx,input as JsonObject));},
   async query(raw:unknown,bearer:unknown,validate:GatewayValidator){const parsed=parse(raw,'query',validate);return await options.store.read(async ctx=>await parsed.operation.query!(ctx,await authenticate(ctx,bearer,parsed.operation,parsed.input.purpose),parsed.payload));},
   async command(raw:unknown,bearer:unknown,validate:GatewayValidator){

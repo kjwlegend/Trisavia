@@ -29,5 +29,6 @@ export function registerAgentGatewayRoutes(app:FastifyInstance,gateway:AgentGate
  route('POST','/v1/gateway/query',request=>gateway.query(request.body,bearer(request),validate(request)));
  route('POST','/v1/gateway/commands',request=>gateway.command(request.body,bearer(request),validate(request)));
  route('POST','/v1/gateway/receipts/query',request=>gateway.receipt(request.body,bearer(request)));
- for(const read of gateway.publicPaths)route('GET',read.path,request=>{const query=object(request.query,['worldId','cursor','limit']),input={...query};if(input.limit!==undefined){if(typeof input.limit!=='string'||!/^\d{1,3}$/.test(input.limit))throw new M1Error('invalid_request',400,'Invalid page limit');input.limit=Number(input.limit);}return gateway.publicRead(read.id,input,validate(request));});
+ return {route,validate};
 }
+export type GatewayHttpTransport=ReturnType<typeof registerAgentGatewayRoutes>;

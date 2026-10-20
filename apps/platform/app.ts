@@ -15,6 +15,7 @@ import { createWorldService, verifyWorldReadiness } from './application/world-se
 import { createAgentGateway } from './application/agent-gateway.ts';
 import { worldGatewayGuide, worldGatewayOperations, worldPublicReads } from './application/agent-gateway-world.ts';
 import { registerAgentGatewayRoutes } from './transport/http/agent-gateway-routes.ts';
+import { registerWorldObservationRoutes } from './transport/http/agent-gateway-world-routes.ts';
 import { createDeterministicScheduler } from './infrastructure/scheduling/deterministic-scheduler.ts';
 import { createWorldRuleDriver } from './application/world-rule-driver.ts';
 
@@ -40,7 +41,7 @@ export async function buildApp(options:BuildAppOptions):Promise<FastifyInstance>
    const world=createWorldService(identity);
    const gateway=createAgentGateway({store:runtime,identity,operations:worldGatewayOperations(world),publicReads:worldPublicReads(world),guides:[worldGatewayGuide]});
    gatewayCapabilities=()=>({...gateway.capabilities(),worldSimulation:{enabled:true,actionAdvancement:'deterministic-rule-tasks',movementPolicyVersion:1,stepIntervalMs:1000,pollIntervalMs:1000,externalAgentExecution:false}});
-   registerAgentGatewayRoutes(app,gateway,{instanceId:store.instanceId,now:options.clock??Date.now});
+   registerWorldObservationRoutes(gateway,registerAgentGatewayRoutes(app,gateway,{instanceId:store.instanceId,now:options.clock??Date.now}));
    const scheduler=createDeterministicScheduler({store:runtime,workerId:`world-rules-${process.pid}`,handlers:[{kind:'world.movement.step',version:1,run:world.handleTask}],batchLimit:10,leaseMs:30000});
    ruleDriver=createWorldRuleDriver(scheduler);app.addHook('onReady',async()=>{ruleDriver!.start();});
   }

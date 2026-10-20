@@ -5,6 +5,7 @@ import {stat} from 'node:fs/promises';
 import test from 'node:test';
 import {buildApp} from '../../apps/platform/app.ts';
 import {M1_TABLES} from '../../apps/platform/contracts/store.ts';
+import {INTERACTION_REPOSITORY} from '../../apps/platform/domains/interaction/repository.ts';
 import {gatewayFixture} from './postgresql-fixture.ts';
 const origin='http://127.0.0.1:18894';
 async function request(path:string,body?:unknown,token?:string){
@@ -14,15 +15,16 @@ async function request(path:string,body?:unknown,token?:string){
 const envelope=(operation:string,input:unknown,commandId?:string)=>({protocolVersion:1,consumerId:'gateway-http-story',purpose:'agent-manual',operation,input,...(commandId?{commandId}:{})});
 const savedToken=()=>randomUUID()+'.'+randomBytes(32).toString('base64url');
 test('same-origin HTTP discovers real handlers and independently registered Agents receive server-advanced logical movement',async()=>{
- const f=await gatewayFixture(),app=await buildApp({...f.options,email:{mode:'experience'},worldCoreEnabled:true});
+ const f=await gatewayFixture({interaction:false}),app=await buildApp({...f.options,email:{mode:'experience'},worldCoreEnabled:true});
  try{
   await app.listen({host:'127.0.0.1',port:18894});
+  assert.equal(await f.runtime.read(ctx=>ctx.repository(INTERACTION_REPOSITORY).getConfiguration(1)),undefined);
   const entry=await fetch(origin+'/agent/entry.md');assert.equal(entry.status,200);assert((await entry.text()).includes('/v1/gateway/discovery'));
   const capabilities=await request('/v1/capabilities');assert.equal(capabilities.status,200);const cap=capabilities.body.gateway;assert.equal(cap.ownerBindingRequiredForAgent,false);assert.deepEqual(cap.modules,['world']);assert(capabilities.body.perceptionApi);assert(capabilities.body.walletApi);
   const discovery=await request(cap.discovery.path);assert.equal(discovery.status,200);assert.equal(discovery.body.data.catalogRevision,cap.catalogRevision);
   for(const operation of discovery.body.data.operations){assert(!operation.http.path.includes('8789'));for(const ref of [operation.inputSchema,operation.outputSchema]){const schema=await request(ref.path);assert.equal(schema.status,200);assert.equal(createHash('sha256').update(schema.body.data.canonicalDocument).digest('hex'),schema.body.data.digest);assert.deepEqual(JSON.parse(schema.body.data.canonicalDocument),schema.body.data.document);}}
   const guide=await request('/v1/gateway/guides/world?version=1');assert.equal(guide.status,200);assert.equal(guide.body.data.document.worldRuleAdvancement.enabled,true);
-  assert.equal((await request('/v1/gateway/schemas/world.avatar.input?version=2')).status,400);assert.equal((await request('/v1/gateway/discovery?private=true')).status,400);
+  assert.equal((await request('/v1/gateway/schemas/world.avatar.input?version=2')).status,404);assert.equal((await request('/v1/gateway/discovery?private=true')).status,400);
   const runtimeToken=savedToken(),continuationToken=savedToken(),registrationInput={operationId:randomUUID(),attemptId:randomUUID(),runtimeToken,continuationToken};
   const saved=await f.savePrivate('agent-a-materials.json',{origin,registrationInput});assert.equal((await stat(saved)).mode&0o077,0);
   const registered=await request('/v1/registrations',registrationInput);assert.equal(registered.status,200);assert.equal(registered.body.outcome,'committed');assert.equal(registered.body.managementStatus,'pending_setup');assert.equal(registered.body.gateway.ownerBindingRequired,false);
@@ -50,7 +52,7 @@ test('same-origin HTTP discovers real handlers and independently registered Agen
  }finally{await app.close();await f.dispose();}
 });
 test('closed write gate permits build, health, public reads and wallet pure reads without persistent changes',async()=>{
- const f=await gatewayFixture();let app:Awaited<ReturnType<typeof buildApp>>|undefined;
+ const f=await gatewayFixture({interaction:false});let app:Awaited<ReturnType<typeof buildApp>>|undefined;
  try{
   const actor=await f.register();await f.gate(false);
   const snapshot=()=>f.legacy.read(async tx=>{const result:unknown[]=[];for(const table of M1_TABLES)result.push([table,await tx.find(table,{})]);return result;});
