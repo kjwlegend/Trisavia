@@ -3,6 +3,7 @@ import { Pool } from 'pg';
 import { StorageError } from '../../contracts/store.ts';
 import { column, MODELS, type Field } from './model.ts';
 import { directFields, splitFields } from './codec.ts';
+import { RUNTIME_MIGRATIONS } from './runtime-migrations.ts';
 
 export interface PostgresConnectionOptions { connectionString:string; instanceId:string; recoveryEpoch:string }
 const quote=(value:string)=>`'${value.replaceAll("'","''")}'`;
@@ -22,7 +23,7 @@ for(const name of modules)tableSql.set(name,[`CREATE SCHEMA IF NOT EXISTS ${name
 for(const model of MODELS){
   // v1 has already been exercised in isolated databases. Add discovered source
   // fields through a new module migration, without editing those applied bytes.
-  const initialFields=model.fields.filter(field=>!(model.table==='iam.email_attempts'&&field.path==='emailVerified'));
+  const initialFields=model.fields.filter(field=>!(model.table==='iam.email_attempts'&&field.path==='emailVerified')&&!(model.table==='iam.world_memberships'&&field.path==='sharingGeneration'));
   const allowed=new Set<string>();for(const field of initialFields){const parts=field.path.split('.');for(let index=1;index<=parts.length;index++)allowed.add(parts.slice(0,index).join('.'));}
   tableSql.get(model.table.split('.')[0]!)!.push(`CREATE TABLE ${model.table}(
     id text COLLATE "C" PRIMARY KEY CHECK(length(id)>0), version bigint NOT NULL CHECK(version BETWEEN 1 AND 9007199254740991),
@@ -94,6 +95,11 @@ POSTGRES_MIGRATIONS.push({moduleId:'email',version:2,name:'bounded_code_mail_quo
   CREATE INDEX code_mail_owner_recent ON email.mail_jobs(owner_key,created_at,id) WHERE purpose='code';
   CREATE INDEX code_mail_source_recent ON email.mail_jobs(source_key,created_at,id) WHERE purpose='code';`,dependencies:['email','iam']});
 POSTGRES_MIGRATIONS.push({moduleId:'iam',version:4,name:'pending_recovery_authority_lookup',sql:"CREATE INDEX pending_agent_recovery ON iam.recovery_requests(agent_id,expires_at,id) WHERE status='pending';",dependencies:['iam']});
+const membershipAllowed=MODELS.find(model=>model.table==='iam.world_memberships')!.fields.map(field=>quote(field.path));
+POSTGRES_MIGRATIONS.push({moduleId:'iam',version:5,name:'persistent_membership_sharing_generation',sql:`ALTER TABLE iam.world_memberships ADD COLUMN sharing_generation bigint CHECK(sharing_generation BETWEEN 1 AND 9007199254740991);
+  ALTER TABLE iam.world_memberships DROP CONSTRAINT world_memberships__present_check;
+  ALTER TABLE iam.world_memberships ADD CONSTRAINT world_memberships__present_check CHECK(_present <@ ARRAY[${membershipAllowed.join(',')}]::text[]);`,dependencies:['iam']});
+POSTGRES_MIGRATIONS.push(...RUNTIME_MIGRATIONS);
 export const POSTGRES_SCHEMA_SIGNATURE=createHash('sha256').update(POSTGRES_MIGRATIONS.map(item=>`${item.moduleId}:${createHash('sha256').update(item.sql).digest('hex')}`).join('\n')).digest('hex');
 
 /** Explicit DDL-role operation; openPostgresStore never calls this. */

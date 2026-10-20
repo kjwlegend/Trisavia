@@ -14,6 +14,7 @@ export interface OpenPostgresStoreOptions {
 export interface PostgresScope {
   readonly client:PoolClient;readonly write:boolean;alive():boolean;
   beforeCommit(check:()=>Promise<void>):void;
+  attempt<T>(work:()=>Promise<T>):Promise<T>;
 }
 export interface PostgresTransactionHost {
   readonly instanceId:string;readonly recoveryEpoch:string;
@@ -52,8 +53,21 @@ export async function openPostgresTransactionHost(options:OpenPostgresStoreOptio
           const result=await connection.query(`SELECT instance_id,recovery_epoch,writes_enabled FROM platform.instance_state WHERE singleton=1 FOR ${write?'UPDATE':'SHARE'}`);
           const guard=result.rows[0];if(!guard||guard.instance_id!==options.instanceId||guard.recovery_epoch!==options.recoveryEpoch)throw new StorageError('conflict','PostgreSQL deployment identity changed; reopen the store');
           if(write){if(!guard.writes_enabled)throw new StorageError('unavailable','Business writes are closed');await connection.query('UPDATE platform.instance_state SET write_generation=write_generation+1 WHERE singleton=1');}
-          const beforeCommit:Array<()=>Promise<void>>=[];
-          const scope:PostgresScope={client:connection,write,alive:()=>usable,beforeCommit(check){if(!usable)throw new StorageError('closed','Storage scope has ended');beforeCommit.push(check);}};
+          const beforeCommit:Array<()=>Promise<void>>=[],savepoints:symbol[]=[];
+          const savepointContext=new AsyncLocalStorage<symbol>();let savepointSequence=0;
+          const scope:PostgresScope={client:connection,write,alive:()=>usable,
+            beforeCommit(check){if(!usable)throw new StorageError('closed','Storage scope has ended');beforeCommit.push(check);},
+            async attempt<T>(work:()=>Promise<T>):Promise<T>{
+              if(!usable)throw new StorageError('closed','Storage scope has ended');
+              if(!write)throw new StorageError('invalid_usage','Read scopes cannot create write attempts');
+              if(savepoints.at(-1)!==savepointContext.getStore())throw new StorageError('invalid_usage','Overlapping savepoint attempts are not supported');
+              const token=Symbol(),name='runtime_attempt_'+(++savepointSequence),checkpoint=beforeCommit.length;savepoints.push(token);
+              await connection.query('SAVEPOINT '+name);
+              try{return await savepointContext.run(token,async()=>{const value=work();if(!value||typeof value.then!=='function')throw new StorageError('invalid_usage','Runtime attempts must be asynchronous');return value;});}
+              catch(error){beforeCommit.splice(checkpoint);await connection.query('ROLLBACK TO SAVEPOINT '+name);throw error;}
+              finally{savepoints.pop();await connection.query('RELEASE SAVEPOINT '+name);}
+            },
+          };
           const value=work(scope);
           if(!value||typeof value.then!=='function')throw new StorageError('invalid_usage','PostgreSQL callbacks must be asynchronous');
           const output=await value;for(const check of beforeCommit)await check();usable=false;commitSent=true;await connection.query('COMMIT');return output;
