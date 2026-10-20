@@ -29,11 +29,32 @@ test('bounded domain quota counts match strict windows, source keys, same-email 
       const expected=query.kind==='email_attempts_recent'?attempts.filter(item=>Number(item.createdAt)>query.since&&(!query.sourceKeys||query.sourceKeys.includes(item.sourceKey as string))).length:
         query.kind==='code_mail_recent'?jobs.filter(item=>item.purpose==='code'&&Number(item.createdAt)>query.since&&(!query.sourceKeys||query.sourceKeys.includes(item.sourceKey as string))&&(!query.related||item.ownerKey===query.related.ownerKey||attempts.some(attempt=>attempt.id===item.attemptId&&attempt.emailKey===query.related!.emailKey))).length:
         query.kind==='recovery_requests_recent'?recoveries.filter(item=>Number(item.createdAt)>query.since&&(query.ownerId===undefined||item.ownerId===query.ownerId)&&(query.sourceKey===undefined||item.sourceKey===query.sourceKey)).length:
-        invites.filter(item=>item.kind==='invite'&&item.active===true&&item.ownerId===query.ownerId&&Number(item.expiresAt)>query.after).length;
+        query.kind==='active_invites'?invites.filter(item=>item.kind==='invite'&&item.active===true&&item.ownerId===query.ownerId&&Number(item.expiresAt)>query.after).length:0;
       assert.equal(await store.read(tx=>tx.quotaCount(query)),Math.min(expected,query.limit),JSON.stringify(query));
     }
     assert.equal(await store.transaction(tx=>tx.quotaCount({kind:'active_invites',ownerId:'o',after:now,limit:1})),1);
   }finally{await store.close();}
+});
+
+test('pending recovery is one current-authority existence query with the exact existing status predicates',async()=>{
+  const store=await testStore(),pool=new Pool({connectionString:applicationOptions.connectionString,max:1});
+  const query:QuotaCountQuery={kind:'pending_recovery',agentId:'a',epoch:'epoch-test',after:now,limit:1};
+  try{
+    await store.transaction(async tx=>{
+      await tx.insert('agents',row('a',{runtimeActive:true,runtimeVersion:1}));await tx.insert('agents',row('other',{runtimeActive:true,runtimeVersion:1}));
+      await tx.insert('owners',row('o',{status:'active',epoch:'epoch-test',authVersion:1}));await tx.insert('bindings',row('binding',{agentId:'a',ownerId:'o',active:true}));
+      await tx.insert('credentials',row('runtime',{fingerprint:'runtime',kind:'runtime',verifier:'fixture-only',epoch:'epoch-test',active:true,runtimeVersion:1,agentId:'a'}));
+      for(let index=0;index<201;index++){
+        const id=`request-${index}`;await tx.insert('credentials',row(id,{fingerprint:id,kind:'recovery_assistance',verifier:'fixture-only',epoch:'epoch-test',active:true}));
+        await tx.insert('recovery_requests',row(id,{agentId:'a',ownerId:'o',contextCredentialId:id,bindingId:'binding',bindingVersion:1,creatorRuntimeCredentialId:'runtime',creatorRuntimeVersion:1,ownerAuthVersion:1,epoch:'epoch-test',status:'pending',expiresAt:index===200?now+1:now}));
+      }
+    });
+    assert.equal(await store.read(tx=>tx.quotaCount(query)),1);
+    const mismatches=[['iam.recovery_requests',"status='completed'","status='pending'","id='request-200'"],['iam.recovery_requests',"epoch='other'","epoch='epoch-test'","id='request-200'"],['iam.recovery_requests',`expires_at=to_timestamp(${now}/1000.0)`,`expires_at=to_timestamp(${now+1}/1000.0)`,"id='request-200'"],['iam.human_accounts',"status='pending_setup'","status='active'","id='o'"],['iam.human_accounts',"epoch='other'","epoch='epoch-test'","id='o'"],['iam.human_accounts','auth_version=2','auth_version=1',"id='o'"],['iam.management_bindings','version=2','version=1',"id='binding'"],['iam.management_bindings','active=false','active=true',"id='binding'"],['iam.credentials','active=false','active=true',"id='runtime'"],['iam.credentials',"kind='bootstrap'","kind='runtime'","id='runtime'"],['iam.credentials',"epoch='other'","epoch='epoch-test'","id='runtime'"],['iam.credentials','runtime_version=2','runtime_version=1',"id='runtime'"],['iam.agents','runtime_active=false','runtime_active=true',"id='a'"],['iam.agents','runtime_version=2','runtime_version=1',"id='a'"]] as const;
+    for(const[table,change,restore,where]of mismatches){await pool.query(`UPDATE ${table} SET ${change} WHERE ${where}`);assert.equal(await store.read(tx=>tx.quotaCount(query)),0,`${table} ${change}`);await pool.query(`UPDATE ${table} SET ${restore} WHERE ${where}`);assert.equal(await store.read(tx=>tx.quotaCount(query)),1);}
+    await pool.query("UPDATE iam.management_bindings SET agent_id='other' WHERE id='binding'; UPDATE iam.credentials SET agent_id='other' WHERE id='runtime'");
+    assert.equal(await store.read(tx=>tx.quotaCount(query)),1,'The port does not invent extra conditions absent from the existing recovery status predicate');
+  }finally{await pool.end();await store.close();}
 });
 
 test('quota adapter issues one count-only SQL statement and rejects uncontrolled query shapes',async()=>{

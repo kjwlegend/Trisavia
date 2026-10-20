@@ -93,6 +93,7 @@ POSTGRES_MIGRATIONS.push({moduleId:'iam',version:3,name:'bounded_identity_quota_
 POSTGRES_MIGRATIONS.push({moduleId:'email',version:2,name:'bounded_code_mail_quota_windows',sql:`CREATE INDEX code_mail_recent ON email.mail_jobs(created_at,id) WHERE purpose='code';
   CREATE INDEX code_mail_owner_recent ON email.mail_jobs(owner_key,created_at,id) WHERE purpose='code';
   CREATE INDEX code_mail_source_recent ON email.mail_jobs(source_key,created_at,id) WHERE purpose='code';`,dependencies:['email','iam']});
+POSTGRES_MIGRATIONS.push({moduleId:'iam',version:4,name:'pending_recovery_authority_lookup',sql:"CREATE INDEX pending_agent_recovery ON iam.recovery_requests(agent_id,expires_at,id) WHERE status='pending';",dependencies:['iam']});
 export const POSTGRES_SCHEMA_SIGNATURE=createHash('sha256').update(POSTGRES_MIGRATIONS.map(item=>`${item.moduleId}:${createHash('sha256').update(item.sql).digest('hex')}`).join('\n')).digest('hex');
 
 /** Explicit DDL-role operation; openPostgresStore never calls this. */

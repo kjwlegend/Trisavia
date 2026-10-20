@@ -22,6 +22,14 @@ export function quotaSelection(query:QuotaCountQuery):{sql:string;values:unknown
       table='iam.recovery_requests';allowed=['kind','since','ownerId','sourceKey','limit'];where.push(`q.created_at > ${timestamp(query.since)}`);if(query.ownerId!==undefined)where.push(`q.owner_id=${text(query.ownerId)}`);if(query.sourceKey!==undefined)where.push(`q.source_key=${text(query.sourceKey)}`);break;
     case'active_invites':
       table='iam.credentials';allowed=['kind','ownerId','after','limit'];where.push("q.active=true","q.kind='invite'",`q.owner_id=${text(query.ownerId)}`,`q.expires_at > ${timestamp(query.after)}`);break;
+    case'pending_recovery':
+      if(query.limit!==1)throw new StorageError('invalid_usage','Pending recovery is a bounded existence query');
+      table='iam.recovery_requests';allowed=['kind','agentId','epoch','after','limit'];
+      where.push(`q.agent_id=${text(query.agentId)}`,"q.status='pending'",`q.epoch=${text(query.epoch)}`,`q.expires_at > ${timestamp(query.after)}`,
+        `EXISTS(SELECT 1 FROM iam.human_accounts o WHERE o.id=q.owner_id AND o.status='active' AND o.epoch=q.epoch AND o.auth_version=q.owner_auth_version)`,
+        `EXISTS(SELECT 1 FROM iam.management_bindings b WHERE b.id=q.binding_id AND b.version=q.binding_version AND b.active=true AND b.owner_id=q.owner_id)`,
+        `EXISTS(SELECT 1 FROM iam.credentials c WHERE c.id=q.creator_runtime_credential_id AND c.active=true AND c.kind='runtime' AND c.epoch=q.epoch AND c.runtime_version=q.creator_runtime_version)`,
+        `EXISTS(SELECT 1 FROM iam.agents a WHERE a.id=q.agent_id AND a.runtime_version=q.creator_runtime_version AND a.runtime_active=true)`);break;
     default:throw new StorageError('invalid_usage','Unknown domain quota query');
   }
   if(Object.keys(query).some(key=>!allowed.includes(key)))throw new StorageError('invalid_usage','Unknown quota query field');
