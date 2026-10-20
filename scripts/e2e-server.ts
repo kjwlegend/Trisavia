@@ -1,27 +1,19 @@
-import { spawn } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { buildApp } from '../apps/platform/app.ts';
+import { loadEmailConfig } from '../apps/platform/infrastructure/email/resend.ts';
+import { postgresFixture } from '../tests/api/postgresql-fixture.ts';
 
-// A fresh database for browser tests, never the user's persistent local instance.
-const directory = mkdtempSync(join(tmpdir(), 'agents-era-e2e-'));
-const child = spawn(process.execPath, [fileURLToPath(new URL('../apps/platform/server.ts', import.meta.url))], {
-  env: {
-    ...process.env, M1_HOST: '127.0.0.1', M1_PORT: '8897',
-    M1_DATABASE_PATH: join(directory, 'test.sqlite'),
-    M1_IDENTITY_PATH: join(directory, 'identity.json'),
-    M1_INSTANCE_ID: 'm1-e2e', M1_RECOVERY_EPOCH: 'm1-e2e-epoch',
-  },
-  stdio: 'inherit',
-});
-for (const signal of ['SIGTERM', 'SIGINT'] as const) process.once(signal, () => { child.kill(signal); });
-child.once('error', () => {
-  rmSync(directory, { recursive: true, force: true });
-  console.error('Browser test service could not start.');
-  process.exitCode = 1;
-});
-child.once('exit', (code) => {
-  rmSync(directory, { recursive: true, force: true });
-  process.exitCode = code ?? 0;
-});
+// Reuse the formal PG fixture; never inherit a user's application URL/identity.
+const port = Number(process.env.M1_E2E_PORT);
+if (!Number.isInteger(port) || port < 1 || port > 65535 || [8789, 8799, 8801, 8787, 8846, 8897, 18892, 15432].includes(port)) throw new Error('An explicit disposable loopback E2E port is required');
+const pg = await postgresFixture(), email = loadEmailConfig({ M1_EMAIL_MODE: 'experience' });
+let app: Awaited<ReturnType<typeof buildApp>> | undefined, closing: Promise<void> | undefined;
+function close(): Promise<void> {
+  return closing ??= (async () => { try { await app?.close(); } finally { await pg.dispose(); } })();
+}
+for (const signal of ['SIGTERM', 'SIGINT'] as const) process.once(signal, () => { void close().catch(() => { process.exitCode = 1; }); });
+try {
+  app = await buildApp({ ...pg.options, ...(email ? { email } : {}) });
+  await app.listen({ host: '127.0.0.1', port });
+} catch {
+  await close(); console.error('Isolated PostgreSQL browser test service could not start.'); process.exitCode = 1;
+}

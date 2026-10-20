@@ -1,11 +1,8 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { join } from 'node:path';
 import type { TestContext } from 'node:test';
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
-import { loadBackendConfig } from '../../../apps/platform/configuration/backend-config.ts';
-import { openM1Store } from '../../../apps/platform/infrastructure/relational/sqlite-store.ts';
 import type { M1Store } from '../../../apps/platform/contracts/store.ts';
 import { seedWs02DemoData } from '../../../apps/platform/application/perception-seed.ts';
 import { updatePerceptionDemoObject } from '../../../apps/platform/application/perception-admin.ts';
@@ -21,15 +18,11 @@ export const agentRef = (id: string) => ({ moduleId: 'profiles', type: 'profiles
 // owners and their Agents are newly registered through the ordinary APIs.
 export async function ownerReadFixture(t: TestContext, viewport = { width: 1440, height: 900 }) {
   const f = await ws02Fixture(t, { accounts: true, viewport });
-  const config = loadBackendConfig({ M1_EMAIL_MODE: 'experience',
-    M1_DATABASE_PATH: join(f.directory, 'synthetic.sqlite'),
-    M1_IDENTITY_PATH: join(f.directory, 'synthetic.identity.json') }, f.directory);
-  const storage = <T>(work: (store: M1Store) => T): T => {
-    const store = openM1Store(config); try { return work(store); } finally { store.close(); }
-  };
+  const config = f.config;
+  const storage = <T>(work: (store: M1Store) => Promise<T>): Promise<T> => work(f.store);
   const administrator = 'owner-read-synthetic-administrator';
-  const manifest = storage(store => seedWs02DemoData(store, { actorId: administrator })) as Json;
-  storage(store => authorizeWs02SeedOwnerObservation(store, {
+  const manifest = await storage(store => seedWs02DemoData(store, { actorId: administrator })) as Json;
+  await storage(store => authorizeWs02SeedOwnerObservation(store, {
     actorId: administrator, operationId: randomUUID(), expectedSourceAdministrator: administrator,
   }));
   const empty = await ownerFixture(f.api, 'ReadEmpty', async value => {
@@ -39,15 +32,15 @@ export async function ownerReadFixture(t: TestContext, viewport = { width: 1440,
   const label = randomUUID().slice(0, 8);
   const markers = { items: `隔离数据库物品-${label}`, notifications: `隔离数据库通知-${label}`,
     announcements: `隔离数据库公告-${label}`, events: `隔离数据库计划-${label}` };
-  for (const category of ['items', 'announcements', 'events'] as const) storage(store => {
-    const row = store.read(tx => tx.find('perception_objects').find(row => row.data.categoryId === category
+  for (const category of ['items', 'announcements', 'events'] as const) await storage(async store => {
+    const row = await store.read(async tx => (await tx.find('perception_objects')).find(row => row.data.categoryId === category
       && (category !== 'events' || row.data.type === 'world.plan@1' || (row.data.ref as Json)?.type === 'world.plan@1')));
     assert(row, `The seeded ${category} source has a real demonstration object to update`);
     return updatePerceptionDemoObject(store, { actorId: administrator, operationId: randomUUID(), expectedVersion: row.version,
       ref: row.data.ref as Ref, title: markers[category] });
   });
   const longMessage = '这是由隔离管理员明确更新的长通知正文，用于核对真实分段读取，网页查看不代表 Agent 已确认。'.repeat(30);
-  storage(store => updatePerceptionDemoObject(store, { actorId: administrator, operationId: randomUUID(), expectedVersion: 1,
+  await storage(store => updatePerceptionDemoObject(store, { actorId: administrator, operationId: randomUUID(), expectedVersion: 1,
     ref: { moduleId: 'mailbox', type: 'mailbox.message@1', id: 'test-message-09' }, title: markers.notifications, body: longMessage }));
   const requests: { method: string; path: string; input: Json }[] = [];
   const responses: { path: string; input: Json; status: number; body: Json }[] = [];
@@ -100,14 +93,14 @@ export async function ownerReadFixture(t: TestContext, viewport = { width: 1440,
     assert.fail('A bounded reference collection must terminate');
   }
   const states = () => storage(store => store.read(tx => tx.find('perception_states')));
-  const source = (id: string, state: 'enabled' | 'unavailable' | 'not_enabled') => storage(store => store.transaction(tx => {
-    const current = tx.get('perception_catalog', 'current')!;
-    tx.update('perception_catalog', { ...current, version: current.version + 1,
+  const source = (id: string, state: 'enabled' | 'unavailable' | 'not_enabled') => storage(store => store.transaction(async tx => {
+    const current = (await tx.get('perception_catalog', 'current'))!;
+    await tx.update('perception_catalog', { ...current, version: current.version + 1,
       data: { ...current.data, sourceStates: { ...(current.data.sourceStates as Json), [id]: state } } }, current.version);
   }));
-  const observer = (active: boolean) => storage(store => store.transaction(tx => {
-    const row = tx.get('perception_catalog', OWNER_OBSERVATION_ID)!;
-    tx.update('perception_catalog', { ...row, version: row.version + 1, data: { ...row.data, active } }, row.version);
+  const observer = (active: boolean) => storage(store => store.transaction(async tx => {
+    const row = (await tx.get('perception_catalog', OWNER_OBSERVATION_ID))!;
+    await tx.update('perception_catalog', { ...row, version: row.version + 1, data: { ...row.data, active } }, row.version);
   }));
   return { ...f, config, storage, a, b, empty, manifest, markers, longMessage, requests, responses, records, states, source, observer,
     get exampleLoads() { return exampleLoads; } };

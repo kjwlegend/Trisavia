@@ -32,7 +32,7 @@ async function fits(page: Page) { await expect(hudWindow(page)).toHaveAttribute(
 test('owner platform holdings and notifications match real authorized pages and full content without Agent or human reader-state writes', { timeout: 75_000 }, async t => {
   const f = await ownerReadFixture(t), { page } = f;
   const holdings = await f.records('inventory', 'holdings'), notices = await f.records('inbox', 'notifications');
-  const before = f.states(); await page.goto(f.origin); await f.login(f.a.owner); await returnToWorld(page); await chooseAgent(page, f.a.agents[0]!);
+  const before = await f.states(); await page.goto(f.origin); await f.login(f.a.owner); await returnToWorld(page); await chooseAgent(page, f.a.agents[0]!);
   const selectedName = await page.locator('#hud-agent-select').innerText();
   await openHud(page, '背包'); await fits(page);
   await expect(inventory(page).getByRole('button', { name: '背包', exact: true })).toHaveAttribute('aria-pressed', 'true');
@@ -64,7 +64,7 @@ test('owner platform holdings and notifications match real authorized pages and 
   await wheelToControl(page, page.locator('#hud-platform-mail-results'), closed); await pointer(page, closed);
   await expect(page.locator('#hud-detail-body')).toContainText('当前仅可查看摘要');
   assert.equal(f.requests.some(request => request.path.endsWith('/detail') && request.input.ref?.id === unavailable.ref.id), false);
-  await page.keyboard.press('Escape'); assert.deepEqual(f.states(), before, 'Human full reading preserves every Agent confirmation');
+  await page.keyboard.press('Escape'); assert.deepEqual(await f.states(), before, 'Human full reading preserves every Agent confirmation');
   await f.logout();
 });
 
@@ -108,13 +108,13 @@ test('public catalogue, announcements and event records work without an Agent an
 test('real unavailable, denied, empty and network-error states never substitute interface examples, which remain an explicit separate context', { timeout: 70_000 }, async t => {
   const f = await ownerReadFixture(t), { page } = f;
   await page.goto(f.origin); await f.login(f.a.owner); await returnToWorld(page); await chooseAgent(page, f.a.agents[0]!); await openHud(page, '信箱');
-  await expect(messages(page)).toHaveCount(20); f.observer(false);
+  await expect(messages(page)).toHaveCount(20); await f.observer(false);
   await returnToWorld(page); f.allowStatus('/v1/perception/list', 403); await openHud(page, '信箱');
   await expect(mail(page)).toContainText('当前账号无权查看这类内容'); await expect(messages(page)).toHaveCount(0);
   await expect(mail(page)).not.toContainText('当前没有可查看的通知'); await expect(mail(page)).not.toContainText('示例私人通知');
-  f.observer(true); f.source('direct-mail', 'not_enabled'); await returnToWorld(page); await openHud(page, '信箱');
+  await f.observer(true); await f.source('direct-mail', 'not_enabled'); await returnToWorld(page); await openHud(page, '信箱');
   await expect(mail(page)).toContainText('主人查看这类通知的入口尚未开放'); await expect(messages(page)).toHaveCount(0);
-  f.source('direct-mail', 'enabled'); f.source('demo-items', 'unavailable');
+  await f.source('direct-mail', 'enabled'); await f.source('demo-items', 'unavailable');
   await openHud(page, '背包'); await pointer(page, inventory(page).getByRole('button', { name: '物品目录', exact: true }));
   await expect(inventory(page)).toContainText('内容来源暂不可用'); await expect(itemButtons(page)).toHaveCount(0);
   assert.equal(f.exampleLoads, 0, 'A real source failure does not even load the old static examples');
@@ -123,7 +123,7 @@ test('real unavailable, denied, empty and network-error states never substitute 
   assert.equal(f.exampleLoads, 1, 'The example resource is loaded only after the explicit user action');
   await pointer(page, inventory(page).getByRole('button', { name: '返回平台内容', exact: true }));
   await expect(inventory(page)).toContainText('内容来源暂不可用'); await expect(inventory(page).locator('[data-item-id]')).toHaveCount(0);
-  f.source('demo-items', 'enabled');
+  await f.source('demo-items', 'enabled');
   let abort = true;
   await page.route('**/v1/perception/list', async route => {
     if (abort && route.request().postDataJSON()?.categoryId === 'items') { abort = false; f.allowAbort('/v1/perception/list'); await route.abort('failed'); }
@@ -132,8 +132,8 @@ test('real unavailable, denied, empty and network-error states never substitute 
   await pointer(page, inventory(page).getByRole('button', { name: '重试', exact: true })); await expect(inventory(page)).toContainText('暂时无法载入');
   await expect(itemButtons(page)).toHaveCount(0); await pointer(page, inventory(page).getByRole('button', { name: '重试', exact: true }));
   await expect(itemButtons(page)).toHaveCount(14);
-  f.storage(store => store.transaction(tx => { for (const row of tx.find('perception_grants', { agentId: f.a.agents[0]!.agentId, kind: 'holding' })) {
-    tx.update('perception_grants', { ...row, version: row.version + 1, data: { ...row.data, active: false } }, row.version);
+  await f.storage(store => store.transaction(async tx => { for (const row of await tx.find('perception_grants', { agentId: f.a.agents[0]!.agentId, kind: 'holding' })) {
+    await tx.update('perception_grants', { ...row, version: row.version + 1, data: { ...row.data, active: false } }, row.version);
   } }));
   await pointer(page, inventory(page).getByRole('button', { name: '背包', exact: true }));
   await expect(inventory(page)).toContainText('当前没有可查看的持有记录'); await expect(itemButtons(page)).toHaveCount(0);
@@ -219,9 +219,9 @@ test('owner detail retry refreshes a stale summary before reading the newly comm
   await pointer(page, other); await expect(page.locator('#hud-platform-item-detail .hud-message-body')).toBeVisible();
   const id = await stale.getAttribute('data-platform-item'); assert(id);
   const updatedTitle = `${f.markers.items}-新版`, body = '这是列表完成后才由隔离管理员提交的物品新版正文。';
-  f.storage(store => {
-    const object = store.read(tx => tx.find('perception_objects').find(row => (row.data.ref as Json)?.id === id))!;
-    updatePerceptionDemoObject(store, { actorId: 'owner-read-synthetic-administrator', operationId: crypto.randomUUID(),
+  await f.storage(async store => {
+    const object = (await store.read(async tx => (await tx.find('perception_objects')).find(row => (row.data.ref as Json)?.id === id)))!;
+    await updatePerceptionDemoObject(store, { actorId: 'owner-read-synthetic-administrator', operationId: crypto.randomUUID(),
       ref: object.data.ref as ObjectRef, expectedVersion: object.version, title: updatedTitle, body });
   });
   await pointer(page, stale); await expect(inventory(page)).toContainText('内容已变化');
@@ -235,8 +235,8 @@ test('owner detail retry refreshes a stale summary before reading the newly comm
 test('owner retry after an expired page starts a fresh list instead of recycling an expired continuation token', { timeout: 45_000 }, async t => {
   const f = await ownerReadFixture(t), { page } = f;
   await page.goto(f.origin); await f.login(f.a.owner); await returnToWorld(page); await openHud(page, '信箱'); await expect(messages(page)).toHaveCount(20);
-  f.storage(store => store.transaction(tx => { for (const session of tx.find('perception_sessions', { kind: 'list' }))
-    tx.update('perception_sessions', { ...session, version: session.version + 1, data: { ...session.data, expiresAt: Date.now() - 1 } }, session.version);
+  await f.storage(store => store.transaction(async tx => { for (const session of await tx.find('perception_sessions', { kind: 'list' }))
+    await tx.update('perception_sessions', { ...session, version: session.version + 1, data: { ...session.data, expiresAt: Date.now() - 1 } }, session.version);
   }));
   f.allowStatus('/v1/perception/list', 410);
   const more = mail(page).getByRole('button', { name: '继续载入', exact: true }); await wheelToControl(page, page.locator('#hud-platform-mail-results'), more); await pointer(page, more);
@@ -253,7 +253,7 @@ test('owner retry after an expired page starts a fresh list instead of recycling
 test('a denied private detail removes all previously visible private summaries instead of leaving other revoked titles cached', { timeout: 45_000 }, async t => {
   const f = await ownerReadFixture(t), { page } = f;
   await page.goto(f.origin); await f.login(f.a.owner); await returnToWorld(page); await openHud(page, '信箱'); await expect(messages(page)).toHaveCount(20);
-  const oldTitles = await messages(page).allTextContents(); f.observer(false); f.allowStatus('/v1/perception/detail', 404);
+  const oldTitles = await messages(page).allTextContents(); await f.observer(false); f.allowStatus('/v1/perception/detail', 404);
   await pointer(page, messages(page).first()); await expect(page.locator('#hud-detail-window')).toBeHidden();
   await expect(messages(page)).toHaveCount(0); await expect(mail(page)).toContainText('当前账号无权查看这类内容');
   const visible = await mail(page).innerText(); assert(oldTitles.every(title => !visible.includes(title)), 'Revocation clears the whole old private projection');

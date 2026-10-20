@@ -1,12 +1,11 @@
 import assert from 'node:assert/strict';
-import { rm } from 'node:fs/promises';
-import { join } from 'node:path';
 import type { TestContext } from 'node:test';
 import { chromium, expect, type Page } from '@playwright/test';
 import { buildApp } from '../../../apps/platform/app.ts';
-import { loadBackendConfig } from '../../../apps/platform/configuration/backend-config.ts';
+import { loadEmailConfig } from '../../../apps/platform/infrastructure/email/resend.ts';
+import { postgresFixture } from '../../api/postgresql-fixture.ts';
 import { agentFixture, injectApi, ownerFixture, type Json } from '../../../scripts/agent-manager-qa-fixture.ts';
-import { privateDirectory, privateJson } from './private-fixtures.ts';
+import { privateJson } from './private-fixtures.ts';
 
 // Opt-in Node browser stories own this temporary instance and never use the
 // shared Playwright webServer, an existing QA identity, or a user's environment.
@@ -15,11 +14,9 @@ export async function ws02Fixture(t: TestContext, options: {
   viewport?: { width: number; height: number };
   reducedMotion?: 'reduce' | 'no-preference';
 } = {}) {
-  const directory = await privateDirectory('ws02-hud-');
-  const config = loadBackendConfig({ M1_EMAIL_MODE: 'experience',
-    M1_DATABASE_PATH: join(directory, 'synthetic.sqlite'),
-    M1_IDENTITY_PATH: join(directory, 'synthetic.identity.json') }, directory);
-  const app = buildApp(config), api = injectApi(app);
+  const pg = await postgresFixture(), directory = pg.directory, email = loadEmailConfig({ M1_EMAIL_MODE: 'experience' });
+  const config = { ...pg.options, ...(email ? { email } : {}) };
+  const app = await buildApp(config), api = injectApi(app);
   let browser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
   const issues: string[] = [], secrets = new Set<string>(), expected = new Map<string, number>();
   const writes: { method: string; path: string }[] = [];
@@ -27,7 +24,7 @@ export async function ws02Fixture(t: TestContext, options: {
     try { assert.deepEqual(issues, [], 'No unexpected browser failures or private material in URLs'); }
     finally {
       try { await browser?.close(); }
-      finally { try { await app.close(); } finally { await rm(directory, { recursive: true, force: true }); } }
+      finally { try { await app.close(); } finally { await pg.dispose(); } }
     }
   });
   const origin = await app.listen({ host: '127.0.0.1', port: 0 });
@@ -112,7 +109,7 @@ export async function ws02Fixture(t: TestContext, options: {
     await page.locator('[data-manager-page="security"]').click(); await page.locator('#logout').click();
     await expect.poll(() => page.evaluate(() => sessionStorage.getItem('connet.owner.v2') === null)).toBe(true);
   }
-  return { page, context, directory, origin, api, owners, writes, track, login, logout,
+  return { page, context, directory, origin, api, owners, writes, track, login, logout, config, store: pg.store,
     allowStatus(path: string, status: number, count = 1) { allow('response', path, String(status), count); allow('console', path, String(status), count); },
     allowAbort(path: string, count = 1) { allow('network', path, 'failed', count); allow('console', path, 'failed', count); } };
 }

@@ -2,21 +2,18 @@
 // server and browser context, so the shared Playwright webServer is never used.
 import assert from 'node:assert/strict';
 import test, { type TestContext } from 'node:test';
-import { rm } from 'node:fs/promises';
-import { join } from 'node:path';
 import { chromium, expect, type Page } from '@playwright/test';
 import { buildApp } from '../../apps/platform/app.ts';
-import { loadBackendConfig } from '../../apps/platform/configuration/backend-config.ts';
+import { loadEmailConfig } from '../../apps/platform/infrastructure/email/resend.ts';
+import { postgresFixture } from '../api/postgresql-fixture.ts';
 import { agentFixture, injectApi, ok, operationId, ownerFixture, type Json } from '../../scripts/agent-manager-qa-fixture.ts';
-import { privateDirectory, privateDownload, privateJson } from './helpers/private-fixtures.ts';
+import { privateDownload, privateJson } from './helpers/private-fixtures.ts';
 
 async function vault(page: Page): Promise<Json> { return page.evaluate(() => JSON.parse(sessionStorage.getItem('connet.owner.v2') || '{}')); }
 async function idle(page: Page) { await expect(page.locator('#account-root')).toHaveAttribute('aria-busy', 'false'); }
 async function fixture(t: TestContext) {
-  const directory = await privateDirectory('manager-regression-');
-  const config = loadBackendConfig({ M1_EMAIL_MODE: 'experience', M1_DATABASE_PATH: join(directory, 'synthetic.sqlite'),
-    M1_IDENTITY_PATH: join(directory, 'synthetic.identity.json') }, directory);
-  const app = buildApp(config);
+  const pg = await postgresFixture(), directory = pg.directory, email = loadEmailConfig({ M1_EMAIL_MODE: 'experience' });
+  const app = await buildApp({ ...pg.options, ...(email ? { email } : {}) });
   let browser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
   const issues: string[] = [], pageErrors: string[] = [], secrets = new Set<string>(), passwords = new Set<string>(), expected = new Map<string, number>();
   let ownListReads = 0;
@@ -25,7 +22,7 @@ async function fixture(t: TestContext) {
     try {
       if (page && !page.isClosed()) assert(await page.evaluate(values => values.every(value => !JSON.stringify(sessionStorage).includes(value)), [...passwords]), 'Passwords are not persisted');
       assert.deepEqual(issues, [], 'Only explicitly injected failures are expected; no page errors or private URL material');
-    } finally { await browser?.close(); await app.close(); await rm(directory, { recursive: true, force: true }); }
+    } finally { try { await browser?.close(); } finally { try { await app.close(); } finally { await pg.dispose(); } } }
   });
   const origin = await app.listen({ host: '127.0.0.1', port: 0 }), api = injectApi(app);
   const owner = await ownerFixture(api, 'UI', async value => { await privateJson(directory, 'owner-proofs', { browserToken: value.browserToken, sessionToken: value.sessionToken }); });
