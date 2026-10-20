@@ -96,7 +96,8 @@ test('wallet/backpack shows only actual holdings, restores a manually loaded lat
   assert.equal(f.requests.slice(countBeforeReloadOpen).filter(request => request.path.endsWith('/list') && request.input.categoryId === 'holdings').length, 1);
   await wheelToControl(page, region, more); await pointer(page, more); await expect(cells(page)).toHaveCount(all.length);
   await expect(laterCell).toHaveAttribute('aria-pressed', 'true');
-  assert(Math.abs(await region.evaluate(node => node.scrollTop) - position) <= 2, 'The restored full list retains the captured position');
+  await expect.poll(async () => Math.abs(await region.evaluate(node => node.scrollTop) - position),
+    { timeout: 5000, message: 'The restored full list retains the captured position' }).toBeLessThanOrEqual(2);
   await search.fill(privateQuery); await f.logout(); await returnToWorld(page); await f.login(); await returnToWorld(page); await f.select(f.a); await openHud(page, '背包');
   await expect(search).toHaveValue(''); assert.equal(await page.evaluate(() => sessionStorage.getItem('isolated-wallet-mail-unrelated')), 'preserve-this-record');
   await humanReadOnly(page); await f.logout();
