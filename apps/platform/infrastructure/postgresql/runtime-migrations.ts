@@ -94,3 +94,9 @@ RUNTIME_MIGRATIONS.push({moduleId:'world',version:3,name:'complete_frozen_moveme
 CREATE FUNCTION world.check_new_movement_path() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF (SELECT count(*) FROM world.movement_steps WHERE movement_id=NEW.id)<>NEW.path_length THEN RAISE EXCEPTION 'Movement path is incomplete' USING ERRCODE='23514';END IF;RETURN NULL;END $$;
 CREATE CONSTRAINT TRIGGER new_movement_complete_path AFTER INSERT ON world.movements DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION world.check_new_movement_path();
 `});
+RUNTIME_MIGRATIONS.push({moduleId:'interaction',version:2,name:'bind_activity_and_feedback_to_their_own_parent',dependencies:['interaction'],sql:`
+ALTER TABLE interaction.activities ADD CONSTRAINT activity_parent_identity UNIQUE(id,invitation_id);
+ALTER TABLE interaction.invitations ADD CONSTRAINT invitation_own_activity FOREIGN KEY(activity_id,id) REFERENCES interaction.activities(id,invitation_id) DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE interaction.feedback_contributions ADD CONSTRAINT feedback_parent_identity UNIQUE(id,activity_id);
+ALTER TABLE interaction.activities ADD CONSTRAINT activity_own_feedback FOREIGN KEY(feedback_id,id) REFERENCES interaction.feedback_contributions(id,activity_id) DEFERRABLE INITIALLY DEFERRED;
+`});
