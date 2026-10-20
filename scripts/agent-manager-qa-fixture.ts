@@ -65,11 +65,11 @@ async function main(){
  for(let i=2;i<process.argv.length;i+=2){
   const key=process.argv[i],value=process.argv[i+1];
   if(!key||!value)return fail('invalid_arguments');
-  if(!['--candidate','--out'].includes(key)||value.startsWith('--')||args[key])return fail('invalid_arguments');
+  if(!['--candidate','--out','--connection','--identity'].includes(key)||value.startsWith('--')||args[key])return fail('invalid_arguments');
   args[key]=value;
  }
- const candidateArgument=args['--candidate'],outputArgument=args['--out'];
- if(!candidateArgument||!outputArgument||!isAbsolute(candidateArgument)||!isAbsolute(outputArgument))return fail('absolute_candidate_and_new_output_required');
+ const candidateArgument=args['--candidate'],outputArgument=args['--out'],connectionFile=args['--connection'],identityPath=args['--identity'];
+ if(!candidateArgument||!outputArgument||!connectionFile||!identityPath||![candidateArgument,outputArgument,connectionFile,identityPath].every(isAbsolute))return fail('absolute_candidate_output_connection_and_identity_required');
  if(Number(process.versions.node.split('.')[0])!==24)fail('node_24_required');
  const candidate=await realpath(candidateArgument),requested=resolve(outputArgument),parent=await realpath(dirname(requested));
  if(parent!==dirname(requested)||(await lstat(candidate)).isDirectory()!==true)fail('unsafe_directory');
@@ -88,9 +88,9 @@ async function main(){
   const {loadBackendConfig}=await import(pathToFileURL(join(candidate,'apps/platform/configuration/backend-config.ts')).href);
   const {buildApp}=await import(pathToFileURL(join(candidate,'apps/platform/app.ts')).href);
   // Explicit configuration never inherits a user's database, identity or Resend secrets.
-  const config=loadBackendConfig({M1_EMAIL_MODE:'experience',M1_DATABASE_PATH:join(out,'fixture.sqlite'),M1_IDENTITY_PATH:join(out,'fixture.sqlite.identity.json')},out);
-  Object.assign(state,{databasePath:config.databasePath,identityPath:config.identityPath,instanceId:config.instanceId,recoveryEpoch:config.recoveryEpoch});await save();
-  const activeApp:Injector=buildApp({databasePath:config.databasePath,instanceId:config.instanceId,recoveryEpoch:config.recoveryEpoch,email:config.email});app=activeApp;
+  const config=loadBackendConfig({M1_EMAIL_MODE:'experience',M1_POSTGRES_CONNECTION_FILE:connectionFile,M1_IDENTITY_PATH:identityPath},out);
+  Object.assign(state,{connectionFile,identityPath:config.identityPath,instanceId:config.instanceId,recoveryEpoch:config.recoveryEpoch});await save();
+  const activeApp:Injector=await buildApp(config);app=activeApp;
   const api=injectApi(activeApp,async command=>{if(!state.commands.includes(command))state.commands.push(command);await save();});
   const capabilities=await ok(api,'GET','/capabilities');if(capabilities.emailMode!=='experience'||capabilities.ownerEmailVerification!==true)fail('experience_candidate_required');
   for(const label of ['A','B','Empty']){
