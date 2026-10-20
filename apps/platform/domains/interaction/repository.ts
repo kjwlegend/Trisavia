@@ -12,7 +12,7 @@ export interface InteractionRepository {
   savePair(policy: InteractionPairPolicy, expectedVersion: number): Promise<void>;
   getInvitation(id: string): Promise<InteractionInvitation | undefined>;
   saveInvitation(invitation: InteractionInvitation, expectedVersion: number | null): Promise<void>;
-  findActiveInvitation(worldId: string, fromAgentId: string, toAgentId: string, artifact: ArtifactRef, sharedGeneration: number): Promise<InteractionInvitation | undefined>;
+  findActiveInvitation(worldId: string, fromAgentId: string, toAgentId: string, artifact: ArtifactRef, sharedGeneration: number, participantGenerations: { from: number; to: number }): Promise<InteractionInvitation | undefined>;
   getActivity(id: string): Promise<FeedbackActivity | undefined>;
   getActivityByInvitation(invitationId: string): Promise<FeedbackActivity | undefined>;
   saveActivity(activity: FeedbackActivity, expectedVersion: number | null): Promise<void>;
