@@ -101,7 +101,8 @@ export async function openPostgresStore(options:OpenPostgresStoreOptions):Promis
   const pool=new Pool({connectionString:options.connectionString,max:poolMax,connectionTimeoutMillis:bounded(options.connectionTimeoutMillis??5000,100,60_000),statement_timeout:timeout,idle_in_transaction_session_timeout:timeout,application_name:'agents-era-local'});
   pool.on('error',()=>{/* The pool destroys failed idle connections; no private error payload is logged. */});
   const client=await pool.connect().catch(async error=>{await pool.end();throw storageError(error);});
-  try{await verifySchema(client,options);}catch(error){client.release(true);await pool.end();throw storageError(error);}client.release();
+  const bootstrapError=()=>{};client.on('error',bootstrapError);
+  try{await verifySchema(client,options);}catch(error){client.removeListener('error',bootstrapError);client.release(true);await pool.end();throw storageError(error);}client.removeListener('error',bootstrapError);client.release();
   const context=new AsyncLocalStorage<boolean>();let closed=false;let closing:Promise<void>|undefined;
   async function scope<T>(write:boolean,work:(session:M1Transaction)=>Promise<T>):Promise<T>{
     if(closed)throw new StorageError('closed','PostgreSQL store is closing');
@@ -110,6 +111,7 @@ export async function openPostgresStore(options:OpenPostgresStoreOptions):Promis
     return context.run(true,async()=>{
       for(let attempt=1;attempt<=retries;attempt++){
         const connection=await pool.connect().catch(error=>{throw storageError(error);});let usable=true,commitSent=false,destroy=false;
+        const connectionError=()=>{destroy=true;};connection.on('error',connectionError);
         try{
           await connection.query('BEGIN ISOLATION LEVEL REPEATABLE READ');
           // This must be the first read: waiting on an updated row causes RR/40001,
@@ -127,7 +129,7 @@ export async function openPostgresStore(options:OpenPostgresStoreOptions):Promis
           await connection.query('ROLLBACK').catch(()=>{destroy=true;});
           if((sqlState==='40001'||sqlState==='40P01')&&attempt<retries)continue;
           throw storageError(error);
-        }finally{usable=false;connection.release(destroy);}
+        }finally{usable=false;connection.removeListener('error',connectionError);connection.release(destroy);}
       }
       throw new StorageError('busy','Transaction retry budget was exhausted');
     });

@@ -20,13 +20,16 @@ const modules=new Set(MODELS.map(model=>model.table.split('.')[0]!));
 const tableSql=new Map<string,string[]>();
 for(const name of modules)tableSql.set(name,[`CREATE SCHEMA IF NOT EXISTS ${name};`]);
 for(const model of MODELS){
-  const allowed=new Set<string>();for(const field of model.fields){const parts=field.path.split('.');for(let index=1;index<=parts.length;index++)allowed.add(parts.slice(0,index).join('.'));}
+  // v1 has already been exercised in isolated databases. Add discovered source
+  // fields through a new module migration, without editing those applied bytes.
+  const initialFields=model.fields.filter(field=>!(model.table==='iam.email_attempts'&&field.path==='emailVerified'));
+  const allowed=new Set<string>();for(const field of initialFields){const parts=field.path.split('.');for(let index=1;index<=parts.length;index++)allowed.add(parts.slice(0,index).join('.'));}
   tableSql.get(model.table.split('.')[0]!)!.push(`CREATE TABLE ${model.table}(
     id text COLLATE "C" PRIMARY KEY CHECK(length(id)>0), version bigint NOT NULL CHECK(version BETWEEN 1 AND 9007199254740991),
     _codec_version integer NOT NULL DEFAULT 1 CHECK(_codec_version=1),
     _present text[] NOT NULL CHECK(_present <@ ARRAY[${[...allowed].map(quote).join(',')}]::text[]),
     _nulls text[] NOT NULL CHECK(_nulls <@ _present),
-    ${directFields(model).map(fieldSql).join(',\n')}
+    ${directFields(model).filter(field=>initialFields.includes(field)).map(fieldSql).join(',\n')}
     ${model.unique?.map(fields=>`, UNIQUE(${fields.map(column).join(',')})`).join('')??''}
     ${model.check?.map(check=>`, CHECK(${check})`).join('')??''}
   );`);
@@ -70,6 +73,10 @@ for(const model of MODELS){
 }
 export const POSTGRES_MIGRATIONS=[...tableSql].map(([moduleId,sql])=>({moduleId,version:1,name:'domain_schema_v1',sql:sql.join('\n'),dependencies:[] as string[]}));
 POSTGRES_MIGRATIONS.push({moduleId:'relationships',version:1,name:'deferred_domain_relationships',sql:references.join('\n'),dependencies:[...modules]});
+const emailAllowed=MODELS.find(model=>model.table==='iam.email_attempts')!.fields.map(field=>quote(field.path));
+POSTGRES_MIGRATIONS.push({moduleId:'iam',version:2,name:'preserve_email_attempt_verification_declaration',sql:`ALTER TABLE iam.email_attempts ADD COLUMN email_verified boolean;
+  ALTER TABLE iam.email_attempts DROP CONSTRAINT email_attempts__present_check;
+  ALTER TABLE iam.email_attempts ADD CONSTRAINT email_attempts__present_check CHECK(_present <@ ARRAY[${emailAllowed.join(',')}]::text[]);`,dependencies:['iam']});
 export const POSTGRES_SCHEMA_SIGNATURE=createHash('sha256').update(POSTGRES_MIGRATIONS.map(item=>`${item.moduleId}:${createHash('sha256').update(item.sql).digest('hex')}`).join('\n')).digest('hex');
 
 /** Explicit DDL-role operation; openPostgresStore never calls this. */
