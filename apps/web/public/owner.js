@@ -8,6 +8,7 @@ import {assertOwnerOperationResult} from './owner-operation-result.js';
 import {createOwnerEmailFlow} from './owner-email-flow.js';
 import {createOwnerReceiptReader,confirmUnknownOwnerOperation} from './owner-receipt.js';
 import {managerActions,managerInput,managerRequest,assertManagerResult,parseIntervalSeconds} from './owner-manager-commands.js';
+import {mountOwnerWorldSummary} from './hud/owner-world-summary.js';
 
 export function createOwnerController(root,{entryStore,onState=()=>{},onView=()=>{},isVisible=()=>true,onLogout=()=>{},confirmAction=async()=>false,focusTitle=()=>{}}={}){
 const $=(selector,scope=root)=>query(selector,scope);
@@ -993,6 +994,28 @@ async function readWallet({signal}={}){
   try{const result=await api('/wallet/query',{method:'POST',body,token:session,signal});if(!current())throw new DOMException('Context changed','AbortError');return result;}
   catch(error){if(current()&&error.status===401)expireAuthenticatedSession(source,session,generation);throw error;}
 }
+async function readOwnerWorldSummary(operation,input={}, {signal}={}){
+  const source=vault,session=vault.sessionToken,generation=readGeneration,target=selectedId,revision=summary().observationRevision;
+  const current=()=>source===vault&&session===vault.sessionToken&&target===selectedId&&revision===summary().observationRevision&&authenticatedOwner();
+  if(!current())throw new ApiError(sessionPhase==='expired'?'session_expired':'authentication_required',401);
+  if(!target||!agents.some(agent=>agent.agentId===target))throw new ApiError('agent_required',409);
+  let path,options={signal};
+  if(operation==='capabilities')path='/capabilities';
+  else if(operation==='discovery')path='/gateway/discovery';
+  else if(operation==='schema'||operation==='guide'){
+    if(!Number.isSafeInteger(input.version)||input.version<1||input.version>1000000)throw new ApiError('invalid_request',422);
+    if(operation==='schema'&&!['interaction.owner_summary.input','interaction.owner_summary.output'].includes(input.schemaId)||operation==='guide'&&input.moduleId!=='interaction')throw new ApiError('insufficient_scope',403);
+    path=operation==='schema'?`/gateway/schemas/${encodeURIComponent(input.schemaId)}?version=${input.version}`:`/gateway/guides/interaction?version=${input.version}`;
+  }
+  else if(operation==='summary'){
+    if(input.cursor!==undefined&&(typeof input.cursor!=='string'||input.cursor.length<1||input.cursor.length>2048))throw new ApiError('invalid_request',422);
+    path='/gateway/query';options={...options,method:'POST',token:session,body:{protocolVersion:1,consumerId:'connet.owner.world-summary.v1',purpose:'human-inspect',operation:'interaction.owner_summary',input:{agentId:target,limit:20,...(input.cursor?{cursor:input.cursor}:{})}}};
+  }else throw new ApiError('insufficient_scope',403);
+  try{const result=await api(path,options);if(!current()||signal?.aborted)throw new DOMException('Context changed','AbortError');return result;}
+  catch(error){if(current()&&error.status===401)expireAuthenticatedSession(source,session,generation);throw error;}
+}
+const worldSummary=mountOwnerWorldSummary($('#owner-world-summary'),{read:readOwnerWorldSummary,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}});
+window.addEventListener('pagehide',event=>{if(!event.persisted)worldSummary.dispose();});
 return{start,open,select:selectAgent,refresh:refreshSummary,readPerception,readWallet,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
   hudContext(){if(authenticatedOwner()&&['ready','refreshing'].includes(summary().phase))return{kind:'owner',ownerId:account.ownerId,agentId:agents.some(agent=>agent.agentId===selectedId)?selectedId:''};return sessionPhase==='anonymous'&&!vault.sessionToken?{kind:'guest',ownerId:'',agentId:''}:null;},
   attachPresentation(value){presentation=value;value.setNavigator(navigateManager);},
