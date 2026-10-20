@@ -20,6 +20,7 @@ export function storageError(error:unknown):unknown{
   const code=state(error);if(code?.startsWith('23'))return new StorageError('constraint','A database relationship or uniqueness constraint rejected this operation',{cause:error});
   if(code==='40001'||code==='40P01'||code==='55P03'||code==='57014')return new StorageError('busy','Database operation could not finish within its bounded concurrency window',{cause:error});
   if(code?.startsWith('08')||code==='57P01'||code==='57P02'||code==='57P03')return new StorageError('unavailable','Database connection is unavailable',{cause:error});
+  if(error instanceof Error&&('code'in error&&['ECONNREFUSED','ECONNRESET','EPIPE','ETIMEDOUT','ENOTFOUND'].includes(String(error.code))||/connection.*(terminated|closed)|timeout exceeded|query read timeout/i.test(error.message)))return new StorageError('unavailable','Database connection is unavailable',{cause:error});
   return error;
 }
 function identity(options:OpenPostgresStoreOptions){if(!options.connectionString||!options.instanceId||!options.recoveryEpoch)throw new StorageError('invalid_usage','Explicit database connection and instance identity are required');}
@@ -36,11 +37,11 @@ function selection(table:M1Table,filters:ExactFilters,options:{id?:string;afterI
       if(value!==null&&!['string','number','boolean'].includes(typeof value))throw new StorageError('invalid_usage','Filters require scalar JSON values');
       const field=model.fields.find(item=>item.path===key);
       if(!field){clauses.push('FALSE');continue;}
-      const match=value===null||typeof value==='string'&&field.kind==='text'||typeof value==='number'&&field.kind==='integer'||typeof value==='boolean'&&field.kind==='boolean'||typeof value==='number'&&field.kind==='timestamp';
+      const match=value===null||typeof value==='string'&&['text','authorization'].includes(field.kind)||typeof value==='number'&&['integer','authorization'].includes(field.kind)||typeof value==='boolean'&&field.kind==='boolean'||typeof value==='number'&&field.kind==='timestamp';
       if(!match){clauses.push('FALSE');continue;}
       clauses.push(`t._present @> ARRAY[${parameter(key)}]::text[]`);
       if(value===null)clauses.push(`t._nulls @> ARRAY[${parameter(key)}]::text[]`);
-      else clauses.push(`t.${column(key)} IS NOT DISTINCT FROM ${parameter(field.kind==='timestamp'?new Date(safeInteger(value)):value)}::${sqlType(field).replace(' COLLATE "C"','')}`);
+      else clauses.push(`t.${column(key)}${field.kind==='authorization'?typeof value==='number'?'_number':'_hash':''} IS NOT DISTINCT FROM ${parameter(field.kind==='timestamp'?new Date(safeInteger(value)):value)}::${field.kind==='authorization'?typeof value==='number'?'bigint':'text':sqlType(field).replace(' COLLATE "C"','')}`);
     }
     if(options.id!==undefined)clauses.push(`t.id=${parameter(options.id)}`);
     if(options.afterId!==undefined)clauses.push(`t.id > ${parameter(options.afterId)} COLLATE "C"`);
@@ -131,5 +132,15 @@ export async function openPostgresStore(options:OpenPostgresStoreOptions):Promis
       throw new StorageError('busy','Transaction retry budget was exhausted');
     });
   }
-  return {instanceId:options.instanceId,recoveryEpoch:options.recoveryEpoch,read:work=>scope(false,work),transaction:work=>scope(true,work),close(){closed=true;closing??=pool.end();return closing;}};
+  return {instanceId:options.instanceId,recoveryEpoch:options.recoveryEpoch,read:work=>scope(false,work),transaction:work=>scope(true,work),close(){if(context.getStore())return Promise.reject(new StorageError('invalid_usage','Cannot close a store inside its active scope'));closed=true;closing??=pool.end();return closing;}};
+}
+
+/** Explicit maintenance-role action; importing/opening never enables business writes. */
+export async function setPostgresWriteGate(options:OpenPostgresStoreOptions,change:{enabled:boolean}):Promise<void>{
+  identity(options);if(typeof change.enabled!=='boolean')throw new StorageError('invalid_usage','An explicit write-gate state is required');
+  const pool=new Pool({connectionString:options.connectionString,max:1,connectionTimeoutMillis:5000});const client=await pool.connect();
+  try{await client.query('BEGIN');await verifySchema(client,options);const current=await client.query('SELECT instance_id,recovery_epoch FROM platform.instance_state WHERE singleton=1 FOR UPDATE');
+    if(current.rows[0]?.instance_id!==options.instanceId||current.rows[0]?.recovery_epoch!==options.recoveryEpoch)throw new StorageError('conflict','Deployment identity changed');
+    await client.query('UPDATE platform.instance_state SET writes_enabled=$1,write_generation=write_generation+1 WHERE singleton=1',[change.enabled]);await client.query('COMMIT');
+  }catch(error){await client.query('ROLLBACK').catch(()=>undefined);throw storageError(error);}finally{client.release();await pool.end();}
 }
