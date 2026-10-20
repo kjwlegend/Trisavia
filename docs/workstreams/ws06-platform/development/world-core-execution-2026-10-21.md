@@ -26,6 +26,7 @@
 | A，`01a1576d-e964-7323-a8df-fec8881db720` | `m1-api` / `codex/world-gateway-decision` | `apps/platform/domains/decision/**`、`application/decision-service.ts`、`application/agent-gateway*.ts`、`transport/http/agent-gateway*.ts`；`app.ts`、`server.ts`、`configuration/**` 组合根；身份接入适配及必要 M1 最小抽取；能力、schema/guide、`docs/access/v1/**` 与初始公开指引；`tests/gateway/**`、`tests/decision/**`。 |
 | B，`01a13916-86a5-7dc0-af80-efabb15c492d` | `m1-storage` / `codex/world-persistence-scheduler` | `infrastructure/postgresql/**`、`infrastructure/scheduling/**`、`contracts/runtime-store.ts` 及 `domains/runtime/**` 公共事务/回执/事件/Outbox/任务端口；`tests/runtime/**`、`tests/storage/**`；隔离本地数据库初始化/检查脚本 `scripts/world-core-*.ts` 与必要 ops 文件。 |
 | C，`01a13917-146c-7aa2-91ff-c6bd5d2501ce` | `m1-acceptance` / `codex/world-interaction` | `domains/world/**`、`domains/interaction/**` 及其 `repository.ts` 业务端口；`application/world-service.ts`、`application/interaction-service.ts`；`tests/world/**`、`tests/interaction/**`。本轮是代码作者，自测不能作为独立验收。 |
+| D，`01a1576e-5a22-79a2-8752-daa9b3a4e36e` | `m1-web` / `codex/world-core-web` | `apps/web/public/**` 中现有画布/HUD的真实状态适配，具体生产路径由作者先回报；`tests/site/world-core*.test.ts`、`tests/e2e/world-core*.{spec,node}.ts` 及同名helper。不制作新素材、另定视觉或修改平台HTTP/组合根。 |
 | TD，`01a138f6-2c0e-75a1-87fe-ee0735493f4f` | `m1-integration` / `codex/world-core-integration` | 本执行记录、资源生命周期、作者提交整合、固定差异送审、交付证据；不代写业务实现。 |
 
 根 `package.json`、锁文件及 `tsconfig.json` 由 A 唯一写入，先向 TD 报必要性；B/C 的需求回派 A。`contracts/store.ts` 和现存 M1 具名仓储默认不扩写为新世界总表，若确需公共接缝由 B 所有、先通知 A。A 的身份抽取文件与 B 存储适配文件分开。其他路径发现必要变更先报 TD 分配，不抢写。
@@ -103,3 +104,25 @@ TD在该固定组合运行 `node --test tests/gateway/identity-access.test.ts te
 B已创建独立开发库 `world_core_b_20261021_01`，记录OID并使用0600私有配置；未操作原connet。N1候选与正式切换尚未发生。N1拟由显式 `WORLD_CORE_ENABLED=1` 启用新组合，公开指引保持候选同源，只发布实际已装配能力；不在GET或readiness中初始化schema。
 
 A/C发现并按所有权实施leave→rejoin旧共享不能复活的边界：新增身份sharingGeneration，仅实际leave递增，pause与重新join不回退共享代次。Decision旧领取另绑定暂停/限制等当前资格版本。该后继修改尚未纳入上述R1—R3接受。
+
+### 6.3 实现后继、独审状态与现有UI接线
+
+原reviewer R4发现两项P2：WC-CR01场景游标暴露隐藏Agent标识，WC-CR02目标读取/事件授权泄露不可见原因。R5在C `bfe3556`静态关闭WC-CR01；WC-CR02的Avatar分支已修，但事件分支仍未关闭。C后继 `70358b3`修事件目标不存在/受限/退出统一404，保留调用者自己的资格错误及真实基础设施失败；该修订与完整C包已重新提交原reviewer，本记录不提前关闭问题。
+
+R6已静态接受B `122b52f → 630b95b05d217cc51f76bc23fd1c68196520ba70`的16个拥有路径：具名PG适配、隔离初始化及相关测试。reviewer已读普通日志，4/4由两项utility和两项真实PG组成，不表示HTTP或N1通过。TD尚未整合该节点，等待其新增身份/领域依赖的固定独审，不把作者树的其他cherry-pick一并当作接受。
+
+后继固定包与工程证据如下，均区别于独立验收：
+
+| 作者 | 固定包/范围 | 当前工程结果与限制 |
+| --- | --- | --- |
+| C | `33598a5691642fc92d81f0551c119b3c367eff50`；World/Interaction拥有路径 | 作者clean停工。提交路径生成持久计划，1秒规则任务逐步移动，迟到不追赶；资格/版本/容量/租约和提交前条件重验。WS03三阶段与公开场景白名单已实现。精确同次26/26（World13、Interaction13）纯规则/内存UoW、full typecheck及diff-check通过；未跑PG/HTTP/独立Agent/UI。manifest为`m1-acceptance/outputs/world-core-c/final-33598a5-verification.json`，日志同前缀。 |
+| B | `5a239f9`及`4c8b2ab5bd54069291e4cdcb2865edd4e1d5cb58`；已送原reviewer | durable movement adapter、提交前校验、有界runDue/close与仅领取已注册handler kinds。作者报告17/17无skip，包含真实路径不瞬移、租约重领拒旧worker、重开续进、原回执重放不重启、unknown COMMIT、40001三次重试、epoch及close排空。普通日志在`m1-storage/outputs/world-core/host-movement-node/`；owned strict typecheck通过，旧full诊断的C fixture hook已由C703补齐，后继完整组合另验。 |
+| A | Decision编排已形成固定节点，HTTP组合仍在实现 | 作者真实隔离PG Decision4/4覆盖三手动阶段/真实C回执、no_action、unknown保额和暂停恢复后旧claim失效；尚非N1。HTTP根计划实际启用1秒有界无重叠规则循环，关闭时先停循环并等待runDue再关pool。 |
+
+以上C、B包与A的`7a69a294`/`553a28b6`身份后继已按拥有路径送原reviewer，结果待回执。当前integration代码仍为R1—R3接受的`6a8b145`，未启动18893，未对外给新核心入口。
+
+总指挥已授权先将现有主画面接入真实状态，不等待新美术。C完成固定包后停止编辑释放执行资源；D原会话恢复，TD核对其worktree clean且仍在旧`001ae3f`后，保留旧分支并从已审整合`2a7cf61`新建`codex/world-core-web`。D实际模型轮次及精确路径待其回执；不由派单推定核实。
+
+A/C冻结公开读取为候选同源`GET /v1/world/scene`和`GET /v1/world/rules`。场景返回当前获准公开Avatar、白名单资料、权威逻辑位置及版本/时间/分页；不含完整路径、movementId或私有暂停原因。D仅投影这些真实位置，插值不是业务动作；不把旧地图道路/场所或演示漫游冒充新引擎事实。Owner互动摘要必须使用有效Owner session、有效binding和来源许可，不用Agent runtime身份代读。
+
+候选交接将同时注明新隔离Owner正常网页注册/绑定是否可用、实际测试验证码/邮件模式及人类允许观察范围。总指挥安排两个独立Agent先无Owner绑定完成N1/N2，随后可由一个新Owner绑定两者。Agent给主人的私密绑定链接由测试会话另存0600交接文件，只传路径给获授权UI模拟者，不转交runtime凭据。N1交付后保留新身份、绑定材料和业务状态供N2续验，不能静默重建。上述流程尚未执行，独立AgentHTTP与人类UI不记PASS。
