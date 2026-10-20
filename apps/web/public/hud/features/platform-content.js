@@ -29,10 +29,10 @@ function tabs(options,current,select){const bar=el('div','hud-filters');for(cons
 const emptyText={holdings:'当前没有可查看的持有记录。',items:'当前没有可查看的物品。',notifications:'当前没有可查看的通知。',announcements:'当前没有可查看的公告。',events:'当前没有可查看的事件。'};
 function feedback(state,key,retry,chooseAgent){
   const box=el('div','hud-feedback');box.setAttribute('role','status');
-  let message=state.phase==='loading'?'正在载入内容……':state.phase==='no_agent'?'请选择要查看的 Agent。':state.phase==='session'?'登录状态已失效或尚未登录，请登录后查看。':state.phase==='denied'?'当前账号无权查看这类内容。':state.phase==='not_enabled'?key==='holdings'?'主人查看背包的入口尚未开放。':key==='notifications'?'主人查看这类通知的入口尚未开放。':key==='events'?'事件读取暂未开放。':'这类内容的读取暂未开放。':state.phase==='unavailable'?'内容来源暂不可用，请稍后重试。':state.phase==='partial'?'后续内容暂时无法载入。已显示部分内容，尚未全部载入。':state.phase==='ready'&&state.complete?emptyText[key]:'暂时无法载入，请稍后重试。';
+  let message=state.phase==='loading'?'正在载入内容……':state.phase==='no_agent'?'请选择要查看的 Agent。':state.phase==='session'?'登录状态已失效或尚未登录，请登录后查看。':state.phase==='denied'?'当前账号无权查看这类内容。':state.phase==='resync'?'内容已变化，请重新载入当前列表。':state.phase==='not_enabled'?key==='holdings'?'主人查看背包的入口尚未开放。':key==='notifications'?'主人查看这类通知的入口尚未开放。':key==='events'?'事件读取暂未开放。':'这类内容的读取暂未开放。':state.phase==='unavailable'?'内容来源暂不可用，请稍后重试。':state.phase==='partial'?'后续内容暂时无法载入。已显示部分内容，尚未全部载入。':state.phase==='ready'&&state.complete?emptyText[key]:'暂时无法载入，请稍后重试。';
   box.append(el('p','',message));
   if(state.phase==='no_agent'||state.phase==='session')box.append(button(state.phase==='no_agent'?'选择 Agent':'登录账号',chooseAgent));
-  else if(['error','unavailable','partial'].includes(state.phase))box.append(button('重试',retry));
+  else if(['error','unavailable','partial','resync'].includes(state.phase))box.append(button(state.phase==='resync'?'重新载入':'重试',retry));
   return box;
 }
 function pageFoot(state,key,provider){const node=el('div','hud-page-state');node.setAttribute('role','status');if(state.phase==='loading')node.append(el('p','hud-muted','正在继续载入……'));else if(state.phase==='partial')node.append(feedback(state,key,()=>provider.load(key,{more:Boolean(state.nextPageToken)}),()=>{}));else if(state.phase==='ready'){node.append(el('p','hud-muted',state.complete?`当前可查看范围已完整载入 · ${state.records.length} 条`:`已载入 ${state.records.length} 条，尚未全部载入。`));if(!state.complete)node.append(button('继续载入',()=>provider.load(key,{more:true})));}return node;}
@@ -75,7 +75,7 @@ export function createPlatformInventory(provider,{session,chooseAgent=()=>{}}={}
         try{detail.item=await provider.detail('items',{ref:own.content.itemRef},{signal:request.signal});}catch(error){if(error.name==='AbortError')throw error;detail.itemError=error;}
       }
       if(generation===detailRevision&&!disposed)renderDetail();
-    }catch(error){if(generation!==detailRevision||disposed||error.name==='AbortError')return;detailError=error;detail=null;if(['denied','session'].includes(readPhase(error))){provider.remove(key,record);clear();}else renderDetail();}
+    }catch(error){if(generation!==detailRevision||disposed||error.name==='AbortError')return;detailError=error;detail=null;renderDetail();}
   }
   function renderDetail(){
     const top=details.scrollTop;details.replaceChildren();if(!selected)return;
@@ -112,7 +112,7 @@ export function createPlatformInventory(provider,{session,chooseAgent=()=>{}}={}
     if(key==='holdings'&&!state.selectedAgentId)node.append(button('查看物品目录',()=>{key='items';clear();render();if(active)void provider.load(key);}));
     const columns=el('div','hud-inventory-layout'),browser=el('div','hud-inventory-browser'),label=el('label','hud-search','搜索当前已载入物品'),search=el('input');search.type='search';search.value=view.query;search.maxLength=100;search.id='hud-platform-item-search';search.addEventListener('input',()=>{remember();view.query=search.value;view.top=0;renderResults();});label.append(search);browser.append(label,results);columns.append(browser,details);node.append(columns);renderResults();
   }
-  const stop=provider.subscribe(changed=>{if(changed!==key)return;const source=provider.snapshot(key);if(!source.records.length)clear();render();});
+  const stop=provider.subscribe(changed=>{const source=provider.snapshot(changed);if(views[changed]&&['denied','session','resync'].includes(source.phase))Object.assign(views[changed],{selected:'',top:0,detailTop:0,query:''});if(changed!==key)return;if(!source.records.length)clear();render();});
   render();
   return{node,activate(){active=true;void provider.load(key);},deactivate(){remember();active=false;provider.cancel(key);cancel();if(!detail)selected=null;},setContext(next){if(state.observationRevision!==next.observationRevision){clear();for(const view of Object.values(views))Object.assign(view,{selected:'',top:0,detailTop:0});}state=next;render();},back(){if(!preview)return false;preview=false;renderDetail();return true;},dispose(){disposed=true;cancel();stop();}};
 }
@@ -150,7 +150,7 @@ export function createPlatformMail(provider,{session,detailHost,chooseAgent=()=>
     cancel();const g=generation;detail=null;detailError=null;related=null;request=new AbortController();renderDetail();
     if(record.detailAvailable===false)return;
     try{const result=await provider.detail(key,record,{signal:request.signal});if(g!==generation||disposed||opened!==record)return;detail=result;renderDetail();}
-    catch(error){if(g!==generation||disposed||error.name==='AbortError')return;detailError=error;if(['denied','session'].includes(readPhase(error))){close(false);provider.remove(key,record);}else renderDetail();}
+    catch(error){if(g!==generation||disposed||error.name==='AbortError')return;detailError=error;renderDetail();}
   }
   function open(record){remember();opened=record;views[key].selected=keyOf(record);readerTop=views[key].bodyTop[keyOf(record)]||0;detail=null;detailError=null;related=null;detailHost.open(key==='events'?'事件详情':key==='announcements'?'公告详情':'通知详情',reader(),restore=>{if(detail)views[key].bodyTop[keyOf(record)]=related?relatedTop:detailHost.body.scrollTop;cancel();if(restore)focusRow();opened=null;detail=null;related=null;list.scrollTop=views[key].top;});void read(record);}
   function select(next){remember();close(false);key=next;if(next!=='notifications')worldKey=next;render();if(active)void provider.load(key);}
@@ -163,6 +163,6 @@ export function createPlatformMail(provider,{session,detailHost,chooseAgent=()=>
     for(const record of source.records){const row=el('div','hud-message-row hud-platform-message-row'),control=button('',()=>open(record),'hud-message-open');control.dataset.platformMessage=record.ref.id;control.setAttribute('aria-pressed',String(keyOf(record)===views[key].selected));const text=el('span','hud-message-summary');text.append(el('strong','',`${key==='events'?eventLabel(record)+' · ':''}${titleOf(record)}`),el('span','hud-muted',sourceText(record)));control.append(icon(key==='events'?'clock':'notice'),text);row.append(control,badge(record));const published=time(record.summary.source?.publishedAt);row.append(el('time','',key==='events'?eventTime(record):published?`发布于 ${published}`:'发布时间未提供'));list.append(row);}
     if(!source.records.length)list.append(feedback(source,key,()=>provider.load(key),chooseAgent));else list.append(pageFoot(source,key,provider));node.append(list);list.scrollTop=views[key].top;
   }
-  const stop=provider.subscribe(changed=>{if(changed!==key)return;if(!provider.snapshot(key).records.length){close(false);cancel();opened=null;detail=null;detailHost.clear();}render();});render();
+  const stop=provider.subscribe(changed=>{const source=provider.snapshot(changed);if(views[changed]&&['denied','session','resync'].includes(source.phase))Object.assign(views[changed],{top:0,selected:'',bodyTop:{}});if(changed!==key)return;if(!source.records.length){close(false);cancel();opened=null;detail=null;detailHost.clear();}render();});render();
   return{node,activate(){active=true;void provider.load(key);},deactivate(){remember();active=false;close(false);provider.cancel(key);cancel();},setContext(next){if(state.observationRevision!==next.observationRevision){close(false);cancel();opened=null;detail=null;detailHost.clear();for(const view of Object.values(views))Object.assign(view,{top:0,selected:'',bodyTop:{}});}state=next;render();},showWorld(category){select(category==='events'?'events':'announcements');},back(){if(!detailHost.isOpen)return false;if(related){cancel();related=null;renderDetail();detailHost.body.scrollTop=relatedTop;return true;}close();return true;},dispose(){disposed=true;close(false);cancel();stop();}};
 }
