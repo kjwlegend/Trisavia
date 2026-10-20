@@ -3,7 +3,7 @@ import { loadBackendConfig } from './configuration/backend-config.ts';
 
 async function main(): Promise<void> {
   const config = loadBackendConfig();
-  const app = buildApp(config);
+  const app = await buildApp(config);
   let closing = false;
   const stop = async () => {
     if (closing) return;
