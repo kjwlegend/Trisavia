@@ -10,7 +10,7 @@ import { migratePostgres, POSTGRES_MIGRATIONS } from '../../apps/platform/infras
 import { openPostgresStore } from '../../apps/platform/infrastructure/postgresql/postgres-store.ts';
 import { bootstrapPlatformCatalog } from '../../apps/platform/application/bootstrap.ts';
 /** Each application fixture owns a fresh real PostgreSQL database, private connection files and identity. */
-export async function postgresFixture(identity = { instanceId: `instance_${randomUUID()}`, recoveryEpoch: `epoch_${randomUUID()}` }) {
+export async function postgresFixture(identity = { instanceId: `instance_${randomUUID()}`, recoveryEpoch: `epoch_${randomUUID()}` }, setup: { bootstrap?: boolean } = {}) {
     const runtimeFile = process.env.M1_POSTGRES_TEST_RUNTIME;
     if (!runtimeFile)
         throw new Error('Explicit isolated PostgreSQL test runtime is required');
@@ -30,7 +30,7 @@ export async function postgresFixture(identity = { instanceId: `instance_${rando
         store = await openPostgresStore(options);
         originalClose = store.close.bind(store);
         store.close = dispose;
-        await bootstrapPlatformCatalog(store);
+        if (setup.bootstrap !== false) await bootstrapPlatformCatalog(store);
         const identityPath = join(directory, 'identity.json');
         await writeFile(identityPath, JSON.stringify({ version: 1, ...identity }) + '\n', { mode: 0o600, flag: 'wx' });
         return { directory, privateConnections: connections, identityPath, options, store, dispose, migrationConnectionString,
@@ -76,7 +76,7 @@ import { buildApp, type BuildAppOptions } from '../../apps/platform/app.ts';
 export async function testApplication(options: Partial<BuildAppOptions> = {}) {
     if (options.connectionString && options.instanceId && options.recoveryEpoch)
         return await buildApp(options as BuildAppOptions);
-    const pg = await postgresFixture();
+    const pg=await postgresFixture({instanceId:options.instanceId??`instance_${randomUUID()}`,recoveryEpoch:options.recoveryEpoch??`epoch_${randomUUID()}`});
     try {
         const app = await buildApp({ ...pg.options, ...options });
         const close=app.close.bind(app);app.close=(async()=>{try{await close();}finally{await pg.dispose();}}) as typeof app.close;
