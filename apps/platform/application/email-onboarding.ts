@@ -1,7 +1,6 @@
 import { requireRow as required, patchRow as update } from '../domains/common/repository.ts';
 import { mailJobRepository } from '../domains/email/repository.ts';
 import { recoveryRequestRepository, humanAccountRepository, credentialRepository, managementBindingRepository, emailAttemptRepository, agentRepository, registrationRepository } from '../domains/access/repository.ts';
-import { filterAsync } from '../domains/common/async-collections.ts';
 import { randomUUID } from 'node:crypto';
 import type { JsonObject, M1ReadSession, M1Store, M1Transaction, StoredRow } from '../contracts/store.ts';
 import { accountFields } from '../domains/access/account-identifiers.ts';

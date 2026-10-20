@@ -3,7 +3,6 @@ import { requireRow as required, patchRow as update } from '../domains/common/re
 import { profileRepository } from '../domains/profile/repository.ts';
 import { operationRepository, factRepository } from '../domains/platform/repository.ts';
 import { credentialRepository, humanAccountRepository, agentRepository, managementBindingRepository, membershipRepository, recoveryRequestRepository, registrationRepository } from '../domains/access/repository.ts';
-import { findAsync } from '../domains/common/async-collections.ts';
 import { randomUUID } from "node:crypto";
 import type { JsonObject, JsonValue, M1ReadSession, M1Store, M1Table, M1Transaction, StoredRow } from "../contracts/store.ts";
 import { checkPassword, equalDigest, hashPassword, parseToken, payloadHash, verifier } from "../domains/access/credentials.ts";
@@ -317,10 +316,8 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
             createRecoveryRequest: await check(async () => { await recoveryCreatePermission(tx, agentId); }),
             readRecoveryRequest: await check(() => { }),
             cancelRecoveryRequest: await check(async () => {
-                const request = await findAsync((await recoveryRequestRepository(tx).findByAgentId(agentId)), async (row) => await recoveryStatus(tx, row) === "pending");
-                if (!request)
+                if (!await recoveryRequestRepository(tx).hasCurrentPending(agentId, store.recoveryEpoch, now()))
                     fail("recovery_request_closed", 409, "No pending recovery request");
-                await pendingRecovery(tx, request);
             }),
         };
     }
