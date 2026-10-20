@@ -129,8 +129,9 @@ test('40001 retries the complete callback at most three times and leaves no part
     $$;
     CREATE TRIGGER storage_test_serialization_failure BEFORE INSERT ON iam.agents FOR EACH ROW EXECUTE FUNCTION platform.storage_test_serialization_failure();`);
   try{
+    await store.transaction(tx=>tx.insert('agents',row('retry-cache',{runtimeActive:true})));
     const before=(await admin.query('SELECT write_generation FROM platform.instance_state')).rows[0].write_generation;
-    await assert.rejects(store.transaction(async tx=>{callbacks++;await tx.insert('operations',row('before-retry',{scope:'test',action:'retry',operationId:'same-operation',epoch:options.recoveryEpoch}));await tx.insert('agents',row('retry-exhausted'));}),errorCode('busy'));
+    await assert.rejects(store.transaction(async tx=>{callbacks++;assert.equal((await tx.get('agents','retry-cache'))?.data.runtimeActive,true);await tx.update('agents',row('retry-cache',{runtimeActive:false},2),1);assert.equal((await tx.get('agents','retry-cache'))?.data.runtimeActive,false);await tx.insert('operations',row('before-retry',{scope:'test',action:'retry',operationId:'same-operation',epoch:options.recoveryEpoch}));await tx.insert('agents',row('retry-exhausted'));}),errorCode('busy'));
     assert.equal(callbacks,3);assert.equal(await store.read(tx=>tx.get('operations','before-retry')),undefined);
     assert.equal((await admin.query('SELECT write_generation FROM platform.instance_state')).rows[0].write_generation,before);
     await store.transaction(tx=>tx.insert('agents',row('usable-after-exhaustion')));

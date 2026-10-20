@@ -59,28 +59,35 @@ function selection(table:M1Table,filters:ExactFilters,options:SelectionOptions={
 
 /** Internal typed-row adapter. Every query uses this scope's one checked-out client. */
 export function createPostgresSession(client:PoolClient,write:boolean,alive:()=>boolean):M1Transaction{
+  const cache=new Map<string,StoredRow|undefined>(),loading=new Map<string,Promise<StoredRow|undefined>>();let cacheGeneration=0;
+  const cacheKey=(table:M1Table,identifier:string)=>JSON.stringify([table,identifier]);
+  function invalidate():void{cacheGeneration++;cache.clear();loading.clear();}
   async function execute<T>(work:()=>Promise<T>):Promise<T>{if(!alive())throw new StorageError('closed','Storage scope has ended');try{return await work();}catch(error){throw storageError(error);}}
   function writable(){if(!write)throw new StorageError('invalid_usage','Read scopes cannot persist data');}
   async function rows<T extends JsonObject>(table:M1Table,filters:ExactFilters,options:SelectionOptions={}):Promise<StoredRow<T>[]>{
-    const query=selection(table,filters,options),result=await client.query(query.sql,query.values),output:StoredRow<T>[]=[];
-    for(const row of result.rows){const model=MODELS.find(item=>item.table===row.model)!;output.push(await decode(client,model,row.stored) as StoredRow<T>);}return output;
+    const generation=cacheGeneration,query=selection(table,filters,options),result=await client.query(query.sql,query.values),output:StoredRow<T>[]=[];
+    for(const row of result.rows){const model=MODELS.find(item=>item.table===row.model)!,decoded=await decode(client,model,row.stored) as StoredRow<T>;output.push(decoded);if(generation===cacheGeneration)cache.set(cacheKey(table,decoded.id),structuredClone(decoded));}return output;
   }
   return {
-    get:async <T extends JsonObject=JsonObject>(table:M1Table,identifier:string)=>execute(async()=>{id(identifier);return (await rows<T>(table,{}, {id:identifier,limit:1}))[0];}),
+    get:async <T extends JsonObject=JsonObject>(table:M1Table,identifier:string)=>execute(async()=>{tableName(table);id(identifier);const key=cacheKey(table,identifier);
+      if(cache.has(key))return structuredClone(cache.get(key)) as StoredRow<T>|undefined;
+      let pending=loading.get(key);if(!pending){const generation=cacheGeneration;pending=rows<T>(table,{}, {id:identifier,limit:1}).then(result=>{const found=result[0];if(generation===cacheGeneration)cache.set(key,structuredClone(found));return found;});loading.set(key,pending);}
+      try{return structuredClone(await pending) as StoredRow<T>|undefined;}finally{if(loading.get(key)===pending)loading.delete(key);}
+    }),
     find:async <T extends JsonObject=JsonObject>(table:M1Table,filters:ExactFilters={})=>execute(()=>rows<T>(table,filters)),
     scan:async <T extends JsonObject=JsonObject>(table:M1Table,filters:ExactFilters,options:SelectionOptions&{limit:number})=>execute(async()=>{bounded(options.limit,1,100_001);if(options.afterId!==undefined&&typeof options.afterId!=='string')throw new StorageError('invalid_usage','Invalid stable keyset');return rows<T>(table,filters,options);}),
     count:async(table,filters,limit)=>execute(async()=>{bounded(limit,1,100_001);const query=selection(table,filters,{limit});const result=await client.query(`SELECT count(*)::integer AS total FROM (${query.sql}) bounded_count`,query.values);return result.rows[0].total as number;}),
     quotaCount:async query=>execute(async()=>{const selected=quotaSelection(query);const result=await client.query(selected.sql,selected.values);return result.rows[0].total as number;}),
-    insert:async(table,row)=>execute(async()=>{writable();tableName(table);const model=resolveModel(table,row),encoded=encode(model,row);
+    insert:async(table,row)=>execute(async()=>{writable();tableName(table);const model=resolveModel(table,row),encoded=encode(model,row);invalidate();
       await client.query(`INSERT INTO ${model.table}(${encoded.columns.join(',')}) VALUES(${encoded.values.map((_,index)=>`$${index+1}`).join(',')})`,encoded.values);
       await writeChildren(client,model,row);await auxiliary(client,model,row);
     }),
     update:async(table,row,expectedVersion)=>execute(async()=>{writable();tableName(table);safeInteger(expectedVersion);if(expectedVersion<1||row.version!==expectedVersion+1)throw new StorageError('invalid_usage','Updates must advance exactly one version');const model=resolveModel(table,row);if(model.immutable)throw new StorageError('constraint','Immutable content versions cannot be updated');
-      const encoded=encode(model,row),result=await client.query(`UPDATE ${model.table} SET ${encoded.columns.slice(1).map((name,index)=>`${name}=$${index+1}`).join(',')} WHERE id=$${encoded.values.length} AND version=$${encoded.values.length+1}`, [...encoded.values.slice(1),row.id,expectedVersion]);
+      const encoded=encode(model,row);invalidate();const result=await client.query(`UPDATE ${model.table} SET ${encoded.columns.slice(1).map((name,index)=>`${name}=$${index+1}`).join(',')} WHERE id=$${encoded.values.length} AND version=$${encoded.values.length+1}`, [...encoded.values.slice(1),row.id,expectedVersion]);
       if(result.rowCount!==1)return false;await writeChildren(client,model,row);await auxiliary(client,model,row);return true;
     }),
     remove:async(table,identifier,expectedVersion)=>execute(async()=>{writable();tableName(table);id(identifier);if(safeInteger(expectedVersion)<1)throw new StorageError('invalid_usage','Invalid expected version');
-      let changed=false;for(const model of modelsFor(table)){if(model.logical==='perception_objects')await client.query('DELETE FROM perception.reference_aliases WHERE external_id=$1 AND EXISTS(SELECT 1 FROM '+model.table+' WHERE id=$1 AND version=$2)',[identifier,expectedVersion]);const result=await client.query(`DELETE FROM ${model.table} WHERE id=$1 AND version=$2`,[identifier,expectedVersion]);changed=changed||result.rowCount===1;}return changed;
+      invalidate();let changed=false;for(const model of modelsFor(table)){if(model.logical==='perception_objects')await client.query('DELETE FROM perception.reference_aliases WHERE external_id=$1 AND EXISTS(SELECT 1 FROM '+model.table+' WHERE id=$1 AND version=$2)',[identifier,expectedVersion]);const result=await client.query(`DELETE FROM ${model.table} WHERE id=$1 AND version=$2`,[identifier,expectedVersion]);changed=changed||result.rowCount===1;}return changed;
     }),
   };
 }
