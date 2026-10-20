@@ -22,6 +22,12 @@ export interface RetentionCutoff {
   at: number;
   inclusive: boolean;
 }
+/** Internal fixed domain quota queries. Return at most limit, never source rows or mail payloads. */
+export type QuotaCountQuery =
+  | { kind: 'email_attempts_recent'; since: number; sourceKeys?: string[]; limit: number }
+  | { kind: 'code_mail_recent'; since: number; related?: { ownerKey: string; emailKey: string }; sourceKeys?: string[]; limit: number }
+  | { kind: 'recovery_requests_recent'; since: number; ownerId?: string; sourceKey?: string; limit: number }
+  | { kind: 'active_invites'; ownerId: string; after: number; limit: number };
 
 export interface M1ReadSession {
   get<T extends JsonObject = JsonObject>(table: M1Table, id: string): Promise<StoredRow<T> | undefined>;
@@ -29,6 +35,7 @@ export interface M1ReadSession {
   /** Bounded keyset reads with source filtering performed by PostgreSQL. */
   scan<T extends JsonObject = JsonObject>(table: M1Table, filters: ExactFilters, options: { limit: number; afterId?: string; cutoff?: RetentionCutoff }): Promise<StoredRow<T>[]>;
   count(table: M1Table, filters: ExactFilters, limit: number): Promise<number>;
+  quotaCount(query: QuotaCountQuery): Promise<number>;
 }
 export interface M1Transaction extends M1ReadSession {
   insert(table: M1Table, row: StoredRow): Promise<void>;
