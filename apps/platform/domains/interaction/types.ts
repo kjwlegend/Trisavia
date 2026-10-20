@@ -39,6 +39,7 @@ export interface InteractionInvitation {
   intent: string;
   configuration: FeedbackConfiguration;
   sharedGeneration: number;
+  participantGenerations: { from: number; to: number };
   state: InvitationState;
   createdAt: number;
   deadline: number;

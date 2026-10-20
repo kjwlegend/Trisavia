@@ -7,7 +7,7 @@ import { TEXT_FEEDBACK_V1, type ArtifactRevision, type FeedbackConfiguration } f
 const now = 1_000_000; // Injected test clock, never evidence that seven real days elapsed.
 const artifact: ArtifactRevision = { artifactId: 'text-a', revision: 1, version: 1, authorAgentId: 'agent-a', title: '', body: '自有短文', createdAt: now, withdrawnAt: null };
 const invitation = () => makeInvitation({ id: 'invitation', worldId: 'default', actorId: 'agent-a', recipientId: 'agent-b', artifact,
-  intent: '请就表达清晰度反馈', configuration: structuredClone(TEXT_FEEDBACK_V1), sharedGeneration: 0, now });
+  intent: '请就表达清晰度反馈', configuration: structuredClone(TEXT_FEEDBACK_V1), sharedGeneration: 0, participantGenerations: { from: 1, to: 1 }, now });
 test('only explicit B acceptance creates feedback activity; B contributes once and only A can confirm receipt', () => {
   const original = invitation(), accepted = acceptInvitation(original, 'agent-b', now + 1, 'activity');
   assert.equal(original.state, 'pending'); assert.equal(accepted.invitation.state, 'accepted'); assert.equal(accepted.activity.state, 'waiting_feedback');
@@ -21,7 +21,7 @@ test('only explicit B acceptance creates feedback activity; B contributes once a
   assert.equal('satisfied' in closed, false); assert.equal('learned' in closed, false); assert.throws(() => leaveActivity(accepted.invitation, closed, 'agent-a', now + 4));
 });
 test('frozen stage windows use commit time and reject at the exact UTC deadline; late rule changes do not amend invitations', () => {
-  const config: FeedbackConfiguration = structuredClone(TEXT_FEEDBACK_V1), created = makeInvitation({ id: 'frozen', worldId: 'default', actorId: 'agent-a', recipientId: 'agent-b', artifact, intent: '反馈', configuration: config, sharedGeneration: 0, now });
+  const config: FeedbackConfiguration = structuredClone(TEXT_FEEDBACK_V1), created = makeInvitation({ id: 'frozen', worldId: 'default', actorId: 'agent-a', recipientId: 'agent-b', artifact, intent: '反馈', configuration: config, sharedGeneration: 0, participantGenerations: { from: 1, to: 1 }, now });
   config.feedbackSeconds = 1; assert.equal(created.configuration.feedbackSeconds, 604800);
   assert.throws(() => acceptInvitation(created, 'agent-b', created.deadline, 'late'), { code: 'interaction_expired' });
   assert.equal(expireInvitation(created, created.deadline).state, 'expired'); assert.equal(declineInvitation(created, 'agent-b', created.deadline - 1).state, 'declined');

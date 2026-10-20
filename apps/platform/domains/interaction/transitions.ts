@@ -2,13 +2,14 @@ import { fail } from '../common/errors.ts';
 import { activityExpired, assertConfiguration, deadlineAt, invitationExpired, plainText } from './rules.ts';
 import type { ArtifactRevision, FeedbackActivity, FeedbackConfiguration, FeedbackContribution, InteractionInvitation } from './types.ts';
 
-export function makeInvitation(input: { id: string; worldId: string; actorId: string; recipientId: string; artifact: ArtifactRevision; intent: unknown; configuration: FeedbackConfiguration; sharedGeneration: number; now: number }): InteractionInvitation {
+export function makeInvitation(input: { id: string; worldId: string; actorId: string; recipientId: string; artifact: ArtifactRevision; intent: unknown; configuration: FeedbackConfiguration; sharedGeneration: number; participantGenerations: { from: number; to: number }; now: number }): InteractionInvitation {
   const { artifact, configuration: config } = input; assertConfiguration(config);
+  if (!Number.isSafeInteger(input.participantGenerations.from) || input.participantGenerations.from < 1 || !Number.isSafeInteger(input.participantGenerations.to) || input.participantGenerations.to < 1) fail('invalid_request', 400, 'Invalid participation generation');
   if (input.actorId !== artifact.authorAgentId || artifact.withdrawnAt !== null) fail('target_not_accessible', 404, 'Target is not accessible');
   if (input.actorId === input.recipientId) fail('invalid_request', 400, 'The feedback recipient must be another Agent');
   return { id: input.id, version: 1, worldId: input.worldId, fromAgentId: input.actorId, toAgentId: input.recipientId,
     artifact: { artifactId: artifact.artifactId, revision: artifact.revision }, intent: plainText(input.intent, 'intent', config.maxIntentCodePoints),
-    configuration: structuredClone(config), sharedGeneration: input.sharedGeneration, state: 'pending', createdAt: input.now,
+    configuration: structuredClone(config), sharedGeneration: input.sharedGeneration, participantGenerations: { ...input.participantGenerations }, state: 'pending', createdAt: input.now,
     deadline: deadlineAt(input.now, config.invitationSeconds), respondedAt: null, activityId: null, reason: null };
 }
 function pending(invitation: InteractionInvitation, now: number): void {
