@@ -223,8 +223,10 @@ A/D只读定位Owner未开放：676→b5既有感知读取源及对应前端门�
 
 D完整像素激活固定`3b14215 → 75bbb857e8dfa015618ca271c0e205817188be35`，工作树clean，34路径为32个生产文件及两个测试文件，已送原reviewer，尚未得到本片审查结论。实际provider、Owner查询／账号、背包／钱包／四类信箱接口保持；真实完整场景投影消费已批准布局、人体帧和脚点，外围7建筑／94景观不成为新的服务器场所或碰撞规则。实际收到的相邻位置最多补间180ms，不生成下一步或推断在线。
 
-作者普通manifest及日志归`m1-web/outputs/world-core-web/pixel-activation/`：同次site32/32＝11pixel／实际字典＋9公开reader＋10owned＋2旧town helper；最终synthetic browser run06为3/3、无skip，8JS语法、full typecheck及diff0。浏览器全路由拦截至`https://pixel-world.invalid`，空身份、无真实网络／账号操作，1440×900与1361×765桌面；覆盖19PNG校验／解码、fit／2×／3×、拖动、同格原生指针与键盘选择、日间／黄昏、减少动态、撤回及404清理、资产失败重试、pagehide回收和11人有界分页完整收口。不是18893实际HTTP、真实移动或独立UI通过。
+作者普通manifest及日志归`m1-web/outputs/world-core-web/pixel-activation/`：同次site32/32＝11pixel／实际字典＋9公开reader＋10owned＋2旧town helper；最终synthetic browser run06为3/3、无skip，8JS语法、full typecheck及diff0。浏览器全路由拦截至`https://pixel-world.invalid`，空身份、无真实网络／账号操作，1440×900与1361×765桌面；覆盖19PNG校验／解码、fit／2×／3×、拖动、同格原生指针与键盘选择、日间／黄昏、减少动态、撤回及404清理、资产失败后fallback／重试按钮出现、pagehide回收和11人有界分页完整收口。没有点击重试后成功恢复的证据；browser清空会推进worldRevision，同revision清空只由site覆盖。不是18893实际HTTP、真实移动或独立UI通过。
 
 失败run01—04保留：初始近景角色在固定顶栏下，后续选择先把目标拖到可见区；locator.click自动scrollIntoView导致在close handler入场前滚页。最终按语义定位可见按钮rect、等既有打开动画完成再原生mouse点按，page scroll和camera仍严格相等，未放宽断言或为此改变生产关闭逻辑。run05两故事通过与run06新增分页后的三故事分别归档，不累计。TD核22采用文件含19PNG与冻结包逐字节一致、12普通日志hash一致，读取通过日志并看过1361全景日间及1440近景黄昏截图；不代替原reviewer或实际产品视觉验收。
 
 WS02已正式补入[原接口合同§11.7](../../ws02-perception/world-perception-api.md#117-2026-10-21fresh实例读取可用性与主人集合查询裁定)，将此问题裁定为恢复既有主人读取的必要修复。集合查询许可与逐对象许可独立；通知来源可声明current_bound_owner查询获准集合，不授正文／附件／发件人或隐藏数量权限。过滤后空与真空同形；公告／事件仍按公开world、背包按有效holding、钱包读真实已初始化账户。helper只发布限定来源／声明新版本，保全旧精确文档和业务事实，不seed、不补grant／投递／余额，不从GET／readiness初始化。TD冻结原合同到`outputs/world-core/ws02-reader-contract-20261021/world-perception-api.md`，全文SHA256为`ccceb3566813535d18a22ba7cec0d4ac0d552b114beb97dafea945171d350932`，第405行起为裁定；A据此准备修补和反例，最终固定差异及审查尚待交付，18893仍b5。
+
+R27后继正式发现WC-CR06／P2：world-scene将帧间隔截到50ms后交位置补间，低帧率／长帧下不能守180ms上界，原单测直传大dt未覆盖实际链。75bbb暂不整体接受；原D据此修单调真实经过时间与实际RAF调用链反例，其余已核范围保持。上述资产失败、same-revision的表述按reviewer实际证据校正；作者被要求保留旧manifest并明确勘误，不通过补无关故事扩统计。总指挥已授权若前端先受审可单独fresh备份发布并并行验收，后端修补另在安全点维护；是否拆批按两原作者实际收口进度确定，不发布未审75bbb。
