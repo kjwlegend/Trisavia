@@ -79,6 +79,8 @@ node scripts/postgresql/backup.ts restore-drill /private/runtime/runtime.json /p
 
 恢复先再验basebackup，使用新labelled卷、新容器、`network none`且无host port；从basebackup＋WAL回放，不挂载或覆盖源卷。CLI返回新容器／卷名供维护者核对；`stopRestoreDrill`仅在project／drill标签匹配后正常停止，默认保留诊断卷，只有明确一次性演练才删除其自有资源。恢复后的身份／全行／历史digest及cutoff后WAL探针必须核对，不能只用进程启动证明恢复成功。测试已实际覆盖basebackup后提交经WAL恢复；这不等于生产RPO／RTO达标。
 
+全业务恢复检查由`tests/postgresql/operations-full-recovery.test.ts`消费显式`M1_PG_RUNTIME_FILE`／`M1_PG_SQLITE_COPY`／`M1_PG_IDENTITY_COPY`：新隔离目标导入并以正式codec回构原23表，再对14个正式schema内**全部**typed／child／metadata表的全列、稳定行序做SHA256；恢复后逐表计数／hash、历史canonical文本／digest及配对identity一致。`recovery-evidence.ts`经`docker exec psql`只读取得实际数据并在进程内摘要，日志仅计数／hash，不保存第二套业务JSON镜像。证据与物理备份仍是私有材料；该检查不把早期820行／预升catalog4来源冒充最终fresh cutoff。
+
 ## 自管生产准备边界
 
 模板给出建议RPO≤5分钟、RTO≤60分钟，均为**未实证目标**；建议保留7份日basebackup、4份周basebackup、3份月逻辑dump，WAL从最早保留basebackup起连续保留到目标恢复点。删除须以离机副本校验和新恢复成功为前提，不按日历盲删WAL。本轮不安装定时任务；当前为显式操作，未具备离机连续传输前不能宣称满足建议RPO。
