@@ -1,0 +1,42 @@
+name: ${CONNET_PG_PROJECT:?Explicit private project configuration is required}
+services:
+  postgres:
+    image: ${CONNET_PG_IMAGE:?Use the pulled PostgreSQL 18.6-trixie RepoDigest}
+    container_name: ${CONNET_PG_PROJECT}-server
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/admin-password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --data-checksums
+    ports:
+      - "127.0.0.1:${CONNET_PG_PORT:?Explicit loopback port}:5432"
+    volumes:
+      # PostgreSQL 18's versioned PGDATA is below this directory.
+      - data:/var/lib/postgresql
+      - ./postgresql.conf:/etc/postgresql/connet.conf:ro
+      - ./init/10-roles.sh:/docker-entrypoint-initdb.d/10-roles.sh:ro
+    secrets:
+      - admin-password
+      - migration-password
+      - application-password
+      - backup-password
+    command: [postgres, -c, config_file=/etc/postgresql/connet.conf]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U postgres -d postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    stop_grace_period: 60s
+volumes:
+  data:
+    name: ${CONNET_PG_PROJECT}-data
+secrets:
+  admin-password:
+    file: ${CONNET_PG_PRIVATE_DIR:?Explicit private secrets directory}/admin-password
+  migration-password:
+    file: ${CONNET_PG_PRIVATE_DIR}/migration-password
+  application-password:
+    file: ${CONNET_PG_PRIVATE_DIR}/application-password
+  backup-password:
+    file: ${CONNET_PG_PRIVATE_DIR}/backup-password
