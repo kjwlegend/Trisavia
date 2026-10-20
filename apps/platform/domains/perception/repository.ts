@@ -31,6 +31,7 @@ export function notificationStateRepository(session: M1ReadSession) {
 /** perception owns perception_sessions; callers choose named queries, never table names or free filters. */
 export function readSessionRepository(session: M1ReadSession) {
     return {
+        expiredBefore: async (at: number, limit: number) => await session.scan('perception_sessions', {}, { limit, cutoff: { field: 'expiresAt', at, inclusive: true } }),
         pageAll: async <T extends JsonObject = JsonObject>(options: Page) => await session.scan<T>('perception_sessions', {}, options),
         remove: async (id: string, expectedVersion: number) => await writeRows(session).remove('perception_sessions', id, expectedVersion),
         countByActorId: async <T extends JsonObject = JsonObject>(actorId: Scalar, limit: number) => await session.count('perception_sessions', { actorId }, limit),
@@ -42,6 +43,7 @@ export function readSessionRepository(session: M1ReadSession) {
 /** perception owns perception_access; callers choose named queries, never table names or free filters. */
 export function accessFactRepository(session: M1ReadSession) {
     return {
+        expiredBefore: async (at: number, limit: number) => await session.scan('perception_access', {}, { limit, cutoff: { field: 'recordedAt', at, inclusive: false } }),
         pageAll: async <T extends JsonObject = JsonObject>(options: Page) => await session.scan<T>('perception_access', {}, options),
         remove: async (id: string, expectedVersion: number) => await writeRows(session).remove('perception_access', id, expectedVersion),
         countByHumanAudienceOwnerId: async (humanAudienceOwnerId: Scalar, limit: number) => await session.count('perception_access', { humanAudienceOwnerId }, limit),

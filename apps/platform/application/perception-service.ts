@@ -278,12 +278,11 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
             fail('invalid_request', 422, 'Invalid declaration references');
     }
     async function cleanup(tx: M1Transaction): Promise<void> {
-        for (const repository of [accessFactRepository(tx),readSessionRepository(tx)]) {
-            for (const row of await repository.pageAll({limit:200})) {
-                const expired='recordedAt' in row.data ? Number(row.data.recordedAt)<now()-settings.accessRetentionMs : Number(row.data.expiresAt)<=now();
-                if(expired)await repository.remove(row.id,row.version);
-            }
-        }
+        const access = accessFactRepository(tx), sessions = readSessionRepository(tx), at = now();
+        for (const row of await access.expiredBefore(at - settings.accessRetentionMs, 200))
+            await access.remove(row.id, row.version);
+        for (const row of await sessions.expiredBefore(at, 200))
+            await sessions.remove(row.id, row.version);
     }
     async function capacity(tx: M1Transaction, a: Actor): Promise<void> {
         await cleanup(tx);
