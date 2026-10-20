@@ -194,3 +194,11 @@ TD先保存当前新库live一致逻辑dump及配对identity／私有配置，�
 北京时间2026-10-21 **02:14:29.557**明确重新开写门，health ready；从正常停服到完成为96.09秒。当前PID **907**、固定cwd **`/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/world-core/n2-b5f0285/source`**，源码 **`b5f0285b1f5c4cd850689c86a2fbf8eb216ec942`**。origin／公开入口、库名、instance和epoch沿第6.5节不变。公开模块实际从`[world]`变为`[world,interaction,decision]`，catalogRevision为`gateway-26efefe55243d028819b88ae`。总指挥已收到实际可恢复时间及资源，只需提示原A/B重新发现实时能力；没有重发身份或私密操作捷径。
 
 原D收到运行已审公开浏览器故事的任务，限新空context、匿名首页／owner和公开事实、使用现有双Avatar，不创建账户或借凭据。此时脚本尚未回报，独立N2／Owner UI和新视觉仍未记通过。N2后所有新增状态继续保留，不回灌本次维护前dump；任何后继切换再做fresh备份。原8789／正式connet、其他端口、历史资料及公网未操作。
+
+### 6.8 作者浏览器工程与视觉接续
+
+D随后在固定执行树`ebe7677`对运行b5f0285执行已审`tests/e2e/world-core-public.node.ts`：同一新空context、1440×900、首页和`/owner`的一项故事1/1通过、无skip；两真实Avatar与实际公开响应字段一致、无demo actor及公开World请求Authorization、键盘详情／手动刷新通过、未观察到pageerror。首次因Playwright headless shell1248未安装，在创建browser前停止，run01日志保留；通过既有`M1_TEST_CHROMIUM_PATH`使用已装Chrome155.0.8059.85重跑原故事为run02。TD已读manifest／普通日志及该既有执行参数，没有新增测试代码。证据归`m1-web/outputs/world-core-web/browser-b5f0285-ebe7677-run02/`；自有page／context／browser已关闭，无注册／私有接口／业务写入。此为作者工程故事，不替代独立普通用户UI或新视觉验收。
+
+D工作树随后无冲突merge已审b5f0285，HEAD`3c889ce68cec2828438572fadb192f98ca9500e7`、两parent为ebe与b5；完整tree与b5同为`a2298edef214a3e36cfc34829c7874f0a5c89740`，历史、outputs及失败／通过日志保留，未再次运行浏览器或操作服务。原设计师的`docs/design/pixel-world-20261021/production-contract.md`已固定`pixel-town-commons@1`空间映射：768×512源像素、`sourceX=264+16*x`／`sourceY=136+16*y`，当前真实公共庭256×256，外围仅景观。TD已派同一D先按固定合同适配几何、相机尺度、资产加载与渲染接口；装饰、脚点和完整预览仍等设计师最终字典／验证，不猜未定细节、不改World规则或当前N2资源。
+
+总指挥补充普通用户主界面要求已派设计师及D：角色详情优先姓名、可理解的所在区域和已有数据能证明的状态／结果；版本、逻辑坐标、协议／规则代次等只放必要调试层。公开World不推导私有互动结果或在线，idle不表示没有移动。保留原底部HUD、居中内容窗和账号流程，设计预览不替代真实背包／信箱数据。该后继视觉差异尚未实现、独审或部署，不继承b5浏览器通过。
