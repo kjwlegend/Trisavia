@@ -114,5 +114,6 @@ export function createWorldReadProvider(session){
     throw problem('response_unknown');
   }
   function remove(key,record){views[key]={...views[key],phase:'partial',records:views[key].records.filter(value=>refKey(value.ref)!==refKey(record.ref)),complete:false,nextPageToken:null,errorCode:'read_scope_changed'};emit(key);}
-  return{snapshot,load,detail,remove,subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},dispose(){disposed=true;stop();invalidate();listeners.clear();}};
+  function cancel(key){const request=requests.get(key);if(!request)return;request.abort();requests.delete(key);views[key]=views[key].records.length?{...views[key],phase:'ready',loadingMore:false}:empty(key);emit(key);}
+  return{snapshot,load,detail,remove,cancel,subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},dispose(){disposed=true;stop();invalidate();listeners.clear();}};
 }

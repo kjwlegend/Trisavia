@@ -103,7 +103,7 @@ export function createPlatformInventory(provider,{session,chooseAgent=()=>{}}={}
     const chosen=records.find(record=>keyOf(record)===view.selected)||records[0];view.selected=keyOf(chosen);
     for(const record of records){const control=button('',()=>{remember();view.selected=keyOf(record);view.detailTop=0;renderResults();focusNode([...grid.querySelectorAll('button')].find(value=>value.dataset.platformItem===record.ref.id));});control.dataset.platformItem=record.ref.id;control.setAttribute('aria-label',titleOf(record));control.setAttribute('aria-pressed',String(same(record,chosen)));const slot=el('span','hud-item-slot');slot.append(icon(record.summary.itemKind==='work'?'document':'inventory'));control.append(slot,el('span','hud-item-name',titleOf(record)),badge(record,key==='holdings'),el('span','hud-item-full-name',titleOf(record)));grid.append(control);}
     results.append(grid,pageFoot(source,key,provider));results.scrollTop=top;
-    if(!same(selected,chosen))void read(chosen);else renderDetail();
+    if(!same(selected,chosen)){if(active)void read(chosen);else details.replaceChildren();}else renderDetail();
   }
   function render(){
     if(disposed)return;node.replaceChildren();const view=views[key],agent=selectedAgent(state);
@@ -114,7 +114,7 @@ export function createPlatformInventory(provider,{session,chooseAgent=()=>{}}={}
   }
   const stop=provider.subscribe(changed=>{if(changed!==key)return;const source=provider.snapshot(key);if(!source.records.length)clear();render();});
   render();
-  return{node,activate(){active=true;void provider.load(key);},deactivate(){remember();active=false;cancel();if(!detail)selected=null;},setContext(next){if(state.observationRevision!==next.observationRevision){clear();for(const view of Object.values(views))Object.assign(view,{selected:'',top:0,detailTop:0});}state=next;render();},back(){if(!preview)return false;preview=false;renderDetail();return true;},dispose(){disposed=true;cancel();stop();}};
+  return{node,activate(){active=true;void provider.load(key);},deactivate(){remember();active=false;provider.cancel(key);cancel();if(!detail)selected=null;},setContext(next){if(state.observationRevision!==next.observationRevision){clear();for(const view of Object.values(views))Object.assign(view,{selected:'',top:0,detailTop:0});}state=next;render();},back(){if(!preview)return false;preview=false;renderDetail();return true;},dispose(){disposed=true;cancel();stop();}};
 }
 
 export function createPlatformMail(provider,{session,detailHost,chooseAgent=()=>{}}={}){
@@ -164,5 +164,5 @@ export function createPlatformMail(provider,{session,detailHost,chooseAgent=()=>
     if(!source.records.length)list.append(feedback(source,key,()=>provider.load(key),chooseAgent));else list.append(pageFoot(source,key,provider));node.append(list);list.scrollTop=views[key].top;
   }
   const stop=provider.subscribe(changed=>{if(changed!==key)return;if(!provider.snapshot(key).records.length){close(false);cancel();opened=null;detail=null;detailHost.clear();}render();});render();
-  return{node,activate(){active=true;void provider.load(key);},deactivate(){remember();active=false;close(false);cancel();},setContext(next){if(state.observationRevision!==next.observationRevision){close(false);cancel();opened=null;detail=null;detailHost.clear();for(const view of Object.values(views))Object.assign(view,{top:0,selected:'',bodyTop:{}});}state=next;render();},showWorld(category){select(category==='events'?'events':'announcements');},back(){if(!detailHost.isOpen)return false;if(related){cancel();related=null;renderDetail();detailHost.body.scrollTop=relatedTop;return true;}close();return true;},dispose(){disposed=true;close(false);cancel();stop();}};
+  return{node,activate(){active=true;void provider.load(key);},deactivate(){remember();active=false;close(false);provider.cancel(key);cancel();},setContext(next){if(state.observationRevision!==next.observationRevision){close(false);cancel();opened=null;detail=null;detailHost.clear();for(const view of Object.values(views))Object.assign(view,{top:0,selected:'',bodyTop:{}});}state=next;render();},showWorld(category){select(category==='events'?'events':'announcements');},back(){if(!detailHost.isOpen)return false;if(related){cancel();related=null;renderDetail();detailHost.body.scrollTop=relatedTop;return true;}close();return true;},dispose(){disposed=true;close(false);cancel();stop();}};
 }
