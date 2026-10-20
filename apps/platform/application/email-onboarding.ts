@@ -87,7 +87,7 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
         }
         if (row.data.agentId && row.data.purpose === 'registration') {
             const owner = await humanAccountRepository(tx).get(string(row, 'ownerId')), target = await credentialRepository(tx).get(string(row, 'targetCredentialId'));
-            if (!owner || owner.data.status !== 'pending_setup' || owner.data.handoffGeneration !== row.data.generation || !target?.data.active || (target.data.expiresAt as number) <= now() || (await managementBindingRepository(tx).findByActiveAndAgentId(true, string(row, 'agentId'))).length)
+            if (!owner || owner.data.status !== 'pending_setup' || owner.data.handoffGeneration !== row.data.generation || !target?.data.active || (target.data.expiresAt as number) <= now() || await managementBindingRepository(tx).existsActiveByAgentId(string(row, 'agentId')))
                 return 'expired';
         }
         return string(row, 'status');
@@ -125,19 +125,18 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
         return [sourceKey(clientIp), ...(config?.resend ? [emailDigest(config.resend.codeSecret, store.instanceId, 'source', clientIp)] : [])];
     }
     async function startLimit(tx: M1ReadSession, keys: string[]) {
-        const recent = (await emailAttemptRepository(tx).findAll()).filter((row) => number(row, 'createdAt') > now() - 3600000);
-        if (recent.filter((row) => keys.includes(string(row, 'sourceKey'))).length >= 30 || recent.length >= 1000)
+        const since = now() - 3600000;
+        if (await emailAttemptRepository(tx).countRecent(since, 30, keys) >= 30 || await emailAttemptRepository(tx).countRecent(since, 1000) >= 1000)
             fail('email_rate_limited', 429, 'Try again later');
     }
     async function sendLimit(tx: M1ReadSession, row: StoredRow, keys: string[]) {
-        const all = await mailJobRepository(tx).findByPurpose('code');
         const ownerKey = row.data.purpose === 'recovery' ? string(row, 'ownerId') : string(row, 'emailKey');
-        const related = await filterAsync(all, async (job) => job.data.ownerKey === ownerKey || (typeof job.data.attemptId === 'string' && (await emailAttemptRepository(tx).get(job.data.attemptId))?.data.emailKey === row.data.emailKey));
-        if (related.some((job) => number(job, 'createdAt') > now() - 60000)
-            || related.filter((job) => number(job, 'createdAt') > now() - 30 * 60000).length >= 3
-            || related.filter((job) => number(job, 'createdAt') > now() - 24 * 3600000).length >= 10
-            || all.filter((job) => keys.includes(string(job, 'sourceKey')) && number(job, 'createdAt') > now() - 30 * 60000).length >= 20
-            || all.filter((job) => number(job, 'createdAt') > now() - 30 * 60000).length >= 1000)
+        const repository = mailJobRepository(tx), at = now(), related = { ownerKey, emailKey: string(row, 'emailKey') };
+        if (await repository.countRecentCodes(at - 60000, 1, { related }) >= 1
+            || await repository.countRecentCodes(at - 30 * 60000, 3, { related }) >= 3
+            || await repository.countRecentCodes(at - 24 * 3600000, 10, { related }) >= 10
+            || await repository.countRecentCodes(at - 30 * 60000, 20, { sourceKeys: keys }) >= 20
+            || await repository.countRecentCodes(at - 30 * 60000, 1000) >= 1000)
             fail('email_rate_limited', 429, 'Try again later');
         return ownerKey;
     }
@@ -197,7 +196,7 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
                 return await hooks.command(tx, `owner-email-recovery:${id}`, action, input, async () => {
                     configured(currentMode === 'experience' ? 'experience' : 'resend');
                     await hooks.pendingRecovery(tx, request);
-                    if ((await emailAttemptRepository(tx).findByRequestId(request.id)).length)
+                    if (await emailAttemptRepository(tx).existsByRequestId(request.id))
                         fail('email_attempt_exists', 409, 'Continue the original browser attempt or cancel the recovery request');
                     const key = sourceKey(clientIp);
                     await startLimit(tx, sourceKeys(clientIp));
@@ -277,9 +276,9 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
                     if (action !== finalAction(row))
                         fail('target_not_accessible', 404, 'Target is not accessible');
                     const fields = accountFields(row.data.username, row.data.email);
-                    if ((await humanAccountRepository(tx).findByUsernameKey(fields.usernameKey)).length)
+                    if (await humanAccountRepository(tx).existsByUsernameKey(fields.usernameKey))
                         fail('username_unavailable', 409, 'Username is already in use', { field: 'username' });
-                    if ((await humanAccountRepository(tx).findByEmailKey(fields.emailKey)).length)
+                    if (await humanAccountRepository(tx).existsByEmailKey(fields.emailKey))
                         fail('email_unavailable', 409, 'Email is already in use', { field: 'email' });
                     const ownerId = typeof row.data.ownerId === 'string' ? row.data.ownerId : row.id;
                     const password = hashPassword(input.password);
@@ -295,7 +294,7 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
                     else {
                         if (input.handoffToken !== undefined || input.setupToken !== undefined || await humanAccountRepository(tx).get(ownerId))
                             fail('account_id_conflict', 409, 'Use a new unused account attempt');
-                        if ((await humanAccountRepository(tx).findAll()).length >= settings.ownerLimit)
+                        if (await humanAccountRepository(tx).countAll(settings.ownerLimit) >= settings.ownerLimit)
                             fail('quota_exceeded', 429, 'Account registration limit reached');
                         owner = { id: ownerId, version: 1, data: { status: 'active', epoch: store.recoveryEpoch, authVersion: 1, createdAt: now() } };
                         await humanAccountRepository(tx).insert(owner);
@@ -306,7 +305,7 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
                         await hooks.newCredential(tx, input.recoveryToken, 'owner_recovery', { ownerId, ownerAuthVersion: owner.data.authVersion! });
                     if (row.data.agentId) {
                         const agentId = string(row, 'agentId');
-                        if ((await managementBindingRepository(tx).findByActiveAndAgentId(true, agentId)).length)
+                        if (await managementBindingRepository(tx).existsActiveByAgentId(agentId))
                             fail('state_conflict', 409, 'Agent is already managed');
                         await managementBindingRepository(tx).insert({ id: randomUUID(), version: 1, data: { agentId, ownerId, active: true } });
                         await update(agentRepository(tx), await required(agentRepository(tx), agentId), { managementInitializedAt: now() });

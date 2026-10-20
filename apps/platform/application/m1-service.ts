@@ -3,7 +3,7 @@ import { requireRow as required, patchRow as update } from '../domains/common/re
 import { profileRepository } from '../domains/profile/repository.ts';
 import { operationRepository, factRepository } from '../domains/platform/repository.ts';
 import { credentialRepository, humanAccountRepository, agentRepository, managementBindingRepository, membershipRepository, recoveryRequestRepository, registrationRepository } from '../domains/access/repository.ts';
-import { someAsync, findAsync } from '../domains/common/async-collections.ts';
+import { findAsync } from '../domains/common/async-collections.ts';
 import { randomUUID } from "node:crypto";
 import type { JsonObject, JsonValue, M1ReadSession, M1Store, M1Table, M1Transaction, StoredRow } from "../contracts/store.ts";
 import { checkPassword, equalDigest, hashPassword, parseToken, payloadHash, verifier } from "../domains/access/credentials.ts";
@@ -91,7 +91,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         throw new Error("Invalid M1 configuration");
     async function newCredential(tx: M1Transaction, raw: unknown, kind: string, metadata: JsonObject): Promise<CredentialRow> {
         const parsed = parseToken(raw, true);
-        if (await credentialRepository(tx).get(parsed.id) || (await credentialRepository(tx).findByFingerprint(parsed.fingerprint)).length > 0) {
+        if (await credentialRepository(tx).get(parsed.id) || await credentialRepository(tx).existsByFingerprint(parsed.fingerprint)) {
             fail("credential_conflict", 409, "Use independent, unused credential material");
         }
         const row: CredentialRow = {
@@ -196,7 +196,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                 fail("target_not_accessible", 404, "Target is not accessible");
         }
         else if (credential.data.kind === "owner_session") {
-            if (!(await managementBindingRepository(tx).findByActiveAndAgentIdAndOwnerId(true, agentId, credential.data.ownerId)).length)
+            if (!await managementBindingRepository(tx).existsActiveByAgentIdAndOwnerId(agentId, credential.data.ownerId!))
                 fail("target_not_accessible", 404, "Target is not accessible");
         }
         else
@@ -267,9 +267,9 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     }
     async function recoveryCreatePermission(tx: M1ReadSession, agentId: string): Promise<StoredRow> {
         const owner = await recoveryOwner(tx, agentId);
-        if ((await recoveryRequestRepository(tx).findByOwnerId(owner.id)).filter((row) => numberValue(row, "createdAt") > now() - 3600000).length >= 5)
+        if (await recoveryRequestRepository(tx).countRecent(now() - 3600000, 5, { ownerId: owner.id }) >= 5)
             fail("recovery_rate_limited", 429, "Try again later");
-        if (await someAsync((await recoveryRequestRepository(tx).findByAgentId(agentId)), async (row) => await recoveryStatus(tx, row) === "pending"))
+        if (await recoveryRequestRepository(tx).hasCurrentPending(agentId, store.recoveryEpoch, now()))
             fail("recovery_request_pending", 409, "A recovery request is already pending");
         return owner;
     }
@@ -384,9 +384,9 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     const pending = await required(humanAccountRepository(tx), proof.data.ownerId!);
                     if (version(input.expectedGeneration, "expectedGeneration") !== proof.data.handoffGeneration)
                         fail("generation_conflict", 409, "Handoff generation changed");
-                    if ((await managementBindingRepository(tx).findByActiveAndAgentId(true, agentId)).length)
+                    if (await managementBindingRepository(tx).existsActiveByAgentId(agentId))
                         fail("state_conflict", 409, "Agent is already managed");
-                    if ((await managementBindingRepository(tx).findByActiveAndOwnerId(true, actor.data.ownerId)).length >= limits.agentsPerOwner)
+                    if (await managementBindingRepository(tx).countActiveByOwnerId(actor.data.ownerId!, limits.agentsPerOwner) >= limits.agentsPerOwner)
                         fail("quota_exceeded", 429, "Owner Agent limit reached");
                     const agent = await required(agentRepository(tx), agentId);
                     const registration = (await registrationRepository(tx).findByAgentId(agentId))[0]!;
@@ -444,9 +444,9 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     return await command(tx, `registration:${attemptId}`, action, input, () => registrationView(prior));
                 }
                 const invite = input.inviteToken === undefined ? undefined : await authenticate(tx, input.inviteToken, ["invite"]);
-                if ((await agentRepository(tx).findAll()).length >= limits.registrations)
+                if (await agentRepository(tx).countAll(limits.registrations) >= limits.registrations)
                     fail("quota_exceeded", 429, "Registration limit reached");
-                if (invite && (await managementBindingRepository(tx).findByActiveAndOwnerId(true, invite.data.ownerId)).length >= limits.agentsPerOwner)
+                if (invite && await managementBindingRepository(tx).countActiveByOwnerId(invite.data.ownerId!, limits.agentsPerOwner) >= limits.agentsPerOwner)
                     fail("quota_exceeded", 429, "Owner Agent limit reached");
                 return await command(tx, `registration:${attemptId}`, action, input, async () => {
                     const agentId = randomUUID();
@@ -567,8 +567,8 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     return await command(tx, `agent:${agentId}`, action, input, async () => {
                         const owner = await recoveryCreatePermission(tx, agentId);
                         const sourceKey = payloadHash([store.instanceId, context.clientIp ?? "internal"]);
-                        const recent = (await recoveryRequestRepository(tx).findAll()).filter((row) => numberValue(row, "createdAt") > now() - 3600000);
-                        if (recent.filter((row) => row.data.sourceKey === sourceKey).length >= 30 || recent.length >= 1000)
+                        const since = now() - 3600000;
+                        if (await recoveryRequestRepository(tx).countRecent(since, 30, { sourceKey }) >= 30 || await recoveryRequestRepository(tx).countRecent(since, 1000) >= 1000)
                             fail("recovery_rate_limited", 429, "Try again later");
                         const binding = (await managementBindingRepository(tx).findByActiveAndAgentIdAndOwnerId(true, agentId, owner.id))[0]!;
                         const requestContext = await newCredential(tx, input.assistanceToken, "recovery_assistance", { agentId, ownerId: owner.id });
@@ -653,7 +653,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     return { invites: (await credentialRepository(tx).findByKindAndOwnerId("invite", ownerId)).map(inviteView) };
                 return await command(tx, `owner:${ownerId}`, action, input, async () => {
                     if (action === "issueInvite") {
-                        if ((await credentialRepository(tx).findByActiveAndKindAndOwnerId(true, "invite", ownerId)).filter((row) => (row.data.expiresAt as number) > now()).length >= limits.invitesPerOwner)
+                        if (await credentialRepository(tx).countActiveInvites(ownerId, now(), limits.invitesPerOwner) >= limits.invitesPerOwner)
                             fail("quota_exceeded", 429, "Active invite limit reached");
                         const invite = await newCredential(tx, input.inviteToken, "invite", { ownerId, ownerAuthVersion: actor.data.ownerAuthVersion!, expiresAt: now() + limits.invite });
                         return { ownerId, ...inviteView(invite), limit: 1 };
@@ -813,7 +813,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     else if (actor.data.kind === "owner_session") {
                         if (result.ownerId === actor.data.ownerId)
                             return result;
-                        if (typeof result.agentId === "string" && (await managementBindingRepository(tx).findByActiveAndAgentIdAndOwnerId(true, result.agentId, actor.data.ownerId)).length)
+                        if (typeof result.agentId === "string" && await managementBindingRepository(tx).existsActiveByAgentIdAndOwnerId(result.agentId, actor.data.ownerId!))
                             return result;
                     }
                     else if (result.agentId === actor.data.agentId) {

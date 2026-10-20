@@ -54,7 +54,7 @@ export function meteredRead(tx: M1Transaction, limits: {
                     fail('budget_too_small', 422, 'Read source row budget cannot prove selection completion');
                 return rows;
             },
-            find: tx.find.bind(tx), count: tx.count.bind(tx), insert: tx.insert.bind(tx), update: tx.update.bind(tx), remove: tx.remove.bind(tx),
+            find: tx.find.bind(tx), count: tx.count.bind(tx), quotaCount: tx.quotaCount.bind(tx), insert: tx.insert.bind(tx), update: tx.update.bind(tx), remove: tx.remove.bind(tx),
         };
         return { reader, check };
     }

@@ -3,6 +3,7 @@ import { writeRows, type Scalar, type Page } from '../common/repository.ts';
 /** email owns mail_jobs; callers choose named queries, never table names or free filters. */
 export function mailJobRepository(session: M1ReadSession) {
     return {
+        countRecentCodes: async (since: number, limit: number, scope: { related?: { ownerKey: string; emailKey: string }; sourceKeys?: string[] } = {}) => await session.quotaCount({ kind: 'code_mail_recent', since, limit, ...scope }),
         get: async <T extends JsonObject = JsonObject>(id: string) => await session.get<T>('mail_jobs', id),
         findByPurpose: async <T extends JsonObject = JsonObject>(purpose: Scalar) => await session.find<T>('mail_jobs', { purpose }),
         insert: async (row: StoredRow) => await writeRows(session).insert('mail_jobs', row),
