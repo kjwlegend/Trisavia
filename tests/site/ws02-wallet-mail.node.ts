@@ -7,6 +7,7 @@ import { walletMailFixture } from './ws02-wallet-mail-fixture.ts';
 import { pointer, wheelToControl } from '../e2e/helpers/ws02-owner-read-fixture.ts';
 import { hudWindow, openHud, returnToWorld, containedHud } from '../e2e/helpers/hud-ui.ts';
 import type { ObjectRef } from '../../apps/platform/domains/perception/protocol.ts';
+import { mailboxRepository } from '../../apps/platform/domains/mailbox/repository.ts';
 
 const inventory = (page: Page) => page.locator('#hud-feature-inventory');
 const mail = (page: Page) => page.locator('#hud-feature-mail');
@@ -110,12 +111,21 @@ test('mail has four peer categories, starts with genuinely empty messages and re
     && response.status === 200 && response.body.data.complete && response.body.data.records.length === 0)).toBe(true);
   const title = `受信上游真实来信-${crypto.randomUUID().slice(0, 8)}`, body = '这封长来信由经过实际 runtime 认证的合成 Agent 通过受信上游接收。'.repeat(40);
   const received = f.deliver(title, body), before = f.readStates();
+  const receivedAt = f.storage(store => store.read(tx => mailboxRepository(tx).receipt(received.ref.id, f.a.agentId)!.data.receivedAt));
+  const displayedTime = await page.evaluate(stamp => new Date(stamp).toLocaleString('zh-CN', { hour12: false }), receivedAt);
   await pointer(page, mail(page).getByRole('button', { name: '消息', exact: true })); await expect(rows(page)).toHaveCount(1);
   const row = mail(page).locator(`[data-platform-message="${received.ref.id}"]`); await expect(row).toContainText(title);
   await expect(row.locator('..').locator('[data-sender-name]')).toContainText(f.sibling.name);
   await expect(row.locator('..').locator('[data-sender-name]')).toContainText('Agent');
+  await expect(row.locator('..').locator('time')).toHaveText(`接收于 ${displayedTime}`);
+  await expect.poll(() => f.responses.some(response => response.status === 200 && response.input.categoryId === 'messages'
+    && response.body.data.records.some((record: { ref: ObjectRef; summary: { receivedAt?: number } }) => record.ref.id === received.ref.id && record.summary.receivedAt === receivedAt))).toBe(true);
   await pointer(page, row); await expect(page.locator('#hud-detail-body .hud-message-body')).toHaveText(body);
   await expect(page.locator('#hud-detail-body [data-sender-name]')).toContainText(f.sibling.name);
+  await expect(page.locator('#hud-detail-body')).toContainText(`接收于 ${displayedTime}`);
+  await expect(page.locator('#hud-detail-body')).not.toContainText('消息时间未提供');
+  await expect.poll(() => f.responses.some(response => response.status === 200 && response.path.endsWith('/detail')
+    && response.input.ref?.id === received.ref.id && response.body.data.content.receivedAt === receivedAt)).toBe(true);
   await expect(page.locator('#hud-detail-body')).toContainText(`收件对象：${f.a.name}`); await humanReadOnly(page);
   await page.keyboard.press('Escape'); await expect(row).toBeFocused();
   await pointer(page, mail(page).getByRole('button', { name: '通知', exact: true })); await expect(rows(page)).toHaveCount(20);
