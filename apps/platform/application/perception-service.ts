@@ -15,6 +15,7 @@ import { grantId } from './perception-seed.ts';
 import { mailboxRepository, mailboxRef, mailboxReceiptAuthorizationVersion, saveMailboxReceipt, type MailboxReceipt } from '../domains/mailbox/repository.ts';
 import { mailboxSender, validateMailboxSources, type TrustedMailboxSource } from './mailbox-service.ts';
 import { ownerObservation, ownerLayer, OWNER_OBSERVATION_ID } from './perception-owner-observation.ts';
+import { mayQueryOwnerNotifications, OWNER_NOTIFICATION_COLLECTION_QUERY_ID } from './perception-collection-query.ts';
 export interface PerceptionOptions {
     mailboxSources?: readonly TrustedMailboxSource[];
     now?: () => number;
@@ -55,7 +56,7 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
     if (Object.values(settings).some(n => !Number.isSafeInteger(n) || n < 1) || settings.receiptLimit > 100000 || settings.receiptPerAgentLimit > 100000 || settings.statePerAgentLimit > 100000 || settings.stateTotalLimit > 100000 || settings.accessTotalLimit > 100000 || settings.accessPerAgentLimit > 100000 || settings.detailSegmentChars > 2000)
         throw new Error('Invalid perception limits');
     async function actor(tx: M1Transaction, token: unknown): Promise<Actor> { const c = await auth.authenticate(tx, token, ['runtime', 'owner_session']); return { id: String(c.data.agentId ?? c.data.ownerId), kind: c.data.kind as Actor['kind'], agentId: typeof c.data.agentId === 'string' ? c.data.agentId : null, ownerId: typeof c.data.ownerId === 'string' ? c.data.ownerId : null, generation: c.data.runtimeVersion ?? c.data.ownerAuthVersion ?? 1 }; }
-    async function permission(tx: M1Transaction, a: Actor, sourceIds?: string[]): Promise<string> { const config = (await catalogRepository(tx).get('current'))!, states = plain(config.data.sourceStates), sources = sourceIds ? Object.fromEntries(sourceIds.map(id => [id, states[id] ?? 'not_enabled'])) : states; return key({ actor: a.id, kind: a.kind, generation: a.generation, subjectAgentId: a.agentId, binding: a.binding ? { id: a.binding.id, version: a.binding.version, data: a.binding.data } : null, ownerSourcePolicy: a.kind === 'owner_session' ? await catalogRepository(tx).get(OWNER_OBSERVATION_ID) ?? null : null, epoch: store.recoveryEpoch, sources }); }
+    async function permission(tx: M1Transaction, a: Actor, sourceIds?: string[]): Promise<string> { const config = (await catalogRepository(tx).get('current'))!, states = plain(config.data.sourceStates), sources = sourceIds ? Object.fromEntries(sourceIds.map(id => [id, states[id] ?? 'not_enabled'])) : states; return key({ actor: a.id, kind: a.kind, generation: a.generation, subjectAgentId: a.agentId, binding: a.binding ? { id: a.binding.id, version: a.binding.version, data: a.binding.data } : null, ownerSourcePolicy: a.kind === 'owner_session' ? await catalogRepository(tx).get(OWNER_OBSERVATION_ID) ?? null : null, ownerCollectionQueryPolicy: a.kind === 'owner_session' ? await catalogRepository(tx).get(OWNER_NOTIFICATION_COLLECTION_QUERY_ID) ?? null : null, epoch: store.recoveryEpoch, sources }); }
     async function readActor(tx: M1Transaction, a: Actor, input: Record<string, unknown>, channel: string): Promise<Actor> {
         if (a.kind === 'runtime' || channel === 'world') {
             if (input.agentRef !== undefined)
@@ -447,9 +448,8 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
             fail('invalid_request', 422, 'Selection is not supported');
         const sourceIds = [...(metricId ? category.metrics.find(m => m.metricId === metricId)!.sourceIds : category.sourceIds)] as string[];
         if (a.kind === 'owner_session' && categoryId === 'notifications') {
-            const policy = await catalogRepository(tx).get(OWNER_OBSERVATION_ID);
-            if (policy?.data.active !== true || !ownerLayer(policy, 'existence') || !ownerLayer(policy, 'summary'))
-                fail('insufficient_scope', 403, 'The source has not granted owner notification observation');
+            if (!await mayQueryOwnerNotifications(tx))
+                fail('insufficient_scope', 403, 'The source has not granted owner notification collection queries');
         }
         if (a.kind === 'owner_session' && (metricId === 'unconfirmed' || input.selection !== undefined))
             fail('insufficient_scope', 403, 'Agent confirmation selectors are not human reading state');

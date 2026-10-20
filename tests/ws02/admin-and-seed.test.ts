@@ -14,11 +14,12 @@ import type { Json } from '../../scripts/agent-manager-qa-fixture.ts';
 import { fixture, requestBase, type Ref } from './helpers.ts';
 await test('administrative publications require a fresh catalog revision and persist one exact original receipt and fact', async (t) => {
     const f = await fixture(t), first = await f.read('GET', '/discovery?limit=50'), original = await f.read('GET', '/guides/world?version=1');
+    const nextVersion = first.modules.find((module: Json) => module.moduleId === 'world').usageGuide.version + 1;
     const invalid = { operationId: randomUUID(), actorId: 'isolated-administrator', expectedCatalogRevision: first.catalogRevision,
-        revision: first.catalogRevision, guideVersion: 2, guideText: 'A genuinely changed guide must have a discoverable revision.' };
+        revision: first.catalogRevision, guideVersion: nextVersion, guideText: 'A genuinely changed guide must have a discoverable revision.' };
     await assert.rejects(async () => await f.storage(async (store) => await publishPerceptionGuide(store, invalid)), { code: 'version_conflict' });
     assert.equal((await f.read('GET', '/discovery?limit=50')).catalogRevision, first.catalogRevision);
-    assert.equal((await f.call('GET', '/guides/world?version=2')).status, 404);
+    assert.equal((await f.call('GET', `/guides/world?version=${nextVersion}`)).status, 404);
     const input = { ...invalid, operationId: randomUUID(), revision: 'audited-catalog-2' };
     const published = await f.storage(async (store) => await publishPerceptionGuide(store, input));
     assert.deepEqual(await f.storage(async (store) => await publishPerceptionGuide(store, input)), published);
@@ -27,7 +28,7 @@ await test('administrative publications require a fresh catalog revision and per
     assert.notEqual(current.catalogRevision, first.catalogRevision);
     assert.notEqual(current.skillCatalogRevision, first.skillCatalogRevision);
     assert.deepEqual(await f.read('GET', '/guides/world?version=1'), original);
-    assert.equal((await f.read('GET', '/guides/world?version=2')).version, 2);
+    assert.equal((await f.read('GET', `/guides/world?version=${nextVersion}`)).version, nextVersion);
     assert.equal(await f.storage(async (store) => await store.read(async (tx) => (await tx.find('perception_access', { operationId: input.operationId })).length)), 1);
     const items = await f.listAll(requestBase('world', { categoryId: 'items', limit: 5 })), ref = items.records[0]!.ref as Ref;
     const update = { operationId: randomUUID(), actorId: 'isolated-administrator', expectedVersion: items.records[0]!.version, ref,
@@ -88,7 +89,7 @@ await test('administrative edits and guide publication roll back source history,
     const edit = { operationId: randomUUID(), actorId: 'isolated-administrator', ref, expectedVersion: source.version, body: 'A transactional new body.' };
     const catalog = await f.read('GET', '/discovery?limit=50');
     const guide = { operationId: randomUUID(), actorId: 'isolated-administrator', expectedCatalogRevision: catalog.catalogRevision,
-        revision: 'atomic-guide-2', guideVersion: 2, guideText: 'This new guide and its publication fact must commit together.' };
+        revision: 'atomic-guide-2', guideVersion: catalog.modules.find((module: Json) => module.moduleId === 'world').usageGuide.version + 1, guideText: 'This new guide and its publication fact must commit together.' };
     const cases = [
         { table: 'perception_access', when: "json_extract(NEW.data,'$.actor.kind')='administrator'", run: async () => await f.storage(async (store) => await updatePerceptionDemoObject(store, edit)), input: edit },
         { table: 'perception_catalog', when: "json_extract(NEW.data,'$.kind')='administrative_receipt'", run: async () => await f.storage(async (store) => await publishPerceptionGuide(store, guide)), input: guide },

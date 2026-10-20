@@ -22,6 +22,13 @@ const Ajv2020 = createRequire(import.meta.url)('ajv/dist/2020.js').default;
 const agentRef = (id: string) => ({ moduleId: 'profiles', type: 'profiles.agent@1', id });
 const ownerInput = (id: string, channel = 'inbox', extra: Json = {}): Json => requestBase(channel, { purpose: 'human-inspect', agentRef: agentRef(id), categoryId: channel === 'inbox' ? 'notifications' : 'holdings', ...extra });
 const authorize = async (f: Awaited<ReturnType<typeof fixture>>, extra: Json = {}) => await f.storage(async (store) => await authorizeWs02SeedOwnerObservation(store, { actorId: 'isolated-owner-observer-administrator', operationId: randomUUID(), expectedSourceAdministrator: 'isolated-test-administrator', ...extra }));
+async function assertFilteredEmpty(f: Awaited<ReturnType<typeof fixture>>) {
+    const result = await f.call('POST', '/list', ownerInput(f.a.agentId), f.owner.sessionToken);
+    assert.equal(result.status, 200, 'The explicit query-only source declaration permits collection enumeration');
+    assert.deepEqual(result.data.records, [], 'Missing or revoked object observation grants no object visibility');
+    assert.equal(result.data.complete, true);
+    assert.equal(result.data.nextPageToken, null);
+}
 await test('owner observes actual permitted holdings and all 31 declared notifications without changing content, deliveries or the 27 Agent confirmations', async (t) => {
     const f = await fixture(t, { detailSegmentChars: 256 });
     const message: Ref = { moduleId: 'mailbox', type: 'mailbox.message@1', id: 'test-message-09' };
@@ -70,7 +77,7 @@ await test('owner observes actual permitted holdings and all 31 declared notific
 });
 await test('binding alone and demo data do not authorize private notifications; cross owner/runtime selectors and Agent confirmation selectors are rejected', async (t) => {
     const f = await fixture(t), input = ownerInput(f.a.agentId);
-    assert.equal((await f.call('POST', '/list', input, f.owner.sessionToken)).status, 403);
+    await assertFilteredEmpty(f);
     const ref: Ref = { moduleId: 'mailbox', type: 'mailbox.message@1', id: 'test-message-01' };
     const detail = { ...requestBase('inbox', { purpose: 'human-inspect' }), agentRef: agentRef(f.a.agentId), ref };
     assert.equal((await f.call('POST', '/detail', detail, f.owner.sessionToken)).status, 404);
@@ -118,7 +125,7 @@ await test('owner pagination and body continuations bind the actual human, selec
     await f.storage(async (store) => await store.transaction(async (tx) => { const row = (await tx.get('perception_catalog', OWNER_OBSERVATION_ID))!; await tx.update('perception_catalog', { ...row, version: row.version + 1, data: { ...row.data, layers: { existence: true, summary: true, body: true, attachments: false } } }, row.version); }));
     assert.equal((await f.call('POST', '/detail', { ...detail, contentToken: fresh.nextContentToken }, f.owner.sessionToken)).status, 409);
     await f.storage(async (store) => await store.transaction(async (tx) => { const row = (await tx.get('perception_catalog', OWNER_OBSERVATION_ID))!; await tx.update('perception_catalog', { ...row, version: row.version + 1, data: { ...row.data, active: false } }, row.version); }));
-    assert.equal((await f.call('POST', '/list', input, f.owner.sessionToken)).status, 403);
+    await assertFilteredEmpty(f);
     assert.equal((await f.call('POST', '/detail', detail, f.owner.sessionToken)).status, 404);
 });
 await test('source layer checks keep existence, summary, body and attachments independent, and private item content is not inferred from ownership', async (t) => {
@@ -137,10 +144,10 @@ await test('source layer checks keep existence, summary, body and attachments in
     assert.equal(body.content.text, 'Source authorized body');
     assert.deepEqual(body.attachments, []);
     await patchLayers({ existence: true, summary: false, body: true, attachments: true });
-    assert.equal((await f.call('POST', '/list', ownerInput(f.a.agentId), f.owner.sessionToken)).status, 403);
+    await assertFilteredEmpty(f);
     assert.equal((await f.call('POST', '/detail', detail, f.owner.sessionToken)).status, 404);
     await patchLayers({ existence: false, summary: true, body: true, attachments: true });
-    assert.equal((await f.call('POST', '/list', ownerInput(f.a.agentId), f.owner.sessionToken)).status, 403);
+    await assertFilteredEmpty(f);
     const holdings = await f.read('POST', '/list', ownerInput(f.a.agentId, 'inventory', { limit: 2 }), f.owner.sessionToken), holding = holdings.records[0];
     await f.storage(async (store) => await store.transaction(async (tx) => { const row = (await tx.get('perception_objects', refId(holding.summary.itemRef)))!; await tx.update('perception_objects', { ...row, version: row.version + 1, data: { ...row.data, public: false, title: 'Private item title', body: 'Private item content' } }, row.version); }));
     const updated = await f.read('POST', '/list', ownerInput(f.a.agentId, 'inventory', { limit: 50 }), f.owner.sessionToken), relation = updated.records.find((r: Json) => r.ref.id === holding.ref.id)!;
@@ -186,7 +193,7 @@ await test('the explicit source declaration is idempotent, preserves source and 
     const inactive = await authorize(f);
     assert.equal(inactive.changed, false);
     assert.equal(inactive.active, false);
-    assert.equal((await f.call('POST', '/list', ownerInput(f.a.agentId), f.owner.sessionToken)).status, 403);
+    await assertFilteredEmpty(f);
     assert.deepEqual(await snapshot(), before);
 });
 await test('the local CLI checks actor and paired identity before writes, emits an exact receipt and can replay without reseeding', async (t) => {

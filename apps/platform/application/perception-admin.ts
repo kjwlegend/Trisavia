@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type { JsonObject, M1Store, M1Transaction } from '../contracts/store.ts';
 import { fail } from '../domains/common/errors.ts';
 import { key, plain, refId, type ObjectRef } from '../domains/perception/protocol.ts';
-import { publishCatalogInTransaction } from './perception-catalog.ts';
+import { publishCatalogInTransaction, publishImplementedReadersInTransaction, IMPLEMENTED_READER_SOURCES } from './perception-catalog.ts';
 interface AdministrativeCommand {
     operationId: string;
     actorId: string;
@@ -74,4 +74,19 @@ export async function publishPerceptionGuide(store: M1Store, options: Administra
         const published = (await catalogRepository(tx).get('current'))!;
         return { catalogRevision: published.data.catalogRevision!, skillCatalogRevision: published.data.skillCatalogRevision!, guideVersion: published.data.guideVersion!, changed };
     });
+}
+/** Reviewed maintenance release. No arbitrary source, guide text, audience or object grant can be supplied. */
+export async function publishImplementedPerceptionReaders(store: M1Store, options: AdministrativeCommand & {
+    expectedInstanceId: string;
+    expectedRecoveryEpoch: string;
+    expectedCatalogRevision: string;
+    revision: string;
+    guideVersion: number;
+}): Promise<JsonObject> {
+    if (!/^[A-Za-z0-9_-]{1,100}$/.test(options.revision) || !/^[A-Za-z0-9_-]{1,100}$/.test(options.expectedCatalogRevision) || !Number.isSafeInteger(options.guideVersion) || options.guideVersion < 1)
+        throw new Error('An explicit expected and target catalog revision and guide version are required');
+    if (options.expectedInstanceId !== store.instanceId || options.expectedRecoveryEpoch !== store.recoveryEpoch)
+        fail('version_conflict', 409, 'The explicit target instance or recovery epoch differs');
+    const payload: JsonObject = { action: 'publishImplementedReaders', release: 'ws02-implemented-readers@1', instanceId: store.instanceId, recoveryEpoch: store.recoveryEpoch, expectedCatalogRevision: options.expectedCatalogRevision, revision: options.revision, guideVersion: options.guideVersion, sourceIds: [...IMPLEMENTED_READER_SOURCES] };
+    return await command(store, options, payload, async (tx, stamp) => ({ instanceId: store.instanceId, recoveryEpoch: store.recoveryEpoch, ...await publishImplementedReadersInTransaction(tx, { ...options, stamp }) }));
 }

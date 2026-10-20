@@ -253,12 +253,13 @@ await test('versioned catalog guides keep prior versions readable and a partial 
     for (const field of ['protocolVersion', 'consumerId', 'contentToken', 'completionToken', 'operationId']) {
         assert(JSON.stringify(guide1.document).includes(field), `A reader without source code can find ${field} in the public guide`);
     }
-    await f.storage(async (store) => await publishPerceptionCatalog(store, { revision: 'isolated-catalog-2', guideVersion: 2, guideText: 'New reviewed manual guide, version two.' }));
+    const nextGuideVersion = catalog.modules.find((module: Json) => module.moduleId === 'world').usageGuide.version + 1;
+    await f.storage(async (store) => await publishPerceptionCatalog(store, { revision: 'isolated-catalog-2', guideVersion: nextGuideVersion, guideText: 'New reviewed manual guide, next exact version.' }));
     const overview = await f.overview(undefined, { knownCatalogRevision: before.catalogRevision, knownSkillCatalogRevision: before.skillCatalogRevision });
     assert.equal(overview.catalogChanged, true);
     assert.equal(overview.skillsChanged, true);
     assert.deepEqual(await f.read('GET', '/guides/world?version=1'), guide1);
-    const guide2 = await f.read('GET', '/guides/world?version=2');
+    const guide2 = await f.read('GET', `/guides/world?version=${nextGuideVersion}`);
     assert.notDeepEqual(guide2, guide1);
     const stale = await f.call('GET', `/discovery?limit=1&pageToken=${encodeURIComponent(before.nextPageToken)}`);
     assert.equal(stale.status, 409);
