@@ -4,7 +4,7 @@ import {projectWorldAvatars} from '../hud/world-scene-projection.js';
 export function avatarBounds(geometry){
   const {width,height,anchor,hitBox}=geometry||{};
   if(!(width>0&&height>0&&Number.isFinite(anchor?.x)&&Number.isFinite(anchor?.y)&&anchor.x>=0&&anchor.x<=width&&anchor.y>=0&&anchor.y<=height&&hitBox&&[hitBox.left,hitBox.top,hitBox.right,hitBox.bottom].every(Number.isFinite)&&hitBox.right>hitBox.left&&hitBox.bottom>hitBox.top&&hitBox.left>=-anchor.x&&hitBox.right<=width-anchor.x&&hitBox.top>=-anchor.y&&hitBox.bottom<=height-anchor.y))throw new Error('pixel_avatar_geometry_invalid');
-  return{width,height,anchor:{x:anchor.x,y:anchor.y},hitBox:{...hitBox}};
+  return{width,height,anchor:{x:anchor.x,y:anchor.y},hitBox:{...hitBox},...(geometry.minHit?{minHit:{...geometry.minHit}}:{}),...(geometry.hitPadding?{hitPadding:{...geometry.hitPadding}}:{})};
 }
 // Decoration instructions and the final human renderer arrive from the audited
 // design dictionary. This interface supplies native coordinates, not a layout.

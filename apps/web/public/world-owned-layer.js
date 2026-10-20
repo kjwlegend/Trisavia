@@ -2,12 +2,13 @@ import {el} from './common.js';
 import {avatarSprite} from './scene.js';
 import {createOwnedAgentMotion} from './world-owned-motion.js';
 import {overlaps,freeAreas,worldOverlayRects} from './world-safe-area.js';
+import {humanHitSize,receivePosition,advancePosition} from './world-pixel/human.js';
 function nearestRect(areas,width,height,desired){return areas.filter(a=>a.right-a.left>=width&&a.bottom-a.top>=height).map(area=>{
   const left=Math.max(area.left,Math.min(area.right-width,desired.left)),top=Math.max(area.top,Math.min(area.bottom-height,desired.top));
   return{left,right:left+width,top,bottom:top+height,distance:Math.hypot(left-desired.left,top-desired.top)};
 }).sort((a,b)=>a.distance-b.distance)[0]||null;}
 export function findAvatarHit(entries,point,scale,shape,previousId){
-  const hits=entries.map(entry=>{const b=shape(entry).hitBox;return{entry,d:Math.hypot(point.x-entry.x,point.y-entry.y),x:entry.x+(b.left+b.right)/2,y:entry.y+(b.top+b.bottom)/2,halfWidth:Math.max((b.right-b.left)/2,22/scale),halfHeight:Math.max((b.bottom-b.top)/2,22/scale)};}).filter(hit=>Math.abs(point.x-hit.x)<=hit.halfWidth&&Math.abs(point.y-hit.y)<=hit.halfHeight).sort((a,b)=>a.d-b.d);
+  const hits=entries.map(entry=>{const geometry=shape(entry),b=geometry.hitBox,size=humanHitSize(geometry,scale);return{entry,d:Math.hypot(point.x-entry.x,point.y-entry.y),x:entry.x+(b.left+b.right)/2,y:entry.y+(b.top+b.bottom)/2,halfWidth:size.width/(2*scale),halfHeight:size.height/(2*scale)};}).filter(hit=>Math.abs(point.x-hit.x)<=hit.halfWidth&&Math.abs(point.y-hit.y)<=hit.halfHeight).sort((a,b)=>a.d-b.d);
   if(!hits.length)return;const first=hits[0].entry;if(previousId===undefined)return first;
   const sameCell=hits.filter(({entry})=>entry.x===first.x&&entry.y===first.y).map(hit=>hit.entry);return sameCell[(sameCell.findIndex(entry=>entry.agentId===previousId)+1)%sameCell.length];
 }
@@ -28,10 +29,10 @@ export function createOwnedAgentLayer(root,graph,{blockedRects=[],onSelect=()=>{
     }
     const active=entries.get(focusedId)||entries.get(hoveredId);
     for(const entry of entries.values()){
-      const p=project.point(entry.x,entry.y),hit=shape(entry).hitBox,width=Math.max(44,(hit.right-hit.left)*project.scale),height=Math.max(44,(hit.bottom-hit.top)*project.scale),center={x:p.x+(hit.left+hit.right)/2*project.scale,y:p.y+(hit.top+hit.bottom)/2*project.scale};
+      const p=project.point(entry.x,entry.y),hit=shape(entry).hitBox,{width,height}=humanHitSize(shape(entry),project.scale),center={x:p.x+(hit.left+hit.right)/2*project.scale,y:p.y+(hit.top+hit.bottom)/2*project.scale};
       let rect={left:center.x-width/2,right:center.x+width/2,top:center.y-height/2,bottom:center.y+height/2};
       const clipped=rect.left<0||rect.right>box.width||rect.top<76||rect.bottom>box.height||geometry.obstacles.some(b=>overlaps(rect,b));
-      if(clipped&&entry.agentId===focusedId)rect=nearestRect(geometry.areas,44,44,rect)||rect;
+      if(clipped&&entry.agentId===focusedId)rect=nearestRect(geometry.areas,width,height,rect)||rect;
       entry.button.hidden=clipped&&entry.agentId!==focusedId;
       entry.button.style.left=`${rect.left}px`;entry.button.style.top=`${rect.top}px`;entry.button.style.width=`${rect.right-rect.left}px`;entry.button.style.height=`${rect.bottom-rect.top}px`;
       if(entry===active)entry.button.setAttribute('aria-describedby',tooltip.id);else entry.button.removeAttribute('aria-describedby');
@@ -63,18 +64,19 @@ export function createOwnedAgentLayer(root,graph,{blockedRects=[],onSelect=()=>{
         button.addEventListener('focus',()=>{focusedId=agent.agentId;layout();});button.addEventListener('blur',()=>{focusedId='';layout();});
       }
       const spriteKey=JSON.stringify(agent.avatar);if(entry.spriteKey!==spriteKey){entry.sprites.clear();entry.spriteKey=spriteKey;}entry.avatar=agent.avatar;entry.nameValue=agent.name;
-      entry.owned=authoritative?agent.owned:true;entry.fact=authoritative?agent.fact:null;
-      if(authoritative)Object.assign(entry,{x:agent.x,y:agent.y,walking:false,frame:0,direction:'down',projectionVersion:agent.projectionVersion});
+      entry.owned=authoritative?agent.owned:true;
+      if(authoritative){if(renderer)receivePosition(entry,agent,{animate:projection.animate!==false});else Object.assign(entry,{x:agent.x,y:agent.y,walking:false,frame:0,direction:'down'});entry.projectionVersion=agent.projectionVersion;}
+      entry.fact=authoritative?agent.fact:null;
       entry.button.dataset.agentId=entry.agentId;entry.button.dataset.worldSource=authoritative?'server':'demo';
       entry.button.setAttribute('aria-label',authoritative?`${agent.name}，服务器角色，${agent.fact.placeId==='commons'?'公共庭，':''}${agent.fact.status==='suspended'?'已暂停':'已加入'}${entry.owned?'，我的 Agent，选择并管理':'，查看公开事实'}`:`${agent.name}，${agent.agentId===selectedId?'当前 Agent':'我的 Agent'}，选择并管理`);entry.button.setAttribute('aria-pressed',String(agent.agentId===selectedId));
     }
-    if(!authoritative)copyPositions();labels.hidden=!entries.size;const note=document.querySelector('#world-owned-note');if(note){note.hidden=!entries.size;note.textContent=authoritative?'角色位置来自服务器 · 背景为演示，不表示在线':'自有角色动画仅供展示，不代表在线';}layout();
+    if(!authoritative)copyPositions();labels.hidden=!entries.size;const note=document.querySelector('#world-owned-note');if(note){note.hidden=!entries.size;note.textContent=authoritative?renderer?'角色位置来自服务器 · 当前开放公共庭':'角色位置来自服务器 · 背景为演示，不表示在线':'自有角色动画仅供展示，不代表在线';}layout();
   }
   return{
     set,actors:()=>[...entries.values()],
-    step(dt,options){if(authoritative)return;motion.step(dt,{...options,heldIds:[focusedId,hoveredId]});copyPositions();},
+    step(dt,options){if(authoritative){if(renderer)for(const entry of entries.values())advancePosition(entry,dt,options);return;}motion.step(dt,{...options,heldIds:[focusedId,hoveredId]});copyPositions();},
     draw(ctx,entry,scale,frame={}){
-      if(entry.agentId===selectedId){if(renderer)renderer.drawSelection(ctx,entry,scale);else{const rx=Math.max(24,12/scale),ry=Math.max(9,5/scale);ctx.fillStyle='#C7E8DC';ctx.globalAlpha=.24;ctx.beginPath();ctx.ellipse(entry.x,entry.y+2,rx,ry,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;ctx.lineWidth=2;ctx.strokeStyle='#397E80';ctx.stroke();}}
+      if(entry.agentId===selectedId){if(renderer)renderer.drawSelection(ctx,entry,scale,frame);else{const rx=Math.max(24,12/scale),ry=Math.max(9,5/scale);ctx.fillStyle='#C7E8DC';ctx.globalAlpha=.24;ctx.beginPath();ctx.ellipse(entry.x,entry.y+2,rx,ry,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;ctx.lineWidth=2;ctx.strokeStyle='#397E80';ctx.stroke();}}
       if(renderer){renderer.drawAvatar(ctx,entry,frame);return;}
       const key=`${entry.direction}:${entry.walking?entry.frame:'idle'}`;
       if(!entry.sprites.has(key))entry.sprites.set(key,avatarSprite({avatar:entry.avatar},entry.agentId,{walking:entry.walking,step:entry.frame,direction:entry.direction}));

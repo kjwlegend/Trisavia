@@ -1,5 +1,6 @@
 import {$,el,api} from '../common.js';
-import {createWorldScene,places,placeDetails} from '../world-scene.js';
+import {createWorldScene,placeDetails} from '../world-scene.js';
+import {loadPixelTown,COMMONS_PLACE} from '../world-pixel/town.js';
 import {createOwnedAgentBinding} from './owned-agents.js';
 import {createPanelTransition} from './panel-transition.js';
 import {createWorldSceneProvider} from './world-scene-provider.js';
@@ -18,7 +19,7 @@ function renderDetails(place,reset=false){
   $('#world-detail-close').setAttribute('aria-label',place.kind==='world-avatar'?'关闭角色详情':'关闭场所说明');detail.dataset.agentId=place.kind==='world-avatar'?place.agentId:'';
   debug.hidden=!details.debug;if(reset)debug.open=false;debugBody.replaceChildren();for(const [label,value]of details.debug||[])debugBody.append(el('dt','',label),el('dd','',value));return details;
 }
-const list = $('#world-place-list');
+const list = $('#world-place-list'),places=rendering?.places||[COMMONS_PLACE];
 for (const area of [...new Set(places.map(place => place.area))]) {
   const group = el('section', 'world-place-group');
   group.append(el('h3', '', area));
@@ -74,6 +75,7 @@ function updateControls(state) {
   $('#world-zoom-in').disabled = !mapReady || state.zoom >= 3;
   $('#world-pause').textContent = state.paused ? '播放动态' : '暂停动态';
   $('#world-pause').setAttribute('aria-pressed', String(state.paused));
+  for(const [key,button]of themeButtons)button.setAttribute('aria-pressed',String(state.theme===key));reduceMotion.setAttribute('aria-pressed',String(state.reducedMotion));
   const text = state.worldScene?.phase!=='demo'?'服务器角色位置按读取结果显示 · 画布动画不代表在线':state.paused ? state.pauseReason === 'reduced' ? '静止展示 · 已遵循系统的减少动态设置' : state.pauseReason === 'performance' ? '静止展示 · 可手动播放演示' : '静止展示 · 演示动态已暂停' : !state.visible ? '演示动态在地图可见时继续' : '人物与环境为演示动态';
   if ($('#world-motion-status').textContent !== text) $('#world-motion-status').textContent = text;
 }
@@ -82,15 +84,18 @@ async function startScene() {
   scene?.destroy(); scene = null;mapReady=false;mapFailed=false;setMapAvailable(false);
   $('#world-fallback').hidden = true;
   $('#world-motion-status').textContent = '正在载入世界画布…';
+  let loaded;
   try {
-    const next = await createWorldScene($('#world-scene'), {rendering,worldSource:'pending',signal:sceneAbort.signal,onSelect: openPlace, onOwnedSelect:(agentId,origin)=>ownedAgents?.select(agentId,origin), onChange: updateControls, onError:()=>{if(generation===sceneGeneration)mapError();}});
+    loaded=rendering||await loadPixelTown({signal:sceneAbort.signal});
+    if(generation!==sceneGeneration||sceneAbort.signal.aborted){loaded.dispose?.();return;}
+    const next = await createWorldScene($('#world-scene'), {rendering:loaded,worldSource:'pending',signal:sceneAbort.signal,onSelect: openPlace, onOwnedSelect:(agentId,origin)=>ownedAgents?.select(agentId,origin), onChange: updateControls, onError:()=>{if(generation===sceneGeneration)mapError();}});
     if(generation!==sceneGeneration){next.destroy();return;}
     scene=next;scene.setWorldScene(worldData);if(!mapFailed)ownedAgents?.attach(scene);
     if(!mapFailed){setMapAvailable(true);updateControls(scene.getState());}
     if (currentPlace) scene.select(currentPlace);
-  } catch { if(generation===sceneGeneration)mapError(); }
+  } catch {loaded?.dispose?.();if(generation===sceneGeneration)mapError(); }
 }
-function setMapAvailable(value){mapReady=value;for(const id of ['world-zoom-out','world-zoom-in','world-fit','world-pause','world-explore','world-reset'])$(`#${id}`).disabled=!value;$('#world-gesture-hint').hidden=!value;document.dispatchEvent(new CustomEvent('world:availability',{detail:{available:value}}));}
+function setMapAvailable(value){mapReady=value;for(const id of ['world-zoom-out','world-zoom-in','world-fit','world-pause','world-explore','world-reset','world-theme-day','world-theme-dusk','world-reduce-motion'])$(`#${id}`).disabled=!value;$('#world-gesture-hint').hidden=!value;document.dispatchEvent(new CustomEvent('world:availability',{detail:{available:value}}));}
 function mapError() {
   mapFailed=true;worldProvider.setVisible(false);ownedAgents?.attach(null);setMapAvailable(false);
   $('#world-fallback').hidden = false;
@@ -109,16 +114,18 @@ $('#world-reset').addEventListener('click',()=>scene?.reset());
 $('#world-open-list').addEventListener('click',()=>{$('#world-place-directory').open=true;$('#world-place-directory').scrollIntoView({block:'start',behavior:'instant'});$('#world-place-directory > summary').focus({preventScroll:true});});
 $('#world-pause').addEventListener('click', () => { if (scene) scene.setPaused(!scene.getState().paused); });
 $('#world-retry').addEventListener('click', startScene);
+const themeButtons=new Map();for(const [key,label]of [['day','日间'],['dusk','黄昏']]){const button=el('button','',label);button.id=`world-theme-${key}`;button.type='button';button.setAttribute('aria-pressed',String(key==='day'));button.addEventListener('click',()=>scene?.setTheme(key));themeButtons.set(key,button);($('#hud-map-menu')||$('.world-controls')).append(button);}
+const reduceMotion=el('button','','减少动态');reduceMotion.id='world-reduce-motion';reduceMotion.type='button';reduceMotion.setAttribute('aria-pressed','false');reduceMotion.addEventListener('click',()=>{if(scene)scene.setReducedMotion(!scene.getState().reducedMotion);});($('#hud-map-menu')||$('.world-controls')).append(reduceMotion);
 const refreshWorld=el('button','','刷新世界'),moreWorld=el('button','','继续载入角色');refreshWorld.id='world-refresh';moreWorld.id='world-load-more';refreshWorld.type=moreWorld.type='button';moreWorld.hidden=true;
 ($('#hud-map-menu')||$('.world-controls')).append(refreshWorld,moreWorld);
 refreshWorld.addEventListener('click',()=>void worldProvider.refresh());moreWorld.addEventListener('click',()=>void worldProvider.loadMore());
 worldProvider.subscribe(value=>{
-  worldData=value;scene?.setWorldScene(value);refreshWorld.hidden=value.phase==='demo';moreWorld.hidden=value.phase!=='partial';
+  worldData=value;scene?.setWorldScene(value);refreshWorld.hidden=false;moreWorld.hidden=value.phase!=='partial';
   const source=$('.world-demo'),summary=$('summary',source),body=$('p',source);source.dataset.worldPhase=value.phase;
-  summary.textContent=value.phase==='demo'?'演示世界 · 客户端动画不代表在线':value.phase==='ready'?`服务器世界 · ${value.avatars.length} 个公开角色`:value.phase==='partial'?`服务器世界 · 已载入 ${value.avatars.length} 个角色（未完整）`:value.phase==='refreshing'?'服务器世界 · 正在刷新':value.phase==='paused'?'世界读取已暂停':value.phase==='loading'?'正在读取服务器世界…':'服务器世界暂不可用 · 可重试';
-  body.textContent=value.phase==='demo'?'当前服务未启用世界核心。人物与环境为本地演示，自有角色动画不代表在线。':['ready','partial','refreshing'].includes(value.phase)?`${value.avatars.length===0&&value.complete?'当前公开世界没有可显示的角色。':''}角色名称与位置来自服务器；${value.complete?'本次集合已完整读取。':'当前集合尚未完整。'}读取时间：${new Date(value.asOf).toLocaleString('zh-CN',{hour12:false})}。逻辑坐标采用 logical-grid-to-town@1 投影，背景道路与场所仅为演示，不代表真实到访、在线或移动目的地。`:value.phase==='paused'?'场景不可见时停止读取，返回后重新取得服务器事实。':value.phase==='loading'?'正在取得当前世界规则与公开角色，不使用演示角色补齐。':value.errorCode==='world_cursor_invalid'||value.errorCode==='world_scene_changed'?'世界集合已变化，旧角色资料已清除。请刷新世界，从头读取。':'当前无法确认公开角色，旧角色资料已清除。请通过更多地图工具中的“刷新世界”重试。';
+  summary.textContent=value.phase==='demo'?'当前世界尚未开放':value.phase==='ready'?`服务器世界 · ${value.avatars.length} 个公开角色`:value.phase==='partial'?`服务器世界 · 已载入 ${value.avatars.length} 个角色（完整后显示）`:value.phase==='refreshing'?'服务器世界 · 正在刷新':value.phase==='paused'?'世界读取已暂停':value.phase==='loading'?'正在读取服务器世界…':'服务器世界暂不可用 · 可重试';
+  body.textContent=value.phase==='demo'?'当前服务未启用世界，画面仅为景观预览；不以演示人物补齐真实角色。':['ready','partial','refreshing'].includes(value.phase)?`${value.avatars.length===0&&value.complete?'当前公开世界没有可显示的角色。':''}角色名称与位置来自服务器；${value.complete?'本次集合已完整读取。':'当前集合尚未完整。'}读取时间：${new Date(value.asOf).toLocaleString('zh-CN',{hour12:false})}。当前开放：公共庭；周边街区为景观预览，不代表真实到访、在线或移动目的地。发型为本地表现映射，不表示已保存的发型选择。`:value.phase==='paused'?'场景不可见时停止读取，返回后重新取得服务器事实。':value.phase==='loading'?'正在取得当前世界规则与公开角色，不使用演示角色补齐。':value.errorCode==='world_cursor_invalid'||value.errorCode==='world_scene_changed'?'世界集合已变化，旧角色资料已清除。请刷新世界，从头读取。':'当前无法确认公开角色，旧角色资料已清除。请通过更多地图工具中的“刷新世界”重试。';
   if(currentPlace?.kind==='world-avatar'){
-    const row=value.avatars.find(avatar=>avatar.agentId===currentPlace.agentId);
+    const row=value.complete?value.avatars.find(avatar=>avatar.agentId===currentPlace.agentId):null;
     if(!row)closePlace(false);
     else{const renderedState=scene?.getState().worldScene,rendered=renderedState?.avatars.find(avatar=>avatar.fact.agentId===row.agentId);currentPlace={...row,kind:'world-avatar',projectionVersion:renderedState?.projectionVersion,x:rendered?.x??currentPlace.x,y:rendered?.y??currentPlace.y};renderDetails(currentPlace);scene?.select(currentPlace);}
   }

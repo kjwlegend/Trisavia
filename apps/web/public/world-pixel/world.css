@@ -1,0 +1,5 @@
+/* Native source pixels; existing HUD, account panels and safe areas stay in place. */
+.world-canvas[data-rendering="pixel-town"]{image-rendering:pixelated;image-rendering:crisp-edges}
+.world-owned-hit[data-world-source="server"]{min-width:38px;min-height:52px}
+#world-detail-debug{margin-top:12px}
+#world-detail-debug>summary{cursor:pointer;min-height:32px;color:var(--hud-muted,#53675f)}

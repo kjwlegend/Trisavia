@@ -7,3 +7,12 @@ export function pixelPoint(point,rules){
   if(!Number.isSafeInteger(point?.x)||!Number.isSafeInteger(point?.y)||point.x<0||point.x>=16||point.y<0||point.y>=16)throw new Error('pixel_position_invalid');
   return{x:PIXEL_MAP.origin.x+PIXEL_MAP.cellSize*point.x,y:PIXEL_MAP.origin.y+PIXEL_MAP.cellSize*point.y};
 }
+export function assertPixelSnapshot(value,previous){
+  if(value.rules)assertPixelRules(value.rules);
+  if(value.phase==='demo')throw new Error('pixel_scene_requires_world');
+  if(!value.complete)return;
+  if(!value.rules||!Number.isSafeInteger(value.asOf)||!Number.isSafeInteger(value.worldRevision))throw new Error('pixel_snapshot_invalid');
+  if(previous?.complete&&(value.asOf<previous.asOf||value.worldRevision<previous.worldRevision))throw new Error('pixel_snapshot_stale');
+  const old=new Map((previous?.avatars||[]).map(row=>[row.agentId,row]));
+  for(const row of value.avatars){pixelPoint(row.position,value.rules);const prior=old.get(row.agentId);if(prior&&(row.id!==prior.id||row.version<prior.version||row.version===prior.version&&(row.position.x!==prior.position.x||row.position.y!==prior.position.y)))throw new Error('pixel_avatar_version_changed');}
+}
