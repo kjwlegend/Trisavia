@@ -22,7 +22,7 @@ export async function runOwnerObservation(args:string[]) {
  // setup, migrations, epoch updates, or an implicit new database first.
  const inspection=new DatabaseSync(databasePath,{readOnly:true,allowExtension:false,enableDoubleQuotedStringLiterals:false});
  try {
-  const schema=inspection.prepare('SELECT MAX(version) AS version FROM schema_migrations').get();if(schema?.version!==5)throw new Error('Existing schema-5 perception data is required; this command does not migrate or seed');
+  const schema=inspection.prepare('SELECT MAX(version) AS version FROM schema_migrations').get();if(schema?.version!==6)throw new Error('Existing schema-6 perception data is required; this command does not migrate or seed');
   const paired=inspection.prepare('SELECT instance_id, recovery_epoch FROM instance_state WHERE singleton = 1').get();
   if(!paired||paired.instance_id!==identity.instanceId||paired.recovery_epoch!==identity.recoveryEpoch)throw new Error('Database and identity are not paired');
  } finally {inspection.close();}

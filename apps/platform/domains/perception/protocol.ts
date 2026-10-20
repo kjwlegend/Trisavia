@@ -9,11 +9,13 @@ export const CATEGORIES = [
   { categoryId:'announcements',channel:'world',sourceIds:['demo-announcements'],scopeKinds:['world'],metrics:[{metricId:'all',unit:'announcements',description:'明确标识的演示公告',sourceIds:['demo-announcements']}] },
   { categoryId:'events',channel:'world',sourceIds:['demo-events','platform-publications'],scopeKinds:['world'],metrics:[{metricId:'plans',unit:'planned_events',description:'计划记录，不代表已经发生',sourceIds:['demo-events']},{metricId:'occurrences',unit:'occurred_events',description:'发生记录：演示剧情与真实管理员内容发布逐项区分；均不代表Agent行为',sourceIds:['demo-events','platform-publications']}] },
   { categoryId:'places',channel:'world',sourceIds:['demo-places'],scopeKinds:['world'],metrics:[{metricId:'all',unit:'places',description:'示例场所说明，不是实时位置或产权',sourceIds:['demo-places']}] },
+  { categoryId:'messages',channel:'inbox',sourceIds:['direct-messages'],scopeKinds:['world'],metrics:[{metricId:'all',unit:'received_messages',description:'本人当前有效收件关系；与旧平台通知及其未确认数分开',sourceIds:['direct-messages']}] },
   { categoryId:'rules',channel:'world',sourceIds:['world-meta'],scopeKinds:['world'],metrics:[{metricId:'all',unit:'rules',description:'当前世界说明规则',sourceIds:['world-meta']}] },
 ] as const;
 export const TYPE_DEFINITIONS = [
   {moduleId:'world',type:'world.rules@1',prefix:'world.rules'}, {moduleId:'profiles',type:'profiles.agent@1',prefix:'profiles.agent'},
   {moduleId:'items',type:'items.item@1',prefix:'items.item'}, {moduleId:'inventory',type:'inventory.holding@1',prefix:'inventory.holding'},
+  {moduleId:'mailbox',type:'mailbox.direct-message@1',prefix:'mailbox.direct-message'},
   {moduleId:'mailbox',type:'mailbox.message@1',prefix:'mailbox.message'}, {moduleId:'world',type:'world.announcement@1',prefix:'world.announcement'},
   {moduleId:'world',type:'world.place@1',prefix:'world.place'}, {moduleId:'world',type:'world.plan@1',prefix:'world.plan'}, {moduleId:'world',type:'world.occurrence@1',prefix:'world.occurrence'},
 ];
@@ -21,6 +23,7 @@ export const OPERATIONS = [
   {id:'discovery',action:'perceptionDiscovery',method:'GET',path:'/v1/perception/discovery'},
   {id:'schema',action:'perceptionSchema',method:'GET',path:'/v1/perception/schemas/:schemaId'},
   {id:'guide',action:'perceptionGuide',method:'GET',path:'/v1/perception/guides/:moduleId'},
+  {id:'wallet-query',action:'walletQuery',method:'POST',path:'/v1/wallet/query'},
   {id:'overview',action:'perceptionOverview',method:'POST',path:'/v1/perception/overview'},
   {id:'list',action:'perceptionList',method:'POST',path:'/v1/perception/list'},
   {id:'detail',action:'perceptionDetail',method:'POST',path:'/v1/perception/detail'},
