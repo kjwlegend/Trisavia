@@ -138,3 +138,12 @@
 运行交付目录（0700，私密文件0600）为 `/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/postgresql/user-8789-pg-delivery-20261020T063818Z/`。关键安全证据：`source-manifest.json`、`maintenance.json`、`server-process.json`、`cutoff/live-evidence.json`、`cutoff/stopped-evidence.json`、`fresh-cutoff-preservation.json`、`closed-readiness.json`、`delivery-aggregate-counts.json`、`physical-backup-result.json`、`public-byte-verification.json`、`write-gate-open.json`；conversion／backup private manifest与秘密不复制到公开文档。归档测试／容量／hash证据在其上级 `candidate-9acc8cd-*`／`candidate-6947c4d-*`。
 
 main已从b94febb fast-forward至6947后交付。main-protection-20261020T070019Z保全710个非目标脏路径及index：709未变，reviewer并行更新的1份报告保留前后版本，staged patch不变、revert0；备份在integration `outputs/ws02-wallet-mail/`。后续仅本执行记录／原独审报告的归档提交不改变运行源码。公网、8799／8801／8787／8846、真实邮件／移动端和后台触发未扩大；原UI与原Agent独立窄验收已交回总指挥调度。
+
+
+### 6.5 详情关闭名称后继交付（2026-10-20）
+
+按总指挥本轮明确授权，已交付 OWN-UI-R8-01 的独立小修：运行源码 `001ae3faa844fda05e6e18f1fba25dac7e731236`，PID `84411`，入口仍为[世界](http://127.0.0.1:8789/)与[主人](http://127.0.0.1:8789/owner)。main先从81927a2快进至001ae3；其后仅本段与[P3独审原件](../../ws02-perception/validation/m2-detail-close-label-code-review-2026-10-20.md#r2-固定后继复核与接受)的归档提交不改变运行版本。原reviewer R2静态接受81927→001ae3、DL-CR01关闭：生产仅将共用详情关闭按钮名称改为“关闭详情”，另一行同步既有E2E精确定位，原条件、真实点击及故事断言保持。作者两文件语法、固定diff-check通过；本次没有重跑浏览器或PG回归，普通用户必要复验交总指挥调度，未预记UI关闭。
+
+切换前补当前connet的一致逻辑备份（custom dump 431639字节、目录可读，未做恢复演练）并保全原identity／应用配置；PG原容器、数据卷持续运行。原PID78821经SIGTERM正常排空后以同一原配置／identity启动新固定归档；停止信号 `2026-10-20T07:37:44.859498+00:00` 至同实例health200 `2026-10-20T07:37:45.485214+00:00` 实测 `0.625秒`，静态核对完成共 `0.628秒`。`/assets/hud/detail-host.js`、首页和`/owner`均200、与固定源码精确同字节且no-store。容器ID／启动时间／卷、原实例／identity／配置hash及本次前后write_generation保持，写门一直开放；没有数据库迁移、转换、导入、回灌、换库或恢复SQLite，当前PG全部后续写入随同一数据库保留。该保全依据连续同库及操作边界，不冒称重新全量行对账。
+
+固定373文件归档及本轮证据：`/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/postgresql/user-8789-detail-label-20261020T073553Z`。`preflight-backup.json`、`maintenance.json`、`public-verification.json`、`pg-continuity.json`、`server-process.json`、`source-manifest.json`为脱敏索引；private内备份／身份／配置不公开。源码FF前后712个非目标脏路径均一致、staged patch保持，原index及前后文件保存在同目录`main-protection/`；并行用户改动未撤销。独立小修仅本地8789，旧快照／分支／证据均保留，公网／push／其他端口未操作。
