@@ -83,3 +83,13 @@
 - A测试候选c5d9050最小权限fixture已固定，config/proxy16项在B7b4608通过，4个关键WS02文件13项在B0a50021通过；不同存储版证据不合称同一最终运行。完整应用测试／CLI适配仍在途。
 - 应用核心独审新增PG-CR06（固定首200清理漏后部expired）与PG-CR07（邮件及其他配额无界扫描／N+1）；原A改端口、域仓储与用例，B支持受控SQL过滤／计数与索引。保留原限额／幂等语义，不引入后台触发，固定修订待送原reviewer。
 - C回执真实basebackup／pg_verifybackup＋连续WAL隔离恢复成功、源PG未停；并从冻结7b全新合成Agent生成真实limit1 discovery令牌，迁至B7b4608后以原token续完47项顺序且无重漏，PG新建页亦一致。上述转换／恢复／分页测试代码仍待同批固定，暂不据回执记最终接受。
+
+
+### 后继固定与仍待交付项
+
+- 原reviewer R13接受A e74f0cc＋B f1281a2关闭PG-CR06；原503反例与修后真实应用1/1均保留。R14接受B8219437事务内按需点读缓存及B2d7742e pending recovery SQL，当前真实最小app存储27/27无skip。缓存不跨请求或重试，仍用原250ms业务读取预算。
+- R15接受C4d561cd关闭PG-CR08。最终fresh流程明确为停止一致schema5副本→新schema6副本→由冻结7b精确manifest验证后产生另一catalog4／guide4副本→闭门PG转换。合成同shape输入闭门ready／health200已实际1/1。最终保全须核原20表中除schema_migrations／perception_catalog外18表（含instance_state）、原迁移1—5原样追加6、旧catalog除current保持，不把三个集合混称全部旧表不变。
+- A47863e42／f0c7d83将邮件、恢复和关联配额接具名SQL计数／存在性，CR07原作者旧email文件反例2/2失败、修后2/2通过，待原reviewer最终复核；旧反例是loader仅替换d06 email-onboarding，其余新fixture／端口保持，不能写成整套旧d06源码运行。CLI显式PG目标3026f151及测试b136f3b已固定并整合；最新核心39/39、无skip（config／proxy16、m1-service12、AgentManager8、quota2、unknown_commit1），普通证据为API outputs/pg-async/verified-core-final.log。
+- C777d4ab固定必要E2E异步fixture／端口接线；tests/site由B独占改造。桌面钱包4故事首轮1过3失败，涉及背包、缺失钱包和正文返回控件，作者正在按真实HTTP定位，原断言／预算未放宽；尚不构成交付通过。原owner-read矩阵中被新钱包默认分类替代的旧项目与本次选择项目分开记录，未跑不记通过。
+- 原7b同Node的CLI＋integration29项15过14失败已实际对照，其中旧CLI协议失败1、integration旧setup载荷400共13项；候选相同14失败逐项对应。扩展API四文件40项1过39失败与同7b逐项相同（其中原三文件30项1过29失败）。INT02本次四并发曾出现3成功／1 retry_same_operation；原payload及operationId顺序恢复后仍唯一Agent，内部最多3次保持。该测试语义调整仍单独交原reviewer判断，不因改后PASS自动接受。
+- C原basebackup／pg_verifybackup＋后续WAL实际测试证明两条sentinel恢复；全量迁入业务行／metadata／历史canonical字节和digest的恢复对账尚待补齐，已派原C以最新固定B2d和C4d的新隔离目标完成。正式connet仍未导入，原8789／SQLite／identity未切换；PG最终固定整合、原审及必要桌面和恢复证据完成后才执行fresh cutoff。
