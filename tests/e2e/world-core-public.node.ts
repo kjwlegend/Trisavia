@@ -10,8 +10,8 @@ type Scene={phase:string;complete:boolean;worldRevision:number;avatars:Array<{fa
 const fingerprint=(row:Fact)=>JSON.stringify([row.id,row.agentId,row.version,row.status,row.position,row.profile.displayName,row.profile.publishedVersion]);
 
 test('homepage and Owner shell display real public Avatars and matching server facts without demo residents or credentials',async t=>{
- const caps=await (await fetch(`${origin}/v1/capabilities`)).json() as {gateway?:{modules:string[]};worldSimulation?:{enabled:boolean}};
- assert.equal(caps.worldSimulation?.enabled,true);assert.ok(caps.gateway?.modules.includes('world'));
+ const caps=await (await fetch(`${origin}/v1/capabilities`)).json() as {gateway?:{modules:string[];worldSimulation?:{enabled:boolean}}};
+ assert.equal(caps.gateway?.worldSimulation?.enabled,true);assert.ok(caps.gateway?.modules.includes('world'));
  const browser=await chromium.launch({headless:true,...(process.env.M1_TEST_CHROMIUM_PATH?{executablePath:process.env.M1_TEST_CHROMIUM_PATH}:{})});t.after(()=>browser.close());
  const context=await browser.newContext({viewport:{width:1440,height:900}});t.after(()=>context.close());
  for(const path of ['/','/owner']){

@@ -5,7 +5,7 @@ import {createWorldSceneProvider} from '../../apps/web/public/hud/world-scene-pr
 // @ts-expect-error Browser modules are plain JavaScript.
 import {readWorldRules,readWorldPage,projectWorldAvatars,WORLD_PROJECTION_VERSION} from '../../apps/web/public/hud/world-scene-projection.js';
 
-const caps={apiVersion:'v1',instanceId:'test-world-instance',gateway:{protocolVersion:1,modules:['world']},worldSimulation:{enabled:true}};
+const caps={apiVersion:'v1',instanceId:'test-world-instance',gateway:{protocolVersion:1,modules:['world'],worldSimulation:{enabled:true}}};
 const rulesData={world:{worldId:'default',active:true,revision:1,rulesetVersion:1},rules:{worldId:'default',version:1,topologyVersion:1,width:20,height:12},asOf:1000};
 const avatar=(id:string,x=1,y=2)=>({id:`avatar-${id}`,worldId:'default',agentId:id,version:1,status:'idle',position:{x,y},placeId:null,rulesetVersion:1,createdAt:10,updatedAt:20,profile:{agentId:id,publishedVersion:1,displayName:`真实 ${id}`,appearance:{template:'basic',color:'blue'}}});
 const page=(avatars:unknown[]=[],worldRevision=1,complete=true,nextCursor:string|null=null)=>({worldId:'default',worldRevision,asOf:1000,scope:'world',avatars,complete,nextCursor});
@@ -45,6 +45,14 @@ test('one round reads opaque pages completely with only public credential-free G
  assert.deepEqual(provider.snapshot().avatars.map((row:any)=>row.agentId),['one','two']);
  assert.equal(calls.filter(call=>call.path.startsWith('/world/scene?')).length,2);
  assert.ok(calls.every(call=>call.signal instanceof AbortSignal));assert.equal(timers.pending.size,1);provider.dispose();assert.equal(timers.pending.size,0);
+});
+
+test('only the actual gateway.worldSimulation flag enables reads; a misplaced top-level flag cannot authorize the source',async()=>{
+ for(const gateway of [{protocolVersion:1,modules:['world']},{...caps.gateway,worldSimulation:{enabled:false}}]){
+  const requested:string[]=[];
+  const {provider}=harness(undefined,{request:async(path:string)=>{requested.push(path);return{...caps,gateway,worldSimulation:{enabled:true}};}});
+  await flush();assert.equal(provider.snapshot().phase,'unavailable');assert.equal(provider.snapshot().errorCode,'world_not_available');assert.deepEqual(provider.snapshot().avatars,[]);assert.deepEqual(requested,['/capabilities']);provider.dispose();
+ }
 });
 
 test('a bounded partial round can continue manually, and a changed page revision clears every old visible name',async()=>{

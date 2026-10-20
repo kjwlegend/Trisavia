@@ -22,7 +22,7 @@ export function createWorldSceneProvider({request=api,worldId='default',interval
       const caps=await read('/capabilities');
       if(caps?.apiVersion!=='v1'||typeof caps.instanceId!=='string')throw failure('world_response_invalid');
       if(!caps.gateway){failures=0;emit({phase:'demo',enabled:false,...cleared()});return;}
-      if(caps.gateway.protocolVersion!==1||caps.worldSimulation?.enabled!==true||!caps.gateway.modules?.includes('world'))throw failure('world_not_available');
+      if(caps.gateway.protocolVersion!==1||caps.gateway.worldSimulation?.enabled!==true||!caps.gateway.modules?.includes('world'))throw failure('world_not_available');
       emit({enabled:true});
       const unwrap=result=>{if(result?.protocolVersion!==1||result.instanceId!==caps.instanceId||!result.data)throw failure('world_response_invalid');return result.data;};
       const rules=readWorldRules(unwrap(await read(`/world/rules?${new URLSearchParams({worldId})}`)),worldId);
