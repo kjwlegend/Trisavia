@@ -9,7 +9,7 @@ export interface DecisionIntentSink {
 }
 export interface DecisionTarget {
  /** Current visibility, business state/version, rules and membership must all still permit this stage. */
- inspect(context:RuntimeReadContext,principal:Principal,request:DecisionRequest):Promise<DecisionIntent|null>;
+ inspect(context:RuntimeReadContext,principal:Principal,request:DecisionRequest):Promise<{intent:DecisionIntent;actionable:boolean}|null>;
  /** Original domain owns validation and its stable command receipt, in this caller's transaction. */
  execute(context:RuntimeTransaction,principal:Principal,key:CommandKey,action:string,input:JsonObject):Promise<CommandReceipt>;
 }

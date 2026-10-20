@@ -12,8 +12,8 @@ export interface DecisionIntent {
 export interface DecisionRequest extends DecisionIntent {
  id:string;version:number;recoveryEpoch:string;createdAt:number;status:DecisionStatus;
  claim:{id:string;commandId:string;authorizationVersion:string;claimedAt:number;reservationId:string}|null;
- response:{commandId:string;action:string;inputHash:string;respondedAt:number;executionId:string|null;executionOutcome:'completed'|'unknown'|'not_reported'}|null;
- resolution:{targetCommandId:string;domain:string;action:string;outcome:'committed'|'rejected'|'conflict'|'expired';result:JsonObject;eventIds:string[];resolvedAt:number}|null;
+ response:{commandId:string;action:string|null;inputHash:string;respondedAt:number;executionId:string|null;executionOutcome:'completed'|'unknown'|'not_reported'}|null;
+ resolution:{targetCommandId:string|null;domain:string;action:string;outcome:'committed'|'rejected'|'conflict'|'expired'|'no_action';result:JsonObject;eventIds:string[];resolvedAt:number}|null;
  invalidation:{code:string;at:number}|null;
 }
 export interface DecisionDispatchReservation {
