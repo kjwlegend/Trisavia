@@ -174,3 +174,9 @@ R17接受B `1754a36 → cb17ce9`两路径顺序解码修正，R18接受A `bb6165
 原D以`08dbebf → ebe76777c15b68d2e465853b934844d9c161630c`三路径修复provider、真实嵌套形状正反例及待运行E2E断言；定点9/9、语法、full typecheck／diff-check通过，证据在`m1-web/outputs/world-core-web/td-n1-ui01/`。已送原reviewer复核，本文不提前关闭WC-CR05。D七项Owner摘要和浏览器脚本静态结果分别守自身范围；尚无D真实HTTP／浏览器或独立UI通过。
 
 用户后继已明确“继续视觉制作与整合（推荐）”。原设计总监继续原430素材的完整像素小镇预览／适配与生产合同，人物先左右朝向。TD已同步实时World 16×16整数逻辑格、版本1、spawn(0,0)、无blocked、唯一commons场所、每规则步1秒及公开白名单DTO；格未定义米。D临时中央投影仅为视觉映射，可随合同更换，不能改变服务器位置、障碍、场所／路径规则；若涉及规则由C/B负责固定送审。环境可动，真实Avatar不能补假漫游／在线。核心N1／N2与视觉并行，不等待新美术才开始独立验证。
+
+R22随后静态接受D `ebe7677`并关闭WC-CR05，D最终11指定路径获接受；旧da39／08db单独版本仍含已记录问题。TD将B cb17、A758、D3fb／e680／da39／24f／08db／ebe无冲突整合为`b5f0285b1f5c4cd850689c86a2fbf8eb216ec942`。后端拥有路径与A消费B后的`d7554e2`完全一致，前端／site／E2E与D ebe完全一致，无手写整合差异。
+
+TD在固定b5f0285运行受影响38/38、fail／cancel／skip0：两N1 HTTP、两N2 HTTP、两registry、三config、一真实PG邀请分页、九修正后公开场景、七Owner摘要、十二既有owned／map检查；full typecheck与diff-check0。命令与日志在`outputs/world-core/integration-b5f0285/`，仅使用隔离A/B fixture及18894，不访问正在独立验收的18893或正式connet。前序70／4及作者结果保持各自版本，不累计称一次全量。
+
+N2固定包已准备于`outputs/world-core/n2-b5f0285/source`，archive SHA256 `49fb1d6e596b258d8e6e47698869c542fe3c91d8edee8e42f525ceddd01cb087`，package-lock SHA256 `3bc1406cc0c0febcdfa49a95dc0c6661534a8883f83dcb06a00e27e62753d7b0`，依赖独立复制。此时尚未运行N2；18893仍为b55 N1。TD另只读保全N1公开目录引用的21份精确schema／guide响应，均200／no-store，见`n1-public-documents.json`，供升级后核对旧文档摘要。等待总指挥双边安全检查点后再备份当前库及identity／配置、显式初始化模板和原地发布。
