@@ -176,7 +176,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
   async function readAvatar(context: RuntimeReadContext, principal: Principal, worldId: string, agentId?: string) {
     const actor = await authorize(context, principal); await participation(context, actor, worldId, false);
     const target = agentId ?? actor;
-    try { await participation(context, target, worldId, false); if (target !== actor && !await identity.readPublicAgent(context, target)) fail('avatar_not_found', 404, 'Avatar is not available'); } catch (error) { if (error instanceof M1Error && error.statusCode < 500) fail('avatar_not_found', 404, 'Avatar is not available'); throw error; }
+    try { await participation(context, target, worldId, false); if (target !== actor && !await identity.readPublicAgent(context, target)) fail('avatar_not_found', 404, 'Avatar is not available'); } catch (error) { if (error instanceof M1Error && [403, 404].includes(error.statusCode)) fail('avatar_not_found', 404, 'Avatar is not available'); throw error; }
     const { world } = await rulesFor(context, worldId), avatar = await context.repository(WORLD_REPOSITORY).getAvatar(worldId, target);
     if (!avatar || avatar.status === 'left') fail('avatar_not_found', 404, 'Avatar is not available');
     return { worldId, worldRevision: world.revision, asOf: context.now(), avatar: structuredClone(avatar) };
@@ -199,7 +199,13 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
       await participation(context, actor, event.worldId, false);
       if (event.subject.type === 'movement' && !event.audience.agentIds.includes(actor)) fail('target_not_accessible', 404, 'Event is not accessible');
       if (typeof event.payload.agentId !== 'string') fail('target_not_accessible', 404, 'Event is not accessible');
-      await participation(context, event.payload.agentId, event.worldId, false);
+      try {
+        await participation(context, event.payload.agentId, event.worldId, false);
+        if (!await identity.readPublicAgent(context, event.payload.agentId)) fail('target_not_accessible', 404, 'Event is not accessible');
+      } catch (error) {
+        if (error instanceof M1Error && [403, 404].includes(error.statusCode)) fail('target_not_accessible', 404, 'Event is not accessible');
+        throw error;
+      }
     },
     async readRules(context: RuntimeReadContext, principal: Principal, worldId: string) { const actor = await authorize(context, principal); await participation(context, actor, worldId, false); const { world, rules } = await rulesFor(context, worldId); return { world: structuredClone(world), rules: structuredClone(rules), asOf: context.now() }; },
     async readScene(context: RuntimeReadContext, principal: Principal, worldId: string, options: { cursor?: string; limit?: number } = {}) {

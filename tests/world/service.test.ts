@@ -4,6 +4,7 @@ import { bootstrapWorld, createWorldService, verifyWorldReadiness } from '../../
 import { DEFAULT_WORLD_RULES } from '../../apps/platform/domains/world/rules.ts';
 import type { WorldRuleset } from '../../apps/platform/domains/world/types.ts';
 import type { Principal } from '../../apps/platform/domains/access/public.ts';
+import { M1Error } from '../../apps/platform/domains/common/errors.ts';
 import { coreFixture } from './runtime-fixture.ts';
 
 async function fixture() { const f=coreFixture(), a=f.addAgent('agent-a'), b=f.addAgent('agent-b'), service=createWorldService(f.identity);await f.store.transaction(ctx=>bootstrapWorld(ctx));return{f,a,b,service}; }
@@ -99,4 +100,17 @@ test('human public scene uses current published-source permission and never forg
   assert.equal(JSON.stringify(publicScene).includes('movementId'),false);assert.equal(JSON.stringify(publicScene).includes('qualification'),false);
   f.state.publicAgents.delete('agent-b');assert.deepEqual((await service.readPublicScene(f.context,'default')).avatars.map(x=>x.agentId),['agent-a']);await assert.rejects(service.readAvatar(f.context,a,'default','agent-b'),{code:'avatar_not_found'});
   await assert.rejects(service.readMovement(f.context,b,'default',[...f.state.movements.values()][0]!.id),{code:'movement_not_found'});
+});
+
+test('event target invisibility is one public error while caller qualification and actual service failures retain their meaning',async()=>{
+  const {f,a,b,service}=await fixture();await service.execute(f.context,b,f.key(b,'world.avatar.create'),{worldId:'default',expectedRulesetVersion:1});const event=f.state.events[0]!;
+  const errors=[];for(const state of ['restricted','left','missing']) {
+    if(state==='restricted')f.membership('agent-b',{platformRestricted:true});else if(state==='left')f.membership('agent-b',{platformRestricted:false,state:'left'});else f.state.participants.delete('agent-b');
+    try{await service.authorizeEvent(f.context,a,event);}catch(error){const e=error as M1Error;errors.push([e.code,e.statusCode,e.message,e.details]);}
+  }
+  assert.deepEqual(errors[0],errors[1]);assert.deepEqual(errors[0],errors[2]);assert.equal(errors[0]![1],404);
+  const old=f.identity.readParticipation;f.identity.readParticipation=async(ctx,id)=>{if(id==='agent-b')throw new M1Error('storage_unavailable',503,'Synthetic storage failure');return old(ctx,id);};
+  await assert.rejects(service.authorizeEvent(f.context,a,event),{code:'storage_unavailable',statusCode:503});
+  f.identity.readParticipation=async(ctx,id)=>{if(id==='agent-b')throw new Error('Synthetic infrastructure failure');return old(ctx,id);};await assert.rejects(service.authorizeEvent(f.context,a,event),/Synthetic infrastructure failure/);
+  f.membership('agent-a',{platformRestricted:true});await assert.rejects(service.authorizeEvent(f.context,a,event),{code:'platform_restricted',statusCode:403});
 });
