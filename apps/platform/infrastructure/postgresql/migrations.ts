@@ -6,9 +6,10 @@ import { directFields, splitFields } from './codec.ts';
 
 export interface PostgresConnectionOptions { connectionString:string; instanceId:string; recoveryEpoch:string }
 const quote=(value:string)=>`'${value.replaceAll("'","''")}'`;
-export function sqlType(field:Field):string{return ({text:'text COLLATE "C"',integer:'bigint',boolean:'boolean',timestamp:'timestamptz',document:'jsonb',array:'jsonb',strings:'text[]'} as const)[field.kind];}
+export function sqlType(field:Field):string{return ({text:'text COLLATE "C"',integer:'bigint',boolean:'boolean',timestamp:'timestamptz',document:'jsonb',array:'jsonb',strings:'text[]',authorization:'text'} as const)[field.kind];}
 function fieldSql(field:Field):string {
   const name=column(field.path),required=field.required?' NOT NULL':'';
+  if(field.kind==='authorization')return `${name}_number bigint CHECK(${name}_number BETWEEN 1 AND 9007199254740991),${name}_hash text CHECK(${name}_hash ~ '^[a-f0-9]{64}$'),CHECK(num_nonnulls(${name}_number,${name}_hash)<=1)`;
   let sql=`${name} ${sqlType(field)}${required}`;
   if(field.kind==='integer')sql+=` CHECK(${name} BETWEEN -9007199254740991 AND 9007199254740991)`;
   if(field.kind==='timestamp')sql+=` CHECK(${name} >= '1970-01-01'::timestamptz)`;
@@ -30,7 +31,7 @@ for(const model of MODELS){
     ${model.check?.map(check=>`, CHECK(${check})`).join('')??''}
   );`);
 }
-tableSql.get('platform')!.push(`CREATE TABLE platform.instance_state(singleton integer PRIMARY KEY CHECK(singleton=1), instance_id text NOT NULL, recovery_epoch text NOT NULL, write_generation bigint NOT NULL DEFAULT 0 CHECK(write_generation>=0), writes_enabled boolean NOT NULL DEFAULT true);
+tableSql.get('platform')!.push(`CREATE TABLE platform.instance_state(singleton integer PRIMARY KEY CHECK(singleton=1), instance_id text NOT NULL, recovery_epoch text NOT NULL, write_generation bigint NOT NULL DEFAULT 0 CHECK(write_generation>=0), writes_enabled boolean NOT NULL DEFAULT false);
   CREATE TABLE platform.legacy_schema_migrations(version integer PRIMARY KEY,name text NOT NULL,checksum text NOT NULL,applied_at text NOT NULL);
   CREATE UNIQUE INDEX management_bindings_active_agent ON iam.management_bindings(agent_id) WHERE active;
   CREATE UNIQUE INDEX profile_agent_unique ON profiles.agent_profiles(agent_id);`);
@@ -43,7 +44,7 @@ for(const[table,{parent,mode}]of childTables){
   let sql:string;
   if(mode==='confirmation')sql=`CREATE TABLE ${table}(parent_id text COLLATE "C" PRIMARY KEY, confirmed_content_version bigint CHECK(confirmed_content_version BETWEEN 1 AND 9007199254740991),confirmed_at timestamptz CHECK(confirmed_at>='1970-01-01'));`;
   else if(mode==='profile')sql=`CREATE TABLE ${table}(parent_id text COLLATE "C" NOT NULL,stage text NOT NULL CHECK(stage IN ('draft','published')),ordinal integer NOT NULL DEFAULT 0,display_name text,bio text,interests text[],avatar_template text,avatar_color text,content_schema_version integer NOT NULL CHECK(content_schema_version=1),content_text text NOT NULL CHECK(jsonb_typeof(content_text::jsonb)='object'),PRIMARY KEY(parent_id,stage),CHECK(display_name IS NOT DISTINCT FROM content_text::jsonb->>'displayName'),CHECK(bio IS NOT DISTINCT FROM content_text::jsonb->>'bio'),CHECK(avatar_template IS NOT DISTINCT FROM content_text::jsonb#>>'{avatar,template}'),CHECK(avatar_color IS NOT DISTINCT FROM content_text::jsonb#>>'{avatar,color}'));`;
-  else sql=`CREATE TABLE ${table}(parent_id text COLLATE "C" NOT NULL,ordinal integer NOT NULL CHECK(ordinal>=0),entry_key text COLLATE "C" NOT NULL,entry_schema_version integer NOT NULL CHECK(entry_schema_version=1),entry_text text NOT NULL CHECK(entry_text::jsonb IS NOT NULL)${table==='perception.source_states'?',source_state text NOT NULL CHECK(source_state IN (\'enabled\',\'not_enabled\',\'unavailable\'))':''},PRIMARY KEY(parent_id,ordinal)${mode==='map'?',UNIQUE(parent_id,entry_key)':''});`;
+  else sql=`CREATE TABLE ${table}(parent_id text COLLATE "C" NOT NULL,ordinal integer NOT NULL CHECK(ordinal>=0),entry_key text COLLATE "C" NOT NULL,entry_schema_version integer NOT NULL CHECK(entry_schema_version=1),entry_text text NOT NULL CHECK(entry_text::jsonb IS NOT NULL)${table==='perception.source_states'?',source_state text NOT NULL CHECK(source_state IN (\'enabled\',\'not_enabled\',\'unavailable\')),CHECK(source_state IS NOT DISTINCT FROM entry_text::jsonb#>>\'{}\')':''}${mode==='snapshot'?',collection_index integer CHECK(collection_index>=-1)':''},PRIMARY KEY(parent_id,ordinal)${mode==='map'?',UNIQUE(parent_id,entry_key)':''});`;
   tableSql.get(schema)!.push(sql);
 }
 tableSql.get('mailbox')!.push(`CREATE TABLE mailbox.messages(id text COLLATE "C" PRIMARY KEY,source_id text NOT NULL,source_message_key text NOT NULL,UNIQUE(source_id,source_message_key));

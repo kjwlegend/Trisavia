@@ -1,6 +1,6 @@
 import type { PoolClient } from 'pg';
 import { StorageError, type JsonObject, type JsonValue, type StoredRow } from '../../contracts/store.ts';
-import { column, type Field, type Model } from './model.ts';
+import { column, resolveModel, type Field, type Model } from './model.ts';
 
 export const MAX_SAFE = Number.MAX_SAFE_INTEGER;
 export function safeInteger(value: unknown): number {
@@ -21,10 +21,10 @@ export function checkedJson(value:unknown, seen=new Set<unknown>()):void {
 }
 
 export interface Encoded { columns:string[]; values:unknown[] }
-export interface SplitField { table:string; path:string; mode:'array'|'map'|'profile'|'confirmation' }
+export interface SplitField { table:string; path:string; mode:'array'|'map'|'profile'|'confirmation'|'snapshot' }
 export function splitFields(model:Model):SplitField[]{
   if(model.logical==='profiles')return [{table:'profiles.profile_contents',path:'draft',mode:'profile'},{table:'profiles.profile_contents',path:'published',mode:'profile'},{table:'profiles.field_policies',path:'lockedFields',mode:'array'}];
-  if(model.table==='perception.read_sessions')return [{table:'perception.read_session_items',path:'records',mode:'array'},{table:'perception.read_session_grants',path:'grantVersions',mode:'map'}];
+  if(model.table==='perception.read_sessions')return [{table:'perception.read_session_items',path:'records',mode:'array'},{table:'perception.read_session_grants',path:'grantVersions',mode:'map'},{table:'perception.read_session_catalog_items',path:'snapshot',mode:'snapshot'}];
   if(model.table==='perception.access_facts')return [{table:'perception.access_targets',path:'targets',mode:'array'},{table:'perception.access_related_records',path:'relatedRecordIds',mode:'array'}];
   if(model.table==='perception.catalog_current')return [{table:'perception.source_states',path:'sourceStates',mode:'map'},{table:'perception.catalog_seed_objects',path:'seedObjectIds',mode:'array'}];
   if(model.table==='perception.observation_policies')return [{table:'perception.observation_policy_objects',path:'objectIds',mode:'array'}];
@@ -36,11 +36,17 @@ export function directFields(model:Model):Field[]{const split=splitFields(model)
 function normalizeField(field:Field,value:JsonValue):unknown {
   if(value===null)return null;
   if(field.kind==='text'){if(typeof value!=='string')throw new StorageError('invalid_usage',`Invalid ${field.path} type`);return value;}
-  if(field.kind==='integer')return safeInteger(value);
+  if(field.kind==='integer'){if(typeof value!=='number')throw new StorageError('invalid_usage',`Invalid ${field.path} integer type`);return safeInteger(value);}
   if(field.kind==='timestamp'){
+    if(typeof value!=='number')throw new StorageError('invalid_usage',`Invalid ${field.path} timestamp type`);
     const stamp=safeInteger(value);if(stamp<0||!Number.isFinite(new Date(stamp).getTime()))throw new StorageError('invalid_usage',`Invalid ${field.path} timestamp`);return new Date(stamp);
   }
   if(field.kind==='boolean'){if(typeof value!=='boolean')throw new StorageError('invalid_usage',`Invalid ${field.path} flag`);return value;}
+  if(field.kind==='authorization'){
+    if(typeof value==='number'&&Number.isSafeInteger(value)&&value>0)return value;
+    if(typeof value==='string'&&/^[a-f0-9]{64}$/.test(value))return value;
+    throw new StorageError('invalid_usage','Invalid grant authorization version');
+  }
   if(field.kind==='document'&&(typeof value!=='object'||Array.isArray(value)))throw new StorageError('invalid_usage',`Invalid ${field.path} document`);
   if((field.kind==='array'||field.kind==='strings')&&!Array.isArray(value))throw new StorageError('invalid_usage',`Invalid ${field.path} array`);
   if(field.kind==='strings'){if(!(value as JsonValue[]).every(item=>typeof item==='string'))throw new StorageError('invalid_usage',`Invalid ${field.path} text list`);return value;}
@@ -48,7 +54,7 @@ function normalizeField(field:Field,value:JsonValue):unknown {
 }
 export function encode(model:Model,row:StoredRow):Encoded {
   checkedJson(row.data);
-  if(!row.id||typeof row.id!=='string'||safeInteger(row.version)<1)throw new StorageError('invalid_usage','Invalid source identity/version');
+  if(!row.id||typeof row.id!=='string'||typeof row.version!=='number'||safeInteger(row.version)<1)throw new StorageError('invalid_usage','Invalid source identity/version');
   const allowed=new Set(model.fields.map(field=>field.path)),containers=new Set<string>();
   for(const field of model.fields){const parts=field.path.split('.');for(let index=1;index<parts.length;index++)containers.add(parts.slice(0,index).join('.'));}
   const present:string[]=[],nulls:string[]=[],values=new Map<string,unknown>();
@@ -63,8 +69,14 @@ export function encode(model:Model,row:StoredRow):Encoded {
     }
   }
   walk(row.data);
+  if(model.logical==='perception_catalog'&&row.data.kind==='object_history'){
+    const content=row.data.content as JsonObject;encode(resolveModel('perception_objects',{id:String(row.data.objectId),version:row.data.contentVersion as number,data:content}),{id:String(row.data.objectId),version:row.data.contentVersion as number,data:content});
+  }
   const columns=['id','version','_present','_nulls'],output:unknown[]=[row.id,row.version,present,nulls];
   for(const field of directFields(model)){
+    if(field.kind==='authorization'){
+      const value=values.get(field.path);columns.push(`${column(field.path)}_number`,`${column(field.path)}_hash`);output.push(typeof value==='number'?value:null,typeof value==='string'?value:null);continue;
+    }
     columns.push(column(field.path));output.push(values.get(field.path)??null);
     if(field.kind==='document'||field.kind==='array'){
       columns.push(`${column(field.path)}_text`);output.push(values.get(field.path)??null);
@@ -84,6 +96,7 @@ export async function decode(client:PoolClient,model:Model,stored:Record<string,
     if(!field){if(!model.fields.some(item=>item.path===path))setPath(data,path,{});continue;}
     const value=stored[column(path)];
     if(field.kind==='integer')setPath(data,path,safeInteger(value));
+    else if(field.kind==='authorization')setPath(data,path,stored[`${column(path)}_number`]!=null?safeInteger(stored[`${column(path)}_number`]):stored[`${column(path)}_hash`] as string);
     else if(field.kind==='timestamp')setPath(data,path,new Date(value as string).getTime());
     else if(field.kind==='document'||field.kind==='array')setPath(data,path,JSON.parse(stored[`${column(path)}_text`] as string) as JsonValue);
     else setPath(data,path,value as JsonValue);
@@ -97,6 +110,9 @@ export async function decode(client:PoolClient,model:Model,stored:Record<string,
     }
     const result=await client.query(`SELECT * FROM ${split.table} WHERE parent_id=$1${split.mode==='profile'?' AND stage=$2':''} ORDER BY ordinal`,split.mode==='profile'?[stored.id,split.path]:[stored.id]);
     if(split.mode==='profile'){data[split.path]=JSON.parse(result.rows[0]?.content_text??'{}') as JsonObject;continue;}
+    if(split.mode==='snapshot'){
+      const snapshot:JsonObject={};for(const item of result.rows){if(item.collection_index===null)snapshot[item.entry_key]=JSON.parse(item.entry_text);else if(item.collection_index===-1)snapshot[item.entry_key]=[];else(snapshot[item.entry_key] as JsonValue[]).push(JSON.parse(item.entry_text));}data[split.path]=snapshot;continue;
+    }
     if(split.mode==='map')data[split.path]=Object.fromEntries(result.rows.map(item=>[item.entry_key,JSON.parse(item.entry_text)])) as JsonObject;
     else data[split.path]=result.rows.map(item=>JSON.parse(item.entry_text)) as JsonValue[];
   }
@@ -111,11 +127,21 @@ export async function writeChildren(client:PoolClient,model:Model,row:StoredRow)
     if(split.mode==='profile'){
       const content=value as JsonObject,known=['displayName','bio','interests','avatar'];
       if(Object.keys(content).some(key=>!known.includes(key)))throw new StorageError('invalid_usage','Unmapped profile content');
+      for(const key of ['displayName','bio'])if(content[key]!=null&&typeof content[key]!=='string')throw new StorageError('invalid_usage','Invalid profile text');
+      if(content.interests!=null&&(!Array.isArray(content.interests)||!content.interests.every(item=>typeof item==='string')))throw new StorageError('invalid_usage','Invalid profile interests');
       const avatar=content.avatar as JsonObject|undefined;
       if(avatar&&Object.keys(avatar).some(key=>!['template','color'].includes(key)))throw new StorageError('invalid_usage','Unmapped avatar parameter');
       await client.query(`INSERT INTO profiles.profile_contents(parent_id,stage,ordinal,display_name,bio,interests,avatar_template,avatar_color,content_schema_version,content_text)
         VALUES($1,$2,0,$3,$4,$5,$6,$7,1,$8)`,[row.id,split.path,content.displayName??null,content.bio??null,content.interests??null,avatar?.template??null,avatar?.color??null,JSON.stringify(content)]);continue;
     }
+    if(split.mode==='snapshot'){
+      let ordinal=0;for(const[key,entry]of Object.entries(value as JsonObject)){
+        if(!['worlds','modules','types','sources','categories','skills','operations','catalogRevision','skillCatalogRevision','schemaReader','guideReader','notEnabled'].includes(key))throw new StorageError('invalid_usage','Unknown frozen catalog field');
+        const parts=Array.isArray(entry)?[[-1,[]],...entry.map((item,index)=>[index,item])]:[[null,entry]];
+        for(const[index,item]of parts)await client.query(`INSERT INTO ${split.table}(parent_id,ordinal,entry_key,entry_schema_version,entry_text,collection_index) VALUES($1,$2,$3,1,$4,$5)`,[row.id,ordinal++,key,JSON.stringify(item),index]);
+      }continue;
+    }
+    if(split.table==='perception.read_session_grants')for(const entry of Object.values(value as JsonObject))if(entry!==null&&!(typeof entry==='number'&&Number.isSafeInteger(entry)&&entry>0)&&!(typeof entry==='string'&&/^[0-9a-f]{64}$/.test(entry)))throw new StorageError('invalid_usage','Invalid frozen grant authorization version');
     const entries=split.mode==='map'?Object.entries(value as JsonObject):(value as JsonValue[]).map((entry,index)=>[String(index),entry] as const);
     for(const[index,[key,entry]]of entries.entries())await client.query(`INSERT INTO ${split.table}(parent_id,ordinal,entry_key,entry_schema_version,entry_text${split.table==='perception.source_states'?',source_state':''}) VALUES($1,$2,$3,1,$4${split.table==='perception.source_states'?',$5':''})`,[row.id,index,key,JSON.stringify(entry),...(split.table==='perception.source_states'?[entry]:[])]);
   }
