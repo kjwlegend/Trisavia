@@ -127,11 +127,20 @@ export function createInteractionService(identity: IdentityAccess<RuntimeReadCon
   async function execute(context: RuntimeTransaction, principal: Principal, key: CommandKey, input: JsonObject): Promise<CommandReceipt> {
     if (key.domain !== 'interaction' || !fields[key.action] || principal.kind !== 'agent' || key.principal.kind !== 'agent' || key.principal.id !== principal.agentId) fail('invalid_request', 400, 'Invalid interaction command identity');
     object(input, fields[key.action]!);
-    return commitRuntimeCommandIn(context, { key, requestHash: hashRuntimeRequest(input), authorize: async current => { await authorizeInput(current, principal, key.action, input); },
+    return commitRuntimeCommandIn(context, { key, requestHash: hashRuntimeRequest(input), authorize: async current => {
+      await authorizeInput(current, principal, key.action, input);
+      // Recheck the actor, not a target legitimately withdrawn/blocked by this very command.
+      current.validateBeforeCommit(async latest => { await actor(latest, principal); });
+    },
       classifyRejection: error => error instanceof M1Error && error.statusCode < 500 ? { outcome: error.statusCode === 409 ? 'conflict' : error.statusCode === 410 ? 'expired' : 'rejected', result: { code: error.code, ...receiptReferences(input) } } : undefined,
       handle: async current => {
         const agentId = principal.agentId, repository = current.repository(INTERACTION_REPOSITORY), now = current.now();
-        await participant(current, agentId, undefined, true);
+        const qualification = await participant(current, agentId, undefined, true);
+        current.validateBeforeCommit(async latest => {
+          const fresh = await participant(latest, agentId, undefined, true);
+          if (fresh.runtimeVersion !== qualification.runtimeVersion || fresh.membership.ownerPauseVersion !== qualification.membership.ownerPauseVersion
+            || fresh.membership.platformVersion !== qualification.membership.platformVersion || fresh.membership.sharingGeneration !== qualification.membership.sharingGeneration) fail('interaction_qualification_changed', 409, 'Interaction qualification changed before commit');
+        });
         if (key.action === 'interaction.artifact.create') {
           const configuration = await repository.getConfiguration(1); if (!configuration) fail('interaction_unavailable', 503, 'Interaction configuration is not initialized');
           const artifact: ArtifactRevision = { artifactId: randomUUID(), revision: 1, version: 1, authorAgentId: agentId,
@@ -170,6 +179,7 @@ export function createInteractionService(identity: IdentityAccess<RuntimeReadCon
         }
         if (key.action.startsWith('interaction.invitation.')) {
           const { invitation } = await bundle(current, agentId, identifier(input.invitationId), true); expected(input.expectedVersion, invitation.version);
+          commitBeforeDeadline(current, invitation.deadline);
           if (key.action.endsWith('.accept')) {
             const accepted = acceptInvitation(invitation, agentId, now, randomUUID());
             await repository.saveInvitation(accepted.invitation, invitation.version); await repository.saveActivity(accepted.activity, null);
@@ -190,6 +200,7 @@ export function createInteractionService(identity: IdentityAccess<RuntimeReadCon
           return { result, eventIds: await emit(current, key, key.action, { type: 'feedback', id: next.id, version: next.version }, [invitation.fromAgentId, invitation.toAgentId], result, invitation.worldId) };
         }
         expected(input.expectedVersion, activity.version);
+        commitBeforeDeadline(current, activity.state === 'waiting_ack' ? activity.acknowledgementDeadline! : activity.feedbackDeadline);
         let next: FeedbackActivity;
         if (key.action.endsWith('.submit_feedback')) {
           const submitted = submitFeedback(invitation, activity, agentId, now, randomUUID(), input.body); await repository.saveFeedback(submitted.feedback, null); next = submitted.activity;
@@ -292,4 +303,8 @@ export async function verifyInteractionReadiness(context: RuntimeReadContext): P
   const configuration = await context.repository(INTERACTION_REPOSITORY).getConfiguration(1);
   if (!configuration || await context.tasks.currentGeneration('interaction') < 1) fail('interaction_unavailable', 503, 'Interaction has not been initialized');
   assertConfiguration(configuration);
+}
+
+function commitBeforeDeadline(context: RuntimeTransaction, deadline: number): void {
+  context.validateBeforeCommit(async latest => { if (latest.now() >= deadline) fail('interaction_expired', 410, 'The interaction stage deadline passed before commit'); });
 }

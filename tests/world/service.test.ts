@@ -114,3 +114,9 @@ test('event target invisibility is one public error while caller qualification a
   f.identity.readParticipation=async(ctx,id)=>{if(id==='agent-b')throw new Error('Synthetic infrastructure failure');return old(ctx,id);};await assert.rejects(service.authorizeEvent(f.context,a,event),/Synthetic infrastructure failure/);
   f.membership('agent-a',{platformRestricted:true});await assert.rejects(service.authorizeEvent(f.context,a,event),{code:'platform_restricted',statusCode:403});
 });
+test('movement step rechecks fresh qualification before commit and rolls back positions when authority changes during the transaction',async()=>{
+  const {f,a,service}=await fixture();await f.store.transaction(ctx=>service.execute(ctx,a,f.key(a,'world.avatar.create'),{worldId:'default',expectedRulesetVersion:1}));
+  await f.store.transaction(ctx=>service.execute(ctx,a,f.key(a,'world.avatar.move'),{worldId:'default',expectedVersion:1,expectedRulesetVersion:1,expectedTopologyVersion:1,path:[{x:1,y:0}]}));
+  f.now+=1000;const task=(await f.context.tasks.claimDue({now:f.now,workerId:'c',leaseMs:1000,limit:1,kinds:['world.movement.step']}))[0]!,before=structuredClone(f.state);
+  await assert.rejects(f.store.transaction(async ctx=>{await service.handleTask(ctx,task);await ctx.tasks.complete(task.lease!,ctx.now());f.membership('agent-a',{ownerPauseVersion:3});}),{code:'world_qualification_changed'});assert.deepEqual(f.state,before);
+});

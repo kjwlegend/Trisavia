@@ -93,6 +93,12 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
       const existing = await repository.getAvatar(movement.worldId, movement.agentId); if (!existing || existing.id !== movement.avatarId || existing.status !== 'idle' || existing.version !== movement.expectedAvatarVersion) fail('movement_avatar_changed', 409, 'Avatar has changed'); avatar = existing;
       const cell = movement.path[movement.nextStep]; if (!cell || movement.nextDueAt === null || task.dueAt !== movement.nextDueAt || context.now() < movement.nextDueAt) fail('movement_plan_invalid', 409, 'Movement plan is not executable');
       destination = validatePath(rules, avatar.position, [cell])[0]!; await capacity(context, rules, [destination], movement.agentId);
+      context.validateBeforeCommit(async latest => {
+        await participation(latest, movement.agentId, movement.worldId, true); const fresh = await identity.readParticipation(latest, movement.agentId), q = movement.qualification;
+        const current = await rulesFor(latest, movement.worldId);
+        if (fresh.runtimeVersion !== q.runtimeVersion || fresh.membership.ownerPauseVersion !== q.ownerPauseVersion || fresh.membership.platformVersion !== q.platformVersion
+          || fresh.membership.sharingGeneration !== q.sharingGeneration || current.rules.version !== movement.rulesetVersion || current.rules.topologyVersion !== movement.topologyVersion) fail('world_qualification_changed', 409, 'Movement qualification changed before commit');
+      });
     } catch (error) {
       if (!(error instanceof M1Error) || error.statusCode >= 500) throw error;
       const next = stopped(movement, context.now(), error.code); await repository.saveMovement(next, movement.version); const revision = await repository.advanceRevision(movement.worldId, world.revision); await movementFact(context, key, next, revision); return;
@@ -129,11 +135,21 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
     const keys = key.action === 'world.avatar.create' ? ['worldId', 'expectedRulesetVersion'] : key.action === 'world.avatar.move'
       ? ['worldId', 'expectedVersion', 'expectedRulesetVersion', 'expectedTopologyVersion', 'path'] : key.action === 'world.movement.stop' ? ['worldId', 'movementId', 'expectedVersion'] : ['worldId', 'expectedVersion'];
     const request = object(input, keys), worldId = identifier(request.worldId, 'worldId');
-    return commitRuntimeCommandIn(context, { key, requestHash: hashRuntimeRequest(input), authorize: async current => { await participation(current, await authorize(current, principal), worldId, false); },
+    return commitRuntimeCommandIn(context, { key, requestHash: hashRuntimeRequest(input), authorize: async current => {
+      await participation(current, await authorize(current, principal), worldId, false);
+      current.validateBeforeCommit(async latest => { await participation(latest, await authorize(latest, principal), worldId, false); });
+    },
       classifyRejection: error => error instanceof M1Error && error.statusCode < 500 ? { outcome: error.statusCode === 409 ? 'conflict' : error.statusCode === 410 ? 'expired' : 'rejected', result: { code: error.code } } : undefined,
       handle: async current => {
         const agentId = principal.agentId, repository = current.repository(WORLD_REPOSITORY);
         await participation(current, agentId, worldId, key.action !== 'world.movement.stop');
+        const qualification = await identity.readParticipation(current, agentId);
+        current.validateBeforeCommit(async latest => {
+          await participation(latest, agentId, worldId, key.action !== 'world.movement.stop');
+          const fresh = await identity.readParticipation(latest, agentId);
+          if (fresh.runtimeVersion !== qualification.runtimeVersion || fresh.membership.ownerPauseVersion !== qualification.membership.ownerPauseVersion
+            || fresh.membership.platformVersion !== qualification.membership.platformVersion || fresh.membership.sharingGeneration !== qualification.membership.sharingGeneration) fail('world_qualification_changed', 409, 'World qualification changed before commit');
+        });
         const locked = await repository.lockWorld(worldId); if (!locked?.active) fail('world_not_accessible', 404, 'World is not available');
         const { world, rules } = await rulesFor(current, worldId), old = await repository.getAvatar(worldId, agentId), now = current.now();
         if (key.action === 'world.movement.stop') {

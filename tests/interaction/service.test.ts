@@ -82,3 +82,13 @@ test('expiry worker revalidates current lease fencing and target version; late d
   assert.equal((await send(a,'interaction.activity.leave',{activityId,expectedVersion:2})).outcome,'conflict'); // Explicit terminal rejection; no revival.
   assert.equal(f.state.activities.get(activityId)!.state,'expired');
 });
+test('fresh commit-time deadline and actor qualification checks roll back a transition rather than committing stale acceptance',async()=>{
+  for(const change of ['deadline','pause']) {
+    const {f,b,service,invite}=await fixture(),inv=await invite(),before=structuredClone(f.state);
+    await assert.rejects(f.store.transaction(async ctx=>{
+      const result=await service.execute(ctx,b,f.key(b,'interaction.invitation.accept'),{invitationId:inv.result.invitationId!,expectedVersion:1});assert.equal(result.outcome,'committed');
+      if(change==='deadline')f.now=inv.result.deadline as number;else f.membership('agent-b',{ownerPaused:true,ownerPauseVersion:2});
+    }),change==='deadline'?{code:'interaction_expired'}:{code:'participation_paused'});
+    assert.deepEqual(f.state,before); // Including invitation, unique activity, receipt, next Decision and task.
+  }
+});
