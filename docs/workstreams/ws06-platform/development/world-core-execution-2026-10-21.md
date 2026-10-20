@@ -202,3 +202,17 @@ D随后在固定执行树`ebe7677`对运行b5f0285执行已审`tests/e2e/world-c
 D工作树随后无冲突merge已审b5f0285，HEAD`3c889ce68cec2828438572fadb192f98ca9500e7`、两parent为ebe与b5；完整tree与b5同为`a2298edef214a3e36cfc34829c7874f0a5c89740`，历史、outputs及失败／通过日志保留，未再次运行浏览器或操作服务。原设计师的`docs/design/pixel-world-20261021/production-contract.md`已固定`pixel-town-commons@1`空间映射：768×512源像素、`sourceX=264+16*x`／`sourceY=136+16*y`，当前真实公共庭256×256，外围仅景观。TD已派同一D先按固定合同适配几何、相机尺度、资产加载与渲染接口；装饰、脚点和完整预览仍等设计师最终字典／验证，不猜未定细节、不改World规则或当前N2资源。
 
 总指挥补充普通用户主界面要求已派设计师及D：角色详情优先姓名、可理解的所在区域和已有数据能证明的状态／结果；版本、逻辑坐标、协议／规则代次等只放必要调试层。公开World不推导私有互动结果或在线，idle不表示没有移动。保留原底部HUD、居中内容窗和账号流程，设计预览不替代真实背包／信箱数据。该后继视觉差异尚未实现、独审或部署，不继承b5浏览器通过。
+
+### 6.9 独立闭环、安全点与像素固定输入
+
+独立Agent正式报告为[核心Gateway／World／Decision实测](../../ws02-perception/validation/user-simulation/core-gateway-world-decision-20261021.md)：A/B分别完成注册、Avatar、移动、发现对方，以及A原创文本邀请、B自行读取接受并提交反馈、A实际读取确认、双方回查同一活动closed／received_confirmed。182次主线HTTP为180次200及两次预期同键异体409；后续正常换发主人入口不计入这182次。报告列明重放抽样、未测跨主体私有读取、期限、撤回及故障恢复；不扩写为完整WS03或所有边界通过。TD仅读取正式脱敏报告，不读取双方运行凭据或正文。
+
+原主人交接入口首先显示合并失效原因；两Agent随后沿公开正常流程、原身份换发代次2入口。不能以换发成功反推旧入口的唯一失效原因。独立人类报告[阶段三](../../../validation/user-simulation/world-core-desktop-round-01-2026-10-21.md#阶段三b5f0285新主人注册双agent与互动事实)记录02:32:07—02:39:15在b5旧画面完成一个新Owner先B后A绑定、双Agent选择／所属高亮、各一条最小互动事实、整页刷新、正常退出与密码重登；体验码1234并非真实邮箱验证。消息空态通过，背包／通知／公告／事件显示未开放，未记为真实空集合。CORE-UI-O01／P2为摘要日期与邀请状态挤叠；已派D定点修复。原UI已保留登录及当前A，归档并交还维护安全点，未对最终像素验收。
+
+总指挥确认最终新版本继续使用18893及当前新库、instance／epoch、Owner绑定、Agent凭据和真实业务，不切回8789；8789只保留历史版本。本轮后继固定差异经独审／工程检查后可fresh备份并原地发布，前后回报。后续由总指挥协调原A提交真实短路径、原UI观察新画面行走和到达，不用示例角色或注入代替，也不启动外部Agent定时任务。
+
+原设计师固定包`pixel-town-v1.0.0`、地图`pixel-town-commons@1`、素材`2026-10-21.r3`已经总指挥接受为首个生产视觉基线。TD核对31文件（含19PNG）及11份证据hash，冻结于`outputs/world-core/pixel-town-v1.0.0-design/`，receipt为`td-receipt.json`；bundleDigest为`e51eaf38c10765eceaee2cb22147211b76e2adbc5d98447b74d6f9386dca29b1`，按相对路径排序后的`sha256  path`行计算。采用production-contract SHA256为`bebd6dddd942ad682a4c585e2d231c5474075664c6d17c8725eee5e28dbea96c`；人体96×64、脚点[48,39]、左右朝向及idle／walk帧合同已固定。原430素材保全，19PNG保持原字节。D只能消费此固定输入，保留真实provider、Owner及HUD，不接预览演示背包／信箱。设计自身逻辑、桌面及短性能结果各守原范围，不推为产品浏览器或60fps／容量通过。
+
+原reviewer R23接受D`3c889ce → 4df5d8`九路径可注入像素基础，R24接受`4df5d8 → d278d59`六路径公开能力说明、角色详情层级和首次拒绝入口引导。TD无冲突cherry-pick为`db19bb5`与`04705feb2ea1e7b9dad18320c68b0330dcf22cb8`，生产／测试路径与D固定d278一致；未新增整合逻辑。此时尚未在047运行TD组合检查或部署，实际18893仍b5。D两路径摘要排版修复`d278 → e6bf1cb`已送原reviewer；完整像素激活仍由D实现，不继承上述静态接受或旧b5浏览器通过。
+
+A/D只读定位Owner未开放：676→b5既有感知读取源及对应前端门控未改；fresh catalog默认禁用部分已实现来源，UI由category／source缺失或not_enabled进入未开放分支，区别于真正空集合及403。通知另依赖历史31条demo来源策略，旧固定31refs授权helper不能用于新空实例。匿名实际capabilities仍声明Owner读取API，perception revision为catalog-1／skills-1；匿名discovery401后未借Owner材料继续，不冒称已读取候选私有目录或私密业务行。最小修补准备是分离reader可用性与示例内容、显式版本目录发布；通知collection-query许可交回WS02确认，逐对象来源授权保持，不seed、不改grant、不用前端假空掩盖。该修补尚未实施、受审或发布。
