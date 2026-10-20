@@ -5,6 +5,7 @@ import type { IdentityAccess, Principal } from '../domains/access/public.ts';
 import { fail, M1Error, object, version } from '../domains/common/errors.ts';
 import type { DecisionIntentSink, DecisionOrigin, DecisionTarget } from '../domains/decision/public.ts';
 import type { DecisionRequest } from '../domains/decision/repository.ts';
+import { createInteractionCursor } from '../domains/interaction/cursor.ts';
 import { INTERACTION_REPOSITORY } from '../domains/interaction/repository.ts';
 import { activityExpired, artifactReference, assertConfiguration, identifier, invitationExpired, pairIds, plainText, sharedAccess } from '../domains/interaction/rules.ts';
 import { acceptInvitation, closeActivity, declineInvitation, expireActivity, expireInvitation, leaveActivity, makeInvitation, submitFeedback, withdrawInvitation } from '../domains/interaction/transitions.ts';
@@ -39,6 +40,7 @@ function safeActivity(activity: FeedbackActivity, now: number): JsonObject {
     feedbackId: activity.feedbackId, endedAt: activity.endedAt, endedByAgentId: activity.endedByAgentId };
 }
 export function createInteractionService(identity: IdentityAccess<RuntimeReadContext>, decisions: DecisionIntentSink) {
+  const cursors = createInteractionCursor();
   async function actor(context: RuntimeReadContext, principal: Principal): Promise<string> {
     if (principal.kind !== 'agent') fail('agent_identity_required', 403, 'This action requires the Agent identity');
     await identity.authorizeAgent(context, principal, principal.agentId); return principal.agentId;
@@ -278,12 +280,32 @@ export function createInteractionService(identity: IdentityAccess<RuntimeReadCon
     async readActivity(context: RuntimeReadContext, principal: Principal, activityId: string) { const agentId = await actor(context, principal), value = await activityBundle(context, agentId, identifier(activityId)); return readInvitation(context, principal, value.invitation.id); },
     async readArtifact(context: RuntimeReadContext, principal: Principal, ref: unknown) { return structuredClone(await ownArtifact(context, await actor(context, principal), ref)); },
     async readPolicy(context: RuntimeReadContext, principal: Principal, target: string) { const agentId = await actor(context, principal); const [a, b] = pairIds(agentId, identifier(target)); const policy = await context.repository(INTERACTION_REPOSITORY).getPair(a, b); return { agentId: target, version: policy?.version ?? 1, blocked: policy?.blockedByAgentIds.includes(agentId) ?? false, sharedGeneration: policy?.sharedGeneration ?? 0, asOf: context.now() }; },
-    async listCurrent(context: RuntimeReadContext, principal: Principal, options: { afterId?: string; limit?: number } = {}) {
-      const agentId = await actor(context, principal), limit = options.limit ?? 50; if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) fail('invalid_request', 400, 'Invalid current-items limit');
-      const candidates = await context.repository(INTERACTION_REPOSITORY).listInvitations(agentId, { ...options, limit }), items: JsonObject[] = [];
-      for (const candidate of candidates) { try { const value = await bundle(context, agentId, candidate.id); items.push({ invitation: safeInvitation(value.invitation, context.now()), activity: value.activity ? safeActivity(value.activity, context.now()) : null }); } catch (error) { if (!(error instanceof M1Error) || error.statusCode !== 404) throw error; } }
-      return { items, asOf: context.now(), scope: 'current-authorized-interactions', complete: candidates.length < limit, nextAfterId: candidates.length === limit ? candidates.at(-1)!.id : null };
+    async listCurrent(context: RuntimeReadContext, principal: Principal, options: { cursor?: string; limit?: number } = {}) {
+      const agentId = await actor(context, principal); object(options, ['cursor', 'limit']);
+      const limit = options.limit ?? 50;
+      if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100 || options.cursor !== undefined && typeof options.cursor !== 'string') fail('invalid_request', 400, 'Invalid current-items query');
+      const scope = { instanceId: context.instanceId, recoveryEpoch: context.recoveryEpoch, agentId, limit };
+      let afterId = options.cursor === undefined ? undefined : cursors.decode(options.cursor, scope, context.now()), scanned = 0, complete = false;
+      const repository = context.repository(INTERACTION_REPOSITORY), items: JsonObject[] = [];
+      // Hidden rows still advance this internal cut; only encrypted continuations leave the domain.
+      while (items.length < limit && scanned < 500 && !complete) {
+        const batchSize = Math.min(50, 500 - scanned), candidates = await repository.listInvitations(agentId, { ...(afterId ? { afterId } : {}), limit: batchSize });
+        if (!candidates.length) { complete = true; break; }
+        for (let index = 0; index < candidates.length; index++) {
+          const candidate = candidates[index]!; afterId = candidate.id; scanned++;
+          try {
+            const value = await bundle(context, agentId, candidate.id);
+            items.push({ invitation: safeInvitation(value.invitation, context.now()), activity: value.activity ? safeActivity(value.activity, context.now()) : null });
+          } catch (error) {
+            if (!(error instanceof M1Error) || error.code !== 'target_not_accessible' || error.statusCode !== 404) throw error;
+          }
+          if (items.length === limit) { complete = index === candidates.length - 1 && candidates.length < batchSize; break; }
+        }
+        if (items.length < limit && candidates.length < batchSize) complete = true;
+      }
+      return { items, asOf: context.now(), scope: 'current-authorized-interactions', complete, nextCursor: !complete && afterId ? cursors.encode(afterId, scope, context.now()) : null };
     },
+
     async readOwnerSummary(context: RuntimeReadContext, principal: Principal, agentId: string, options: { afterId?: string; limit?: number } = {}) {
       if (principal.kind !== 'owner') fail('owner_identity_required', 403, 'This summary requires the current Owner identity'); await identity.authorizeAgent(context, principal, agentId);
       const limit = options.limit ?? 50; if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) fail('invalid_request', 400, 'Invalid summary limit');
