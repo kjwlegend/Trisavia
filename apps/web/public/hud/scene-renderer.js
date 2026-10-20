@@ -4,7 +4,7 @@ import {createOwnedAgentBinding} from './owned-agents.js';
 import {createPanelTransition} from './panel-transition.js';
 import {createWorldSceneProvider} from './world-scene-provider.js';
 let scene=null;
-export function initSceneRenderer({session,onSelectAgent=()=>{}}={}){
+export function initSceneRenderer({session,onSelectAgent=()=>{},rendering=null}={}){
 let mapReady=false,mapFailed=false,pageActive=true;
 let sceneGeneration=0,sceneAbort=null;
 const ownedAgents=session?createOwnedAgentBinding(session,onSelectAgent):null;
@@ -82,7 +82,7 @@ async function startScene() {
   $('#world-fallback').hidden = true;
   $('#world-motion-status').textContent = '正在载入世界画布…';
   try {
-    const next = await createWorldScene($('#world-scene'), {worldSource:'pending',signal:sceneAbort.signal,onSelect: openPlace, onOwnedSelect:(agentId,origin)=>ownedAgents?.select(agentId,origin), onChange: updateControls, onError:()=>{if(generation===sceneGeneration)mapError();}});
+    const next = await createWorldScene($('#world-scene'), {rendering,worldSource:'pending',signal:sceneAbort.signal,onSelect: openPlace, onOwnedSelect:(agentId,origin)=>ownedAgents?.select(agentId,origin), onChange: updateControls, onError:()=>{if(generation===sceneGeneration)mapError();}});
     if(generation!==sceneGeneration){next.destroy();return;}
     scene=next;scene.setWorldScene(worldData);if(!mapFailed)ownedAgents?.attach(scene);
     if(!mapFailed){setMapAvailable(true);updateControls(scene.getState());}

@@ -19,9 +19,9 @@ export function readWorldPage(data,rules){
   }
   return{worldId:rules.worldId,worldRevision:data.worldRevision,asOf:data.asOf,avatars,complete:data.complete,nextCursor:data.nextCursor};
 }
-export function projectWorldAvatars(avatars,rules,{width=1536,height=1024}={}){
-  return avatars.map(row=>({agentId:row.agentId,name:row.profile.displayName,avatar:{...row.profile.appearance},fact:structuredClone(row),projectionVersion:WORLD_PROJECTION_VERSION,
+export function projectWorldAvatars(avatars,rules,{width=1536,height=1024,projectPoint,projectionVersion=WORLD_PROJECTION_VERSION}={}){
+  return avatars.map(row=>({agentId:row.agentId,name:row.profile.displayName,avatar:{...row.profile.appearance},fact:structuredClone(row),projectionVersion,
     // Keep the display extent inside the canvas so the (0,0) spawn is not
     // covered by the fixed header/source note. This does not move its cell.
-    x:width/4+(rules.width===1?.5:row.position.x/(rules.width-1))*width/2,y:height/4+(rules.height===1?.5:row.position.y/(rules.height-1))*height/2,walking:false,frame:0,direction:'down'}));
+    ...(projectPoint?projectPoint(row.position,rules):{x:width/4+(rules.width===1?.5:row.position.x/(rules.width-1))*width/2,y:height/4+(rules.height===1?.5:row.position.y/(rules.height-1))*height/2}),walking:false,frame:0,direction:'down'}));
 }
