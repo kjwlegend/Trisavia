@@ -6,6 +6,19 @@ const keyOf=record=>JSON.stringify([record?.ref?.moduleId,record?.ref?.type,reco
 const same=(a,b)=>keyOf(a)===keyOf(b)&&a?.version===b?.version;
 const titleOf=record=>record?.summary?.title||'内容详情';
 const contentTitle=detail=>typeof detail?.content?.title==='string'&&detail.content.title.trim()?detail.content.title:'';
+export function projectSavedInventorySelection(view,source,records){
+  const chosen=records.find(record=>keyOf(record)===view.selected)||null;
+  if(chosen)return{chosen,pending:false};
+  if(view.selected&&!source.complete&&!source.records.some(record=>keyOf(record)===view.selected))return{chosen:null,pending:true};
+  const fallback=records[0]||null;if(view.selected){view.top=0;view.detailTop=0;}view.selected=fallback?keyOf(fallback):'';return{chosen:fallback,pending:false};
+}
+export function inventoryNavigationFields(view={}){return{category:['all','work','prop'].includes(view.category)?view.category:'all',selected:typeof view.selected==='string'&&view.selected.length<=600?view.selected:'',top:Number.isFinite(view.top)&&view.top>=0?view.top:0,detailTop:Number.isFinite(view.detailTop)&&view.detailTop>=0?view.detailTop:0};}
+export function readSavedInventoryNavigation(raw){try{return inventoryNavigationFields(JSON.parse(raw||'null')||{});}catch{return inventoryNavigationFields();}}
+export function readSavedMailNavigation(raw){
+  const categories=['messages','notifications','announcements','events'];
+  if(categories.includes(raw))return{category:raw,views:{}};
+  try{const value=JSON.parse(raw||'null');return{category:categories.includes(value?.category)?value.category:'messages',views:value?.views&&typeof value.views==='object'&&!Array.isArray(value.views)?value.views:{}};}catch{return{category:'messages',views:{}};}
+}
 const relatedKind=ref=>ref?.type==='items.item@1'?'物品':ref?.type==='world.announcement@1'?'公告':'事件';
 function senderText(value,detail=false){const sender=value?.summary?.sender||value?.content?.sender;if(typeof sender?.displayName!=='string'||!sender.displayName.trim())return '发件人不可显示';const kind=sender.kind==='agent'?'Agent':sender.kind==='human'?'人类':'';return detail?`发件人：${sender.displayName}${kind?'（'+kind+'）':''}`:`来自：${sender.displayName}${kind?' · '+kind:''}`;}
 function messageTime(value){const content=value?.summary||value?.content||{};const sent=time(content.sentAt),received=time(content.receivedAt);return sent?`发送于 ${sent}`:received?`接收于 ${received}`:'消息时间未提供';}
@@ -63,15 +76,15 @@ export function createContentSwitcher(example,platform,{session,onEnterDemo=()=>
 
 export function createPlatformInventory(provider,{session,context,walletProvider,chooseAgent=()=>{}}={}){
   const node=el('section','hud-inventory hud-platform-content'),results=el('div','hud-inventory-grid-scroll'),details=el('section','hud-item-detail');results.id='hud-platform-item-results';details.id='hud-platform-item-detail';
-  const key='holdings';let state=session.snapshot(),active=false,disposed=false,selected=null,detail=null,detailError=null,detailRequest=null,detailRevision=0,preview=false;
+  const key='holdings';let state=session.snapshot(),active=false,disposed=false,selected=null,detail=null,detailError=null,detailRequest=null,detailRevision=0,preview=false,pendingRestore=false;
   const views={holdings:{selected:'',top:0,detailTop:0,query:'',category:'all'}};
   let inventoryScope='';
   function inventoryStorageKey(){const scope=context?.snapshot().scope,identity=session.hudContext?.();return scope?.kind==='owner'&&identity?.kind==='owner'&&scope.ownerId===identity.ownerId&&scope.agentId===identity.agentId?`connet.hud.platform.inventory-view.v1:${JSON.stringify([scope.origin,scope.instanceId,scope.ownerId,scope.agentId])}`:'';}
-  function saveInventory(){const scope=inventoryStorageKey();if(!scope)return;inventoryScope=scope;try{sessionStorage.setItem(scope,JSON.stringify(views.holdings));}catch{/* Navigation can stay in memory without storing source content. */}}
-  function restoreInventory(force=false){const scope=inventoryStorageKey();if(!scope){inventoryScope='';return;}if(!force&&scope===inventoryScope)return;inventoryScope=scope;const view=views.holdings;Object.assign(view,{selected:'',top:0,detailTop:0,query:'',category:'all'});try{const saved=JSON.parse(sessionStorage.getItem(scope)||'null');if(!saved)return;if(['all','work','prop'].includes(saved.category))view.category=saved.category;if(typeof saved.query==='string'&&saved.query.length<=100)view.query=saved.query;if(typeof saved.selected==='string'&&saved.selected.length<=600)view.selected=saved.selected;for(const field of ['top','detailTop'])if(Number.isFinite(saved[field])&&saved[field]>=0)view[field]=saved[field];}catch{/* Malformed navigation never supplies visible records or a balance. */}}
-  results.addEventListener('scroll',()=>{if(node.getClientRects().length){views[key].top=results.scrollTop;saveInventory();}},{passive:true});
+  function saveInventory(){const scope=inventoryStorageKey();if(!scope)return;inventoryScope=scope;try{sessionStorage.setItem(scope,JSON.stringify(inventoryNavigationFields(views.holdings)));}catch{/* Navigation can stay in memory without storing source content. */}}
+  function restoreInventory(force=false){const scope=inventoryStorageKey();if(!scope){inventoryScope='';return;}if(!force&&scope===inventoryScope)return;inventoryScope=scope;const view=views.holdings;Object.assign(view,{query:'',...inventoryNavigationFields()});try{Object.assign(view,readSavedInventoryNavigation(sessionStorage.getItem(scope)));}catch{/* Search text is never restored from navigation. */}}
+  results.addEventListener('scroll',()=>{if(!pendingRestore&&node.getClientRects().length){views[key].top=results.scrollTop;saveInventory();}},{passive:true});
   details.addEventListener('scroll',()=>{if(detail&&node.getClientRects().length){views[key].detailTop=details.scrollTop;saveInventory();}},{passive:true});
-  function remember(){views[key].top=results.scrollTop;views[key].detailTop=details.scrollTop;saveInventory();}
+  function remember(){if(!pendingRestore){views[key].top=results.scrollTop;views[key].detailTop=details.scrollTop;}saveInventory();}
   function cancel(){detailRevision++;detailRequest?.abort();detailRequest=null;}
   function clear(){cancel();selected=null;detail=null;detailError=null;preview=false;details.replaceChildren();}
   async function read(record){
@@ -103,20 +116,21 @@ export function createPlatformInventory(provider,{session,context,walletProvider
     details.scrollTop=top||views[key].detailTop;
   }
   function renderResults(){
-    const source=provider.snapshot(key),view=views[key],top=view.top;results.replaceChildren();
+    const source=provider.snapshot(key),view=views[key];results.replaceChildren();
     const records=source.records.filter(record=>titleOf(record).includes(view.query)&&(view.category==='all'||record.summary.itemKind===view.category));
+    const previousSelection=view.selected,{chosen,pending}=projectSavedInventorySelection(view,source,records);pendingRestore=pending;if(previousSelection!==view.selected)saveInventory();
     if(!source.records.length){clear();results.append(feedback(source,key,()=>provider.load(key),chooseAgent));return;}
-    if(!records.length){clear();results.append(el('p','hud-feedback','没有符合条件的内容。'),button('清除筛选',()=>{view.query='';view.category='all';render();}));return;}
+    if(!records.length){clear();results.append(el('p','hud-feedback',source.complete?'没有符合条件的内容。':'当前已载入内容中没有符合条件的物品。'),button('清除筛选',()=>{view.query='';view.category='all';view.selected='';saveInventory();render();}),pageFoot(source,key,provider));return;}
     const grid=el('div','hud-items');grid.setAttribute('aria-label','获准持有记录');
-    const chosen=records.find(record=>keyOf(record)===view.selected)||records[0];view.selected=keyOf(chosen);
-    for(const record of records){const control=button('',()=>{remember();view.selected=keyOf(record);view.detailTop=0;saveInventory();renderResults();focusNode([...results.querySelectorAll('button')].find(value=>value.dataset.platformItem===record.ref.id));});control.dataset.platformItem=record.ref.id;control.setAttribute('aria-label',titleOf(record));control.setAttribute('aria-pressed',String(same(record,chosen)));const slot=el('span','hud-item-slot');slot.append(icon(record.summary.itemKind==='work'?'document':'inventory'));control.append(slot,el('span','hud-item-name',titleOf(record)),badge(record,key==='holdings'),el('span','hud-item-full-name',titleOf(record)));grid.append(control);}
-    results.append(grid,pageFoot(source,key,provider));results.scrollTop=top;
-    if(!same(selected,chosen)){if(active)void read(chosen);else details.replaceChildren();}else renderDetail();
+    for(const record of records){const control=button('',()=>{remember();pendingRestore=false;view.top=results.scrollTop;view.selected=keyOf(record);view.detailTop=0;saveInventory();renderResults();focusNode([...results.querySelectorAll('button')].find(value=>value.dataset.platformItem===record.ref.id));});control.dataset.platformItem=record.ref.id;control.setAttribute('aria-label',titleOf(record));control.setAttribute('aria-pressed',String(same(record,chosen)));const slot=el('span','hud-item-slot');slot.append(icon(record.summary.itemKind==='work'?'document':'inventory'));control.append(slot,el('span','hud-item-name',titleOf(record)),badge(record,key==='holdings'),el('span','hud-item-full-name',titleOf(record)));grid.append(control);}
+    results.append(grid,pageFoot(source,key,provider));results.scrollTop=view.top;
+    if(pending){clear();details.append(el('p','hud-muted','先前选择的物品尚未载入。可继续载入以恢复。'));return;}
+    if(!same(selected,chosen)){if(active&&chosen)void read(chosen);else details.replaceChildren();}else renderDetail();
   }
   function render(){
     if(disposed)return;node.replaceChildren();const view=views[key],agent=selectedAgent(state);
     const info=el('div','hud-inventory-context');info.append(el('p','hud-muted',`正在查看：${agent?.name?agent.name+'的背包':'请选择 Agent'} · 平台内容`),walletStatus());node.append(info);
-    const columns=el('div','hud-inventory-layout'),browser=el('div','hud-inventory-browser'),filters=tabs([['all','全部'],['work','作品'],['prop','虚拟道具']],view.category,next=>{remember();view.category=next;view.top=0;saveInventory();render();}),label=el('label','hud-search','搜索当前已载入物品'),search=el('input');search.type='search';search.value=view.query;search.maxLength=100;search.id='hud-platform-item-search';search.addEventListener('input',()=>{remember();view.query=search.value;view.top=0;saveInventory();renderResults();});label.append(search);browser.append(filters,label,results);columns.append(browser,details);node.append(columns);renderResults();
+    const columns=el('div','hud-inventory-layout'),browser=el('div','hud-inventory-browser'),filters=tabs([['all','全部'],['work','作品'],['prop','虚拟道具']],view.category,next=>{remember();view.category=next;view.top=0;view.selected='';view.detailTop=0;saveInventory();render();}),label=el('label','hud-search','搜索当前已载入物品'),search=el('input');search.type='search';search.value=view.query;search.maxLength=100;search.id='hud-platform-item-search';search.addEventListener('input',()=>{remember();view.query=search.value;view.top=0;view.selected='';view.detailTop=0;saveInventory();renderResults();});label.append(search);browser.append(filters,label,results);columns.append(browser,details);node.append(columns);renderResults();
   }
   function walletStatus(){
     const value=walletProvider.snapshot(),status=el('div','hud-wallet-status');status.id='hud-wallet-status';status.dataset.phase=value.phase;status.setAttribute('role','status');
@@ -136,7 +150,7 @@ export function createPlatformMail(provider,{session,context,detailHost,chooseAg
   const detailTitle=()=>key==='messages'?'消息详情':key==='events'?'事件详情':key==='announcements'?'公告详情':'通知详情';
   let categoryScope='';
   function categoryStorageKey(){const scope=context?.snapshot().scope,identity=session.hudContext?.();return scope?.kind==='owner'&&identity?.kind==='owner'&&scope.ownerId===identity.ownerId&&scope.agentId===identity.agentId?`connet.hud.platform.mail-category.v1:${JSON.stringify([scope.origin,scope.instanceId,scope.ownerId,scope.agentId])}`:'';}
-  function restoreCategory(force=false){const scope=categoryStorageKey();if(!scope){categoryScope='';return;}if(!force&&scope===categoryScope)return;categoryScope=scope;try{const raw=sessionStorage.getItem(scope);if(Object.hasOwn(views,raw)){key=raw;return;}const saved=JSON.parse(raw||'null');if(!saved)return;if(Object.hasOwn(views,saved.category))key=saved.category;for(const [name,view]of Object.entries(views)){const value=saved.views?.[name];if(!value)continue;if(Number.isFinite(value.top)&&value.top>=0)view.top=value.top;if(typeof value.selected==='string'&&value.selected.length<=600)view.selected=value.selected;if(value.bodyTop&&typeof value.bodyTop==='object'&&!Array.isArray(value.bodyTop))view.bodyTop=Object.fromEntries(Object.entries(value.bodyTop).slice(-100).filter(([ref,top])=>ref.length<=600&&Number.isFinite(top)&&top>=0));}}catch{/* Navigation remains available in memory. */}}
+  function restoreCategory(force=false){const scope=categoryStorageKey();if(!scope){categoryScope='';return;}if(!force&&scope===categoryScope)return;categoryScope=scope;key='messages';for(const view of Object.values(views))Object.assign(view,{top:0,selected:'',bodyTop:{}});try{const saved=readSavedMailNavigation(sessionStorage.getItem(scope));key=saved.category;for(const [name,view]of Object.entries(views)){const value=saved.views[name];if(!value)continue;if(Number.isFinite(value.top)&&value.top>=0)view.top=value.top;if(typeof value.selected==='string'&&value.selected.length<=600)view.selected=value.selected;if(value.bodyTop&&typeof value.bodyTop==='object'&&!Array.isArray(value.bodyTop))view.bodyTop=Object.fromEntries(Object.entries(value.bodyTop).slice(-100).filter(([ref,top])=>ref.length<=600&&Number.isFinite(top)&&top>=0));}}catch{/* A missing or unavailable preference starts at messages. */}}
   function saveCategory(){const scope=categoryStorageKey();if(!scope)return;categoryScope=scope;try{const positions=Object.fromEntries(Object.entries(views).map(([name,view])=>[name,{...view,bodyTop:Object.fromEntries(Object.entries(view.bodyTop).slice(-100))}]));sessionStorage.setItem(scope,JSON.stringify({category:key,views:positions}));}catch{/* No private source content is stored for navigation. */}}
   list.addEventListener('scroll',()=>{if(!detailHost.isOpen&&node.getClientRects().length){views[key].top=list.scrollTop;saveCategory();}},{passive:true});
   function remember(){if(node.getClientRects().length){views[key].top=list.scrollTop;saveCategory();}}
