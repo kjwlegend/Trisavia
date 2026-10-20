@@ -2,10 +2,10 @@
 
 2026-10-20，技术总监维护。本文件是本批执行合同和交付证据的唯一入口，承接已获用户批准的[主案](../architecture/postgresql-jsonb-proposal.md)与[技术附录](../architecture/postgresql-jsonb-technical-appendix.md)。原方案的待审核字样不覆盖本轮明确实施授权。本轮允许本地自管容器、完整隔离迁移验证与成功后的8789切换；公网未授权更新。
 
-## 1. 基线与当前状态
+## 1. 前置基线与实施范围
 
-- 当前固定候选源码 `7b748ab94ff944e3c54f98b8a112d0a3a7727791`，包含钱包与直接消息schema6。原专职reviewer已接受b94febb→7b748ab固定全批，WM-CR01—08全部关闭，无未结实质发现。纯Git归档typecheck与87项核心检查全部通过、无skip；fresh schema6副本保全已核对。该接受仅属钱包／信箱基线，PG另审。
-- 用户8789仍为adae355／PID9859、原SQLite schema5／20表，尚未执行本批写入。最终停服后一致快照先经审过的钱包源码离线迁至schema6，再转换PG；提前演练只用一致副本。不中途发布两个竞争版本。
+- 本轮钱包／信箱前置基线源码 `7b748ab94ff944e3c54f98b8a112d0a3a7727791`，包含钱包与直接消息schema6。原专职reviewer已接受b94febb→7b748ab固定全批，WM-CR01—08全部关闭，无未结实质发现。纯Git归档typecheck与87项核心检查全部通过、无skip；fresh schema6副本保全已核对。该接受仅属钱包／信箱基线，PG另审。
+- 实施前8789为adae355／PID9859、原SQLite schema5／20表。最终停服后一致快照先经受审流程离线迁至schema6／catalog4，再转换PG；最终结果见第6节，未中途发布两个竞争版本。
 - schema6准确源清单为下列23表；不得按旧20表清单遗漏钱包及直接消息。原实例、recoveryEpoch、配对identity、旧凭据及所有后来用户写入保留。
 - 原额外三个API文件有29项同基线失败，单列历史证据；不得宣称旧全套全绿。独审、工程测试、独立UI与Agent实际验收分开记录。
 
@@ -66,7 +66,9 @@
 4. 原专职reviewer接受最终固定diff后，核对并保全main所有非目标脏路径/index；短维护窗口停止并排空8789，fresh live/stopped一致SQLite及identity，离线schema6升级、最终PG转换及比对，业务写门关闭只读ready核验，再唯一切PG。维护窗口按15分钟设计，以实测证据为准。最终固定候选的本地容量仅按当前小数据验证：冷启动就绪≤30秒，10次health的p95≤1秒，典型列表／详情p95≤2秒，4并发读取p95≤5秒且无超时；这些是本地验收阈值，非生产SLA，必须先实测再记达到。
 5. PG接收任何新持久写（包括读取会话/访问事实）后只能在PG侧保全修复，不切陈旧SQLite。原SQLite/identity/所有快照保留封存。最终稳定SHA、实例、真实余额/消息数、URL先回总指挥，再补文档；独立UI/Agent窄验收由总指挥调度。无定时Agent触发、公网更新或push。
 
-## 5. 实际进度与证据
+## 5. 实施过程与分阶段证据
+
+本节按实施顺序保留各时点状态；最终运行／接受／交付结果以第6节为准。
 
 - 钱包基线已独审接受7b748ab，纯Git归档位于integration的 `outputs/postgresql/wallet-sqlite-baseline-7b748ab`；87项检查及完整tracked文件hash见同目录上级的baseline验证／manifest。新鲜schema6一致副本指针为 `outputs/postgresql/schema6-baseline-pointer.json`，仅供复制到隔离演练空间，原SQLite未写。
 - `schema6-source-inventory.json`记录全部23表字段类型／shape／最大字节及数量，不含秘密值。该盘点副本含原Agent1、wallet1（真实0）、direct messages0／receipts0、objects68、grants45、catalog151、access462、sessions12；只是该时点副本事实，最终cutoff仍须重取当前数据。
@@ -93,3 +95,46 @@
 - C777d4ab固定必要E2E异步fixture／端口接线；tests/site由B独占改造。桌面钱包4故事首轮1过3失败，涉及背包、缺失钱包和正文返回控件，作者正在按真实HTTP定位，原断言／预算未放宽；尚不构成交付通过。原owner-read矩阵中被新钱包默认分类替代的旧项目与本次选择项目分开记录，未跑不记通过。
 - 原7b同Node的CLI＋integration29项15过14失败已实际对照，其中旧CLI协议失败1、integration旧setup载荷400共13项；候选相同14失败逐项对应。扩展API四文件40项1过39失败与同7b逐项相同（其中原三文件30项1过29失败）。INT02本次四并发曾出现3成功／1 retry_same_operation；原payload及operationId顺序恢复后仍唯一Agent，内部最多3次保持。该测试语义调整仍单独交原reviewer判断，不因改后PASS自动接受。
 - C原basebackup／pg_verifybackup＋后续WAL实际测试证明两条sentinel恢复；全量迁入业务行／metadata／历史canonical字节和digest的恢复对账尚待补齐，已派原C以最新固定B2d和C4d的新隔离目标完成。正式connet仍未导入，原8789／SQLite／identity未切换；PG最终固定整合、原审及必要桌面和恢复证据完成后才执行fresh cutoff。
+
+
+## 6. 最终本地交付回执（2026-10-20）
+
+本批已完成本地PostgreSQL交付。原专职reviewer在[独审第30节](../validation/postgresql-local-code-review-2026-10-20.md#30-r28-最终固定接受7b748ab--6947c4d)接受 `7b748ab94ff944e3c54f98b8a112d0a3a7727791 → 6947c4d7988396239cec9d37987e21b530a3a09e` 固定整合，PG-CR01—09全部关闭、无剩余实质发现。该接受与后续独立普通UI／原Agent验收分别成立，不表示整个WS02完成。
+
+### 6.1 正式运行与维护窗口
+
+- 运行源码 `6947c4d7988396239cec9d37987e21b530a3a09e`，PID `78821`，Node24.16.0；固定372 tracked文件的交付归档位于 `/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/postgresql/user-8789-pg-delivery-20261020T063818Z/source`。新依赖使用独立 `outputs/postgresql/dependencies-38d0de3/node_modules`；旧运行快照引用的integration/node_modules未替换。
+- 本地入口 [世界](http://127.0.0.1:8789/) 与 [主人](http://127.0.0.1:8789/owner)。正式 `connet` 在专用PG18.6／`127.0.0.1:15432`，运行角色connet_app，schema signature `59dc5807e115be48fc4e36e3c74d1a3a96c84051d207805cf9724f6345a4eb71`。不是另换QA库／identity；容器／卷／镜像沿本轮隔离实证的固定配置。
+- 原8789／PID9859先核对cwd与唯一数据库持有者，再正常SIGTERM，监听及原SQLite所有句柄归零。维护从北京时间 `15:04:14.488` 至 `15:08:43.315`，共 `268.83秒`（4分29秒）；新进程先闭门启动，完成只读health与静态字节后才明确开门。
+- 开门初始write_generation=1；不是recoveryEpoch变化。原实例仍 `instance_6ee4d865-1e1a-4b40-90eb-2dbe6c46165f`，identity仍原data路径且hash不变。health返回200及原实例；首页／owner／本批变更资产共10个public响应与固定源码字节完全相同、no-store。TD未提交真实账户／邮件，未借原owner或Agent凭据发认证请求，未做浏览器用户动作。
+
+### 6.2 fresh cutoff、完整保全与实际内容
+
+正式数据取自本次停服前live、停服排空后stopped两份一致SQLite backup及配对identity。未复用早期820行演练副本；本次fresh数据碰巧仍为同数量，不以数量相同替代来源证据。live→stopped表指纹无变化，integrity_check=ok。
+
+原schema5／20表的stopped副本经新schema6副本、冻结7b manifest核验后的新catalog4副本，再导入正式空connet；23源表、820行完整id／version／字段回构差异0，140历史文档canonical／digest保持，写门始终false。闭门真实app build／ready／health200前后全部21逻辑表和守卫均未改变。
+
+- 原18表（含instance_state，明确不含schema_migrations／perception_catalog）逐行不变；原迁移1—5完整保留并追加6。
+- 原catalog共102行，除current外101行保持原字节／版本，追加精确版本后151行；当前schema4／guide4，revision `catalog-r03-20261020-e29b7a68-schema-3-schema-4`。
+- 原identity原件与各阶段配对副本完全相同，SHA-256 `f950f2a9d4df36be1b982160bc9ca76ff607d9c124fdc0cef4ad9d8a8729170d`；原Agent、主人、绑定、凭据及recoveryEpoch保持，没有重发身份或旋转凭据。
+
+切换时实际内容：原小序Agent `93d85e90-1f5d-4699-8331-4a763d0f94d2`；Agent／主人／绑定各1、credentials14、operations29、facts29；星币账户1且真实余额0；直接消息0、直接receipt0；对象68、grant45（holding14、旧delivery31）、原确认state3、read sessions12、access462。对象来源包含物品14、旧通知内容31、公告2、地点16、事件计划2、发生项2、规则1；旧对象的历史 `mailbox.message@1` 类型不等于新的直接消息表。演示内容仍只是持久化演示，不推为真实经济／真实Agent行动。
+
+### 6.3 备份与恢复边界
+
+正式转换后、开门前完成新的physical basebackup及pg_verifybackup、WAL归档411文件、connet logical dump、role globals、原identity及私有运行／应用配置保全。实际备份用时72.14秒，完整私有备份在下述交付目录的 `physical-backup/`，不是离机灾备／HA或生产RPO／RTO达标。
+
+恢复能力另由C固定ab76f60在最新59dc schema的独立目标真实验证：basebackup＋WAL恢复至新network-none／无host port容器后，14 schema内57张typed／child／metadata表、2128物理行全列稳定hash、140历史canonical文档／digest及配对identity均匹配，1/1无skip；源是已审7b预升catalog4旧副本，明确不冒称本次fresh正式备份又恢复了一次。CR08的schema5／catalog3→闭门PG链、正式fresh逐行对账、正式basebackup verify分别补齐不同边界。
+
+现在已开门，任何新增持久写（含session／access）都必须保全当前PG全部提交并在PG侧修复；不能切陈旧SQLite或回灌旧副本。原 `/Users/kjw/Workspace/Codes/agents-era/data/m1-account-v2.sqlite`、配对identity、旧快照／storage／ignored outputs均保留；无reset／清缓存／清库。
+
+### 6.4 工程结果及证据归属
+
+- 纯Git9acc8cd归档的235项组合实际为182过／53失败、skip0／cancel0，exit1如实保留；53个用例与同Node原7b的39个旧API＋14个旧CLI/integration失败逐项名称及code／actual／expected／operator完全一致，新增失败0。唯一标题alias SQLite connections→PostgreSQL pools明确记录；不称全套全绿。
+- 6947相对9acc唯一变化是已审的滚动.node.ts测试等待；全部372文件hash核对、生产与235组输入逐字节不变，两归档完整typecheck均0。末版滚动测试保留2px／5000ms，准确3dd来源同次四桌面故事4/4无skip；先前c415的3/4及更早503均原样保留。
+- B准确c415：PG存储28/28、site/provider/HTTP48/48；C转换等12/12、旧实际分页1/1、WAL探针1/1、catalog准备1/1、选定原owner-read1＋2、服务SIGTERM生命周期1/1、全业务恢复1/1，各按其固定来源，未合称原全部矩阵／手机通过。
+- TD独立真实loopback HTTP容量：冷ready/listen24.51ms，10次health p9516.93ms、list38.78ms、detail16.89ms；5波×4并发20次全部200，无客户端补重试，p95736.39ms／max797.22ms。原250ms内容准备预算未改；只属当前小数据本地指标，非生产SLA。
+
+运行交付目录（0700，私密文件0600）为 `/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-integration/outputs/postgresql/user-8789-pg-delivery-20261020T063818Z/`。关键安全证据：`source-manifest.json`、`maintenance.json`、`server-process.json`、`cutoff/live-evidence.json`、`cutoff/stopped-evidence.json`、`fresh-cutoff-preservation.json`、`closed-readiness.json`、`delivery-aggregate-counts.json`、`physical-backup-result.json`、`public-byte-verification.json`、`write-gate-open.json`；conversion／backup private manifest与秘密不复制到公开文档。归档测试／容量／hash证据在其上级 `candidate-9acc8cd-*`／`candidate-6947c4d-*`。
+
+main已从b94febb fast-forward至6947后交付。main-protection-20261020T070019Z保全710个非目标脏路径及index：709未变，reviewer并行更新的1份报告保留前后版本，staged patch不变、revert0；备份在integration `outputs/ws02-wallet-mail/`。后续仅本执行记录／原独审报告的归档提交不改变运行源码。公网、8799／8801／8787／8846、真实邮件／移动端和后台触发未扩大；原UI与原Agent独立窄验收已交回总指挥调度。
