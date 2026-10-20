@@ -26,7 +26,7 @@ test('logical projection has an explicit version and preserves authoritative cel
  const rules=readWorldRules(rulesData),rows=readWorldPage(page([avatar('first',0,0),avatar('last',19,11)]),rules).avatars;
  const projected=projectWorldAvatars(rows,rules);
  assert.equal(WORLD_PROJECTION_VERSION,'logical-grid-to-town@1');
- assert.deepEqual(projected.map((row:any)=>({x:row.x,y:row.y})),[{x:48,y:64},{x:1488,y:960}]);
+ assert.deepEqual(projected.map((row:any)=>({x:row.x,y:row.y})),[{x:384,y:256},{x:1152,y:768}]);
  assert.deepEqual(projected.map((row:any)=>row.fact.position),[{x:0,y:0},{x:19,y:11}]);
  assert.ok(projected.every((row:any)=>row.walking===false));
  assert.deepEqual(projectWorldAvatars(rows,rules),projected,'Rendering time cannot move a received fact');

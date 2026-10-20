@@ -21,5 +21,7 @@ export function readWorldPage(data,rules){
 }
 export function projectWorldAvatars(avatars,rules,{width=1536,height=1024}={}){
   return avatars.map(row=>({agentId:row.agentId,name:row.profile.displayName,avatar:{...row.profile.appearance},fact:structuredClone(row),projectionVersion:WORLD_PROJECTION_VERSION,
-    x:48+(rules.width===1?.5:row.position.x/(rules.width-1))*(width-96),y:64+(rules.height===1?.5:row.position.y/(rules.height-1))*(height-128),walking:false,frame:0,direction:'down'}));
+    // Keep the display extent inside the canvas so the (0,0) spawn is not
+    // covered by the fixed header/source note. This does not move its cell.
+    x:width/4+(rules.width===1?.5:row.position.x/(rules.width-1))*width/2,y:height/4+(rules.height===1?.5:row.position.y/(rules.height-1))*height/2,walking:false,frame:0,direction:'down'}));
 }
