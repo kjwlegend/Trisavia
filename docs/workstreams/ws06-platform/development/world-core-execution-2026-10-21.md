@@ -344,3 +344,15 @@ TD立即中断原D并取得明确停止回执：D停止v1固定／送审／整�
 根转达原UI在21:35:49.655普通reload后出现新“连接中断／正在恢复／显示上次画面”提示，后继节点自行恢复三角色，未点世界重试；这证明现场曾触发保留与恢复链，不证明请求从此零失败，也不能仅据提示确定429或5xx。TD只读进程及日志元数据：58137／PPID1存活，日志仍仅47字节启动记录，无HTTP持续日志；可访问Chrome库存未见18893页，TD本chat IAB为空，无法访问其他chat原UI页，因此不能归因或排除旧JS页面。未接管／关闭页面、造压、注入故障或读取私有凭据。
 
 原A按根诊断范围做后继有界抽样并停止：北京**22:24:57—22:26:07**，仅八次匿名GET（caps一次、scene七次，约10秒间隔，无并发或重试），**四次200／四次429 rate_limited**；成功scene均worldRevision29／三Avatar。四次429分别为22:25:07.131 req-e92／Retry-After7，22:25:47.175 req-ej9／28，22:25:57.178 req-ejq／18，22:26:07.180 req-ejz／8。没有5xx或网络失败，没有代码／DB／服务改动。普通原件在`m1-api/outputs/world-read-reliability/sample-20261021T142457Z/`，证明后继该窗口现场仍有限流，**消费者／来源未归因，不能倒推21:35原事件**。本轮未扩大配额或自动重启；正式UI最终观察尚待其报告。
+
+### 7.8 观测补丁准备与新版人物契约接续
+
+根转达原UI于北京时间**23:32:14.125**交还安全点：同Owner登录、当前A、108%、无窗口／菜单／草稿／未决操作，多余页面已关闭，停止输入。d8阶段实际记录两次保留三角色的恢复状态，其中一次自行恢复，末次A切换另见“最近互动暂不可用”；21:35—23:32之间有长采集间隙，不能记连续4—5分钟稳定PASS，亦不能仅据提示推定HTTP状态。正式阶段七报告归原模拟者；BL01未关闭。该安全点允许后继已审补丁维护，不因新视觉方向等待而搁置故障排查。
+
+A／D分别只读核对：Gateway按IP使用固定60秒／240预算，拒绝计数不延长窗口；capabilities及perception／wallet分别使用其他预算。d8单文档未发现每帧HTTP或重复World provider，三Avatar正常World路径约62次Gateway／首分钟／文档。“最近互动”每次打开／切对象／手动重查另有目录、两schema、guide及summary共五次共享Gateway请求，未缓存该目录链且缺少429等待门禁，但无自身后台timer。此为可验证的额外消耗路径，仍不足证明现场四次429的唯一来源，不能默认归因旧页面或其他消费者。
+
+根授权在现有证据不足时先补最小安全观测。原A在独占m1-api从`03313c5`新建`codex/world-read-rate-diagnostics-api`，仅负责Gateway route、独立observation模块及隔离测试三路径；旧5db分支与outputs保留。候选只在429输出有界累计窗口汇总，首拒绝及其后至少10秒一次，map容量事件单独限频；固定route模板与固有类别计数，不读取或记录auth头，不含IP／hash、请求ID、主体、凭据、参数／正文或原始异常。保持原配额、鉴权、窗口、Retry-After及HTTP结果，sink失败不影响请求，无新timer／DB／诊断HTTP接口。当前仍待A固定、原reviewer独审与TD组合核对，未发布，不把诊断本身称故障修复；停止追加现场抽样、压力及故障注入。
+
+根已接受WS01[功能§3.2](../../ws01-registration/02-features-and-flows.md#32-实际人物形象选择2026-10-21-增量)及[接线§2.3.3](../../ws01-registration/design/world-account-entry-contract.md#233-实际人物选择的业务接线2026-10-21)的业务边界。`profile.published.avatar`为唯一已保存选择，复用公开avatar-catalog及稳定look标识；权限、CAS、提议与原目标／载荷恢复保持。公开appearance从该源投影，publishedVersion变化即使位置／worldRevision不变也更新全部人物表现。未知／下架不允许新选，已保存人物解析保持，当前三个Avatar按旧事实冻结确定映射，不重置。TD已同步原A／D／C，具体JSON由同一实现候选统一；实际人物枚举、默认、素材版本及旧映射仍待原设计总监清单，未恢复被撤回的v1实施。
+
+本记录§7.6—7.7已于main以ff-only归档为`cb2f2901dbc8cf8e991a8049ec638cc9449c1710`，仅一条TD文档路径变化；7199项原脏状态及staged内容逐项保持，回执`outputs/world-core/main-direction-record-sync-cb2f290/receipt.json`。运行仍独立冻结d8／58137；本节准备没有操作服务或数据库。
