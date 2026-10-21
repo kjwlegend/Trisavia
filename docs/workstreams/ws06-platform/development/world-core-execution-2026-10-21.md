@@ -328,3 +328,19 @@ R31检查确认WC-CR07／P2：无合法Retry-After时，fallback退避仅由定�
 北京时间2026-10-21 **21:31:17.185**开写门并health ready，维护**52.816秒**。实际运行 **`d8ee361597d277d12fbda6fcc9260991a8d5f971`**、PID **58137／PPID1**、固定cwd为上述source；入口仍 **http://127.0.0.1:18893/**。普通启动、备份摘要、三阶段continuity及closed-readiness证据同归`reliability-d8ee361/`。当前恢复继续采用兼容当前catalog的d8或已评估473源码，保留当前PG／identity及全部后续写入，不能回灌旧dump。原8789／connet、PG生命周期、其他服务及公网未动。
 
 根已收到实际ready时间及版本，可恢复原独立UI验证连接稳定性；此处尚无其正式新结果，不宣称现场所有间歇故障关闭。三面板及CORE-UI-BL02容器修复仍由D后继实施，尚未固定／独审／发布，不借本故障包通过提前记视觉完成。
+
+发布后main从4d3以ff-only推进至`03313c56457e4288572d951b324757d3a5520022`（d8代码与本记录）；10个目标路径与当时7199个修改／未跟踪路径无重叠，私有保全后前后7199路径字节／模式／缺失／symlink指纹及原staged patch全部保持。回执在`outputs/world-core/main-reliability-sync-03313c5/receipt.json`。runtime继续独立冻结d8，不因main文档提交变化。
+
+### 7.6 用户撤回v1视觉方向与后继契约等待
+
+用户随后明确否定pixel-panels-v1.0.0的视觉方向：仅图标／边角像素化、整体仍是标准Web表单，不符合完整游戏化／像素化角色编辑要求；新方向需直接选择素材库中的实际人物形象，不能把现有basic＋四色当作产品限制。此前根对设计截图的方向接受仅保留历史，**v1现已撤回，不得称用户通过或继续按该包完成视觉发布**。根重派原设计总监制定角色选择场景及背包／信箱共用像素窗口，WS01制定最小look／appearance identity业务契约；原素材、当前PG、Owner／绑定、三Avatar及所有后续真实写入保留，不重置／seed。
+
+TD立即中断原D并取得明确停止回执：D停止v1固定／送审／整合／发布及视觉代码／测试，没有新增commit；m1-web仍为`codex/world-ui-reliability`／`e9e2fc44`。18个WIP路径全部保留：12个原public文件（home、detail-host、platform-content、icons、panel-layout／transition、scene-renderer、shell、index、owner-manager、owner-panel、owner），三个新public文件（panel-environment、avatar-preview、panels.css），既有ws02-hud断言同步及两个新panel测试。ignored outputs及全部失败记录保留，自有测试进程已结束；没有reset／stash／回退或现服／DB操作。此前两桌面合成故事及公共场景故事只属未发布v1工程，不能作为新方向验收。保存／退出保护、固定视口及可达性改动可评估复用，但仍需纳入新版固定差异独审。
+
+已让原reviewer停止v1后继合同准备，不读WIP或预先接受；d8已上线可靠性及R30／R32结论保持。原A只读评估授权保存→持久化→公开profile／scene，原D只读评估真实look→同一sprite渲染及保留的界面保护，原C只读评估隔离验收链。等待根转交新设计和WS01契约后再实现视觉闭环，作者继续Sol／xhigh；不新增产品字段决定或以旧技术限制替代用户要求。原独立UI的d8连接复验继续，不因方向变化重启。
+
+### 7.7 d8后继现场读取异常的已知范围
+
+根转达原UI在21:35:49.655普通reload后出现新“连接中断／正在恢复／显示上次画面”提示，后继节点自行恢复三角色，未点世界重试；这证明现场曾触发保留与恢复链，不证明请求从此零失败，也不能仅据提示确定429或5xx。TD只读进程及日志元数据：58137／PPID1存活，日志仍仅47字节启动记录，无HTTP持续日志；可访问Chrome库存未见18893页，TD本chat IAB为空，无法访问其他chat原UI页，因此不能归因或排除旧JS页面。未接管／关闭页面、造压、注入故障或读取私有凭据。
+
+原A按根诊断范围做后继有界抽样并停止：北京**22:24:57—22:26:07**，仅八次匿名GET（caps一次、scene七次，约10秒间隔，无并发或重试），**四次200／四次429 rate_limited**；成功scene均worldRevision29／三Avatar。四次429分别为22:25:07.131 req-e92／Retry-After7，22:25:47.175 req-ej9／28，22:25:57.178 req-ejq／18，22:26:07.180 req-ejz／8。没有5xx或网络失败，没有代码／DB／服务改动。普通原件在`m1-api/outputs/world-read-reliability/sample-20261021T142457Z/`，证明后继该窗口现场仍有限流，**消费者／来源未归因，不能倒推21:35原事件**。本轮未扩大配额或自动重启；正式UI最终观察尚待其报告。
