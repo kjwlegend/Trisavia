@@ -72,12 +72,12 @@ test('expired continuation and repeated cursors do not loop; the next retry star
  await flush();assert.equal(repeated.provider.snapshot().errorCode,'world_response_invalid');assert.equal(repeated.calls.filter(call=>call.path.startsWith('/world/scene?')).length,2);repeated.provider.dispose();
 });
 
-test('visible refresh never overlaps, is capped at one second and failures back off while clearing facts',async()=>{
+test('visible refresh never overlaps, is capped at one second and temporary failures retain labelled last facts while backing off',async()=>{
  let release:(value:unknown)=>void=()=>{},reject=false;
  const {provider,timers,calls}=harness(async()=>{if(reject)throw Object.assign(new Error('busy'),{code:'busy',status:503});return new Promise(resolve=>{release=resolve;});},{intervalMs:10});
  await flush();assert.equal(timers.pending.size,0);assert.equal(calls.length,3);
  release(envelope(page([avatar('first')])));await flush();assert.equal([...timers.pending.values()][0]?.delay,1000);
- reject=true;timers.fire();await flush();assert.deepEqual(provider.snapshot().avatars,[]);assert.equal([...timers.pending.values()][0]?.delay,2000);
+ reject=true;timers.fire();await flush();assert.equal(provider.snapshot().phase,'recovering');assert.equal(provider.snapshot().avatars[0].agentId,'first');assert.equal([...timers.pending.values()][0]?.delay,2000);
  timers.fire();await flush();assert.equal([...timers.pending.values()][0]?.delay,4000);provider.dispose();
 });
 
@@ -96,5 +96,5 @@ test('withdrawn public rows disappear, 403 clears all rows, and unknown source n
  await flush();response=envelope(page([],2));await provider.refresh();assert.equal(provider.snapshot().phase,'ready');assert.deepEqual(provider.snapshot().avatars,[]);
  response=envelope(page([avatar('old')],3));await provider.refresh();denied=true;await provider.refresh();assert.equal(provider.snapshot().phase,'error');assert.deepEqual(provider.snapshot().avatars,[]);provider.dispose();
  const unknown=harness(undefined,{request:async()=>{throw new Error('offline');}});await flush();assert.equal(unknown.provider.snapshot().phase,'error');assert.notEqual(unknown.provider.snapshot().enabled,false);unknown.provider.dispose();
- const legacy=harness(undefined,{request:async()=>({apiVersion:'v1',instanceId:'legacy'})});await flush();assert.equal(legacy.provider.snapshot().phase,'demo');legacy.provider.dispose();
+ const legacy=harness(undefined,{request:async()=>({apiVersion:'v1',instanceId:'legacy'})});await flush();assert.equal(legacy.provider.snapshot().phase,'unavailable');assert.deepEqual(legacy.provider.snapshot().avatars,[]);legacy.provider.dispose();
 });

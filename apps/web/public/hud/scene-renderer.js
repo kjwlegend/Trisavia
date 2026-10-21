@@ -15,7 +15,7 @@ let currentPlace = null;
 const detail=$('#world-detail'),detailTransition=createPanelTransition(detail);
 const debug=el('details'),debugBody=el('dl','hud-facts');debug.id='world-detail-debug';debug.hidden=true;debug.append(el('summary','','技术信息'),debugBody);$('#world-detail-note').after(debug);
 function renderDetails(place,reset=false){
-  const details=placeDetails(place);$('#world-detail-area').textContent=details.area;$('#world-detail-title').textContent=details.name;$('#world-detail-icon').textContent=details.icon;$('#world-detail-description').textContent=details.description;$('#world-detail-note').textContent=details.note;
+  const details=placeDetails(place);$('#world-detail-area').textContent=details.area;$('#world-detail-title').textContent=details.name;$('#world-detail-icon').textContent=details.icon;$('#world-detail-description').textContent=details.description;$('#world-detail-note').textContent=place.kind==='world-avatar'&&worldData.phase==='recovering'?`连接正在恢复。这里保留 ${new Date(worldData.asOf).toLocaleString('zh-CN',{hour12:false})} 读取的公开记录。${details.note}`:details.note;
   $('#world-detail-close').setAttribute('aria-label',place.kind==='world-avatar'?'关闭角色详情':'关闭场所说明');detail.dataset.agentId=place.kind==='world-avatar'?place.agentId:'';
   debug.hidden=!details.debug;if(reset)debug.open=false;debugBody.replaceChildren();for(const [label,value]of details.debug||[])debugBody.append(el('dt','',label),el('dd','',value));return details;
 }
@@ -76,7 +76,7 @@ function updateControls(state) {
   $('#world-pause').textContent = state.paused ? '播放动态' : '暂停动态';
   $('#world-pause').setAttribute('aria-pressed', String(state.paused));
   for(const [key,button]of themeButtons)button.setAttribute('aria-pressed',String(state.theme===key));reduceMotion.setAttribute('aria-pressed',String(state.reducedMotion));
-  const text = state.worldScene?.phase!=='demo'?'服务器角色位置按读取结果显示 · 画布动画不代表在线':state.paused ? state.pauseReason === 'reduced' ? '静止展示 · 已遵循系统的减少动态设置' : state.pauseReason === 'performance' ? '静止展示 · 可手动播放演示' : '静止展示 · 演示动态已暂停' : !state.visible ? '演示动态在地图可见时继续' : '人物与环境为演示动态';
+  const text = state.worldScene?.phase==='recovering'?'连接正在恢复 · 角色保留最近读取的位置':state.worldScene?.phase!=='demo'?'服务器角色位置按读取结果显示 · 画布动画不代表在线':state.paused ? state.pauseReason === 'reduced' ? '静止展示 · 已遵循系统的减少动态设置' : state.pauseReason === 'performance' ? '静止展示 · 可手动播放演示' : '静止展示 · 演示动态已暂停' : !state.visible ? '演示动态在地图可见时继续' : '人物与环境为演示动态';
   if ($('#world-motion-status').textContent !== text) $('#world-motion-status').textContent = text;
 }
 async function startScene() {
@@ -120,10 +120,11 @@ const refreshWorld=el('button','','刷新世界'),moreWorld=el('button','','继�
 ($('#hud-map-menu')||$('.world-controls')).append(refreshWorld,moreWorld);
 refreshWorld.addEventListener('click',()=>void worldProvider.refresh());moreWorld.addEventListener('click',()=>void worldProvider.loadMore());
 worldProvider.subscribe(value=>{
-  worldData=value;scene?.setWorldScene(value);refreshWorld.hidden=false;moreWorld.hidden=value.phase!=='partial';
+  worldData=value;const applied=scene?.setWorldScene(value);if(applied?.accepted===false)value={...value,phase:'unavailable',avatars:[],complete:false,errorCode:applied.reason};refreshWorld.hidden=false;refreshWorld.disabled=Boolean(value.errorStatus===429&&value.retryAt&&value.retryAt>Date.now());moreWorld.hidden=value.phase!=='partial';
   const source=$('.world-demo'),summary=$('summary',source),body=$('p',source);source.dataset.worldPhase=value.phase;
-  summary.textContent=value.phase==='demo'?'当前世界尚未开放':value.phase==='ready'?`服务器世界 · ${value.avatars.length} 个公开角色`:value.phase==='partial'?`服务器世界 · 已载入 ${value.avatars.length} 个角色（完整后显示）`:value.phase==='refreshing'?'服务器世界 · 正在刷新':value.phase==='paused'?'世界读取已暂停':value.phase==='loading'?'正在读取服务器世界…':'服务器世界暂不可用 · 可重试';
-  body.textContent=value.phase==='demo'?'当前服务未启用世界，画面仅为景观预览；不以演示人物补齐真实角色。':['ready','partial','refreshing'].includes(value.phase)?`${value.avatars.length===0&&value.complete?'当前公开世界没有可显示的角色。':''}角色名称与位置来自服务器；${value.complete?'本次集合已完整读取。':'当前集合尚未完整。'}读取时间：${new Date(value.asOf).toLocaleString('zh-CN',{hour12:false})}。当前开放：公共庭；周边街区为景观预览，不代表真实到访、在线或移动目的地。发型为本地表现映射，不表示已保存的发型选择。`:value.phase==='paused'?'场景不可见时停止读取，返回后重新取得服务器事实。':value.phase==='loading'?'正在取得当前世界规则与公开角色，不使用演示角色补齐。':value.errorCode==='world_cursor_invalid'||value.errorCode==='world_scene_changed'?'世界集合已变化，旧角色资料已清除。请刷新世界，从头读取。':'当前无法确认公开角色，旧角色资料已清除。请通过更多地图工具中的“刷新世界”重试。';
+  summary.textContent=value.phase==='ready'?`服务器世界 · ${value.avatars.length} 个公开角色`:value.phase==='recovering'?'连接中断 · 正在恢复，显示上次画面':value.phase==='partial'?`服务器世界 · 已载入 ${value.avatars.length} 个角色（完整后显示）`:value.phase==='refreshing'?'服务器世界 · 正在刷新':value.phase==='paused'?'世界读取已暂停':value.phase==='loading'?'正在读取服务器世界…':'服务器世界暂不可用 · 正在重试';
+  const retryReason=value.errorStatus===429?'读取较频繁，正在等待后重试。':value.errorStatus>=500?'服务暂忙，正在尝试恢复。':'网络暂时中断，正在尝试恢复。';
+  body.textContent=value.phase==='recovering'?`${retryReason}当前保留最后成功读取的公开画面，读取时间：${new Date(value.asOf).toLocaleString('zh-CN',{hour12:false})}。这不是当前已连接的状态；恢复后会按最新结果更新。`:['ready','partial','refreshing'].includes(value.phase)?`${value.avatars.length===0&&value.complete?'当前公开世界没有可显示的角色。':''}角色名称与位置来自服务器；${value.complete?'本次集合已完整读取。':'当前集合尚未完整。'}读取时间：${new Date(value.asOf).toLocaleString('zh-CN',{hour12:false})}。当前开放：公共庭；周边街区为景观预览，不代表真实到访、在线或移动目的地。发型为本地表现映射，不表示已保存的发型选择。`:value.phase==='paused'?'场景不可见时停止读取，返回后重新取得服务器事实。':value.phase==='loading'?'正在取得当前世界规则与公开角色，不使用演示角色补齐。':value.errorCode==='world_not_available'?'当前世界尚未开放或未就绪，旧角色资料已清除。稍后会重新确认。':['world_cursor_invalid','world_scene_changed','world_response_invalid'].includes(value.errorCode)?'世界集合或版本已变化，旧角色资料已清除。正在从头重新确认。':['world_not_accessible','not_found'].includes(value.errorCode)||[401,403,404].includes(value.errorStatus)?'当前公开世界不可查看，旧角色资料已清除。稍后会重新确认。':`${retryReason}当前没有可显示的成功读取画面。`;
   if(currentPlace?.kind==='world-avatar'){
     const row=value.complete?value.avatars.find(avatar=>avatar.agentId===currentPlace.agentId):null;
     if(!row)closePlace(false);

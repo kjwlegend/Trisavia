@@ -181,7 +181,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   const abort=new AbortController(),eventOptions={signal:abort.signal};
   const state=()=>({mode,exploring,minZoom:overviewScale()/camera.base,zoom:camera.zoom,paused,pauseReason,theme,reducedMotion:reduced.matches||reduceOverride,visible:visible&&!document.hidden,actorCount:actorLimit,quality,frames,...metrics,camera:{x:camera.x,y:camera.y,scale:camera.base*camera.zoom,width:camera.width,height:camera.height,sourceWidth:W,sourceHeight:H,coordinateSpace:rendering?'source-pixel':'legacy-town-pixel'},actors:actors.slice(0,actorLimit).map(a=>({id:a.id,x:a.x,y:a.y,pause:a.pause})),selectedId:selected?.id??null,
     rendering:rendering?{backend:'pixel-town',mapVersion:rendering.mapSpec.version,assetVersion:rendering.sourceVersion,imageCount:rendering.imageCount}:null,
-    worldScene:{phase:worldView.phase,enabled:worldView.enabled,asOf:worldView.asOf,worldRevision:worldView.worldRevision,complete:worldView.complete,projectionVersion:rendering?.mapSpec.version||WORLD_PROJECTION_VERSION,avatars:ownedLayer.actors().filter(row=>row.fact).map(row=>({fact:structuredClone(row.fact),x:row.x,y:row.y}))}});
+    worldScene:{phase:worldView.phase,enabled:worldView.enabled,asOf:worldView.asOf,worldRevision:worldView.worldRevision,complete:worldView.complete,errorCode:worldView.errorCode??null,errorStatus:worldView.errorStatus??null,retryAt:worldView.retryAt??null,lastSuccessAt:worldView.lastSuccessAt??null,projectionVersion:rendering?.mapSpec.version||WORLD_PROJECTION_VERSION,avatars:ownedLayer.actors().filter(row=>row.fact).map(row=>({fact:structuredClone(row.fact),x:row.x,y:row.y}))}});
   // Projection uses the whole viewport; overview reserves room for the two overlays.
   function overviewInsets(){const phone=camera.width<760;return {top:phone?112:88,bottom:phone?116:126,left:16,right:16};}
   function overviewScale(){const i=overviewInsets();return rendering?rendering.camera.fit({width:W,height:H},camera,i):Math.max(.01,Math.min((camera.width-i.left-i.right)/W,(camera.height-i.top-i.bottom)/H));}
@@ -251,7 +251,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   function setReducedMotion(value){reduceOverride=Boolean(value);reconcile();notify();}
   function applyAgents(){
     if(!rendering&&worldView.phase==='demo')ownedLayer.set(ownedProjection);
-    else{const ids=new Set(ownedProjection.agents.map(row=>row.agentId)),project=rendering?rendering.projectAvatars:projectWorldAvatars;ownedLayer.set({source:'server',animate:running(),selectedAgentId:ownedProjection.selectedAgentId,agents:worldView.rules?project(worldView.avatars,worldView.rules,WORLD_SIZE).map(row=>({...row,owned:ids.has(row.agentId)})):[]});}
+    else{const ids=new Set(ownedProjection.agents.map(row=>row.agentId)),project=rendering?rendering.projectAvatars:projectWorldAvatars;ownedLayer.set({source:'server',animate:running()&&worldView.phase!=='recovering',selectedAgentId:ownedProjection.selectedAgentId,agents:worldView.rules?project(worldView.avatars,worldView.rules,WORLD_SIZE).map(row=>({...row,owned:ids.has(row.agentId)})):[]});}
   }
   function setOwnedAgents(projection){if(destroyed)return;ownedProjection=structuredClone(projection);applyAgents();draw();}
   function clearScene(){if(destroyed)return;worldView={...worldView,phase:'unavailable',rules:null,avatars:[],asOf:null,complete:false,worldRevision:null};actorLimit=0;selected=null;applyAgents();draw();notify();}

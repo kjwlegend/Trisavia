@@ -9,14 +9,14 @@ const origin='https://pixel-world.invalid',root=resolve('apps/web/public'),out=r
 const envelope=(data:unknown)=>({protocolVersion:1,requestId:'synthetic',instanceId:'synthetic-pixel-instance',serverTime:Date.now(),data});
 const avatar=(id:string,x=0,y=0)=>({id:`avatar-${id}`,worldId:'default',agentId:id,version:1,status:'idle',position:{x,y},placeId:'commons',rulesetVersion:1,createdAt:1,updatedAt:1,profile:{agentId:id,publishedVersion:1,displayName:`工程角色 ${id}`,appearance:{template:'basic',color:'blue'}}});
 async function fixture(context:BrowserContext,{failImage=false,paging=false}={}){
- let rows=paging?Array.from({length:11},(_,i)=>avatar(`page-${i}`,i,0)):[avatar('A'),avatar('B'),avatar('C',15,15)],sceneStatus=200,revision=1;
+ let rows=paging?Array.from({length:11},(_,i)=>avatar(`page-${i}`,i,0)):[avatar('A'),avatar('B'),avatar('C',15,15)],sceneStatus=200,revision=1,sceneCode='world_not_accessible',retryAfter:string|null=null;
  const paths:string[]=[],outside:string[]=[],auth:string[]=[],images=new Set<string>();
  await context.route('**/*',async route=>{
   const request=route.request(),url=new URL(request.url());paths.push(url.pathname);if(request.headers().authorization)auth.push(url.pathname);
   if(url.origin!==origin){outside.push(url.origin);await route.abort();return;}
   if(url.pathname==='/v1/capabilities'){await route.fulfill({json:{apiVersion:'v1',instanceId:'synthetic-pixel-instance',perception:false,gateway:{protocolVersion:1,modules:['world'],worldSimulation:{enabled:true}}}});return;}
   if(url.pathname==='/v1/world/rules'){await route.fulfill({json:envelope({world:{worldId:'default',active:true,revision:1,rulesetVersion:1},rules:{worldId:'default',version:1,topologyVersion:1,width:16,height:16},asOf:Date.now()})});return;}
-  if(url.pathname==='/v1/world/scene'){const offset=paging?Number((url.searchParams.get('cursor')||'opaque-0').split('-')[1]):0,complete=!paging||offset===rows.length-1;await route.fulfill(sceneStatus===200?{json:envelope({worldId:'default',worldRevision:revision,asOf:Date.now(),scope:'world',avatars:paging?rows.slice(offset,offset+1):rows,complete,nextCursor:complete?null:`opaque-${offset+1}`})}:{status:sceneStatus,json:{error:{code:'world_not_accessible'}}});return;}
+  if(url.pathname==='/v1/world/scene'){const offset=paging?Number((url.searchParams.get('cursor')||'opaque-0').split('-')[1]):0,complete=!paging||offset===rows.length-1;await route.fulfill(sceneStatus===200?{json:envelope({worldId:'default',worldRevision:revision,asOf:Date.now(),scope:'world',avatars:paging?rows.slice(offset,offset+1):rows,complete,nextCursor:complete?null:`opaque-${offset+1}`})}:{status:sceneStatus,headers:retryAfter?{'Retry-After':retryAfter}:{},json:{error:{code:sceneCode}}});return;}
   if(url.pathname==='/'||url.pathname==='/owner'){await route.fulfill({contentType:'text/html',body:await readFile(resolve(root,'index.html'))});return;}
   if(url.pathname.startsWith('/assets/')){
    const path=resolve(root,decodeURIComponent(url.pathname.slice(8)));if(!path.startsWith(root+'/')){await route.abort();return;}
@@ -25,7 +25,7 @@ async function fixture(context:BrowserContext,{failImage=false,paging=false}={})
   }
   await route.fulfill({status:404,json:{error:{code:'not_found'}}});
  });
- return{paths,outside,auth,images,setRows(value:typeof rows){rows=value;revision++;},deny(){sceneStatus=404;}};
+ return{paths,outside,auth,images,setRows(value:typeof rows){rows=value;revision++;},deny(){sceneStatus=404;sceneCode='world_not_accessible';},fail(status:number,code:string,after:string|null=null){sceneStatus=status;sceneCode=code;retryAfter=after;},recover(){sceneStatus=200;retryAfter=null;}};
 }
 const state=(page:Page)=>page.evaluate(async()=>{const app=await import(String('/assets/home.js'));return app.getWorldState();});
 async function tool(page:Page,name:string){await page.getByRole('button',{name:'更多',exact:true}).click();await page.getByRole('button',{name,exact:true}).click();}
@@ -95,4 +95,16 @@ test('synthetic actual scene loop reaches received positions by the monotonic de
   await frame(10000);await page.evaluate(()=>(window as any).__worldTestHidden(false));await expect.poll(async()=>(await read())?.fact.version).toBe(5);assert.equal((await read()).x,328,'Resuming starts at the fresh received position, with no hidden-time route');
   assert.deepEqual(data.outside,[]);assert.deepEqual(data.auth,[]);
  }catch(error){await mkdir(out,{recursive:true});await page.screenshot({path:resolve(out,'synthetic-deadline-failure.png')});throw error;}finally{await page.close();await context.close();}
+});
+
+test('synthetic public connection recovery labels its last-success canvas, honors rate-limit waiting and replaces it with fresh empty or withdrawn facts',async t=>{
+ const browser=await launch();t.after(()=>browser.close());const context=await browser.newContext({viewport:{width:1440,height:900}});t.after(()=>context.close());const data=await fixture(context),page=await context.newPage();await page.goto(origin);
+ await expect.poll(async()=>(await state(page))?.worldScene.avatars.length).toBe(3);const original=(await state(page)).worldScene;
+ data.fail(503,'busy');await expect.poll(async()=>(await state(page)).worldScene.phase).toBe('recovering');await expect(page.locator('.world-demo summary')).toContainText('连接中断');await expect(page.locator('.world-demo p')).toContainText('最后成功读取');
+ const retained=(await state(page)).worldScene;assert.deepEqual(retained.avatars,original.avatars);assert.equal(retained.asOf,original.asOf);assert.equal(retained.errorStatus,503);
+ await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));assert.deepEqual((await state(page)).worldScene.avatars,retained.avatars,'Recovery never invents a new position');
+ data.setRows([]);data.recover();await expect.poll(async()=>{const value=(await state(page)).worldScene;return value.complete&&value.avatars.length===0&&value.lastSuccessAt>retained.lastSuccessAt&&value.errorCode===null;}).toBe(true);assert.ok(['ready','refreshing'].includes((await state(page)).worldScene.phase));assert.deepEqual((await state(page)).worldScene.avatars,[]);await expect(page.locator('.world-demo')).toContainText('当前公开世界没有可显示的角色');
+ data.setRows([avatar('A')]);await tool(page,'刷新世界');await expect.poll(async()=>(await state(page)).worldScene.avatars.length).toBe(1);
+ data.fail(429,'rate_limited','3');await expect.poll(async()=>(await state(page)).worldScene.phase).toBe('recovering');await page.getByRole('button',{name:'更多',exact:true}).click();await expect(page.getByRole('button',{name:'刷新世界',exact:true})).toBeDisabled();await page.getByRole('button',{name:'更多',exact:true}).click();const beforeRecovery=(await state(page)).worldScene.lastSuccessAt;data.recover();await expect.poll(async()=>{const value=(await state(page)).worldScene;return value.lastSuccessAt>beforeRecovery&&value.errorCode===null;}).toBe(true);assert.ok(['ready','refreshing'].includes((await state(page)).worldScene.phase));
+ data.deny();await expect.poll(async()=>(await state(page)).worldScene.phase).toBe('unavailable');assert.deepEqual((await state(page)).worldScene.avatars,[]);assert.deepEqual(data.auth,[]);assert.deepEqual(data.outside,[]);await page.close();await context.close();
 });

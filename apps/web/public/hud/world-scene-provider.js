@@ -2,30 +2,40 @@ import {api} from '../common.js';
 import {readWorldRules,readWorldPage} from './world-scene-projection.js';
 const abortError=()=>new DOMException('World read cancelled','AbortError');
 const failure=code=>Object.assign(new Error(code),{code});
+const temporary=error=>!['world_not_available','world_not_accessible'].includes(error.code)&&(error.status===429||error.status>=500||['network_unknown','request_timeout','busy','unavailable'].includes(error.code)||error.name==='AbortError');
 
-// Only public GETs. This reader never receives Owner or Agent credentials.
-export function createWorldSceneProvider({request=api,worldId='default',intervalMs=1000,maxPages=10,setTimer=setTimeout,clearTimer=clearTimeout}={}){
-  const listeners=new Set();let revision=0,controller=null,timer=null,visible=false,started=false,disposed=false,failures=0;
-  let state={phase:'loading',enabled:null,worldId,rules:null,avatars:[],worldRevision:null,asOf:null,complete:false,nextCursor:null,errorCode:null};
+// Public GETs only. Metadata is bounded, never an authority substitute for a
+// current scene response; reconnect/manual/visible boundaries rediscover it.
+export function createWorldSceneProvider({request=api,worldId='default',intervalMs=1000,maxPages=10,metadataTtlMs=30000,now=Date.now,setTimer=setTimeout,clearTimer=clearTimeout}={}){
+  const listeners=new Set();let revision=0,controller=null,timer=null,visible=false,started=false,disposed=false,failures=0,metadata=null,notBefore=0;
+  let state={phase:'loading',enabled:null,worldId,rules:null,avatars:[],worldRevision:null,asOf:null,instanceId:null,complete:false,nextCursor:null,errorCode:null,errorStatus:null,lastSuccessAt:null,retryAt:null};
   const snapshot=()=>structuredClone(state);
   function emit(next){state={...state,...next};for(const listener of listeners)listener(snapshot());}
   function stop(){revision++;controller?.abort();controller=null;if(timer!==null)clearTimer(timer);timer=null;}
-  function cleared(){return{rules:null,avatars:[],worldRevision:null,asOf:null,complete:false,nextCursor:null};}
-  function schedule(){if(disposed||!visible||!started||state.phase==='demo'||state.phase==='partial')return;timer=setTimer(()=>{timer=null;void refresh();},Math.max(1000,intervalMs)*Math.min(30,2**Math.min(failures,5)));}
-  async function refresh({more=false}={}){
-    if(disposed||!visible||!started)return;
-    const previous=state;stop();const generation=revision,active=new AbortController();controller=active;
+  function cleared(){return{rules:null,avatars:[],worldRevision:null,asOf:null,complete:false,nextCursor:null,lastSuccessAt:null};}
+  const delay=()=>Math.max(Math.max(1000,intervalMs)*Math.min(30,2**Math.min(failures,5)),notBefore-now());
+  function schedule(){if(disposed||!visible||!started||state.phase==='partial')return;if(timer!==null)clearTimer(timer);timer=setTimer(()=>{timer=null;void refresh();},delay());}
+  async function refresh({more=false,force=false}={}){
+    if(disposed||!visible||!started||controller)return;
+    if(now()<notBefore){if(state.phase==='paused')emit({phase:'error',errorCode:'rate_limited',errorStatus:429,retryAt:notBefore});schedule();return;}
+    const previous=state;let preserveAuthority=true;stop();const generation=revision,active=new AbortController();controller=active;
     const current=()=>!disposed&&visible&&generation===revision&&!active.signal.aborted;
     const read=async path=>{const result=await request(path,{signal:active.signal});if(!current())throw abortError();return result;};
-    emit({phase:more?'partial':state.rules?'refreshing':'loading',errorCode:null});
+    emit({phase:more?'partial':state.rules?'refreshing':'loading',errorCode:null,errorStatus:null,retryAt:null});
     try{
-      const caps=await read('/capabilities');
-      if(caps?.apiVersion!=='v1'||typeof caps.instanceId!=='string')throw failure('world_response_invalid');
-      if(!caps.gateway){failures=0;emit({phase:'demo',enabled:false,...cleared()});return;}
-      if(caps.gateway.protocolVersion!==1||caps.gateway.worldSimulation?.enabled!==true||!caps.gateway.modules?.includes('world'))throw failure('world_not_available');
-      emit({enabled:true});
+      if(force||failures>0||!metadata||now()>=metadata.expiresAt){
+        const caps=await read('/capabilities');
+        if(caps?.apiVersion!=='v1'||typeof caps.instanceId!=='string')throw failure('world_response_invalid');
+        if(!caps.gateway||caps.gateway.protocolVersion!==1||caps.gateway.worldSimulation?.enabled!==true||!caps.gateway.modules?.includes('world')){emit({enabled:false});throw failure('world_not_available');}
+        if(previous.instanceId&&previous.instanceId!==caps.instanceId){preserveAuthority=false;emit({phase:'loading',...cleared(),instanceId:caps.instanceId});}
+        const result=await read(`/world/rules?${new URLSearchParams({worldId})}`);
+        if(result?.protocolVersion!==1||result.instanceId!==caps.instanceId||!result.data)throw failure('world_response_invalid');
+        const rules=readWorldRules(result.data,worldId);
+        if(previous.rules&&JSON.stringify(previous.rules)!==JSON.stringify(rules)){preserveAuthority=false;emit({phase:'loading',...cleared()});}
+        metadata={caps,rules,expiresAt:now()+Math.min(30000,Math.max(1000,metadataTtlMs))};
+      }
+      const {caps,rules}=metadata;emit({enabled:true,instanceId:caps.instanceId});
       const unwrap=result=>{if(result?.protocolVersion!==1||result.instanceId!==caps.instanceId||!result.data)throw failure('world_response_invalid');return result.data;};
-      const rules=readWorldRules(unwrap(await read(`/world/rules?${new URLSearchParams({worldId})}`)),worldId);
       let cursor=more?previous.nextCursor:null,avatars=more?[...previous.avatars]:[],worldRevision=more?previous.worldRevision:null,asOf=more?previous.asOf:null;
       if(more&&(!cursor||JSON.stringify(rules)!==JSON.stringify(previous.rules)))throw failure('world_scene_changed');
       const seenCursors=new Set(),seenAgents=new Set(avatars.map(row=>row.agentId));let complete=false;
@@ -40,16 +50,20 @@ export function createWorldSceneProvider({request=api,worldId='default',interval
         if(seenCursors.has(cursor))throw failure('world_response_invalid');seenCursors.add(cursor);
       }
       if(!current())throw abortError();
-      failures=0;emit({phase:complete?'ready':'partial',enabled:true,rules,avatars,worldRevision,asOf,complete,nextCursor:cursor,errorCode:null});
+      failures=0;notBefore=0;emit({phase:complete?'ready':'partial',enabled:true,rules,avatars,worldRevision,asOf,instanceId:caps.instanceId,complete,nextCursor:cursor,errorCode:null,errorStatus:null,lastSuccessAt:complete?now():null,retryAt:null});
     }catch(error){
-      if(!current()||error.name==='AbortError')return;
-      failures++;emit({phase:['world_not_accessible','world_not_available'].includes(error.code)?'unavailable':'error',enabled:state.enabled,errorCode:error.code||'network_unknown',...cleared()});
+      if(!current())return;
+      failures++;metadata=null;
+      if(error.status===429&&Number.isFinite(error.retryAfterMs)&&error.retryAfterMs>=0)notBefore=Math.max(notBefore,now()+error.retryAfterMs);
+      const recoverable=temporary(error),keep=recoverable&&preserveAuthority&&previous.complete&&previous.rules;
+      const code=error.code||(error.name==='AbortError'?'network_unknown':'world_response_invalid');
+      emit({phase:keep?'recovering':['world_not_accessible','world_not_available'].includes(code)?'unavailable':'error',enabled:state.enabled,...(keep?{rules:previous.rules,avatars:previous.avatars,worldRevision:previous.worldRevision,asOf:previous.asOf,instanceId:previous.instanceId,complete:true,nextCursor:null,lastSuccessAt:previous.lastSuccessAt}:cleared()),errorCode:code,errorStatus:error.status??null,retryAt:now()+delay()});
     }finally{if(current()){controller=null;schedule();}}
   }
   return{snapshot,subscribe(listener){listeners.add(listener);listener(snapshot());return()=>listeners.delete(listener);},
-    start(){if(disposed||started)return;started=true;if(visible)void refresh();},
-    setVisible(value){value=Boolean(value);if(disposed||value===visible)return;visible=value;if(!visible){stop();emit({phase:'paused',...cleared()});}else if(started)void refresh();},
-    refresh:()=>refresh(),loadMore:()=>state.phase==='partial'?refresh({more:true}):Promise.resolve(),
-    dispose(){if(disposed)return;disposed=true;stop();state={...state,phase:'paused',...cleared()};listeners.clear();},
+    start(){if(disposed||started)return;started=true;if(visible)void refresh({force:true});},
+    setVisible(value){value=Boolean(value);if(disposed||value===visible)return;visible=value;if(!visible){stop();metadata=null;emit({phase:'paused',...cleared(),errorCode:null,errorStatus:null});}else if(started)void refresh({force:true});},
+    refresh:()=>refresh({force:true}),loadMore:()=>state.phase==='partial'?refresh({more:true}):Promise.resolve(),
+    dispose(){if(disposed)return;disposed=true;stop();metadata=null;state={...state,phase:'paused',...cleared()};listeners.clear();},
   };
 }

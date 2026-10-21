@@ -31,7 +31,12 @@ export async function api(path, { method = 'GET', body, token, signal } = {}) {
   }
   let result;
   try { result = await response.json(); } catch { throw new ApiError('response_unknown', response.status); }
-  if (!response.ok) throw new ApiError(result?.error?.code || 'request_failed', response.status, result?.error?.details);
+  if (!response.ok) {
+    const error=new ApiError(result?.error?.code||'request_failed',response.status,result?.error?.details),retry=response.headers.get('Retry-After');
+    const delay=retry&&/^\d+$/.test(retry)?Number(retry)*1000:retry?.endsWith(' GMT')?Date.parse(retry)-Date.now():NaN;
+    if(Number.isFinite(delay)&&delay>=0)error.retryAfterMs=delay;
+    throw error;
+  }
   return result;
 }
 const messages = {
