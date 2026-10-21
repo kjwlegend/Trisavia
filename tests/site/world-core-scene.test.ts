@@ -12,9 +12,10 @@ const page=(avatars:unknown[]=[],worldRevision=1,complete=true,nextCursor:string
 const envelope=(data:unknown)=>({protocolVersion:1,instanceId:caps.instanceId,data});
 type Request=(path:string,options:{signal:AbortSignal})=>Promise<unknown>;
 const flush=()=>new Promise<void>(resolve=>setImmediate(resolve));
-function clock(){let sequence=0;const pending=new Map<number,{callback:()=>void;delay:number}>();return{
+function clock(){let sequence=0,elapsed=0;const pending=new Map<number,{callback:()=>void;delay:number}>();return{
+ now:()=>elapsed,
  setTimer(callback:()=>void,delay:number){pending.set(++sequence,{callback,delay});return sequence;},clearTimer(id:number){pending.delete(id);},pending,
- fire(){const [id,timer]=pending.entries().next().value!;pending.delete(id);timer.callback();},
+ fire(){const [id,timer]=pending.entries().next().value!;pending.delete(id);elapsed+=timer.delay;timer.callback();},
 };}
 function harness(scene:(path:string,signal:AbortSignal)=>Promise<unknown>=async()=>envelope(page()),options:Record<string,unknown>={}){
  const timers=clock(),calls:Array<{path:string;signal:AbortSignal}>=[];

@@ -39,6 +39,16 @@ test('Retry-After gates automatic and manual retries without turning intentional
  limited=false;await timers.advance(61000);assert.equal(provider.snapshot().phase,'ready');provider.setVisible(false);assert.equal(provider.snapshot().phase,'paused');assert.equal(timers.pending.size,0);provider.dispose();
 });
 
+test('missing or invalid rate-limit metadata and network failures share a deadline across manual and visible recovery',async()=>{
+ for(const error of [problem('rate_limited',429),problem('rate_limited',429,{retryAfterMs:NaN}),problem('network_unknown',0)]){
+  let fail=false,requests=0;const request=async(path:string)=>{requests++;if(path==='/capabilities')return caps;if(path.startsWith('/world/rules'))return envelope(rules);if(fail)throw error;return page();};
+  const {provider,timers}=reader(request);await flush();fail=true;await timers.advance(1000);assert.equal(provider.snapshot().retryAt,3000);
+  const before=requests;await provider.refresh();await timers.advance(1500);await provider.refresh();provider.setVisible(false);provider.setVisible(true);await flush();
+  assert.equal(requests,before,error.code+' cannot bypass the fallback deadline');assert.equal(provider.snapshot().errorCode,error.code);assert.equal(provider.snapshot().errorStatus,error.status);
+  await timers.advance(2999);assert.equal(requests,before);fail=false;await timers.advance(3000);assert.equal(provider.snapshot().phase,'ready');assert.ok(requests>before,'The original deadline must still allow recovery');provider.dispose();
+ }
+});
+
 test('authorization, explicit unavailable source and invalid cursor clear the snapshot instead of reusing stale public names',async()=>{
  for(const error of [problem('insufficient_scope',403),problem('world_not_accessible',404),problem('world_not_available',503),problem('world_cursor_invalid',409)]){
   let fail=false;const request=async(path:string)=>{if(path==='/capabilities')return caps;if(path.startsWith('/world/rules'))return envelope(rules);if(fail)throw error;return page();};const{provider,timers}=reader(request);await flush();fail=true;await timers.advance(1000);assert.deepEqual(provider.snapshot().avatars,[],error.code);assert.notEqual(provider.snapshot().phase,'recovering');provider.dispose();
