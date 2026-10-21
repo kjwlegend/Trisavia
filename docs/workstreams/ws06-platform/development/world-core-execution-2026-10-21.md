@@ -276,3 +276,55 @@ stopped→after-readers为80表403→414行。七个核定表变化：access_fac
 原Agent报告[473实际结果](../../ws02-perception/validation/user-simulation/core-gateway-world-decision-20261021.md#473读取恢复版a实际结果与停止点2026-10-21t0340250800)正式记载原A自主重新发现新目录及Skill revision，取得所需5份guide v2／14份schema v4，19份canonicalDocument原始UTF-8摘要、JSON结构及精确版本均匹配，首尾目录／权限一致并保全旧基准。真实overview与7个有限list均200：背包／物品／通知／消息／公告／事件计划／已发生事件均complete=true、records=[]、source enabled；钱包权威返回星币0、accountVersion1、platform、注册初始化来源。没有未开放、权限拒绝或来源错误，没有条目则没有编造详情或新内容。该阶段**36次HTTP全部200**、零重试／跨源／重定向／未知结果，独立于历史N1／N2的182次及观察移动4次，不合并为一次全量。A已停止HTTP，B未复跑；未移动、重注册、重绑或确认消息，读取产生的既有session／access不称零DB写。
 
 本轮已授权核心实现、像素接入、读取恢复、固定差异独审、main整合和18893本地交付完成；原reviewer R29接受及WC-CR01—06关闭不变。最终双端仅在各自上述定向范围通过，无新增阻断。手机、完整权限／故障／生命周期矩阵、非空读取隔离、匿名A02同路径复验及未区分滚动组合保持未测／未决范围，不用工程检查或不同入口替代。TD只补本唯一执行记录；WS06在主目录同步其七份治理／架构原件，独立报告仍归原验收者，不覆盖或代提交。当前473服务、原新库／identity及所有后续真实写入继续保留；本次收口不追加测试、维护、回灌、端口或公网发布。
+
+## 7. 2026-10-21后继：世界读取可靠性与像素面板
+
+### 7.1 新授权、资源与诊断分工
+
+用户新增两项交付：修复频繁出现的“服务器世界暂不可用 · 可重试”，并将背包、Avatar设置与信箱接入像素世界视觉。总指挥授权原作者实现、原reviewer固定差异独审、main整合及18893本地交付；故障包可先独立交付，面板合同随后接入，不等全部视觉完成才修报错。原设计总监负责通用像素面板及Avatar／账户，WS07负责背包／信箱状态与布局；D独占web，不由不同作者并写。真实字段、权限和操作保持，未开放的人类已读／删除等能力不由视觉补造，Avatar预览须与实际世界一致；外层滚动时窗口标题出屏纳入容器检查。
+
+本轮起点main／integration均为`4d3f88bd480510b9fe80666e40ec5b1a5c222db5`，实际运行仍473冻结源。此前按用户启动请求于16:19:01以nohup及独立进程会话恢复，PID15970／PPID1，stdin关闭、输出至私有文件，PG原本healthy而未重启；旧33604退出原因无现成证据。启动记录归`outputs/world-core/restart-473e7ed-20261021T081901739Z/`。20:31:47 TD只读确认同PID／cwd、health ready、capabilities world enabled及pollIntervalMs1000，scene200／complete，**当前worldRevision29、3个Avatar**；这是已有后续用户写入，不能再以先前2角色／revision28作当前库断言。原库、配对identity、Owner／绑定、互动及所有新写入继续保全，后继切换再做fresh备份；不重建、seed、迁移或回灌，不操作8789／公网及其他服务。
+
+原A本轮实际turn_context为`gpt-6.1-sol/xhigh`，保留m1-api旧clean4e73分支，从4d3建立`codex/world-read-reliability-api`；其新增写入责任限`apps/platform/transport/http/agent-gateway-routes.ts`及`tests/gateway/rate-limit.test.ts`，补现有限流的重试时间，不改变额度或安全保护。原D本轮实际同为Sol/xhigh，保留m1-web旧clean717分支，从4d3建立`codex/world-ui-reliability`，独占前端读取状态／容器／面板及必要site／E2E。原B本轮实核Sol/xhigh，只读现有日志／进程／PG健康，m1-storage仍clean cb17，不改代码。TD仅维护本记录、整合／交付；原独立UI由总指挥另派，作者观察不代替验收。
+
+### 7.2 首轮现场证据与待证假设
+
+D于20:39:05—20:40:08以新空匿名单tab观察实际18893，caps60／rules59／scene59均200，12次采样ready、complete、3Avatar，无429／5xx／abort／pageerror，随后关闭自有browser；脱敏证据在`m1-web/outputs/world-ui-reliability/observe-public-01.json`。B于20:39—20:42确认PID持续存活约4小时20分、PG healthy／restartCount0／OOM=false；指定日志仅一条47字节启动记录，没有持续HTTP日志，因此不能据无错误记录排除间歇异常。A的三次匿名GET同样正常，不读取主人或Agent私有行。
+
+固定473静态链已确认：每个可见World页每秒读取caps／rules／scene，rules与scene合约120次／分钟；两者及其他Gateway操作共享同IP240次／60秒固定窗。两个页面已占满理论预算，额外正常读取可能触发429，而当前429不带Retry-After。前端将任一短网错／429／5xx统一清空已有画面并显示同一提示。此为确定的策略冲突风险与错误处理事实，尚不能当作用户现场每次故障的唯一根因；隔离自然双页预算、短暂失败恢复及过期／取消响应反例待完成。用户的多个浏览器页不自动等同多个World轮询页，不在现用服务造压。后继修补应保持最新有效公开画面并明确连接状态，对首次无数据、明确停用／撤权、暂态失败与主动取消分别处理，不将旧画面无限冒充实时真数据。
+
+### 7.3 独立基线、设计冻结与首个后端固定差异
+
+原独立UI[阶段六](../../../validation/user-simulation/world-core-desktop-round-01-2026-10-21.md#阶段六晚间世界不稳定与旧面板改版前基线)在20:42:45.533—20:48:09.996记录CORE-UI-BL01／P1：普通浏览中多次不可用与角色消失，20:44:55及20:46:11未显式重试也曾恢复，唯一整页reload未保持恢复；20:47:42一次可见“刷新世界”恢复3角色，20:48:09再次失效。背包／信箱自身仍正常空态与0，不能把世界故障泛化为全部数据不可读。原UI没有HTTP网络监听，不以这些时间点推定状态码或唯一根因；TD20:47:32单次scene200也不否认间歇失败。其13张原生图／14份脱敏AX归主目录`outputs/user-simulation/world-core-ui-20261021/baseline-panels-20261021T124245Z/`，20:48:09后停止输入、保留同Owner／当前A及无待提交安全点；世界仍不可用，不是验收通过。
+
+同报告CORE-UI-BL02／P2明确以Avatar窗外侧普通滚动复现标题／关闭出屏；**Home没有恢复**，最后工具能定位屏外原关闭控件才退出，不当作普通用户在视口可达。此为本轮已复现容器缺陷，原阶段四证据仍保留当时限度。BL03为三面板旧风格及旧basic预览不一致的设计输入，非新增业务能力。WS07另有20:42:34.113—34.296失败语义快照、无故障截图或网络捕获，材料在主目录`outputs/ws07-m2-pixel-panels-20261021/`；其最近成功快照20:38:54，实际失败起点未知，成功原图不挪作失败证据。
+
+总指挥确认共享合同和WS07最终§6可供D接入。TD冻结于`outputs/world-ui-reliability/design-contract-20261021/`：共享实施输入`pixel-panels-contract-r2.md` SHA256 **`05f010f4906471a60580ff7471e1261075e1f1fa6fadc47b04f28bf1cbd8b14e`**；WS07全文`m2-owner-data-ui-minimal-design-2026-10-20.md` SHA256 **`6264c7104080884e226b076b7d23611b63e46f76b2dce836b6a99499dcdc7816`**，其中§6摘要`0827581138f592ec96083e1de24054cf05b93c0d5ee96e7500c09cd58d048f51`。初冻174a7b旧副本保留，实施用r2；对应源仍归设计总监／WS07，不由TD覆盖或代提交。主窗960／最高676／标题64／关闭44，详情680／最高620；视口安全区、主窗HUD可达／详情独占、Avatar分开保存／未确认恢复与同一human.js映射统一。设计预览／自查及生产独立视觉复验分别继续，不借合同冻结预记通过。
+
+A已固定`4d3f88b → 5db904d593a82f70b5870988fa8c5666f5de74d0`两路径，仅Gateway自身限流429增加Retry-After及no-store，剩窗秒数向上取整、范围1—60，map容量满为60；原240/IP、60秒窗口、鉴权／写保护与body保持。隔离Fastify.inject假钟反例为59个1.01秒周期两页236次rules／scene＋6正常发现＝242，240接受／2次429，旧版剩窗1420ms而无等待header；单页124全200。修前4例1过／3失败，修后新增5＋原目录2＋driver1同次8/8、无skip，full typecheck／diff0；无PG／服务监听或当前库操作。TD核2文件／4日志hash一致，证据归`m1-api/outputs/world-read-reliability/`，已送原reviewer R30，尚待独审与D故障包固定；当前18893未切换。
+
+### 7.4 故障包固定与独审推进
+
+原reviewer R30已接受A两路径，未发现新增实质问题；TD无冲突cherry-pick为`2083fef`，没有手写整合逻辑。该后端只为现有429给出等待依据，不单独宣称消除共享预算竞争或现场故障。D独立固定`4d3f88b → 4bb9fa5d1b4843c4b9f6f1b088e398d9ba33e353`七路径（四生产、三测试），固定时clean，尚待原reviewer R31。common仅解析错误Retry-After元数据，不增加自动写重试；公开World保持GET，元数据30秒有界缓存，scene最短1秒单链；暂态保留带旧读取时间的最后完整事实，明确失效／新空集合清除，恢复不生成移动。
+
+D最终site同次27/27＝7可靠性＋9公开reader＋11像素，合成浏览器恢复故事1/1、无skip，full typecheck、四生产JS语法及diff0。隔离双页60秒预算为125次Gateway（含一次其他读取）、capabilities四次、无429；旧模型241触限流。合成浏览器全路由拦截至pixel-world.invalid，覆盖503保留标记、更新的完整空集合清除、429冷却恢复和明确404清除，不访问18893或借用Owner凭据。失败run01—02及旧site／typecheck记录保留，最终断言要求成功读取时间推进、真实新空集合及清除错误；没有以正常refreshing采样或已禁用按钮时序的失败冒称产品故障。TD核12普通日志hash一致；证据在`m1-web/outputs/world-ui-reliability/`。
+
+D从固定4bb继续像素面板后继，与此故障提交分开；根实看1440角色／背包及1024信箱详情，确认方向可接入，正式UI须删实现说明且配色称代表色／资料配色，不暗示一定染衣。最终设计文案合同另冻。当前独审尚未接受D，故障包未组合测试、未发布；18893仍15970／473，独立UI安全点保持。
+
+R31检查确认WC-CR07／P2：无合法Retry-After时，fallback退避仅由定时器和UI显示，公开refresh／隐藏再显示可绕过。TD静态疑点送原reviewer，原D也复核，随后固定独立`4bb → e9e2fc44dbc2a4c0f351200b9b01feed5db9204a`三路径修订；暂态错误把服务器等待与本地退避统一存入notBefore，自动／手动／可见恢复共用，明确业务失效清除及手动重查保持。新反例在t1000失败、t1500多次手动／隐藏及t2999均无新读，t3000实际恢复；涵盖无头429、非法数值等待及短网错。17/17＝8可靠性＋9公开reader，full typecheck／语法／diff0；初跑三失败与修正后日志均保留：前两项来自作者中间态把退避误施于非暂态业务错误，第三项才是假timer未推进时间；固定e9只对temporary设门禁并修正假钟，原断言保持。原D另加errata.json澄清，不覆盖原manifest；此作者后继未重跑Browser／现服。证据归原D`outputs/world-ui-reliability/cooldown-followup/`，原4bb manifest不覆盖；同一reviewer继续复核最终整个4d3→e9故障范围，未借作者自查关闭问题。
+
+最终设计总监交付`pixel-panels-v1.0.0`已由根实看后确认可实施。TD冻结至`outputs/world-ui-reliability/pixel-panels-v1.0.0-design/`，五文件hash及bundleDigest **`365cdae73862bcbf2461f9b334146b41817dd6f27b8b4ae0d3b4298497811f0f`**重算匹配；最终共享合同SHA256 **`a0a919e27887ec391ed974fae74a1c565c1243add28504d1b52841a00e3922fd`**替代r2／r3实施输入，旧冻结副本保留。原pixel-town包31文件仍逐字节匹配原manifest。预览HTML／CSS／JS、合同与validation只提供设计输入；D有选择复用样式／布局，示例数据、模拟保存及PIXEL_PANELS接口不接正式产品。根所见1440／1024与设计作者内部滚动／草稿保护／减少动态结果不代替新生产代码独审或普通UI验收。
+
+### 7.5 可靠性故障包独审、组合检查与实际发布
+
+原reviewer R32接受`4bb → e9e2fc4`三路径修订并关闭WC-CR07，结合R31接受D最终`4d3 → e9`七路径；A R30接受保持。TD无冲突整合D两提交为`a3cff3a`、**`d8ee361597d277d12fbda6fcc9260991a8d5f971`**，九个A／D归属文件与各自固定作者版本逐字节一致，无新增整合逻辑。该组合实际36/36＝Gateway8＋公开reader9＋可靠性8＋pixel11，同次另执行已审合成Browser恢复1/1，均fail／cancel／skip0；full typecheck与diff0。Browser全路由拦截，不访问18893或当前Owner，作者e9未重跑与TD组合实跑分别记录。普通manifest、源码匹配及日志在`outputs/world-ui-reliability/integration-d8ee361/`，不是独立UI或三面板验收。
+
+固定源在`outputs/world-core/reliability-d8ee361/source`，486文件与Git逐字节验证、独立复制依赖，archive SHA256 **`909d3d10567b9621e92383c6bbc9f53629de1a178160f7b24b9ae1970130a720`**。相对现服473，后端仅已审Gateway header七行差异，脚本、依赖、schema／catalog及所有业务逻辑保持；本次无需任何reader发布helper／迁移／seed。
+
+依据根已交还的20:48原UI安全点，TD先通知维护，再fresh保存当前live逻辑dump及全部配对私有材料；核对15970／473 cwd后正常SIGTERM排空、确认18893无监听，再存stopped dump。两dump均核pg_restore清单，未作本次恢复演练；stopped **447539字节**、SHA256 **`0b031f11120a392118a5bedd20985692aacb0c83af7c8a4c285b05e7c40cf332`**。秘密只在本归档`maintenance-private/`的0700／0600文件，不输出连接或凭据，不复用旧备份覆盖新事实。
+
+停服后显式闭写门，从固定d8以nohup／独立进程会话启动，stdin关闭、日志私有。stopped-before→closed-before→after-start的**80表502行**全部语义指纹保持，只有instance_state的write_generation／writes_enabled机械字段按原规则排除；closed-before→after-start全部80表全列指纹完全相同。配对identity SHA256仍da233bc…612，instance／epoch、现有Owner／绑定／会话／Agent／互动及新写入保持。11匿名GET均200／no-store：health／首页／owner／公开入门／caps／rules／scene及四改动前端资源；资源逐字节匹配固定源，公开worldRevision29／3Avatar完整事实与维护前相同，catalog／Skill revision保持。没有借Owner或Agent凭据作私有验证。
+
+北京时间2026-10-21 **21:31:17.185**开写门并health ready，维护**52.816秒**。实际运行 **`d8ee361597d277d12fbda6fcc9260991a8d5f971`**、PID **58137／PPID1**、固定cwd为上述source；入口仍 **http://127.0.0.1:18893/**。普通启动、备份摘要、三阶段continuity及closed-readiness证据同归`reliability-d8ee361/`。当前恢复继续采用兼容当前catalog的d8或已评估473源码，保留当前PG／identity及全部后续写入，不能回灌旧dump。原8789／connet、PG生命周期、其他服务及公网未动。
+
+根已收到实际ready时间及版本，可恢复原独立UI验证连接稳定性；此处尚无其正式新结果，不宣称现场所有间歇故障关闭。三面板及CORE-UI-BL02容器修复仍由D后继实施，尚未固定／独审／发布，不借本故障包通过提前记视觉完成。
