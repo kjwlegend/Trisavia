@@ -356,3 +356,32 @@ A／D分别只读核对：Gateway按IP使用固定60秒／240预算，拒绝计�
 根已接受WS01[功能§3.2](../../ws01-registration/02-features-and-flows.md#32-实际人物形象选择2026-10-21-增量)及[接线§2.3.3](../../ws01-registration/design/world-account-entry-contract.md#233-实际人物选择的业务接线2026-10-21)的业务边界。`profile.published.avatar`为唯一已保存选择，复用公开avatar-catalog及稳定look标识；权限、CAS、提议与原目标／载荷恢复保持。公开appearance从该源投影，publishedVersion变化即使位置／worldRevision不变也更新全部人物表现。未知／下架不允许新选，已保存人物解析保持，当前三个Avatar按旧事实冻结确定映射，不重置。TD已同步原A／D／C，具体JSON由同一实现候选统一；实际人物枚举、默认、素材版本及旧映射仍待原设计总监清单，未恢复被撤回的v1实施。
 
 本记录§7.6—7.7已于main以ff-only归档为`cb2f2901dbc8cf8e991a8049ec638cc9449c1710`，仅一条TD文档路径变化；7199项原脏状态及staged内容逐项保持，回执`outputs/world-core/main-direction-record-sync-cb2f290/receipt.json`。运行仍独立冻结d8／58137；本节准备没有操作服务或数据库。
+
+### 7.9 最小429观测的固定独审与实际发布
+
+原A固定`03313c5 → 1a2eba871ff369af028712f3816c766c990bdcce`三路径：Gateway route、`gateway-request-observation.ts`及`rate-limit-observation.test.ts`。TD核三源码及五日志摘要，原reviewer R33静态接受，无新增实质发现。最终隔离22/22＝观测6＋原限流5＋registry2＋driver1＋identity8，full typecheck／diff0；最终033反例六项均因无诊断输出失败。最初误纳四个PG HTTP用例，25项21通过／4在缺WORLD_CORE_TEST_RUNTIME前置失败，原件保留，未连接DB或服务，不称全套通过。作者原件为`m1-api/outputs/world-read-rate-diagnostics/`。
+
+TD无冲突整合为**`e0054c333a384f22939240d3e7609a4dbed71ff2`**，三文件与作者逐字节一致；准确组合再验同22/22、full typecheck／diff0，证据`outputs/world-ui-reliability/integration-e0054c3/`。仅增加安全stderr的自身429累计汇总；allowed为预算准入，不表示后续鉴权／业务成功。每桶首拒绝及至少10秒间隔快照、容量拒绝另限频，无窗口结束flush，不能累加多快照或假定覆盖尾部所有请求。固定route分类不检查auth头，无IP／hash／requestId／主体／参数／正文／原始异常；sink失败吞掉，不改变HTTP。原配额、窗口、鉴权、写保护、Retry-After及body保持，无timer／DB／调试HTTP接口。此交付增加后继自然流量证据，不能定位旧四次429消费者，故障仍开放。
+
+固定归档为`outputs/world-core/reliability-e0054c3/source`，488文件逐一对Git、依赖独立复制；archive SHA256 **`a3257fa8dbd91a484819183f72b8017d0255ce0ba0b11d9902cdfb38dd62f474`**。依据23:32原UI安全点，维护前通知根，fresh保存live与正常停服后的stopped dump及全部配对私有材料。stopped为**447704字节**，SHA256 **`c0602a857a17bf2ab8c3d927a4784283052456a76e39a8717b6d344b077e220b`**；两份备份核清单、未作恢复演练，原件仅留该目录maintenance-private的0700／0600文件。
+
+停服、闭门与固定源启动三个阶段的**80表504行**全部语义指纹保持，closed-before→after-start全部列一致；仅原instance_state开关／generation按原规则排除。identity SHA、instance／epoch、Owner／绑定／会话／Agent／互动和全部后续事实保全。七匿名就绪GET200／no-store，首页／owner匹配固定HTML；公开完整三Avatar、worldRevision29、catalog／Skill revision保持。无迁移／reader helper／seed或私有用户验证。
+
+北京时间2026-10-21 **23:59:28.921**开写门并ready，维护**19.882秒**。实际版本**e0054c3**、PID **82404／PPID1**、cwd为上述固定source；入口仍**http://127.0.0.1:18893/**。后继仅读自然流量的白名单聚合，不追加抽样循环／造压／故障注入。8789／connet、PG生命周期、其他服务及公网保持。恢复须保全当前PG／identity及所有后续写入，不能回灌历史dump；本次无schema变更，旧d8兼容源码保留。
+
+### 7.10 人物子包、旧映射与统一实现合同
+
+根转交设计总监已固定的`2026-10-21.appearance-v1.1`人物子包，并实看v2的1440人物舞台／六款矩阵／整体木框后接受制作与接线方向；这不是人类最终审美验收，完整v2几何／M2／状态清单仍待设计收尾。TD冻结`outputs/world-ui-reliability/appearance-v1.1-design/`：JSON SHA256 **`30c00558d539a194e6936b24e0179a2558cad4b047251265231388e9c63c2b82`**、JS SHA256 **`c5555a2055fdb8bdcd9e1fb78d6e1c36c3b9a6054b8be67c2fd1265a79a154c2`**，两内容等价；六人物实际引用14图与设计副本、Sunnyside原图及现服d8生产图逐字节一致。沿原`pixel-town-v1.0.0`素材版本`2026-10-21.r3`，不改PNG。新默认为短发，完整人物为base＋六款hair之一，帧96×64／脚点(48,39)，不暗示新增衣装、肤色或装备。
+
+按根明确授权，23:54:21仅一次公开scene GET200、无重试，保存实际完整三Avatar与worldRevision29，并调用固定d8 renderer计算旧呈现：两位旧blue均为卷发，后续cream角色按其原Avatar事实id及固定旧hair顺序为长发。实际id／原字段／位置／版本及映射依据单列`legacy-three-avatar-mapping.json`，原响应另存；这是从公开事实与已部署算法得到的展示映射，不把lookId推造成过去已保存字段，不写回、不硬编码真实id到生产。缺事实时明确unresolved，不用名字／AgentId／目录顺序或默认补猜。
+
+TD冻结以下最小跨作者合同，WS01业务规则保持：
+
+- 新`fields.avatar`和新持久值为严格`{lookId, catalogVersion}`，catalogVersion固定上述appearance-v1.1；lookId为六个`sunnyside-human-{shorthair,longhair,curlyhair,bowlhair,mophair,spikeyhair}`之一。旧`{template:'basic',color}`保留原存储union、载荷hash和历史回执；旧未决原请求按原语义继续，不能转换载荷重放。姓名等其他字段保存不改变形象或批准／清除独立提议。
+- `/v1/avatar-catalog`顶层version2，给出catalogVersion、assetVersion=`2026-10-21.r3`、上述catalogDigest、defaultLookId及`looks[{lookId,displayName,selectable,preview}]`。新选按当前可选目录验证；已保存旧目录人物保持解析。素材路径／帧与资源版本不重复写入每份profile。
+- `profile.published.avatar`仍为唯一保存源。Owner profile读取保留原draft／published，增加只读`publishedAppearance`／`draftAppearance`，对应不存在则null；已解析值是look pair，缺足够旧事实则保留legacy shape作为明确unresolved。匿名publicProfile保留原`profile.avatar`，另有顶层appearance和publishedVersion；IdentityAccess与scene的appearance用同一解析。新只读注释不成为写入输入或重写旧receipt。
+- 旧映射通过profile纯resolver与装配层窄只读port，B在同一活M1 session／PGclient内读default world的原Avatar id，已完成当前Owner绑定或公开可见性校验后才调用。null只代表确实无Avatar，存储失败抛出；不建Avatar、不另开事务、不为新look保存读取世界。World已持有真实Avatar id可直传纯resolver。无第二套World可写外观，所有列表／预览／HUD／世界按publishedVersion更新，不等待移动。
+
+责任与隔离：原A的m1-api在clean后切新`codex/world-look-api`、原B的m1-storage在clean后切新`codex/world-look-storage`，共同base **e0054c3**，各自旧分支／storage／outputs保留。A负责profile／目录resolver、M1／perception／access公开投影、必要schema／guide与app装配，明确接管world-service的一处只读投影；B负责PG codec／typed model／追加迁移及session窄adapter，不改历史迁移checksum／旧资料／回执。B本轮实际Sol／xhigh已于23:52轮次核实；A维持原已核配置。
+
+D原m1-web的18个WIP逐文件备份且原树未动，证据`outputs/world-ui-reliability/v1-web-wip-preserved/`；另分普通worktree **`/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-web-look`**、`codex/world-look-panels-v2`、base07c7d18，由同D独占，依赖独立复制。D本轮23:56实际Sol／xhigh回执已核，已看v2实图；负责共享人物renderer、全部Owner／HUD缩略图与状态接线、v2人物场景和真实M2面板，可选择复用旧viewport／草稿／focus保护，但均纳入新版独审，不搬回v1白纸四色表单。C保留原五条隔离真实HTTP／持久化／浏览器故事及三个预留测试路径，待接口实现可组合后接续，不替代原独立reviewer或普通UI。各作者不操作当前18893／DB；视觉完整manifest随后核，未宣称新look或v2已发布。
