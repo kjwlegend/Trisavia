@@ -42,6 +42,31 @@ function selection(table:M1Table,filters:ExactFilters,options:SelectionOptions={
 
 const invalidators=new WeakMap<M1Transaction,()=>void>();
 export function invalidatePostgresSession(session:M1Transaction):void{invalidators.get(session)?.();}
+const sessionCapabilities=new WeakMap<object,{client:PoolClient;alive:()=>boolean}>();
+
+/** Infrastructure-only projection. Preserve the private, same-client read capability. */
+export function createPostgresReadSession(session:M1ReadSession):M1ReadSession{
+  const capability=sessionCapabilities.get(session);
+  if(!capability)throw new StorageError('invalid_usage','Unknown PostgreSQL session');
+  if(!capability.alive())throw new StorageError('closed','Storage scope has ended');
+  const reader=Object.freeze({get:session.get,find:session.find,scan:session.scan,count:session.count,quotaCount:session.quotaCount});
+  sessionCapabilities.set(reader,capability);return reader;
+}
+
+/** Composition-root bridge only; authorization and metering belong to its caller. */
+export async function readLegacyAvatarIdentity(session:M1ReadSession,input:{agentId:string;worldId:'default'}):Promise<{avatarId:string}|null>{
+  const capability=sessionCapabilities.get(session);
+  if(!capability)throw new StorageError('invalid_usage','Unknown PostgreSQL session');
+  if(!capability.alive())throw new StorageError('closed','Storage scope has ended');
+  if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(key=>!['agentId','worldId'].includes(key))||input.worldId!=='default')throw new StorageError('invalid_usage','Invalid legacy Avatar identity query');
+  id(input.agentId);
+  try{
+    // A left Avatar still owns the original stable identity used by legacy
+    // rendering. Do not filter its state or create a replacement on a read.
+    const result=await capability.client.query('SELECT id FROM world.avatars WHERE world_id=$1 AND agent_id=$2 LIMIT 1',[input.worldId,input.agentId]);
+    return result.rowCount?{avatarId:result.rows[0].id as string}:null;
+  }catch(error){throw storageError(error);}
+}
 
 /** Internal typed-row adapter. Every query uses this scope's one checked-out client. */
 export function createPostgresSession(client:PoolClient,write:boolean,alive:()=>boolean):M1Transaction{
@@ -75,7 +100,7 @@ export function createPostgresSession(client:PoolClient,write:boolean,alive:()=>
     remove:async(table,identifier,expectedVersion)=>execute(async()=>{writable();tableName(table);id(identifier);if(safeInteger(expectedVersion)<1)throw new StorageError('invalid_usage','Invalid expected version');
       invalidate();let changed=false;for(const model of modelsFor(table)){if(model.logical==='perception_objects')await client.query('DELETE FROM perception.reference_aliases WHERE external_id=$1 AND EXISTS(SELECT 1 FROM '+model.table+' WHERE id=$1 AND version=$2)',[identifier,expectedVersion]);const result=await client.query(`DELETE FROM ${model.table} WHERE id=$1 AND version=$2`,[identifier,expectedVersion]);changed=changed||result.rowCount===1;}return changed;
     }),
-  };invalidators.set(session,invalidate);return session;
+  };invalidators.set(session,invalidate);sessionCapabilities.set(session,{client,alive});return session;
 }
 
 async function auxiliary(client:PoolClient,model:Model,row:StoredRow):Promise<void>{
@@ -98,7 +123,7 @@ export async function openPostgresStore(options:OpenPostgresStoreOptions):Promis
     const result=work(current);if(!result||typeof result.then!=='function')throw new StorageError('invalid_usage','PostgreSQL callbacks must be asynchronous');return result;
   }
   return {instanceId:host.instanceId,recoveryEpoch:host.recoveryEpoch,
-    read:work=>host.read(async scope=>{const current=session(scope),reader:M1ReadSession={get:current.get,find:current.find,scan:current.scan,count:current.count,quotaCount:current.quotaCount};return invoke(work,reader);}),
+    read:work=>host.read(async scope=>invoke(work,createPostgresReadSession(session(scope)))),
     transaction:work=>host.transaction(async scope=>invoke(work,session(scope))),close:()=>host.close()};
 }
 

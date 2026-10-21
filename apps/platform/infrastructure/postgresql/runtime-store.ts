@@ -1,7 +1,7 @@
 import { StorageError, type M1ReadSession } from '../../contracts/store.ts';
 import type { RuntimeStore, RuntimeReadContext, RuntimeTransaction, RuntimeRepositoryPort } from '../../contracts/runtime-store.ts';
 import { openPostgresTransactionHost, type OpenPostgresStoreOptions, type PostgresScope } from './transaction-host.ts';
-import { createPostgresSession, invalidatePostgresSession } from './postgres-store.ts';
+import { createPostgresReadSession, createPostgresSession, invalidatePostgresSession } from './postgres-store.ts';
 import { createRuntimeRepositories } from './runtime-repositories.ts';
 import { runtimeSql } from './runtime-sql.ts';
 import { createWorldRepository } from './world-repository.ts';
@@ -29,7 +29,7 @@ function createContext(scope:PostgresScope,options:OpenRuntimeStoreOptions):Runt
   outbox:scope.write?core.outbox:Object.freeze({get:core.outbox.get,list:core.outbox.list}),
  };
  const context=Object.freeze(scope.write?{...base,validateBeforeCommit(check:(ctx:RuntimeTransaction)=>Promise<void>){sql.writable();if(typeof check!=='function')throw new StorageError('invalid_usage','A commit validator is required');scope.beforeCommit(()=>check(context));},async attempt<T>(work:(context:RuntimeTransaction)=>Promise<T>):Promise<T>{sql.writable();invalidatePostgresSession(legacy);try{return await scope.attempt(()=>work(context as RuntimeTransaction));}finally{invalidatePostgresSession(legacy);}}}:base) as RuntimeTransaction;
- identities.set(context,{scope,session:Object.freeze({get:legacy.get,find:legacy.find,scan:legacy.scan,count:legacy.count,quotaCount:legacy.quotaCount})});
+ identities.set(context,{scope,session:createPostgresReadSession(legacy)});
  return context;
 }
 /** Verifies existing module history and instance identity. Never migrates, seeds, or opens the write gate. */

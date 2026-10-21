@@ -3,6 +3,8 @@ import { StorageError, type JsonObject, type JsonValue, type StoredRow } from '.
 import { column, resolveModel, type Field, type Model } from './model.ts';
 
 export const MAX_SAFE = Number.MAX_SAFE_INTEGER;
+const profileLookIds=new Set(['sunnyside-human-shorthair','sunnyside-human-longhair','sunnyside-human-curlyhair','sunnyside-human-bowlhair','sunnyside-human-mophair','sunnyside-human-spikeyhair']);
+const profileCatalogVersion='2026-10-21.appearance-v1.1';
 export function safeInteger(value: unknown): number {
   const number = typeof value === 'string' && /^-?\d+$/.test(value) ? Number(value) : value;
   if(typeof number!=='number'||!Number.isSafeInteger(number))throw new StorageError('invalid_usage','Expected a safe integer');
@@ -129,10 +131,16 @@ export async function writeChildren(client:PoolClient,model:Model,row:StoredRow)
       if(Object.keys(content).some(key=>!known.includes(key)))throw new StorageError('invalid_usage','Unmapped profile content');
       for(const key of ['displayName','bio'])if(content[key]!=null&&typeof content[key]!=='string')throw new StorageError('invalid_usage','Invalid profile text');
       if(content.interests!=null&&(!Array.isArray(content.interests)||!content.interests.every(item=>typeof item==='string')))throw new StorageError('invalid_usage','Invalid profile interests');
-      const avatar=content.avatar as JsonObject|undefined;
-      if(avatar&&Object.keys(avatar).some(key=>!['template','color'].includes(key)))throw new StorageError('invalid_usage','Unmapped avatar parameter');
-      await client.query(`INSERT INTO profiles.profile_contents(parent_id,stage,ordinal,display_name,bio,interests,avatar_template,avatar_color,content_schema_version,content_text)
-        VALUES($1,$2,0,$3,$4,$5,$6,$7,1,$8)`,[row.id,split.path,content.displayName??null,content.bio??null,content.interests??null,avatar?.template??null,avatar?.color??null,JSON.stringify(content)]);continue;
+      const avatar=content.avatar as JsonObject|null|undefined;
+      if(avatar!=null&&(typeof avatar!=='object'||Array.isArray(avatar)))throw new StorageError('invalid_usage','Invalid profile avatar');
+      const selectedLook=avatar!=null&&(Object.hasOwn(avatar,'lookId')||Object.hasOwn(avatar,'catalogVersion'));
+      if(selectedLook){
+        if(Object.keys(avatar!).length!==2||typeof avatar!.lookId!=='string'||!profileLookIds.has(avatar!.lookId)||avatar!.catalogVersion!==profileCatalogVersion)throw new StorageError('invalid_usage','Invalid profile appearance selection');
+      }else if(avatar&&Object.keys(avatar).some(key=>!['template','color'].includes(key)))throw new StorageError('invalid_usage','Unmapped avatar parameter');
+      // Keep the original content, including optional/null legacy fields. The
+      // mirrors describe its union branch; they never replace old avatar facts.
+      await client.query(`INSERT INTO profiles.profile_contents(parent_id,stage,ordinal,display_name,bio,interests,avatar_template,avatar_color,avatar_look_id,avatar_catalog_version,content_schema_version,content_text)
+        VALUES($1,$2,0,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,[row.id,split.path,content.displayName??null,content.bio??null,content.interests??null,avatar?.template??null,avatar?.color??null,selectedLook?avatar!.lookId:null,selectedLook?avatar!.catalogVersion:null,selectedLook?2:1,JSON.stringify(content)]);continue;
     }
     if(split.mode==='snapshot'){
       let ordinal=0;for(const[key,entry]of Object.entries(value as JsonObject)){

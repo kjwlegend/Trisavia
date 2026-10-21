@@ -100,6 +100,22 @@ POSTGRES_MIGRATIONS.push({moduleId:'iam',version:5,name:'persistent_membership_s
   ALTER TABLE iam.world_memberships DROP CONSTRAINT world_memberships__present_check;
   ALTER TABLE iam.world_memberships ADD CONSTRAINT world_memberships__present_check CHECK(_present <@ ARRAY[${membershipAllowed.join(',')}]::text[]);`,dependencies:['iam']});
 POSTGRES_MIGRATIONS.push(...RUNTIME_MIGRATIONS);
+// Applied v1 SQL stays byte-for-byte fixed. No legacy content, row version or
+// receipt is rewritten when the explicit appearance branch becomes available.
+POSTGRES_MIGRATIONS.push({moduleId:'profiles',version:2,name:'explicit_appearance_selection',sql:`ALTER TABLE profiles.profile_contents
+  ADD COLUMN avatar_look_id text COLLATE "C", ADD COLUMN avatar_catalog_version text COLLATE "C";
+  ALTER TABLE profiles.profile_contents DROP CONSTRAINT profile_contents_content_schema_version_check;
+  ALTER TABLE profiles.profile_contents ADD CONSTRAINT profile_contents_content_schema_version_check CHECK(content_schema_version IN (1,2));
+  ALTER TABLE profiles.profile_contents ADD CONSTRAINT profile_contents_avatar_union_check CHECK(
+    (content_schema_version=1 AND avatar_look_id IS NULL AND avatar_catalog_version IS NULL AND
+      CASE WHEN NOT (content_text::jsonb ? 'avatar') OR content_text::jsonb->'avatar'='null'::jsonb THEN true
+        WHEN jsonb_typeof(content_text::jsonb->'avatar')='object' THEN ((content_text::jsonb->'avatar') - 'template' - 'color')='{}'::jsonb
+        ELSE false END)
+    OR (content_schema_version=2 AND avatar_template IS NULL AND avatar_color IS NULL
+      AND avatar_look_id IS NOT NULL AND avatar_look_id IN ('sunnyside-human-shorthair','sunnyside-human-longhair','sunnyside-human-curlyhair','sunnyside-human-bowlhair','sunnyside-human-mophair','sunnyside-human-spikeyhair')
+      AND avatar_catalog_version IS NOT NULL AND avatar_catalog_version='2026-10-21.appearance-v1.1'
+      AND coalesce(content_text::jsonb->'avatar'=jsonb_build_object('lookId',avatar_look_id,'catalogVersion',avatar_catalog_version),false))
+  );`,dependencies:['profiles']});
 export const POSTGRES_SCHEMA_SIGNATURE=createHash('sha256').update(POSTGRES_MIGRATIONS.map(item=>`${item.moduleId}:${createHash('sha256').update(item.sql).digest('hex')}`).join('\n')).digest('hex');
 
 /** Explicit DDL-role operation; openPostgresStore never calls this. */
