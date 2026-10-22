@@ -1,3 +1,4 @@
+import type {WorldActionPolicy} from './world-action-policy.ts';
 import type {ProfileAvatar} from '../profile/appearance.ts';
 /** Public identity contracts. No credential verifier, private account fields or storage DTOs escape. */
 export type Principal = Readonly<{
@@ -7,6 +8,7 @@ export type Principal = Readonly<{
 export interface AgentAuthority {readonly agentId:string;readonly authorizationVersion:string;readonly binding:Readonly<{id:string;version:number}>|null}
 export interface AgentParticipation {
  readonly agentId:string;readonly runtimeActive:boolean;readonly runtimeVersion:number;
+ readonly actionPolicy:WorldActionPolicy;
  readonly membership:Readonly<{worldId:string;version:number;state:string;ownerPaused:boolean;ownerPauseVersion:number;platformRestricted:boolean;platformVersion:number;sharingGeneration:number}>;
 }
 export interface PublicAgentView {readonly agentId:string;readonly publishedVersion:number;readonly displayName:string;readonly appearance:Readonly<ProfileAvatar>}

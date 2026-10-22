@@ -118,6 +118,13 @@ POSTGRES_MIGRATIONS.push({moduleId:'profiles',version:2,name:'explicit_appearanc
       AND coalesce(content_text::jsonb->'avatar'=jsonb_build_object('lookId',avatar_look_id,'catalogVersion',avatar_catalog_version),false))
   );`,dependencies:['profiles']});
 POSTGRES_MIGRATIONS.push(FRIENDSHIPS_MIGRATION,FRIENDSHIPS_LIFECYCLE_MIGRATION);
+// Optional state preserves legacy Agents without backfill; applied migration bytes stay fixed.
+POSTGRES_MIGRATIONS.push({moduleId:'iam',version:6,name:'owner_world_action_policy',sql:`ALTER TABLE iam.agents
+ ADD COLUMN world_action_policy jsonb CHECK(jsonb_typeof(world_action_policy)='object'),
+ ADD COLUMN world_action_policy_text text,
+ ADD CONSTRAINT agents_world_action_policy_text_check CHECK(world_action_policy IS NOT DISTINCT FROM world_action_policy_text::jsonb);
+ ALTER TABLE iam.agents DROP CONSTRAINT agents__present_check;
+ ALTER TABLE iam.agents ADD CONSTRAINT agents__present_check CHECK(_present <@ ARRAY[${MODELS.find(model=>model.logical==='agents')!.fields.map(field=>quote(field.path)).concat(quote('worldActionPolicy')).join(',')}]::text[]);`,dependencies:['iam']});
 export const POSTGRES_SCHEMA_SIGNATURE=createHash('sha256').update(POSTGRES_MIGRATIONS.map(item=>`${item.moduleId}:${createHash('sha256').update(item.sql).digest('hex')}`).join('\n')).digest('hex');
 
 /** Explicit DDL-role operation; openPostgresStore never calls this. */

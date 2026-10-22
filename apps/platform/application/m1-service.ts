@@ -1,3 +1,4 @@
+import {assertWorldActionAllowed,worldActionPolicy,worldActionPolicyView} from '../domains/access/world-action-policy.ts';
 import {authenticateCredential} from '../domains/access/authentication.ts';
 import { mapAsync } from '../domains/common/async-collections.ts';
 import { requireRow as required, patchRow as update } from '../domains/common/repository.ts';
@@ -22,7 +23,7 @@ import { createPerceptionService, type PerceptionOptions } from "./perception-se
 import { initializePerceptionAgent } from "./perception-seed.ts";
 import {createOwnerFriendsReader} from "./owner-friends.ts";
 import type { PerceptionAction } from "../domains/perception/protocol.ts";
-export type M1Action = PerceptionAction | "readOwnerFriends" | "capabilities" | "catalog" | "register" | "registrationResult" | "self" | "publicProfile" | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup" | "readRecovery" | "registerOwner" | "readAccount" | "claimAgent" | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites" | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveProfile" | "saveDraft" | "publishProfile" | "unpublishProfile" | "profilePolicy" | "createRecoveryRequest" | "readRecoveryRequest" | "cancelRecoveryRequest" | "recoveryAssistance" | "verifyRecoveryRequest" | "rejectRecoveryRequest" | "startRegistration" | "readRegistrationAttempt" | "sendRegistrationCode" | "verifyRegistrationEmail" | "cancelRegistration" | "startEmailRecovery" | "readEmailRecoveryAttempt" | "sendRecoveryCode" | "verifyRecoveryEmail" | "recoverByEmail" | "enableRecoveryBackup" | "readWorldAccess" | "saveWorldAccess" | "readMembership" | "join" | "leave" | "participation" | "receipt";
+export type M1Action = PerceptionAction | "readOwnerFriends" | "capabilities" | "catalog" | "register" | "registrationResult" | "self" | "publicProfile" | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup" | "readRecovery" | "registerOwner" | "readAccount" | "claimAgent" | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites" | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveProfile" | "saveDraft" | "publishProfile" | "unpublishProfile" | "profilePolicy" | "createRecoveryRequest" | "readRecoveryRequest" | "cancelRecoveryRequest" | "recoveryAssistance" | "verifyRecoveryRequest" | "rejectRecoveryRequest" | "startRegistration" | "readRegistrationAttempt" | "sendRegistrationCode" | "verifyRegistrationEmail" | "cancelRegistration" | "startEmailRecovery" | "readEmailRecoveryAttempt" | "sendRecoveryCode" | "verifyRecoveryEmail" | "recoverByEmail" | "enableRecoveryBackup" | "readWorldActionPolicy" | "saveWorldActionPolicy" | "readWorldAccess" | "saveWorldAccess" | "readMembership" | "join" | "leave" | "participation" | "receipt";
 export interface M1Options {
     legacyAvatarIdentity?:LegacyAvatarIdentityReader<M1ReadSession>;
     perception?: PerceptionOptions;
@@ -670,6 +671,21 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     return { agentId, runtimeVersion, runtimeActive: action === "replaceRuntime" };
                 });
             }
+            if (action === "readWorldActionPolicy" || action === "saveWorldActionPolicy") {
+                const input=object(raw,action==='readWorldActionPolicy'?['agentId']:['operationId','agentId','expectedVersion','mode']);
+                const actor=await authenticate(tx,token,action==='readWorldActionPolicy'?['runtime','owner_session']:['owner_session']);
+                const agentId=text(input.agentId,'agentId',8,100),agent=await target(tx,actor,agentId),current=worldActionPolicy(agent);
+                if(action==='readWorldActionPolicy')return worldActionPolicyView(agent,asOf);
+                return await command(tx,`owner:${actor.data.ownerId!}`,action,input,async()=>{
+                    if(!Number.isSafeInteger(input.expectedVersion)||Number(input.expectedVersion)<0)fail('invalid_request',400,'Expected a nonnegative policy version');
+                    if(input.expectedVersion!==current.version)fail('version_conflict',409,'World action policy changed',{version:current.version});
+                    if(input.mode!=='autonomous'&&input.mode!=='observe')fail('invalid_request',400,'Choose autonomous or observe');
+                    if(input.mode===current.mode)return {...worldActionPolicyView(agent,asOf),changed:false};
+                    const nextVersion=current.version+1;if(!Number.isSafeInteger(nextVersion))fail('state_conflict',409,'Policy version cannot advance');
+                    const next=await update(agentRepository(tx),agent,{worldActionPolicy:{version:nextVersion,mode:input.mode,updatedAt:asOf,updatedByOwnerId:actor.data.ownerId!}});
+                    return {...worldActionPolicyView(next,asOf),changed:true};
+                });
+            }
             if (action === "readWorldAccess" || action === "saveWorldAccess") {
                 const input = object(raw, action === "readWorldAccess" ? ["agentId"] : ["operationId", "agentId", "expectedVersion", "intervalSeconds"]);
                 const actor = await authenticate(tx, token, action === "readWorldAccess" ? ["runtime", "owner_session"] : ["owner_session"]);
@@ -772,6 +788,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     expected(member, input);
                     if (action === "participation")
                         return membershipView(await update(membershipRepository(tx), member, { ownerPaused: boolean(input.paused, "paused"), ownerPauseVersion: numberValue(member, "ownerPauseVersion") + 1 }));
+                    if (actor.data.kind === 'runtime' && (action === 'join' || action === 'leave'))assertWorldActionAllowed(worldActionPolicy(await required(agentRepository(tx),agentId)),`world.membership.${action}`);
                     if (action === "leave")
                         return membershipView(member.data.state === "left" ? member : await update(membershipRepository(tx), member, { state: "left", sharingGeneration: Number(member.data.sharingGeneration ?? 1) + 1 }));
                     await businessWrite(tx, actor, agentId);

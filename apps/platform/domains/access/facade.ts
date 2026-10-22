@@ -1,6 +1,7 @@
 import type {M1ReadSession} from '../../contracts/store.ts';
 import {authenticateCredential} from './authentication.ts';
 import {agentRepository,credentialRepository,humanAccountRepository,managementBindingRepository,membershipRepository} from './repository.ts';
+import {worldActionPolicy} from './world-action-policy.ts';
 import {payloadHash} from './credentials.ts';
 import {fail} from '../common/errors.ts';
 import type {IdentityAccess,Principal} from './public.ts';
@@ -42,7 +43,7 @@ export function createIdentityAccess<Context extends object>(options:{session:(c
   async readParticipation(context,agentId){
    const tx=options.session(context),agent=await agentRepository(tx).get(agentId),member=await membershipRepository(tx).get(agentId);
    if(!agent||!member)fail('target_not_accessible',404,'Target is not accessible');
-   return Object.freeze({agentId,runtimeActive:agent.data.runtimeActive===true,runtimeVersion:Number(agent.data.runtimeVersion),membership:Object.freeze({worldId:String(member.data.worldId),version:member.version,state:String(member.data.state),ownerPaused:member.data.ownerPaused===true,ownerPauseVersion:Number(member.data.ownerPauseVersion),platformRestricted:member.data.platformRestricted===true,platformVersion:Number(member.data.platformVersion),sharingGeneration:Number(member.data.sharingGeneration??1)})});
+   return Object.freeze({agentId,actionPolicy:worldActionPolicy(agent),runtimeActive:agent.data.runtimeActive===true,runtimeVersion:Number(agent.data.runtimeVersion),membership:Object.freeze({worldId:String(member.data.worldId),version:member.version,state:String(member.data.state),ownerPaused:member.data.ownerPaused===true,ownerPauseVersion:Number(member.data.ownerPauseVersion),platformRestricted:member.data.platformRestricted===true,platformVersion:Number(member.data.platformVersion),sharingGeneration:Number(member.data.sharingGeneration??1)})});
   },
   async readPublicAgent(context,agentId){
    const tx=options.session(context),agent=await agentRepository(tx).get(agentId),profile=await profileRepository(tx).get(agentId),member=await membershipRepository(tx).get(agentId);
