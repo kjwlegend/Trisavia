@@ -12,6 +12,8 @@ import type { RuntimeStore } from './contracts/runtime-store.ts';
 import type { JsonObject } from './contracts/store.ts';
 import { createRuntimeIdentity } from './application/runtime-identity.ts';
 import { createWorldService, verifyWorldReadiness } from './application/world-service.ts';
+import { createRelationshipsService } from './application/relationships-service.ts';
+import { relationshipsGatewayOperations, relationshipsGatewayGuide } from './application/agent-gateway-relationships.ts';
 import { createAgentGateway } from './application/agent-gateway.ts';
 import { worldGatewayGuide, worldGatewayOperations, worldPublicReads } from './application/agent-gateway-world.ts';
 import { registerAgentGatewayRoutes } from './transport/http/agent-gateway-routes.ts';
@@ -22,7 +24,7 @@ import { createInteractionService, verifyInteractionReadiness } from './applicat
 import { createDecisionService } from './application/decision-service.ts';
 import { interactionGatewayGuide, interactionGatewayOperations } from './application/agent-gateway-interaction.ts';
 import { decisionGatewayGuide, decisionGatewayOperations } from './application/agent-gateway-decision.ts';
-import { fail } from './domains/common/errors.ts';
+import { fail, object } from './domains/common/errors.ts';
 import { IDLE_LIFE_POLICY_V1 } from './domains/world/idle-life.ts';
 
 export interface BuildAppOptions extends OpenPostgresStoreOptions {
@@ -41,17 +43,27 @@ export async function buildApp(options:BuildAppOptions):Promise<FastifyInstance>
   app.addHook('onClose',async()=>{try{await runtime?.close();}finally{await store.close();}});
   app.setNotFoundHandler((_request,reply)=>reply.code(404).send({error:{code:'not_found',message:'Route not found'}}));
   let gatewayCapabilities:(()=>JsonObject)|undefined;
+  let friendshipOwnerRead:((raw:unknown,token:unknown)=>Promise<JsonObject>)|undefined;
   if(options.worldCoreEnabled===true){
    runtime=await openPostgresRuntimeStore({...options,...(options.clock?{now:options.clock}:{})});
    await runtime.read(ctx=>verifyWorldReadiness(ctx));
    const identity=createRuntimeIdentity(options.recoveryEpoch,options.clock??Date.now,readLegacyAvatarIdentity);
-   const world=createWorldService(identity),operations=worldGatewayOperations(world),guides=[worldGatewayGuide];
+   const world=createWorldService(identity),relationships=createRelationshipsService(identity),operations=[...worldGatewayOperations(world),...relationshipsGatewayOperations(relationships)],guides=[worldGatewayGuide,relationshipsGatewayGuide];
+   friendshipOwnerRead=(raw,token)=>runtime!.read(async ctx=>{
+    const input=object(raw,['agentId']),principal=await identity.authenticate(ctx,token,['owner_session']),friends:JsonObject[]=[];let cursor:string|undefined;
+    for(let page=0;page<3;page++){
+     const value=await relationships.friends(ctx,principal,{agentId:typeof input.agentId==='string'?input.agentId:'',limit:100,...(cursor?{cursor}:{})});friends.push(...value.friends);
+     if(value.complete)return {agentId:value.agentId,friends,complete:true,asOf:value.asOf};
+     cursor=value.nextCursor??undefined;
+    }
+    fail('source_unavailable',503,'Use the bounded friendship reader to read this collection');
+   });
    const handlers:DeterministicTaskHandler[]=[{kind:'world.movement.step',version:1,run:world.handleTask},{kind:'world.idle.step',version:1,run:world.handleIdleTask}];
    if(options.worldCoreInteractionEnabled===true){
     await runtime.read(async ctx=>{await verifyInteractionReadiness(ctx);if(await ctx.tasks.currentGeneration('decision')<1)fail('decision_unavailable',503,'Decision lifecycle is not initialized');});
     let interaction:ReturnType<typeof createInteractionService>;
     const decision=createDecisionService({identity,target:{inspect:(...args)=>interaction.decisionTarget.inspect(...args),execute:(...args)=>interaction.decisionTarget.execute(...args)}});
-    interaction=createInteractionService(identity,decision.sink);
+    interaction=createInteractionService(identity,decision.sink,{onCompletedFeedback:(ctx,fact)=>relationships.recordCompletedFeedback(ctx,fact)});
     operations.push(...interactionGatewayOperations(interaction,identity),...decisionGatewayOperations(decision));guides.push(interactionGatewayGuide,decisionGatewayGuide);
     handlers.push({kind:'interaction.invitation.expire',version:1,run:interaction.handleTask},{kind:'interaction.activity.expire',version:1,run:interaction.handleTask},{kind:'decision.expire',version:1,run:async(ctx,scheduled)=>{if(!scheduled.lease)fail('invalid_task',400,'Decision expiry requires a lease');const task=await ctx.tasks.assertLease(scheduled.lease,ctx.now());if(task.domain!=='decision'||task.kind!=='decision.expire'||task.handlerVersion!==1||task.payloadVersion!==1||task.target.type!=='decision.request'||task.payload.decisionId!==task.target.id)fail('invalid_task',400,'Unsupported Decision task');await decision.expire(ctx,task.target.id);}});
    }
@@ -63,7 +75,7 @@ export async function buildApp(options:BuildAppOptions):Promise<FastifyInstance>
    ruleDriver=createWorldRuleDriver({async runDue(){const now=(options.clock??Date.now)();if(now>=nextIdleDiscovery){idleAfter=await runtime!.transaction(ctx=>world.ensureIdleLife(ctx,'default',idleAfter));nextIdleDiscovery=now+IDLE_LIFE_POLICY_V1.scanIntervalMs;}return scheduler.runDue();},close:()=>scheduler.close()});app.addHook('onReady',async()=>{ruleDriver!.start();});
   }
   app.get('/health',async(_request,reply)=>{try{if(runtime)await runtime.read(ctx=>verifyWorldReadiness(ctx));return await store.read(async()=>({status:'ok',phase:'M1',apiVersion:'1',instanceId:store.instanceId,...(runtime?{worldCore:'ready'}:{})}));}catch{return reply.code(503).send({status:'unavailable',error:{code:'storage_unavailable'}});}});
-  const service=createM1Service(store,{legacyAvatarIdentity:readLegacyAvatarIdentity,...(options.clock?{now:options.clock}:{}),...(options.email?{email:options.email}:{}),...(options.perception?{perception:options.perception}:{}),...(gatewayCapabilities?{gateway:gatewayCapabilities}:{})});
+  const service=createM1Service(store,{legacyAvatarIdentity:readLegacyAvatarIdentity,...(options.clock?{now:options.clock}:{}),...(options.email?{email:options.email}:{}),...(options.perception?{perception:options.perception}:{}),...(gatewayCapabilities?{gateway:gatewayCapabilities}:{}),...(friendshipOwnerRead?{friendshipOwnerRead}:{})});
   registerM1Routes(app,service);registerPerceptionRoutes(app,service);registerSiteRoutes(app);return app;
  }catch(error){try{await ruleDriver?.close();await runtime?.close();}finally{await store.close();}throw error;}
 }

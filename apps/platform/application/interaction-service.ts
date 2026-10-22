@@ -40,7 +40,8 @@ function safeActivity(activity: FeedbackActivity, now: number): JsonObject {
     outcome: activity.outcome, acceptedAt: activity.acceptedAt, feedbackDeadline: activity.feedbackDeadline, acknowledgementDeadline: activity.acknowledgementDeadline,
     feedbackId: activity.feedbackId, endedAt: activity.endedAt, endedByAgentId: activity.endedByAgentId };
 }
-export function createInteractionService(identity: IdentityAccess<RuntimeReadContext>, decisions: DecisionIntentSink) {
+export interface CompletedTextFeedback {activityId:string;fromAgentId:string;toAgentId:string;invitationCreatedAt:number;completedAt:number}
+export function createInteractionService(identity: IdentityAccess<RuntimeReadContext>, decisions: DecisionIntentSink,hooks:{onCompletedFeedback?:(context:RuntimeTransaction,fact:CompletedTextFeedback)=>Promise<void>}={}) {
   const cursors = createInteractionCursor();
   async function actor(context: RuntimeReadContext, principal: Principal): Promise<string> {
     if (principal.kind !== 'agent') fail('agent_identity_required', 403, 'This action requires the Agent identity');
@@ -210,7 +211,9 @@ export function createInteractionService(identity: IdentityAccess<RuntimeReadCon
         } else if (key.action.endsWith('.close')) {
           if (!await visibleFeedback(current, activity)) absent(); next = closeActivity(invitation, activity, agentId, now);
         } else next = leaveActivity(invitation, activity, agentId, now, input.reason);
-        await repository.saveActivity(next, activity.version); await nextStage(current, invitation, next, key); const result = safeActivity(next, now);
+        await repository.saveActivity(next, activity.version);
+        if(key.action==='interaction.activity.close'&&next.state==='closed'&&next.outcome==='received_confirmed')await hooks.onCompletedFeedback?.(current,{activityId:next.id,fromAgentId:invitation.fromAgentId,toAgentId:invitation.toAgentId,invitationCreatedAt:invitation.createdAt,completedAt:now});
+        await nextStage(current, invitation, next, key); const result = safeActivity(next, now);
         return { result, eventIds: await emit(current, key, key.action, { type: 'activity', id: next.id, version: next.version }, [invitation.fromAgentId, invitation.toAgentId], result, invitation.worldId) };
       } });
   }

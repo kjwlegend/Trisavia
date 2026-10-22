@@ -26,6 +26,8 @@ export type M1Action = PerceptionAction | "readOwnerFriends" | "capabilities" | 
 export interface M1Options {
     legacyAvatarIdentity?:LegacyAvatarIdentityReader<M1ReadSession>;
     perception?: PerceptionOptions;
+    /** Composition-owned source reader. Keeps Owner REST and Gateway on the same current authorization. */
+    friendshipOwnerRead?:(raw:unknown,token:unknown)=>Promise<JsonObject>;
     /** Composition-owned module discovery. M1 does not implement those modules. */
     gateway?: () => JsonObject;
     now?: () => number;
@@ -344,7 +346,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         if (email.handles(action))
             return await email.invoke(action, raw, token, context.clientIp);
         if (action === "readOwnerFriends")
-            return await readOwnerFriends(raw,token);
+            return await (options.friendshipOwnerRead??readOwnerFriends)(raw,token);
         if (action === "walletQuery")
             return await wallet.query(raw, token);
         if (perception.handles(action))
