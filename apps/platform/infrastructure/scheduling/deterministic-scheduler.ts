@@ -1,11 +1,11 @@
-import type { RuntimeStore, RuntimeTask, RuntimeTransaction } from '../../contracts/runtime-store.ts';
+import type { IdleTaskRecurrence, RuntimeStore, RuntimeTask, RuntimeTransaction } from '../../contracts/runtime-store.ts';
 import { RuntimeError } from '../../contracts/runtime-store.ts';
 import { StorageError } from '../../contracts/store.ts';
 
 export interface DeterministicTaskHandler {
  readonly kind:string;readonly version:number;
  /** Domain-owned deterministic rules only. No external model, tools, network, or nested transaction. */
- run(context:RuntimeTransaction,task:RuntimeTask):Promise<void>;
+ run(context:RuntimeTransaction,task:RuntimeTask):Promise<void|IdleTaskRecurrence>;
 }
 export interface SchedulerOptions {
  store:RuntimeStore;workerId:string;handlers:readonly DeterministicTaskHandler[];
@@ -27,7 +27,7 @@ export function createDeterministicScheduler(options:SchedulerOptions){
   const tasks=await options.store.transaction(async ctx=>ctx.tasks.claimDue({now:ctx.now(),workerId:options.workerId,leaseMs,limit,kinds}));result.claimed=tasks.length;
   for(const task of tasks){const lease=task.lease!;
    try{
-    await options.store.transaction(async ctx=>{const current=await ctx.tasks.assertLease(lease,ctx.now()),handler=handlers.get(current.kind+':'+current.handlerVersion);if(!handler)throw new RuntimeError('task_failed','Deterministic handler is not registered');await handler.run(ctx,current);await ctx.tasks.complete(lease,ctx.now());});result.completed++;
+    await options.store.transaction(async ctx=>{const current=await ctx.tasks.assertLease(lease,ctx.now()),handler=handlers.get(current.kind+':'+current.handlerVersion);if(!handler)throw new RuntimeError('task_failed','Deterministic handler is not registered');const next=await handler.run(ctx,current);if(next)await ctx.tasks.recurIdle(lease,{now:ctx.now(),...next.idle});else await ctx.tasks.complete(lease,ctx.now());});result.completed++;
    }catch(error){
     // Unknown COMMIT is recovered from the original persisted task/receipt;
     // never replay it as a fresh operation or turn it into a failure update.

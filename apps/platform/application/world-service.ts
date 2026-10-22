@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { CommandKey, CommandReceipt, RuntimeEvent, RuntimeReadContext, RuntimeTask, RuntimeTransaction } from '../contracts/runtime-store.ts';
+import type { CommandKey, CommandReceipt, IdleTaskRecurrence, RuntimeEvent, RuntimeReadContext, RuntimeTask, RuntimeTransaction } from '../contracts/runtime-store.ts';
 import type { JsonObject } from '../contracts/store.ts';
 import type { IdentityAccess, Principal, PublicAgentView } from '../domains/access/public.ts';
 import { fail, M1Error, object, version } from '../domains/common/errors.ts';
@@ -9,6 +9,7 @@ import { createWorldCursor } from '../domains/world/cursor.ts';
 import { WORLD_REPOSITORY } from '../domains/world/repository.ts';
 import { assertCell, assertRuleset, containingPlace, DEFAULT_WORLD_RULES, validatePath } from '../domains/world/rules.ts';
 import { MOVEMENT_POLICY_V1, type GridPoint, type WorldAvatar, type WorldMovement, type WorldRuleset } from '../domains/world/types.ts';
+import { IDLE_LIFE_POLICY_V1, idlePath, idleSeed, spawnCandidates } from '../domains/world/idle-life.ts';
 
 /** Explicit maintenance initialization. Opening the store or serving HTTP never seeds a world. */
 export async function bootstrapWorld(context: RuntimeTransaction, rules: WorldRuleset = structuredClone(DEFAULT_WORLD_RULES)): Promise<void> {
@@ -61,6 +62,71 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
       }
     }
   }
+  async function commitPosition(context: RuntimeTransaction, rules: WorldRuleset, avatar: WorldAvatar, cell: GridPoint): Promise<WorldAvatar> {
+    const destination = validatePath(rules, avatar.position, [cell])[0]!;
+    await capacity(context, rules, [destination], avatar.agentId);
+    const next = { ...avatar, version: avatar.version + 1, position: { ...destination }, placeId: containingPlace(rules, destination)?.id ?? null, rulesetVersion: rules.version, updatedAt: context.now() };
+    await context.repository(WORLD_REPOSITORY).saveAvatar(next, avatar.version); return next;
+  }
+  const restMs = (avatar: WorldAvatar) => IDLE_LIFE_POLICY_V1.minRestMs + idleSeed(avatar.id + ':' + avatar.version) % IDLE_LIFE_POLICY_V1.restJitterMs;
+  async function ensureIdleTask(context: RuntimeTransaction, avatar: WorldAvatar): Promise<void> {
+    const generation = await context.tasks.currentGeneration('world'), taskId = 'world-idle:' + avatar.id + ':' + generation;
+    if (await context.tasks.get(taskId)) return;
+    await context.tasks.schedule({ taskId, domain: 'world', kind: 'world.idle.step', handlerVersion: 1, dedupeKey: taskId,
+      target: { type: 'avatar', id: avatar.id, version: 1 }, timeKind: 'utc', dueAt: context.now() + restMs(avatar), generation, maxAttempts: 5, payloadVersion: 1,
+      payload: { worldId: avatar.worldId, agentId: avatar.agentId, path: [], avatarVersion: avatar.version, qualification: '', explicitStamp: '' } });
+  }
+  /** Bounded discovery only; no identity creation, position change, model, or browser dependency. */
+  async function ensureIdleLife(context: RuntimeTransaction, worldId = 'default', afterAgentId?: string): Promise<string | undefined> {
+    const repository = context.repository(WORLD_REPOSITORY);
+    const world = await repository.lockWorld(worldId); if (!world?.active) return;
+    const avatars = await repository.listAvatars(worldId, { ...(afterAgentId ? { afterAgentId } : {}), limit: IDLE_LIFE_POLICY_V1.scanBatch });
+    for (const avatar of avatars) await ensureIdleTask(context, avatar);
+    return avatars.length === IDLE_LIFE_POLICY_V1.scanBatch ? avatars.at(-1)!.agentId : undefined;
+  }
+  /** Current state is the fact: reuse one task and never append idle movement/event/outbox history. */
+  async function handleIdleTask(context: RuntimeTransaction, scheduled: RuntimeTask): Promise<IdleTaskRecurrence> {
+    if (!scheduled.lease) fail('invalid_task', 400, 'Idle rules require a current lease');
+    const task = await context.tasks.assertLease(scheduled.lease, context.now());
+    if (task.domain !== 'world' || task.kind !== 'world.idle.step' || task.target.type !== 'avatar' || task.handlerVersion !== 1 || task.payloadVersion !== 1) fail('invalid_task', 400, 'Unsupported idle task');
+    const payload = task.payload, worldId = identifier(payload.worldId, 'worldId'), agentId = identifier(payload.agentId, 'agentId');
+    const repository = context.repository(WORLD_REPOSITORY), world = await repository.lockWorld(worldId), avatar = await repository.getAvatar(worldId, agentId), now = context.now();
+    const again = (delay: number, next: JsonObject): IdleTaskRecurrence => ({ idle: { dueAt: now + delay, payload: next } });
+    const rest = (explicitStamp = String(payload.explicitStamp ?? ''), delay = avatar ? restMs(avatar) : 30000) => again(delay, { worldId, agentId, path: [], avatarVersion: avatar?.version ?? 1, qualification: '', explicitStamp });
+    if (!world?.active || !avatar || avatar.id !== task.target.id || avatar.status !== 'idle') return rest();
+    try { await participation(context, agentId, worldId, true); } catch (error) { if (error instanceof M1Error && error.statusCode < 500) return rest(); throw error; }
+    const status = await identity.readParticipation(context, agentId);
+    const qualification = [context.recoveryEpoch, status.runtimeVersion, status.membership.ownerPauseVersion, status.membership.platformVersion, status.membership.sharingGeneration].join(':');
+    const explicit = await repository.getLatestMovement(worldId, agentId), explicitStamp = explicit ? explicit.id + ':' + explicit.version : '';
+    if (await repository.getActiveMovement(worldId, agentId)) return rest(explicitStamp);
+    // A deliberate stop or arrival earns a full pause, even if its Avatar version did not change.
+    if (explicit && now < explicit.updatedAt + restMs(avatar)) return rest(explicitStamp, Math.max(1000, explicit.updatedAt + restMs(avatar) - now));
+    if (payload.explicitStamp !== explicitStamp || payload.avatarVersion !== avatar.version) return rest(explicitStamp);
+    const { rules } = await rulesFor(context, worldId);
+    let path: GridPoint[];
+    if (!Array.isArray(payload.path) || payload.path.length > IDLE_LIFE_POLICY_V1.maxPathLength) fail('invalid_task', 400, 'Invalid bounded idle path');
+    if (payload.path.length) {
+      if (payload.qualification !== qualification || payload.rulesetVersion !== rules.version || payload.topologyVersion !== rules.topologyVersion) return rest(explicitStamp);
+      path = payload.path as unknown as GridPoint[];
+    } else {
+      const neighbors = await repository.listAvatars(worldId, { limit: 100 });
+      path = idlePath(rules, avatar.position, neighbors.filter(other => other.agentId !== agentId).map(other => other.position), idleSeed(avatar.id + ':' + avatar.version));
+      if (!path.length) return rest(explicitStamp);
+    }
+    const step = path[0]!;
+    const neighbors = await repository.listAvatars(worldId, { limit: 100 });
+    if (neighbors.some(other => other.agentId !== agentId && other.position.x === step.x && other.position.y === step.y)) return rest(explicitStamp);
+    context.validateBeforeCommit(async latest => {
+      await participation(latest, agentId, worldId, true); const fresh = await identity.readParticipation(latest, agentId), current = await rulesFor(latest, worldId);
+      if ([latest.recoveryEpoch, fresh.runtimeVersion, fresh.membership.ownerPauseVersion, fresh.membership.platformVersion, fresh.membership.sharingGeneration].join(':') !== qualification
+        || current.rules.version !== rules.version || current.rules.topologyVersion !== rules.topologyVersion) fail('world_qualification_changed', 409, 'Idle qualification changed before commit');
+    });
+    let next: WorldAvatar;
+    try { next = await commitPosition(context, rules, avatar, step); } catch (error) { if (error instanceof M1Error && error.statusCode < 500) return rest(explicitStamp); throw error; }
+    await repository.advanceRevision(worldId, world.revision);
+    return again(path.length > 1 ? IDLE_LIFE_POLICY_V1.stepIntervalMs : restMs(next), { worldId, agentId, path: path.slice(1) as unknown as JsonObject[], avatarVersion: next.version,
+      qualification, rulesetVersion: rules.version, topologyVersion: rules.topologyVersion, explicitStamp });
+  }
   async function scheduleStep(context: RuntimeTransaction, movement: WorldMovement): Promise<void> {
     if (movement.nextDueAt === null) return;
     await context.tasks.schedule({ taskId: randomUUID(), domain: 'world', kind: 'world.movement.step', handlerVersion: 1, dedupeKey: movement.id + ':' + movement.version,
@@ -103,11 +169,11 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
       if (!(error instanceof M1Error) || error.statusCode >= 500) throw error;
       const next = stopped(movement, context.now(), error.code); await repository.saveMovement(next, movement.version); const revision = await repository.advanceRevision(movement.worldId, world.revision); await movementFact(context, key, next, revision); return;
     }
-    const now = context.now(), nextAvatar: WorldAvatar = { ...avatar, version: avatar.version + 1, position: { ...destination }, placeId: containingPlace(rules, destination)?.id ?? null, rulesetVersion: rules.version, updatedAt: now };
+    const now = context.now(), nextAvatar = await commitPosition(context, rules, avatar, destination);
     const finished = movement.nextStep + 1 === movement.path.length;
     const next: WorldMovement = { ...movement, version: movement.version + 1, state: finished ? 'completed' : 'running', nextStep: movement.nextStep + 1,
       expectedAvatarVersion: nextAvatar.version, updatedAt: now, nextDueAt: finished ? null : now + movement.stepIntervalMs, completedAt: finished ? now : null };
-    await repository.saveAvatar(nextAvatar, avatar.version); await repository.saveMovement(next, movement.version); await scheduleStep(context, next);
+    await repository.saveMovement(next, movement.version); await scheduleStep(context, next);
     const revision = await repository.advanceRevision(movement.worldId, world.revision); await fact(context, key, nextAvatar, 'world.avatar.moved', revision); await movementFact(context, key, next, revision);
     // Controlled scheduler completes the same lease only after this handler's writes succeed.
   }
@@ -164,9 +230,18 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
         if (key.action === 'world.avatar.create') {
           if (version(request.expectedRulesetVersion, 'expectedRulesetVersion') !== rules.version) fail('version_conflict', 409, 'World rules have changed');
           if (old && old.status !== 'left') return { result: avatarResult(old, world.revision, false), eventIds: [] };
-          assertCell(rules, rules.spawn); await capacity(current, rules, [rules.spawn], agentId);
-          avatar = { id: old?.id ?? randomUUID(), worldId, agentId, version: old ? old.version + 1 : 1, status: 'idle', position: { ...rules.spawn },
-            placeId: containingPlace(rules, rules.spawn)?.id ?? null, rulesetVersion: rules.version, createdAt: old?.createdAt ?? now, updatedAt: now }; kind = 'world.avatar.created';
+          let spawn = old?.position;
+          if (!spawn) {
+            const occupied = (await repository.listAvatars(worldId, { limit: 100 })).map(other => other.position);
+            for (const candidate of spawnCandidates(rules, occupied, idleSeed(agentId))) {
+              try { await capacity(current, rules, [candidate], agentId); spawn = candidate; break; }
+              catch (error) { if (!(error instanceof M1Error) || error.code !== 'place_capacity_reached') throw error; }
+            }
+          }
+          if (!spawn) fail('place_capacity_reached', 409, 'No accessible spawn is available');
+          assertCell(rules, spawn); await capacity(current, rules, [spawn], agentId);
+          avatar = { id: old?.id ?? randomUUID(), worldId, agentId, version: old ? old.version + 1 : 1, status: 'idle', position: { ...spawn },
+            placeId: containingPlace(rules, spawn)?.id ?? null, rulesetVersion: rules.version, createdAt: old?.createdAt ?? now, updatedAt: now }; kind = 'world.avatar.created';
         } else {
           if (!old || old.status === 'left') fail('avatar_not_found', 404, 'Avatar is not available');
           if (version(request.expectedVersion) !== old.version) fail('version_conflict', 409, 'Avatar has changed');
@@ -185,7 +260,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
             return { result: movementResult(movement, revision), eventIds: await movementFact(current, key, movement, revision) };
           }
         }
-        await repository.saveAvatar(avatar, old?.version ?? null); const revision = await repository.advanceRevision(worldId, world.revision);
+        await repository.saveAvatar(avatar, old?.version ?? null); if (avatar.status === 'idle') await ensureIdleTask(current, avatar); const revision = await repository.advanceRevision(worldId, world.revision);
         return { result: avatarResult(avatar, revision, true), eventIds: await fact(current, key, avatar, kind, revision) };
       } });
   }
@@ -197,7 +272,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
     if (!avatar || avatar.status === 'left') fail('avatar_not_found', 404, 'Avatar is not available');
     return { worldId, worldRevision: world.revision, asOf: context.now(), avatar: structuredClone(avatar) };
   }
-  return { execute, readAvatar, handleTask,
+  return { execute, readAvatar, handleTask, handleIdleTask, ensureIdleLife,
     async readMovement(context: RuntimeReadContext, principal: Principal, worldId: string, movementId?: string): Promise<JsonObject> {
       const actor = await authorize(context, principal); await participation(context, actor, worldId, false); const { world } = await rulesFor(context, worldId), repository = context.repository(WORLD_REPOSITORY);
       const movement = movementId === undefined ? await repository.getActiveMovement(worldId, actor) : await repository.getMovement(identifier(movementId, 'movementId'));

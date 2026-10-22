@@ -13,9 +13,10 @@ export interface WorldRepository {
   saveAvatar(avatar: WorldAvatar, expectedVersion: number | null): Promise<void>;
   getMovement(id: string): Promise<WorldMovement | undefined>;
   getActiveMovement(worldId: string, agentId: string): Promise<WorldMovement | undefined>;
+  getLatestMovement(worldId: string, agentId: string): Promise<WorldMovement | undefined>;
   saveMovement(movement: WorldMovement, expectedVersion: number | null): Promise<void>;
   countAtPlace(worldId: string, placeId: string, excludingAgentId: string): Promise<number>;
   listAvatars(worldId: string, options: { afterAgentId?: string; limit: number }): Promise<WorldAvatar[]>;
 }
-export type WorldReader = Pick<WorldRepository, 'getWorld' | 'getRuleset' | 'getAvatar' | 'getMovement' | 'getActiveMovement' | 'listAvatars'>;
+export type WorldReader = Pick<WorldRepository, 'getWorld' | 'getRuleset' | 'getAvatar' | 'getMovement' | 'getActiveMovement' | 'getLatestMovement' | 'listAvatars'>;
 export const WORLD_REPOSITORY = defineRuntimeRepository<WorldReader, WorldRepository>('world');

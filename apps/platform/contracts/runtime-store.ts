@@ -46,6 +46,7 @@ export interface RuntimeTask extends RuntimeTaskDraft {
   version: number; state: WorkState; attempts: number; fence: number; lease: WorkLease | null;
   lastErrorCode: string | null; completedAt: number | null;
 }
+export interface IdleTaskRecurrence { idle: { dueAt: number; payload: JsonObject } }
 export interface RuntimeTaskReader {
   get(taskId: string): Promise<RuntimeTask | undefined>;
   list(input: { domain?: string; targetId?: string; state?: WorkState; afterId?: string; limit: number }): Promise<RuntimeTask[]>;
@@ -58,6 +59,8 @@ export interface RuntimeTaskRepository extends RuntimeTaskReader {
   claimDue(input: LeaseClaim & { kinds?: string[] }): Promise<RuntimeTask[]>;
   assertLease(lease: WorkLease, now: number): Promise<RuntimeTask>;
   complete(lease: WorkLease, now: number): Promise<void>;
+  /** Reuse the same fenced world.idle.step row; other task kinds remain immutable one-shot work. */
+  recurIdle(lease: WorkLease, input: { now: number; dueAt: number; payload: JsonObject }): Promise<void>;
   /** dueAt is retry availability; it does not replace the original domain deadline. */
   retry(lease: WorkLease, input: { now: number; dueAt: number; errorCode: string }): Promise<void>;
   cancel(taskId: string, expectedVersion: number, now: number): Promise<boolean>;

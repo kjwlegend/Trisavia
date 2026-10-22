@@ -100,3 +100,18 @@ ALTER TABLE interaction.invitations ADD CONSTRAINT invitation_own_activity FOREI
 ALTER TABLE interaction.feedback_contributions ADD CONSTRAINT feedback_parent_identity UNIQUE(id,activity_id);
 ALTER TABLE interaction.activities ADD CONSTRAINT activity_own_feedback FOREIGN KEY(feedback_id,id) REFERENCES interaction.feedback_contributions(id,activity_id) DEFERRABLE INITIALLY DEFERRED;
 `});
+
+RUNTIME_MIGRATIONS.push({moduleId:'runtime',version:4,name:'reuse_fenced_world_idle_task',dependencies:['runtime','world'],sql:`
+CREATE OR REPLACE FUNCTION runtime.protect_work() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+ IF TG_TABLE_NAME='tasks' THEN
+  IF OLD.domain='world' AND OLD.kind='world.idle.step' AND OLD.target_type='avatar' AND OLD.handler_version=1 AND OLD.payload_version=1
+   AND OLD.state='leased' AND NEW.state='pending' AND NEW.attempts=0 AND NEW.fence=OLD.fence
+   AND NEW.due_at>OLD.due_at AND NEW.available_at=NEW.due_at AND NEW.completed_at IS NULL
+   AND NEW.lease_token IS NULL AND NEW.lease_worker IS NULL AND NEW.lease_expires_at IS NULL AND NEW.last_error_code IS NULL THEN
+   IF (to_jsonb(NEW)-ARRAY['version','state','attempts','due_at','available_at','payload','lease_token','lease_worker','lease_expires_at','last_error_code']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['version','state','attempts','due_at','available_at','payload','lease_token','lease_worker','lease_expires_at','last_error_code']) OR NEW.version<>OLD.version+1 THEN RAISE EXCEPTION 'Idle identity or fence changed' USING ERRCODE='23514';END IF;
+   RETURN NEW;
+  END IF;
+ END IF;
+ IF (to_jsonb(NEW)-ARRAY['version','state','attempts','fence','lease_token','lease_worker','lease_expires_at','last_error_code','completed_at','available_at']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['version','state','attempts','fence','lease_token','lease_worker','lease_expires_at','last_error_code','completed_at','available_at']) OR NEW.version<>OLD.version+1 OR NEW.attempts<OLD.attempts OR NEW.fence<OLD.fence OR OLD.state IN ('completed','failed','cancelled') AND NEW.state<>OLD.state THEN RAISE EXCEPTION 'Work identity, terminal state or fence changed' USING ERRCODE='23514';END IF;RETURN NEW;
+END $$;
+`});
