@@ -18,12 +18,15 @@ export function validToken(token) { return typeof token === 'string' && /^[A-Za-
 export class ApiError extends Error {
   constructor(code, status, details) { super(code); this.code = code; this.status = status; this.details = details; }
 }
-export async function api(path, { method = 'GET', body, token, signal } = {}) {
+export async function api(path, { method = 'GET', body, token, signal, headers: extraHeaders } = {}) {
   let response;
   try {
     const timeout = AbortSignal.timeout(15000);
+    const headers = new Headers(extraHeaders);
+    if (body) headers.set('Content-Type', 'application/json');
+    if (token) headers.set('Authorization', `Bearer ${token}`);
     response = await fetch(`/v1${path}`, {method, credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer', signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
-      headers: {...(body ? {'Content-Type': 'application/json'} : {}), ...(token ? {Authorization: `Bearer ${token}`} : {})},
+      headers,
       ...(body ? {body: JSON.stringify(body)} : {})});
   } catch (error) {
     if (error.name === 'AbortError') throw error;

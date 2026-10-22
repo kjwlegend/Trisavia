@@ -1,0 +1,680 @@
+{
+  "capabilities": {
+    "apiVersion": "v1",
+    "instanceId": "synthetic-archived-instance",
+    "stage": "M1",
+    "authentication": "opaque-bearer-v1",
+    "ownerRecovery": true,
+    "ownerRecoveryAssistance": true,
+    "ownerEmailVerification": true,
+    "ownerEmailRecovery": true,
+    "emailMode": "experience",
+    "runtimeReplacement": true,
+    "defaultPublicRole": true,
+    "profileSave": "immediate-public",
+    "worldAccessPreference": true,
+    "scheduling": false,
+    "perception": true,
+    "perceptionApi": {
+      "protocolVersion": 1,
+      "discovery": {
+        "method": "GET",
+        "path": "/v1/perception/discovery"
+      },
+      "catalogRevision": "catalog-readers-1-schema-4",
+      "skillCatalogRevision": "skills-catalog-readers-1-schema-4",
+      "manualOnly": true,
+      "snapshot": false,
+      "changes": false,
+      "activity": true,
+      "confirmation": true,
+      "ownerObservation": {
+        "agentRefRequired": true,
+        "inventory": true,
+        "inbox": "source-authorized",
+        "messages": "source-authorized",
+        "readerState": false,
+        "confirmation": false
+      }
+    },
+    "walletApi": {
+      "protocolVersion": 1,
+      "query": {
+        "operationId": "wallet-query",
+        "method": "POST",
+        "path": "/v1/wallet/query"
+      },
+      "readOnly": true,
+      "currency": {
+        "code": "star_coin",
+        "displayName": "星币",
+        "scale": 0
+      }
+    },
+    "interaction": true,
+    "gateway": {
+      "protocolVersion": 1,
+      "catalogRevision": "gateway-26efefe55243d028819b88ae",
+      "discovery": {
+        "method": "GET",
+        "path": "/v1/gateway/discovery"
+      },
+      "query": {
+        "method": "POST",
+        "path": "/v1/gateway/query"
+      },
+      "command": {
+        "method": "POST",
+        "path": "/v1/gateway/commands"
+      },
+      "receipt": {
+        "method": "POST",
+        "path": "/v1/gateway/receipts/query"
+      },
+      "modules": [
+        "world",
+        "interaction",
+        "decision"
+      ],
+      "manualOnly": true,
+      "externalExecution": "host-controlled",
+      "ownerBindingRequiredForAgent": false,
+      "worldSimulation": {
+        "enabled": true,
+        "actionAdvancement": "deterministic-rule-tasks",
+        "movementPolicyVersion": 1,
+        "stepIntervalMs": 1000,
+        "pollIntervalMs": 1000,
+        "externalAgentExecution": false
+      }
+    },
+    "operations": [
+      {
+        "action": "capabilities",
+        "method": "GET",
+        "path": "/v1/capabilities",
+        "actors": [
+          "anonymous"
+        ],
+        "receiptScopes": {},
+        "requiredVersions": []
+      },
+      {
+        "action": "catalog",
+        "method": "GET",
+        "path": "/v1/avatar-catalog",
+        "actors": [
+          "anonymous"
+        ],
+        "receiptScopes": {},
+        "requiredVersions": []
+      },
+      {
+        "action": "publicProfile",
+        "method": "GET",
+        "path": "/v1/public/agents/:agentId",
+        "actors": [
+          "anonymous"
+        ],
+        "receiptScopes": {},
+        "requiredVersions": []
+      },
+      {
+        "action": "self",
+        "method": "GET",
+        "path": "/v1/agent/self",
+        "actors": [
+          "runtime"
+        ],
+        "receiptScopes": {},
+        "requiredVersions": []
+      },
+      {
+        "action": "readProfile",
+        "method": "GET",
+        "path": "/v1/agents/:agentId/profile",
+        "actors": [
+          "runtime",
+          "owner_session"
+        ],
+        "receiptScopes": {},
+        "requiredVersions": []
+      },
+      {
+        "action": "saveProfile",
+        "method": "PUT",
+        "path": "/v1/agents/:agentId/profile",
+        "actors": [
+          "runtime",
+          "owner_session"
+        ],
+        "receiptScopes": {
+          "runtime": "agent:{agentId}",
+          "owner_session": "owner:{ownerId}"
+        },
+        "requiredVersions": [
+          "expectedVersion",
+          "expectedPolicyVersion"
+        ]
+      },
+      {
+        "action": "readWorldAccess",
+        "method": "GET",
+        "path": "/v1/agents/:agentId/world-access",
+        "actors": [
+          "runtime",
+          "owner_session"
+        ],
+        "receiptScopes": {},
+        "requiredVersions": []
+      },
+      {
+        "action": "saveWorldAccess",
+        "method": "PUT",
+        "path": "/v1/owner/agents/:agentId/world-access",
+        "actors": [
+          "owner_session"
+        ],
+        "receiptScopes": {
+          "owner_session": "owner:{ownerId}"
+        },
+        "requiredVersions": [
+          "expectedVersion"
+        ]
+      },
+      {
+        "action": "saveDraft",
+        "method": "PUT",
+        "path": "/v1/agents/:agentId/profile/draft",
+        "actors": [
+          "runtime",
+          "owner_session"
+        ],
+        "receiptScopes": {
+          "runtime": "agent:{agentId}",
+          "owner_session": "owner:{ownerId}"
+        },
+        "requiredVersions": [
+          "expectedVersion",
+          "expectedPolicyVersion"
+        ]
+      },
+      {
+        "action": "publishProfile",
+        "method": "POST",
+        "path": "/v1/agents/:agentId/profile/publish",
+        "actors": [
+          "runtime",
+          "owner_session"
+        ],
+        "receiptScopes": {
+          "runtime": "agent:{agentId}",
+          "owner_session": "owner:{ownerId}"
+        },
+        "requiredVersions": [
+          "expectedVersion",
+          "expectedPolicyVersion"
+        ]
+      },
+      {
+        "action": "unpublishProfile",
+        "method": "POST",
+        "path": "/v1/agents/:agentId/profile/unpublish",
+        "actors": [
+          "runtime",
+          "owner_session"
+        ],
+        "receiptScopes": {
+          "runtime": "agent:{agentId}",
+          "owner_session": "owner:{ownerId}"
+        },
+        "requiredVersions": [
+          "expectedVersion",
+          "expectedPolicyVersion"
+        ]
+      },
+      {
+        "action": "profilePolicy",
+        "method": "PUT",
+        "path": "/v1/owner/agents/:agentId/profile-policy",
+        "actors": [
+          "owner_session"
+        ],
+        "receiptScopes": {
+          "owner_session": "owner:{ownerId}"
+        },
+        "requiredVersions": [
+          "expectedVersion",
+          "expectedPolicyVersion"
+        ]
+      },
+      {
+        "action": "readMembership",
+        "method": "GET",
+        "path": "/v1/agents/:agentId/membership",
+        "actors": [
+          "runtime",
+          "owner_session"
+        ],
+        "receiptScopes": {},
+        "requiredVersions": []
+      },
+      {
+        "action": "join",
+        "method": "POST",
+        "path": "/v1/agents/:agentId/membership/join",
+        "actors": [
+          "runtime",
+          "owner_session"
+        ],
+        "receiptScopes": {
+          "runtime": "agent:{agentId}",
+          "owner_session": "owner:{ownerId}"
+        },
+        "requiredVersions": [
+          "expectedVersion",
+          "expectedProfileVersion"
+        ]
+      },
+      {
+        "action": "leave",
+        "method": "POST",
+        "path": "/v1/agents/:agentId/membership/leave",
+        "actors": [
+          "runtime",
+          "owner_session"
+        ],
+        "receiptScopes": {
+          "runtime": "agent:{agentId}",
+          "owner_session": "owner:{ownerId}"
+        },
+        "requiredVersions": [
+          "expectedVersion"
+        ]
+      },
+      {
+        "action": "participation",
+        "method": "PUT",
+        "path": "/v1/owner/agents/:agentId/participation",
+        "actors": [
+          "owner_session"
+        ],
+        "receiptScopes": {
+          "owner_session": "owner:{ownerId}"
+        },
+        "requiredVersions": [
+          "expectedVersion"
+        ]
+      },
+      {
+        "action": "createRecoveryRequest",
+        "method": "POST",
+        "path": "/v1/agent/self/owner-recovery-requests",
+        "actors": [
+          "runtime"
+        ],
+        "receiptScopes": {
+          "runtime": "agent:{agentId}"
+        },
+        "requiredVersions": []
+      },
+      {
+        "action": "readRecoveryRequest",
+        "method": "GET",
+        "path": "/v1/agent/self/owner-recovery-requests/:requestId",
+        "actors": [
+          "runtime"
+        ],
+        "receiptScopes": {},
+        "requiredVersions": []
+      },
+      {
+        "action": "cancelRecoveryRequest",
+        "method": "POST",
+        "path": "/v1/agent/self/owner-recovery-requests/:requestId/cancel",
+        "actors": [
+          "runtime"
+        ],
+        "receiptScopes": {
+          "runtime": "agent:{agentId}"
+        },
+        "requiredVersions": [
+          "expectedVersion"
+        ]
+      },
+      {
+        "action": "recoveryAssistance",
+        "method": "GET",
+        "path": "/v1/owner/recovery-assistance",
+        "actors": [
+          "recovery_assistance"
+        ],
+        "receiptScopes": {},
+        "requiredVersions": []
+      },
+      {
+        "action": "verifyRecoveryRequest",
+        "method": "POST",
+        "path": "/v1/owner/recovery-assistance/verify",
+        "actors": [
+          "owner_recovery"
+        ],
+        "receiptScopes": {},
+        "requiredVersions": []
+      },
+      {
+        "action": "rejectRecoveryRequest",
+        "method": "POST",
+        "path": "/v1/owner/recovery-assistance/reject",
+        "actors": [
+          "owner_recovery",
+          "owner_session"
+        ],
+        "receiptScopes": {
+          "owner_recovery": "owner:{ownerId}",
+          "owner_session": "owner:{ownerId}"
+        },
+        "requiredVersions": [
+          "expectedVersion"
+        ]
+      },
+      {
+        "action": "startRegistration",
+        "method": "POST",
+        "path": "/v1/owner/registration-attempts",
+        "actors": [
+          "anonymous"
+        ],
+        "receiptScopes": {
+          "browser": "owner-registration:{attemptId}"
+        },
+        "requiredVersions": []
+      },
+      {
+        "action": "readRegistrationAttempt",
+        "method": "GET",
+        "path": "/v1/owner/registration-attempts/:attemptId",
+        "actors": [
+          "email_registration"
+        ],
+        "receiptScopes": {},
+        "requiredVersions": []
+      },
+      {
+        "action": "sendRegistrationCode",
+        "method": "POST",
+        "path": "/v1/owner/registration-attempts/:attemptId/email-challenges",
+        "actors": [
+          "email_registration"
+        ],
+        "receiptScopes": {
+          "email_registration": "owner-registration:{attemptId}"
+        },
+        "requiredVersions": []
+      },
+      {
+        "action": "verifyRegistrationEmail",
+        "method": "POST",
+        "path": "/v1/owner/registration-attempts/:attemptId/email-verifications",
+        "actors": [
+          "email_registration"
+        ],
+        "receiptScopes": {
+          "email_registration": "owner-registration:{attemptId}"
+        },
+        "requiredVersions": []
+      },
+      {
+        "action": "cancelRegistration",
+        "method": "POST",
+        "path": "/v1/owner/registration-attempts/:attemptId/cancel",
+        "actors": [
+          "email_registration"
+        ],
+        "receiptScopes": {
+          "email_registration": "owner-registration:{attemptId}"
+        },
+        "requiredVersions": []
+      },
+      {
+        "action": "registerOwner",
+        "method": "POST",
+        "path": "/v1/owner/accounts",
+        "actors": [
+          "email_registration"
+        ],
+        "receiptScopes": {
+          "email_registration": "owner-registration:{attemptId}"
+        },
+        "requiredVersions": []
+      },
+      {
+        "action": "completeSetup",
+        "method": "POST",
+        "path": "/v1/owner/setup/complete",
+        "actors": [
+          "email_registration"
+        ],
+        "receiptScopes": {
+          "email_registration": "owner-registration:{attemptId}"
+        },
+        "requiredVersions": []
+      },
+      {
+        "action": "startEmailRecovery",
+        "method": "POST",
+        "path": "/v1/owner/recovery-assistance/email-attempts",
+        "actors": [
+          "recovery_assistance"
+        ],
+        "receiptScopes": {
+          "browser": "owner-email-recovery:{attemptId}"
+        },
+        "requiredVersions": []
+      },
+      {
+        "action": "readEmailRecoveryAttempt",
+        "method": "GET",
+        "path": "/v1/owner/email-recovery-attempts/:attemptId",
+        "actors": [
+          "email_recovery"
+        ],
+        "receiptScopes": {},
+        "requiredVersions": []
+      },
+      {
+        "action": "sendRecoveryCode",
+        "method": "POST",
+        "path": "/v1/owner/email-recovery-attempts/:attemptId/email-challenges",
+        "actors": [
+          "email_recovery"
+        ],
+        "receiptScopes": {
+          "email_recovery": "owner-email-recovery:{attemptId}"
+        },
+        "requiredVersions": []
+      },
+      {
+        "action": "verifyRecoveryEmail",
+        "method": "POST",
+        "path": "/v1/owner/email-recovery-attempts/:attemptId/email-verifications",
+        "actors": [
+          "email_recovery"
+        ],
+        "receiptScopes": {
+          "email_recovery": "owner-email-recovery:{attemptId}"
+        },
+        "requiredVersions": []
+      },
+      {
+        "action": "recoverByEmail",
+        "method": "POST",
+        "path": "/v1/owner/email-recovery-attempts/:attemptId/complete",
+        "actors": [
+          "email_recovery"
+        ],
+        "receiptScopes": {
+          "email_recovery": "owner-email-recovery:{attemptId}"
+        },
+        "requiredVersions": []
+      },
+      {
+        "action": "enableRecoveryBackup",
+        "method": "POST",
+        "path": "/v1/owner/recovery-backups",
+        "actors": [
+          "owner_session"
+        ],
+        "receiptScopes": {
+          "owner_session": "owner:{ownerId}"
+        },
+        "requiredVersions": []
+      }
+    ]
+  },
+  "rules": {
+    "protocolVersion": 1,
+    "requestId": "synthetic-archived-rules",
+    "instanceId": "synthetic-archived-instance",
+    "serverTime": 1792640791014,
+    "data": {
+      "world": {
+        "worldId": "default",
+        "active": true,
+        "rulesetVersion": 1,
+        "revision": 29
+      },
+      "rules": {
+        "worldId": "default",
+        "version": 1,
+        "topologyVersion": 1,
+        "width": 16,
+        "height": 16,
+        "spawn": {
+          "x": 0,
+          "y": 0
+        },
+        "maxPathLength": 64,
+        "blocked": [],
+        "places": [
+          {
+            "id": "commons",
+            "bounds": {
+              "left": 0,
+              "top": 0,
+              "right": 15,
+              "bottom": 15
+            },
+            "access": "members",
+            "capacity": null
+          }
+        ]
+      },
+      "asOf": 1792640791017
+    }
+  },
+  "scene": {
+    "protocolVersion": 1,
+    "requestId": "synthetic-archived-scene",
+    "instanceId": "synthetic-archived-instance",
+    "serverTime": 1792640791020,
+    "data": {
+      "worldId": "default",
+      "worldRevision": 29,
+      "asOf": 1792640791054,
+      "scope": "world",
+      "avatars": [
+        {
+          "id": "synthetic-avatar-1",
+          "worldId": "default",
+          "agentId": "synthetic-agent-1",
+          "version": 2,
+          "status": "idle",
+          "position": {
+            "x": 0,
+            "y": 1
+          },
+          "placeId": "commons",
+          "rulesetVersion": 1,
+          "createdAt": 1792519774148,
+          "updatedAt": 1792519812524,
+          "profile": {
+            "agentId": "synthetic-agent-1",
+            "publishedVersion": 2,
+            "displayName": "Synthetic public avatar 1",
+            "appearance": {
+              "template": "basic",
+              "color": "blue"
+            }
+          }
+        },
+        {
+          "id": "synthetic-avatar-2",
+          "worldId": "default",
+          "agentId": "synthetic-agent-2",
+          "version": 22,
+          "status": "idle",
+          "position": {
+            "x": 15,
+            "y": 6
+          },
+          "placeId": "commons",
+          "rulesetVersion": 1,
+          "createdAt": 1792519780671,
+          "updatedAt": 1792524126353,
+          "profile": {
+            "agentId": "synthetic-agent-2",
+            "publishedVersion": 2,
+            "displayName": "Synthetic public avatar 2",
+            "appearance": {
+              "template": "basic",
+              "color": "blue"
+            }
+          }
+        },
+        {
+          "id": "synthetic-avatar-3",
+          "worldId": "default",
+          "agentId": "synthetic-agent-3",
+          "version": 1,
+          "status": "idle",
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "placeId": "commons",
+          "rulesetVersion": 1,
+          "createdAt": 1792572112649,
+          "updatedAt": 1792572112649,
+          "profile": {
+            "agentId": "synthetic-agent-3",
+            "publishedVersion": 3,
+            "displayName": "Synthetic public avatar 3",
+            "appearance": {
+              "template": "basic",
+              "color": "cream"
+            }
+          }
+        }
+      ],
+      "complete": true,
+      "nextCursor": null
+    }
+  },
+  "provenance": {
+    "sourceCommit": "e0054c333a384f22939240d3e7609a4dbed71ff2",
+    "sourceSha256": {
+      "capabilities": "2e2cb572881bd12c047b8b183d05a2e6fdc6a1b9e278a5e19453df476794c5fa",
+      "rules": "76340fb4dd323e1de3fbd0bc4eb09c5ac4f16314166b0368716b3f4139001a87",
+      "scene": "76ffef4fd57f5a6f7e816f9840233f78e96962a4804942046cdbb91bfe7e4d64"
+    },
+    "redactions": [
+      "instanceId",
+      "requestId",
+      "avatar id",
+      "agentId",
+      "displayName"
+    ],
+    "note": "Captured public DTO shape and values preserved apart from the listed identifiers. Exact original captures can be replayed with WORLD_CORE_READ_DTO_DIR."
+  }
+}
