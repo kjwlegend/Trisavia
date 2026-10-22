@@ -7,7 +7,9 @@ export function readAppearance(value){if(value&&typeof value.lookId==='string'&&
 export function readWorldRules(data,worldId='default'){
   const {world,rules,asOf}=data||{};
   if(world?.worldId!==worldId||world.active!==true||!integer(world.revision)||!integer(asOf)||rules?.worldId!==worldId||!integer(rules.version)||world.rulesetVersion!==rules.version||!integer(rules.topologyVersion)||!Number.isSafeInteger(rules.width)||rules.width<1||!Number.isSafeInteger(rules.height)||rules.height<1)invalid();
-  return{worldId,version:rules.version,topologyVersion:rules.topologyVersion,width:rules.width,height:rules.height};
+  if(rules.places!==undefined&&!Array.isArray(rules.places))invalid();
+  const places=rules.places?.map(place=>{if(typeof place?.id!=='string'||!place.id||!['members','closed'].includes(place.access))invalid();return{id:place.id,access:place.access};});
+  return{worldId,version:rules.version,topologyVersion:rules.topologyVersion,width:rules.width,height:rules.height,...(places?{places}: {})};
 }
 export function readWorldPage(data,rules){
   if(data?.worldId!==rules.worldId||data.scope!=='world'||!integer(data.worldRevision)||!integer(data.asOf)||!Array.isArray(data.avatars)||typeof data.complete!=='boolean'||(data.complete?data.nextCursor!==null:typeof data.nextCursor!=='string'||!data.nextCursor))invalid();

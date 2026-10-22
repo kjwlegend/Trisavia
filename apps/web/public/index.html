@@ -15,13 +15,13 @@
         <div class="world-map-column">
           <div class="world-map-shell">
             <div class="world-canvas-host" id="world-scene"></div>
-            <details class="world-demo"><summary>正在读取世界</summary><p>当前开放：公共庭；周边街区为景观预览。角色位置以服务器读取结果为准，画布动画不表示在线。</p></details>
+            <section class="world-status-hud" id="world-status-hud" aria-label="世界信息"><strong id="world-current-place">场景待确认</strong><span id="world-scene-count">公开角色：—</span><time id="world-current-time" aria-label="上海当前日期时间">正在校准时间…</time><span class="sr-only" id="world-read-status" role="status"></span></section>
             <div class="world-fallback" id="world-fallback" hidden><p>地图暂时无法显示，仍可通过下方场所列表查看说明。</p><button type="button" id="world-retry">重试地图</button></div>
           </div>
           <div id="world-controls-stash" hidden><div class="world-controls" role="group" aria-label="地图视野与动态">
             <div class="world-zoom-controls"><button type="button" id="world-zoom-out" aria-label="缩小地图">− <span>缩小</span></button><output id="world-zoom" aria-label="地图缩放比例">100%</output><button type="button" id="world-zoom-in" aria-label="放大地图">＋ <span>放大</span></button></div><button type="button" id="world-fit">全景</button><button type="button" id="world-pause" aria-pressed="false">暂停动态</button><div class="world-control-secondary"><button type="button" id="world-explore" aria-pressed="false">探索地图</button><button type="button" id="world-reset" hidden>返回初始视角</button><button type="button" id="world-open-list" aria-controls="world-place-directory">场所列表</button><a id="world-learn" href="#world-entry">了解与接入 ↓</a></div>
           </div>
-          </div><div class="world-map-notes"><p id="world-gesture-hint">方向键平移 · +/− 缩放 · Home 全景 · Ctrl / ⌘ + 滚轮缩放</p><p id="world-owned-note" hidden>自有角色动画仅供展示，不代表在线</p><p class="sr-only" id="world-motion-status" role="status">人物与环境为演示动态</p></div>
+          </div><div class="world-map-notes"><p id="world-gesture-hint">方向键平移 · +/− 缩放 · Home 全景 · Ctrl / ⌘ + 滚轮缩放</p><p class="sr-only" id="world-motion-status" role="status">人物与环境为演示动态</p></div>
         </div>
         <div id="hud-root" class="hud-root"></div>
         <aside class="world-detail" id="world-detail" aria-labelledby="world-detail-title" tabindex="-1" hidden>

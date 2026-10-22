@@ -3,3 +3,6 @@
 .world-owned-hit[data-world-source="server"]{min-width:38px;min-height:52px}
 #world-detail-debug{margin-top:12px}
 #world-detail-debug>summary{cursor:pointer;min-height:32px;color:var(--hud-muted,#53675f)}
+.world-status-hud{position:absolute;z-index:2;left:24px;top:76px;box-sizing:border-box;width:232px;min-height:88px;padding:10px 12px;display:grid;grid-template-rows:20px 18px 18px;gap:3px;background:rgba(25,46,34,.94);color:#F2E8C6;border:2px solid #172B22;box-shadow:inset 0 0 0 1px #8A9B69,0 2px #172B22;clip-path:polygon(4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px),0 4px,4px 4px);pointer-events:auto;animation:none;transition:none}
+.world-status-hud strong{font-size:14px;line-height:20px;font-weight:700;white-space:nowrap}.world-status-hud>span,.world-status-hud time{font-size:12px;line-height:18px;color:#C3D0A1;white-space:nowrap}.world-status-hud time{display:block;width:21ch;font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:0}
+@media(max-width:759px){.world-status-hud{left:12px}}

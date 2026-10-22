@@ -46,9 +46,9 @@ export function createOwnedAgentLayer(root,graph,{blockedRects=[],onSelect=()=>{
   }
   function overlayChanged(){if(destroyed)return;geometry=null;onOverlayChange();layout();}
   const observer=new MutationObserver(overlayChanged),resizer=new ResizeObserver(overlayChanged);
-  for(const selector of ['#hud-root','#world-detail','.world-demo']){const node=document.querySelector(selector);if(node)observer.observe(node,{subtree:true,attributes:true,attributeFilter:['hidden','class','style','open','data-panel-state']});}
+  for(const selector of ['#hud-root','#world-detail','#world-status-hud']){const node=document.querySelector(selector);if(node)observer.observe(node,{subtree:true,attributes:true,attributeFilter:['hidden','class','style','open','data-panel-state']});}
   const layoutRoot=document.querySelector('#world-layout');if(layoutRoot)observer.observe(layoutRoot,{attributes:true,attributeFilter:['style']});
-  for(const selector of ['header','#hud-dock','#hud-agent','#hud-locate-agent','#hud-window','#world-detail','.world-demo']){const node=document.querySelector(selector);if(node)resizer.observe(node);}
+  for(const selector of ['header','#hud-dock','#hud-agent','#hud-locate-agent','#hud-window','#world-detail','#world-status-hud']){const node=document.querySelector(selector);if(node)resizer.observe(node);}
   function set(projection){
     if(destroyed)return;authoritative=projection.source==='server';selectedId=projection.selectedAgentId;const ids=new Set(projection.agents.map(agent=>agent.agentId));motion.sync(authoritative?[]:[...ids]);
     labels.setAttribute('aria-label',authoritative?'服务器公开角色地图操作':'我的 Agent 地图操作');

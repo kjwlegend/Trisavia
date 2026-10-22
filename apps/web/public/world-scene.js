@@ -1,3 +1,4 @@
+import {daylightAt} from './hud/world-time.js';
 // The world consumes one local design-kit subset; character frames share one sheet.
 import {townAssets} from './world-town/assets.js';
 import {createOwnedAgentLayer} from './world-owned-layer.js';
@@ -148,7 +149,7 @@ function drawActor(ctx,a,images) {
   ctx.drawImage(images.get('character-sheet'),r.x,r.y,r.width,r.height,a.x-anchor.x,a.y-anchor.y,r.width,r.height);
 }
 
-export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{},onChange=()=>{},onError=()=>{},signal,worldSource='demo',rendering=null}={}){
+export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{},onChange=()=>{},onError=()=>{},signal,worldSource='demo',rendering=null,initialTime=Date.now()}={}){
   const W=rendering?.mapSpec.width??WORLD_SIZE.width,H=rendering?.mapSpec.height??WORLD_SIZE.height;
   const stagePlaces=rendering?rendering.places:places;
   const images=rendering?null:await loadAssets();
@@ -176,10 +177,12 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   let hoverPointer=null,hoverProjection='';
   let mode=rendering?'overview':'initial',exploring=false;
   let worldView={phase:!rendering&&worldSource==='demo'?'demo':'loading',enabled:null,rules:null,avatars:[],complete:false,asOf:null,worldRevision:null},ownedProjection={agents:[],selectedAgentId:''};
-  let paused=reduced.matches,pauseReason=reduced.matches?'reduced':'user',visible=true,destroyed=false,broken=false,selected=null,raf=0,lastTime=null,lastDraw=0,elapsed=0,environment=true,actorLimit=worldSource==='demo'?actors.length:0,quality=0,theme='day',reduceOverride=false;
+  let paused=reduced.matches,pauseReason=reduced.matches?'reduced':'user',visible=true,destroyed=false,broken=false,selected=null,raf=0,lastTime=null,lastDraw=0,elapsed=0,environment=true,actorLimit=worldSource==='demo'?actors.length:0,quality=0,reduceOverride=false;
+  let sceneTime=initialTime,light=daylightAt(sceneTime),stillLight=daylightAt(sceneTime,{reducedMotion:true});
+  const currentLight=()=>reduced.matches||reduceOverride?stillLight:light;
   let frames=0,drawMs=0,slowSamples=[],metrics={fps:0,meanDrawMs:0};
   const abort=new AbortController(),eventOptions={signal:abort.signal};
-  const state=()=>({mode,exploring,minZoom:overviewScale()/camera.base,zoom:camera.zoom,paused,pauseReason,theme,reducedMotion:reduced.matches||reduceOverride,visible:visible&&!document.hidden,actorCount:actorLimit,quality,frames,...metrics,camera:{x:camera.x,y:camera.y,scale:camera.base*camera.zoom,width:camera.width,height:camera.height,sourceWidth:W,sourceHeight:H,coordinateSpace:rendering?'source-pixel':'legacy-town-pixel'},actors:actors.slice(0,actorLimit).map(a=>({id:a.id,x:a.x,y:a.y,pause:a.pause})),selectedId:selected?.id??null,
+  const state=()=>({mode,exploring,minZoom:overviewScale()/camera.base,zoom:camera.zoom,paused,pauseReason,theme:light.period,lighting:structuredClone(currentLight()),reducedMotion:reduced.matches||reduceOverride,visible:visible&&!document.hidden,actorCount:actorLimit,quality,frames,...metrics,camera:{x:camera.x,y:camera.y,scale:camera.base*camera.zoom,width:camera.width,height:camera.height,sourceWidth:W,sourceHeight:H,coordinateSpace:rendering?'source-pixel':'legacy-town-pixel'},actors:actors.slice(0,actorLimit).map(a=>({id:a.id,x:a.x,y:a.y,pause:a.pause})),selectedId:selected?.id??null,
     rendering:rendering?{backend:'pixel-town',mapVersion:rendering.mapSpec.version,assetVersion:rendering.sourceVersion,imageCount:rendering.imageCount}:null,
     worldScene:{phase:worldView.phase,enabled:worldView.enabled,asOf:worldView.asOf,worldRevision:worldView.worldRevision,complete:worldView.complete,errorCode:worldView.errorCode??null,errorStatus:worldView.errorStatus??null,retryAt:worldView.retryAt??null,lastSuccessAt:worldView.lastSuccessAt??null,projectionVersion:rendering?.mapSpec.version||WORLD_PROJECTION_VERSION,avatars:ownedLayer.actors().filter(row=>row.fact).map(row=>({fact:structuredClone(row.fact),x:row.x,y:row.y}))}});
   // Projection uses the whole viewport; overview reserves room for the two overlays.
@@ -195,7 +198,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
     try{
       ctx.setTransform(camera.dpr,0,0,camera.dpr,0,0);rect(ctx,0,0,camera.width,camera.height,'#e4ecdc');ctx.save();
       const scale=camera.base*camera.zoom;const center=screenCenter();ctx.translate(Math.round(center.x-camera.x*scale),Math.round(center.y-camera.y*scale));ctx.scale(scale,scale);if(rendering)ctx.imageSmoothingEnabled=false;else ctx.drawImage(ground.canvas,0,0);
-      const renderFrame={elapsed:elapsed*1000,paused,reducedMotion:reduced.matches||reduceOverride,quality,scale,theme,avatars:ownedLayer.actors(),viewport:{left:camera.x-center.x/scale,right:camera.x+(camera.width-center.x)/scale,top:camera.y-center.y/scale,bottom:camera.y+(camera.height-center.y)/scale}};if(rendering)rendering.drawGround(ctx,renderFrame);
+      const lighting=currentLight(),renderFrame={elapsed:elapsed*1000,paused,reducedMotion:reduced.matches||reduceOverride,quality,scale,theme:lighting.period,lighting,avatars:ownedLayer.actors(),viewport:{left:camera.x-center.x/scale,right:camera.x+(camera.width-center.x)/scale,top:camera.y-center.y/scale,bottom:camera.y+(camera.height-center.y)/scale}};if(rendering)rendering.drawGround(ctx,renderFrame);
       // Every camera entry renders here. Re-hit the last real pointer after a
       // projection change; never carry a mouse hold onto a different screen spot.
       const canvasBox=canvas.getBoundingClientRect(),projection=[camera.x,camera.y,scale,center.x,center.y,camera.width,camera.height,canvasBox.left,canvasBox.top].join(':');
@@ -207,7 +210,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
       // not grant a path, hide an Avatar or determine its authoritative place.
       if(!rendering&&worldView.phase!=='demo')for(const entry of ownedLayer.actors())ownedLayer.draw(ctx,entry,scale);
       if(selected){if(rendering&&selected.kind==='world-avatar'){const entry=ownedLayer.actors().find(row=>row.agentId===selected.agentId);if(entry)rendering.drawSelection(ctx,entry,scale,renderFrame);}else if(!rendering){const isActor=['actor','world-avatar'].includes(selected.kind);ctx.strokeStyle='#557f9a';ctx.lineWidth=2/Math.max(scale,.4);ctx.setLineDash([5/scale,4/scale]);ctx.beginPath();ctx.ellipse(selected.x,selected.y+3,isActor?13:Math.min(selected.w/2+12,70),isActor?6:16,0,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);}}
-      if(rendering){rendering.drawUpper?.(ctx,renderFrame);rendering.drawEffects?.(ctx,{...renderFrame,quality:environment?quality:1});}
+      if(rendering){rendering.drawUpper?.(ctx,renderFrame);rendering.drawEffects?.(ctx,{...renderFrame,quality:environment?quality:1});for(const entry of ownedLayer.actors())if(entry.agentId===ownedProjection.selectedAgentId||entry.agentId===selected?.agentId)rendering.drawSelection(ctx,entry,scale,renderFrame);}
       ctx.restore();
       ownedLayer.layout({scale,point:(x,y)=>({x:(x-camera.x)*scale+center.x,y:(y-camera.y)*scale+center.y})});
       frames++;drawMs+=performance.now()-start;
@@ -247,7 +250,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   // Opening, switching or closing a reading panel never takes the camera.
   function select(place){selected=place??null;draw();notify();}
   function setPaused(value){paused=Boolean(value)||reduced.matches;pauseReason=reduced.matches?'reduced':'user';reconcile();notify();}
-  function setTheme(value){if(!rendering||!['day','dusk'].includes(value))return;theme=value;draw();notify();}
+  function setTime(value){if(!Number.isFinite(value)||value<0||value>8.64e15)return;sceneTime=value;light=daylightAt(value);stillLight=daylightAt(value,{reducedMotion:true});draw();}
   function setReducedMotion(value){reduceOverride=Boolean(value);reconcile();notify();}
   function applyAgents(){
     if(!rendering&&worldView.phase==='demo')ownedLayer.set(ownedProjection);
@@ -325,7 +328,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   document.addEventListener('visibilitychange',()=>{reconcile();notify();},eventOptions);
   const observer=new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;reconcile();notify();},{threshold:.01});observer.observe(root);
   const resizer=new ResizeObserver(resize);resizer.observe(root);resize();reconcile();notify();
-  return{canvas,setZoom,fit,reset,setExploring,select,setPaused,setTheme,setReducedMotion,setOwnedAgents,setWorldScene,clearScene,locateOwnedAgent,getState:state,destroy(){if(destroyed)return;destroyed=true;cancelAnimationFrame(raf);observer.disconnect();resizer.disconnect();abort.abort();ownedLayer.destroy();rendering?.dispose?.();canvas.remove();}};
+  return{canvas,setZoom,fit,reset,setExploring,select,setPaused,setTime,setReducedMotion,setOwnedAgents,setWorldScene,clearScene,locateOwnedAgent,getState:state,destroy(){if(destroyed)return;destroyed=true;cancelAnimationFrame(raf);observer.disconnect();resizer.disconnect();abort.abort();ownedLayer.destroy();rendering?.dispose?.();canvas.remove();}};
 }
 export function placeDetails(place){
   if(place.kind==='world-avatar')return{name:place.profile.displayName,area:place.placeId==='commons'?'公共庭':'所在区域待确认',icon:'○',

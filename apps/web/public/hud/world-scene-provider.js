@@ -9,11 +9,11 @@ const READ_BUILD='world-provider-20261022-v1';
 // current scene response; reconnect/manual/visible boundaries rediscover it.
 export function createWorldSceneProvider({request=api,worldId='default',intervalMs=1000,maxPages=10,metadataTtlMs=30000,now=Date.now,setTimer=setTimeout,clearTimer=clearTimeout}={}){
   const listeners=new Set();let revision=0,controller=null,timer=null,visible=false,started=false,disposed=false,failures=0,metadata=null,notBefore=0,retryError=null,readStarted=false;
-  let state={phase:'loading',enabled:null,worldId,rules:null,avatars:[],worldRevision:null,asOf:null,instanceId:null,complete:false,nextCursor:null,errorCode:null,errorStatus:null,lastSuccessAt:null,retryAt:null};
+  let state={phase:'loading',enabled:null,worldId,rules:null,avatars:[],worldRevision:null,asOf:null,serverTime:null,timeSource:null,instanceId:null,complete:false,nextCursor:null,errorCode:null,errorStatus:null,lastSuccessAt:null,retryAt:null};
   const snapshot=()=>structuredClone(state);
   function emit(next){state={...state,...next};for(const listener of listeners)listener(snapshot());}
   function stop(){revision++;controller?.abort();controller=null;if(timer!==null)clearTimer(timer);timer=null;}
-  function cleared(){return{rules:null,avatars:[],worldRevision:null,asOf:null,complete:false,nextCursor:null,lastSuccessAt:null};}
+  function cleared(){return{rules:null,avatars:[],worldRevision:null,asOf:null,serverTime:null,timeSource:null,complete:false,nextCursor:null,lastSuccessAt:null};}
   const backoff=()=>Math.max(1000,intervalMs)*Math.min(30,2**Math.min(failures,5));
   const delay=()=>notBefore>now()?notBefore-now():failures?backoff():Math.max(1000,intervalMs);
   function schedule(){if(disposed||!visible||!started||state.phase==='partial')return;if(timer!==null)clearTimer(timer);timer=setTimer(()=>{timer=null;void refresh({reason:failures>0&&notBefore>0?'recovery':'timer'});},delay());}
@@ -39,7 +39,7 @@ export function createWorldSceneProvider({request=api,worldId='default',interval
         metadata={caps,rules,expiresAt:now()+Math.min(30000,Math.max(1000,metadataTtlMs))};
       }
       const {caps,rules}=metadata;emit({enabled:true,instanceId:caps.instanceId});
-      const unwrap=result=>{if(result?.protocolVersion!==1||result.instanceId!==caps.instanceId||!result.data)throw failure('world_response_invalid');return result.data;};
+      let serverTime=null;const unwrap=result=>{if(result?.protocolVersion!==1||result.instanceId!==caps.instanceId||!result.data)throw failure('world_response_invalid');serverTime=Number.isSafeInteger(result.serverTime)&&result.serverTime>=0?result.serverTime:null;return result.data;};
       let cursor=more?previous.nextCursor:null,avatars=more?[...previous.avatars]:[],worldRevision=more?previous.worldRevision:null,asOf=more?previous.asOf:null;
       if(more&&(!cursor||JSON.stringify(rules)!==JSON.stringify(previous.rules)))throw failure('world_scene_changed');
       const seenCursors=new Set(),seenAgents=new Set(avatars.map(row=>row.agentId));let complete=false;
@@ -54,7 +54,7 @@ export function createWorldSceneProvider({request=api,worldId='default',interval
         if(seenCursors.has(cursor))throw failure('world_response_invalid');seenCursors.add(cursor);
       }
       if(!current())throw abortError();
-      failures=0;notBefore=0;retryError=null;emit({phase:complete?'ready':'partial',enabled:true,rules,avatars,worldRevision,asOf,instanceId:caps.instanceId,complete,nextCursor:cursor,errorCode:null,errorStatus:null,lastSuccessAt:complete?now():null,retryAt:null});
+      failures=0;notBefore=0;retryError=null;emit({phase:complete?'ready':'partial',enabled:true,rules,avatars,worldRevision,asOf,serverTime:serverTime??asOf,timeSource:serverTime===null?'asOf':'serverTime',instanceId:caps.instanceId,complete,nextCursor:cursor,errorCode:null,errorStatus:null,lastSuccessAt:complete?now():null,retryAt:null});
     }catch(error){
       if(!current())return;
       failures++;metadata=null;

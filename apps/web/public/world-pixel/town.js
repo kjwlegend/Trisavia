@@ -2,6 +2,7 @@ import './asset-kit.js';
 import {loadPixelAssets} from './assets.js';
 import {createPixelRenderLayer} from './render-layer.js';
 import {HUMAN_GEOMETRY,drawHuman,drawHumanFoot} from './human.js';
+import {daylightAt} from '../hud/world-time.js';
 export const PIXEL_LAYOUT_SHA256='30abc430606ed7eda79200e340a4bf54dab8eef2e727d6efd971911cbcc6aec1';
 export const COMMONS_PLACE=Object.freeze({kind:'world-place',id:'commons',name:'公共庭',area:'当前开放',icon:'○',x:384,y:384,w:256,h:256,anchor:{x:128,y:256},description:'公开角色当前在公共庭活动。周边街区为景观预览，尚未开放为可到访场所。',note:'角色位置来自服务器；景观与视觉主题不表示在线、到访或互动结果。'});
 const cancelled=()=>new DOMException('Pixel town cancelled','AbortError');
@@ -27,16 +28,16 @@ export function createPixelTown(assets,layout,{makeCanvas=()=>document.createEle
   for(const item of modules)parts(g,item,true);
   const grass=makeCanvas();grass.width=grass.height=16;const grassContext=grass.getContext('2d');if(!grassContext)throw new Error('pixel_canvas_unavailable');sprite(grassContext,kit.terrain.grass.center,0,0);grade(grassContext,0,0,16,16);
   const terminals=new Set(['scenery-north-green','scenery-east-blue','scenery-south-purple']);
-  const objects=modules.map(item=>({kind:'pixel-scenery',id:item.id,x:item.anchor[0],y:item.footY,draw(ctx,frame){parts(ctx,item,false);if(terminals.has(item.id)){const x=item.left+item.module.entrance[0]+10,y=item.footY-14;ctx.fillStyle='#3d5d5c';ctx.fillRect(x,y,9,5);ctx.fillStyle=frame.theme==='dusk'?'#f4d58b':'#9bd3ba';ctx.fillRect(x+2,y+2,5,1);}}}));
-  const layer=createPixelRenderLayer({assets,avatarGeometry:HUMAN_GEOMETRY,objects,places:[COMMONS_PLACE],drawAvatar:(ctx,entry,frame)=>drawHuman(ctx,entry,frame,assets),drawSelection:(ctx,entry,_scale,frame)=>drawHumanFoot(ctx,entry,true,frame?.theme),drawGround(ctx,frame){
+  const objects=modules.map(item=>({kind:'pixel-scenery',id:item.id,x:item.anchor[0],y:item.footY,draw(ctx,frame){parts(ctx,item,false);if(terminals.has(item.id)){const x=item.left+item.module.entrance[0]+10,y=item.footY-14;ctx.fillStyle='#3d5d5c';ctx.fillRect(x,y,9,5);ctx.fillStyle=(frame.lighting?.lamps??0)>.2?'#FFD68A':'#9bd3ba';ctx.fillRect(x+2,y+2,5,1);}}}));
+  const layer=createPixelRenderLayer({assets,avatarGeometry:HUMAN_GEOMETRY,objects,places:[COMMONS_PLACE],drawAvatar(ctx,entry,frame){ctx.save();ctx.filter=`brightness(${frame.lighting?.people??1})`;drawHuman(ctx,entry,frame,assets);ctx.restore();},drawSelection:(ctx,entry,_scale,frame)=>drawHumanFoot(ctx,entry,true,frame?.theme),drawGround(ctx,frame){
     const pattern=ctx.createPattern(grass,'repeat');if(pattern){ctx.fillStyle=pattern;ctx.fillRect(-2048,-2048,4864,4608);}
     const river=layout.background.river,top=Math.floor(frame.viewport.top/16)*16-16,bottom=frame.viewport.bottom+16,water=kit.terrain.water.tiles||kit.terrain.water;
     for(let y=top;y<bottom;y+=16){for(const x of river.bankX)sprite(ctx,kit.terrain.sand.center,x,y);for(let x=river.x;x<river.x+river.width;x+=16)sprite(ctx,water[x===river.x?'left':x===river.x+river.width-16?'right':'center'],x,y);shore(ctx,river.x,y,'west');shore(ctx,river.x+river.width-16,y,'east');}
-    ctx.drawImage(ground,0,0);ctx.fillStyle=frame.theme==='dusk'?'#91d0bf':'#779c86';for(const light of layout.guideLights){const [x,y]=light.position;for(const dx of [0,5,10])ctx.fillRect(x+dx,y,3,1);}for(const entry of frame.avatars)drawHumanFoot(ctx,entry);
+    ctx.drawImage(ground,0,0);ctx.fillStyle='#779c86';for(const light of layout.guideLights){const [x,y]=light.position;for(const dx of [0,5,10])ctx.fillRect(x+dx,y,3,1);}for(const entry of frame.avatars)drawHumanFoot(ctx,entry);
   }});
   return{...layer,buildingCount:modules.filter(item=>item.id.startsWith('scenery-')).length,sourceVersion:kit.version,imageCount:assets.images.size,
     drawUpper(ctx){for(const item of modules)for(const part of item.module.foregroundParts||[])sprite(ctx,part.sprite,item.left+part.offset[0],item.top+part.offset[1],part);},
-    drawEffects(ctx,frame){if(frame.theme!=='dusk')return;ctx.fillStyle='#263d6847';ctx.fillRect(-2048,-2048,4864,4608);if(frame.reducedMotion||frame.quality)return;for(const light of layout.doorwayLights){const[x,y]=light.position;for(const[size,alpha]of [[30,.055],[22,.075],[14,.10],[6,.15]]){ctx.fillStyle=`rgba(255,215,124,${alpha})`;ctx.fillRect(x-size/2,y-size/3,size,size*2/3);}}},
+    drawEffects(ctx,frame){const light=frame.lighting||daylightAt(Date.now(),{reducedMotion:frame.reducedMotion});if(light.opacity>0){ctx.fillStyle=`rgba(${light.color.join(',')},${light.opacity})`;ctx.fillRect(-2048,-2048,4864,4608);}},
     dispose(){assets.dispose();ground.width=grass.width=0;},
   };
 }

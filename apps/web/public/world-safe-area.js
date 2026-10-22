@@ -10,7 +10,7 @@ export function freeAreas(bounds,blocked){
 }
 export function worldOverlayRects(root,margin=8){
   const box=root.getBoundingClientRect(),rects=[];
-  for(const selector of ['header','#hud-dock','#hud-agent','#hud-locate-agent','#hud-window','#hud-detail-window','#world-detail','#hud-tooltip','.world-demo','.hud-map-tools','.hud-map-menu','.hud-mail-feedback']){
+  for(const selector of ['header','#hud-dock','#hud-agent','#hud-locate-agent','#hud-window','#hud-detail-window','#world-detail','#hud-tooltip','#world-status-hud','.hud-map-tools','.hud-map-menu','.hud-mail-feedback']){
     const node=document.querySelector(selector);if(!node||node.hidden||!node.getClientRects().length)continue;
     const r=node.getBoundingClientRect();let {left,right,top,bottom}=r;
     // Reserve the final centered window as well as its animated silhouette.

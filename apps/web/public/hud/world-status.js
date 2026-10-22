@@ -1,0 +1,17 @@
+import {createSceneClock,shanghaiTime} from './world-time.js';
+const put=(node,text)=>{if(node.textContent!==text)node.textContent=text;};
+export function sceneStatus(value,selectedAgentId=''){
+  const rows=value.complete?value.avatars:[],selected=rows.find(row=>row.agentId===selectedAgentId),places=new Set(rows.map(row=>row.placeId).filter(Boolean)),open=value.rules?.places?.filter(place=>place.access==='members')||[];
+  const placeId=selected?.placeId||(places.size===1?[...places][0]:open.length===1?open[0].id:null),place=placeId==='commons'?'公共庭':null;
+  const retained=value.phase==='recovering'||value.phase==='paused';
+  return{location:place?`${selected?.placeId?'角色所在':'当前场景'}：${place}`:'场景待确认',count:value.complete?`${retained?'上次画面':'公开角色'}：${rows.length}`:'公开角色：—',status:value.phase==='recovering'?'连接正在恢复，保留上次成功读取的场景。':value.phase==='partial'?'角色集合尚未完整读取。':['error','unavailable'].includes(value.phase)?'场景暂不可读取。':value.phase==='paused'?'场景读取已暂停。':''};
+}
+export function createWorldStatusHud(root,{onTime=()=>{},clock=createSceneClock(),setTimer=setTimeout,clearTimer=clearTimeout}={}){
+  const location=root.querySelector('#world-current-place'),count=root.querySelector('#world-scene-count'),time=root.querySelector('#world-current-time'),status=root.querySelector('#world-read-status');let value={phase:'loading',complete:false,avatars:[]},selectedAgentId='',visible=true,timer=null,disposed=false;
+  function render(){const text=sceneStatus(value,selectedAgentId);put(location,text.location);put(count,text.count);put(status,text.status);if(count.title!==text.status)count.title=text.status;}
+  function paintTime(){const epoch=clock.now();put(time,shanghaiTime(epoch).text);time.dateTime=new Date(epoch).toISOString();if(time.dataset.timeSource!==clock.source){time.dataset.timeSource=clock.source;time.title=`Asia/Shanghai · ${clock.source==='local'?'本机时间，等待服务器校准':'服务器时间已校准'}`;}onTime(epoch);}
+  function tick(){timer=null;if(disposed||!visible)return;paintTime();timer=setTimer(tick,1000);}
+  function position(){const header=document.querySelector('header'),map=root.parentElement;if(header&&map)root.style.top=`${Math.max(12,header.getBoundingClientRect().bottom-map.getBoundingClientRect().top+12)}px`;}
+  const observer=new ResizeObserver(position);const header=document.querySelector('header');if(header)observer.observe(header);position();tick();
+  return{clock,update(next){value=next;if(next.phase==='ready'&&clock.calibrate(next.serverTime,next.instanceId,next.timeSource)&&visible)paintTime();render();},select(agentId){selectedAgentId=agentId;render();},setVisible(next){next=Boolean(next);if(disposed||next===visible)return;visible=next;if(timer!==null)clearTimer(timer);timer=null;if(visible)tick();},dispose(){disposed=true;if(timer!==null)clearTimer(timer);observer.disconnect();}};
+}
