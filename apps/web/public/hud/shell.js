@@ -30,7 +30,7 @@ export function createHud({session,accountNode,onOpenAccount=()=>{},onLocateAgen
   const stopContext=context.subscribe(value=>{flushViews();store.setContext(value.scope,{persistent:value.persistent});reconcile();});provider.subscribe(value=>{providerState=value;reconcile();});void context.load();
   const enterDemo=key=>()=>{if(current===key&&!windowNode.hidden)title.focus({preventScroll:true});};
   const chooseAgent=()=>openAccount(session.snapshot().authenticated?'agents':'login');
-  const features={profile:createProfileFeature(provider,enterDemo('profile')),inventory:createInventoryFeature(provider,enterDemo('inventory'),{store,context,worldProvider,walletProvider,session,chooseAgent}),mail:createMailFeature(provider,enterDemo('mail'),{store,context,detailHost,worldProvider,session,chooseAgent}),friends:createFriendsFeature(session,{chooseAgent})};
+  const features={profile:createProfileFeature(provider,enterDemo('profile')),inventory:createInventoryFeature(provider,enterDemo('inventory'),{store,context,detailHost,worldProvider,walletProvider,session,chooseAgent}),mail:createMailFeature(provider,enterDemo('mail'),{store,context,detailHost,worldProvider,session,chooseAgent}),friends:createFriendsFeature(session,{chooseAgent})};
   flushViews=()=>{for(const feature of Object.values(features))feature.flush?.();};
   const names={profile:'个人',inventory:'背包',mail:'信箱',friends:'好友列表'},buttons={};let current='',trigger=null,hoverTimer=0,navigationRevision=0;
   const worldControls=createWorldControls(root),floatingFeedback=el('div','hud-floating-feedback');root.append(floatingFeedback);
