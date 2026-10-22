@@ -427,3 +427,19 @@ WS01随后精确裁定已补原§3.2：`published=null`且无可靠已确认形�
 恢复实际完成：停止态20GiB系统盘与30GiB数据盘分别APFS克隆，源／副本全量SHA256一致，分别为`84c6d76f935524cf72c44bfc20cba1e0f6ccc320eb6bc8c63f54a07195cbc5af`和`db337338cf6da506840cbbc174b2787f48fcbf1c0364a65bb52b52d7b445682f`；不称恢复演练。11:44:36原profile完成80GiB扩盘启动，原PG容器于11:45:55启动。两次前置检查曾因Docker Mounts数组返回顺序改变而停止，确认按Destination排序后的全部条目精确相同后才继续；容器ID及原卷未变、未重建。扩容后数据盘约48GiB可用，其他profile未操作。
 
 11:46:31四个有限匿名GET（health／capabilities／rules／scene）均200／no-store、无重试；真实PG只读成功。80表504行业务语义指纹与e005原交付快照全部相同，原gate／generation机械排除保持，instance／epoch／identity SHA未变；三Avatar完整公开事实也相同，变化仅请求信封requestId／serverTime及data.asOf。初始scene比较只排顶层asOf而报false，随后递归核实准确三个变化路径，原结果与修正回执均保留，不把原比较写为首次全过。原应用**e005／PID82404**全程未重启／换码，写门未修改；A可恢复自有隔离测试。恢复后另fresh当前库dump447704字节，SHA256 **`a2fc5aa517947dcd6581d9084a615e06fb70f76b3aee5abba7a9603410193094`**，pg_restore清单验证通过、未作恢复演练。原卷、全部归档、旧库及配对材料保留，无清理／回灌／迁移。回执为上述目录`stopped-disk-preservation.json`、`expanded-original-container.json`、`recovery-verification.json`、`http-readiness.json`；当前数据恢复通过不等于持续归档治理或429问题关闭。
+
+### 7.15 容量明细、截断归档续发与独立治理范围
+
+按用户追问，11:52仅扫描文件名／stat及读取有效PG配置，未解析WAL内容：wal-archive共1684文件，其中1679个正常段名（1678×16MiB＋1个9170944字节截断文件）、5个各341字节的base-backup history；partial扩展名／timeline history／压缩文件均0。逻辑总量28161341097字节，约26.23GiB／28.16GB；最早复制mtime为10月20日13:42:25，最新10月22日04:34:29，不当作业务事务时间。实际配置为archive_mode on、timeout 1min、段16MB及原test-not-exists后cp的未压缩命令。60秒用于限制未归档窗口，本身不是错误；短周期整段未压缩复制、无容量／保留治理与非原子落盘共同构成本次缺陷，不能说当前世界产生了30GB业务数据。
+
+11:55 SQL容量聚合排除postgres／template：当前world一库14.90MiB，历史connet一库14.85MiB，按既有fixture精确前缀确认的隔离测试60库705.34MiB；不据此认定这些测试库可直接删除。文件系统base约759.71MiB，活动pg_wal约352.02MiB，二者与归档分开，SQL逻辑容量与文件系统分配口径不同。WAL属于同一PG实例，不能仅凭归档数量分摊到当前世界、历史库或测试。文件／配置／三组聚合证据分别为`wal-file-metadata.json`、`actual-archive-settings.json`、`database-capacity-groups-final.json`；本问答未扩大成行内容或WAL解析。
+
+恢复后发现末段`00000001000000060000008F`在盘满时只复制9170944字节，目标正式名字已存在使旧命令持续拒绝；对应活动WAL仍完整16MiB。TD先额外复制截断文件到host0600私有保全并核SHA256 `5d69895c97b63ae8d52daaa060a5c394bad14c184d8ae0ebc189d91915fc5110`，复核完整源大小／hash，再于11:54:24把原截断副本移入原卷0700隔离目录保留，未删源、覆盖原件、强制switch或伪报成功。11:56:22原archiver自然补齐同名16MiB，SHA256 `a1b66e6e5737c9a6753c60a90a9f8600bf4317425843608f4f018a273b3d4673`与先核活动源相同，archived_count29并已推进至…AB；历史failed38保留，last_failed停在隔离前。11:57另一次scene GET200／no-store、无重试。续发恢复证据`truncated-archive-preservation.json`、`archive-natural-recovery.json`、`archive-recovery-application-read.json`，持续治理尚未交付。
+
+原B在clean ad5另分`codex/postgresql-archive-capacity`，独占原m1-storage；原look分支保留。后继最小范围为归档原子压缩／已存在同内容幂等、异内容失败、旧raw／新gzip恢复兼容、备份哈希及显式有界容量提示，不改60秒恢复窗口、创建后台timer或自动删除未证明可回收材料。TD登记隔离project `agents-era-pg-archive-b-c5e821a4`，server／data及restore UUID资源只用原专用context内已拉取固定PG18.6 digest，network none、无host端口，不挂载／查询当前PG卷；实际UUID先登记，finally按精确标识及ownership label清理。登记`outputs/postgresql/archive-capacity-b-resource-register.json`。该批单独固定、独立审查及验证，不阻塞已就绪look／v2发布。
+
+### 7.16 v2固定候选及实际目录发布预检
+
+原D固定`07c7d18 → 1486c4aabeebbcfa1efec7b58d02cfd34ebd6d8e`，75路径＝70生产（含42原生UI PNG及2人物目录）＋5测试，原C三文件未碰、可靠性provider生产字节保持e005。TD逐文件对Git并核clean，11份证据hash匹配；manifest SHA256 `ba528072bab4c6f6bfb5cf561633bed254f7b1c992ab4c68b02233f75aad1203`，intake在`outputs/world-ui-reliability/d-v2-1486c4a-intake/`。作者40site、6面板Browser、fixed-head原World Browser5、tsc／25JS语法／diff均通过；Browser全路由合成、context已关闭，13截图及首跑失败原件保留，不代真实A/B保存组合或普通UI。TD实看role1440／inventory1024工程图，原reviewer R35已开始，尚未记接受／部署。
+
+A真实look HTTP两故事及受审B-only固定489文件源的实际隔离维护顺序1/1通过，末组旧WS02前置的默认shape与专属fixture最小World SELECT授权逐项修正，旧失败保留，最终固定尚待。C三自有WIP保留并重新唤醒，对齐固定D实际DOM后待固定A组合。12:00:49当前库一次只读预检为catalog-readers-1-schema-4／guide2／schema4；**perception.documents实际55行＝41 schema4＋14 guide1/2，schema5／guide3均空闲**。此前口述69不能当本表实际行数，现以当前预检更正，不猜其来源；A原fresh55证据仍保留隔离范围，维护前再fresh核。预检原件`outputs/world-ui-reliability/look-publication-preflight/current-public-document-ids.json`，未发布目录。
