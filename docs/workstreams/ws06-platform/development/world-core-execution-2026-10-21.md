@@ -491,3 +491,14 @@ TD无冲突取C两提交为`8fa5091`＋**`05b8dca3ef96ab4756e87864517406851a935a
 **12:58:12恢复写入，维护82.082秒；18893真实运行版本为`05b8dca3ef96ab4756e87864517406851a935a2e`，PID73223／PPID1**。URL仍为`http://127.0.0.1:18893/`、`/owner`及原Agent入口。证据集中于`outputs/world-core/look-05b8dca/`的source-manifest、qualification、live／stopped-backup、physical／catalog／startup-verification、closed-readiness及maintenance.json；private备份与服务日志不公开。根已收到真实版本，可接原独立普通用户UI；本节仅工程／保全／实际读取交付，不预写独立UI或最终审美通过。8789应用、公网与其他服务未切换；容量工具与429自然原因仍分别开放。
 
 恢复边界已生效：profiles v2及schema5／guide3已真实发布，**不能直接运行e005或B-only旧应用，不能回灌旧备份覆盖后续写入**。故障恢复须保留此配对PG／identity／全部新增事实，采用05b8dca兼容新旧形状的完整源码前向修复。main文档后继不等于运行版本；本次实际部署证据以冻结source／PID／维护回执为准。
+
+
+### 7.20 已审独立后继候选与第八阶段UI运行保护
+
+13:00前根已启动原普通用户模拟者，在实际05b8dca／18893进行第八阶段；明确该轮浏览器安全停点前保持当前版本及PG服务稳定。TD只继续候选整合／冻结与文档同步，未因代码就绪重启或重载服务。当前运行仍05b8dca／PID73223，§7.19的工程交付不等于该阶段UI通过。
+
+R39已接受A `25df02ab3f5e07f033b0dae68fba36c661e05f64`三路径，R40接受D `e8c99c2178dab5fd8c99146d08b2d2f8ec28503e`四路径及两者静态接缝。A精确24项、D精确15项作者证据各自保留，均typecheck／diff0；TD取为`1446c06`＋**`18ef528d875d2dc7369623a2e0d6b88dfb092c50`**，七归属文件逐字节匹配已审Git，无额外差异，不重跑未改检查。独立运行候选冻结`outputs/world-core/reliability-18ef528/source`，556文件，tar SHA256 **`e2ab54cb4493a2b1eb51d03d5c83eed557c732553c4749e09c34250298b4ef72`**，qualification存在、deployed=false。仅给既有读取附固定build及有限reason提示，按白名单有界聚合，不加请求／timer、不改配额／授权／目录／业务数据；提示是非可信自报，不是消费者身份或根因证明。最终429仍OPEN，必须另看自然后继样本。
+
+R38的B `ac93fff2bca98372a274f18cb1bb2c66d094fdfe`11路径也无冲突整合为**`4f90f9c73f25d9a6d04a9a393b049cd46e938179`**；逐字节核作者Git，应用文件没有变化。独立运维源码冻结`outputs/world-core/archive-ops-4f90f9c/source`，564文件，tar SHA256 **`50fbd9208be419cc96171ca4445cc67590d076ed49256e46f917d5d6d11ead6e`**；仅供工具安装／隔离恢复，禁止把它当当前应用版本。一次准备冻结误抄完整SHA，git archive在生成源码前报不存在tree；空候选与失败说明保留于invalid-ref-preserved，随后按实际git rev-parse结果冻结，未触服务／数据。
+
+只读确认当前PG配置及init的bind仍指向原m1-acceptance目录，未指向本次integration修改；容器d3ab…d731及agents-era-pg-data保持，没有archive helper挂载。B正仅在自有outputs整理具体安装／完整cluster保全／两业务identity配对及独立恢复方案，不执行现用资源动作。后续须根协调第八阶段安全停点，保全全部后续写入与完整现卷后再装helper、保持固定PG18.6 image／原volume／60秒间隔；验证自然后继归档及独立restore，不能以源码已合入或作者测试通过关闭容量事件。旧raw档、旧备份、历史库／测试库均保留，无自动删除／历史重压／新timer。
