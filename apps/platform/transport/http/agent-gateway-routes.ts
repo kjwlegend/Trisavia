@@ -6,7 +6,7 @@ import {RuntimeError} from '../../contracts/runtime-store.ts';
 import {StorageError} from '../../contracts/store.ts';
 import type {JsonObject} from '../../contracts/store.ts';
 import {object} from '../../domains/common/errors.ts';
-import {createGatewayQuotaObservation,type GatewayQuotaDiagnosticSink,type GatewayQuotaRoute} from './gateway-request-observation.ts';
+import {createGatewayQuotaObservation,isWorldReadObservationRoute,worldReadObservationHints,type GatewayQuotaDiagnosticSink,type GatewayQuotaRoute} from './gateway-request-observation.ts';
 class GatewayRateLimitError extends M1Error {
  readonly retryAfterSeconds:number;
  constructor(message:string,retryAfterSeconds:number){super('rate_limited',429,message);this.retryAfterSeconds=retryAfterSeconds;}
@@ -17,11 +17,12 @@ export function registerAgentGatewayRoutes(app:FastifyInstance,gateway:AgentGate
  const validators=new WeakMap<JsonObject,(input:unknown)=>boolean>();
  const validate=(request:FastifyRequest)=>(schema:JsonObject,input:unknown)=>{let check=validators.get(schema);if(!check){check=request.compileValidationSchema(schema,'body');validators.set(schema,check);}return check(input);};
  function quota(request:FastifyRequest,route:GatewayQuotaRoute){
+  const hints=isWorldReadObservationRoute(route)?worldReadObservationHints(request.headers['x-world-read-build'],request.headers['x-world-read-reason']):undefined;
   const at=Date.now();if(at-cleanupAt>=60000){for(const [id,window]of windows)if(at-window.at>=60000)windows.delete(id);cleanupAt=at;}
   let window=windows.get(request.ip);
-  if(!window){if(windows.size>=10000){observation.capacityRejected(route,at,windows.size);throw new GatewayRateLimitError('Request capacity is exhausted',60);}windows.set(request.ip,window={at,count:0});}
+  if(!window){if(windows.size>=10000){observation.capacityRejected(route,at,windows.size,hints);throw new GatewayRateLimitError('Request capacity is exhausted',60);}windows.set(request.ip,window={at,count:0});}
   if(at-window.at>=60000){window.at=at;window.count=0;}
-  const allowed=++window.count<=240;observation.attempt(window,route,allowed);
+  const allowed=++window.count<=240;observation.attempt(window,route,allowed,hints);
   if(!allowed){const retryAfter=Math.min(60,Math.max(1,Math.ceil((window.at+60000-at)/1000)));observation.rejected(window,route,at,retryAfter);throw new GatewayRateLimitError('Request rate limit reached',retryAfter);}
  }
  const bearer=(request:FastifyRequest)=>{const header=request.headers.authorization;if(typeof header!=='string'||!header.startsWith('Bearer '))throw new M1Error('authentication_failed',401,'Bearer authentication is required');return header.slice(7);};
