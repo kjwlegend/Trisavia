@@ -6,6 +6,7 @@ import { key, plain, refId,OPERATIONS,TYPE_DEFINITIONS, type ObjectRef } from '.
 import { publishCatalogInTransaction, publishImplementedReadersInTransaction, IMPLEMENTED_READER_SOURCES,initializePerceptionCatalog } from './perception-catalog.ts';
 import {PERCEPTION_SCHEMA_VERSION} from '../domains/perception/schemas.ts';
 import {APPEARANCE_CATALOG_VERSION,APPEARANCE_CATALOG_DIGEST,APPEARANCE_ASSET_VERSION} from '../domains/profile/appearance-catalog.ts';
+import {AGENT_HUMAN_VOICE_GUIDE} from './agent-human-voice.ts';
 interface AdministrativeCommand {
     operationId: string;
     actorId: string;
@@ -75,6 +76,29 @@ export async function publishPerceptionGuide(store: M1Store, options: Administra
         await publishCatalogInTransaction(tx, options);
         const published = (await catalogRepository(tx).get('current'))!;
         return { catalogRevision: published.data.catalogRevision!, skillCatalogRevision: published.data.skillCatalogRevision!, guideVersion: published.data.guideVersion!, changed };
+    });
+}
+/** Source-owned guide-only release. Existing exact documents, schemas and source permissions remain intact. */
+export async function publishAgentHumanVoiceGuide(store:M1Store,options:AdministrativeCommand&{
+    expectedInstanceId:string;expectedRecoveryEpoch:string;expectedCatalogRevision:string;revision:string;expectedGuideVersion:number;guideVersion:number;
+}):Promise<JsonObject>{
+    if(options.expectedInstanceId!==store.instanceId||options.expectedRecoveryEpoch!==store.recoveryEpoch)fail('version_conflict',409,'The explicit target instance or recovery epoch differs');
+    if(!/^[A-Za-z0-9_-]{1,80}$/.test(options.expectedCatalogRevision)||options.revision!==`${options.expectedCatalogRevision}-human-voice-1`||!Number.isSafeInteger(options.expectedGuideVersion)||options.expectedGuideVersion<1||options.guideVersion!==options.expectedGuideVersion+1)throw new Error('An explicit next human-voice guide revision is required');
+    const payload:JsonObject={action:'publishAgentHumanVoiceGuide',release:'agent-human-voice@1',instanceId:store.instanceId,recoveryEpoch:store.recoveryEpoch,expectedCatalogRevision:options.expectedCatalogRevision,revision:options.revision,expectedGuideVersion:options.expectedGuideVersion,guideVersion:options.guideVersion,guideText:AGENT_HUMAN_VOICE_GUIDE};
+    return await command(store,options,payload,async tx=>{
+        const current=await catalogRepository(tx).get('current');
+        if(!current||current.data.schemaVersion!==PERCEPTION_SCHEMA_VERSION||current.data.catalogRevision!==options.expectedCatalogRevision||current.data.guideVersion!==options.expectedGuideVersion)fail('version_conflict',409,'The expected current schema, catalog or guide changed');
+        const modules=['perception','world','profiles','items','inventory','mailbox','wallet'];
+        for(const moduleId of modules){
+            if(!await catalogRepository(tx).get(`guide:${moduleId}:${options.expectedGuideVersion}`))fail('version_conflict',409,'The current exact guide is missing');
+            if(await catalogRepository(tx).get(`guide:${moduleId}:${options.guideVersion}`))fail('version_conflict',409,'The new exact guide version is occupied');
+        }
+        const previous=(await catalogRepository(tx).get(`guide:world:${options.expectedGuideVersion}`))!,document=plain(previous.data.document);
+        if(typeof document.text!=='string')fail('version_conflict',409,'The current exact guide text is missing');
+        const guideText=document.text.includes(AGENT_HUMAN_VOICE_GUIDE)?document.text:`${document.text}\n${AGENT_HUMAN_VOICE_GUIDE}`;
+        await publishCatalogInTransaction(tx,{revision:options.revision,guideVersion:options.guideVersion,guideText});
+        const published=(await catalogRepository(tx).get('current'))!;
+        return {changed:true,catalogRevision:published.data.catalogRevision!,skillCatalogRevision:published.data.skillCatalogRevision!,guideVersion:published.data.guideVersion!,schemaVersion:published.data.schemaVersion!,newGuideDocuments:modules.length};
     });
 }
 /** Reviewed maintenance release. No arbitrary source, guide text, audience or object grant can be supplied. */
