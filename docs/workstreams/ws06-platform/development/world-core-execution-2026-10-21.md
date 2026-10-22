@@ -559,6 +559,21 @@ D后继确认定位原浅底来自world-owned.css中`.hud-root .hud-locate-agent
 
 沿用根第九阶段安全停点及14:04指令，在归档恢复后fresh取live dump **482210字节**／SHA **`767bb8accdda4d2dbf2c318f77cf22262094ba1a553216cfd8b9a3f5522a1ed9`**，停止态dump **482211字节**／SHA **`7c99924c37604e725a47117eb1a1b89cda30d5027eb6aab0324365c8f70ebb9b`**，两者配对保全且pg_restore清单通过。**14:06:20.073692**停止063／PID96914，关World写门，以新冻结源闭门启动；80表581行全部业务语义不变，闭门启动前后全部列hash一致，原identity／instance／epoch及全部后续写入保留，无迁移／目录发布／seed／补余额。
 
-11个有限只读GET全部200／no-store，index与两个入口一致，common.js／world-scene-provider.js／063 panels.css的实际响应均逐字节匹配源；capabilities／catalog保持schema5／guide3，worldRevision29／3Avatar及公开事实保持。**14:06:38.544871恢复World原写门true，维护18.471秒；18893实际运行b21f28b／PID97734／PPID1**。PG没有再次重启，8789仍PID84411；公网和其他服务不改。证据`outputs/world-core/reliability-b21f28b/`中的qualification、maintenance-clearance、source-manifest、live／stopped-backup、三阶段continuity、closed-readiness与maintenance。
+11个有限只读GET全部200／no-store，index与两个入口一致，common.js／world-scene-provider.js／063 panels.css的实际响应均逐字节匹配源；capabilities／catalog保持schema5／guide3，worldRevision29／3Avatar及公开事实保持。**14:06:38.544871恢复World原写门true，维护18.471秒；18893实际运行b21f28b／PID97734／PPID1**。PG没有再次重启，8789仍PID84411；公网和其他服务不改。证据`outputs/world-core/reliability-b21f28b/`中的qualification、maintenance-clearance、source-manifest、live／stopped-backup、三阶段continuity、closed-readiness与maintenance。 其中qualification的deployed=false是原部署前资格快照，保留历史语义；实际已上线状态以source-manifest的deployed=true及本节maintenance回执为准，不能将该资格快照读为尚未部署。
 
 提示只给原有读取附固定build及start／timer／manual／visible／recovery／unknown有限reason，白名单24有界桶，原配额、权限、请求数量和timer不变。提示属于非可信自报，不是消费者身份或因果证明。发布后仅看现有私有聚合日志 **90.086秒**（14:06:21.750863—14:07:51.836880），**新自然429样本0**；未制造429流量、未加监控timer、未因无样本无限等待。`natural-observation.json`保留该有限窗口；历史429根因及BL01长期观察仍OPEN，不由本次部署或短时无报错关闭。独立普通UI仅沿用其已验阶段范围，本节不声称新一轮UI或全权限验收通过。
+
+
+### 7.25 本次整库隔离恢复、清理与最终容量时点（2026-10-22 14:16）
+
+服务已按§7.24恢复，后续验证没有再次停服。**14:07:16—14:11:14** 用固定R38工具显式扩展本次物理备份WAL范围；这是已登记的备份主动pg_switch_wal，发生在自然gzip取证之后，不与§7.23自然样本混用。v2 manifest保留 **2094份归档，其中4份gzip**，throughFile为`000000010000000800000028`，已校验包括自然`…0025.gz`的压缩与解压hash。该数是备份包固定范围，不是14:16现用目录文件总数。
+
+现用服务继续运行时，14:07:15冻结摘要到14:11:37的全字段比较在World的platform.instance_state失败；定点核对其余136表全列一致、该表所有业务／身份字段和writes_enabled一致，唯一差异是write_generation。交易层每次获准写事务均会递增此代次，不能仅凭代次改变推断写门切换；未追溯或虚构具体来源事务。失败证据保留。随后恢复验收显式单列此持续运行控制计数，**不声称与异步现场快照的控制代次相等**，不排除任何其他字段。
+
+使用本次新备份调用已审restoreDrill；helper创建资源前已写私有精确UUID登记。独立容器 **`agents-era-pg-restore-3ef7cdc5-784a-4eb2-90be-198a5dd1ea33`**、同名`-data`新卷，network none、无host端口，实核未挂载原agents-era-pg-data，不启动应用／Agent。**14:15:35**恢复结束且pg_is_in_recovery=false；63库名称／OID及system identifier与原一致。connet57表1607行全部列相同，World80表581行全部业务／身份字段相同，其中79表全部列相同，仅instance_state.write_generation另记恢复值67453；两原配对identity SHA／instance／epoch与原writes_enabled=true均匹配。日志实证从归档恢复`…0022`至`…0028`，**自然gzip对应的`…0025`实际参与回放**；不是仅看容器ready或借用R38作者旧测试。
+
+**14:15:55.481**按精确project／purpose／drill标签调用原stopRestoreDrill(...,true)，只停止并删除上述一次性restore容器与卷。14:16:44实核两者不存在，原volume、新live PG、旧停止容器、所有备份及历史档仍保留；18893 **b21f28b／PID97734**、8789原**PID84411**，双库写门均true。没有向现用库回灌、删除历史测试库或修改业务事实。普通证据为本节同目录的archive-extension-receipt、restore-resource、live-recovery-cutoff-scope、restore-verification、restore-cleanup与final-runtime；完整restore日志仅私有保存。
+
+根要求的最终一次脱敏容量摘要于 **14:16:03.450 +08:00** 在一次性restore清理后读取：现用归档目录 **raw共2090文件／34963720190字节（约32.5625GiB，2084完整段＋6元数据）**；**gzip共12文件／252191字节（约246.28KiB，12段）**。这是有界名字／大小扫描，无临时、不完整raw或未知项；本次容量扫描不把12份全部冒称逐份现场解压验证。数据文件系统total **84357632000字节**，used **36693860352字节**（约34.17GiB，df46%），available **43889098752字节**（约40.88GiB）。旧11:55的26.23GiB、首次备份2089文件、扩展备份2094文件与本时点2102目录项各守自己的时间／范围，不混算释放量；本次删除／重压历史归档均为0。
+
+该一次显式容量评估为ok，仍是当前压力快照，retentionStatus=not_established；没有自动保留／清理或新增监控timer。新原子压缩工具、一个自然内容匹配样本、此次含gzip完整备份及两业务隔离恢复均已得到各自实证；长期容量保留与历史429根因仍OPEN。有限自然429窗口已按§7.24结束，不为没有新样本追加负载或无限观察。资格快照deployed=false的历史口径已在§7.24说明，当前实际运行以maintenance与final-runtime为准。
