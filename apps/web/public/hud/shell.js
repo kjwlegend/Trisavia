@@ -30,7 +30,7 @@ export function createHud({session,accountNode,onOpenAccount=()=>{},onLocateAgen
   const stopContext=context.subscribe(value=>{flushViews();store.setContext(value.scope,{persistent:value.persistent});reconcile();});provider.subscribe(value=>{providerState=value;reconcile();});void context.load();
   const enterDemo=key=>()=>{if(current===key&&!windowNode.hidden)title.focus({preventScroll:true});};
   const chooseAgent=()=>openAccount(session.snapshot().authenticated?'agents':'login');
-  const features={profile:createProfileFeature(provider,enterDemo('profile')),inventory:createInventoryFeature(provider,enterDemo('inventory'),{store,context,detailHost,worldProvider,walletProvider,session,chooseAgent}),mail:createMailFeature(provider,enterDemo('mail'),{store,context,detailHost,worldProvider,session,chooseAgent}),friends:createFriendsFeature(session,{chooseAgent})};
+  const features={profile:createProfileFeature(provider,enterDemo('profile')),inventory:createInventoryFeature(provider,enterDemo('inventory'),{store,context,detailHost,worldProvider,walletProvider,session,chooseAgent}),mail:createMailFeature(provider,enterDemo('mail'),{store,context,detailHost,worldProvider,session,chooseAgent}),friends:createFriendsFeature(session,{chooseAgent,detailHost})};
   flushViews=()=>{for(const feature of Object.values(features))feature.flush?.();};
   const names={profile:'个人',inventory:'背包',mail:'信箱',friends:'好友列表'},buttons={};let current='',trigger=null,hoverTimer=0,navigationRevision=0;
   const worldControls=createWorldControls(root),floatingFeedback=el('div','hud-floating-feedback');root.append(floatingFeedback);
@@ -64,7 +64,7 @@ export function createHud({session,accountNode,onOpenAccount=()=>{},onLocateAgen
   });
   body.addEventListener('click',event=>{const link=event.target.closest('a[href]');if(!link||accountNode.contains(link))return;const url=new URL(link.href,location.origin);if(url.origin!==location.origin||url.pathname!=='/owner')return;const privateParams=new URLSearchParams(url.hash.slice(1));if(privateParams.has('handoff')||privateParams.has('assistance'))return;event.preventDefault();openAccount('profile',new URLSearchParams(url.hash.slice(1)).get('agent')||'',link);});
   document.addEventListener('hud:choose-agent',chooseAgent);
-  document.addEventListener('hud:friendship-inbox',event=>{if(current!=='mail')void open('mail');features.mail.showFriendships(event.detail?.direction==='sent'?'sent':'received');});
+  document.addEventListener('hud:friendship-inbox',event=>{if(current!=='friends')void open('friends');features.friends.showRequests(event.detail?.direction==='sent'?'sent':'received');});
   document.addEventListener('keydown',event=>{if(detailHost.isOpen&&event.key==='Escape'){event.preventDefault();event.stopImmediatePropagation();detailHost.close();return;}if(event.key!=='Escape')return;if(worldControls.menuOpen){event.preventDefault();event.stopImmediatePropagation();worldControls.closeMenu(true);return;}if(!current)return;event.preventDefault();event.stopImmediatePropagation();if(current==='account'||!features[current].back())shut();},true);
   window.addEventListener('focus',()=>session.refresh());new ResizeObserver(size).observe(root);
   return{close:shut,openAccount,isAccountOpen:()=>current==='account'&&!windowNode.hidden,setAccountTitle(value){if(current==='account'){title.textContent=value;size();}},focusAccountTitle(){if(current==='account')title.focus({preventScroll:true});}};
