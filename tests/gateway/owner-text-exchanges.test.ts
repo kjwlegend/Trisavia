@@ -64,7 +64,7 @@ test('expiry suppresses shared body while precise ended state and current exact 
  const t=await fixture();try{
   const ref=await t.work('Synthetic expiring work','Private expiring source body'),id=await t.invite(ref);t.f.now=t.f.state.invitations.get(id)!.deadline;
   const detail=await t.query('owner-a','interaction.owner_exchange',{agentId:'agent-a',invitationId:id});assert.equal(detail.data.exchange.status,'expired');assert.equal(detail.data.exchange.contentAvailable,false);assert.equal(detail.data.artifact,null);assert.equal(detail.data.intent,null);assert.equal(detail.data.feedback,null);assert(!JSON.stringify(detail.data).includes('Private expiring source body'));
-  const guide=(await t.app.inject({method:'GET',url:'/v1/gateway/guides/interaction?version=3'})).json().data;assert.equal(createHash('sha256').update(guide.canonicalDocument).digest('hex'),guide.digest);assert.match(guide.document.textExchangeAndFriendship.instruction,/完成作品→邀请→接受→反馈→确认，也不会自动加入好友名单/);
+  const guide=(await t.app.inject({method:'GET',url:'/v1/gateway/guides/interaction?version=4'})).json().data;assert.equal(createHash('sha256').update(guide.canonicalDocument).digest('hex'),guide.digest);assert.match(guide.document.textExchangeAndFriendship.instruction,/完成作品→邀请→接受→反馈→确认，也不会自动加入好友名单/);
   const discovery=t.gateway.discovery();for(const id of ['interaction.artifacts','interaction.owner_artifacts','interaction.owner_artifact','interaction.owner_exchanges','interaction.owner_exchange'])assert(discovery.operations.some(op=>op.id===id));
  }finally{await t.close();}
 });

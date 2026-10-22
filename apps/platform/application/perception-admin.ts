@@ -6,7 +6,7 @@ import { key, plain, refId,OPERATIONS,TYPE_DEFINITIONS, type ObjectRef } from '.
 import { publishCatalogInTransaction, publishImplementedReadersInTransaction, IMPLEMENTED_READER_SOURCES,initializePerceptionCatalog } from './perception-catalog.ts';
 import {PERCEPTION_SCHEMA_VERSION} from '../domains/perception/schemas.ts';
 import {APPEARANCE_CATALOG_VERSION,APPEARANCE_CATALOG_DIGEST,APPEARANCE_ASSET_VERSION} from '../domains/profile/appearance-catalog.ts';
-import {AGENT_HUMAN_VOICE_GUIDE,AGENT_TEXT_EXCHANGE_GUIDE,CURRENT_TEXT_EXCHANGE_GUIDE,AGENT_FRIENDSHIP_GUIDE} from './agent-human-voice.ts';
+import {AGENT_HUMAN_VOICE_GUIDE,AGENT_TEXT_EXCHANGE_GUIDE,CURRENT_TEXT_EXCHANGE_GUIDE,AGENT_FRIENDSHIP_GUIDE,CURRENT_FRIENDSHIP_GUIDE,AGENT_AUTONOMY_GUIDE} from './agent-human-voice.ts';
 interface AdministrativeCommand {
     operationId: string;
     actorId: string;
@@ -136,6 +136,26 @@ export async function publishFriendshipGuide(store:M1Store,options:Administrativ
         if(typeof document.text!=='string')fail('version_conflict',409,'The current exact guide text is missing');
         const corrected=document.text.replaceAll(AGENT_TEXT_EXCHANGE_GUIDE,CURRENT_TEXT_EXCHANGE_GUIDE).replaceAll('当前好友列表只有主人只读入口，没有建立好友命令。','当前实时目录提供独立好友邀请、接受、拒绝与取消；先读relationships模块的准确输入和当前allowedActions。').replaceAll('当前好友列表只读，没有建立好友命令。','当前实时目录提供独立好友邀请、接受、拒绝与取消。');
         await publishCatalogInTransaction(tx,{revision:options.revision,guideVersion:options.guideVersion,guideText:corrected.includes(AGENT_FRIENDSHIP_GUIDE)?corrected:`${corrected}\n${AGENT_FRIENDSHIP_GUIDE}`});
+        const published=(await catalogRepository(tx).get('current'))!;
+        return {changed:true,catalogRevision:published.data.catalogRevision!,skillCatalogRevision:published.data.skillCatalogRevision!,guideVersion:published.data.guideVersion!,schemaVersion:published.data.schemaVersion!,newGuideDocuments:modules.length};
+    });
+}
+/** Source-owned action-policy guidance; previous exact documents and all business records remain unchanged. */
+export async function publishAgentAutonomyGuide(store:M1Store,options:AdministrativeCommand&{
+    expectedInstanceId:string;expectedRecoveryEpoch:string;expectedCatalogRevision:string;revision:string;expectedGuideVersion:number;guideVersion:number;
+}):Promise<JsonObject>{
+    if(options.expectedInstanceId!==store.instanceId||options.expectedRecoveryEpoch!==store.recoveryEpoch)fail('version_conflict',409,'The explicit target instance or recovery epoch differs');
+    if(!/^[A-Za-z0-9_-]{1,88}$/.test(options.expectedCatalogRevision)||options.revision!==`${options.expectedCatalogRevision}-autonomy-1`||!Number.isSafeInteger(options.expectedGuideVersion)||options.expectedGuideVersion<1||options.guideVersion!==options.expectedGuideVersion+1)throw new Error('An explicit next autonomous-participation guide revision is required');
+    const payload:JsonObject={action:'publishAgentAutonomyGuide',release:'agent-autonomy-guide@1',instanceId:store.instanceId,recoveryEpoch:store.recoveryEpoch,expectedCatalogRevision:options.expectedCatalogRevision,revision:options.revision,expectedGuideVersion:options.expectedGuideVersion,guideVersion:options.guideVersion,friendshipGuide:CURRENT_FRIENDSHIP_GUIDE,autonomyGuide:AGENT_AUTONOMY_GUIDE};
+    return await command(store,options,payload,async tx=>{
+        const current=await catalogRepository(tx).get('current');
+        if(!current||current.data.schemaVersion!==PERCEPTION_SCHEMA_VERSION||current.data.catalogRevision!==options.expectedCatalogRevision||current.data.guideVersion!==options.expectedGuideVersion)fail('version_conflict',409,'The expected current schema, catalog or guide changed');
+        const modules=['perception','world','profiles','items','inventory','mailbox','wallet'];
+        for(const moduleId of modules){if(!await catalogRepository(tx).get(`guide:${moduleId}:${options.expectedGuideVersion}`))fail('version_conflict',409,'The current exact guide is missing');if(await catalogRepository(tx).get(`guide:${moduleId}:${options.guideVersion}`))fail('version_conflict',409,'The new exact guide version is occupied');}
+        const previous=(await catalogRepository(tx).get(`guide:world:${options.expectedGuideVersion}`))!,document=plain(previous.data.document);
+        if(typeof document.text!=='string')fail('version_conflict',409,'The current exact guide text is missing');
+        const corrected=document.text.replaceAll(AGENT_FRIENDSHIP_GUIDE,CURRENT_FRIENDSHIP_GUIDE).replaceAll('没有周期、后台轮询、webhook、宿主执行、经济或自动Skill安装。','本站不创建周期、后台轮询、webhook或宿主执行，不自动安装Skill；经济仅按当前启用接口。');
+        await publishCatalogInTransaction(tx,{revision:options.revision,guideVersion:options.guideVersion,guideText:corrected.includes(AGENT_AUTONOMY_GUIDE)?corrected:`${corrected}\n${AGENT_AUTONOMY_GUIDE}`});
         const published=(await catalogRepository(tx).get('current'))!;
         return {changed:true,catalogRevision:published.data.catalogRevision!,skillCatalogRevision:published.data.skillCatalogRevision!,guideVersion:published.data.guideVersion!,schemaVersion:published.data.schemaVersion!,newGuideDocuments:modules.length};
     });

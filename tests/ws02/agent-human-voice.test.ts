@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import {createHash,randomUUID} from 'node:crypto';
 import test from 'node:test';
 import Fastify from 'fastify';
-import {AGENT_HUMAN_VOICE_GUIDE,AGENT_TEXT_EXCHANGE_GUIDE,AGENT_FRIENDSHIP_GUIDE} from '../../apps/platform/application/agent-human-voice.ts';
+import {AGENT_HUMAN_VOICE_GUIDE,AGENT_TEXT_EXCHANGE_GUIDE,AGENT_FRIENDSHIP_GUIDE,AGENT_AUTONOMY_GUIDE} from '../../apps/platform/application/agent-human-voice.ts';
 import {initializePerceptionCatalog,publishPerceptionCatalog} from '../../apps/platform/application/perception-catalog.ts';
-import {publishAgentHumanVoiceGuide,publishTextExchangeGuide,publishFriendshipGuide} from '../../apps/platform/application/perception-admin.ts';
+import {publishAgentHumanVoiceGuide,publishTextExchangeGuide,publishFriendshipGuide,publishAgentAutonomyGuide} from '../../apps/platform/application/perception-admin.ts';
 import {createPerceptionService} from '../../apps/platform/application/perception-service.ts';
 import {registerPerceptionRoutes} from '../../apps/platform/transport/http/perception-routes.ts';
 import {registerSiteRoutes} from '../../apps/platform/transport/http/site-routes.ts';
@@ -71,7 +71,7 @@ test('World discovery and actual entry deliver first-person fact-bound guidance 
  assert.notEqual(gateway.catalogRevision,createAgentGateway({store:f.store,identity:f.identity,operations,guides:[previous]}).catalogRevision);
  const app=Fastify();registerAgentGatewayRoutes(app,gateway,{instanceId:'voice-unit',now:()=>1000});registerSiteRoutes(app);
  try{
-  const discovery=(await app.inject({method:'GET',url:'/v1/gateway/discovery'})).json().data,guideRef=discovery.modules.find((module:{moduleId:string})=>module.moduleId==='world').usageGuide;assert.equal(guideRef.version,5);
+  const discovery=(await app.inject({method:'GET',url:'/v1/gateway/discovery'})).json().data,guideRef=discovery.modules.find((module:{moduleId:string})=>module.moduleId==='world').usageGuide;assert.equal(guideRef.version,6);
   const response=await app.inject({method:'GET',url:guideRef.path}),data=response.json().data;assert.equal(response.statusCode,200);assert.equal(sha(data.canonicalDocument),data.digest);assert.equal(data.document.humanCommunication.instruction,AGENT_HUMAN_VOICE_GUIDE);
   for(const phrase of ['第一人称','内部仍须完整发现能力','只有主人明确要求排错','等待中的行动不说完成','不编造到达、交谈或对方回应','不代表外部Agent再次调用模型','绑定完成不重复要求关联'])assert(AGENT_HUMAN_VOICE_GUIDE.includes(phrase));
   const entry=await app.inject({method:'GET',url:'/agent/entry.md'});assert.equal(entry.statusCode,200);assert.match(entry.body,/以角色第一人称说话/);assert.match(entry.body,/内部仍完整发现能力/);assert.match(entry.body,/MANAGEMENT_URL/);assert(!entry.body.includes('我是江屿'));
@@ -110,4 +110,19 @@ test('friendship guide6 replaces stale current-only advice, publishes normalized
   for(const moduleId of ['perception','world','profiles','items','inventory','mailbox','wallet']){const response=await app.inject({method:'GET',url:`/v1/perception/guides/${moduleId}?version=6`,headers:{authorization:'Bearer synthetic'}});assert.equal(response.statusCode,200);const data=response.json().data;assert.equal(sha(data.canonicalDocument),data.digest);assert(data.document.text.includes(AGENT_FRIENDSHIP_GUIDE));assert(!data.document.text.includes('当前好友列表只有主人只读入口，没有建立好友命令'));assert.match(data.document.text,/两者都不会建立好友/);}
  }finally{await app.close();}
  const afterReads=f.snapshot();await assert.rejects(publishFriendshipGuide(f.store,{...options,operationId:randomUUID(),expectedRecoveryEpoch:'wrong'}));assert.deepEqual(f.snapshot(),afterReads);
+});
+
+
+test('autonomy guide7 is discoverable with canonical digests while exact guide6 and business facts remain immutable',async()=>{
+ const f=memory();await f.store.transaction(initializePerceptionCatalog);
+ const previousRevision=baseline+'-human-voice-1-text-exchange-1-friendship-1';
+ await publishPerceptionCatalog(f.store,{revision:previousRevision,guideVersion:6,guideText:'Synthetic retained guide6.\n'+AGENT_FRIENDSHIP_GUIDE});
+ const before=f.snapshot(),old=(await f.tx.get('perception_catalog','guide:world:6'))!,service=createPerceptionService(f.store,{authenticate:async()=>({id:'synthetic-runtime',version:1,data:{kind:'runtime',agentId:'synthetic-agent',runtimeVersion:1}})}),oldCapabilities=await service.capabilities();
+ const options={actorId:'isolated-guide-maintainer',operationId:randomUUID(),expectedInstanceId:f.store.instanceId,expectedRecoveryEpoch:f.store.recoveryEpoch,expectedCatalogRevision:previousRevision,revision:previousRevision+'-autonomy-1',expectedGuideVersion:6,guideVersion:7};
+ const receipt=await publishAgentAutonomyGuide(f.store,options),after=f.snapshot();assert.equal(receipt.newGuideDocuments,7);assert.equal(receipt.schemaVersion,5);assert.deepEqual(await publishAgentAutonomyGuide(f.store,options),receipt);assert.deepEqual(f.snapshot(),after);assert.deepEqual(await f.tx.get('perception_catalog','guide:world:6'),old);
+ for(const row of before.perception_catalog!.filter(row=>/^(guide|schema):/.test(row.id)))assert.deepEqual(await f.tx.get('perception_catalog',row.id),row);
+ for(const table of M1_TABLES)if(!['perception_catalog','perception_access'].includes(table))assert.deepEqual(f.rows(table),before[table]);
+ const capabilities=await service.capabilities();assert.equal(capabilities.catalogRevision,options.revision);assert.notEqual(capabilities.skillCatalogRevision,oldCapabilities.skillCatalogRevision);
+ const app=Fastify();registerPerceptionRoutes(app,{invokeHttp:service.invoke} as unknown as M1Service);
+ try{const discovery=(await app.inject({method:'GET',url:'/v1/perception/discovery?limit=50',headers:{authorization:'Bearer synthetic'}})).json().data;assert(discovery.skills.every((skill:any)=>skill.version===7&&skill.guideRef.version===7));for(const moduleId of ['perception','world','profiles','items','inventory','mailbox','wallet']){const response=await app.inject({method:'GET',url:`/v1/perception/guides/${moduleId}?version=7`,headers:{authorization:'Bearer synthetic'}});assert.equal(response.statusCode,200);const data=response.json().data;assert.equal(sha(data.canonicalDocument),data.digest);assert(data.document.text.includes(AGENT_AUTONOMY_GUIDE));assert.match(data.document.text,/例行更新静默完成/);assert.match(data.document.text,/已有Agent保留原期望/);assert.match(data.document.text,/Agent自报，不是服务器验证/);assert.match(data.document.text,/主人明确要求立即停止时，即使断网也先停本地/);assert.match(data.document.text,/主人从好友窗口查看申请和结果/);assert.match(data.document.http.updateCheck.currentPolicy,/world-action-policy/);}}finally{await app.close();}
 });

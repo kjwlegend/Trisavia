@@ -91,7 +91,7 @@ test('only newly initiated and actually confirmed text completion scores once in
 test('current Agent capabilities and canonical exact guides discover all independent friendship reads and commands',async()=>{
  const t=await fixture();try{
   const capabilities=t.gateway.capabilities();assert(capabilities.modules.includes('relationships'));const discovery=t.gateway.discovery();assert.equal(discovery.operations.filter(op=>op.moduleId==='relationships').length,9);
-  for(const [moduleId,version] of [['relationships',1],['interaction',3],['world',5]] as const){const response=await t.app.inject({method:'GET',url:`/v1/gateway/guides/${moduleId}?version=${version}`});assert.equal(response.statusCode,200);const guide=response.json().data;assert.equal(createHash('sha256').update(guide.canonicalDocument).digest('hex'),guide.digest);assert(!guide.canonicalDocument.includes('当前好友列表只有主人只读入口，没有建立好友命令'));}
-  assert.match(JSON.stringify(t.gateway.guide('relationships','1').document),/closed\/received_confirmed/);
+  for(const [moduleId,version] of [['relationships',2],['interaction',4],['world',6]] as const){const response=await t.app.inject({method:'GET',url:`/v1/gateway/guides/${moduleId}?version=${version}`});assert.equal(response.statusCode,200);const guide=response.json().data;assert.equal(createHash('sha256').update(guide.canonicalDocument).digest('hex'),guide.digest);assert(!guide.canonicalDocument.includes('当前好友列表只有主人只读入口，没有建立好友命令'));}
+  assert.match(JSON.stringify(t.gateway.guide('relationships','2').document),/closed\/received_confirmed/);
  }finally{await t.close();}
 });

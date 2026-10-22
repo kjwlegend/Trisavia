@@ -2,6 +2,7 @@ import type {CommandKey,CommandReceipt,RuntimeReadContext,RuntimeStore,RuntimeTr
 import type {JsonObject,JsonValue} from '../contracts/store.ts';
 import type {IdentityAccess,Principal} from '../domains/access/public.ts';
 import {fail,object,text} from '../domains/common/errors.ts';
+import {AUTONOMOUS_WORLD_ACTIONS} from '../domains/access/world-action-policy.ts';
 import {hashRuntimeRequest} from '../domains/runtime/command.ts';
 export interface GatewayOperation {
  id:string;moduleId:string;schemaVersion:number;kind:'query'|'command';actors:('agent'|'owner')[];description:string;
@@ -71,7 +72,7 @@ export function createAgentGateway(options:{store:RuntimeStore;identity:Identity
   async query(raw:unknown,bearer:unknown,validate:GatewayValidator){const parsed=parse(raw,'query',validate);return await options.store.read(async ctx=>await parsed.operation.query!(ctx,await authenticate(ctx,bearer,parsed.operation,parsed.input.purpose),parsed.payload));},
   async command(raw:unknown,bearer:unknown,validate:GatewayValidator){
    const parsed=parse(raw,'command',validate),commandId=text(parsed.input.commandId,'commandId',8,100);
-   return await options.store.transaction(async ctx=>{const principal=await authenticate(ctx,bearer,parsed.operation,parsed.input.purpose),key:CommandKey={domain:parsed.operation.moduleId,action:parsed.operation.id,commandId,principal:{kind:principal.kind,id:principal.kind==='agent'?principal.agentId:principal.ownerId},recoveryEpoch:ctx.recoveryEpoch};return await parsed.operation.command!(ctx,principal,key,parsed.payload);});
+   return await options.store.transaction(async ctx=>{const principal=await authenticate(ctx,bearer,parsed.operation,parsed.input.purpose);if(principal.kind==='agent'&&!AUTONOMOUS_WORLD_ACTIONS.includes(parsed.operation.id))fail('world_action_not_allowed',403,'This registered command has no explicit autonomous world permission');const key:CommandKey={domain:parsed.operation.moduleId,action:parsed.operation.id,commandId,principal:{kind:principal.kind,id:principal.kind==='agent'?principal.agentId:principal.ownerId},recoveryEpoch:ctx.recoveryEpoch};return await parsed.operation.command!(ctx,principal,key,parsed.payload);});
   },
   async receipt(raw:unknown,bearer:unknown){
    const input=object(raw,['protocolVersion','consumerId','purpose','operation','commandId']);if(input.protocolVersion!==1)fail('unsupported_protocol',400,'Gateway protocol version is not supported');text(input.consumerId,'consumerId',1,100);

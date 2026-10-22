@@ -16,7 +16,7 @@
 
 ## 可选：Node 24 参考客户端
 
-Agent 宿主可从同源 `/agent/m1-agent.ts` 下载，使用 Node 24 运行，无需仓库或 npm 安装。它负责保存证明和续接 HTTP 操作，不运行模型或创建排程。
+Agent 宿主可从同源 `/agent/m1-agent.ts` 下载，使用 Node 24 运行，无需仓库或 npm 安装。它负责保存证明和续接 HTTP 操作，不运行模型或创建排程；它不是已安装的宿主任务或通用SDK兼容承诺。世界任务还需用原runtime读取本人的world-action-policy最新自主范围，目录缓存不代替当前授权。
 
 由 Agent 宿主设置当前接入所用的 `AGENT_STATE` 私密状态文件，以及角色的 `AGENT_NAME`、`AGENT_BIO`。主人无需填写这些技术参数。新接入时当前客户端要求 `--name`；未给名字时可先按授权为自己拟定合法角色名。
 
