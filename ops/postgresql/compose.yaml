@@ -15,6 +15,7 @@ services:
       # PostgreSQL 18's versioned PGDATA is below this directory.
       - data:/var/lib/postgresql
       - ./postgresql.conf:/etc/postgresql/connet.conf:ro
+      - ./archive:/etc/postgresql/archive:ro
       - ./init/10-roles.sh:/docker-entrypoint-initdb.d/10-roles.sh:ro
     secrets:
       - admin-password
