@@ -70,7 +70,7 @@ export function createOwnedAgentLayer(root,graph,{blockedRects=[],onSelect=()=>{
       entry.button.dataset.agentId=entry.agentId;entry.button.dataset.worldSource=authoritative?'server':'demo';
       entry.button.setAttribute('aria-label',authoritative?`${agent.name}，服务器角色，${agent.fact.placeId==='commons'?'公共庭，':''}${agent.fact.status==='suspended'?'已暂停':'已加入'}${entry.owned?'，我的 Agent，选择并管理':'，查看公开事实'}`:`${agent.name}，${agent.agentId===selectedId?'当前 Agent':'我的 Agent'}，选择并管理`);entry.button.setAttribute('aria-pressed',String(agent.agentId===selectedId));
     }
-    if(!authoritative)copyPositions();labels.hidden=!entries.size;const note=document.querySelector('#world-owned-note');if(note){note.hidden=!entries.size;note.textContent=authoritative?renderer?'角色位置来自服务器 · 当前开放公共庭':'角色位置来自服务器 · 背景为演示，不表示在线':'自有角色动画仅供展示，不代表在线';}layout();
+    if(!authoritative)copyPositions();labels.hidden=!entries.size;const note=document.querySelector('#world-owned-note');if(note){note.hidden=!entries.size;note.textContent=authoritative?renderer?'角色位置来自服务器 · 小镇道路已开放，建筑内部尚未开放':'角色位置来自服务器 · 背景为演示，不表示在线':'自有角色动画仅供展示，不代表在线';}layout();
   }
   return{
     set,actors:()=>[...entries.values()],
