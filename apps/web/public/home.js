@@ -5,6 +5,7 @@ import {mountOwnerPanel,createOwnerPresentation} from './owner-panel.js';
 import {createSessionApi} from './hud/session-api.js';
 import {createHud} from './hud/shell.js';
 import {initSceneRenderer,getWorldState} from './hud/scene-renderer.js';
+import {mountWorldAudio} from './world-audio-ui.js';
 export async function boot({entryStore,intent}){
 bindOnboardingPrompt({text:$('#agent-prompt'),copy:$('#copy-prompt'),retry:$('#retry-prompt'),status:$('#copy-status')});
 
@@ -14,6 +15,7 @@ controller=createOwnerController(accountNode,{entryStore,isVisible:()=>hud?.isAc
 const session=createSessionApi(controller);
 hud=createHud({session,accountNode,canLeaveAccount:()=>controller.leaveEditing(),onLocateAgent:agentId=>renderer?.locateAgent(agentId),onOpenAccount:(mode,agentId)=>controller.open(mode,agentId),getAccountTitle:()=>controller.getTitle()});
 renderer=initSceneRenderer({session,onSelectAgent:(agentId,origin)=>hud.openAccount('profile',agentId,origin)});
+const audio=mountWorldAudio();let audioIdentity=session.snapshot().observationRevision;session.subscribe(state=>{if(audioIdentity!==state.observationRevision){audioIdentity=state.observationRevision;audio.clearEffects();}});
 const hadPrivateEntry=entryStore.pending;
 let entryRevision=0;
 window.addEventListener('hashchange',()=>{entryRevision++;try{const next=entryStore.capture();if(next.mode)hud.openAccount(next.mode,next.agentId);}catch{const alert=document.createElement('p');alert.className='notice error world-startup-error';alert.setAttribute('role','alert');alert.textContent='无法安全保存这次入口，请允许会话存储后重新打开。原任务保持不变。';$('#main').prepend(alert);}});

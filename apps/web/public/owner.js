@@ -13,6 +13,7 @@ import {mountFriendshipOverview} from './hud/friendship-ui.js';
 import {worldAccessAdoptionText} from './world-access-status.js';
 import {mountWorldActionPolicy} from './owner-world-action-policy.js';
 import {mountOwnerWorldSummary} from './hud/owner-world-summary.js';
+import {emitWorldAudio} from './world-audio.js';
 
 export function createOwnerController(root,{entryStore,onState=()=>{},onView=()=>{},isVisible=()=>true,onLogout=()=>{},confirmAction=async()=>false,focusTitle=()=>{}}={}){
 const $=(selector,scope=root)=>query(selector,scope);
@@ -27,6 +28,7 @@ function summary(){const ready=authenticatedOwner();const identity=[ready,vault,
 function safeTarget(){const context=emailFlow?.target||assistance.snapshot()||vault.claimContext;if(!context?.agentId)return null;const owned=agents.find(agent=>agent.agentId===context.agentId);return{agentId:context.agentId,name:context.agentId===setupInfo?.agentId?vault.setupAgentName||'':owned?.profile.published?.displayName||owned?.profile.draft?.displayName||'',avatar:context.agentId===setupInfo?.agentId?setupAvatar:owned?.profile.publishedAppearance??owned?.profile.published?.avatar,recovery:Boolean(context.recovery||assistance.token)};}
 function emitState(){presentation?.account(account);presentation?.target(safeTarget());const state=summary();presentation?.state(state);for(const listener of subscribers)listener(structuredClone(state));onState(state);presentation?.sync();onView();}
 const storageKey='connet.owner.v2';
+const freshAudioOperations=new Set();
 let vault={format:'connet-owner-v2',origin:location.origin};
 let storageAvailable=true;
 try{const saved=JSON.parse(sessionStorage.getItem(storageKey)||'null');if(saved?.format==='connet-owner-v2'&&saved.origin===location.origin)vault=saved;}catch{storageAvailable=false;}
@@ -363,9 +365,10 @@ async function executePending(pending=vault.pendingOperation){
  if(!pending||!pendingPayload)return;const busyLease=setBusy(true);const payload=pendingPayload;
  const managerCall=managerRequest(pending);
  const path=managerCall?.path||(pending.action==='unpublishProfile'?`/agents/${encodeURIComponent(pending.targetId)}/profile/unpublish`:{login:'/owner/sessions',completeSetup:'/owner/setup/complete',recover:'/owner/recoveries',registerOwner:'/owner/accounts',claimAgent:'/owner/agent-claims',rejectRecoveryRequest:'/owner/recovery-assistance/reject',enableRecoveryBackup:'/owner/recovery-backups'}[pending.action]);
- const hadUnknown=Boolean(pending.uncertain),authSource=vault,authSession=vault.sessionToken,authGeneration=readGeneration;
- try{const result=await api(path||pending.path,{method:managerCall?.method||(path?'POST':pending.method),body:payload.body,token:payload.token});await committed(result,pending);}
+ const hadUnknown=Boolean(pending.uncertain),authSource=vault,authSession=vault.sessionToken,authGeneration=readGeneration,audible=freshAudioOperations.delete(pending.operationId);
+ try{const result=await api(path||pending.path,{method:managerCall?.method||(path?'POST':pending.method),body:payload.body,token:payload.token});await committed(result,pending);if(audible&&!hadUnknown&&authSource===vault&&authSession===vault.sessionToken&&(!pending.targetId||pending.targetId===selectedId))emitWorldAudio(result.changed===false?'result-notice':'result-success',`${pending.scope}:${pending.action}:${pending.operationId}:${result.version??''}`);}
  catch(error){
+  if(audible&&authSource===vault&&authSession===vault.sessionToken&&(!pending.targetId||pending.targetId===selectedId))emitWorldAudio(isUnknown(error)?'result-notice':'result-error',`${pending.scope}:${pending.action}:${pending.operationId}:unconfirmed`);
   if(error.status===401&&payload.token===authSession)expireAuthenticatedSession(authSource,authSession,authGeneration);
   if(error.recoveryReceiptConfirmed){message('密码重设结果已读到，但暂时无法保存完成状态。原进度和下一代证明仍保留，请继续确认原操作，不要重新重设。','pending');return;}
   if(pending.action==='enableRecoveryBackup'&&error.code==='inactive_backup'){pending.uncertain=true;save();backupError(error);return;}
@@ -393,7 +396,7 @@ async function executePending(pending=vault.pendingOperation){
 }
 async function command({action,path,method='POST',fields={},targetId=selectedId,scope=`owner:${vault.ownerId}`,token=vault.sessionToken,kind='owner',operationId=id()}){
   if(busy||vault.pendingOperation||emailFlow?.pending)return;
-  try{beginPending({action,path,method,body:{operationId,...fields},token,scope,kind,targetId});await executePending();}catch(error){fail(error);controls();}
+  try{beginPending({action,path,method,body:{operationId,...fields},token,scope,kind,targetId});if(managerActions.has(action))freshAudioOperations.add(operationId);await executePending();}catch(error){freshAudioOperations.delete(operationId);fail(error);controls();}
 }
 async function checkResult(){
  if(busy||!vault.pendingOperation)return;const busyLease=setBusy(true);const pending=vault.pendingOperation;
@@ -1068,6 +1071,7 @@ async function commandFriendship(operation,input={}){
       friendshipPending.delete(scope);sessionStorage.removeItem(storageKey);
       if(!ctx.current())throw new DOMException('Context changed','AbortError');
       if(receipt.outcome!=='committed')throw new ApiError(receipt.result?.code||'state_conflict',409);
+      if(!replay)emitWorldAudio(['accepted','declined','cancelled'].includes(projected.disposition)?'result-success':'result-notice',`${scope}:${body.commandId}:${projected.request?.version??projected.relationship?.version??''}`);
       return{protocolVersion:result.protocolVersion,instanceId:result.instanceId,data:projected};
     }catch(error){if(error.status>=400&&error.status<500&&!['unknown_commit','commit_result_unknown','response_unknown','retry_same_operation'].includes(error.code)){friendshipPending.delete(scope);try{sessionStorage.removeItem(storageKey);}catch{}}if(ctx.current()&&error.status===401)expireAuthenticatedSession(ctx.source,ctx.session,ctx.generation);throw error;}
     finally{friendshipWrites.delete(scope);}

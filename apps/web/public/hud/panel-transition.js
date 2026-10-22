@@ -1,3 +1,4 @@
+import {emitWorldAudio} from '../world-audio.js';
 const windowFrames={
   enter:[{opacity:0,transform:'translateY(6px) scale(.985)'},{opacity:1,transform:'translateY(0) scale(1)'}],
   exit:[{opacity:1,transform:'translateY(0) scale(1)'},{opacity:0,transform:'translateY(6px) scale(.985)'}],
@@ -32,6 +33,7 @@ export function createPanelTransition(node,{
     const turn=++generation;cancel();
     node.hidden=false;node.inert=!visible;node.style.pointerEvents=visible?'':'none';node.setAttribute('aria-hidden',String(!visible));
     state=visible?'opening':'closing';node.dataset.panelState=state;
+    if(variant==='window')emitWorldAudio(visible?'panel-open':'panel-close');
     let resolve;const promise=new Promise(done=>{resolve=done;});active={promise,resolve,animation:null,timer:null};
     if(motion?.matches||typeof node.animate!=='function'){finish(turn,visible);return promise;}
     const tooltip=variant==='tooltip',duration=tooltip?(visible?100:80):(visible?160:120);

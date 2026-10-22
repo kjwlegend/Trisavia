@@ -10,6 +10,7 @@ import {createWorldStatusHud} from './world-status.js';
 import {createPublicCharacterReader} from './public-character-reader.js';
 import {createPublicCharacterCard} from './public-character-card.js';
 import {freeAreas} from '../world-safe-area.js';
+import {emitWorldAudio} from '../world-audio.js';
 let scene=null;
 export function initSceneRenderer({session,onSelectAgent=()=>{},rendering=null}={}){
 let mapReady=false,mapFailed=false,pageActive=true;
@@ -61,6 +62,7 @@ function positionCharacterCard(){
 const characterSize=new ResizeObserver(positionCharacterCard);characterSize.observe(characterCard.node);
 window.addEventListener('resize',positionCharacterCard);
 function openPlace(place, origin) {
+  if(place.kind==='world-avatar')emitWorldAudio('world-focus');
   document.dispatchEvent(new CustomEvent('world:place-open'));
   currentPlace = place;
   returnFocus = origin;
