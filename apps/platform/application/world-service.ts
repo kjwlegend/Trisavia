@@ -9,7 +9,7 @@ import { commitRuntimeCommandIn, hashRuntimeRequest } from '../domains/runtime/c
 import { createWorldCursor } from '../domains/world/cursor.ts';
 import { WORLD_REPOSITORY } from '../domains/world/repository.ts';
 import { assertCell, assertRuleset, containingPlace, DEFAULT_WORLD_RULES, validatePath } from '../domains/world/rules.ts';
-import { MOVEMENT_POLICY_V1, type GridPoint, type WorldAvatar, type WorldMovement, type WorldRuleset } from '../domains/world/types.ts';
+import { MOVEMENT_POLICY_V1, type GridPoint, type WorldAvatar, type WorldMovement, type WorldRuleset, type WorldMapManifest, type WorldNpc } from '../domains/world/types.ts';
 import { IDLE_LIFE_POLICY_V1, idlePath, idleSeed, spawnCandidates } from '../domains/world/idle-life.ts';
 
 /** Explicit maintenance initialization. Opening the store or serving HTTP never seeds a world. */
@@ -191,6 +191,9 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
     const cancelled=latest?.state==='stopped'&&latest.updatedAt>=motion.startedAt;
     return {...structuredClone(avatar),motion:cancelled?null:structuredClone(motion)};
   }
+  type MapCut={worldId:string;worldRevision:number;rulesetVersion:number;topologyVersion:number;asOf:number};
+  async function mapProjection(context:RuntimeReadContext,worldId:string):Promise<MapCut&{manifest:WorldMapManifest|null}>;
+  async function mapProjection(context:RuntimeReadContext,worldId:string,npcs:true):Promise<MapCut&{npcs:WorldNpc[]}>;
   async function mapProjection(context:RuntimeReadContext,worldId:string,npcs=false){const {world,rules}=await rulesFor(context,worldId);return {worldId,worldRevision:world.revision,rulesetVersion:rules.version,topologyVersion:rules.topologyVersion,...(npcs?{npcs:structuredClone(rules.mapManifest?.npcs??[])}:{manifest:structuredClone(rules.mapManifest??null)}),asOf:context.now()};}
   async function sceneProjection(context: RuntimeReadContext, worldId: string, observer: string, options: { cursor?: string; limit?: number } = {}) {
       const limit = options.limit ?? 50;
