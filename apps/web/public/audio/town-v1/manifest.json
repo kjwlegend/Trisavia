@@ -1,0 +1,619 @@
+{
+  "id": "town-v1",
+  "version": 1,
+  "source": "Original deterministic composition and synthesis; no third-party samples or audio-generation API.",
+  "reproduce": "node scripts/audio/generate-town.mjs",
+  "sampleRate": 48000,
+  "bgm": {
+    "id": "lanterns-in-the-breeze",
+    "title": "风灯小镇 / Lanterns in the Breeze",
+    "usage": "梦幻小镇背景音乐，安静、留白，无鼓点推进",
+    "status": "active",
+    "sources": [
+      {
+        "url": "/assets/audio/town-v1/lanterns-in-the-breeze.ogg",
+        "type": "audio/ogg; codecs=opus",
+        "bytes": 1633666,
+        "sha256": "a1fc3284e2def52a3a3e434dcdf4b83052314ef7cb93b995de4e0834da0cb2ae"
+      },
+      {
+        "url": "/assets/audio/town-v1/lanterns-in-the-breeze.mp3",
+        "type": "audio/mpeg",
+        "bytes": 709821,
+        "sha256": "a020ca57c9314ab07a0d2ad7b0eb11b07fde3f348e73e58f56fb52bc4b668d10"
+      },
+      {
+        "url": "/assets/audio/town-v1/lanterns-in-the-breeze.wav",
+        "type": "audio/wav",
+        "bytes": 15360078,
+        "sha256": "c0be4ffb15d5f38234fbf28b3763dceb6bd249f1598bbb12474ea22e670dba5e"
+      }
+    ],
+    "duration": 80,
+    "frames": 3840000,
+    "loop": {
+      "start": 0,
+      "end": 80,
+      "startFrame": 0,
+      "endFrame": 3840000
+    },
+    "recommendedGain": 0.5,
+    "composition": {
+      "bpm": 72,
+      "meter": "4/4",
+      "bars": 24,
+      "key": "D major, pentatonic emphasis",
+      "form": "A / A′ / B, 8 bars each",
+      "melodyRange": "D4–B5",
+      "loopMethod": "Circular note tails and room taps; no end fade"
+    },
+    "metrics": {
+      "frames": 3840000,
+      "duration": 80,
+      "sampleRate": 48000,
+      "channels": 2,
+      "peakDbFS": -12.586,
+      "rmsDbFS": -25.061,
+      "dc": -9e-8,
+      "maxAdjacentStep": 0.021881103515625,
+      "loopBoundaryStep": [
+        0.0008544921875,
+        0.00115966796875
+      ],
+      "integratedLUFS": -23,
+      "truePeakDbTP": -12.59,
+      "loudnessRangeLU": 1.2,
+      "threshold": -33,
+      "offset": 0.19
+    },
+    "decoded": {
+      "ogg": {
+        "frames": 3840000,
+        "duration": 80,
+        "sampleRate": 48000,
+        "channels": 2,
+        "peakDbFS": -12.477,
+        "rmsDbFS": -25.054,
+        "dc": -0.00002038,
+        "maxAdjacentStep": 0.021942138671875,
+        "loopBoundaryStep": [
+          -0.003662109375,
+          0.003021240234375
+        ],
+        "integratedLUFS": -22.99,
+        "truePeakDbTP": -12.48,
+        "loudnessRangeLU": 1.2,
+        "threshold": -32.99,
+        "offset": 0.19
+      },
+      "mp3": {
+        "frames": 3840000,
+        "duration": 80,
+        "sampleRate": 48000,
+        "channels": 2,
+        "peakDbFS": -12.595,
+        "rmsDbFS": -25.061,
+        "dc": -0.00001571,
+        "maxAdjacentStep": 0.0350341796875,
+        "loopBoundaryStep": [
+          -0.0025634765625,
+          -0.004730224609375
+        ],
+        "integratedLUFS": -23,
+        "truePeakDbTP": -12.59,
+        "loudnessRangeLU": 1.2,
+        "threshold": -33,
+        "offset": 0.19
+      }
+    }
+  },
+  "sfx": {
+    "ui-confirm": {
+      "id": "ui-confirm",
+      "usage": "木质轻确认",
+      "status": "active",
+      "duration": 0.08,
+      "loop": null,
+      "recommendedGain": 0.55,
+      "metrics": {
+        "frames": 3840,
+        "duration": 0.08,
+        "sampleRate": 48000,
+        "channels": 2,
+        "peakDbFS": -10,
+        "rmsDbFS": -22.767,
+        "dc": -0.00117683,
+        "maxAdjacentStep": 0.075347900390625,
+        "loopBoundaryStep": [
+          0,
+          0
+        ]
+      },
+      "sources": [
+        {
+          "url": "/assets/audio/town-v1/ui-confirm.ogg",
+          "type": "audio/ogg; codecs=opus",
+          "bytes": 1706,
+          "sha256": "42eb6895cee7c398a44c05a984b6a0f840895a2d3dc829fa14bcf1d9f4ca33b7"
+        },
+        {
+          "url": "/assets/audio/town-v1/ui-confirm.mp3",
+          "type": "audio/mpeg",
+          "bytes": 1749,
+          "sha256": "879f735291652fe81669962da4142a7081567dd83b6e03139c0b7983bf093de3"
+        },
+        {
+          "url": "/assets/audio/town-v1/ui-confirm.wav",
+          "type": "audio/wav",
+          "bytes": 15404,
+          "sha256": "2e85e32955b3a21ccf942dba0d6997b5a06a596c8107373bebb828fba47cf999"
+        }
+      ]
+    },
+    "panel-open": {
+      "id": "panel-open",
+      "usage": "打开面板，柔升双音",
+      "status": "active",
+      "duration": 0.22,
+      "loop": null,
+      "recommendedGain": 0.55,
+      "metrics": {
+        "frames": 10560,
+        "duration": 0.22,
+        "sampleRate": 48000,
+        "channels": 2,
+        "peakDbFS": -10,
+        "rmsDbFS": -19.583,
+        "dc": 0.00001476,
+        "maxAdjacentStep": 0.02935791015625,
+        "loopBoundaryStep": [
+          0,
+          0
+        ]
+      },
+      "sources": [
+        {
+          "url": "/assets/audio/town-v1/panel-open.ogg",
+          "type": "audio/ogg; codecs=opus",
+          "bytes": 2629,
+          "sha256": "dcbbb058b06aee0665000d68e575aaf77102cb7a19252b525f09a6ed578d1417"
+        },
+        {
+          "url": "/assets/audio/town-v1/panel-open.mp3",
+          "type": "audio/mpeg",
+          "bytes": 2277,
+          "sha256": "6b5ee0ebe91d513a310e2ef9e775e0e39e1adb3f1e3745c35bcbfbb2ad7e2c64"
+        },
+        {
+          "url": "/assets/audio/town-v1/panel-open.wav",
+          "type": "audio/wav",
+          "bytes": 42284,
+          "sha256": "c508f93665c9886f1b2e49b69aa776f5333437bd423842b4071aa187f82400c4"
+        }
+      ]
+    },
+    "panel-close": {
+      "id": "panel-close",
+      "usage": "关闭面板，柔落双音",
+      "status": "active",
+      "duration": 0.17,
+      "loop": null,
+      "recommendedGain": 0.55,
+      "metrics": {
+        "frames": 8160,
+        "duration": 0.17,
+        "sampleRate": 48000,
+        "channels": 2,
+        "peakDbFS": -10,
+        "rmsDbFS": -19.146,
+        "dc": 0.00002642,
+        "maxAdjacentStep": 0.022857666015625,
+        "loopBoundaryStep": [
+          0,
+          0
+        ]
+      },
+      "sources": [
+        {
+          "url": "/assets/audio/town-v1/panel-close.ogg",
+          "type": "audio/ogg; codecs=opus",
+          "bytes": 2128,
+          "sha256": "12b2409fac55bb9549b0749a29f4cdf1e9e4049b7d78728a49fb6e7005cc9146"
+        },
+        {
+          "url": "/assets/audio/town-v1/panel-close.mp3",
+          "type": "audio/mpeg",
+          "bytes": 1941,
+          "sha256": "f3a3970701bae6b7eb006d2f2f032eca6b8cd335ca295cb5008f9bb76dad22ea"
+        },
+        {
+          "url": "/assets/audio/town-v1/panel-close.wav",
+          "type": "audio/wav",
+          "bytes": 32684,
+          "sha256": "85cd77987f1d0aaac66085d44b06b42f4efab8542eec73751bea570bbdfa4638"
+        }
+      ]
+    },
+    "result-success": {
+      "id": "result-success",
+      "usage": "实际轻成功，低调三音",
+      "status": "active",
+      "duration": 0.56,
+      "loop": null,
+      "recommendedGain": 0.55,
+      "metrics": {
+        "frames": 26880,
+        "duration": 0.56,
+        "sampleRate": 48000,
+        "channels": 2,
+        "peakDbFS": -10,
+        "rmsDbFS": -20.591,
+        "dc": -0.00006254,
+        "maxAdjacentStep": 0.021148681640625,
+        "loopBoundaryStep": [
+          0,
+          0
+        ]
+      },
+      "sources": [
+        {
+          "url": "/assets/audio/town-v1/result-success.ogg",
+          "type": "audio/ogg; codecs=opus",
+          "bytes": 5579,
+          "sha256": "97554fd35cb1baae5dc9ee801f8421cd9de8e6df97b0cf35c00d4d83aef8d3a1"
+        },
+        {
+          "url": "/assets/audio/town-v1/result-success.mp3",
+          "type": "audio/mpeg",
+          "bytes": 3837,
+          "sha256": "30d7b9756666f4c7936906744c0109b9c7d93b6845ce393521dfe68c382c8008"
+        },
+        {
+          "url": "/assets/audio/town-v1/result-success.wav",
+          "type": "audio/wav",
+          "bytes": 107564,
+          "sha256": "f30f5abf69ecbe1ad07439c80816489a23d158cf91aacc42e8ed76358f880a9d"
+        }
+      ]
+    },
+    "result-notice": {
+      "id": "result-notice",
+      "usage": "中性通知或尚未完成",
+      "status": "active",
+      "duration": 0.32,
+      "loop": null,
+      "recommendedGain": 0.55,
+      "metrics": {
+        "frames": 15360,
+        "duration": 0.32,
+        "sampleRate": 48000,
+        "channels": 2,
+        "peakDbFS": -10,
+        "rmsDbFS": -21.161,
+        "dc": -0.00012434,
+        "maxAdjacentStep": 0.017120361328125,
+        "loopBoundaryStep": [
+          0,
+          0
+        ]
+      },
+      "sources": [
+        {
+          "url": "/assets/audio/town-v1/result-notice.ogg",
+          "type": "audio/ogg; codecs=opus",
+          "bytes": 3236,
+          "sha256": "ae6235bf9743bb0ce306629124eb1a7574855c09d9038b97021c863ec8a68e25"
+        },
+        {
+          "url": "/assets/audio/town-v1/result-notice.mp3",
+          "type": "audio/mpeg",
+          "bytes": 2613,
+          "sha256": "e7bed40abeee4be891cde7115ae0e250528874ec55390d1a3a418f4bcf5d5cb6"
+        },
+        {
+          "url": "/assets/audio/town-v1/result-notice.wav",
+          "type": "audio/wav",
+          "bytes": 61484,
+          "sha256": "53267eb681827c0397c70962ad372917819913847bff1909b43ec9909c205a3c"
+        }
+      ]
+    },
+    "result-error": {
+      "id": "result-error",
+      "usage": "实际未成功的柔和反馈，非警报",
+      "status": "active",
+      "duration": 0.26,
+      "loop": null,
+      "recommendedGain": 0.55,
+      "metrics": {
+        "frames": 12480,
+        "duration": 0.26,
+        "sampleRate": 48000,
+        "channels": 2,
+        "peakDbFS": -10,
+        "rmsDbFS": -21.393,
+        "dc": 0.00014198,
+        "maxAdjacentStep": 0.007080078125,
+        "loopBoundaryStep": [
+          0,
+          0
+        ]
+      },
+      "sources": [
+        {
+          "url": "/assets/audio/town-v1/result-error.ogg",
+          "type": "audio/ogg; codecs=opus",
+          "bytes": 2233,
+          "sha256": "f6e36433a27c52b1d78870467a8c31cfd6ae54a94839db613a96ac1bd095ec52"
+        },
+        {
+          "url": "/assets/audio/town-v1/result-error.mp3",
+          "type": "audio/mpeg",
+          "bytes": 2061,
+          "sha256": "d513e280024d15e75202f0f6883c9136672c69dc931bcefd2f31cf9b945e0f25"
+        },
+        {
+          "url": "/assets/audio/town-v1/result-error.wav",
+          "type": "audio/wav",
+          "bytes": 49964,
+          "sha256": "85d128fe2e3fc742397d7681a404ee02709e232a48c7e8cc373ce74845f230d7"
+        }
+      ]
+    },
+    "world-focus": {
+      "id": "world-focus",
+      "usage": "选择并定位当前对象",
+      "status": "active",
+      "duration": 0.2,
+      "loop": null,
+      "recommendedGain": 0.55,
+      "metrics": {
+        "frames": 9600,
+        "duration": 0.2,
+        "sampleRate": 48000,
+        "channels": 2,
+        "peakDbFS": -10,
+        "rmsDbFS": -19.679,
+        "dc": 0.00001529,
+        "maxAdjacentStep": 0.025390625,
+        "loopBoundaryStep": [
+          0,
+          0
+        ]
+      },
+      "sources": [
+        {
+          "url": "/assets/audio/town-v1/world-focus.ogg",
+          "type": "audio/ogg; codecs=opus",
+          "bytes": 2681,
+          "sha256": "0426b03660fc3defb450ddfbbdb57a502717f937cd015b496b2e864e6510c67f"
+        },
+        {
+          "url": "/assets/audio/town-v1/world-focus.mp3",
+          "type": "audio/mpeg",
+          "bytes": 2157,
+          "sha256": "9b135e8607deaa8468f07d60fb7d6fef6a3c996da7d0003a567b8c0d168e49af"
+        },
+        {
+          "url": "/assets/audio/town-v1/world-focus.wav",
+          "type": "audio/wav",
+          "bytes": 38444,
+          "sha256": "1eaab4133e3888722cfddb47487e6a82c28156bb56f85d3d41b043c1b09226b9"
+        }
+      ]
+    },
+    "world-step-a": {
+      "id": "world-step-a",
+      "usage": "柔砂木脚步备用，不自动接线",
+      "status": "standby",
+      "duration": 0.09,
+      "loop": null,
+      "recommendedGain": 0.55,
+      "metrics": {
+        "frames": 4320,
+        "duration": 0.09,
+        "sampleRate": 48000,
+        "channels": 2,
+        "peakDbFS": -10,
+        "rmsDbFS": -25.965,
+        "dc": 0.00267501,
+        "maxAdjacentStep": 0.10009765625,
+        "loopBoundaryStep": [
+          0,
+          0
+        ]
+      },
+      "sources": [
+        {
+          "url": "/assets/audio/town-v1/world-step-a.ogg",
+          "type": "audio/ogg; codecs=opus",
+          "bytes": 1001,
+          "sha256": "283aaed4681f3e466a7be7af4ad72eb5cedb79b9774f0db31f352a2ffcd1d205"
+        },
+        {
+          "url": "/assets/audio/town-v1/world-step-a.mp3",
+          "type": "audio/mpeg",
+          "bytes": 2109,
+          "sha256": "a4a68f65d236c12ff637421e494cdc82c94c9de2c4f8ba027fd94c8bb5f499ac"
+        },
+        {
+          "url": "/assets/audio/town-v1/world-step-a.wav",
+          "type": "audio/wav",
+          "bytes": 17324,
+          "sha256": "5c95dba79eb60130ea893cc1f0c8f8083e7948cf10bb232746224d431e7ca228"
+        }
+      ]
+    },
+    "world-step-b": {
+      "id": "world-step-b",
+      "usage": "第二种柔砂木脚步备用",
+      "status": "standby",
+      "duration": 0.1,
+      "loop": null,
+      "recommendedGain": 0.55,
+      "metrics": {
+        "frames": 4800,
+        "duration": 0.1,
+        "sampleRate": 48000,
+        "channels": 2,
+        "peakDbFS": -10,
+        "rmsDbFS": -27.589,
+        "dc": -0.000888,
+        "maxAdjacentStep": 0.09722900390625,
+        "loopBoundaryStep": [
+          0,
+          0
+        ]
+      },
+      "sources": [
+        {
+          "url": "/assets/audio/town-v1/world-step-b.ogg",
+          "type": "audio/ogg; codecs=opus",
+          "bytes": 1133,
+          "sha256": "6e783824dbc919c9a96a4da90a8fc60b51a509d2bf26d55b1571f30fd43b88d0"
+        },
+        {
+          "url": "/assets/audio/town-v1/world-step-b.mp3",
+          "type": "audio/mpeg",
+          "bytes": 2301,
+          "sha256": "3b51dcf2ede57c439e5d864c76906b091216377246cc92ebb29560988261a1ac"
+        },
+        {
+          "url": "/assets/audio/town-v1/world-step-b.wav",
+          "type": "audio/wav",
+          "bytes": 19244,
+          "sha256": "6443c57032daccb737752823f54bdd07c679daf1c233ab6e2f0d9347ec70b4ad"
+        }
+      ]
+    },
+    "dialogue-tick-a": {
+      "id": "dialogue-tick-a",
+      "usage": "真实逐字呈现备用，不伪造聊天",
+      "status": "standby",
+      "duration": 0.032,
+      "loop": null,
+      "recommendedGain": 0.55,
+      "recommendedMultiplier": 0.35,
+      "metrics": {
+        "frames": 1536,
+        "duration": 0.032,
+        "sampleRate": 48000,
+        "channels": 2,
+        "peakDbFS": -18.001,
+        "rmsDbFS": -29.238,
+        "dc": 0.00013473,
+        "maxAdjacentStep": 0.036468505859375,
+        "loopBoundaryStep": [
+          0,
+          0
+        ]
+      },
+      "sources": [
+        {
+          "url": "/assets/audio/town-v1/dialogue-tick-a.ogg",
+          "type": "audio/ogg; codecs=opus",
+          "bytes": 700,
+          "sha256": "75ea3730e3fd7806171f58f9c04ca2a75e5788547de1c71cfe668ee0e7bfe7f1"
+        },
+        {
+          "url": "/assets/audio/town-v1/dialogue-tick-a.mp3",
+          "type": "audio/mpeg",
+          "bytes": 1437,
+          "sha256": "7cd59b8c1a786e47f05b26f91091ae3512bb650e9c3ed716bfd622a4f258a710"
+        },
+        {
+          "url": "/assets/audio/town-v1/dialogue-tick-a.wav",
+          "type": "audio/wav",
+          "bytes": 6188,
+          "sha256": "56ac4cd0648c639d94a29d20ff8f59d1676a42fdd4bcc2b05d488fa396564630"
+        }
+      ]
+    },
+    "dialogue-tick-b": {
+      "id": "dialogue-tick-b",
+      "usage": "真实逐字呈现的纸木变体",
+      "status": "standby",
+      "duration": 0.036,
+      "loop": null,
+      "recommendedGain": 0.55,
+      "recommendedMultiplier": 0.35,
+      "metrics": {
+        "frames": 1728,
+        "duration": 0.036,
+        "sampleRate": 48000,
+        "channels": 2,
+        "peakDbFS": -18.001,
+        "rmsDbFS": -29.45,
+        "dc": -0.00030214,
+        "maxAdjacentStep": 0.035919189453125,
+        "loopBoundaryStep": [
+          0,
+          0
+        ]
+      },
+      "sources": [
+        {
+          "url": "/assets/audio/town-v1/dialogue-tick-b.ogg",
+          "type": "audio/ogg; codecs=opus",
+          "bytes": 1013,
+          "sha256": "63813a99fb50d6e8753e23769aa612a000c1ddd5aa920e0fe859a87254685122"
+        },
+        {
+          "url": "/assets/audio/town-v1/dialogue-tick-b.mp3",
+          "type": "audio/mpeg",
+          "bytes": 1461,
+          "sha256": "7dfd461ece99f4f99708dd911718535f2f9e5bf965f18ce3d486c0eb9c8dbc14"
+        },
+        {
+          "url": "/assets/audio/town-v1/dialogue-tick-b.wav",
+          "type": "audio/wav",
+          "bytes": 6956,
+          "sha256": "0d1c290f78b3184e3d796399d265eea1a6558d62d5e204960bc90fdd33a06efe"
+        }
+      ]
+    },
+    "dialogue-tick-c": {
+      "id": "dialogue-tick-c",
+      "usage": "真实逐字呈现的第三变体",
+      "status": "standby",
+      "duration": 0.04,
+      "loop": null,
+      "recommendedGain": 0.55,
+      "recommendedMultiplier": 0.35,
+      "metrics": {
+        "frames": 1920,
+        "duration": 0.04,
+        "sampleRate": 48000,
+        "channels": 2,
+        "peakDbFS": -18.001,
+        "rmsDbFS": -30.54,
+        "dc": -0.0005592,
+        "maxAdjacentStep": 0.037841796875,
+        "loopBoundaryStep": [
+          0,
+          0
+        ]
+      },
+      "sources": [
+        {
+          "url": "/assets/audio/town-v1/dialogue-tick-c.ogg",
+          "type": "audio/ogg; codecs=opus",
+          "bytes": 928,
+          "sha256": "58e55227eb29c5fed2d01df42bf91b8c79d025604c143e1317992d847e8cfb4c"
+        },
+        {
+          "url": "/assets/audio/town-v1/dialogue-tick-c.mp3",
+          "type": "audio/mpeg",
+          "bytes": 1461,
+          "sha256": "5c32d1e9adb041bd2a185f450a365cb34768b4d9f4e3acada87993b1ab40c5eb"
+        },
+        {
+          "url": "/assets/audio/town-v1/dialogue-tick-c.wav",
+          "type": "audio/wav",
+          "bytes": 7724,
+          "sha256": "eef10639d385ae23948937c0986acc1a33113a42d263476408db74ca366fb425"
+        }
+      ]
+    }
+  }
+}
