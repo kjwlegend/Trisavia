@@ -63,10 +63,39 @@ ALTER SYSTEM SET archive_mode = 'off';
 ALTER SYSTEM SET archive_timeout = '0';
 ```
 
-Normally restart the **same container**, allowing a clean shutdown (for example,
-`docker --context colima-agents-era-pg restart --time 60 CURRENT_PG_ID`). A reload
-does not apply this startup setting. Preserve the original image, data directory,
-volume, private pairings, business facts and application versions. Do not create
+Stop and start the **same fixed container ID** in separate, checked steps. Record
+its existing restart policy and verify `StopSignal=SIGINT` first. This signal asks
+PostgreSQL for a fast, clean shutdown: active transactions are rolled back before
+the server exits. Keep the current `unless-stopped` policy unchanged. Docker's
+manual stop suppresses automatic restart; stopping PostgreSQL through
+`docker exec pg_ctl` does not provide that Docker stop boundary.
+
+```sh
+docker --context colima-agents-era-pg stop --timeout -1 CURRENT_PG_ID
+```
+
+`--timeout -1` makes the Docker daemon wait indefinitely without escalating to
+`SIGKILL`. TD's calling process waits at most 60 seconds. If that client wait
+expires, or the stop command fails, abort all following steps: do not send another
+signal, start or remove the container, or begin cleanup. PostgreSQL may still be
+shutting down; leave it to finish and report the observed state. Do not substitute
+a finite Docker stop/restart timeout, which can escalate to `SIGKILL`.
+
+Only after the stop command succeeds, inspect that same ID:
+
+```sh
+docker --context colima-agents-era-pg inspect --format '{{.State.Status}} {{.State.Running}} {{.State.ExitCode}} {{.State.OOMKilled}}' CURRENT_PG_ID
+```
+
+Require exactly `exited false 0 false`; otherwise stop the procedure. Then start
+that same container, without recreating it:
+
+```sh
+docker --context colima-agents-era-pg start CURRENT_PG_ID
+```
+
+A reload does not apply this startup setting. Preserve the original image, data
+directory, volume, private pairings, business facts and application versions. Do not create
 a replacement container, edit old frozen bind files, initdb, migrate or restore an
 old database. Confirm `SHOW archive_mode` returns `off` and `SHOW archive_timeout`
 returns `0` after readiness, then
@@ -110,3 +139,7 @@ The archive success/retry requirements and storage warning follow
 [PostgreSQL 18 continuous archiving §25.3.1](https://www.postgresql.org/docs/18/continuous-archiving.html).
 The mode is a startup setting; see [PG18 WAL configuration](https://www.postgresql.org/docs/18/runtime-config-wal.html).
 Forced-switch handling is in [PG18 CheckArchiveTimeout](https://github.com/postgres/postgres/blob/REL_18_STABLE/src/backend/postmaster/checkpointer.c).
+Shutdown semantics are documented in [PG18 server shutdown](https://www.postgresql.org/docs/18/server-shutdown.html).
+The unlimited stop wait and manual-stop restart-policy behavior follow
+[Docker stop](https://docs.docker.com/reference/cli/docker/container/stop/) and
+[Docker restart policies](https://docs.docker.com/engine/containers/start-containers-automatically/).
