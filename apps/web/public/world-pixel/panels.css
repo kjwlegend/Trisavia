@@ -27,6 +27,23 @@
 .account-root .manager-object{height:44px;min-height:44px;padding:3px 14px;border-bottom:1px solid #536c46;background:#263e2e;color:#b4c4a1}.manager-object strong{color:#eee8cd}.manager-object .avatar{width:32px;height:32px;object-fit:contain;image-rendering:pixelated}.manager-object .manager-object-picture{width:32px;height:32px;flex:none}.hud-root .manager-object button{font-size:12px;min-height:32px;padding:3px 10px;background:transparent}
 .panel-tabs{height:38px;min-height:38px;padding:0 14px;display:flex;align-items:stretch;gap:6px;border-bottom:2px solid #5f7549;background:#1d3327}.hud-root .panel-tabs button{min-height:36px;padding:5px 18px;border:0;border-bottom:3px solid transparent;background:transparent;color:#aebe98}.hud-root .panel-tabs button[aria-pressed=true]{background:#41583a;border-color:#d9cc82;color:#f4e8b6}
 .account-root .manager-actions{min-height:58px;padding:7px 16px;background:#2a3d2b;border-top:3px solid #142a1e;color:#c7d0a7}.account-root .manager-action-note{color:#b4c4a1;max-width:none;font-size:12px}.account-root .manager-actions button{min-height:40px;font-size:14px}.account-root .manager-soft,.account-root .manager-confirm-target,.account-root .notice,.account-root #proposal-review,.account-root #legacy-world-state{background:#304a38;color:#eee8cd;border-color:#7b8c56;border-radius:0}.account-root .manager-soft p,.account-root .manager-hero p,.account-root .manager-page-heading p,.manager-eyebrow{color:#b4c4a1}.manager-portrait{background:#304a38;border-radius:0}.manager-portrait:after{display:none}.account-root #agent-list button{background:#304a38;border-radius:0;border-color:#6c8151}.account-root #agent-list button[aria-pressed=true]{background:#456244;border-color:#d9ce85}
+/* Owner-only field locks retain native checkbox semantics in the dark theme. */
+.account-root #policy-form .lock-list label.check{background:#2b432e;color:#eee8cd;border:2px solid #95aa77;border-radius:0;cursor:pointer}
+.account-root #policy-form .lock-list label.check:has(input:checked){background:#3e5936;border-color:#d9ce85}
+.account-root #policy-form .lock-list label.check:has(input:focus-visible){outline:2px solid #eee1a1;outline-offset:2px}
+.account-root #policy-form .lock-list input[type=checkbox]{appearance:none;display:inline-grid;place-content:center;flex:0 0 18px;width:18px;height:18px;min-height:18px;margin:0;padding:0;border:2px solid #b8c7a5;border-radius:0;background:#182e22;color:#203728;box-shadow:none;opacity:1;cursor:inherit}
+.account-root #policy-form .lock-list input[type=checkbox]::after{content:"";width:9px;height:5px;border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-1px) rotate(-45deg);opacity:0}
+.account-root #policy-form .lock-list input[type=checkbox]:checked{background:#d9ce85;border-color:#eee8cd}
+.account-root #policy-form .lock-list input[type=checkbox]:checked::after{opacity:1}
+.account-root #policy-form .lock-list input[type=checkbox]:focus-visible{outline:0}
+.account-root #policy-form .lock-list label.check:has(input:disabled){background:#263a2a;color:#c7d2b8;border-color:#728667;cursor:not-allowed}
+.account-root #policy-form .lock-list input[type=checkbox]:disabled{background:#243629;border-color:#b8c7a5;color:#eee8cd}
+.account-root #policy-form .lock-list input[type=checkbox]:checked:disabled{background:#4b6245}
+/* Current-Agent location is a readable HUD action, including unavailable maps. */
+.hud-root .hud-locate-agent{background:#314830;color:#eee8cd;border-color:#ad8c5f;border-radius:0;box-shadow:inset 0 0 0 2px #5e6640,0 3px #15281d}
+.hud-root .hud-locate-agent:hover:not(:disabled){background:#456244;border-color:#d9ce85}
+.hud-root .hud-locate-agent:focus-visible{outline:2px solid #eee1a1;outline-offset:3px}
+.hud-root .hud-locate-agent:disabled{background:#263a2a;color:#c7d2b8;border-color:#728667;opacity:1;cursor:not-allowed}
 .account-root[data-layout=manager] #manage-view:is([data-manager-page=appearance],[data-manager-page=profile]){grid-template-columns:minmax(0,1fr)}
 #manage-view:is([data-manager-page=appearance],[data-manager-page=profile]) .manager-sidebar{display:none}
 #manage-view:is([data-manager-page=appearance],[data-manager-page=profile]) .manager-scroll{padding:0;overflow:hidden;display:flex;flex-direction:column}
