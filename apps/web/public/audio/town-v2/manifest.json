@@ -4,13 +4,13 @@
   "source": "Original deterministic rhythmic recomposition and synthesis; no third-party samples or audio-generation API.",
   "reproduce": "node scripts/audio/generate-town-v2.mjs",
   "sampleRate": 48000,
-  "defaultWorldReplacement": false,
+  "defaultWorldReplacement": true,
   "sharedSfxManifest": "/assets/audio/town-v1/manifest.json",
   "bgm": {
     "id": "lanterns-in-the-breeze-light-steps",
     "title": "风灯小镇 v2 · 轻步 / Lanterns in the Breeze – Light Steps",
-    "usage": "轻快律动A/B试听候选，尚未替换主世界默认",
-    "status": "audition",
+    "usage": "用户已选定的主世界默认背景音乐：轻快律动",
+    "status": "active",
     "sources": [
       {
         "url": "/assets/audio/town-v2/lanterns-in-the-breeze-light-steps.ogg",
