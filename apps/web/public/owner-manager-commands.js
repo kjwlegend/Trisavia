@@ -1,7 +1,7 @@
 import {APPEARANCE_VERSION,lookFor} from './world-pixel/look.js';
 function failure(code){const error=new Error(code);error.code=code;return error;}
 
-export const managerActions=new Set(['saveProfile','saveWorldAccess','saveDraft','publishProfile','join','profilePolicy','participation']);
+export const managerActions=new Set(['saveProfile','saveWorldAccess','saveWorldActionPolicy','saveDraft','publishProfile','join','profilePolicy','participation']);
 const positive=value=>Number.isSafeInteger(value)&&value>0;
 export function parseIntervalSeconds(text,unit){
   if(!['1','60','3600'].includes(unit))throw failure('invalid_interval');
@@ -11,12 +11,13 @@ export function parseIntervalSeconds(text,unit){
 }
 export function managerInput(action,input){
   const invalid=()=>{throw failure('invalid_backup');};
-  if(!managerActions.has(action)||!input||!positive(input.expectedVersion))invalid();
+  if(!managerActions.has(action)||!input||!(action==='saveWorldActionPolicy'?Number.isSafeInteger(input.expectedVersion)&&input.expectedVersion>=0:positive(input.expectedVersion)))invalid();
   const clean={expectedVersion:input.expectedVersion};
   if(action==='participation'){
     if(Object.keys(input).some(key=>!['operationId','expectedVersion','paused'].includes(key))||typeof input.paused!=='boolean')invalid();
     return{...clean,paused:input.paused};
   }
+  if(action==='saveWorldActionPolicy'){if(Object.keys(input).some(key=>!['operationId','expectedVersion','mode'].includes(key))||!['autonomous','observe'].includes(input.mode))invalid();return{...clean,mode:input.mode};}
   if(action==='saveWorldAccess'){if(input.intervalSeconds!==null&&!positive(input.intervalSeconds))invalid();return{...clean,intervalSeconds:input.intervalSeconds};}
   if(action==='join'){if(!positive(input.expectedProfileVersion))invalid();return{...clean,expectedProfileVersion:input.expectedProfileVersion};}
   if(!positive(input.expectedPolicyVersion))invalid();clean.expectedPolicyVersion=input.expectedPolicyVersion;
@@ -41,6 +42,7 @@ export function managerRequest(pending){
   if(!managerActions.has(pending.action))return null;
   const agent=encodeURIComponent(pending.targetId);
   if(pending.action==='profilePolicy'||pending.action==='participation')return{path:`/owner/agents/${agent}/${pending.action==='profilePolicy'?'profile-policy':'participation'}`,method:'PUT'};
+  if(pending.action==='saveWorldActionPolicy')return{path:`/owner/agents/${agent}/world-action-policy`,method:'PUT'};
   if(pending.action==='saveWorldAccess')return{path:`/owner/agents/${agent}/world-access`,method:'PUT'};
   if(pending.action==='join')return{path:`/agents/${agent}/membership/join`,method:'POST'};
   return{path:`/agents/${agent}/profile${{saveProfile:'',saveDraft:'/draft',publishProfile:'/publish'}[pending.action]}`,method:pending.action==='publishProfile'?'POST':'PUT'};
@@ -51,6 +53,7 @@ export function assertManagerResult(result,pending,ownerId){
   if(result.operationId!==pending.operationId||pending.scope!==`owner:${ownerId}`||result.agentId!==pending.targetId)mismatch();
   if(pending.action==='profilePolicy'){if(result.mode!==pending.input?.mode||JSON.stringify(result.lockedFields)!==JSON.stringify(pending.input?.lockedFields)||!positive(result.version)||!positive(result.policyVersion))mismatch();}
   else if(pending.action==='participation'){if(result.ownerPaused!==pending.input?.paused||!positive(result.version))mismatch();}
+  else if(pending.action==='saveWorldActionPolicy'){if(result.mode!==pending.input?.mode||!Number.isSafeInteger(result.version)||result.version<pending.input.expectedVersion||typeof result.changed!=='boolean')mismatch();}
   else if(pending.action==='saveWorldAccess'){if(result.intervalSeconds!==pending.input?.intervalSeconds||!positive(result.version))mismatch();}
   else if(pending.action==='saveProfile'||pending.action==='saveDraft'){
     const fields=pending.action==='saveProfile'?result.published:result.draft;
