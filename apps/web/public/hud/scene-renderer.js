@@ -48,14 +48,17 @@ function positionCharacterCard(){
   if(currentPlace?.kind!=='world-avatar'||detail.hidden||!scene)return;
   const state=scene.getState(),camera=state.camera,box=scene.canvas.getBoundingClientRect(),phone=camera.width<760;
   const anchor={x:box.left+camera.width/2+(currentPlace.x-camera.x)*camera.scale,y:box.top+(state.mode==='overview'?(camera.height+(phone?112:88)-(phone?116:126))/2:camera.height/2)+(currentPlace.y-camera.y)*camera.scale};
-  const bounds={left:12,right:innerWidth-12,top:Math.max(12,document.querySelector('header')?.getBoundingClientRect().bottom+12||12),bottom:Math.min(innerHeight-12,$('#hud-dock')?.getBoundingClientRect().top-12||innerHeight-12)};
+  const bounds={left:phone?12:24,right:innerWidth-(phone?12:24),top:phone?Math.max(12,document.querySelector('header')?.getBoundingClientRect().bottom+12||12):24,bottom:phone?Math.min(innerHeight-12,$('#hud-dock')?.getBoundingClientRect().top-12||innerHeight-12):innerHeight-24};
+  const maxHeight=Math.min(phone?360:600,bounds.bottom-bounds.top),width=Math.min(phone?320:440,bounds.right-bounds.left);detail.style.setProperty('--character-card-max-height',`${maxHeight}px`);
+  const height=Math.min(maxHeight,detail.offsetHeight||maxHeight);
   const blocked=['#world-status-hud','#hud-agent','#hud-locate-agent','.hud-map-tools'].flatMap(selector=>{const node=$(selector);if(!node||node.hidden||!node.getClientRects().length)return[];const rect=node.getBoundingClientRect();return[{left:rect.left-12,right:rect.right+12,top:rect.top-12,bottom:rect.bottom+12}];});
-  const areas=freeAreas(bounds,blocked).filter(area=>area.right-area.left>=Math.min(320,bounds.right-bounds.left)&&area.bottom-area.top>=Math.min(360,bounds.bottom-bounds.top));
-  const clamp=(value,min,max)=>Math.max(min,Math.min(max,value)),width=Math.min(320,bounds.right-bounds.left),height=Math.min(360,bounds.bottom-bounds.top);
+  const areas=freeAreas(bounds,blocked).filter(area=>area.right-area.left>=width&&area.bottom-area.top>=height);
+  const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
   const candidates=(areas.length?areas:[bounds]).flatMap(area=>[anchor.x+12,anchor.x-width-12].map(x=>({x:clamp(x,area.left,area.right-width),y:clamp(anchor.y-80,area.top,area.bottom-height)})));
   candidates.sort((a,b)=>Math.hypot(a.x+width/2-anchor.x,a.y+80-anchor.y)-Math.hypot(b.x+width/2-anchor.x,b.y+80-anchor.y));
-  detail.style.setProperty('--character-card-left',`${Math.round(candidates[0].x)}px`);detail.style.setProperty('--character-card-top',`${Math.round(candidates[0].y)}px`);detail.style.setProperty('--character-card-max-height',`${height}px`);
+  detail.style.setProperty('--character-card-left',`${Math.round(candidates[0].x)}px`);detail.style.setProperty('--character-card-top',`${Math.round(candidates[0].y)}px`);
 }
+const characterSize=new ResizeObserver(positionCharacterCard);characterSize.observe(characterCard.node);
 window.addEventListener('resize',positionCharacterCard);
 function openPlace(place, origin) {
   document.dispatchEvent(new CustomEvent('world:place-open'));
@@ -162,7 +165,7 @@ document.addEventListener('visibilitychange',()=>{statusHud.setVisible(pageActiv
 for (const link of document.querySelectorAll('a[href="#connect"]')) link.addEventListener('click', () => { $('#connect').open = true; });
 if (location.hash === '#connect') $('#connect').open = true;
 startScene();worldProvider.start();
-window.addEventListener('pagehide', event => {pageActive=false;stopEntryRead();worldProvider.setVisible(false);statusHud.setVisible(false);if (!event.persisted){entryObserver?.disconnect();sceneGeneration++;sceneAbort?.abort();worldProvider.dispose();statusHud.dispose();stopStatusSession?.();ownedAgents?.dispose();characterCard.dispose();publicCharacter.dispose();window.removeEventListener('resize',positionCharacterCard);detailTransition.destroy();scene?.destroy();} });
+window.addEventListener('pagehide', event => {pageActive=false;stopEntryRead();worldProvider.setVisible(false);statusHud.setVisible(false);if (!event.persisted){entryObserver?.disconnect();sceneGeneration++;sceneAbort?.abort();worldProvider.dispose();statusHud.dispose();stopStatusSession?.();ownedAgents?.dispose();characterCard.dispose();publicCharacter.dispose();window.removeEventListener('resize',positionCharacterCard);characterSize.disconnect();detailTransition.destroy();scene?.destroy();} });
 window.addEventListener('pageshow',()=>{pageActive=true;if(scene&&!mapFailed){worldProvider.setVisible(scene.getState().visible);statusHud.setVisible(scene.getState().visible&&!document.hidden);}if(entryVisible)void readEntryCapabilities();});
 return{locateAgent(agentId){return mapReady&&scene?.locateOwnedAgent(agentId)||false;}};
 }

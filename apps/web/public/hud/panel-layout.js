@@ -1,5 +1,6 @@
 // Fixed hosts use viewport coordinates, independently of document scroll.
 export function panelRectangle(root,dock,header,viewport){
+  if(viewport.right-viewport.left>=760)return{left:(viewport.left+viewport.right)/2,top:(viewport.top+viewport.bottom)/2,width:Math.max(0,viewport.right-viewport.left-48),height:Math.max(0,viewport.bottom-viewport.top-48),safeTop:Math.max(viewport.top+88,header.bottom+16)};
   const left=Math.max(root.left,viewport.left),right=Math.min(root.right,viewport.right),upper=Math.max(root.top,viewport.top),lower=Math.min(root.bottom,viewport.bottom);
   const top=Math.max(viewport.top+88,upper,header.bottom+16),bottom=Math.min(lower,dock.top-40);
   return{left:(left+right)/2,top:(top+Math.max(top,bottom))/2,width:Math.max(0,right-left-48),height:Math.max(0,bottom-top),safeTop:top};
