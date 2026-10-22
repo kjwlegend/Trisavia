@@ -157,3 +157,24 @@ test('synthetic legal 180-character parent and related titles remain visually co
  }
  await writeFile(resolve(out,'title-visibility.json'),JSON.stringify(measurements,null,2)+'\n');
 });
+
+test('synthetic role management keeps its sidebar navigation inside the window and naturally reaches account security',async t=>{
+ await mkdir(out,{recursive:true});const browser=await launch();t.after(()=>browser.close());
+ for(const viewport of [{width:1280,height:800},{width:1024,height:768}]){
+  const context=await browser.newContext({viewport,reducedMotion:'reduce'});t.after(()=>context.close());await intercept(context,true);const page=await context.newPage();await page.goto(origin);await mountComponents(page);
+  const management=page.getByRole('button',{name:'管理',exact:true});await expect(management).toBeVisible();let box=await management.boundingBox();assert.ok(box);await page.mouse.click(box.x+box.width/2,box.y+box.height/2);await expect(page.locator('#manage-view')).toHaveAttribute('data-manager-page','overview');
+  const security=page.locator('.manager-sidebar [data-manager-page="security"]');await expect(security).toBeVisible();
+  const geometry=await security.evaluate(node=>{const box=node.getBoundingClientRect(),hit=document.elementFromPoint(box.x+box.width/2,box.y+box.height/2);return{box:box.toJSON(),hit:{tag:hit?.tagName,className:hit?.className},hitInside:node.contains(hit),ancestors:[...function*(value:Element|null){while(value){yield value;value=value.parentElement;}}(node)].map(value=>{const style=getComputedStyle(value);return{tag:value.tagName,id:value.id,className:value.className,box:value.getBoundingClientRect().toJSON(),height:style.height,minHeight:style.minHeight,flex:style.flex,overflowY:style.overflowY,scrollTop:value.scrollTop,scrollHeight:value.scrollHeight,clientHeight:value.clientHeight};})};});
+  await writeFile(resolve(out,`manager-navigation-${viewport.width}.json`),JSON.stringify(geometry,null,2)+'\n');await page.screenshot({path:resolve(out,`manager-navigation-${viewport.width}.png`)});
+  if(!geometry.hitInside){
+   const sidebar=await page.locator('.manager-sidebar').boundingBox();assert.ok(sidebar);await page.mouse.move(sidebar.x+sidebar.width/2,sidebar.y+sidebar.height/2);await page.mouse.wheel(0,400);await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+   const after=await security.evaluate(node=>{const box=node.getBoundingClientRect();return{box:box.toJSON(),hitInside:node.contains(document.elementFromPoint(box.x+box.width/2,box.y+box.height/2)),sidebarScrollTop:node.closest('.manager-sidebar')!.scrollTop};});await writeFile(resolve(out,`manager-wheel-${viewport.width}.json`),JSON.stringify(after,null,2)+'\n');assert.equal(after.hitInside,true,'Baseline diagnosis: an actual wheel can expose the clipped navigation');await page.mouse.click(after.box.x+after.box.width/2,after.box.y+after.box.height/2);await expect(page.locator('#manage-view')).toHaveAttribute('data-manager-page','security');await page.screenshot({path:resolve(out,`manager-wheel-security-${viewport.width}.png`)});
+  }
+  assert.equal(geometry.hitInside,true,'Initial security navigation must be inside the rendered window without needing a hidden lower scroll');
+  box=await security.boundingBox();assert.ok(box);await page.mouse.click(box.x+box.width/2,box.y+box.height/2);await expect(page.locator('#manage-view')).toHaveAttribute('data-manager-page','security');await expect(page.locator('#logout')).toBeVisible();
+  const logout=await page.locator('#logout').boundingBox();assert.ok(logout);assert.equal(await page.evaluate(({x,y})=>document.querySelector('#logout')!.contains(document.elementFromPoint(x,y)),{x:logout.x+logout.width/2,y:logout.y+logout.height/2}),true);
+  const overview=page.locator('.manager-sidebar [data-manager-page="overview"]');box=await overview.boundingBox();assert.ok(box);await page.mouse.click(box.x+box.width/2,box.y+box.height/2);await expect(page.locator('#manage-view')).toHaveAttribute('data-manager-page','overview');
+  let focused=false;for(let i=0;i<40;i++){await page.keyboard.press('Tab');if(await security.evaluate(node=>node===document.activeElement)){focused=true;break;}}assert.equal(focused,true,'The security page remains reachable through the actual top-window Tab cycle');await page.keyboard.press('Enter');await expect(page.locator('#manage-view')).toHaveAttribute('data-manager-page','security');await expect(page.locator('#logout')).toBeVisible();
+  await page.close();await context.close();
+ }
+});
