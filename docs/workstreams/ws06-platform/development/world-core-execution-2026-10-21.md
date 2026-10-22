@@ -405,3 +405,25 @@ A在自己的分支取B同tree依赖后继续应用／目录／投影；具体�
 目录发布新增范围由原A负责：`scripts/ws01-appearance-catalog.ts`、perception-admin具名发布及ws02-admin-target仅进程注入的窄预检；普通CLI默认readiness不放宽。计划显式schema4→5／guide2→3，目标为原revision追加`-schema-5`，Skill同步；保留旧精确schema／guide原行与digest，不改sourceStates／collection声明／grants／正文／身份或World。目标instance／epoch／当前revision与operator／operationId回执须固定，同载荷重入不追加revision；隔离验证与实际发布仍待A固定，不能把计划当已交付。
 
 根明确后继恢复条件：**profiles v2物理升级后旧schema签名检查已不接受e005；产生新look真实保存后，更不能退回只懂basic／color的旧应用，不能回灌旧dump覆盖任何后续写入。**必须使用最终已审、能读取新旧形状的固定组合源码保留当前PG作前向修补；不把B-only存储候选当成完整新look服务回退。原world-core-upgrade脚本会在物理迁移后核应用readiness，TD已指出不能用schema5应用直接升级仍为schema4目录而假定全步成功；拟用固定受审B-only源执行物理升级，再用最终候选执行具名目录发布，最后闭门启动并逐步保全／验证。该具体顺序须由A／B隔离证据确认后才能用于维护；当前18893仍e005／82404，未执行任何look迁移或目录发布。
+
+### 7.13 B独审接收、自然429证据与跨夜观察边界
+
+原reviewer R34已静态接受B的`e0054c3 → ad5f413`五路径，五源码／三日志指纹及PG9/9核实，无新增实质发现。TD无冲突cherry-pick为`9a5f2b2`，仅整合这五路径；A权限／预算、HTTP、C组合与D视觉仍各待固定及独审，不继承B通过。main于北京时间2026-10-22 **11:28:26**文档ff-only至`511a01e77210f1da64812535dc78ee7c5e3f910e`，7245项非目标脏路径字节／模式／缺失／symlink及staged保持；回执`outputs/world-core/main-look-contract-sync-511a01e/receipt.json`。运行代码仍e005，文档／整合提交没有切换服务。
+
+11:30:39仅读现服私有日志，安全解析10份429累计快照，**未生成HTTP**。事件时间为北京时间00:17:27—00:21:49，归属五个60秒／240配额窗口；各窗首拒绝前rules／scene准入分别为108／132、96／144、106／134、107／133、98／142。所有快照只有`/v1/world/rules`和`/v1/world/scene`，没有gateway_operation，故这五窗不支持归因最近互动目录查询。相同窗口多快照不能相加；无消费者标识、无尾部flush保证，不能断言旧页面、确切页面数或倒推此前21:35／22:25事件。00:11旧观察与11:30本次读取之间有长采集空档，不称持续稳定测试。普通聚合原件`outputs/world-ui-reliability/post-delivery-observation/e005-natural-429-events.json`。
+
+A／D只读逐项对齐e005实际保存capabilities、正式rules生成及d8 provider：schema／catalogRevision／membership／worldRevision／asOf不会逐轮清metadata，成功scene不触发rules重取，明确入口为force、30秒过期、失败、缺失与显隐变化。D另用固定e005 provider和已保存真实caps／scene，加473同实例rules DTO离线双文档60秒重放，caps4／rules4／scene120、无error；因e005未保存rules正文，此项不冒称e005真实HTTP重跑。该正常成功链仍不能解释自然窗口96—108次rules，暂未找到可确定直接修复的静态漏项；故障继续开放，不扩大配额或以假设改业务。后继若补客户端有限刷新原因／固定构建提示，须独立固定、白名单聚合及原reviewer复核，不能混作视觉通过。
+
+WS01随后精确裁定已补原§3.2：`published=null`且无可靠已确认形象时，name-only保存返回指向avatar的可修正校验错误，资料／提议／版本保持，不取未确认draft、不写新注册默认，不返回public成功也不转私有draft成功。已有选择器保留主人本次输入并要求明确选择，补齐原必要资料／权限后一次普通保存公开，无额外发布步骤；已有公开资料的name-only仍原样保留avatar结构和值。A／D／C均收到，业务等待解除，实际代码／HTTP与UI结果仍待交付。
+
+### 7.14 PostgreSQL归档占满数据盘的确诊与恢复准备
+
+北京时间11:38:13只读核得登记`colima-agents-era-pg`中的`agents-era-pg-server`为restarting／exit1／restartCount414，OOMKilled=false；末120行私有日志含30次“No space left on device／could not write／FATAL／lock file”。只读容量核实：该profile数据盘30GiB已100%，唯一PG卷约28GiB，其中wal-archive约27GiB、PG实际目录约1012MiB；主机仍329GiB可用，无可回收镜像／容器／build cache。既有配置`archive_timeout=60s`及持续归档复制，归档缺少容量／保留治理为本次确诊缺陷。此事实独立于前述429，不能倒推两者同因；18893应用进程存活不等于数据库或服务ready。
+
+根已授权最小本地恢复：停止失败重启循环、正常停止该独立profile，保全停止态完整磁盘与配对identity／配置后，将原数据盘30→80GiB扩容并恢复原卷。11:40:51容器正常停止，11:40:53 profile正常停止；磁盘副本及私有日志／配置放`outputs/world-ui-reliability/pg-availability-20261022/preservation-private/`，0700／0600。当前正在完整克隆及hash核对，尚未记扩容或恢复完成；A／C暂停PG fixture重试，D独立检查继续。不得删除WAL／数据库、清理未证明可回收材料、回灌旧dump或重建identity；该PG也承载历史connet库，保全整个原卷，不另操作8789应用或其他profile。
+
+扩容只属临时恢复容量，不能关闭归档治理缺陷。原B／TD须依据现有备份恢复链给出最小持续修复并独立验证／必要审查，不因另造完整备份平台拖延已授权look交付；具体方案及实施仍待后继证据。
+
+恢复实际完成：停止态20GiB系统盘与30GiB数据盘分别APFS克隆，源／副本全量SHA256一致，分别为`84c6d76f935524cf72c44bfc20cba1e0f6ccc320eb6bc8c63f54a07195cbc5af`和`db337338cf6da506840cbbc174b2787f48fcbf1c0364a65bb52b52d7b445682f`；不称恢复演练。11:44:36原profile完成80GiB扩盘启动，原PG容器于11:45:55启动。两次前置检查曾因Docker Mounts数组返回顺序改变而停止，确认按Destination排序后的全部条目精确相同后才继续；容器ID及原卷未变、未重建。扩容后数据盘约48GiB可用，其他profile未操作。
+
+11:46:31四个有限匿名GET（health／capabilities／rules／scene）均200／no-store、无重试；真实PG只读成功。80表504行业务语义指纹与e005原交付快照全部相同，原gate／generation机械排除保持，instance／epoch／identity SHA未变；三Avatar完整公开事实也相同，变化仅请求信封requestId／serverTime及data.asOf。初始scene比较只排顶层asOf而报false，随后递归核实准确三个变化路径，原结果与修正回执均保留，不把原比较写为首次全过。原应用**e005／PID82404**全程未重启／换码，写门未修改；A可恢复自有隔离测试。恢复后另fresh当前库dump447704字节，SHA256 **`a2fc5aa517947dcd6581d9084a615e06fb70f76b3aee5abba7a9603410193094`**，pg_restore清单验证通过、未作恢复演练。原卷、全部归档、旧库及配对材料保留，无清理／回灌／迁移。回执为上述目录`stopped-disk-preservation.json`、`expanded-original-container.json`、`recovery-verification.json`、`http-readiness.json`；当前数据恢复通过不等于持续归档治理或429问题关闭。
