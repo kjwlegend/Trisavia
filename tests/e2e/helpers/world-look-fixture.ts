@@ -27,6 +27,38 @@ export type LookAgent = { agentId: string; name: string; runtimeToken: string; c
 export type LookOwner = { owner: Json; agents: LookAgent[] };
 const pageEvidenceDirectories = new WeakMap<Page, string>();
 
+/** Observe clipping separately from DOM visibility; no focus, scroll or input is synthesized here. */
+export async function lookNavigationObservation(control: Locator) {
+  return control.evaluate(node => {
+    const box = node.getBoundingClientRect(), sidebar = node.closest('.manager-sidebar'), frame = sidebar?.getBoundingClientRect();
+    const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+    return { control: node.id || node.getAttribute('data-manager-page'), box: box.toJSON(),
+      focused: document.activeElement === node, inertAncestor: node.closest('[inert]')?.id ?? null,
+      hitInside: Boolean(hit && (node === hit || node.contains(hit))), hit: hit ? { id: hit.id, className: hit.getAttribute('class') } : null,
+      sidebar: sidebar ? { box: frame!.toJSON(), scrollTop: sidebar.scrollTop, scrollHeight: sidebar.scrollHeight, clientHeight: sidebar.clientHeight,
+        controlInside: box.top >= frame!.top && box.bottom <= frame!.bottom } : null };
+  });
+}
+
+/** Reach a real control with the window's native Tab path; do not call focus() or scrollIntoView(). */
+export async function lookTabTo(page: Page, control: Locator) {
+  await expect(control).toBeVisible(); await expect(control).toBeEnabled();
+  await expect(page.locator('#hud-window')).toHaveAttribute('data-panel-state', 'open');
+  for (let turn = 0; turn < 48; turn++) {
+    await page.keyboard.press('Tab');
+    assert(await page.evaluate(() => {
+      const active = document.activeElement;
+      return Boolean(active && !active.closest('[inert]') && active.closest('#hud-window,#hud-dock'));
+    }), 'Native Tab stays within the active window and its available HUD controls');
+    if (await control.evaluate(node => document.activeElement === node)) {
+      const observed = await lookNavigationObservation(control);
+      assert(observed.hitInside && observed.sidebar?.controlInside, 'The keyboard target is actually visible within its scroll clip');
+      return observed;
+    }
+  }
+  assert.fail('The native Tab order did not reach the requested management control');
+}
+
 /** Native input only. Visibility failures remain failures; this helper never scrolls or dispatches a click. */
 export async function lookPointer(page: Page, control: Locator) {
   await expect(control).toBeVisible(); await expect(control).toBeEnabled();
@@ -287,7 +319,7 @@ export async function worldLookFixture(t: TestContext, viewport = { width: 1440,
     await lookPointer(page, await characterTab.isVisible() ? characterTab : page.locator('[data-manager-page="' + key + '"]'));
   }
   async function logout() {
-    const security = page.locator('[data-manager-page="security"]');
+    const security = page.locator('button[data-manager-page="security"]');
     if (!(await security.isVisible())) {
       const manage = page.locator('#manager-object').getByRole('button', { name: '管理', exact: true });
       // The native character dialog keeps the page header outside its active interaction scope.

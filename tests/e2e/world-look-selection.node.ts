@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import test from 'node:test';
 import { expect, type Page } from '@playwright/test';
-import { appearanceVersion, lookIds, lookPair, lookPointer, worldLookFixture, type LookAgent } from './helpers/world-look-fixture.ts';
+import { appearanceVersion, lookIds, lookNavigationObservation, lookPair, lookPointer, lookTabTo, worldLookFixture, type LookAgent } from './helpers/world-look-fixture.ts';
 
 const names = ['短发', '长发', '卷发', '齐刘海', '蓬松发', '尖发'];
 const profilePath = (agent: LookAgent) => '/v1/agents/' + agent.agentId + '/profile';
@@ -86,6 +86,12 @@ test('unknown submit and lost committed response recover the exact operation/bod
   await lookPointer(f.page, f.page.locator('#save-appearance'));
   await expect(f.page.locator('#unknown-controls')).toBeVisible(); assert(first);
   assert.deepEqual((await f.profile(agent, f.a.owner)).published.avatar, lookPair());
+  const unsentCount = f.requests.filter(row => row.method === 'PUT' && row.path === path).length;
+  await lookPointer(f.page, f.page.locator('#hud-close')); await expect(f.page.locator('#hud-window')).toBeHidden();
+  await lookPointer(f.page, f.page.locator('#hud-open-profile'));
+  await expect(f.page.locator('#unknown-controls')).toBeVisible();
+  assert.equal(f.requests.filter(row => row.method === 'PUT' && row.path === path).length, unsentCount, 'Closing and reopening does not silently resubmit an unknown operation');
+  assert.deepEqual((await f.profile(agent, f.a.owner)).published.avatar, lookPair());
   await f.page.reload(); await expect(f.page.locator('#unknown-controls')).toBeVisible();
   const committed = f.page.waitForResponse(response => new URL(response.url()).pathname === path && response.request().method() === 'PUT');
   await lookPointer(f.page, f.page.locator('#check-result')); const originalRetry = await committed;
@@ -133,6 +139,10 @@ test('unknown submit and lost committed response recover the exact operation/bod
 test('two Owners and three Agents stay isolated; dirty selection, runtime policy, avatar lock and independent proposals keep their original authority', { timeout: 180_000 }, async t => {
   const f = await worldLookFixture(t, { width: 1280, height: 800 }), [a1, a2] = f.a.agents, b1 = f.b.agents[0]!; assert(a1 && a2);
   await f.login(f.a.owner); await f.appearancePage(a1); await choose(f.page, 4);
+  await lookPointer(f.page, f.page.locator('#hud-close')); await expect(f.page.locator('#hud-window')).toBeHidden();
+  await lookPointer(f.page, f.page.locator('#hud-open-profile'));
+  await expect(f.page.locator('#appearance-form canvas[data-look-stage]')).toHaveAttribute('data-look-id', lookIds[4]!);
+  assert.deepEqual((await f.profile(a1, f.a.owner)).published.avatar, lookPair(), 'Closing retains the unsaved look without publishing it');
   // This native control change must go through the actual dirty confirmation rather than a direct controller call.
   await lookPointer(f.page, f.page.locator('#manager-object').getByRole('button', { name: '切换 Agent', exact: true }));
   await expect(f.page.getByRole('heading', { name: '离开当前编辑' })).toBeVisible();
@@ -162,7 +172,21 @@ test('two Owners and three Agents stay isolated; dirty selection, runtime policy
   assert.deepEqual(proposed.published.avatar, lookPair(lookIds[2]!));
   const nameOnly = await f.save(a2, f.a.owner, { displayName: a2.name + '改名' });
   assert.deepEqual(nameOnly.result.published.avatar, lookPair(lookIds[2]!)); assert.deepEqual(nameOnly.result.draft.avatar, lookPair(lookIds[5]!));
-  await f.logout(); await f.login(f.b.owner); await f.appearancePage(b1);
+  await lookPointer(f.page, f.page.locator('#manager-object').getByRole('button', { name: '管理', exact: true }));
+  const security = f.page.locator('button[data-manager-page="security"]'), initial = await lookNavigationObservation(security);
+  assert(initial.sidebar?.controlInside && initial.hitInside, 'At 1280 the initial security entry is inside its real sidebar clip and receives the pointer');
+  assert(initial.box.height >= 35, 'Compact spacing retains the existing 35px navigation target');
+  await lookPointer(f.page, security); await expect(f.page.locator('#manager-title-security')).toBeVisible();
+  await lookPointer(f.page, f.page.locator('#hud-close')); await expect(f.page.locator('#hud-window')).toBeHidden();
+  await expect(f.page.locator('#hud-open-profile')).toBeFocused();
+  await f.page.keyboard.press('Enter'); await expect(f.page.locator('#hud-window')).toHaveAttribute('data-panel-state', 'open');
+  await expect(f.page.locator('#manage-view')).toHaveAttribute('data-manager-page', 'appearance');
+  await lookPointer(f.page, f.page.locator('#manager-object').getByRole('button', { name: '管理', exact: true }));
+  const keyboard = await lookTabTo(f.page, security);
+  await f.page.keyboard.press('Enter'); await expect(f.page.locator('#manager-title-security')).toBeVisible();
+  await f.evidence('manager-navigation', { initial, keyboard, closedFocusReturned: 'hud-open-profile',
+    baselineBoundary: 'The earlier unscrolled sidebar clipped the entry; D separately demonstrated native wheel access. No total logout inaccessibility is inferred.' });
+  await f.logout(); await f.login(f.b.owner, { navigate: false }); await f.appearancePage(b1);
   await expect(f.page.locator('#agent-list')).not.toContainText(a1.name); await expect(f.page.locator('#selected-avatar canvas.avatar')).toHaveAttribute('data-look-id', lookIds[0]!);
   await f.logout();
 });
