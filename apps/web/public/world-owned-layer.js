@@ -65,7 +65,7 @@ export function createOwnedAgentLayer(root,graph,{blockedRects=[],onSelect=()=>{
       }
       const spriteKey=JSON.stringify(agent.avatar);if(entry.spriteKey!==spriteKey){entry.sprites.clear();entry.spriteKey=spriteKey;}entry.avatar=agent.avatar;entry.nameValue=agent.name;
       entry.owned=authoritative?agent.owned:true;
-      if(authoritative){if(renderer)receivePosition(entry,agent,{animate:projection.animate!==false,now});else Object.assign(entry,{x:agent.x,y:agent.y,walking:false,frame:0,direction:'down'});entry.projectionVersion=agent.projectionVersion;}
+      if(authoritative){if(renderer)receivePosition(entry,agent,{now,serverTime:projection.serverTime??now});else Object.assign(entry,{x:agent.x,y:agent.y,walking:false,frame:0,direction:'down'});entry.projectionVersion=agent.projectionVersion;}
       entry.fact=authoritative?agent.fact:null;
       entry.button.dataset.agentId=entry.agentId;entry.button.dataset.worldSource=authoritative?'server':'demo';
       entry.button.setAttribute('aria-label',authoritative?`${agent.name}，服务器角色，${agent.fact.placeId==='commons'?'公共庭，':''}${agent.fact.status==='suspended'?'已暂停':'已加入'}${entry.owned?'，我的 Agent，选择并管理':'，查看公开事实'}`:`${agent.name}，${agent.agentId===selectedId?'当前 Agent':'我的 Agent'}，选择并管理`);entry.button.setAttribute('aria-pressed',String(agent.agentId===selectedId));

@@ -2,9 +2,9 @@ import {createSceneClock,shanghaiTime} from './world-time.js';
 const put=(node,text)=>{if(node.textContent!==text)node.textContent=text;};
 export function sceneStatus(value,selectedAgentId=''){
   const rows=value.complete?value.avatars:[],selected=rows.find(row=>row.agentId===selectedAgentId),places=new Set(rows.map(row=>row.placeId).filter(Boolean)),open=value.rules?.places?.filter(place=>place.access==='members')||[];
-  const placeId=selected?.placeId||(places.size===1?[...places][0]:open.length===1?open[0].id:null),place=placeId==='commons'?'公共庭':null;
+  const placeId=selected?.placeId||(places.size===1?[...places][0]:open.length===1?open[0].id:null),place=selected?selected.placeId==='commons'?'公共庭':value.rules?.mapManifest?.mapId==='pixel-town-v2'?'小镇街区':null:value.rules?.mapManifest?.mapId==='pixel-town-v2'?'连续小镇':placeId==='commons'?'公共庭':null;
   const retained=value.phase==='recovering'||value.phase==='paused';
-  return{location:place?`${selected?.placeId?'角色所在':'当前场景'}：${place}`:'场景待确认',count:value.complete?`${retained?'上次画面':'公开角色'}：${rows.length}`:'公开角色：—',status:value.phase==='recovering'?'连接正在恢复，保留上次成功读取的场景。':value.phase==='partial'?'角色集合尚未完整读取。':['error','unavailable'].includes(value.phase)?'场景暂不可读取。':value.phase==='paused'?'场景读取已暂停。':''};
+  return{location:place?`${selected?'角色所在':'当前场景'}：${place}`:'场景待确认',count:value.complete?`${retained?'上次画面':'公开角色'}：${rows.length}`:'公开角色：—',status:value.phase==='recovering'?'连接正在恢复，保留上次成功读取的场景。':value.phase==='partial'?'角色集合尚未完整读取。':['error','unavailable'].includes(value.phase)?'场景暂不可读取。':value.phase==='paused'?'场景读取已暂停。':''};
 }
 export function createWorldStatusHud(root,{onTime=()=>{},clock=createSceneClock(),setTimer=setTimeout,clearTimer=clearTimeout}={}){
   const location=root.querySelector('#world-current-place'),count=root.querySelector('#world-scene-count'),time=root.querySelector('#world-current-time'),status=root.querySelector('#world-read-status');let value={phase:'loading',complete:false,avatars:[]},selectedAgentId='',visible=true,timer=null,disposed=false;

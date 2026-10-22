@@ -9,11 +9,11 @@ const READ_BUILD='world-provider-20261022-v1';
 // current scene response; reconnect/manual/visible boundaries rediscover it.
 export function createWorldSceneProvider({request=api,worldId='default',intervalMs=1000,maxPages=10,metadataTtlMs=30000,now=Date.now,setTimer=setTimeout,clearTimer=clearTimeout}={}){
   const listeners=new Set();let revision=0,controller=null,timer=null,visible=false,started=false,disposed=false,failures=0,metadata=null,notBefore=0,retryError=null,readStarted=false;
-  let state={phase:'loading',enabled:null,worldId,rules:null,avatars:[],worldRevision:null,asOf:null,serverTime:null,timeSource:null,instanceId:null,complete:false,nextCursor:null,errorCode:null,errorStatus:null,lastSuccessAt:null,retryAt:null};
+  let state={phase:'loading',enabled:null,worldId,rules:null,avatars:[],npcs:[],worldRevision:null,asOf:null,serverTime:null,timeSource:null,instanceId:null,complete:false,nextCursor:null,errorCode:null,errorStatus:null,lastSuccessAt:null,retryAt:null};
   const snapshot=()=>structuredClone(state);
   function emit(next){state={...state,...next};for(const listener of listeners)listener(snapshot());}
   function stop(){revision++;controller?.abort();controller=null;if(timer!==null)clearTimer(timer);timer=null;}
-  function cleared(){return{rules:null,avatars:[],worldRevision:null,asOf:null,serverTime:null,timeSource:null,complete:false,nextCursor:null,lastSuccessAt:null};}
+  function cleared(){return{rules:null,avatars:[],npcs:[],worldRevision:null,asOf:null,serverTime:null,timeSource:null,complete:false,nextCursor:null,lastSuccessAt:null};}
   const backoff=()=>Math.max(1000,intervalMs)*Math.min(30,2**Math.min(failures,5));
   const delay=()=>notBefore>now()?notBefore-now():failures?backoff():Math.max(1000,intervalMs);
   function schedule(){if(disposed||!visible||!started||state.phase==='partial')return;if(timer!==null)clearTimer(timer);timer=setTimer(()=>{timer=null;void refresh({reason:failures>0&&notBefore>0?'recovery':'timer'});},delay());}
@@ -40,21 +40,21 @@ export function createWorldSceneProvider({request=api,worldId='default',interval
       }
       const {caps,rules}=metadata;emit({enabled:true,instanceId:caps.instanceId});
       let serverTime=null;const unwrap=result=>{if(result?.protocolVersion!==1||result.instanceId!==caps.instanceId||!result.data)throw failure('world_response_invalid');serverTime=Number.isSafeInteger(result.serverTime)&&result.serverTime>=0?result.serverTime:null;return result.data;};
-      let cursor=more?previous.nextCursor:null,avatars=more?[...previous.avatars]:[],worldRevision=more?previous.worldRevision:null,asOf=more?previous.asOf:null;
+      let cursor=more?previous.nextCursor:null,avatars=more?[...previous.avatars]:[],worldRevision=more?previous.worldRevision:null,asOf=more?previous.asOf:null,npcs=[];
       if(more&&(!cursor||JSON.stringify(rules)!==JSON.stringify(previous.rules)))throw failure('world_scene_changed');
       const seenCursors=new Set(),seenAgents=new Set(avatars.map(row=>row.agentId));let complete=false;
       for(let page=0;page<maxPages;page++){
         const query=new URLSearchParams({worldId,limit:'50'});if(cursor)query.set('cursor',cursor);
         const batch=readWorldPage(unwrap(await read(`/world/scene?${query}`)),rules);
         if(worldRevision!==null&&worldRevision!==batch.worldRevision)throw failure('world_scene_changed');
-        worldRevision=batch.worldRevision;asOf=batch.asOf;
+        worldRevision=batch.worldRevision;asOf=batch.asOf;if(page&&JSON.stringify(npcs)!==JSON.stringify(batch.npcs))throw failure('world_scene_changed');npcs=batch.npcs;
         for(const avatar of batch.avatars){if(seenAgents.has(avatar.agentId))throw failure('world_response_invalid');seenAgents.add(avatar.agentId);avatars.push(avatar);}
         complete=batch.complete;cursor=batch.nextCursor;
         if(complete)break;
         if(seenCursors.has(cursor))throw failure('world_response_invalid');seenCursors.add(cursor);
       }
       if(!current())throw abortError();
-      failures=0;notBefore=0;retryError=null;emit({phase:complete?'ready':'partial',enabled:true,rules,avatars,worldRevision,asOf,serverTime:serverTime??asOf,timeSource:serverTime===null?'asOf':'serverTime',instanceId:caps.instanceId,complete,nextCursor:cursor,errorCode:null,errorStatus:null,lastSuccessAt:complete?now():null,retryAt:null});
+      failures=0;notBefore=0;retryError=null;emit({phase:complete?'ready':'partial',enabled:true,rules,avatars,npcs,worldRevision,asOf,serverTime:serverTime??asOf,timeSource:serverTime===null?'asOf':'serverTime',instanceId:caps.instanceId,complete,nextCursor:cursor,errorCode:null,errorStatus:null,lastSuccessAt:complete?now():null,retryAt:null});
     }catch(error){
       if(!current())return;
       failures++;metadata=null;
@@ -65,7 +65,7 @@ export function createWorldSceneProvider({request=api,worldId='default',interval
       notBefore=recoverable?Math.max(notBefore,now()+Math.max(backoff(),serverWait)):0;
       const code=error.code||(error.name==='AbortError'?'network_unknown':'world_response_invalid');
       retryError={errorCode:code,errorStatus:error.status??null};
-      emit({phase:keep?'recovering':['world_not_accessible','world_not_available'].includes(code)?'unavailable':'error',enabled:state.enabled,...(keep?{rules:previous.rules,avatars:previous.avatars,worldRevision:previous.worldRevision,asOf:previous.asOf,instanceId:previous.instanceId,complete:true,nextCursor:null,lastSuccessAt:previous.lastSuccessAt}:cleared()),errorCode:code,errorStatus:error.status??null,retryAt:now()+delay()});
+      emit({phase:keep?'recovering':['world_not_accessible','world_not_available'].includes(code)?'unavailable':'error',enabled:state.enabled,...(keep?{rules:previous.rules,avatars:previous.avatars,npcs:previous.npcs,worldRevision:previous.worldRevision,asOf:previous.asOf,instanceId:previous.instanceId,complete:true,nextCursor:null,lastSuccessAt:previous.lastSuccessAt}:cleared()),errorCode:code,errorStatus:error.status??null,retryAt:now()+delay()});
     }finally{if(current()){controller=null;schedule();}}
   }
   return{snapshot,subscribe(listener){listeners.add(listener);listener(snapshot());return()=>listeners.delete(listener);},
