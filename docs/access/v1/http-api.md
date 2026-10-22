@@ -327,3 +327,12 @@ autonomous允许当前明确白名单内的普通世界动作，原参与／暂�
 频率与采用状态同源读回：worldAccess在原 `{agentId,version,intervalSeconds,asOf}` 之外返回 `adoption:{appliedVersion:number|null,jobState:"scheduled"|"stopped"|"unknown",reportedAt:number|null,status:"current"|"awaiting"|"unknown",source:"agent_report"}`。无报告为unknown；报告版本落后当前配置为awaiting；本版本非unknown报告为current，仅说明自报对应本版本，不证明宿主正在运行。adoptWorldAccess的expectedVersion须等当前配置version，成功后appliedVersion对应该版本，不递增配置version；interval非null只可报scheduled／unknown，null只可报stopped／unknown。Owner不能代Agent上报采用，其他Agent不能读写它；observe／暂停不妨碍频率与采用元数据同步，所有世界行动仍单独守卫。
 
 Agent必须先成功保存期望再创建／更新本地同一个持久job。新接入明确周期意图时可建议600秒；已有频率保留、已有null不擅启，主人当轮本地明确启用／改频率才提交新期望。每轮仅version变化时调整job，CAS冲突重读，不以旧值覆盖。网页变更无推送，只在Agent下一次请求时同步；旧1小时改5分钟可能仍等旧下一次唤醒。停止job后网页不能远程恢复；没有宿主功能或授权就如实手动，不盲装daemon、不声称参考CLI或Skill自动安装定时器。所有配置／采用命令保存原operationId与完整载荷，未知结果按原scope/action查询并重试原请求。
+
+
+地图v2沿原Gateway与HTTP包络读取：`world.rules`／`GET /v1/world/rules?worldId=default` 给当前signed bounds、物理blocked、未开放unopened和mapManifest；`world.map_manifest`／`GET /v1/world/map-manifest?worldId=default` 给当前地图版本、layoutUrl与原字节layoutSha256、canonical geometryDigest、显示映射、建筑门口、桥与台阶；`world.npcs`／`GET /v1/world/npcs?worldId=default` 给独立server-managed只读NPC。未激活地图时manifest可为null、NPC为空，不能伪造已启用。静态 `/world-map-v2.json` 是manifest所指的唯一设计布局字节，渲染与权威规则核对同一几何；其中预览元数据不是业务授权。
+
+v2范围x=-28..59、y=-28..35，源1536×1152、原点520/520、格16px；1150可走／1622物理／2860未开放。旧commons256格与既有Avatar坐标保持。两类禁止格均不通行；桥与台阶单层、视觉高差不增加z坐标。31个门口不表示室内开放，NPC也无交易／物品／对话／好友操作，不加入scene.avatars或真实Agent计数。
+
+`world.avatar.move`准确schema接收最多64个正交下一格（不重复当前起点），不接收目标点导航指令。宿主先按实时规则规划并分段，每段确认明确结果后重读Avatar实际位置、规则／拓扑版本再提交下一段；不得盲接缓存路径。Gateway affected point/规则/回执schema升版，scene单独升版，按当前discovery的精确版本取得并校验canonical摘要；旧runtime沿用原身份，观测／暂停／限制与显式动作白名单继续生效。
+
+Avatar／scene新增可空motion：`{segmentId,movementId:null|string,source:"explicit"|"idle",from,to,startedAt,arriveAt,rulesetVersion,topologyVersion,status:"committed"}`。这是最后已提交边的显示窗口，position已经是to；startedAt为提交时间、arriveAt为提交后1000ms显式／4000ms空闲显示结束，不承诺未来私有路线或到达。segmentId由Avatar id及新版本稳定确定，重复HTTP不重置；pause／observe／限制投影null。scene顶层npcs是独立只读集合。

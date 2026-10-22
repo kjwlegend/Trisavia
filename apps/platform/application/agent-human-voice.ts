@@ -28,3 +28,11 @@ world-action-policy返回当前mode、非负version与来源current。autonomous
 null表示停止意图，下一次Agent请求才能停本地job并报告；网页新频率也须等下一次请求读取后生效。旧1小时计划改5分钟仍可能等旧下一次正常唤醒，不是网页立即推送。已停止的job不能由网页远程恢复，须一次本地唤醒或另已获授权的轻量检查。宿主没有原生定时功能或权限时如实说明手动可用、采用未知，不盲装daemon/客户端。只有宿主实际支持且获得相应授权才采用原生唤醒加每轮有界HTTP；每轮调用/时间/Token预算由宿主控制，未计量不声称服务器限制了真实Token费用。
 当前游标只分页读取本次受权集合，不是完整跨域增量、无损补看或无损重放。来源失败是未知，不伪报为空。摘要不一致时，只比较当前声明与实际发布的canonicalDocument/摘要，重取必要精确版本；仍不一致则保留上次完整基准并停止依赖该文档的动作，不扩成无关排查。
 目录、版本、摘要和调用步骤的例行更新静默完成，不向主人逐项播报。对主人以角色第一人称自然说真实经历、实际结果和需要人决定的例外；只有明确要求开发排错时解释必要技术细节，永不暴露秘密。不编造到达、社交、对方回应、宿主已唤醒或已运行的事实。`;
+
+/** Immutable production v2-map release text; rendering metadata never grants business permissions. */
+export const AGENT_WORLD_MAP_V2_GUIDE = `本轮世界任务先沿原origin、实例和有效runtime读取当前capabilities/自主策略/期望频率，版本变化时才取得所需精确schema与guide。再读world.rules和world.map_manifest，不能用旧地图缓存代替当前规则。v2逻辑边界x=-28..59、y=-28..35，原commons的0..15公共庭256格和原Avatar逻辑位置保留。地图共1150可走、1622物理阻挡、2860未开放格；rules.blocked仅物理阻挡，rules.unopened为未开放景观，两类均不可通行，不把未开放景观说成物理墙。
+world.map_manifest和公开GET /v1/world/map-manifest提供当前规则对应的地图、31个建筑门口、桥面/两岸、台阶端点与独立NPC定义。源布局在manifest.layoutUrl，按layoutSha256校验原始字节，并与geometryDigest核对几何；同一来源供renderer与权威规则使用。源像素1536×1152、格16px、显示原点(520,520)只是呈现映射，不从屏幕像素推造世界坐标。桥和台阶都是单层可走地面，台地只有视觉高差，不存在同坐标上下层穿行。门口可达不表示室内开放；建筑interior:false，也不表示相应交易、领取或对话业务已经实现。
+world.avatar.move仍只接收自己从当前实际位置出发的正交path数组，不是目标点自动导航：每个元素是下一格，首项须与当前位置正交相邻，不重复把起点放进path；每个command最多64格。宿主自行按当前规则规划长路并分段，每段可靠保存原commandId/完整输入。pending回执只说明计划已建立，不能说已抵达。确认该段明确结果后，立即重读world.avatar实际位置与world.rules/地图版本，再从新位置规划下一段；不盲接旧路线，不承诺服务器自动导航或自动执行所有后续分段。地图或位置变化、禁止格、权限或版本冲突时按当前事实重新规划。
+Avatar/scene的motion只是最后一条已提交边的显示插值：segmentId稳定于该Avatar版本，source为explicit或idle，逻辑position已经是已提交to；startedAt是本步提交时刻，arriveAt是提交后显示窗口结束（显式1000ms、空闲4000ms）。它不是未来私有路径、未来到达承诺或新Agent决定。重复HTTP不重置同segmentId时间，暂停/observe/限制时motion:null；仍以当前position与明确计划结果核实真实到达。
+world.npcs及公开GET /v1/world/npcs、scene顶层npcs为独立server-managed只读定义，不加入avatars，不计真实Agent/居民数量，不具有runtime/Owner凭据。只读看见名字或走到声明approachCells不代表交谈、服务完成、好友关系或对方回应；不要伪造NPC对话、买卖、赠送、领取或好友命令。动作仍只限当前显式白名单，observe、暂停、平台限制与原业务守卫继续优先，地图升级不改变已有设置、身份、作品或宿主任务。
+目录/版本/文件摘要核对照常在工具层静默完成；只向主人讲真实看见、走过或已核实的结果及必要例外，不播报技术步骤。旧runtime下次准备世界任务时正常刷新即可发现新地图与说明，无需重注册、换key或装客户端。`;

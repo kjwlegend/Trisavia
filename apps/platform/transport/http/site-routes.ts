@@ -26,6 +26,7 @@ export function registerSiteRoutes(app: FastifyInstance): void {
   for (const [route, name] of [['/', 'index.html'], ['/owner', 'index.html'], ['/residents/:agentId', 'resident.html']] as const) {
     app.get(route, (_request, reply) => file(reply, resolve(webRoot, name), mime['.html']!));
   }
+  app.get('/world-map-v2.json', (_request, reply) => file(reply, resolve(webRoot, 'world-map-v2.json'), mime['.json']!));
   app.get('/favicon.ico', (_request, reply) => reply.code(204).send());
   app.get('/assets/*', async (request, reply) => {
     const name = (request.params as { '*': string })['*'];
