@@ -385,3 +385,23 @@ TD冻结以下最小跨作者合同，WS01业务规则保持：
 责任与隔离：原A的m1-api在clean后切新`codex/world-look-api`、原B的m1-storage在clean后切新`codex/world-look-storage`，共同base **e0054c3**，各自旧分支／storage／outputs保留。A负责profile／目录resolver、M1／perception／access公开投影、必要schema／guide与app装配，明确接管world-service的一处只读投影；B负责PG codec／typed model／追加迁移及session窄adapter，不改历史迁移checksum／旧资料／回执。B本轮实际Sol／xhigh已于23:52轮次核实；A维持原已核配置。
 
 D原m1-web的18个WIP逐文件备份且原树未动，证据`outputs/world-ui-reliability/v1-web-wip-preserved/`；另分普通worktree **`/Users/kjw/Workspace/Codes/agents-era-worktrees/m1-web-look`**、`codex/world-look-panels-v2`、base07c7d18，由同D独占，依赖独立复制。D本轮23:56实际Sol／xhigh回执已核，已看v2实图；负责共享人物renderer、全部Owner／HUD缩略图与状态接线、v2人物场景和真实M2面板，可选择复用旧viewport／草稿／focus保护，但均纳入新版独审，不搬回v1白纸四色表单。C保留原五条隔离真实HTTP／持久化／浏览器故事及三个预留测试路径，待接口实现可组合后接续，不替代原独立reviewer或普通UI。各作者不操作当前18893／DB；视觉完整manifest随后核，未宣称新look或v2已发布。
+
+### 7.11 v2完整固定输入与后继执行登记（2026-10-22）
+
+原设计总监完整交付`pixel-panels-v2.0.0`，根已实看角色1440／1024、背包／信箱及稳定态详情，WS07原§6完成v0.4.1对齐。TD冻结到`outputs/world-ui-reliability/pixel-panels-v2.0.0-design/`，**50文件／231884字节**逐项hash及bytes匹配，按path排序后拼接`sha256 + 两空格 + path + 换行`重算bundleDigest **`683cfb4b86b46b5422c2e5ef5bc42f360166dc42d72e8a6e24ea82e79421855b`**。最终manifest文件自身SHA256为**`671ce35e84dfa7563f1d17dec3a07dd387247033ed5de652cbb83219b7179ede`**；前版c292355只在算法说明中有歧义，更正仅该字段，50内容文件与bundleDigest未变，旧manifest另存metadata-history。人物目录仍为前述v1.1；原世界31文件继续逐字节匹配。
+
+WS07 §6 v0.4.1另冻于人物子包目录，section SHA256 **`a6cbb49fb7f94383f49df55e70649b32bce44098804ba10440c9198cd041c5d3`**，原全文SHA256 **`c1cd8201d7b13da0044d75039716f9bf1e53e7fffec1fb02a66c49b8826f22db`**。D已切用完整固定v2几何／原生UI与此M2内容：真实platform-content格盘／查物区、四类连续来信列表、权限与空态、钱包0／未知／失败区分、单一阅读层与固定关闭／正文内滚；不添加未开放已读／删除写入。原型详情中途动画截图与后取稳定态分别保留范围，不代生产BL02或人类最终视觉签收。
+
+目录preview的最后形状已统一为`{kind:'layered-sprite',layers:[固定base-idle同源URL,固定hair-idle同源URL],frame:{x:0,y:0,width:96,height:64},anchor:{x:48,y:39}}`，仅服务端目录白名单生成，不接受用户任意资源URL。A在Perception预算reader之外保留原session的私有窄closure，但查询仍经过受控源读取计数／deadline，不公开unwrap或绕过预算。B准确范围为PG codec、只追加migrations、postgres-store窄adapter、runtime-store复用及专属PG测试；不得改旧迁移checksum。C在clean后已分`codex/world-look-acceptance`、basee0054c3，原分支／outputs保留，预留三测试路径；A／B／D当前三作者并行，C在可组合接缝就绪后接续，不共享可写区。
+
+main已从cb2以ff-only推进至**`a573f6296668e74213c1dc472cb5c0a0f84671d2`**（e005诊断与TD合同记录），四目标路径与7245项原脏路径无重叠，前后字节／模式及staged全部保持；证据`outputs/world-core/main-diagnostics-sync-a573f62/receipt.json`。运行仍为e005／82404。00:04:48及00:11:23仅读该进程的私有日志，两次均只有47字节启动行、零条429聚合事件，没有生成HTTP；只说明这两截止点尚无后继429样本，不能推定流量覆盖、原因已查明或故障关闭。
+
+### 7.12 look存储固定、组合依赖与恢复边界
+
+原B固定`e0054c3 → ad5f413df270154bb040179c17074e1b5db9e299`五路径：PG codec／migrations／postgres-store／runtime-store及专属`profile-appearance-postgresql.test.ts`。追加profiles v2，checksum **`6b07c281ddaa7c841d7589067329953be77be8f15c13f677bad68feeaa0e9d96`**，新schema signature **`e76fd26787b2037b08508c44324fa2ae27bb5392c2f60f21799a1f45aa69ce1a`**；旧迁移SQL与checksums保持。B实际受限PG9/9＝新4＋既有runtime5，full typecheck／diff0、无warning，九个随机自有测试库全部finally关池并按OID核对清理。覆盖新旧联合形、typed镜像冲突回滚、旧name-only及原载荷回执、三正式session与失效／真实SQL错误、隔离旧schema追加升级前后旧content原字节／receipt／版本／identity／checksum保全。普通证据`m1-storage/outputs/world-look/storage-e0054c3/`，TD五源码及三日志核对在`outputs/world-ui-reliability/storage-ad5f413-intake/`；已送原reviewer R34，尚未记独审通过，不扩大为应用／HTTP／UI通过。
+
+A在自己的分支取B同tree依赖后继续应用／目录／投影；具体依赖副本SHA与等价原B提交随其最终manifest记录，不为统一hash丢弃WIP。C clean树已ff-only到原ad5，00:26实际轮次Sol／xhigh已核，开始三个预留测试文件的真实PG／HTTP／浏览器fixture与五故事；A／D固定接线仍在实施，未用旧API的预期失败冒称通过。C不代原独立审查或普通UI。
+
+目录发布新增范围由原A负责：`scripts/ws01-appearance-catalog.ts`、perception-admin具名发布及ws02-admin-target仅进程注入的窄预检；普通CLI默认readiness不放宽。计划显式schema4→5／guide2→3，目标为原revision追加`-schema-5`，Skill同步；保留旧精确schema／guide原行与digest，不改sourceStates／collection声明／grants／正文／身份或World。目标instance／epoch／当前revision与operator／operationId回执须固定，同载荷重入不追加revision；隔离验证与实际发布仍待A固定，不能把计划当已交付。
+
+根明确后继恢复条件：**profiles v2物理升级后旧schema签名检查已不接受e005；产生新look真实保存后，更不能退回只懂basic／color的旧应用，不能回灌旧dump覆盖任何后续写入。**必须使用最终已审、能读取新旧形状的固定组合源码保留当前PG作前向修补；不把B-only存储候选当成完整新look服务回退。原world-core-upgrade脚本会在物理迁移后核应用readiness，TD已指出不能用schema5应用直接升级仍为schema4目录而假定全步成功；拟用固定受审B-only源执行物理升级，再用最终候选执行具名目录发布，最后闭门启动并逐步保全／验证。该具体顺序须由A／B隔离证据确认后才能用于维护；当前18893仍e005／82404，未执行任何look迁移或目录发布。
