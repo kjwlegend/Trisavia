@@ -3,6 +3,7 @@ import { defineRuntimeRepository } from '../../contracts/runtime-store.ts';
 
 /** All methods participate in the caller's guarded transaction. No retained client. */
 export interface WorldRepository {
+  activateRuleset(ruleset:WorldRuleset,expectedWorldRevision:number):Promise<WorldState>;
   initialize(world: WorldState, ruleset: WorldRuleset): Promise<void>;
   getWorld(worldId: string): Promise<WorldState | undefined>;
   getRuleset(worldId: string, version: number): Promise<WorldRuleset | undefined>;

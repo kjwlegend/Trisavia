@@ -33,6 +33,7 @@ export function coreFixture() {
     const old = map.get(id); if (expected === null ? old !== undefined : old?.version !== expected) throw new RuntimeError('version_conflict', 'CAS failed'); map.set(id, copy(next));
   }
   const world: WorldRepository = {
+    async activateRuleset(r,expected){const old=state.worlds.get(r.worldId);if(!old||old.revision!==expected)throw new RuntimeError('version_conflict','World changed');if(old.rulesetVersion===r.version)return copy(old);state.rules.set(r.worldId+':'+r.version,copy(r));old.rulesetVersion=r.version;old.revision++;return copy(old);},
     async initialize(w, r) { if (!state.worlds.has(w.worldId)) { state.worlds.set(w.worldId, copy(w)); state.rules.set(w.worldId + ':' + r.version, copy(r)); } },
     async getWorld(id) { return copy(state.worlds.get(id)); }, async lockWorld(id) { return copy(state.worlds.get(id)); },
     async getRuleset(id, v) { return copy(state.rules.get(id + ':' + v)); },

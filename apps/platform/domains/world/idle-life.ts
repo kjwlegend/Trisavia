@@ -1,5 +1,5 @@
 import { M1Error } from '../common/errors.ts';
-import { assertCell } from './rules.ts';
+import { assertCell, worldBounds } from './rules.ts';
 import type { GridPoint, WorldRuleset } from './types.ts';
 
 /** Grid steps, never animation frames. Each Avatar reuses one fenced persisted task. */
@@ -18,10 +18,10 @@ const separation = (cell: GridPoint, occupied: GridPoint[]) => occupied.length ?
 
 /** Bounded candidates include the configured legal fallback even for a very large future world. */
 export function spawnCandidates(rules: WorldRuleset, occupied: GridPoint[], seed: number): GridPoint[] {
-  const total = rules.width * rules.height, count = Math.min(total, 4096), candidates = new Map<string, GridPoint>();
+  const bounds=worldBounds(rules),total = rules.width * rules.height, count = Math.min(total, 16384), candidates = new Map<string, GridPoint>();
   for (let index = 0; index < count; index++) {
     const ordinal = total <= count ? (index + seed % total) % total : (Math.imul(index, 2654435761) + seed >>> 0) % total;
-    const cell = { x: ordinal % rules.width, y: Math.floor(ordinal / rules.width) };
+    const cell = { x: bounds.minX+ordinal % rules.width, y: bounds.minY+Math.floor(ordinal / rules.width) };
     if (isWalkable(rules, cell)) candidates.set(cellKey(cell), cell);
   }
   candidates.set(cellKey(rules.spawn), { ...rules.spawn });

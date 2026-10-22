@@ -16,6 +16,9 @@ export interface WorldRuleset {
   blocked: GridPoint[];
   places: WorldPlace[];
   maxPathLength: number;
+  bounds?:WorldBounds;
+  unopened?:GridPoint[];
+  mapManifest?:WorldMapManifest;
 }
 export interface WorldState {
   worldId: string;
@@ -30,6 +33,7 @@ export interface WorldAvatar {
   version: number;
   status: 'idle' | 'suspended' | 'left';
   position: GridPoint;
+  motion?:WorldMotion|null;
   placeId: string | null;
   rulesetVersion: number;
   createdAt: number;
@@ -66,3 +70,16 @@ export interface WorldMovement {
   commandId: string; recoveryEpoch: string;
   qualification: { runtimeVersion: number; ownerPauseVersion: number; platformVersion: number; sharingGeneration: number };
 }
+
+export interface WorldBounds { minX:number; minY:number; maxX:number; maxY:number }
+export interface WorldNpc { npcId:string;name:string;role:string;position:GridPoint;approachCells:GridPoint[];appearance:{lookId:string;catalogVersion:string};serverManaged:true;readOnly:true;actions:never[];status:'service_unavailable';countsAsAgent:false }
+export interface WorldMapManifest {
+ mapId:string;version:number;layoutUrl:string;layoutSha256:string;geometryDigest:string;
+ source:{width:number;height:number};tileSize:number;origin:GridPoint;bounds:WorldBounds;
+ counts:{walkable:number;physicalBlocked:number;unopened:number};singleSurface:true;visualElevationOnly:true;
+ buildings:{id:string;name:string;entrance:GridPoint;interior:false}[];
+ bridges:{id:string;name:string;deckCells:GridPoint[];bankApproachCells:GridPoint[]}[];
+ stairs:{id:string;name:string;cells:GridPoint[];lowerEndpoint:GridPoint;upperEndpoint:GridPoint}[];
+ npcs:WorldNpc[];
+}
+export interface WorldMotion { segmentId:string;movementId:string|null;source:'explicit'|'idle';from:GridPoint;to:GridPoint;startedAt:number;arriveAt:number;rulesetVersion:number;topologyVersion:number;status:'committed' }

@@ -64,10 +64,10 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
       }
     }
   }
-  async function commitPosition(context: RuntimeTransaction, rules: WorldRuleset, avatar: WorldAvatar, cell: GridPoint): Promise<WorldAvatar> {
+  async function commitPosition(context: RuntimeTransaction, rules: WorldRuleset, avatar: WorldAvatar, cell: GridPoint, source:'explicit'|'idle'='idle',movementId:string|null=null): Promise<WorldAvatar> {
     const destination = validatePath(rules, avatar.position, [cell])[0]!;
     await capacity(context, rules, [destination], avatar.agentId);
-    const next = { ...avatar, version: avatar.version + 1, position: { ...destination }, placeId: containingPlace(rules, destination)?.id ?? null, rulesetVersion: rules.version, updatedAt: context.now() };
+    const next = { ...avatar, version: avatar.version + 1, position: { ...destination }, placeId: containingPlace(rules, destination)?.id ?? null, rulesetVersion: rules.version, updatedAt: context.now(),motion:{segmentId:avatar.id+':'+(avatar.version+1),movementId,source,from:{...avatar.position},to:{...destination},startedAt:context.now(),arriveAt:context.now()+(source==='explicit'?MOVEMENT_POLICY_V1.stepIntervalMs:IDLE_LIFE_POLICY_V1.stepIntervalMs),rulesetVersion:rules.version,topologyVersion:rules.topologyVersion,status:'committed' as const} };
     await context.repository(WORLD_REPOSITORY).saveAvatar(next, avatar.version); return next;
   }
   const restMs = (avatar: WorldAvatar) => IDLE_LIFE_POLICY_V1.minRestMs + idleSeed(avatar.id + ':' + avatar.version) % IDLE_LIFE_POLICY_V1.restJitterMs;
@@ -142,6 +142,11 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
       audience: { kind: 'agents', agentIds: [movement.agentId] }, payload: movementResult(movement, revision) });
     await context.outbox.enqueue({ outboxId: randomUUID(), eventId, consumerId: 'world-projection', dedupeKey: eventId, generation: await context.tasks.currentGeneration('world'), dueAt: context.now(), maxAttempts: 5 }); return [eventId];
   }
+  function currentPlanRules(movement:WorldMovement,rules:WorldRuleset):boolean {
+    if(movement.rulesetVersion===rules.version&&movement.topologyVersion===rules.topologyVersion)return true;
+    return movement.rulesetVersion===1&&movement.topologyVersion===1&&rules.version===2&&rules.topologyVersion===2&&rules.mapManifest?.mapId==='pixel-town-v2'
+      &&movement.path.slice(movement.nextStep).every(cell=>cell.x>=0&&cell.x<=15&&cell.y>=0&&cell.y<=15);
+  }
   async function handleTask(context: RuntimeTransaction, scheduled: RuntimeTask): Promise<void> {
     if (!scheduled.lease) fail('invalid_task', 400, 'World movement requires a current lease');
     const task = await context.tasks.assertLease(scheduled.lease, context.now());
@@ -157,7 +162,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
       if (movement.recoveryEpoch !== context.recoveryEpoch || status.runtimeVersion !== q.runtimeVersion || status.membership.ownerPauseVersion !== q.ownerPauseVersion
         || status.membership.platformVersion !== q.platformVersion || status.membership.sharingGeneration !== q.sharingGeneration || status.actionPolicy.version !== (task.payload.actionPolicyVersion ?? 0)) fail('movement_qualification_changed', 409, 'Movement qualification has changed');
       const current = await rulesFor(context, movement.worldId); rules = current.rules;
-      if (movement.rulesetVersion !== rules.version || movement.topologyVersion !== rules.topologyVersion || movement.policyVersion !== MOVEMENT_POLICY_V1.version || movement.stepIntervalMs !== MOVEMENT_POLICY_V1.stepIntervalMs) fail('movement_rules_changed', 409, 'Movement rules have changed');
+      if (!currentPlanRules(movement,rules) || movement.policyVersion !== MOVEMENT_POLICY_V1.version || movement.stepIntervalMs !== MOVEMENT_POLICY_V1.stepIntervalMs) fail('movement_rules_changed', 409, 'Movement rules have changed');
       const existing = await repository.getAvatar(movement.worldId, movement.agentId); if (!existing || existing.id !== movement.avatarId || existing.status !== 'idle' || existing.version !== movement.expectedAvatarVersion) fail('movement_avatar_changed', 409, 'Avatar has changed'); avatar = existing;
       const cell = movement.path[movement.nextStep]; if (!cell || movement.nextDueAt === null || task.dueAt !== movement.nextDueAt || context.now() < movement.nextDueAt) fail('movement_plan_invalid', 409, 'Movement plan is not executable');
       destination = validatePath(rules, avatar.position, [cell])[0]!; await capacity(context, rules, [destination], movement.agentId);
@@ -165,13 +170,13 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
         await participation(latest, movement.agentId, movement.worldId, true); const fresh = await identity.readParticipation(latest, movement.agentId), q = movement.qualification;
         const current = await rulesFor(latest, movement.worldId);
         if (fresh.runtimeVersion !== q.runtimeVersion || fresh.membership.ownerPauseVersion !== q.ownerPauseVersion || fresh.membership.platformVersion !== q.platformVersion
-          || fresh.membership.sharingGeneration !== q.sharingGeneration || fresh.actionPolicy.version !== (task.payload.actionPolicyVersion ?? 0) || current.rules.version !== movement.rulesetVersion || current.rules.topologyVersion !== movement.topologyVersion) fail('world_qualification_changed', 409, 'Movement qualification changed before commit');
+          || fresh.membership.sharingGeneration !== q.sharingGeneration || fresh.actionPolicy.version !== (task.payload.actionPolicyVersion ?? 0) || current.rules.version !== rules.version || current.rules.topologyVersion !== rules.topologyVersion || !currentPlanRules(movement,current.rules)) fail('world_qualification_changed', 409, 'Movement qualification changed before commit');
       });
     } catch (error) {
       if (!(error instanceof M1Error) || error.statusCode >= 500) throw error;
       const next = stopped(movement, context.now(), error.code); await repository.saveMovement(next, movement.version); const revision = await repository.advanceRevision(movement.worldId, world.revision); await movementFact(context, key, next, revision); return;
     }
-    const now = context.now(), nextAvatar = await commitPosition(context, rules, avatar, destination);
+    const now = context.now(), nextAvatar = await commitPosition(context, rules, avatar, destination,'explicit',movement.id);
     const finished = movement.nextStep + 1 === movement.path.length;
     const next: WorldMovement = { ...movement, version: movement.version + 1, state: finished ? 'completed' : 'running', nextStep: movement.nextStep + 1,
       expectedAvatarVersion: nextAvatar.version, updatedAt: now, nextDueAt: finished ? null : now + movement.stepIntervalMs, completedAt: finished ? now : null };
@@ -179,24 +184,32 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
     const revision = await repository.advanceRevision(movement.worldId, world.revision); await fact(context, key, nextAvatar, 'world.avatar.moved', revision); await movementFact(context, key, next, revision);
     // Controlled scheduler completes the same lease only after this handler's writes succeed.
   }
+  async function projectedAvatar(context:RuntimeReadContext,avatar:WorldAvatar):Promise<WorldAvatar>{
+    const status=await identity.readParticipation(context,avatar.agentId),motion=avatar.motion;
+    if(!motion||status.membership.ownerPaused||status.membership.platformRestricted||status.actionPolicy.mode!=='autonomous')return {...structuredClone(avatar),motion:null};
+    const latest=await context.repository(WORLD_REPOSITORY).getLatestMovement(avatar.worldId,avatar.agentId);
+    const cancelled=latest?.state==='stopped'&&latest.updatedAt>=motion.startedAt;
+    return {...structuredClone(avatar),motion:cancelled?null:structuredClone(motion)};
+  }
+  async function mapProjection(context:RuntimeReadContext,worldId:string,npcs=false){const {world,rules}=await rulesFor(context,worldId);return {worldId,worldRevision:world.revision,rulesetVersion:rules.version,topologyVersion:rules.topologyVersion,...(npcs?{npcs:structuredClone(rules.mapManifest?.npcs??[])}:{manifest:structuredClone(rules.mapManifest??null)}),asOf:context.now()};}
   async function sceneProjection(context: RuntimeReadContext, worldId: string, observer: string, options: { cursor?: string; limit?: number } = {}) {
       const limit = options.limit ?? 50;
       if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100 || options.cursor !== undefined && typeof options.cursor !== 'string') fail('invalid_request', 400, 'Invalid scene query');
       const scope = { instanceId: context.instanceId, recoveryEpoch: context.recoveryEpoch, worldId, agentId: observer, limit };
       let after = options.cursor === undefined ? undefined : cursors.decode(options.cursor, scope, context.now()), complete = false, scanned = 0;
-      const { world } = await rulesFor(context, worldId), avatars: (WorldAvatar & { profile: PublicAgentView })[] = [], repository = context.repository(WORLD_REPOSITORY);
+      const { world,rules } = await rulesFor(context, worldId), avatars: (WorldAvatar & { profile: PublicAgentView })[] = [], repository = context.repository(WORLD_REPOSITORY);
       while (avatars.length < limit && scanned < 500 && !complete) {
         const batchSize = Math.min(50, 500 - scanned), candidates = await repository.listAvatars(worldId, { ...(after ? { afterAgentId: after } : {}), limit: batchSize });
         if (!candidates.length) { complete = true; break; }
         for (let index = 0; index < candidates.length; index++) {
           const avatar = candidates[index]!; after = avatar.agentId; scanned++;
-          try { await participation(context, avatar.agentId, worldId, false); const profile = await identity.readPublicAgent(context, avatar.agentId); if (avatar.status !== 'left' && profile) avatars.push({ ...structuredClone(avatar), profile: {...structuredClone(profile),appearance:resolveAppearance(profile.appearance,{avatarId:avatar.id})!} }); }
+          try { await participation(context, avatar.agentId, worldId, false); const profile = await identity.readPublicAgent(context, avatar.agentId); if (avatar.status !== 'left' && profile) avatars.push({ ...await projectedAvatar(context,avatar), profile: {...structuredClone(profile),appearance:resolveAppearance(profile.appearance,{avatarId:avatar.id})!} }); }
           catch (error) { if (!(error instanceof M1Error) || error.statusCode >= 500) throw error; }
           if (avatars.length === limit) { complete = index === candidates.length - 1 && candidates.length < batchSize; break; }
         }
         if (avatars.length < limit && candidates.length < batchSize) complete = true;
       }
-      return { worldId, worldRevision: world.revision, asOf: context.now(), scope: 'world', avatars, complete, nextCursor: !complete && after ? cursors.encode(after, scope, context.now()) : null };
+      return { worldId, worldRevision: world.revision, asOf: context.now(), scope: 'world', avatars,npcs:structuredClone(rules.mapManifest?.npcs??[]), complete, nextCursor: !complete && after ? cursors.encode(after, scope, context.now()) : null };
   }
   async function execute(context: RuntimeTransaction, principal: Principal, key: CommandKey, input: JsonObject): Promise<CommandReceipt> {
     if (key.domain !== 'world' || !actions.includes(key.action) || principal.kind !== 'agent' || key.principal.kind !== 'agent' || key.principal.id !== principal.agentId) fail('invalid_request', 400, 'Invalid world command identity');
@@ -245,11 +258,11 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
           if (!spawn) fail('place_capacity_reached', 409, 'No accessible spawn is available');
           assertCell(rules, spawn); await capacity(current, rules, [spawn], agentId);
           avatar = { id: old?.id ?? randomUUID(), worldId, agentId, version: old ? old.version + 1 : 1, status: 'idle', position: { ...spawn },
-            placeId: containingPlace(rules, spawn)?.id ?? null, rulesetVersion: rules.version, createdAt: old?.createdAt ?? now, updatedAt: now }; kind = 'world.avatar.created';
+            placeId: containingPlace(rules, spawn)?.id ?? null, rulesetVersion: rules.version, createdAt: old?.createdAt ?? now, updatedAt: now,motion:null }; kind = 'world.avatar.created';
         } else {
           if (!old || old.status === 'left') fail('avatar_not_found', 404, 'Avatar is not available');
           if (version(request.expectedVersion) !== old.version) fail('version_conflict', 409, 'Avatar has changed');
-          if (key.action === 'world.avatar.leave') { const active = await repository.getActiveMovement(worldId, agentId); if (active) await repository.saveMovement(stopped(active, now, 'avatar_left'), active.version); avatar = { ...old, version: old.version + 1, status: 'left', placeId: null, updatedAt: now }; kind = 'world.avatar.left'; }
+          if (key.action === 'world.avatar.leave') { const active = await repository.getActiveMovement(worldId, agentId); if (active) await repository.saveMovement(stopped(active, now, 'avatar_left'), active.version); avatar = { ...old, version: old.version + 1, status: 'left', placeId: null, updatedAt: now,motion:null }; kind = 'world.avatar.left'; }
           else {
             if (version(request.expectedRulesetVersion, 'expectedRulesetVersion') !== rules.version || version(request.expectedTopologyVersion, 'expectedTopologyVersion') !== rules.topologyVersion) fail('version_conflict', 409, 'World rules have changed');
             if (await repository.getActiveMovement(worldId, agentId)) fail('movement_in_progress', 409, 'The Avatar already has an active movement');
@@ -274,9 +287,13 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
     try { await participation(context, target, worldId, false); if (target !== actor && !await identity.readPublicAgent(context, target)) fail('avatar_not_found', 404, 'Avatar is not available'); } catch (error) { if (error instanceof M1Error && [403, 404].includes(error.statusCode)) fail('avatar_not_found', 404, 'Avatar is not available'); throw error; }
     const { world } = await rulesFor(context, worldId), avatar = await context.repository(WORLD_REPOSITORY).getAvatar(worldId, target);
     if (!avatar || avatar.status === 'left') fail('avatar_not_found', 404, 'Avatar is not available');
-    return { worldId, worldRevision: world.revision, asOf: context.now(), avatar: structuredClone(avatar) };
+    return { worldId, worldRevision: world.revision, asOf: context.now(), avatar: await projectedAvatar(context,avatar) };
   }
   return { execute, readAvatar, handleTask, handleIdleTask, ensureIdleLife,
+    async readMapManifest(context:RuntimeReadContext,principal:Principal,worldId:string){await participation(context,await authorize(context,principal),worldId,false);return mapProjection(context,worldId);},
+    async readNpcs(context:RuntimeReadContext,principal:Principal,worldId:string){await participation(context,await authorize(context,principal),worldId,false);return mapProjection(context,worldId,true);},
+    async readPublicMapManifest(context:RuntimeReadContext,worldId:string){return mapProjection(context,worldId);},
+    async readPublicNpcs(context:RuntimeReadContext,worldId:string){return mapProjection(context,worldId,true);},
     async readMovement(context: RuntimeReadContext, principal: Principal, worldId: string, movementId?: string): Promise<JsonObject> {
       const actor = await authorize(context, principal); await participation(context, actor, worldId, false); const { world } = await rulesFor(context, worldId), repository = context.repository(WORLD_REPOSITORY);
       const movement = movementId === undefined ? await repository.getActiveMovement(worldId, actor) : await repository.getMovement(identifier(movementId, 'movementId'));
