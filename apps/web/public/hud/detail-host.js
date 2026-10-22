@@ -12,7 +12,16 @@ export function createDetailHost(root,underlay){
   closeButton.id='hud-detail-close';closeButton.type='button';closeButton.setAttribute('aria-label','关闭详情');closeButton.append(icon('close'));header.append(title,closeButton);
   const footer=el('div','hud-reader-footer'),backButton=el('button','','返回信箱');backButton.type='button';footer.append(backButton);let backAction=null;backButton.addEventListener('click',()=>backAction?backAction():close());
   const body=el('div','hud-window-body');body.id='hud-detail-body';body.addEventListener('wheel',event=>event.stopPropagation(),{passive:true});node.append(nativeFrame('lightWood'),header,body,footer);root.append(node);
-  const transition=createPanelTransition(node),environment=getPanelEnvironment();let opened=false,onClose=null;
+  const transition=createPanelTransition(node),environment=getPanelEnvironment();let opened=false,onClose=null,fullTitle=null;
+  function syncFullTitle(){
+    if(!opened)return;
+    // Keep the fixed header compact while making every clipped title readable.
+    const clipped=title.clientHeight>0&&title.scrollHeight>title.clientHeight+1;
+    if(!clipped){fullTitle?.remove();fullTitle=null;return;}
+    if(!fullTitle||fullTitle.parentNode!==body){fullTitle=el('h3','hud-reader-full-title');body.prepend(fullTitle);}
+    fullTitle.textContent=title.textContent;
+  }
+  const titleObserver=new ResizeObserver(syncFullTitle);titleObserver.observe(title);
   function close(restore=true){
     if(!opened)return;opened=false;environment.set('detail',null);
     transition.hide();const callback=onClose;onClose=null;callback?.(restore);
@@ -20,11 +29,11 @@ export function createDetailHost(root,underlay){
   closeButton.addEventListener('click',()=>close());
   return{
     node,body,get isOpen(){return opened;},
-    open(label,content,closed){opened=true;onClose=closed;backAction=null;backButton.textContent='返回信箱';title.textContent=label;body.replaceChildren(content);environment.set('detail',node);transition.show();title.focus({preventScroll:true});},
-    update(label,content){if(!opened)return;title.textContent=label;body.replaceChildren(content);},
-    clear(){title.textContent='';body.replaceChildren();},
+    open(label,content,closed){opened=true;onClose=closed;backAction=null;backButton.textContent='返回信箱';title.textContent=label;body.replaceChildren(content);environment.set('detail',node);transition.show();syncFullTitle();title.focus({preventScroll:true});},
+    update(label,content){if(!opened)return;title.textContent=label;body.replaceChildren(content);syncFullTitle();},
+    clear(){title.textContent='';body.replaceChildren();fullTitle=null;},
     setBack(label,action){backButton.textContent=label;backAction=action;},
     focusTitle(){if(opened)title.focus({preventScroll:true});},close,
-    destroy(){close(false);transition.destroy();},
+    destroy(){close(false);titleObserver.disconnect();transition.destroy();},
   };
 }

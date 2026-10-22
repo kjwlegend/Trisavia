@@ -43,7 +43,7 @@ function eventTime(record,detail){
   return '';
 }
 function statusText(record){return({demo_planned:'演示计划，尚无发生结果',demo_occurred:'演示发生记录',committed:'内容已发布'})[record?.summary?.status]||'';}
-function agentBar(state,chooseAgent){const bar=el('div','pixel-agent-bar'),agent=selectedAgent(state),picture=el('div','pixel-agent-picture');if(agent)avatar(picture,{avatar:agent.avatar},agent.agentId);else picture.append(icon('profile'));bar.append(picture,el('strong','',agent?.name||'尚未选择 Agent'),button(state.authenticated?'切换 Agent':'登录账号',chooseAgent));return bar;}
+function agentBar(state,chooseAgent){const bar=el('div','hud-platform-agent'),agent=selectedAgent(state),picture=el('div','hud-platform-agent-picture');if(agent)avatar(picture,{avatar:agent.avatar},agent.agentId);else picture.append(icon('profile'));bar.append(picture,el('strong','',agent?.name||'尚未选择 Agent'),button(state.authenticated?'切换 Agent':'登录账号',chooseAgent));return bar;}
 function tabs(options,current,select){const bar=el('div','hud-filters');for(const [key,label]of options){const control=button(label,()=>select(key));control.dataset.platformTab=key;control.setAttribute('aria-pressed',String(key===current));bar.append(control);}return bar;}
 const emptyText={holdings:'这个 Agent 暂无持有物品。',items:'当前没有可查看的物品。',messages:'这个 Agent 暂无消息。',notifications:'这个 Agent 暂无通知。',announcements:'当前没有可查看的公告。',events:'当前没有可查看的事件。'};
 function feedback(state,key,retry,chooseAgent){

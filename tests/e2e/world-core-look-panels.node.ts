@@ -2,7 +2,7 @@
 // no listener, Owner credentials, live account or business writes are used.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFile,mkdir} from 'node:fs/promises';
+import {readFile,mkdir,writeFile} from 'node:fs/promises';
 import {resolve,extname} from 'node:path';
 import {chromium,expect,type BrowserContext} from '@playwright/test';
 const origin='https://pixel-panels.invalid',root=resolve('apps/web/public'),out=resolve(process.env.WORLD_LOOK_ARTIFACTS||'outputs/world-look-panels-v2/browser');
@@ -38,8 +38,8 @@ test('synthetic normal anonymous shell contains native outside scrolling and kee
  }
 });
 
-async function mountComponents(page:any){
- await page.evaluate(async()=>{
+async function mountComponents(page:any,flags:{longTitles?:boolean;longName?:boolean}={}){
+ await page.evaluate(async(flags:{longTitles?:boolean;longName?:boolean})=>{
   const common=await import('/assets/common.js' as string),panel=await import('/assets/owner-panel.js' as string),layout=await import('/assets/hud/panel-layout.js' as string),environment=await import('/assets/hud/panel-environment.js' as string),hostModule=await import('/assets/hud/detail-host.js' as string),content=await import('/assets/hud/features/platform-content.js' as string),native=await import('/assets/world-pixel/native-ui.js' as string);
   const root=document.querySelector('#hud-root')!,dock=document.createElement('nav');dock.id='hud-dock';dock.className='hud-dock';for(const label of ['个人','背包','信箱','世界']){const b=document.createElement('button');b.textContent=label;b.type='button';dock.append(b);}root.append(dock);
   const win=document.createElement('section');win.className='hud-window is-account is-manager';win.id='hud-window';win.setAttribute('role','dialog');win.innerHTML='<div class="hud-window-header"><h2 id="hud-title" tabindex="-1">角色设置</h2><button id="hud-close" aria-label="关闭窗口">×</button></div><div class="hud-window-body"></div>';win.prepend(native.nativeFrame('lightWood'));root.append(win);const body=win.querySelector('.hud-window-body')!;
@@ -49,13 +49,14 @@ async function mountComponents(page:any){
   presentation.state({authenticated:true,selectedAgentId:agent.agentId,username:'Synthetic Owner',agents:[{agentId:agent.agentId,name:agent.profile.published.displayName,avatar:agent.profile.published.avatar,membership:'joined'}]});account.querySelector('#auth-view')!.setAttribute('hidden','');account.querySelector('#manage-view')!.removeAttribute('hidden');(account.querySelector('#display-name') as HTMLInputElement).value=agent.profile.published.displayName;presentation.agent(agent);presentation.rememberForm();presentation.navigate(currentPage);
   presentation.setNavigator(async(next:string)=>{if(presentation.dirty()){if(!await presentation.confirm('离开当前编辑','未保存的修改','放弃修改并离开'))return;confirmed=true;presentation.rememberForm();}currentPage=next;presentation.navigate(next);});
   const host=hostModule.createDetailHost(root,win);document.addEventListener('keydown',event=>{if(event.key==='Escape'&&host.isOpen){event.preventDefault();host.close();}});
-  const record={ref:{moduleId:'mailbox',type:'mailbox.message@1',id:'notification-1'},version:1,summary:{title:'真实形状的长标题通知，显示在合成工程故事',dataMode:'platform',source:{kind:'administrative_publication',publishedAt:1}},detailAvailable:true};
+  const relatedTitle='关联物品的完整标题用于普通视觉阅读校验。'.repeat(12).slice(0,180),identityName=flags.longName?'当前角色的完整姓名甲乙丙丁。'.repeat(5).slice(0,60):'实际收件对象';
+  const record={ref:{moduleId:'mailbox',type:'mailbox.message@1',id:'notification-1'},version:1,summary:{title:flags.longTitles?'这是一份合法的完整通知标题用于普通视觉阅读。'.repeat(12).slice(0,180):'真实形状的长标题通知，显示在合成工程故事',dataMode:'platform',source:{kind:'administrative_publication',publishedAt:1}},detailAvailable:true};
   const holding={ref:{moduleId:'inventory',type:'inventory.holding@1',id:'holding-1'},version:1,summary:{title:'合成持有对象',quantity:2,itemKind:'prop',status:'active',dataMode:'platform'},detailAvailable:true};
-  const state={authenticated:true,phase:'ready',selectedAgentId:agent.agentId,observationRevision:1,agents:[{agentId:agent.agentId,name:'实际收件对象',avatar:agent.profile.publishedAppearance}]},session={snapshot:()=>state,hudContext:()=>null},wallet={snapshot:()=>({phase:'ready',data:{currency:{displayName:'星币'},balance:0}}),subscribe:()=>()=>{},load:async()=>{},cancel:()=>{}};
-  const subscribers=new Set<(key:string)=>void>();const provider={snapshot:(key:string)=>({phase:'ready',complete:true,records:key==='notifications'?[record]:key==='holdings'?[holding]:[],nextPageToken:null}),subscribe:(listener:(key:string)=>void)=>{subscribers.add(listener);return()=>subscribers.delete(listener);},load:async(key:string)=>{for(const listener of subscribers)listener(key);},cancel:()=>{},detail:async(key:string)=>({content:{title:key==='holdings'?'合成持有对象':record.summary.title,text:'长正文\n'.repeat(250),quantity:2,dataMode:'platform',source:{kind:'administrative_publication'}}})};
+  const state={authenticated:true,phase:'ready',selectedAgentId:agent.agentId,observationRevision:1,agents:[{agentId:agent.agentId,name:identityName,avatar:agent.profile.publishedAppearance}]},session={snapshot:()=>state,hudContext:()=>null},wallet={snapshot:()=>({phase:'ready',data:{currency:{displayName:'星币'},balance:0}}),subscribe:()=>()=>{},load:async()=>{},cancel:()=>{}};
+  const subscribers=new Set<(key:string)=>void>();const provider={snapshot:(key:string)=>({phase:'ready',complete:true,records:key==='notifications'?[record]:key==='holdings'?[holding]:[],nextPageToken:null}),subscribe:(listener:(key:string)=>void)=>{subscribers.add(listener);return()=>subscribers.delete(listener);},load:async(key:string)=>{for(const listener of subscribers)listener(key);},cancel:()=>{},detail:async(key:string)=>({content:{title:key==='holdings'?'合成持有对象':key==='items'?relatedTitle:record.summary.title,text:flags.longTitles?'这里是完整正文。\n'.repeat(100):'长正文\n'.repeat(250),...(flags.longTitles&&key==='notifications'?{publication:{relatedItems:[{ref:{moduleId:'items',type:'items.item@1',id:'related-title-item'},title:relatedTitle}]}}:{}),quantity:2,dataMode:'platform',source:{kind:'administrative_publication'}}})};
   const inventory=content.createPlatformInventory(provider,{session,walletProvider:wallet}),mail=content.createPlatformMail(provider,{session,detailHost:host});
-  (window as any).__panels={presentation,agent,env,host,submits,get confirmed(){return confirmed;},async show(mode:string){body.replaceChildren();win.className='hud-window';win.dataset.feature=mode;win.querySelector('h2')!.textContent=mode==='inventory'?'背包':mode==='mail'?'信箱':'选择角色';if(mode==='account'){win.className+=' is-account is-manager';body.append(account);presentation.navigate(currentPage);}else{const feature=mode==='inventory'?inventory:mail;body.append(feature.node);feature.activate();}sizing.update();},hide(){win.hidden=true;env.set('main',null);},reopen(){win.hidden=false;env.set('main',win);sizing.update();}};
- });
+  (window as any).__panels={presentation,agent,identityName,relatedTitle,record,shortenTitle(){record.summary.title='简短通知标题';for(const listener of subscribers)listener('notifications');},env,host,submits,get confirmed(){return confirmed;},async show(mode:string){body.replaceChildren();win.className='hud-window';win.dataset.feature=mode;win.querySelector('h2')!.textContent=mode==='inventory'?'背包':mode==='mail'?'信箱':'选择角色';if(mode==='account'){win.className+=' is-account is-manager';body.append(account);presentation.navigate(currentPage);}else{const feature=mode==='inventory'?inventory:mail;body.append(feature.node);feature.activate();}sizing.update();},hide(){win.hidden=true;env.set('main',null);},reopen(){win.hidden=false;env.set('main',win);sizing.update();}};
+ },flags);
 }
 
 
@@ -116,4 +117,43 @@ test('synthetic same-Agent saved projection refreshes pristine previews while pr
  const fresh=async(hair:string)=>page.evaluate(hair=>{const s=(window as any).__panels,pair={lookId:'sunnyside-human-'+hair,catalogVersion:'2026-10-21.appearance-v1.1'};s.agent.profile.published.avatar=pair;s.agent.profile.publishedAppearance=pair;s.presentation.agent(s.agent);},hair);
  await fresh('longhair');await expect(page.locator('#appearance-look-id')).toHaveValue('sunnyside-human-longhair');await expect(page.locator('#appearance-form canvas[data-look-stage]')).toHaveAttribute('data-look-id','sunnyside-human-longhair');assert.equal(await page.evaluate(()=>(window as any).__panels.presentation.dirty('appearance-form')),false);
  await page.getByRole('button',{name:'蓬松发',exact:true}).click();await fresh('spikeyhair');await expect(page.locator('#appearance-look-id')).toHaveValue('sunnyside-human-mophair');await expect(page.locator('#appearance-form canvas[data-look-stage]')).toHaveAttribute('data-look-id','sunnyside-human-mophair');await expect(page.locator('.choice-summary')).toContainText('当前已保存尖发');await expect(page.locator('#manager-public-avatar canvas.avatar')).toHaveAttribute('data-look-id','sunnyside-human-spikeyhair');assert.equal(await page.evaluate(()=>(window as any).__panels.presentation.dirty('appearance-form')),true);await page.close();await context.close();
+});
+
+
+test('synthetic real content identity bars keep portrait, name and switch control in one compact row at both desktop sizes',async t=>{
+ await mkdir(out,{recursive:true});const browser=await launch();t.after(()=>browser.close());const layouts:any[]=[],violations:string[]=[];
+ for(const viewport of [{width:1440,height:900},{width:1024,height:768}]){
+  for(const longName of [false,true]){const context=await browser.newContext({viewport,reducedMotion:'reduce'});t.after(()=>context.close());await intercept(context,true);const page=await context.newPage();await page.goto(origin);await mountComponents(page,{longName});
+  for(const mode of ['inventory','mail']){
+   await page.evaluate(mode=>(window as any).__panels.show(mode),mode);const name=page.getByText(await page.evaluate(()=>(window as any).__panels.identityName),{exact:true}),bar=name.locator('..');await expect(name).toBeVisible();await expect(bar.getByRole('button',{name:'切换 Agent',exact:true})).toBeVisible();
+   const layout=await bar.evaluate(node=>{const rect=(value:Element|null)=>value?.getBoundingClientRect().toJSON();return{bar:rect(node),portrait:rect(node.querySelector('canvas.avatar')),name:rect(node.querySelector('strong')),button:rect(node.querySelector('button'))};});layouts.push({viewport,mode,longName,...layout});
+   const {bar:box,portrait,name:label,button}=layout;const prefix=viewport.width+' '+mode+(longName?' long name':' short name');
+   if(!box||!portrait||!label||!button)violations.push(prefix+' missing identity content');
+   else{const middle=(r:any)=>r.y+r.height/2;if(Math.abs(box.height-44)>.5)violations.push(prefix+' bar is not 44px');if(portrait.width!==32||portrait.height!==32)violations.push(prefix+' portrait is not 32px');if(Math.abs(middle(portrait)-middle(label))>1||Math.abs(middle(label)-middle(button))>1)violations.push(prefix+' content wraps onto different rows');if(portrait.right>label.x||label.right>button.x||portrait.y<box.y||button.bottom>box.bottom)violations.push(prefix+' content leaves compact bar bounds');}
+   await page.screenshot({path:resolve(out,`identity-${mode}-${viewport.width}-${longName?'long':'short'}.png`)});
+  }
+  await page.close();await context.close();}
+ }
+ await writeFile(resolve(out,'identity-layout.json'),JSON.stringify({layouts,violations},null,2)+'\n');assert.deepEqual(violations,[],'Identity stays horizontally aligned without displacing the content tabs');
+});
+
+
+test('synthetic legal 180-character parent and related titles remain visually complete in the scroll body while short titles stay singular',async t=>{
+ await mkdir(out,{recursive:true});const browser=await launch();t.after(()=>browser.close());const measurements:any[]=[];
+ for(const viewport of [{width:1440,height:900},{width:1024,height:768}]){
+  const context=await browser.newContext({viewport,reducedMotion:'reduce'});t.after(()=>context.close());await intercept(context,true);const page=await context.newPage();await page.goto(origin);await mountComponents(page,{longTitles:true});await page.evaluate(()=>(window as any).__panels.show('mail'));await page.locator('[data-platform-tab="notifications"]').click();await page.locator('[data-platform-message]').click();
+  const values=await page.evaluate(()=>({parent:(window as any).__panels.record.summary.title,related:(window as any).__panels.relatedTitle}));assert.equal(values.parent.length,180);assert.equal(values.related.length,180);
+  const close=await page.locator('#hud-detail-close').boundingBox(),footer=await page.locator('.hud-reader-footer').boundingBox();
+  async function visibleTitle(value:string,label:string){
+   await expect(page.locator('#hud-detail-title')).toHaveText(value);await page.locator('#hud-detail-body').evaluate(node=>{node.scrollTop=0;});await page.screenshot({path:resolve(out,`title-${label}-${viewport.width}.png`)});
+   const full=page.locator('#hud-detail-body').getByRole('heading',{name:value,exact:true});await expect(full).toBeVisible();
+   const geometry=await full.evaluate(node=>{const range=document.createRange();range.selectNodeContents(node);const pieces=[...range.getClientRects()].filter(box=>box.width>0),body=document.querySelector('#hud-detail-body')!.getBoundingClientRect(),box=node.getBoundingClientRect(),style=getComputedStyle(node);return{lines:pieces.map(box=>({top:box.top,bottom:box.bottom,left:box.left,right:box.right})),body:{top:body.top,bottom:body.bottom,left:body.left,right:body.right},box:{top:box.top,bottom:box.bottom,left:box.left,right:box.right},clamp:style.webkitLineClamp,overflow:style.overflow,whiteSpace:style.whiteSpace};});
+   assert.ok(geometry.lines.length>2,'The complete title genuinely exceeds two rendered lines');assert.equal(geometry.clamp,'none');assert.equal(geometry.overflow,'visible');assert.ok(geometry.lines.every(line=>line.top>=geometry.box.top&&line.bottom<=geometry.box.bottom&&line.left>=geometry.body.left&&line.right<=geometry.body.right),'Every title glyph is inside the visible full-title box');const last=geometry.lines.at(-1)!;assert.ok(last.bottom<=geometry.body.bottom,'The final title line is visually available in the scroll body');
+   const header=await page.locator('#hud-detail-title').boundingBox();assert.ok(header&&header.height<=48,'The fixed header stays within two lines');measurements.push({viewport,label,header,...geometry});
+   const pageTop=await page.evaluate(()=>scrollY);await page.locator('#hud-detail-body').evaluate(node=>{node.scrollTop=300;});assert.ok(await page.locator('#hud-detail-body').evaluate(node=>node.scrollTop)>0,'Only the body scrolls through the long content');assert.equal(await page.evaluate(()=>scrollY),pageTop);assert.deepEqual(await page.locator('#hud-detail-close').boundingBox(),close);assert.deepEqual(await page.locator('.hud-reader-footer').boundingBox(),footer);
+  }
+  await visibleTitle(values.parent,'parent');await page.getByRole('button',{name:'查看关联物品：'+values.related,exact:true}).click();await visibleTitle(values.related,'related');await page.getByRole('button',{name:'返回原内容',exact:true}).click();await visibleTitle(values.parent,'returned-parent');
+  await page.getByRole('button',{name:'返回信箱',exact:true}).click();await page.evaluate(()=>(window as any).__panels.shortenTitle());await page.locator('[data-platform-message]').click();await expect(page.locator('#hud-detail-title')).toHaveText('简短通知标题');await expect(page.locator('#hud-detail-body').getByRole('heading',{name:'简短通知标题',exact:true})).toHaveCount(0);await expect(page.locator('#hud-detail-close')).toBeVisible();await expect(page.getByRole('button',{name:'返回信箱',exact:true})).toBeVisible();await page.close();await context.close();
+ }
+ await writeFile(resolve(out,'title-visibility.json'),JSON.stringify(measurements,null,2)+'\n');
 });
