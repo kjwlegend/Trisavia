@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import {createInteractionOwnerReader} from './interaction-owner-read.ts';
 import type { CommandKey, CommandReceipt, RuntimeReadContext, RuntimeTransaction, RuntimeEvent, RuntimeTask } from '../contracts/runtime-store.ts';
 import type { JsonObject } from '../contracts/store.ts';
 import type { IdentityAccess, Principal } from '../domains/access/public.ts';
@@ -268,7 +269,7 @@ export function createInteractionService(identity: IdentityAccess<RuntimeReadCon
   const decisionTarget: DecisionTarget = { inspect, async execute(context, principal, key, action, input) {
     if (key.action !== action) fail('invalid_request', 400, 'Decision action differs from target command'); return execute(context, principal, key, input);
   } };
-  return { execute, inspect, decisionTarget, handleTask, readInvitation, authorizeReceipt,
+  return { ...createInteractionOwnerReader(identity,{bundle,participant}), execute, inspect, decisionTarget, handleTask, readInvitation, authorizeReceipt,
     async authorizeEvent(context: RuntimeReadContext, principal: Principal, event: RuntimeEvent) {
       const agentId = await actor(context, principal); if (event.domain !== 'interaction' || !event.audience.agentIds.includes(agentId)) absent();
       if (event.subject.type === 'invitation') await bundle(context, agentId, event.subject.id);

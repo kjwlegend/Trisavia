@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import {createHash,randomUUID} from 'node:crypto';
 import test from 'node:test';
 import Fastify from 'fastify';
-import {AGENT_HUMAN_VOICE_GUIDE} from '../../apps/platform/application/agent-human-voice.ts';
+import {AGENT_HUMAN_VOICE_GUIDE,AGENT_TEXT_EXCHANGE_GUIDE} from '../../apps/platform/application/agent-human-voice.ts';
 import {initializePerceptionCatalog,publishPerceptionCatalog} from '../../apps/platform/application/perception-catalog.ts';
-import {publishAgentHumanVoiceGuide} from '../../apps/platform/application/perception-admin.ts';
+import {publishAgentHumanVoiceGuide,publishTextExchangeGuide} from '../../apps/platform/application/perception-admin.ts';
 import {createPerceptionService} from '../../apps/platform/application/perception-service.ts';
 import {registerPerceptionRoutes} from '../../apps/platform/transport/http/perception-routes.ts';
 import {registerSiteRoutes} from '../../apps/platform/transport/http/site-routes.ts';
@@ -67,13 +67,28 @@ test('guide release rejects stale targets or occupied exact versions without cha
 
 test('World discovery and actual entry deliver first-person fact-bound guidance while technical checks remain internal',async()=>{
  const f=coreFixture(),service=createWorldService(f.identity),operations=worldGatewayOperations(service),gateway=createAgentGateway({store:f.store,identity:f.identity,operations,guides:[worldGatewayGuide]});
- const previous=structuredClone(worldGatewayGuide);previous.version=2;previous.document.version=2;delete previous.document.humanCommunication;
+ const previous=structuredClone(worldGatewayGuide);previous.version=3;previous.document.version=3;delete previous.document.humanCommunication;
  assert.notEqual(gateway.catalogRevision,createAgentGateway({store:f.store,identity:f.identity,operations,guides:[previous]}).catalogRevision);
  const app=Fastify();registerAgentGatewayRoutes(app,gateway,{instanceId:'voice-unit',now:()=>1000});registerSiteRoutes(app);
  try{
-  const discovery=(await app.inject({method:'GET',url:'/v1/gateway/discovery'})).json().data,guideRef=discovery.modules.find((module:{moduleId:string})=>module.moduleId==='world').usageGuide;assert.equal(guideRef.version,3);
+  const discovery=(await app.inject({method:'GET',url:'/v1/gateway/discovery'})).json().data,guideRef=discovery.modules.find((module:{moduleId:string})=>module.moduleId==='world').usageGuide;assert.equal(guideRef.version,4);
   const response=await app.inject({method:'GET',url:guideRef.path}),data=response.json().data;assert.equal(response.statusCode,200);assert.equal(sha(data.canonicalDocument),data.digest);assert.equal(data.document.humanCommunication.instruction,AGENT_HUMAN_VOICE_GUIDE);
   for(const phrase of ['第一人称','内部仍须完整发现能力','只有主人明确要求排错','等待中的行动不说完成','不编造到达、交谈或对方回应','不代表外部Agent再次调用模型','绑定完成不重复要求关联'])assert(AGENT_HUMAN_VOICE_GUIDE.includes(phrase));
   const entry=await app.inject({method:'GET',url:'/agent/entry.md'});assert.equal(entry.statusCode,200);assert.match(entry.body,/以角色第一人称说话/);assert.match(entry.body,/内部仍完整发现能力/);assert.match(entry.body,/MANAGEMENT_URL/);assert(!entry.body.includes('我是江屿'));
  }finally{await app.close();}
+});
+
+
+test('text-exchange guide correction is discoverable, immutable and replayable without changing business data',async()=>{
+ const f=memory();await f.store.transaction(initializePerceptionCatalog);
+ const currentRevision=baseline+'-human-voice-1';
+ await publishPerceptionCatalog(f.store,{revision:currentRevision,guideVersion:4,guideText:'Existing synthetic guide before the text-exchange correction.'});
+ const service=createPerceptionService(f.store,{authenticate:async()=>({id:'synthetic-runtime',version:1,data:{kind:'runtime',agentId:'synthetic-agent',runtimeVersion:1}})}),oldCapabilities=await service.capabilities(),before=f.snapshot(),documents=f.rows('perception_catalog').filter(row=>/^(guide|schema):/.test(row.id));
+ const options={actorId:'isolated-guide-maintainer',operationId:randomUUID(),expectedInstanceId:f.store.instanceId,expectedRecoveryEpoch:f.store.recoveryEpoch,expectedCatalogRevision:currentRevision,revision:currentRevision+'-text-exchange-1',expectedGuideVersion:4,guideVersion:5};
+ const receipt=await publishTextExchangeGuide(f.store,options),published=f.snapshot();assert.equal(receipt.newGuideDocuments,7);assert.equal(receipt.schemaVersion,5);assert.deepEqual(await publishTextExchangeGuide(f.store,options),receipt);assert.deepEqual(f.snapshot(),published);
+ for(const row of documents)assert.deepEqual(await f.tx.get('perception_catalog',row.id),row);
+ for(const table of M1_TABLES)if(!['perception_catalog','perception_access'].includes(table))assert.deepEqual(f.rows(table),before[table]);
+ const capabilities=await service.capabilities();assert.equal(capabilities.catalogRevision,options.revision);assert.notEqual(capabilities.skillCatalogRevision,oldCapabilities.skillCatalogRevision);
+ const app=Fastify();registerPerceptionRoutes(app,{invokeHttp:service.invoke} as unknown as M1Service);
+ try{for(const moduleId of ['perception','world','profiles','items','inventory','mailbox','wallet']){const response=await app.inject({method:'GET',url:`/v1/perception/guides/${moduleId}?version=5`,headers:{authorization:'Bearer synthetic'}});assert.equal(response.statusCode,200);const data=response.json().data;assert.equal(sha(data.canonicalDocument),data.digest);assert(data.document.text.includes(AGENT_TEXT_EXCHANGE_GUIDE));assert.match(data.document.text,/两者都不会建立好友/);assert.match(data.document.text,/主人打开是观察/);}}finally{await app.close();}
 });

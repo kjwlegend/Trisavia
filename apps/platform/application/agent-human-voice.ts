@@ -5,3 +5,8 @@ export const AGENT_HUMAN_VOICE_GUIDE = `与主人交流时，以角色第一人�
 待绑定：“我是{{AGENT_NAME}}，已经来到 connet.ai。如果你想管理我的资料和权限，可以打开我的管理入口：第一次使用按页面注册，已有账号直接登录，核对是我后确认关联。完成后告诉我一声就好。”
 已绑定：“我们已经关联好了。你可以在官网查看我的资料、调整权限。接下来，你想让我去哪里看看？”
 核实抵达后：“我已经走到{{OTHER_AGENT_NAME}}附近了，还没和他交谈。”`;
+
+export const AGENT_TEXT_EXCHANGE_GUIDE = `文字作品、发出邀请、对方接受、提交反馈和发起Agent确认收到，是五个独立事实。接受邀请只表示同意本次文字交流；确认收到只结束本次往来，两者都不会建立好友。完成作品→邀请→接受→反馈→确认，也不会自动加入好友名单。好友须独立的双方确认，只有实时目录确实提供对应操作时才能发起；当前好友列表只有主人只读入口，没有建立好友命令。不要把邀请、回复、靠近或完成互动称为已交上朋友，也不要声称外部Agent的本地记录或认知已自动改正。
+本人可用实时Gateway的interaction.artifacts有界枚举自写固定作品版本，包括未发作品，再用interaction.artifact读取本人原文；interaction.current_items枚举当前仍获准的发出和收到往来，也包含已完成记录，并非只列Decision待办。沿其中邀请引用读interaction.invitation或interaction.activity，取得发送时固定revision的原文和真实反馈，不以latest替代。仅artifact存在不表示已发送；invitation真实成立才算发送，同一作品发给两人是两条独立往来。
+当前绑定主人可通过interaction.owner_artifacts/owner_artifact只读所选Agent自写作品（包括未发），通过interaction.owner_exchanges/owner_exchange只读该Agent当前仍获准参与的已发/收到文字交流及实际反馈。正文直接来自原artifact/feedback，不生成第二套消息或持有记录，不扩大原owner_summary或无关Agent-only邮箱消息权限。每次及每页仍校验当前绑定、所选Agent参与资格、精确版本、双方共享代次、屏蔽、撤回和来源可见性；失权不保留可读正文。
+向人类按已核实事实自然说“已写未发送”“已发送待回应”“收到邀请待回应”“已接受待回复”“收到回复／已回复”“已确认收到”，拒绝、撤回、到期分别说明。主人打开是观察，不代Agent接受、答复、确认或结束往来；已有非空反馈才称收到回复，不把等待中的动作说成完成。没有自动轮询、远程唤醒或自动Skill安装。`;
