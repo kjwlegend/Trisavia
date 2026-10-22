@@ -20,9 +20,18 @@ async function dockerToPrivateFile(args: string[], path: string): Promise<void> 
   }); } finally { await file.close(); }
 }
 const query = async (config: RuntimeConfig, sql: string): Promise<string> => (await docker(['exec', `${config.project}-server`, 'psql', '-X', '-v', 'ON_ERROR_STOP=1', '-U', 'postgres', '-d', 'postgres', '-Atqc', sql])).trim();
+class ArchiveDisabledError extends Error {
+  readonly code='archive_disabled';
+  constructor(){super('Continuous WAL archiving is disabled; this archive-backed backup requires explicit archive_mode=on and a PostgreSQL restart.');this.name='ArchiveDisabledError';}
+}
+async function requireContinuousArchive(config:RuntimeConfig):Promise<void>{
+  const mode=await query(config,'SHOW archive_mode');
+  if(mode!=='on'&&mode!=='always')throw new ArchiveDisabledError();
+}
 
 /** Explicit operator action, not an Agent schedule. Copies only completed archive files. */
 export async function archiveWal(config: RuntimeConfig, output: string): Promise<{ throughFile: string; files: WalArchiveFile[] }> {
+  await requireContinuousArchive(config);
   const throughFile = await query(config, 'SELECT pg_walfile_name(pg_current_wal_insert_lsn())'); await query(config, 'SELECT pg_switch_wal()');
   const deadline = Date.now() + 30_000; let archived = false;
   while (Date.now() < deadline) { const last = await query(config, "SELECT COALESCE(last_archived_wal,'') FROM pg_stat_archiver"); if (last >= throughFile) { archived = true; break; } await setTimeout(250); }
@@ -49,9 +58,10 @@ export async function archiveWal(config: RuntimeConfig, output: string): Promise
 }
 export interface BackupOptions { identityFile?: string; applicationConfigFile?: string; database?: string }
 export async function backupRuntime(config: RuntimeConfig, output: string, options: BackupOptions = {}): Promise<{ directory: string; manifest: string }> {
-  const directory = await secureDirectory(output), temp = `/tmp/connet-base-${randomUUID()}`, startedAt = Date.now();
   const database = options.database ?? 'connet';
   if (!/^connet(?:_(?:rehearsal|test)[a-z0-9_]+)?$/.test(database)) throw new Error('An explicit connet backup target is required');
+  await requireContinuousArchive(config);
+  const directory = await secureDirectory(output), temp = `/tmp/connet-base-${randomUUID()}`, startedAt = Date.now();
   const supplemental: { name: string; sha256: string }[] = [], configDirectory = join(directory, 'private-config'); await mkdir(configDirectory, { mode: 0o700 });
   async function retain(name: string, path: string, secret = true) {
     const bytes = secret ? Buffer.from(await requirePrivateFile(path)) : await readFile(path);
@@ -119,5 +129,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   (async () => { if (!file || !output || extra.length) throw new Error('Usage: backup.ts backup RUNTIME_JSON NEW_OUTPUT PAIRED_IDENTITY PRIVATE_APPLICATION_ENV | archive|restore-drill RUNTIME_JSON BACKUP');
     const config = await readRuntime(file); if (action === 'backup') { if (!identityFile || !applicationConfigFile) throw new Error('Final backups require paired identity and application configuration'); return backupRuntime(config, output, { identityFile, applicationConfigFile }); }
     if (identityFile || applicationConfigFile) throw new Error('Unexpected backup argument'); if (action === 'archive') return archiveWal(config, output); if (action === 'restore-drill') return restoreDrill(config, output); throw new Error('Unknown backup action');
-  })().then(result => process.stdout.write(JSON.stringify(result) + '\n')).catch(() => { process.stderr.write('postgresql_backup_failed: inspect private artifacts; source data was not replaced\n'); process.exitCode = 1; });
+  })().then(result => process.stdout.write(JSON.stringify(result) + '\n')).catch(error => { process.stderr.write(error instanceof ArchiveDisabledError?'postgresql_archive_disabled: archive-backed backup is opt-in; use independent logical backups for default development\n':'postgresql_backup_failed: inspect private artifacts; source data was not replaced\n'); process.exitCode = 1; });
 }

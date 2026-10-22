@@ -28,7 +28,7 @@ test('isolated PG18 raw then gzip archives continuously restore post-basebackup 
       '--mount',`type=bind,source=${resolve('ops/postgresql/archive')},target=/etc/postgresql/archive,readonly`,
       '--mount',`type=bind,source=${resolve('ops/postgresql/init/10-roles.sh')},target=/docker-entrypoint-initdb.d/10-roles.sh,readonly`];
     for(const kind of ['admin','migration','application','backup'])mounts.push('--mount',`type=bind,source=${join(config.privateDir,kind+'-password')},target=/run/secrets/${kind}-password,readonly`);
-    await docker(['run','-d','--name',container,...labels,'--network','none',...mounts,'-e','POSTGRES_USER=postgres','-e','POSTGRES_DB=postgres','-e','POSTGRES_PASSWORD_FILE=/run/secrets/admin-password','-e','POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256 --data-checksums',config.image,'postgres','-c','config_file=/etc/postgresql/connet.conf']);createdContainer=true;
+    await docker(['run','-d','--name',container,...labels,'--network','none',...mounts,'-e','POSTGRES_USER=postgres','-e','POSTGRES_DB=postgres','-e','POSTGRES_PASSWORD_FILE=/run/secrets/admin-password','-e','POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256 --data-checksums',config.image,'postgres','-c','config_file=/etc/postgresql/connet.conf','-c','archive_mode=on','-c','archive_timeout=60s']);createdContainer=true;
     const ready=Date.now()+60000;let started=false;
     while(Date.now()<ready){try{await sql('SELECT 1');started=true;break;}catch{await delay(250);}}
     if(!started)throw new Error('Disposable source did not become ready');

@@ -1,10 +1,27 @@
-# Local WAL archive capacity
+# Optional local WAL archives
 
-The PostgreSQL 18 profile retains `archive_timeout=60s`. That interval bounds the
-age of unarchived work; it also closes full-sized 16 MiB segment files when
-traffic is sparse. Compression reduces their stored size without changing the
-interval, WAL content or recovery sequence. High-entropy/busy WAL may compress
-very little. This change is not a retention policy or an unlimited-capacity claim.
+Local development defaults to `archive_mode=off`: PostgreSQL still writes its
+active WAL for crash recovery, but does not make continuous archive copies. The
+archive helper remains configured for explicit use. `archive_timeout=0` also
+disables periodic forced segment switches. An explicitly enabled timeout can
+close full-sized 16 MiB segments even under sparse traffic. High-entropy WAL may
+compress very little.
+
+`archiveWal` and `backupRuntime` build archive-backed backup sets. With effective
+archiving off they fail immediately with `archive_disabled`, before creating
+output directories, copying files, switching WAL, or waiting for an archiver.
+They do not silently create a partial backup or temporarily enable archiving.
+For lightweight development use independent per-database logical dumps with the
+matching identity/configuration. No continuous point-in-time recovery is claimed.
+An independently planned streaming basebackup can be self-contained, but that is
+not a separate mode offered by these two archive-backed functions.
+
+The 2026-10-22 development authorization permits TD to remove current historical
+WAL archives and clearly attributable redundant archive-only copies. That replaces
+the earlier archive-retention restriction. Cleanup is a separate TD operation;
+this package deletes no archives. Preserve business databases, identities and
+active `PGDATA/pg_wal`. A backup missing required archived segments no longer
+provides the corresponding historical recovery range.
 
 `command.sh SOURCE NAME DIRECTORY [SEGMENT_BYTES]` accepts the existing raw file
 or a gzip file only after an exact content comparison and durable sync. A
@@ -33,14 +50,42 @@ with gzip upgrades its format to v2; the old restorer therefore rejects it rathe
 than silently ending recovery at the last raw segment. The new restorer accepts
 legacy raw-only v1 and mixed/raw/gzip v2.
 
-No live deployment is performed by editing these files. After independent review,
-the named maintainer must preserve the current cluster/identity and all subsequent
-writes, install the read-only archive helper mount together with the matching
-configuration, and verify a later natural archive plus a separate restore. The
-current container predates the helper mount: a configuration reload alone cannot
-install a missing mount. Preserve the existing volume and pinned image when the
-maintainer schedules its replacement. Do not run a fresh initdb, reset a volume,
-disable archiving, or lengthen the interval as a capacity workaround.
+## Existing development cluster: disable without replacing the container
+
+Editing this profile does not change a running server. During the TD maintenance
+window, drain the existing business applications, retain only a small private
+copy/hash of the existing `PGDATA/postgresql.auto.conf`, and record the current
+effective setting. Do not copy the historical archive or entire disk for this
+change. Using the original PostgreSQL operator connection, outside a transaction:
+
+```sql
+ALTER SYSTEM SET archive_mode = 'off';
+ALTER SYSTEM SET archive_timeout = '0';
+```
+
+Normally restart the **same container**, allowing a clean shutdown (for example,
+`docker --context colima-agents-era-pg restart --time 60 CURRENT_PG_ID`). A reload
+does not apply this startup setting. Preserve the original image, data directory,
+volume, private pairings, business facts and application versions. Do not create
+a replacement container, edit old frozen bind files, initdb, migrate or restore an
+old database. Confirm `SHOW archive_mode` returns `off` and `SHOW archive_timeout`
+returns `0` after readiness, then
+resume the applications using their existing configuration. If a command-line
+override prevents the new setting from taking effect, report that specific
+dependency rather than editing unrelated settings. TD performs the separately
+authorized archive cleanup after confirming continuous archiving is off; this
+does not authorize deleting `PGDATA/pg_wal` or database/identity backup material.
+
+## Explicit opt-in and existing backups
+
+Compressed archiving/restoration tools remain available when explicitly needed.
+Opting in requires a deliberate `archive_mode=on` startup/restart, the configured
+read-only helper mount and a writable archive directory; the dedicated recovery
+fixture opts in with its own explicit 60-second timeout only for its disposable
+container. The shared development default makes no archive-age/RPO promise.
+Do not turn it on in the
+shared cluster merely to run a test or work around `archive_disabled`. Restoration
+from retained raw/gzip backups does not itself require archiving on at the source.
 
 An explicit metadata-only check is:
 
@@ -57,12 +102,11 @@ background, check `pg_stat_archiver`, decide recyclability or delete anything.
 The maintainer must also check archiver progress/failures and respond to pressure;
 a successful sample is not evidence of continuous monitoring.
 
-Existing raw archives are kept. No automated prune, recompression of historical
-files, disk cleanup or background schedule is included. Reclaiming any archive
-requires a separate, evidenced decision covering every retained basebackup and
-its continuous recovery range, verified independent transfer, and a successful
-newer restore. An enlarged local disk and compression do not replace that work,
-off-host copies, a named operator or ongoing capacity review.
+No automated prune, historical recompression, disk cleanup or background schedule
+is included. This operator check remains optional; it does not re-enable archives
+or require a new large copy before the authorized development cleanup.
 
 The archive success/retry requirements and storage warning follow
 [PostgreSQL 18 continuous archiving §25.3.1](https://www.postgresql.org/docs/18/continuous-archiving.html).
+The mode is a startup setting; see [PG18 WAL configuration](https://www.postgresql.org/docs/18/runtime-config-wal.html).
+Forced-switch handling is in [PG18 CheckArchiveTimeout](https://github.com/postgres/postgres/blob/REL_18_STABLE/src/backend/postmaster/checkpointer.c).
