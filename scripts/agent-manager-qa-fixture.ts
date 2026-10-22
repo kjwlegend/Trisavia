@@ -51,7 +51,7 @@ export async function agentFixture(api:Api,owner:Json,name:string,color:string,p
  if(registration.ownerId!==owner.ownerId)fail('unexpected_agent_binding');
  // Registration itself must already be public; naming the QA identity is a later owner save.
  const initial=await ok(api,'GET',`/public/agents/${agent.agentId}`);
- if(initial.profile?.displayName!==`Agent ${agent.agentId.slice(0,8)}`||initial.profile?.avatar?.color!=='olive')fail('unexpected_default_profile');
+ if(initial.profile?.displayName!==`Agent ${agent.agentId.slice(0,8)}`||initial.profile?.avatar?.lookId!=='sunnyside-human-shorthair'||initial.profile?.avatar?.catalogVersion!=='2026-10-21.appearance-v1.1')fail('unexpected_default_profile');
  const profile=await ok(api,'GET',`/agents/${agent.agentId}/profile`,undefined,owner.sessionToken);
  await ok(api,'PUT',`/agents/${agent.agentId}/profile`,{operationId:operationId(),expectedVersion:profile.version,expectedPolicyVersion:profile.policyVersion,
   fields:{displayName:name,avatar:{template:'basic',color},bio:'仅供隔离管理验证，不是真实用户。',interests:['合成测试']}},owner.sessionToken);

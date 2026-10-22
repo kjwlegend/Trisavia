@@ -41,7 +41,7 @@ test('public observation requires the current published source and projects only
  const f=fixture(),profile={displayName:'Public Agent',bio:'unused public biography',avatar:{template:'basic',color:'blue'},privateNote:'never projected'};
  f.put('profiles',agentId,{agentId,published:profile,publishedVersion:2,draft:{displayName:'private draft'}});
  const view=await f.access.readPublicAgent(f.context,agentId);
- assert.deepEqual(view,{agentId,publishedVersion:2,displayName:'Public Agent',appearance:{template:'basic',color:'blue'}});
+ assert.deepEqual(view,{agentId,publishedVersion:2,displayName:'Public Agent',appearance:{lookId:'sunnyside-human-curlyhair',catalogVersion:'2026-10-21.appearance-v1.1'}});
  assert(!JSON.stringify(view).includes('private'));assert.equal(await f.access.readPublicAgent(f.context,'missing'),null);
  for(const member of [{state:'left',platformRestricted:false},{state:'joined',platformRestricted:true}]){f.put('memberships',agentId,{agentId,...member});assert.equal(await f.access.readPublicAgent(f.context,agentId),null);}
  f.put('memberships',agentId,{agentId,state:'joined',platformRestricted:false});f.put('profiles',agentId,{agentId,published:null,publishedVersion:3});assert.equal(await f.access.readPublicAgent(f.context,agentId),null);

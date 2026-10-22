@@ -6,7 +6,8 @@ import { managementBindingRepository, membershipRepository } from '../domains/ac
 import { catalogRepository, sourceGrantRepository, contentRepository, notificationStateRepository, accessFactRepository, readSessionRepository } from '../domains/perception/repository.ts';
 import { everyAsync, someAsync, filterAsync } from '../domains/common/async-collections.ts';
 import { randomUUID } from 'node:crypto';
-import type { JsonObject, JsonValue, M1Store, M1Transaction, StoredRow } from '../contracts/store.ts';
+import type { JsonObject, JsonValue, M1ReadSession, M1Store, M1Transaction, StoredRow } from '../contracts/store.ts';
+import {projectAvatar,readAppearance,type LegacyAvatarIdentityReader} from '../domains/profile/appearance.ts';
 import { fail, M1Error, object, text, version } from '../domains/common/errors.ts';
 import { CATEGORIES, OPERATIONS, TYPE_DEFINITIONS, RULES_REF, bounded, key, plain, ref, refId, type ObjectRef, type PerceptionAction, canonicalDocument } from '../domains/perception/protocol.ts';
 import { catalogData, initializePerceptionCatalog } from './perception-catalog.ts';
@@ -17,6 +18,7 @@ import { mailboxSender, validateMailboxSources, type TrustedMailboxSource } from
 import { ownerObservation, ownerLayer, OWNER_OBSERVATION_ID } from './perception-owner-observation.ts';
 import { mayQueryOwnerNotifications, OWNER_NOTIFICATION_COLLECTION_QUERY_ID } from './perception-collection-query.ts';
 export interface PerceptionOptions {
+    legacyAvatarIdentity?:LegacyAvatarIdentityReader<M1ReadSession>;
     mailboxSources?: readonly TrustedMailboxSource[];
     now?: () => number;
     pageTtlMs?: number;
@@ -49,6 +51,10 @@ type Candidate = {
 };
 const common = ['protocolVersion', 'channel', 'purpose', 'consumerId', 'scope', 'limit', 'pageToken', 'budget', 'decision'];
 export function createPerceptionService(store: M1Store, auth: PerceptionAuth, options: PerceptionOptions = {}) {
+    const appearanceReaders=new WeakMap<M1ReadSession,LegacyAvatarIdentityReader<M1ReadSession>>();
+    function bindMeteredAppearance(original:M1Transaction,reader:M1Transaction,meter:ReturnType<typeof meteredRead>):void {
+        if(options.legacyAvatarIdentity)appearanceReaders.set(reader,(_session,input)=>meter.readAuxiliary(`legacy-avatar:${input.agentId}`,()=>options.legacyAvatarIdentity!(original,input)));
+    }
     const now = options.now ?? Date.now;
     const mailboxSources = options.mailboxSources ?? [];
     validateMailboxSources(mailboxSources);
@@ -85,10 +91,10 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
         const row = await profileRepository(tx).get(id), member = await membershipRepository(tx).get(id);
         if (!row || row.data.published === null || member?.data.state !== 'joined' || member.data.platformRestricted !== false)
             return null;
-        const p = plain(row.data.published), av = plain(p.avatar);
-        if (typeof p.displayName !== 'string' || !p.displayName.trim() || av.template !== 'basic' || !['olive', 'cream', 'blue', 'coral'].includes(String(av.color)))
+        const p = plain(row.data.published), av = projectAvatar(p.avatar);
+        if (typeof p.displayName !== 'string' || !p.displayName.trim() || !av)
             return null;
-        const fields: JsonObject = { displayName: p.displayName, avatar: { template: av.template, color: av.color! } };
+        const fields: JsonObject = { displayName: p.displayName, avatar:av,appearance:await readAppearance(tx,id,av,appearanceReaders.get(tx)??options.legacyAvatarIdentity),publishedVersion:row.data.publishedVersion! };
         if (typeof p.bio === 'string')
             fields.bio = p.bio;
         if (Array.isArray(p.interests))
@@ -165,7 +171,7 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
     }
     // Confirmation state can refresh independently; every disclosed summary field must remain authorized.
     function summaryProjection(record: JsonObject): JsonObject { const { agentReadState, ...projection } = record; return projection; }
-    async function selection(tx: M1Transaction, a: Actor, categoryId: string, metricId: string | null, unconfirmed: boolean, max: number): Promise<{
+    async function selection(tx: M1Transaction, a: Actor, categoryId: string, metricId: string | null, unconfirmed: boolean, max: number,appearanceDeadline?:()=>void): Promise<{
         candidates: Candidate[];
         complete: boolean;
         scanned: number;
@@ -226,12 +232,16 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
         else if (categoryId === 'people') {
             const rows = await profileRepository(tx).pageAll({ limit: max });
             complete = rows.length < max;
-            for (const row of rows.slice(0, max)) {
-                scanned++;
-                const c = await publicAgent(tx, row.id);
-                if (c)
-                    candidates.push(c);
-            }
+            // Overview keeps its existing source accounting, adding only this new
+            // one-row identity source. The fetched profile rows are already spent.
+            let auxiliaryRows=0;const previous=appearanceReaders.get(tx),baseReader=previous??options.legacyAvatarIdentity;
+            if(appearanceDeadline&&baseReader)appearanceReaders.set(tx,async(session,input)=>{
+                appearanceDeadline();if(rows.length+auxiliaryRows+1>max)fail('budget_too_small',422,'Read source row budget is exhausted');auxiliaryRows++;
+                const result=await baseReader(session,input);appearanceDeadline();return result;
+            });
+            try{for (const row of rows.slice(0, max)) {scanned++;const c = await publicAgent(tx, row.id);if(c)candidates.push(c);}}
+            finally{if(previous)appearanceReaders.set(tx,previous);else appearanceReaders.delete(tx);}
+            scanned+=auxiliaryRows;
         }
         else {
             const rows = await contentRepository(tx).pageByCategoryId(categoryId, { limit: max });
@@ -411,7 +421,7 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
                 } | undefined;
                 if (status === 'available') {
                     reads++;
-                    selected = await selection(tx, a, category.categoryId, metric.metricId, category.categoryId === 'notifications', Math.max(1, maxRows - scanned));
+                    selected = await selection(tx, a, category.categoryId, metric.metricId, category.categoryId === 'notifications', Math.max(1, maxRows - scanned),()=>{if(now()>=deadline||Date.now()-started>bounded(budget.deadlineMs,250,250,'deadlineMs'))fail('budget_too_small',422,'Overview preparation exceeded the deadline');});
                     scanned += selected.scanned;
                     if (Date.now() - started > bounded(budget.deadlineMs, 250, 250, 'deadlineMs'))
                         fail('budget_too_small', 422, 'Overview preparation exceeded the deadline');
@@ -434,10 +444,11 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
         deadlineMs: number;
     } { const b = input.budget === undefined ? {} : object(input.budget, ['maxResponseBytes', 'maxScannedRows', 'deadlineMs']); return { maxResponseBytes: bounded(b.maxResponseBytes, 65536, 65536, 'maxResponseBytes'), maxScannedRows: bounded(b.maxScannedRows, 2000, 2000, 'maxScannedRows'), deadlineMs: bounded(b.deadlineMs, 250, 250, 'deadlineMs') }; }
     async function list(tx: M1Transaction, a: Actor, input: Record<string, unknown>): Promise<JsonObject> {
-        const limits = readBudget(input), meter = meteredRead(tx, limits);
+        const original=tx,limits = readBudget(input), meter = meteredRead(tx, limits);
         tx = meter.reader;
         const ctx = validateContext(input, a);
         a = await readActor(tx, a, input, String(input.channel));
+        bindMeteredAppearance(original,tx,meter);
         const categoryId = text(input.categoryId, 'categoryId', 1, 60), category = CATEGORIES.find(c => c.categoryId === categoryId);
         if (!category || input.channel !== category.channel)
             fail('invalid_request', 422, 'Category does not belong to the channel');
@@ -498,6 +509,8 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
         const limits = readBudget(input), started = Date.now();
         const channel = text(input.channel, 'channel', 1, 30), baseContext = validateContext(input, a);
         a = await readActor(tx, a, input, channel);
+        let meter=meteredRead(tx,limits,{started});
+        bindMeteredAppearance(tx,tx,meter);
         const ctx = { ...baseContext, ...(a.kind === 'owner_session' && a.agentId ? { agentRef: input.agentRef as JsonObject } : {}) }, r = ref(input.ref), c = await readable(tx, a, r, channel);
         let offset = 0, readSessionId = `body_${randomUUID()}`;
         if (input.knownVersion !== undefined)
@@ -521,7 +534,8 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
         const end = Math.min(offset + settings.detailSegmentChars, body.length), complete = end >= body.length, attachments = Array.isArray(c.row.data.attachments) ? c.row.data.attachments : [];
         if (attachments.length > 50 || Buffer.byteLength(JSON.stringify(attachments)) > 8000)
             fail('source_unavailable', 503, 'Attachment descriptions exceed the bounded source contract');
-        const meter = meteredRead(tx, limits, { started, ...(c.row.data.sourceId === 'platform-publications' ? { sourceRow: c.row } : {}) });
+        if(c.row.data.sourceId==='platform-publications')meter=meteredRead(tx,limits,{started,sourceRow:c.row});
+        bindMeteredAppearance(tx,meter.reader,meter);
         meter.check();
         const related: JsonObject[] = [];
         if (c.row.data.sourceId === 'platform-publications' && Array.isArray(c.row.data.publishedRefs))

@@ -11,7 +11,8 @@ const guide = `本次已主动发起的世界任务先检查实时capabilities�
 const domainGuide = '星币为独立wallet账户的真实平台记录，code star_coin、scale0；wallet-query纯读取已有账户，不写访问事实、回执或决策申报；现perception activity不覆盖wallet，没有记录不代表没有查询。未初始化报错，不造0且无转账/奖励。messages为mailbox域原始来信，与原31条notifications分开；可信来源在已认证上游与准收权限下内部接收，无公开发信。Agent仍须完整保存后显式确认，新messages确认写本域receipt，旧通知状态不改；owner观察不确认。人类发件人名须有独立披露依据，不用owner私有邮箱/用户名，撤名时sender.ref/displayName为null。';
 const titleGuide = '获准 detail.content.title 与正文同权，仅成功详情提供；不能从 ref.id 推造可读名称，也不因拿到引用授予标题或正文权限。';
 const ownerGuide = '主人观察：owner_session 使用 human-inspect；world 不带 agentRef。背包／通知 list 与 detail 顶层必须带 profiles.agent@1 的 agentRef，每次检查当前有效绑定。背包只读关系、数量、状态及获准物品引用，物品正文另验；通知存在、摘要、正文及附件须由来源明确允许当前绑定主人观察，演示标记不授权。主人列表省略 metricId/selection，禁止 unconfirmed；不返回 Agent 阅读状态或 completionToken，不调用确认。主人私有 overview 尚未开放。切换、撤绑或撤源使旧续页／正文 token 失效。人类读取仅记为人类观察，不表示 Agent 行动。';
-export async function initializePerceptionCatalog(tx: M1Transaction): Promise<void> {
+const appearanceGuide='人物目录复用 GET /v1/avatar-catalog，version2；当前 catalogVersion 2026-10-21.appearance-v1.1，assetVersion 2026-10-21.r3。新 avatar 使用 {lookId,catalogVersion}；公开 profiles.agent@1 fields 保留原保存 avatar，另有只读 appearance 与 publishedVersion，不含私有草稿。旧 basic/color 按真实原 Avatar 事实 id 或旧明确配色分支解析；事实不足则保留 legacy 联合形状表示暂无法显示，不能以 AgentId、名字或默认人物猜测。读取不写回、不创建 Avatar、不改权威位置；publishedVersion 变化即更新人物，不等待 worldRevision/移动。新选择须当前可选，已保存选择不因目录重排自动改选；未知写操作继续原目标、载荷和 operationId，不把展示失败当保存失败。';
+export async function initializePerceptionCatalog(tx: M1Transaction,publication?:{revision:string;guideVersion:number}): Promise<void> {
     const previous = await catalogRepository(tx).get('current');
     if (previous) {
         if (Number(previous.data.schemaVersion) > PERCEPTION_SCHEMA_VERSION)
@@ -19,17 +20,18 @@ export async function initializePerceptionCatalog(tx: M1Transaction): Promise<vo
         if (previous.data.schemaVersion !== PERCEPTION_SCHEMA_VERSION) {
             await rememberCatalogRevision(tx, previous.data);
             const text = plainGuideText((await catalogRepository(tx).get(`guide:world:${previous.data.guideVersion}`))?.data.document);
-            const guideVersion = Number(previous.data.guideVersion) + 1;
-            await storeDocuments(tx, guideVersion, `${typeof text === 'string' ? text : guide}\n${ownerGuide}\n${titleGuide}\n${domainGuide}`);
+            const guideVersion = publication?.guideVersion??Number(previous.data.guideVersion) + 1;
+            if(!Number.isSafeInteger(guideVersion)||guideVersion<=Number(previous.data.guideVersion))fail('version_conflict',409,'A schema upgrade requires a newer guide version');
+            await storeDocuments(tx, guideVersion, `${typeof text === 'string' ? text : guide}\n${ownerGuide}\n${titleGuide}\n${domainGuide}\n${appearanceGuide}`);
             const sourceStates = { ...(previous.data.sourceStates as JsonObject), 'direct-messages': (previous.data.sourceStates as JsonObject)['direct-messages'] ?? 'enabled', 'wallet-accounts': (previous.data.sourceStates as JsonObject)['wallet-accounts'] ?? 'enabled' };
-            const revision = `${String(previous.data.catalogRevision).slice(0, 85)}-schema-${PERCEPTION_SCHEMA_VERSION}`;
+            const revision = publication?.revision??`${String(previous.data.catalogRevision).slice(0, 85)}-schema-${PERCEPTION_SCHEMA_VERSION}`;
             await rememberCatalogRevision(tx, { ...previous.data, sourceStates, guideVersion, schemaVersion: PERCEPTION_SCHEMA_VERSION, catalogRevision: revision, skillCatalogRevision: `skills-${revision}` });
             await catalogRepository(tx).replace({ ...previous, version: previous.version + 1, data: { ...previous.data, sourceStates, guideVersion, schemaVersion: PERCEPTION_SCHEMA_VERSION, catalogRevision: revision, skillCatalogRevision: `skills-${revision}` } }, previous.version);
         }
         return;
     }
     await catalogRepository(tx).insert({ id: 'current', version: 1, data: { catalogRevision: 'catalog-1', skillCatalogRevision: 'skills-1', guideVersion: 1, schemaVersion: PERCEPTION_SCHEMA_VERSION, sourceStates: { 'direct-messages': 'enabled', 'wallet-accounts': 'enabled', 'world-meta': 'enabled', 'profiles-public': 'enabled', 'demo-items': 'not_enabled', 'holdings': 'not_enabled', 'direct-mail': 'not_enabled', 'demo-announcements': 'not_enabled', 'demo-events': 'not_enabled', 'platform-publications': 'not_enabled', 'demo-places': 'not_enabled' }, seedObjectIds: [] } });
-    await storeDocuments(tx, 1, `${guide}\n${ownerGuide}\n${titleGuide}\n${domainGuide}`);
+    await storeDocuments(tx, 1, `${guide}\n${ownerGuide}\n${titleGuide}\n${domainGuide}\n${appearanceGuide}`);
     await rememberCatalogRevision(tx, (await catalogRepository(tx).get('current'))!.data);
     await contentRepository(tx).insert({ id: refId(RULES_REF), version: 1, data: { ref: RULES_REF, moduleId: 'world', type: RULES_REF.type, refId: RULES_REF.id, categoryId: 'rules', metricId: 'all', channel: 'world', sourceId: 'world-meta', title: '世界读取规则', body: guide, attachments: [], public: true, active: true, available: true, dataMode: 'platform', source: { kind: 'platform_rules', reference: 'ws02-manual-v1' } } });
     // Keep the original catalog-1 and exact guide1 bytes. Only this explicit fresh

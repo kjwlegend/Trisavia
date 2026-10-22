@@ -2,8 +2,10 @@ import { catalogRepository, accessFactRepository, contentRepository } from '../d
 import { randomUUID } from 'node:crypto';
 import type { JsonObject, M1Store, M1Transaction } from '../contracts/store.ts';
 import { fail } from '../domains/common/errors.ts';
-import { key, plain, refId, type ObjectRef } from '../domains/perception/protocol.ts';
-import { publishCatalogInTransaction, publishImplementedReadersInTransaction, IMPLEMENTED_READER_SOURCES } from './perception-catalog.ts';
+import { key, plain, refId,OPERATIONS,TYPE_DEFINITIONS, type ObjectRef } from '../domains/perception/protocol.ts';
+import { publishCatalogInTransaction, publishImplementedReadersInTransaction, IMPLEMENTED_READER_SOURCES,initializePerceptionCatalog } from './perception-catalog.ts';
+import {PERCEPTION_SCHEMA_VERSION} from '../domains/perception/schemas.ts';
+import {APPEARANCE_CATALOG_VERSION,APPEARANCE_CATALOG_DIGEST,APPEARANCE_ASSET_VERSION} from '../domains/profile/appearance-catalog.ts';
 interface AdministrativeCommand {
     operationId: string;
     actorId: string;
@@ -89,4 +91,25 @@ export async function publishImplementedPerceptionReaders(store: M1Store, option
         fail('version_conflict', 409, 'The explicit target instance or recovery epoch differs');
     const payload: JsonObject = { action: 'publishImplementedReaders', release: 'ws02-implemented-readers@1', instanceId: store.instanceId, recoveryEpoch: store.recoveryEpoch, expectedCatalogRevision: options.expectedCatalogRevision, revision: options.revision, guideVersion: options.guideVersion, sourceIds: [...IMPLEMENTED_READER_SOURCES] };
     return await command(store, options, payload, async (tx, stamp) => ({ instanceId: store.instanceId, recoveryEpoch: store.recoveryEpoch, ...await publishImplementedReadersInTransaction(tx, { ...options, stamp }) }));
+}
+
+/** Explicit read-shape publication only; never seeds objects, changes source states or grants. */
+export async function publishProfileAppearanceCatalog(store:M1Store,options:AdministrativeCommand&{
+    expectedInstanceId:string;expectedRecoveryEpoch:string;expectedCatalogRevision:string;revision:string;expectedGuideVersion:number;guideVersion:number;
+}):Promise<JsonObject>{
+    if(options.expectedInstanceId!==store.instanceId||options.expectedRecoveryEpoch!==store.recoveryEpoch)fail('version_conflict',409,'The explicit target instance or recovery epoch differs');
+    if(!/^[A-Za-z0-9_-]{1,100}$/.test(options.expectedCatalogRevision)||options.revision!==`${options.expectedCatalogRevision.slice(0,85)}-schema-5`||!Number.isSafeInteger(options.expectedGuideVersion)||options.expectedGuideVersion<1||options.guideVersion!==options.expectedGuideVersion+1)throw new Error('An explicit schema4 to schema5 publication and next guide version are required');
+    const payload:JsonObject={action:'publishProfileAppearanceCatalog',release:'ws01-profile-appearance@1',instanceId:store.instanceId,recoveryEpoch:store.recoveryEpoch,expectedCatalogRevision:options.expectedCatalogRevision,revision:options.revision,expectedGuideVersion:options.expectedGuideVersion,guideVersion:options.guideVersion,schemaVersion:PERCEPTION_SCHEMA_VERSION,catalogVersion:APPEARANCE_CATALOG_VERSION,catalogDigest:APPEARANCE_CATALOG_DIGEST,assetVersion:APPEARANCE_ASSET_VERSION};
+    return await command(store,options,payload,async tx=>{
+        const current=await catalogRepository(tx).get('current');
+        if(!current||current.data.schemaVersion!==4||current.data.catalogRevision!==options.expectedCatalogRevision||current.data.guideVersion!==options.expectedGuideVersion)fail('version_conflict',409,'The expected schema4 catalog or guide changed');
+        const modules=['perception','world','profiles','items','inventory','mailbox','wallet'];
+        const schemaIds=[...OPERATIONS.flatMap(operation=>[`perception.${operation.id}-query`,`perception.${operation.id}-result`]),...TYPE_DEFINITIONS.flatMap(type=>[`${type.prefix}-summary`,`${type.prefix}-detail`]),'perception.error-result'];
+        for(const moduleId of modules)if(await catalogRepository(tx).get(`guide:${moduleId}:${options.guideVersion}`))fail('version_conflict',409,'The new exact guide version is occupied');
+        for(const schemaId of schemaIds)if(await catalogRepository(tx).get(`schema:${schemaId}:5`))fail('version_conflict',409,'The new exact schema version is occupied');
+        await initializePerceptionCatalog(tx,{revision:options.revision,guideVersion:options.guideVersion});
+        const published=(await catalogRepository(tx).get('current'))!;
+        if(key(published.data.sourceStates)!==key(current.data.sourceStates)||key(published.data.seedObjectIds)!==key(current.data.seedObjectIds))fail('version_conflict',409,'Read-shape publication cannot change source availability or contents');
+        return {...payload,changed:true,catalogRevisionBefore:current.data.catalogRevision!,catalogRevision:published.data.catalogRevision!,skillCatalogRevision:published.data.skillCatalogRevision!,guideVersionBefore:current.data.guideVersion!,guideVersion:published.data.guideVersion!,schemaVersionBefore:4,schemaVersion:5,newSchemaDocuments:schemaIds.length,newGuideDocuments:modules.length};
+    });
 }

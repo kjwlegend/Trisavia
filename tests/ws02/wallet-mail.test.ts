@@ -9,7 +9,7 @@ import { authorizeWs02SeedOwnerObservation } from '../../apps/platform/applicati
 import { key, refId } from '../../apps/platform/domains/perception/protocol.ts';
 import { fixture, requestBase } from './helpers.ts';
 const agentRef = (id: string) => ({ moduleId: 'profiles', type: 'profiles.agent@1', id });
-await test('detail schema4 supplies the authorized source title alongside the body and never leaks a title through an unauthorized known ref', async (t) => {
+await test('detail schema5 supplies the authorized source title alongside the body and never leaks a title through an unauthorized known ref', async (t) => {
     const f = await fixture(t);
     const items = await f.read('POST', '/list', requestBase('world', { categoryId: 'items', limit: 50 }));
     const item = items.records[0], read = await f.detail(item.ref, 'world');
@@ -47,11 +47,11 @@ await test('schema3 and guide3 exact documents and frozen catalog digests remain
     for (const row of before)
         assert.deepEqual(byId.get(row.id), row);
     const directory = await f.read('GET', '/discovery?limit=50');
-    assert.equal(directory.catalogRevision, 'frozen-catalog-schema3-schema-4');
+    assert.equal(directory.catalogRevision, 'frozen-catalog-schema3-schema-5');
     const old = await f.read('GET', '/schemas/perception.detail-result?version=3');
     assert.equal(old.document.properties.legacySchemaVersion.const, 3);
     assert.equal((await f.read('GET', '/guides/world?version=3')).document.text, 'Frozen guide3 source bytes');
-    const current = await f.read('GET', '/schemas/perception.detail-result?version=4');
+    const current = await f.read('GET', '/schemas/perception.detail-result?version=5');
     assert(current.document.properties.data.properties.content.properties.title);
 });
 // These sources are explicit isolated upstream adapters. Their credentials are
@@ -325,13 +325,20 @@ await test('holding kinds and named publication associations require each target
     const old = await f.detail(publication.ref, 'world', f.owner.sessionToken, { purpose: 'human-inspect' }), related = old.final.content.publication.relatedItems;
     assert(related.length > 10);
     assert.equal(related.length, old.final.content.publication.publishedRefs.length);
-    const item = holdings.records[0], itemId = refId(item.summary.itemRef);
+    // item-1 is deliberately a prefix of the still-authorized item-10..14.
+    // Privacy is about the exact reference/value, not an arbitrary substring.
+    const item = holdings.records.find((record: Json) => record.summary.itemRef.id === 'item-1'), itemId = refId(item.summary.itemRef);
     assert(related.some((r: Json) => key(r.ref) === key(item.summary.itemRef) && r.title === item.summary.title));
     const source = await f.storage(async (store) => await store.read(async (tx) => (await tx.get('perception_objects', itemId))!));
     await f.storage(async (store) => await store.transaction(async (tx) => await tx.update('perception_objects', { ...source, version: source.version + 1, data: { ...source.data, public: false } }, source.version)));
     const current = await f.detail(publication.ref, 'world', f.owner.sessionToken, { purpose: 'human-inspect' }), serialized = JSON.stringify(current.final.content.publication);
-    assert(!serialized.includes(item.summary.itemRef.id));
+    assert(current.final.content.publication.publishedRefs.every((ref: Json) => key(ref) !== key(item.summary.itemRef)));
+    assert(current.final.content.publication.relatedItems.every((relatedItem: Json) => key(relatedItem.ref) !== key(item.summary.itemRef)));
+    assert(!serialized.includes(JSON.stringify(item.summary.itemRef.id)));
     assert(!serialized.includes(item.summary.title));
+    const collisionIndex = current.final.content.publication.relatedItems.findIndex((relatedItem: Json) => relatedItem.ref.id === 'item-10');
+    assert(collisionIndex >= 0);
+    console.info(JSON.stringify({syntheticReferenceSubstringCounterexample:{withdrawn:'item-1',stillAuthorized:'item-10',matchingPath:`content.publication.relatedItems[${collisionIndex}].ref.id`,rawSubstringMatches:serialized.includes('item-1'),exactWithdrawnReferencePresent:false}}));
     const reread = await f.read('POST', '/list', requestBase('inventory', { purpose: 'human-inspect', agentRef: agentRef(f.a.agentId), categoryId: 'holdings', limit: 50 }), f.owner.sessionToken), record = reread.records.find((r: Json) => r.ref.id === item.ref.id);
     assert.equal(record.summary.itemKind, undefined);
     assert.equal(record.summary.itemRef, undefined);
@@ -419,7 +426,7 @@ for (const senderKind of ['agent', 'human'] as const)
                     f.humanNames.set(f.owner.ownerId, name);
                 else {
                     const p = await ok(f.m1, 'GET', `/agents/${f.sibling.agentId}/profile`, undefined, f.owner.sessionToken);
-                    await ok(f.m1, 'PUT', `/agents/${f.sibling.agentId}/profile`, { operationId: randomUUID(), expectedVersion: p.version, expectedPolicyVersion: p.policyVersion, fields: { displayName: name } }, f.owner.sessionToken);
+                    await ok(f.m1, 'PUT', `/agents/${f.sibling.agentId}/profile`, { operationId: randomUUID(), expectedVersion: p.version, expectedPolicyVersion: p.policyVersion, fields: { displayName: name, ...(p.published === null ? { avatar: { lookId: 'sunnyside-human-shorthair', catalogVersion: '2026-10-21.appearance-v1.1' } } : {}) } }, f.owner.sessionToken);
                 }
             };
             await rename(newName);
@@ -491,14 +498,16 @@ await test('WM-CR07: publication target names obey bounded unique logical row re
     const target = items.records[0], references = [target.ref, target.ref, agentRef(f.sibling.agentId), agentRef(f.sibling.agentId), plan.ref];
     await f.storage(async (store) => await store.transaction(async (tx) => { const row = (await tx.get('perception_objects', refId(publication.ref)))!; await tx.update('perception_objects', { ...row, version: row.version + 1, data: { ...row.data, body: 'A source publication body with several named target kinds. '.repeat(40), publishedRefs: references } }, row.version); }));
     const input = { ...requestBase('world', { purpose: 'agent-inspect' }), ref: publication.ref }, prepared = async () => await f.storage(async (store) => await store.read(async (tx) => ({ sessions: await tx.find('perception_sessions'), access: await tx.find('perception_access') })));
-    for (const maxScannedRows of [1, 4]) {
+    // The legacy coral profile also needs one metered original Avatar identity
+    // query. Duplicate references share it; it is never a free hidden source read.
+    for (const maxScannedRows of [1, 4, 5]) {
         const before = await prepared(), denied = await f.call('POST', '/detail', { ...input, budget: { maxScannedRows } });
         assert.equal(denied.status, 422);
         assert.equal(denied.error.code, 'budget_too_small');
         assert.equal(denied.data, undefined);
         assert.deepEqual(await prepared(), before);
     }
-    const full = await f.read('POST', '/detail', { ...input, budget: { maxScannedRows: 5 } });
+    const full = await f.read('POST', '/detail', { ...input, budget: { maxScannedRows: 6 } });
     assert.equal(full.content.publication.relatedItems.length, 5);
     assert.deepEqual(full.content.publication.publishedRefs, references);
     assert.equal(full.contentComplete, false);
@@ -507,7 +516,7 @@ await test('WM-CR07: publication target names obey bounded unique logical row re
     let calls = 0;
     const wall = Date.now(), clock = t.mock.method(Date, 'now', () => ++calls <= 5 ? wall : wall + 10);
     try {
-        const expired = await f.call('POST', '/detail', { ...input, budget: { maxScannedRows: 5, deadlineMs: 5 } });
+        const expired = await f.call('POST', '/detail', { ...input, budget: { maxScannedRows: 6, deadlineMs: 5 } });
         assert.equal(expired.status, 422);
         assert.equal(expired.error.code, 'budget_too_small');
         assert.deepEqual(await prepared(), beforeDeadline);
@@ -516,7 +525,7 @@ await test('WM-CR07: publication target names obey bounded unique logical row re
         clock.mock.restore();
     }
     await f.storage(async (store) => await store.transaction(async (tx) => { const row = (await tx.get('perception_objects', refId(target.ref)))!; await tx.update('perception_objects', { ...row, version: row.version + 1, data: { ...row.data, public: false } }, row.version); }));
-    const withdrawn = await f.read('POST', '/detail', { ...input, budget: { maxScannedRows: 5 } });
+    const withdrawn = await f.read('POST', '/detail', { ...input, budget: { maxScannedRows: 6 } });
     assert.equal(withdrawn.content.publication.relatedItems.length, 3);
     assert(!JSON.stringify(withdrawn.content.publication).includes(target.ref.id));
     assert(!JSON.stringify(withdrawn.content.publication).includes(target.summary.title));

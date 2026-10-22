@@ -1,12 +1,13 @@
 import { fail, object, text } from "../common/errors.ts";
+import {defaultAvatar,LEGACY_AVATAR_COLORS,validateAvatarInput} from './appearance.ts';
 
 export const PROFILE_FIELDS = ["displayName", "avatar", "bio", "interests"] as const;
 export const REMOVABLE_PROFILE_FIELDS = ["bio", "interests"] as const;
-export const AVATAR_COLORS = ["olive", "cream", "blue", "coral"] as const;
+export const AVATAR_COLORS = LEGACY_AVATAR_COLORS;
 
 /** Registration grants a usable public role without importing any private history. */
 export function defaultPublicProfile(agentId: string) {
-  return { displayName: `Agent ${agentId.slice(0, 8)}`, avatar: { template: "basic", color: "olive" } };
+  return { displayName: `Agent ${agentId.slice(0, 8)}`, avatar: defaultAvatar() };
 }
 
 export function validateRemoveFields(value: unknown): (typeof REMOVABLE_PROFILE_FIELDS)[number][] {
@@ -27,11 +28,7 @@ export function validateFields(value: unknown): Record<string, unknown> {
     result.interests = fields.interests.map((item) => text(item, "interests", 1, 40));
   }
   if (fields.avatar !== undefined) {
-    const avatar = object(fields.avatar, ["template", "color"]);
-    if (avatar.template !== "basic" || !AVATAR_COLORS.includes(avatar.color as typeof AVATAR_COLORS[number])) {
-      fail("profile_validation_failed", 422, "Choose a supported avatar", { field: "avatar" });
-    }
-    result.avatar = { template: "basic", color: avatar.color };
+    result.avatar = validateAvatarInput(fields.avatar);
   }
   return result;
 }

@@ -9,7 +9,9 @@ import type { JsonObject, JsonValue, M1ReadSession, M1Store, M1Table, M1Transact
 import { checkPassword, equalDigest, hashPassword, parseToken, payloadHash, verifier } from "../domains/access/credentials.ts";
 import { loginIdentifier } from "../domains/access/account-identifiers.ts";
 import { boolean, fail, M1Error, object, text, version } from "../domains/common/errors.ts";
-import { AVATAR_COLORS, PROFILE_FIELDS, REMOVABLE_PROFILE_FIELDS, defaultPublicProfile, validateFields, validatePublication, validateRemoveFields } from "../domains/profile/profile-rules.ts";
+import { PROFILE_FIELDS, REMOVABLE_PROFILE_FIELDS, defaultPublicProfile, validateFields, validatePublication, validateRemoveFields } from "../domains/profile/profile-rules.ts";
+import {avatarCatalog} from '../domains/profile/appearance-catalog.ts';
+import {projectAvatar,readAppearance,type LegacyAvatarIdentityReader} from '../domains/profile/appearance.ts';
 import { createEmailOnboarding } from "./email-onboarding.ts";
 import type { EmailConfig } from "../infrastructure/email/resend.ts";
 import { FOUNDATION_HTTP_OPERATIONS } from "../contracts/foundation-operations.ts";
@@ -21,6 +23,7 @@ import { initializePerceptionAgent } from "./perception-seed.ts";
 import type { PerceptionAction } from "../domains/perception/protocol.ts";
 export type M1Action = PerceptionAction | "capabilities" | "catalog" | "register" | "registrationResult" | "self" | "publicProfile" | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup" | "readRecovery" | "registerOwner" | "readAccount" | "claimAgent" | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites" | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveProfile" | "saveDraft" | "publishProfile" | "unpublishProfile" | "profilePolicy" | "createRecoveryRequest" | "readRecoveryRequest" | "cancelRecoveryRequest" | "recoveryAssistance" | "verifyRecoveryRequest" | "rejectRecoveryRequest" | "startRegistration" | "readRegistrationAttempt" | "sendRegistrationCode" | "verifyRegistrationEmail" | "cancelRegistration" | "startEmailRecovery" | "readEmailRecoveryAttempt" | "sendRecoveryCode" | "verifyRecoveryEmail" | "recoverByEmail" | "enableRecoveryBackup" | "readWorldAccess" | "saveWorldAccess" | "readMembership" | "join" | "leave" | "participation" | "receipt";
 export interface M1Options {
+    legacyAvatarIdentity?:LegacyAvatarIdentityReader<M1ReadSession>;
     perception?: PerceptionOptions;
     /** Composition-owned module discovery. M1 does not implement those modules. */
     gateway?: () => JsonObject;
@@ -150,6 +153,13 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     function profileView(row: StoredRow): JsonObject {
         const confirmationSource = row.data.published !== null && ["platform_default", "runtime_declaration", "owner_authenticated"].includes(row.data.confirmationSource as string) ? row.data.confirmationSource! : null;
         return { agentId: row.data.agentId!, version: row.version, policyVersion: row.data.policyVersion!, mode: row.data.mode!, lockedFields: row.data.lockedFields!, draft: row.data.draft!, published: row.data.published!, publishedVersion: row.data.publishedVersion!, confirmationSource, proposalPending: payloadHash(dataObject(row.data.draft)) !== payloadHash(dataObject(row.data.published)) };
+    }
+    /** Read-only presentation fields never enter stored profiles or historical command receipts. */
+    async function readProfileView(tx:M1ReadSession,row:StoredRow):Promise<JsonObject> {
+        const agentId=scalarString(row,'agentId');
+        let identity:ReturnType<LegacyAvatarIdentityReader<M1ReadSession>>|undefined;
+        const reader=options.legacyAvatarIdentity?((session:M1ReadSession,input:{agentId:string;worldId:'default'})=>identity??=options.legacyAvatarIdentity!(session,input)):undefined;
+        return {...profileView(row),publishedAppearance:row.data.published===null?null:await readAppearance(tx,agentId,dataObject(row.data.published).avatar,reader),draftAppearance:row.data.draft===null?null:await readAppearance(tx,agentId,dataObject(row.data.draft).avatar,reader)};
     }
     function worldAccessView(agent: StoredRow, asOf: number): JsonObject {
         const stored = dataObject(agent.data.worldAccess);
@@ -312,11 +322,11 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     }
     async function ownerView(tx: M1ReadSession, actor: CredentialRow, agentId: string, asOf: number): Promise<JsonObject> {
         const agent = await target(tx, actor, agentId);
-        return { agentId, ownerId: actor.data.ownerId!, runtimeVersion: agent.data.runtimeVersion!, runtimeActive: agent.data.runtimeActive!, profile: profileView(await required(profileRepository(tx), agentId)), membership: membershipView(await required(membershipRepository(tx), agentId)), worldAccess: worldAccessView(agent, asOf), profileUrl: profileUrl(agentId), management: await managementView(tx, agent), asOf };
+        return { agentId, ownerId: actor.data.ownerId!, runtimeVersion: agent.data.runtimeVersion!, runtimeActive: agent.data.runtimeActive!, profile: await readProfileView(tx,await required(profileRepository(tx), agentId)), membership: membershipView(await required(membershipRepository(tx), agentId)), worldAccess: worldAccessView(agent, asOf), profileUrl: profileUrl(agentId), management: await managementView(tx, agent), asOf };
     }
     const wallet = createWalletService(store, authenticate, now);
     const receiveTrustedMessage = createTrustedMailboxReceiver(store, options.perception?.mailboxSources ?? [], authenticate, now);
-    const perception = createPerceptionService(store, { authenticate }, { ...options.perception, now });
+    const perception = createPerceptionService(store, { authenticate }, { ...options.perception, now, ...(options.legacyAvatarIdentity?{legacyAvatarIdentity:options.legacyAvatarIdentity}:{}) });
     const email = createEmailOnboarding(store, { authenticate, newCredential, command, pendingRecovery, recoveryContext }, {
         now, sessionTtl: limits.session, ownerLimit: limits.ownerRegistrations, ...(options.email ? { config: options.email } : {}),
     });
@@ -328,7 +338,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
             return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, ownerRecoveryAssistance: true, ownerEmailVerification: email.configured, ownerEmailRecovery: email.configured, emailMode: email.mode, runtimeReplacement: true, defaultPublicRole: true, profileSave: "immediate-public", worldAccessPreference: true, scheduling: false, perception: true, perceptionApi: await perception.capabilities(), walletApi: wallet.capabilities(), interaction: Array.isArray(gateway?.modules) && gateway.modules.includes("interaction"), ...(gateway ? { gateway } : {}), operations: FOUNDATION_HTTP_OPERATIONS.map((operation) => ({ ...operation, actors: [...operation.actors], receiptScopes: { ...operation.receiptScopes }, requiredVersions: [...operation.requiredVersions] })) };
         }
         if (action === "catalog")
-            return { version: 1, templates: [{ id: "basic", colors: [...AVATAR_COLORS] }], requiredFields: ["displayName", "avatar"] };
+            return avatarCatalog();
         if (email.handles(action))
             return await email.invoke(action, raw, token, context.clientIp);
         if (action === "walletQuery")
@@ -387,20 +397,20 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     fail("target_not_accessible", 404, "Target is not accessible");
                 }
                 const published = dataObject(profile.data.published);
-                const avatar = dataObject(published.avatar);
-                if (typeof published.displayName !== "string" || published.displayName.trim().length === 0 || avatar.template !== "basic" || !AVATAR_COLORS.includes(avatar.color as typeof AVATAR_COLORS[number])) {
+                const avatar = projectAvatar(published.avatar);
+                if (typeof published.displayName !== "string" || published.displayName.trim().length === 0 || !avatar) {
                     fail("target_not_accessible", 404, "Target is not accessible");
                 }
                 // Build an allowlisted projection. Never return a profile aggregate to an anonymous caller.
                 const publicFields: JsonObject = {
                     displayName: published.displayName!,
-                    avatar: { template: avatar.template!, color: avatar.color! },
+                    avatar,
                 };
                 if (typeof published.bio === "string")
                     publicFields.bio = published.bio;
                 if (Array.isArray(published.interests))
                     publicFields.interests = published.interests.filter((value): value is string => typeof value === "string");
-                return { agentId, profileUrl: profileUrl(agentId), profile: publicFields, membership: { state: "joined" }, asOf };
+                return { agentId, profileUrl: profileUrl(agentId), profile: publicFields, appearance:await readAppearance(tx,agentId,avatar,options.legacyAvatarIdentity),publishedVersion:profile.data.publishedVersion!, membership: { state: "joined" }, asOf };
             }
             if (action === "register") {
                 const input = object(raw, ["operationId", "attemptId", "runtimeToken", "continuationToken", "inviteToken"]);
@@ -460,7 +470,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                 const actor = await authenticate(tx, token, ["runtime"]);
                 const agentId = actor.data.agentId!;
                 const registration = (await registrationRepository(tx).findByAgentId(agentId))[0]!;
-                return { agentId, ownerId: scalarString(registration, "ownerId"), instanceId: store.instanceId, runtimeVersion: actor.data.runtimeVersion!, profile: profileView(await required(profileRepository(tx), agentId)), membership: membershipView(await required(membershipRepository(tx), agentId)), profileUrl: profileUrl(agentId), management: await managementView(tx, await required(agentRepository(tx), agentId)), worldAccess: worldAccessView(await required(agentRepository(tx), agentId), asOf), effectiveActions: await effectiveActions(tx, actor, agentId), asOf };
+                return { agentId, ownerId: scalarString(registration, "ownerId"), instanceId: store.instanceId, runtimeVersion: actor.data.runtimeVersion!, profile: await readProfileView(tx,await required(profileRepository(tx), agentId)), membership: membershipView(await required(membershipRepository(tx), agentId)), profileUrl: profileUrl(agentId), management: await managementView(tx, await required(agentRepository(tx), agentId)), worldAccess: worldAccessView(await required(agentRepository(tx), agentId), asOf), effectiveActions: await effectiveActions(tx, actor, agentId), asOf };
             }
             if (action === "issueHandoff") {
                 const input = object(raw, ["operationId", "expectedGeneration", "handoffToken"]);
@@ -686,7 +696,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                 await target(tx, actor, agentId);
                 const profile = await required(profileRepository(tx), agentId);
                 if (action === "readProfile")
-                    return profileView(profile);
+                    return await readProfileView(tx,profile);
                 return await command(tx, `${actor.data.kind === "runtime" ? "agent" : "owner"}:${actor.data.kind === "runtime" ? agentId : actor.data.ownerId!}`, action, input, async () => {
                     expected(profile, input);
                     if (version(input.expectedPolicyVersion, "expectedPolicyVersion") !== profile.data.policyVersion)
@@ -709,12 +719,16 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                         if (actor.data.kind === "runtime" && [...Object.keys(fields), ...removeFields].some((field) => locked.includes(field)))
                             fail("field_locked", 403, "Owner locked a requested field");
                         if (action === "saveProfile") {
+                            if(profile.data.published===null&&!Object.hasOwn(fields,'avatar'))fail('profile_validation_failed',422,'Choose an appearance before restoring this unpublished profile',{field:'avatar'});
                             const current = profile.data.published === null ? defaultPublicProfile(agentId) : dataObject(profile.data.published);
                             const combined = { ...current, ...fields } as JsonObject;
                             for (const field of removeFields)
                                 delete combined[field];
                             validatePublication(combined);
-                            const published = validateFields(combined) as JsonObject;
+                            // A name-only edit preserves a retained selection, including an older
+                            // catalogue version. Only an explicitly submitted avatar is reselected.
+                            const {avatar:retainedAvatar,...otherFields}=combined;
+                            const published = {...validateFields(otherFields),avatar:retainedAvatar!} as JsonObject;
                             if (profile.data.published !== null && payloadHash(published) === payloadHash(current))
                                 return { ...profileView(profile), changed: false, saveEffect: "public" };
                             // Preserve separately saved proposals. A direct partial save must

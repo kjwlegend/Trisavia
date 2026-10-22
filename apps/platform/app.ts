@@ -2,7 +2,7 @@ import type { EmailConfig } from './infrastructure/email/resend.ts';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { createM1Service } from './application/m1-service.ts';
 import { verifyApplicationReadiness } from './application/bootstrap.ts';
-import { openPostgresStore, type OpenPostgresStoreOptions } from './infrastructure/postgresql/postgres-store.ts';
+import { openPostgresStore,readLegacyAvatarIdentity, type OpenPostgresStoreOptions } from './infrastructure/postgresql/postgres-store.ts';
 import { registerM1Routes } from './transport/http/m1-routes.ts';
 import { registerSiteRoutes } from './transport/http/site-routes.ts';
 import { registerPerceptionRoutes } from './transport/http/perception-routes.ts';
@@ -43,7 +43,7 @@ export async function buildApp(options:BuildAppOptions):Promise<FastifyInstance>
   if(options.worldCoreEnabled===true){
    runtime=await openPostgresRuntimeStore({...options,...(options.clock?{now:options.clock}:{})});
    await runtime.read(ctx=>verifyWorldReadiness(ctx));
-   const identity=createRuntimeIdentity(options.recoveryEpoch,options.clock??Date.now);
+   const identity=createRuntimeIdentity(options.recoveryEpoch,options.clock??Date.now,readLegacyAvatarIdentity);
    const world=createWorldService(identity),operations=worldGatewayOperations(world),guides=[worldGatewayGuide];
    const handlers=[{kind:'world.movement.step',version:1,run:world.handleTask}];
    if(options.worldCoreInteractionEnabled===true){
@@ -61,7 +61,7 @@ export async function buildApp(options:BuildAppOptions):Promise<FastifyInstance>
    ruleDriver=createWorldRuleDriver(scheduler);app.addHook('onReady',async()=>{ruleDriver!.start();});
   }
   app.get('/health',async(_request,reply)=>{try{if(runtime)await runtime.read(ctx=>verifyWorldReadiness(ctx));return await store.read(async()=>({status:'ok',phase:'M1',apiVersion:'1',instanceId:store.instanceId,...(runtime?{worldCore:'ready'}:{})}));}catch{return reply.code(503).send({status:'unavailable',error:{code:'storage_unavailable'}});}});
-  const service=createM1Service(store,{...(options.clock?{now:options.clock}:{}),...(options.email?{email:options.email}:{}),...(options.perception?{perception:options.perception}:{}),...(gatewayCapabilities?{gateway:gatewayCapabilities}:{})});
+  const service=createM1Service(store,{legacyAvatarIdentity:readLegacyAvatarIdentity,...(options.clock?{now:options.clock}:{}),...(options.email?{email:options.email}:{}),...(options.perception?{perception:options.perception}:{}),...(gatewayCapabilities?{gateway:gatewayCapabilities}:{})});
   registerM1Routes(app,service);registerPerceptionRoutes(app,service);registerSiteRoutes(app);return app;
  }catch(error){try{await ruleDriver?.close();await runtime?.close();}finally{await store.close();}throw error;}
 }

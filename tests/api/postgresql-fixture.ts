@@ -25,7 +25,13 @@ export async function postgresFixture(identity = { instanceId: `instance_${rando
         await migratePostgres({ connectionString: migrationConnectionString, ...identity });
         await grantApplicationPermissions(runtime,made.database);
         const ddl=new Pool({connectionString:migrationConnectionString,max:1});
-        try{await ddl.query('UPDATE platform.instance_state SET writes_enabled=true WHERE singleton=1');}finally{await ddl.end();}
+        try{
+            // The composition-owned legacy presentation resolver may only read
+            // the original Avatar identity; this M1 fixture grants no World writes.
+            await ddl.query('GRANT USAGE ON SCHEMA world TO connet_app');
+            await ddl.query('GRANT SELECT(id,world_id,agent_id) ON world.avatars TO connet_app');
+            await ddl.query('UPDATE platform.instance_state SET writes_enabled=true WHERE singleton=1');
+        }finally{await ddl.end();}
         const options = { connectionString, ...identity };
         store = await openPostgresStore(options);
         originalClose = store.close.bind(store);

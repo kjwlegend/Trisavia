@@ -255,8 +255,8 @@ await test('an existing schema2 R03 catalog upgrades without recomputing its fro
     const f={read:async(method:'GET',path:string)=>(await ok(api,method,`/perception${path}`,undefined,agent.runtimeToken)).data};
     assert.deepEqual(await snapshot(), before);
     const discovery = await f.read('GET', '/discovery?limit=50');
-    assert.equal(discovery.catalogRevision, 'catalog-r03-isolated-schema-4');
-    assert(discovery.operations.every((o: Json) => o.inputSchema.version === 4));
+    assert.equal(discovery.catalogRevision, 'catalog-r03-isolated-schema-5');
+    assert(discovery.operations.every((o: Json) => o.inputSchema.version === 5));
     assert(discovery.modules.every((m: Json) => m.usageGuide.version === 3));
     const old = await f.read('GET', '/guides/world?version=2');
     assert.equal(old.document.text, 'Frozen R03 guide world v2');
@@ -264,12 +264,12 @@ await test('an existing schema2 R03 catalog upgrades without recomputing its fro
     const guide = await f.read('GET', '/guides/world?version=3');
     assert(JSON.stringify(guide.document).includes('human-inspect'));
     const supportedCurrent = await storage(async (store) => await store.read(async (tx) => (await tx.get('perception_catalog', 'current'))!));
-    await storage(async (store) => await store.transaction(async (tx) => await tx.update('perception_catalog', { ...supportedCurrent, version: supportedCurrent.version + 1, data: { ...supportedCurrent.data, schemaVersion: 5 } }, supportedCurrent.version)));
+    await storage(async (store) => await store.transaction(async (tx) => await tx.update('perception_catalog', { ...supportedCurrent, version: supportedCurrent.version + 1, data: { ...supportedCurrent.data, schemaVersion: 6 } }, supportedCurrent.version)));
     const protectedCatalog = await storage(async (store) => await store.read(async (tx) => await tx.find('perception_catalog')));
     await assert.rejects(async () => await storage(async (store) => await store.transaction(initializePerceptionCatalog)), { code: 'protocol_unsupported' });
     assert.deepEqual(await storage(async (store) => await store.read(async (tx) => await tx.find('perception_catalog'))), protectedCatalog);
 });
-await test('HTTP-discovered strict schema4 describes owner target context and validates actual read-only owner responses', async (t) => {
+await test('HTTP-discovered strict schema5 describes owner target context and validates actual read-only owner responses', async (t) => {
     const f = await fixture(t);
     await authorize(f);
     const directory = await f.read('GET', '/discovery?limit=50', undefined, f.owner.sessionToken), ajv = new Ajv2020({ strict: false, allErrors: true });
@@ -299,7 +299,7 @@ await test('HTTP-discovered strict schema4 describes owner target context and va
         await validate(detailOp.outputSchema, result.envelope);
         await validate(result.data.schema, result.data.content);
     }
-    const schema = await f.read('GET', `/schemas/${listOp.inputSchema.id}?version=4`), run = ajv.compile({ ...schema.document, $id: 'owner-schema-negative' });
+    const schema = await f.read('GET', `/schemas/${listOp.inputSchema.id}?version=${listOp.inputSchema.version}`), run = ajv.compile({ ...schema.document, $id: 'owner-schema-negative' });
     const input = ownerInput(f.a.agentId), { agentRef: omitted, ...noTarget } = input;
     assert.equal(run(noTarget), false);
     assert.equal(run({ ...input, unexpected: 'strict' }), false);

@@ -1,0 +1,54 @@
+import assert from 'node:assert/strict';
+import {createHash,randomUUID,randomBytes} from 'node:crypto';
+import {mkdtemp,readFile,realpath,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {pathToFileURL} from 'node:url';
+import test from 'node:test';
+import {Pool} from 'pg';
+import {readRuntime} from '../../scripts/postgresql/runtime.ts';
+import {dropWorldTestDatabase} from '../../scripts/world-core-database.ts';
+import {setWorldWriteGate} from '../../scripts/world-core-write-gate.ts';
+import {runAppearanceCatalog} from '../../scripts/ws01-appearance-catalog.ts';
+import {openPostgresStore} from '../../apps/platform/infrastructure/postgresql/postgres-store.ts';
+import {M1_TABLES,type M1Store} from '../../apps/platform/contracts/store.ts';
+import {buildApp} from '../../apps/platform/app.ts';
+import {canonicalDocument} from '../../apps/platform/domains/perception/protocol.ts';
+
+test('real offline B-only upgrade then explicit shape publication preserves exact history and ends with closed pure readiness and wallet',async()=>{
+ const runtimePath=process.env.WORLD_CORE_TEST_RUNTIME,source=process.env.PROFILE_APPEARANCE_BASELINE_SOURCE,initialSource=process.env.PROFILE_APPEARANCE_PRE_UPGRADE_SOURCE;if(!runtimePath||!source||!initialSource)throw new Error('Explicit isolated runtime, fixed e005 initialization and ad5 upgrade sources are required');
+ const config=await readRuntime(runtimePath),directory=await realpath(await mkdtemp(join(tmpdir(),'world-look-a-release-')));
+ const {initializeWorldCore}=await import(pathToFileURL(join(initialSource,'scripts/world-core-initialize.ts')).href),{openPostgresStore:openOriginalStore}=await import(pathToFileURL(join(initialSource,'apps/platform/infrastructure/postgresql/postgres-store.ts')).href),{setWorldWriteGate:setOriginalWriteGate}=await import(pathToFileURL(join(initialSource,'scripts/world-core-write-gate.ts')).href),{upgradeWorldCore}=await import(pathToFileURL(join(source,'scripts/world-core-upgrade.ts')).href),{createM1Service}=await import(pathToFileURL(join(initialSource,'apps/platform/application/m1-service.ts')).href);
+ let connections:string|undefined,store:M1Store|undefined,app:Awaited<ReturnType<typeof buildApp>>|undefined;
+ try{
+  const provisioned=await initializeWorldCore({runtime:config,database:'world_core_a_'+randomUUID().replaceAll('-',''),directory:join(directory,'connections'),creator:'a',port:18894});connections=provisioned.privateConnections;
+  const identity={instanceId:provisioned.instanceId,recoveryEpoch:provisioned.recoveryEpoch},options={...identity,connectionString:(await readFile(join(connections!,'application-database-url'),'utf8')).trim()};
+  store=await openOriginalStore(options);const baseline=await store!.read(async tx=>await tx.get('perception_catalog','current'));assert.equal(baseline!.data.schemaVersion,4);assert.equal(baseline!.data.guideVersion,2);
+  const migrationRows=async()=>{const pool=new Pool({connectionString:(await readFile(join(connections!,'migration-database-url'),'utf8')).trim(),max:1});try{return(await pool.query('SELECT module_id,migration_version,name,checksum,dependencies,applied_at FROM platform.module_migrations ORDER BY module_id,migration_version')).rows;}finally{await pool.end();}};
+  const profileStorage=async()=>{const pool=new Pool({connectionString:(await readFile(join(connections!,'migration-database-url'),'utf8')).trim(),max:1});try{return {columns:(await pool.query("SELECT column_name FROM information_schema.columns WHERE table_schema='profiles' AND table_name='profile_contents' AND column_name IN ('avatar_look_id','avatar_catalog_version') ORDER BY column_name")).rows,contents:(await pool.query('SELECT parent_id,stage,ordinal,content_text FROM profiles.profile_contents ORDER BY parent_id,stage,ordinal')).rows};}finally{await pool.end();}};
+  const rows=async()=>await store!.read(async tx=>{const result={} as Record<typeof M1_TABLES[number],Awaited<ReturnType<typeof tx.find>>>;for(const table of M1_TABLES)result[table]=await tx.find(table,{});return result;});
+  const originalMigrations=await migrationRows();assert.deepEqual(originalMigrations.filter(row=>row.module_id==='profiles').map(row=>row.migration_version),[1]);
+  await setOriginalWriteGate(connections!,true);const runtimeToken=randomUUID()+'.'+randomBytes(32).toString('base64url');await createM1Service(store,{email:{mode:'experience'}}).invoke('register',{operationId:randomUUID(),attemptId:randomUUID(),runtimeToken,continuationToken:randomUUID()+'.'+randomBytes(32).toString('base64url')});const originalRows=await rows(),originalProfileStorage=await profileStorage(),identityBytes=await readFile(join(connections!,'identity.json'));assert.deepEqual(originalProfileStorage.columns,[]);await store!.close();store=undefined;
+  const upgraded=await upgradeWorldCore(config,connections!);assert.equal(upgraded.writeGate,false);assert.equal(upgraded.ready,true);
+  const upgradedMigrations=await migrationRows();for(const row of originalMigrations)assert.deepEqual(upgradedMigrations.find(value=>value.module_id===row.module_id&&value.migration_version===row.migration_version),row);assert.equal(upgradedMigrations.length,originalMigrations.length+1);assert.deepEqual(upgradedMigrations.filter(row=>row.module_id==='profiles').map(row=>row.migration_version),[1,2]);
+  store=await openPostgresStore(options);
+  assert.deepEqual(await rows(),originalRows);assert((await readFile(join(connections!,'identity.json'))).equals(identityBytes));const upgradedProfileStorage=await profileStorage();assert.deepEqual(upgradedProfileStorage.contents,originalProfileStorage.contents);assert.equal(upgradedProfileStorage.columns.length,2);
+  const physical=async()=>{const pool=new Pool({connectionString:(await readFile(join(connections!,'migration-database-url'),'utf8')).trim(),max:1});try{const hashes:Record<string,string>={};const tables=await pool.query("SELECT schemaname,tablename FROM pg_tables WHERE schemaname NOT IN ('pg_catalog','information_schema') AND schemaname NOT LIKE 'pg_toast%' ORDER BY schemaname,tablename");for(const table of tables.rows){assert(/^[a-z_]+$/.test(table.schemaname)&&/^[a-z_]+$/.test(table.tablename));hashes[table.schemaname+'.'+table.tablename]=(await pool.query(`SELECT md5(COALESCE(string_agg(to_jsonb(t)::text,E'\\n' ORDER BY to_jsonb(t)::text),'')) AS digest FROM "${table.schemaname}"."${table.tablename}" t`)).rows[0].digest;}return hashes;}finally{await pool.end();}};
+  const before=await rows(),oldDocuments=before.perception_catalog!.filter(row=>row.id.startsWith('schema:')||row.id.startsWith('guide:'));
+  const physicalBefore=await physical();
+  await assert.rejects(buildApp({...options,worldCoreEnabled:true}));assert.deepEqual(await rows(),before,'New ordinary readiness cannot initialize schema5 while the catalog is still schema4');
+  const operationId=randomUUID(),flags=(manifest:string)=>['--connection',join(connections!,'application-database-url'),'--identity',join(connections!,'identity.json'),'--operator','isolated-look-release','--manifest',join(directory,manifest),'--expected-instance',identity.instanceId,'--expected-epoch',identity.recoveryEpoch,'--expected-catalog-revision',String(baseline!.data.catalogRevision),'--revision',String(baseline!.data.catalogRevision)+'-schema-5','--expected-guide-version','2','--guide-version','3','--operation-id',operationId];
+  await assert.rejects(runAppearanceCatalog(flags('closed-must-not-exist.json')));assert.deepEqual(await rows(),before,'The helper never opens a closed write gate');
+  await setWorldWriteGate(connections!,true);const published=await runAppearanceCatalog(flags('published.json'));assert.equal(published.receipt.schemaVersion,5);assert.equal(published.receipt.outcome,'committed');
+  const after=await rows();for(const row of oldDocuments)assert.deepEqual(after.perception_catalog!.find(value=>value.id===row.id),row);
+  for(const table of M1_TABLES)if(!['perception_catalog','perception_access'].includes(table))assert.deepEqual(after[table],before[table]);
+  const allowedPhysicalChanges=['perception.catalog_current','perception.documents','perception.catalog_releases','platform.administrative_receipts','perception.access_facts','platform.instance_state'];
+  const physicalAfter=await physical();assert.deepEqual(Object.keys(physicalAfter),Object.keys(physicalBefore));for(const table of Object.keys(physicalBefore))if(!allowedPhysicalChanges.includes(table))assert.equal(physicalAfter[table],physicalBefore[table],table);
+  assert.deepEqual((await runAppearanceCatalog(flags('replayed.json'))).receipt,published.receipt);assert.deepEqual(await rows(),after);
+  const physicalReplayed=await physical();for(const table of Object.keys(physicalAfter))if(table!=='platform.instance_state')assert.equal(physicalReplayed[table],physicalAfter[table],table);
+  await setWorldWriteGate(connections!,false);const closedPhysical=await physical();app=await buildApp({...options,worldCoreEnabled:true});const ready=await app.inject({method:'GET',url:'/health'});assert.equal(ready.statusCode,200);
+  const wallet=await app.inject({method:'POST',url:'/v1/wallet/query',headers:{authorization:'Bearer '+runtimeToken},payload:{protocolVersion:1,consumerId:'closed-appearance-wallet',purpose:'agent-inspect'}});assert.equal(wallet.statusCode,200);assert.equal(wallet.json().data.balance,0);assert.deepEqual(await rows(),after,'Closed application startup, health and wallet are pure reads');
+  assert.deepEqual(await physical(),closedPhysical,'Closed readiness and wallet do not change any physical table, including the global guard');
+  console.info(JSON.stringify({offlineAppearanceMaintenance:{fixedInitializationBase:'e0054c333a384f22939240d3e7609a4dbed71ff2',fixedPhysicalUpgradeBase:'ad5f413df270154bb040179c17074e1b5db9e299',profilesMigrationVersions:[1,2],originalMigrationRowsPreserved:originalMigrations.length,physicalTables:Object.keys(physicalBefore).length,allowedPhysicalChanges,oldExactDocuments:oldDocuments.length,oldDocumentsDigest:createHash('sha256').update(canonicalDocument(oldDocuments)).digest('hex'),schema4To5:true,explicitTemporaryWriteGate:true,gateEndedClosed:true,receiptReplayNoLogicalChanges:true,replayGuardGenerationMayAdvance:true,closedWalletBalance:0}}));
+ }finally{await app?.close();await store?.close();if(connections)await dropWorldTestDatabase(config,connections,'a');await rm(directory,{recursive:true,force:true});}
+});

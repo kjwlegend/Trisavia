@@ -1,3 +1,4 @@
+import type {ProfileAvatar} from '../profile/appearance.ts';
 /** Public identity contracts. No credential verifier, private account fields or storage DTOs escape. */
 export type Principal = Readonly<{
  credentialId:string;credentialVersion:number;recoveryEpoch:string;authorizationVersion:string;
@@ -8,7 +9,7 @@ export interface AgentParticipation {
  readonly agentId:string;readonly runtimeActive:boolean;readonly runtimeVersion:number;
  readonly membership:Readonly<{worldId:string;version:number;state:string;ownerPaused:boolean;ownerPauseVersion:number;platformRestricted:boolean;platformVersion:number;sharingGeneration:number}>;
 }
-export interface PublicAgentView {readonly agentId:string;readonly publishedVersion:number;readonly displayName:string;readonly appearance:Readonly<{template:'basic';color:string}>}
+export interface PublicAgentView {readonly agentId:string;readonly publishedVersion:number;readonly displayName:string;readonly appearance:Readonly<ProfileAvatar>}
 /** Context is the current guarded transaction; principals must never be reused across contexts. */
 export interface IdentityAccess<Context extends object>{
  authenticate(context:Context,bearer:unknown,allowedKinds:readonly ('runtime'|'owner_session')[]):Promise<Principal>;

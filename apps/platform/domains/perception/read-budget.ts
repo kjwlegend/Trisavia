@@ -7,7 +7,7 @@ export function meteredRead(tx: M1Transaction, limits: {
         started: number;
         sourceRow?: StoredRow;
     }) {
-        const started = prepared?.started ?? Date.now(), cache = new Map<string, StoredRow | undefined>();
+        const started = prepared?.started ?? Date.now(), cache = new Map<string, StoredRow | undefined>(), auxiliary = new Map<string,Promise<unknown>>();
         let scanned = prepared ? 1 : 0;
         // A designated detail object consumes one logical row; cache its physical source for duplicate references.
         if (prepared?.sourceRow)
@@ -56,5 +56,12 @@ export function meteredRead(tx: M1Transaction, limits: {
             },
             find: tx.find.bind(tx), count: tx.count.bind(tx), quotaCount: tx.quotaCount.bind(tx), insert: tx.insert.bind(tx), update: tx.update.bind(tx), remove: tx.remove.bind(tx),
         };
-        return { reader, check };
+        /** Only composition-bound, at-most-one-row source queries use this seam. */
+        async function readAuxiliary<T>(key:string,load:()=>Promise<T>):Promise<T> {
+            check();
+            let pending=auxiliary.get(key);
+            if(!pending){reserve(1);scanned++;pending=(async()=>{const result=await load();check();return result;})();auxiliary.set(key,pending);}
+            const result=await pending;check();return result as T;
+        }
+        return { reader, check, readAuxiliary };
     }

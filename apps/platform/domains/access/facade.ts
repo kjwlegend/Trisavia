@@ -5,9 +5,9 @@ import {payloadHash} from './credentials.ts';
 import {fail} from '../common/errors.ts';
 import type {IdentityAccess,Principal} from './public.ts';
 import {profileRepository} from '../profile/repository.ts';
-import {AVATAR_COLORS} from '../profile/profile-rules.ts';
+import {projectAvatar,readAppearance,type LegacyAvatarIdentityReader} from '../profile/appearance.ts';
 /** The composition root supplies the identity session from the SAME guarded PG client. */
-export function createIdentityAccess<Context extends object>(options:{session:(context:Context)=>M1ReadSession;recoveryEpoch:string;now?:()=>number;registerCommitValidation?:(context:Context,check:()=>Promise<void>)=>void}):IdentityAccess<Context>{
+export function createIdentityAccess<Context extends object>(options:{session:(context:Context)=>M1ReadSession;recoveryEpoch:string;now?:()=>number;legacyAvatarIdentity?:LegacyAvatarIdentityReader<M1ReadSession>;registerCommitValidation?:(context:Context,check:()=>Promise<void>)=>void}):IdentityAccess<Context>{
  const now=options.now??Date.now,issued=new WeakMap<Principal,Context>();
  async function current(context:Context,principal:Principal){
   if(issued.get(principal)!==context)fail('authentication_failed',401,'Authenticate in the current transaction');
@@ -48,8 +48,9 @@ export function createIdentityAccess<Context extends object>(options:{session:(c
    const tx=options.session(context),agent=await agentRepository(tx).get(agentId),profile=await profileRepository(tx).get(agentId),member=await membershipRepository(tx).get(agentId);
    if(!agent||!profile||!member||profile.data.published===null||member.data.state!=='joined'||member.data.platformRestricted!==false)return null;
    const published=profile.data.published;if(!published||typeof published!=='object'||Array.isArray(published))return null;
-   const avatar=published.avatar;if(typeof published.displayName!=='string'||!published.displayName.trim()||!avatar||typeof avatar!=='object'||Array.isArray(avatar)||avatar.template!=='basic'||!AVATAR_COLORS.includes(avatar.color as typeof AVATAR_COLORS[number])||!Number.isSafeInteger(profile.data.publishedVersion))return null;
-   return Object.freeze({agentId,publishedVersion:Number(profile.data.publishedVersion),displayName:published.displayName,appearance:Object.freeze({template:'basic' as const,color:String(avatar.color)})});
+   const avatar=projectAvatar(published.avatar);if(typeof published.displayName!=='string'||!published.displayName.trim()||!avatar||!Number.isSafeInteger(profile.data.publishedVersion))return null;
+   const appearance=await readAppearance(tx,agentId,avatar,options.legacyAvatarIdentity);if(!appearance)return null;
+   return Object.freeze({agentId,publishedVersion:Number(profile.data.publishedVersion),displayName:published.displayName,appearance:Object.freeze(appearance)});
   },
  };
 }

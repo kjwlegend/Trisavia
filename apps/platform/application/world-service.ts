@@ -122,7 +122,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
         if (!candidates.length) { complete = true; break; }
         for (let index = 0; index < candidates.length; index++) {
           const avatar = candidates[index]!; after = avatar.agentId; scanned++;
-          try { await participation(context, avatar.agentId, worldId, false); const profile = await identity.readPublicAgent(context, avatar.agentId); if (avatar.status !== 'left' && profile) avatars.push({ ...structuredClone(avatar), profile: structuredClone(profile) }); }
+          try { await participation(context, avatar.agentId, worldId, false); const profile = await identity.readPublicAgent(context, avatar.agentId); if (avatar.status !== 'left' && profile) avatars.push({ ...structuredClone(avatar), profile: {...structuredClone(profile),appearance:resolveAppearance(profile.appearance,{avatarId:avatar.id})!} }); }
           catch (error) { if (!(error instanceof M1Error) || error.statusCode >= 500) throw error; }
           if (avatars.length === limit) { complete = index === candidates.length - 1 && candidates.length < batchSize; break; }
         }
@@ -244,3 +244,4 @@ function movementResult(movement: WorldMovement, worldRevision: number): JsonObj
     state: movement.state, nextStep: movement.nextStep, pathLength: movement.path.length, nextDueAt: movement.nextDueAt, completedAt: movement.completedAt,
     stoppedCode: movement.stoppedCode, policyVersion: movement.policyVersion, stepIntervalMs: movement.stepIntervalMs, avatarVersion: movement.expectedAvatarVersion, worldRevision };
 }
+import {resolveAppearance} from '../domains/profile/appearance.ts';

@@ -1,6 +1,7 @@
 import type { JsonObject } from '../../contracts/store.ts';
+import {PROFILE_AVATAR_SCHEMA} from '../profile/appearance.ts';
 const str=(max=180,min=1):JsonObject=>({type:'string',minLength:min,maxLength:max});
-export const PERCEPTION_SCHEMA_VERSION=4;
+export const PERCEPTION_SCHEMA_VERSION=5;
 const num=(min=1,max=Number.MAX_SAFE_INTEGER):JsonObject=>({type:'integer',minimum:min,maximum:max});
 const nullable=(schema:JsonObject):JsonObject=>({anyOf:[schema,{type:'null'}]});
 const obj=(properties:JsonObject,required=Object.keys(properties)):JsonObject=>({type:'object',properties,required,additionalProperties:false});
@@ -15,7 +16,7 @@ const context:JsonObject={protocolVersion:{const:1},consumerId:str(100),purpose:
 const state=obj({ref,currentContentVersion:num(),confirmedContentVersion:nullable(num()),stateVersion:num(0),confirmedAt:nullable(num(0))});
 const schemaRef=obj({id:str(100),version:num()});
 const source=obj({kind:str(100),reference:str(180),administrator:str(100),publishedAt:num(0)},['kind']);
-const profileFields=obj({displayName:str(60),avatar:obj({template:{const:'basic'},color:{enum:['olive','cream','blue','coral']}}),bio:str(500,0),interests:array(str(40),10)},['displayName','avatar']);
+const profileFields=obj({displayName:str(60),avatar:PROFILE_AVATAR_SCHEMA,appearance:PROFILE_AVATAR_SCHEMA,publishedVersion:num(),bio:str(500,0),interests:array(str(40),10)},['displayName','avatar','appearance','publishedVersion']);
 const sender=obj({kind:{enum:['human','agent']},ref:nullable(ref),displayName:nullable(str())});
 const summaryBase={title:str(),dataMode:{enum:['demo','platform','real']},source};
 const summaryFields={...summaryBase,itemKind:{enum:['work','prop']},author:str(),area:str(180,0),quantity:num(0),itemRef:ref,eventKind:{enum:['plan','occurrence']},status:str(100),fields:profileFields,sender,receivedAt:num(0)};
@@ -71,6 +72,7 @@ export function typeSchema(type:string,part:'summary'|'detail'):JsonObject {
  return {$schema:'https://json-schema.org/draft/2020-12/schema',$id:`${prefix}-${part}`,description:`${type} ${part}; untrusted source data`,...obj(properties,required)};
 }
 export const HTTP_GUIDE:JsonObject={
+ profileAppearance:{catalog:'GET /v1/avatar-catalog',catalogVersion:'2026-10-21.appearance-v1.1',meaning:'The public profile fields contain the raw saved avatar, a read-only resolved appearance, and publishedVersion. Explicit selections use {lookId,catalogVersion}. Historical {template:basic,color} is retained; an appearance still in that shape is unresolved, never a guessed new selection. No private draft is exposed. A publishedVersion change updates the displayed person even if the World position and worldRevision are unchanged. Appearance queries never write back a default or create an Avatar.'},
  errors:{schemaRef:{id:'perception.error-result',version:PERCEPTION_SCHEMA_VERSION},meaning:'Non-2xx uses the registered error envelope, never successful empty data. budget_too_small stops preparation without completion/receipt; page_expired/read_scope_changed require a new list; source_unavailable is not an empty complete set. Original failed confirmation receipt repeats its original safe rejection.'},
  digestVerification:{algorithm:'sha256-utf8-hex',input:'UTF-8 bytes of canonicalDocument exactly as returned, without BOM, trailing newline, extra escaping or locale sorting. Parse canonicalDocument and require JSON structural equality with document (object member order irrelevant, array order significant). canonicalDocument is the exact immutable serialization originally hashed; do not reserialize it.',python:'import hashlib, json\nassert json.loads(data["canonicalDocument"]) == data["document"]\nassert hashlib.sha256(data["canonicalDocument"].encode("utf-8")).hexdigest() == data["digest"]',failure:'Do not save a complete new baseline on digest/structure/version mismatch. Preserve the previous complete baseline and identity.'},
  authentication:{header:'Authorization: Bearer <saved-runtime-token>',authority:'Actual credential determines identity; IDs, consumerId, tokens and guides do not grant access',human:'owner_session uses purpose human-inspect. Public world requests omit agentRef. Private list/detail require top-level agentRef {moduleId:profiles,type:profiles.agent@1,id} and current owner binding. Inventory observes only own holdings; item content needs separate authorization. Inbox observes only source-authorized current-bound-owner existence/summary/body/attachments. dataMode never grants access. No Agent confirmation tokens or state are returned. Private owner overview and unconfirmed selectors are not supported.'},

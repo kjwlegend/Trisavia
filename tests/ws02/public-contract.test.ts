@@ -69,7 +69,7 @@ await test('HTTP-discovered exact schemas validate actual envelopes and content,
         for (const record of page.records) {
             const type = directory.types.find((row: Json) => row.type === record.ref.type);
             assert(type);
-            assert.equal(record.schema.version, 4);
+            assert.equal(record.schema.version, 5);
             assert.deepEqual(record.schema, type.summarySchema);
             await validates(record.schema, record.summary);
             if (!record.detailAvailable || inspectedTypes.has(record.ref.type))
@@ -80,7 +80,7 @@ await test('HTTP-discovered exact schemas validate actual envelopes and content,
                 const body = { ...requestBase(channel, { purpose: 'agent-inspect' }), ref: record.ref, ...(contentToken ? { contentToken } : {}) };
                 const detail = await receive('detail', 'POST', '/detail', body);
                 assert.deepEqual(detail.schema, type.detailSchema);
-                assert.equal(detail.schema.version, 4);
+                assert.equal(detail.schema.version, 5);
                 await validates(detail.schema, detail.content);
                 assert.equal(detail.content.title, record.summary.title);
                 if (detail.contentComplete) {
@@ -119,7 +119,7 @@ await test('HTTP-discovered exact schemas validate actual envelopes and content,
         assert.equal(response.status, expected.status);
         const schema = operations.get(expected.id)!.errorSchema;
         assert(schema);
-        assert.equal(schema.version, 4);
+        assert.equal(schema.version, 5);
         await validates(schema, response.envelope);
     }
     // Document endpoints are themselves checked against their actual advertised

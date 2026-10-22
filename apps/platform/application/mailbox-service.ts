@@ -1,6 +1,7 @@
 import { operationRepository, factRepository } from '../domains/platform/repository.ts';
 import { membershipRepository, agentRepository } from '../domains/access/repository.ts';
 import { profileRepository } from '../domains/profile/repository.ts';
+import {projectAvatar} from '../domains/profile/appearance.ts';
 import { randomUUID } from 'node:crypto';
 import type { JsonObject, M1ReadSession, M1Store, M1Transaction, StoredRow } from '../contracts/store.ts';
 import { fail, object, text, version } from '../domains/common/errors.ts';
@@ -32,8 +33,8 @@ export function validateMailboxSources(sources: readonly TrustedMailboxSource[])
 async function agentName(tx: M1ReadSession, ar: ObjectRef): Promise<string | null> {
     if (ar.moduleId !== 'profiles' || ar.type !== 'profiles.agent@1')
         return null;
-    const p = await profileRepository(tx).get(ar.id), m = await membershipRepository(tx).get(ar.id), published = plain(p?.data.published), avatar = plain(published.avatar);
-    return m?.data.state === 'joined' && m.data.platformRestricted === false && avatar.template === 'basic' && ['olive', 'cream', 'blue', 'coral'].includes(String(avatar.color)) && typeof published.displayName === 'string' && published.displayName.trim() ? published.displayName : null;
+    const p = await profileRepository(tx).get(ar.id), m = await membershipRepository(tx).get(ar.id), published = plain(p?.data.published), avatar = projectAvatar(published.avatar);
+    return m?.data.state === 'joined' && m.data.platformRestricted === false && avatar && typeof published.displayName === 'string' && published.displayName.trim() ? published.displayName : null;
 }
 async function humanName(source: TrustedMailboxSource, tx: M1ReadSession, ar: ObjectRef, recipient: string): Promise<HumanMailboxIdentity | null> {
     const identity = await source.humanIdentity?.(tx, ar, recipient);
