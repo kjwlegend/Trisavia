@@ -457,3 +457,37 @@ A真实look HTTP两故事及受审B-only固定489文件源的实际隔离维护�
 C开始在自己的ignored outputs构建固定A6adc完整Git源＋Dbbaa的75归属文件覆盖，依赖独立复制，保留三测试WIP及源码hash；这是未完成审查的开发联测副本，不改TD integration生产树。随后仅在C随机自有PG／loopback端口运行原五故事和根指定的1024背包详情内部底部滚动、主窗／信箱子窗关闭可达定点；合成非空数据不进当前库。独审、工程组合与普通用户UI继续分别记录。
 
 B归档容量包另固定`ad5f413 → ac93fff2bca98372a274f18cb1bb2c66d094fdfe`11路径，原look分支保留。作者9/9＝8合成／CLI＋1真实隔离raw→gzip恢复，含两条post-base提交，v1 raw清单保留、追加gzip升级v2，恢复得到[1,2,3]；typecheck／sh-n／diff0，自有容器／卷已按登记清理。原reviewer按视觉主线之后排独审，尚未部署，不改写容量事件已结案。A／D另开reason诊断分支，白名单build／reason只用于有界聚合，保持配额和请求数；该独立批与归档包均不阻塞已合格的视觉交付。当前18893仍e005／82404，尚未执行look物理升级、目录发布或切服务。
+
+### 7.18 已审人物组合与待交付边界
+
+原reviewer R37随后接受A6adc的29路径，无新增实质发现；与R34 B、R36 D分别成立。TD无冲突整合为**`202d6ab9dd48cf3c52c24c1d03500f63847ba4f0`**，109归属源码与各作者固定Git逐字节一致；288生产／脚本／package文件与C固定开发组合逐字节一致，无整合新增生产差异。whole typecheck exit0，证据`outputs/world-ui-reliability/integration-look-202d6ab/`。C当前故事按精确各轮overlay／失败／自库清理分列，最终固定和原独审尚待，不将离散通过拼为同次全过或独立普通UI通过。
+
+原reviewerR38另接受B ac93归档11路径，无新增实质发现。TD普通intake记录`outputs/postgresql/archive-capacity-ac93fff-intake/`核源码，manifest SHA256 **`f671ce1833c19badf597343732f10ef66d980abd1b2d955f921969fa35e0ae76`**；日志清单没有自带hash字段，TD／reviewer各自计算的值只作本次冻结，不称匹配不存在字段。实际安装需保全整个现用PG卷与配对材料、追加helper只读挂载，并验证自然新归档与独立恢复；现容器没有该挂载，不能以reload声称安装完成。尚未整合／安装此运维包，历史raw档、60秒间隔及共享实例其他库保持；容量事件不据静态接受关闭。
+
+C在bbaa／overlay06的1280×800真实组合发现新阻断：A1选蓬松发→dirty切Agent取消→保存→角色窗“管理”到overview→账户与安全，按钮有bbox且panel=open／非inert，但中心elementFromPoint命中pixel-panel-backdrop，正常原生点击不能进入安全页／退出。round05日志SHA256 **`7cbcba492d292f1b0544f8b5d9eb6233eee12e4c23cff9d519fab54c3522d268`**，本轮自库全部finally关闭／OID核清理；其余链条分轮通过不拼为同次通过。TD已派原D从窗口高度／裁切／scroll和focus／inert归属修正；根明确不能仅抬按钮z-index或取消遮罩，不扩成全站模态重构。C将在原故事补正常鼠标、键盘焦点、关闭返回及草稿／未知结果保持，禁止force-click／放宽断言；新固定差异仍送原reviewer。原R36只守其静态／合成范围，本组合尚未交付，当前18893仍e005。
+
+12:40定位口径更正：D复现相同坐标后实测安全窗bottom664、sidebar top153／bottom655、scrollHeight552／clientHeight502、scrollTop0；security在y657／中心674.5，落在侧栏正常overflow裁切区外。**不是已证明的窗内错误遮罩或inert串层；DOM isVisible／bbox不足以证明实际画面可见。** 原C未对该状态执行侧栏wheel／Tab，不能将未滚动点击失败推为logout完全不可达。D将补原生滚动／键盘基线并作短桌面间距窄修以露出当前10项入口，保留正常35px控件／内部滚动及遮罩；C已接受收窄结论，原反例与20次独立自库清理证据保留。当前测试底稿ce61f7920ff4077f0ce4b3bcdd34bb02ac843bf4仅三文件已送原reviewer，最终CSS后继与同次六故事仍待。
+
+
+D补充原生wheel实测使scrollTop由0→50，原安全入口正常进入，故原问题准确收窄为短桌面初始裁切；不能称logout不可达。后继`62248991c7d53c57c2a5980a823457968eed9414`只改panels.css及其面板测试两路径，通过短桌面间距调整保留35px控件、原overflow／focus／inert／backdrop。1280安全入口y586..621／sidebar bottom655，1024 bottom623；鼠标、Tab／Enter、关闭返回及留稿定点3/3。原reviewer **R41接受固定两路径**，TD整合`a9cb45f`并核288生产文件与C新组合相同。新manifest SHA256 **`d9412d1213bdd9ccf22073e29f0d859b832008e00eceb30ac737385ddf4f180a`**，intake核两源码／22证据；该manifest路径相对于manifest目录，首次误以worktree为根而FileNotFound后改正，未将首轮记通过。
+
+C最终固定`ce61f7920ff4077f0ce4b3bcdd34bb02ac843bf4`＋`ac95b68a45b235d7028bec0ca2c3ccc9f251f6db`，仅三个预定测试路径。北京时间12:50:13起在A6adc＋D622＋C ac95精确组合执行，**同次六故事6/6、0失败／取消／跳过，24.815秒**；固定pure另3/3、typecheck／diff0。六故事内覆盖真实HTTP保存与应用关池重连、结果未知原操作重试、两Owner／三Agent与迟到返回隔离、旧形象和未公开纠错／资源失败、撤权与同文档切Owner、1024真实长正文内滚与主副窗关闭；1280原生鼠标／Tab＋Enter、安全窗关闭焦点返回、dirty／unknown留稿在同次故事内。没有PG或OS重启、实际目录下架、手机、全权限矩阵或普通用户视觉通过的扩大结论。
+
+最终handoff SHA256 **`c24057faaed2b4099cdf82cc9ee4efd56f120a373e3c4096e03719e314aaada9`**，最终浏览器日志SHA256 **`b477622e91d01663bada5fe2a20b23b1cb4e877644f08c46a9d8166bc3a53027`**；30/30自有尝试（旧20＋新10，含最终六例）browser／app／pool关闭且自库OID核对删除全部完成。旧导航假设、422断言、动画采样、选择器歧义及重复hash不重新开窗的失败记录全部保留，不覆写或合并通过次数。TD核三个Git测试文件及24普通证据hash，intake在`outputs/world-ui-reliability/c-look-ac95b68-intake/`。
+
+TD无冲突取C两提交为`8fa5091`＋**`05b8dca3ef96ab4756e87864517406851a935a2e`**；288生产／脚本／package文件与三个测试文件逐字节等同C最终组合，diffcheck0，无新增生产差异，不扩跑已通过且未变化的检查。等价回执`outputs/world-ui-reliability/integration-look-05b8dca/source-equivalence.json`。原reviewer R42已审ce61底稿，最终ac95小差异及完整证据回执仍在收尾；尚未在此段记实际运行交付，18893仍e005／82404。
+
+
+### 7.19 六人物与像素面板v2实际本地交付（2026-10-22 12:58）
+
+原reviewer **R43最终接受ac95两路径增量，结合R42接受完整三个C测试路径及A6adc＋D622同次六故事工程结果**，无新增实质发现。R34／R36／R37／R41生产范围与R42／43测试范围均固定；TD整合05b8dca没有新增生产差异，未扩大已通过测试。冻结源码`outputs/world-core/look-05b8dca/source`，**554 Git文件**逐项字节核实，源码tar SHA256 **`a290ab3fdcf91de161fe1449279314104812abbb1e3f34b1c05670fff86bba63`**；node_modules为独立目录，其六symlink均解析到自身目录内。qualification记录各作者commit、审查与最终工程证据，429 reason和归档工具明确不包含。
+
+北京时间**12:56:41**先fresh当前DB备份447703字节，SHA256 **`f94f9631c4555af94de215e176811cd741dd6bc7037dc544dea80f418077f2a0`**；**12:56:50**原e005／PID82404正常SIGTERM停服，再fresh停止态dump447704字节，SHA256 **`e317d2ecd052ae44a1efdf053bbee0b042ed1c0eef2ad5caa37b2eeb441129f4`**。两份均配对复制private identity／配置、目录0700／文件0600并通过pg_restore清单验证，未冒称恢复演练。identity SHA256 **`da233bcdf1316505e28851bd673166164d000e9a8b701fcb19f7aec46038b612`**保持；原instance／epoch与原PG容器／卷保持。没有seed、重建身份、补余额、删除数据或旧dump回灌。
+
+严格按隔离已证顺序执行：原e005工具关写门，固定B ad5完整源码实际将profiles v1追加v2；80表**504→505行**，仅module_migrations语义变化、31原迁移行保全，新typed列均NULL。随后HTTP服务保持停止，显式开维护写门，用最终候选具名helper以`td-look-release`／`ws01-appearance-release-20261022`发布schema4→5、guide2→3，再finally关写门；80表**505→556行**，仅catalog_current、documents、catalog_releases、administrative_receipts、access_facts五预期表变化。旧55文档与所有旧不可变行原hash保全，新增41 schema5＋7 guide3文档及各一release／receipt／access fact；sourceStates、原profile raw、Owner、绑定、钱包及其他业务事实不变。
+
+最终05b8dca闭门启动后，80表**556→556行、全部列hash均无变化**。有限匿名readiness共**77 GET全部200／no-store**：8个页面／API入口加69份变更静态资源，资源响应逐字节匹配冻结源；入口`/`、`/owner`均同index。catalog v2六look均可选、默认短发、固定catalogDigest匹配；实时capabilities为**catalog-readers-1-schema-4-schema-5／skills-catalog-readers-1-schema-4-schema-5**。WorldRevision仍29、原三Avatar所有公开业务事实保留，唯一预期appearance展示投影按最终pure resolver及真实Avatar ID计算一致。没有用测试fixture污染当前DB，也未代用户做形象保存。
+
+**12:58:12恢复写入，维护82.082秒；18893真实运行版本为`05b8dca3ef96ab4756e87864517406851a935a2e`，PID73223／PPID1**。URL仍为`http://127.0.0.1:18893/`、`/owner`及原Agent入口。证据集中于`outputs/world-core/look-05b8dca/`的source-manifest、qualification、live／stopped-backup、physical／catalog／startup-verification、closed-readiness及maintenance.json；private备份与服务日志不公开。根已收到真实版本，可接原独立普通用户UI；本节仅工程／保全／实际读取交付，不预写独立UI或最终审美通过。8789应用、公网与其他服务未切换；容量工具与429自然原因仍分别开放。
+
+恢复边界已生效：profiles v2及schema5／guide3已真实发布，**不能直接运行e005或B-only旧应用，不能回灌旧备份覆盖后续写入**。故障恢复须保留此配对PG／identity／全部新增事实，采用05b8dca兼容新旧形状的完整源码前向修复。main文档后继不等于运行版本；本次实际部署证据以冻结source／PID／维护回执为准。
