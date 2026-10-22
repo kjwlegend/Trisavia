@@ -6,6 +6,8 @@ export interface InteractionRepository {
   initializeConfiguration(configuration: FeedbackConfiguration): Promise<void>;
   getConfiguration(version: number): Promise<FeedbackConfiguration | undefined>;
   getArtifact(ref: ArtifactRef): Promise<ArtifactRevision | undefined>;
+  /** Author-scoped source enumeration, including unsent/withdrawn revisions; application owns current visibility. */
+  listArtifacts(authorAgentId: string, options: { after?: ArtifactRef; limit: number }): Promise<ArtifactRevision[]>;
   saveArtifact(artifact: ArtifactRevision, expectedVersion: number | null): Promise<void>;
   lockPair(firstAgentId: string, secondAgentId: string): Promise<InteractionPairPolicy>;
   getPair(firstAgentId: string, secondAgentId: string): Promise<InteractionPairPolicy | undefined>;
@@ -19,7 +21,7 @@ export interface InteractionRepository {
   getFeedback(id: string): Promise<FeedbackContribution | undefined>;
   saveFeedback(feedback: FeedbackContribution, expectedVersion: number | null): Promise<void>;
   /** Bounded stable ID enumeration; C computes current effective state/visibility. */
-  listInvitations(agentId: string, options: { afterId?: string; limit: number }): Promise<InteractionInvitation[]>;
+  listInvitations(agentId: string, options: { afterId?: string; artifact?: ArtifactRef; limit: number }): Promise<InteractionInvitation[]>;
 }
-export type InteractionReader = Pick<InteractionRepository, 'getConfiguration' | 'getArtifact' | 'getPair' | 'getInvitation' | 'getActivity' | 'getActivityByInvitation' | 'getFeedback' | 'listInvitations'>;
+export type InteractionReader = Pick<InteractionRepository, 'getConfiguration' | 'getArtifact' | 'listArtifacts' | 'getPair' | 'getInvitation' | 'getActivity' | 'getActivityByInvitation' | 'getFeedback' | 'listInvitations'>;
 export const INTERACTION_REPOSITORY = defineRuntimeRepository<InteractionReader, InteractionRepository>('interaction');

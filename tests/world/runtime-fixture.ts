@@ -45,6 +45,7 @@ export function coreFixture() {
   const interaction: InteractionRepository = {
     async initializeConfiguration(c) { if (!state.configs.has(c.configVersion)) state.configs.set(c.configVersion, copy(c)); }, async getConfiguration(v) { return copy(state.configs.get(v)); },
     async getArtifact(r) { return copy(state.artifacts.get(pairKey(r.artifactId, String(r.revision)))); },
+    async listArtifacts(a,o) { if(!Number.isSafeInteger(o.limit)||o.limit<1||o.limit>100)throw new RuntimeError('invalid_usage','Invalid source page size');return copy([...state.artifacts.values()].filter(value=>value.authorAgentId===a&&(!o.after||value.artifactId>o.after.artifactId||value.artifactId===o.after.artifactId&&value.revision>o.after.revision)).sort((a,b)=>(a.artifactId<b.artifactId?-1:a.artifactId>b.artifactId?1:0)||a.revision-b.revision).slice(0,o.limit)); },
     async saveArtifact(a, expected) { save(state.artifacts, pairKey(a.artifactId, String(a.revision)), a, expected); },
     async lockPair(a,b) { const id = pairKey(a,b); if (!state.pairs.has(id)) state.pairs.set(id, { firstAgentId:a,secondAgentId:b,version:1,blockedByAgentIds:[],sharedGeneration:0,updatedAt:stamp }); return copy(state.pairs.get(id)!); },
     async getPair(a,b) { return copy(state.pairs.get(pairKey(a,b))); }, async savePair(p, expected) { save(state.pairs,pairKey(p.firstAgentId,p.secondAgentId),p,expected); },
@@ -52,7 +53,7 @@ export function coreFixture() {
     async findActiveInvitation(w,a,b,r,g,pg) { return copy([...state.invitations.values()].find(i => i.worldId === w && i.fromAgentId === a && i.toAgentId === b && i.artifact.artifactId === r.artifactId && i.artifact.revision === r.revision && i.sharedGeneration === g && i.participantGenerations.from === pg.from && i.participantGenerations.to === pg.to && (i.state === 'pending' || i.state === 'accepted' && [...state.activities.values()].some(s => s.invitationId === i.id && ['waiting_feedback','waiting_ack'].includes(s.state))))); },
     async getActivity(id) { return copy(state.activities.get(id)); }, async getActivityByInvitation(id) { return copy([...state.activities.values()].find(a => a.invitationId === id)); },
     async saveActivity(a, expected) { fault('activity'); save(state.activities,a.id,a,expected); }, async getFeedback(id) { return copy(state.feedback.get(id)); }, async saveFeedback(f, expected) { save(state.feedback,f.id,f,expected); },
-    async listInvitations(a,o) { return copy([...state.invitations.values()].filter(i => [i.fromAgentId,i.toAgentId].includes(a) && (!o.afterId || i.id > o.afterId)).sort((a,b) => a.id.localeCompare(b.id)).slice(0,o.limit)); },
+    async listInvitations(a,o) { return copy([...state.invitations.values()].filter(i => [i.fromAgentId,i.toAgentId].includes(a) && (!o.afterId || i.id > o.afterId) && (!o.artifact||i.artifact.artifactId===o.artifact.artifactId&&i.artifact.revision===o.artifact.revision)).sort((a,b) => a.id.localeCompare(b.id)).slice(0,o.limit)); },
   };
   const context: RuntimeTransaction & { validateBeforeCommit(check:(context:RuntimeTransaction)=>Promise<void>):void } = {
     validateBeforeCommit(check) { checks.push(check); },
