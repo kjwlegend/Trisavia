@@ -23,7 +23,7 @@ import { createPerceptionService, type PerceptionOptions } from "./perception-se
 import { initializePerceptionAgent } from "./perception-seed.ts";
 import {createOwnerFriendsReader} from "./owner-friends.ts";
 import type { PerceptionAction } from "../domains/perception/protocol.ts";
-export type M1Action = PerceptionAction | "readOwnerFriends" | "capabilities" | "catalog" | "register" | "registrationResult" | "self" | "publicProfile" | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup" | "readRecovery" | "registerOwner" | "readAccount" | "claimAgent" | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites" | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveProfile" | "saveDraft" | "publishProfile" | "unpublishProfile" | "profilePolicy" | "createRecoveryRequest" | "readRecoveryRequest" | "cancelRecoveryRequest" | "recoveryAssistance" | "verifyRecoveryRequest" | "rejectRecoveryRequest" | "startRegistration" | "readRegistrationAttempt" | "sendRegistrationCode" | "verifyRegistrationEmail" | "cancelRegistration" | "startEmailRecovery" | "readEmailRecoveryAttempt" | "sendRecoveryCode" | "verifyRecoveryEmail" | "recoverByEmail" | "enableRecoveryBackup" | "readWorldActionPolicy" | "saveWorldActionPolicy" | "readWorldAccess" | "saveWorldAccess" | "readMembership" | "join" | "leave" | "participation" | "receipt";
+export type M1Action = PerceptionAction | "readOwnerFriends" | "capabilities" | "catalog" | "register" | "registrationResult" | "self" | "publicProfile" | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup" | "readRecovery" | "registerOwner" | "readAccount" | "claimAgent" | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites" | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveProfile" | "saveDraft" | "publishProfile" | "unpublishProfile" | "profilePolicy" | "createRecoveryRequest" | "readRecoveryRequest" | "cancelRecoveryRequest" | "recoveryAssistance" | "verifyRecoveryRequest" | "rejectRecoveryRequest" | "startRegistration" | "readRegistrationAttempt" | "sendRegistrationCode" | "verifyRegistrationEmail" | "cancelRegistration" | "startEmailRecovery" | "readEmailRecoveryAttempt" | "sendRecoveryCode" | "verifyRecoveryEmail" | "recoverByEmail" | "enableRecoveryBackup" | "readWorldActionPolicy" | "saveWorldActionPolicy" | "readWorldAccess" | "saveWorldAccess" | "adoptWorldAccess" | "readMembership" | "join" | "leave" | "participation" | "receipt";
 export interface M1Options {
     legacyAvatarIdentity?:LegacyAvatarIdentityReader<M1ReadSession>;
     perception?: PerceptionOptions;
@@ -172,7 +172,11 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         if (!Number.isSafeInteger(currentVersion) || (currentVersion as number) < 1
             || (intervalSeconds !== null && (!Number.isSafeInteger(intervalSeconds) || (intervalSeconds as number) < 1)))
             throw new Error("Stored world access preference is invalid");
-        return { agentId: agent.id, version: currentVersion, intervalSeconds, asOf };
+        const rawAdoption=stored.adoption;
+        if(rawAdoption!==undefined&&rawAdoption!==null&&(typeof rawAdoption!=='object'||Array.isArray(rawAdoption)||!Number.isSafeInteger(rawAdoption.appliedVersion)||Number(rawAdoption.appliedVersion)<1||!['scheduled','stopped','unknown'].includes(String(rawAdoption.jobState))||!Number.isSafeInteger(rawAdoption.reportedAt)||Number(rawAdoption.reportedAt)<0))fail('world_access_unavailable',503,'Stored adoption report is invalid');
+        const report=dataObject(rawAdoption),appliedVersion=report.appliedVersion??null,jobState=report.jobState??'unknown';
+        const adoption={appliedVersion,jobState,reportedAt:report.reportedAt??null,status:appliedVersion!==null&&appliedVersion!==currentVersion?'awaiting':jobState==='unknown'?'unknown':'current',source:'agent_report'};
+        return { agentId: agent.id, version: currentVersion, intervalSeconds, adoption, asOf };
     }
     function membershipView(row: StoredRow): JsonObject {
         return { agentId: row.data.agentId!, worldId: row.data.worldId!, version: row.version, state: row.data.state!, ownerPaused: row.data.ownerPaused!, ownerPauseVersion: row.data.ownerPauseVersion!, platformRestricted: row.data.platformRestricted!, platformVersion: row.data.platformVersion! };
@@ -296,11 +300,12 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         return {
             readProfile: await check(() => { }), readMembership: await check(() => { }),
             saveProfile: { ...await check(async () => await directSavePermission(tx, actor, agentId, profile)), writableFields: PROFILE_FIELDS.filter((field) => !locked.includes(field)), removableFields: REMOVABLE_PROFILE_FIELDS.filter((field) => !locked.includes(field)) },
-            readWorldAccess: await check(() => { }), saveWorldAccess: { allowed: false, blockedBy: ["insufficient_scope"] },
+            readWorldAccess: await check(() => { }), saveWorldAccess: await check(() => { }),
+            readWorldActionPolicy: await check(() => { }), saveWorldActionPolicy: {allowed:false,blockedBy:['insufficient_scope']},
             saveDraft: { ...await check(write), writableFields: PROFILE_FIELDS.filter((field) => !locked.includes(field)), removableFields: REMOVABLE_PROFILE_FIELDS.filter((field) => !locked.includes(field)) },
             publishProfile: await check(async () => { await write(); publicationPermission(profile, actor, false); }),
             unpublishProfile: await check(async () => { await write(); publicationPermission(profile, actor, true); }),
-            join: await check(async () => { await write(); joinPermission(profile); }), leave: await check(() => { }),
+            join: await check(async () => { assertWorldActionAllowed(worldActionPolicy(await required(agentRepository(tx),agentId)),'world.membership.join'); await write(); joinPermission(profile); }), leave: await check(async () => { assertWorldActionAllowed(worldActionPolicy(await required(agentRepository(tx),agentId)),'world.membership.leave'); }),
             createRecoveryRequest: await check(async () => { await recoveryCreatePermission(tx, agentId); }),
             readRecoveryRequest: await check(() => { }),
             cancelRecoveryRequest: await check(async () => {
@@ -686,18 +691,24 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     return {...worldActionPolicyView(next,asOf),changed:true};
                 });
             }
-            if (action === "readWorldAccess" || action === "saveWorldAccess") {
-                const input = object(raw, action === "readWorldAccess" ? ["agentId"] : ["operationId", "agentId", "expectedVersion", "intervalSeconds"]);
-                const actor = await authenticate(tx, token, action === "readWorldAccess" ? ["runtime", "owner_session"] : ["owner_session"]);
+            if (action === "readWorldAccess" || action === "saveWorldAccess" || action === "adoptWorldAccess") {
+                const input = object(raw, action === "readWorldAccess" ? ["agentId"] : ["operationId", "agentId", "expectedVersion", ...(action === "adoptWorldAccess" ? ["jobState"] : ["intervalSeconds"])]);
+                const actor = await authenticate(tx, token, action === "adoptWorldAccess" ? ["runtime"] : ["runtime", "owner_session"]);
                 const agentId = text(input.agentId, "agentId", 8, 100);
                 const agent = await target(tx, actor, agentId);
                 const current = worldAccessView(agent, asOf);
                 if (action === "readWorldAccess")
                     return current;
-                return await command(tx, `owner:${actor.data.ownerId!}`, action, input, async () => {
+                return await command(tx, actor.data.kind==='runtime'?`agent:${agentId}`:`owner:${actor.data.ownerId!}`, action, input, async () => {
                     if (version(input.expectedVersion) !== current.version)
                         fail("version_conflict", 409, "World access preference changed", { version: current.version! });
-                    await businessWrite(tx, actor, agentId);
+                    if(action==='adoptWorldAccess'){
+                        const jobState=input.jobState;
+                        if(!['scheduled','stopped','unknown'].includes(String(jobState))||jobState==='scheduled'&&current.intervalSeconds===null||jobState==='stopped'&&current.intervalSeconds!==null)fail('invalid_request',400,'Job state must agree with the current configured interval');
+                        const adoption={appliedVersion:current.version!,jobState:jobState as string,reportedAt:asOf};
+                        const next=await update(agentRepository(tx),agent,{worldAccess:{...dataObject(agent.data.worldAccess),adoption}});
+                        return {...worldAccessView(next,asOf),changed:true};
+                    }
                     const intervalSeconds = input.intervalSeconds;
                     if (intervalSeconds !== null && (!Number.isSafeInteger(intervalSeconds) || (intervalSeconds as number) < 1))
                         fail("invalid_request", 400, "Expected a positive safe integer number of seconds or null", { field: "intervalSeconds" });
@@ -706,7 +717,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     const nextVersion = (current.version as number) + 1;
                     if (!Number.isSafeInteger(nextVersion))
                         fail("state_conflict", 409, "Preference version cannot advance");
-                    const next = await update(agentRepository(tx), agent, { worldAccess: { version: nextVersion, intervalSeconds: intervalSeconds as number | null } });
+                    const next = await update(agentRepository(tx), agent, { worldAccess: { ...dataObject(agent.data.worldAccess), version: nextVersion, intervalSeconds: intervalSeconds as number | null } });
                     return { ...worldAccessView(next, asOf), changed: true };
                 });
             }

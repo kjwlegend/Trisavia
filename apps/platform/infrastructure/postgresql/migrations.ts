@@ -119,12 +119,16 @@ POSTGRES_MIGRATIONS.push({moduleId:'profiles',version:2,name:'explicit_appearanc
   );`,dependencies:['profiles']});
 POSTGRES_MIGRATIONS.push(FRIENDSHIPS_MIGRATION,FRIENDSHIPS_LIFECYCLE_MIGRATION);
 // Optional state preserves legacy Agents without backfill; applied migration bytes stay fixed.
+const actionPolicyAllowed=new Set(MODELS.find(model=>model.logical==='agents')!.fields.map(field=>field.path).concat('worldActionPolicy','worldAccess.adoption').flatMap(path=>path.split('.').map((_,index)=>path.split('.').slice(0,index+1).join('.'))));
 POSTGRES_MIGRATIONS.push({moduleId:'iam',version:6,name:'owner_world_action_policy',sql:`ALTER TABLE iam.agents
  ADD COLUMN world_action_policy jsonb CHECK(jsonb_typeof(world_action_policy)='object'),
  ADD COLUMN world_action_policy_text text,
+ ADD COLUMN world_access__adoption jsonb CHECK(jsonb_typeof(world_access__adoption)='object'),
+ ADD COLUMN world_access__adoption_text text,
+ ADD CONSTRAINT agents_world_access_adoption_text_check CHECK(world_access__adoption IS NOT DISTINCT FROM world_access__adoption_text::jsonb),
  ADD CONSTRAINT agents_world_action_policy_text_check CHECK(world_action_policy IS NOT DISTINCT FROM world_action_policy_text::jsonb);
  ALTER TABLE iam.agents DROP CONSTRAINT agents__present_check;
- ALTER TABLE iam.agents ADD CONSTRAINT agents__present_check CHECK(_present <@ ARRAY[${MODELS.find(model=>model.logical==='agents')!.fields.map(field=>quote(field.path)).concat(quote('worldActionPolicy')).join(',')}]::text[]);`,dependencies:['iam']});
+ ALTER TABLE iam.agents ADD CONSTRAINT agents__present_check CHECK(_present <@ ARRAY[${[...actionPolicyAllowed].map(quote).join(',')}]::text[]);`,dependencies:['iam']});
 export const POSTGRES_SCHEMA_SIGNATURE=createHash('sha256').update(POSTGRES_MIGRATIONS.map(item=>`${item.moduleId}:${createHash('sha256').update(item.sql).digest('hex')}`).join('\n')).digest('hex');
 
 /** Explicit DDL-role operation; openPostgresStore never calls this. */

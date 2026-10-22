@@ -1,8 +1,9 @@
+import {assertWorldActionAllowed,worldActionPolicy} from '../domains/access/world-action-policy.ts';
 import { meteredRead } from '../domains/perception/read-budget.ts';
 import { mapAsync } from '../domains/common/async-collections.ts';
 import { operationRepository, factRepository } from '../domains/platform/repository.ts';
 import { profileRepository } from '../domains/profile/repository.ts';
-import { managementBindingRepository, membershipRepository } from '../domains/access/repository.ts';
+import { agentRepository, managementBindingRepository, membershipRepository } from '../domains/access/repository.ts';
 import { catalogRepository, sourceGrantRepository, contentRepository, notificationStateRepository, accessFactRepository, readSessionRepository } from '../domains/perception/repository.ts';
 import { everyAsync, someAsync, filterAsync } from '../domains/common/async-collections.ts';
 import { randomUUID } from 'node:crypto';
@@ -573,6 +574,8 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
                 fail('operation_id_conflict', 409, 'Operation payload changed');
             return plain(prior.data.result);
         }
+        const agent=await agentRepository(tx).get(a.agentId!);if(!agent)fail('target_not_accessible',404,'Target is not accessible');
+        assertWorldActionAllowed(worldActionPolicy(agent),'perception.agent_read.confirm');
         validateDecision(input.decision);
         if (await operationRepository(tx).countByAction('confirmAgentRead', settings.receiptLimit + 1) >= settings.receiptLimit || await operationRepository(tx).countByActionAndScope('confirmAgentRead', scope, settings.receiptPerAgentLimit + 1) >= settings.receiptPerAgentLimit)
             fail('storage_capacity', 503, 'Confirmation receipt capacity is exhausted');

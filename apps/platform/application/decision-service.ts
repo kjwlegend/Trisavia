@@ -1,3 +1,4 @@
+import {assertWorldActionAllowed} from '../domains/access/world-action-policy.ts';
 import {randomUUID} from 'node:crypto';
 import type {JsonObject} from '../contracts/store.ts';
 import type {CommandKey,CommandReceipt,RuntimeReadContext,RuntimeTransaction} from '../contracts/runtime-store.ts';
@@ -33,10 +34,11 @@ export function createDecisionService(options:{identity:IdentityAccess<RuntimeRe
  }
  async function eligibility(ctx:RuntimeReadContext,p:Principal,row:DecisionRequest){
   const state=await options.identity.readParticipation(ctx,row.agentId);
-  return hashRuntimeRequest({credential:p.authorizationVersion,runtimeVersion:state.runtimeVersion,runtimeActive:state.runtimeActive,membershipState:state.membership.state,ownerPauseVersion:state.membership.ownerPauseVersion,platformVersion:state.membership.platformVersion,sharingGeneration:state.membership.sharingGeneration,templateVersion:row.templateVersion,configVersion:row.configVersion,dispatchPolicyVersion:policy.version});
+  return hashRuntimeRequest({actionPolicy:state.actionPolicy,credential:p.authorizationVersion,runtimeVersion:state.runtimeVersion,runtimeActive:state.runtimeActive,membershipState:state.membership.state,ownerPauseVersion:state.membership.ownerPauseVersion,platformVersion:state.membership.platformVersion,sharingGeneration:state.membership.sharingGeneration,templateVersion:row.templateVersion,configVersion:row.configVersion,dispatchPolicyVersion:policy.version});
  }
- async function validateCommit(ctx:RuntimeTransaction,p:Principal,row:DecisionRequest){
-  const stamp=await eligibility(ctx,p,row);ctx.validateBeforeCommit(async current=>{if(row.deadline<=current.now())fail('decision_expired',410,'Decision request expired before commit');if(stamp!==await eligibility(current,p,row))fail('decision_scope_changed',409,'Decision authorization changed before commit');});
+ async function validateCommit(ctx:RuntimeTransaction,p:Principal,row:DecisionRequest,action:'decision.claim'|'decision.respond'){
+  assertWorldActionAllowed((await options.identity.readParticipation(ctx,row.agentId)).actionPolicy,action);
+  const stamp=await eligibility(ctx,p,row);ctx.validateBeforeCommit(async current=>{assertWorldActionAllowed((await options.identity.readParticipation(current,row.agentId)).actionPolicy,action);if(row.deadline<=current.now())fail('decision_expired',410,'Decision request expired before commit');if(stamp!==await eligibility(current,p,row))fail('decision_scope_changed',409,'Decision authorization changed before commit');});
  }
  async function inspection(ctx:RuntimeReadContext,p:Principal,row:DecisionRequest){const current=await options.target.inspect(ctx,p,row);if(!current)fail('target_not_accessible',404,'Target is not accessible');return current;}
  function active(ctx:RuntimeReadContext,row:DecisionRequest,current:{intent:DecisionIntent;actionable:boolean}){
@@ -104,7 +106,7 @@ export function createDecisionService(options:{identity:IdentityAccess<RuntimeRe
   async claim(ctx:RuntimeTransaction,p:Principal,commandId:string,raw:unknown):Promise<CommandReceipt>{
    const input=object(raw,['decisionId','expectedVersion']),id=text(input.decisionId,'decisionId',1,100);version(input.expectedVersion);text(commandId,'commandId',8,100);
    return await commitRuntimeCommandIn(ctx,{key:key(ctx,p,'decision.claim',commandId),requestHash:hashRuntimeRequest(json(input)),authorize:tx=>authorizeCommand(tx,p,id),classifyRejection:classify(id),handle:async tx=>{
-    const repo=tx.repository(decisionRepository),row=await owned(tx,p,id),current=await inspection(tx,p,row);expected(row,input.expectedVersion);active(tx,row,current);await validateCommit(tx,p,row);
+    const repo=tx.repository(decisionRepository),row=await owned(tx,p,id),current=await inspection(tx,p,row);assertWorldActionAllowed((await options.identity.readParticipation(tx,row.agentId)).actionPolicy,'decision.claim');expected(row,input.expectedVersion);active(tx,row,current);await validateCommit(tx,p,row,'decision.claim');
     if(row.status==='claimed'){
      if(row.claim!.authorizationVersion!==await eligibility(tx,p,row))fail('decision_scope_changed',409,'The original claim authorization changed');
      return {result:{decisionId:row.id,version:row.version,status:row.status,claimId:row.claim!.id,deadline:row.deadline,alreadyClaimed:true,nextAction:'recover_original_claim_or_execution'},eventIds:[]};
@@ -126,7 +128,7 @@ export function createDecisionService(options:{identity:IdentityAccess<RuntimeRe
    if(action==='no_action'&&Object.keys(proposal).length)fail('invalid_request',400,'No action must not contain a business proposal');
    if(['expectedVersion','agentId','ownerId','source','invitationId','activityId','commandId'].some(field=>Object.hasOwn(proposal,field)))fail('invalid_request',400,'Business identity and target fields are server supplied');
    return await commitRuntimeCommandIn(ctx,{key:key(ctx,p,'decision.respond',commandId),requestHash:hashRuntimeRequest(json(input)),authorize:tx=>authorizeCommand(tx,p,id),classifyRejection:classify(id),handle:async tx=>{
-    const repo=tx.repository(decisionRepository),row=await owned(tx,p,id),current=await inspection(tx,p,row);expected(row,input.expectedVersion);active(tx,row,current);await validateCommit(tx,p,row);
+    const repo=tx.repository(decisionRepository),row=await owned(tx,p,id),current=await inspection(tx,p,row);assertWorldActionAllowed((await options.identity.readParticipation(tx,row.agentId)).actionPolicy,'decision.respond');expected(row,input.expectedVersion);active(tx,row,current);await validateCommit(tx,p,row,'decision.respond');
     if(!row.claim||row.claim.id!==claimId||row.claim.authorizationVersion!==await eligibility(tx,p,row))fail('decision_scope_changed',409,'The current claim is required');
     if(row.status!=='claimed'&&!(row.status==='responded'&&row.response?.executionOutcome==='unknown'))fail('decision_closed',409,'Decision request is not accepting a response');
     if(row.response?.executionOutcome==='unknown'&&(executionId!==row.response.executionId||executionOutcome==='not_reported'))fail('execution_reconciliation_required',409,'Reconcile the original execution ID');

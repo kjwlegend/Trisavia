@@ -1,3 +1,4 @@
+import {assertWorldActionAllowed} from '../domains/access/world-action-policy.ts';
 import { randomUUID } from 'node:crypto';
 import {createInteractionOwnerReader} from './interaction-owner-read.ts';
 import type { CommandKey, CommandReceipt, RuntimeReadContext, RuntimeTransaction, RuntimeEvent, RuntimeTask } from '../contracts/runtime-store.ts';
@@ -140,10 +141,12 @@ export function createInteractionService(identity: IdentityAccess<RuntimeReadCon
       handle: async current => {
         const agentId = principal.agentId, repository = current.repository(INTERACTION_REPOSITORY), now = current.now();
         const qualification = await participant(current, agentId, undefined, true);
+        assertWorldActionAllowed(qualification.actionPolicy, key.action);
         current.validateBeforeCommit(async latest => {
           const fresh = await participant(latest, agentId, undefined, true);
+          assertWorldActionAllowed(fresh.actionPolicy, key.action);
           if (fresh.runtimeVersion !== qualification.runtimeVersion || fresh.membership.ownerPauseVersion !== qualification.membership.ownerPauseVersion
-            || fresh.membership.platformVersion !== qualification.membership.platformVersion || fresh.membership.sharingGeneration !== qualification.membership.sharingGeneration) fail('interaction_qualification_changed', 409, 'Interaction qualification changed before commit');
+            || fresh.membership.platformVersion !== qualification.membership.platformVersion || fresh.membership.sharingGeneration !== qualification.membership.sharingGeneration || fresh.actionPolicy.version !== qualification.actionPolicy.version) fail('interaction_qualification_changed', 409, 'Interaction qualification changed before commit');
         });
         if (key.action === 'interaction.artifact.create') {
           const configuration = await repository.getConfiguration(1); if (!configuration) fail('interaction_unavailable', 503, 'Interaction configuration is not initialized');
@@ -236,7 +239,7 @@ export function createInteractionService(identity: IdentityAccess<RuntimeReadCon
         || request.configVersion !== invitation.configuration.configVersion || request.templateVersion !== invitation.configuration.templateVersion) return null;
       if (request.stage === 'acknowledgement' && activity?.feedbackId && !await visibleFeedback(context, activity)) return null;
       const current = intentFor(invitation, activity), status = await participant(context, agentId, invitation.worldId);
-      const actionable = !status.membership.ownerPaused && current !== null && current.deduplicationKey === request.deduplicationKey
+      const actionable = status.actionPolicy.mode === 'autonomous' && !status.membership.ownerPaused && current !== null && current.deduplicationKey === request.deduplicationKey
         && current.target.version === request.target.version && current.deadline === request.deadline && current.deadline > context.now();
       const intent: InteractionDecisionIntent = { deduplicationKey: request.deduplicationKey, agentId, stage: request.stage, target: { ...request.target }, worldId: request.worldId,
         templateVersion: request.templateVersion, configVersion: request.configVersion, deadline: request.deadline, allowedActions: [...request.allowedActions], contextRefs: request.contextRefs.map(ref => ({ ...ref })) };
