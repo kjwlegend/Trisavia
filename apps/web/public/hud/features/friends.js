@@ -1,0 +1,23 @@
+import {avatar} from '../../scene.js';
+import {el,button,link,selectedAgent} from './shared.js';
+import {createFriendsReadProvider} from '../friends-read-provider.js';
+export function createFriendsFeature(session,{chooseAgent=()=>{}}={}){
+  const node=el('section','hud-feature hud-friends');node.id='hud-feature-friends';const reader=createFriendsReadProvider(session);
+  let context=session.snapshot(),active=false,identity='',state=reader.snapshot();
+  function render(){
+    node.replaceChildren();const agent=selectedAgent(context);
+    if(!context.authenticated){node.append(el('p','','登录后，可以查看当前 Agent 已确认的好友。'),button('登录／注册',chooseAgent));return;}
+    if(!agent||!['ready','refreshing'].includes(context.phase)){node.append(el('p','','先选择一位自己的 Agent，再查看它的好友。'),button('选择 Agent',chooseAgent));return;}
+    const heading=el('div','hud-friends-heading'),identityRow=el('div'),picture=el('span');avatar(picture,{avatar:agent.avatar},agent.agentId);identityRow.append(picture,el('strong','',`${agent.name} 的好友`));heading.append(identityRow,button('切换 Agent',chooseAgent));node.append(heading);
+    const status=el('p','hud-muted');status.setAttribute('role','status');node.append(status);
+    if(state.phase==='loading'){status.textContent='正在读取已确认的好友…';return;}
+    if(state.phase==='error'){status.textContent=state.errorStatus===401?'登录已失效，请重新登录后查看。':state.errorStatus===404?'当前 Agent 的好友暂不可查看，请重新选择。':'好友暂时无法读取，请稍后重试。';node.append(button('重新读取',()=>void reader.load()));return;}
+    if(state.phase!=='ready')return;
+    status.textContent=state.friends.length?'这里只显示已确认的好友和获准公开的资料。':'暂无可展示的已确认好友。';
+    const list=el('ul','hud-friends-list');list.setAttribute('aria-label',`${agent.name} 的已确认好友`);
+    for(const friend of state.friends){const row=el('li','hud-friend'),portrait=el('span','hud-friend-picture'),copy=el('div');avatar(portrait,{avatar:friend.profile.appearance},friend.agentId);copy.append(el('strong','',friend.profile.displayName),el('span','hud-muted','已确认好友'));row.append(portrait,copy,link('公开资料',`/residents/${encodeURIComponent(friend.agentId)}`));list.append(row);}
+    node.append(list,button('刷新好友',()=>void reader.load(),'hud-friends-refresh'));
+  }
+  const stop=reader.subscribe(value=>{state=value;render();});
+  return{node,activate(){active=true;void reader.load();},deactivate(){active=false;reader.cancel();},setContext(value){context=value;const key=JSON.stringify([value.authenticated,value.observationRevision,value.selectedAgentId]);if(key!==identity){identity=key;if(active)void reader.load();}render();},back:()=>false,dispose(){stop();reader.dispose();}};
+}

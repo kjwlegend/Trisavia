@@ -281,7 +281,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
     const p=worldPoint(x,y);
     const owned=ownedLayer.hit(p,camera.base*camera.zoom,cycle);if(owned)return owned;
     for(const actor of [...actors.slice(0,actorLimit)].reverse())if(Math.abs(p.x-actor.x)<12&&p.y>actor.y-34&&p.y<actor.y+7)return actor;
-    return [...stagePlaces].sort((a,b)=>b.y-a.y).find(o=>p.x>o.x-o.w/2-5&&p.x<o.x+o.w/2+5&&p.y>o.y-o.anchor.y-5&&p.y<o.y+o.h-o.anchor.y+5);
+    return [...stagePlaces].sort((a,b)=>b.y-a.y).find(o=>!(rendering&&o.id==='commons')&&p.x>o.x-o.w/2-5&&p.x<o.x+o.w/2+5&&p.y>o.y-o.anchor.y-5&&p.y<o.y+o.h-o.anchor.y+5);
   }
   const pointers=new Map();let drag=null,pinch=null;
   const local=e=>{const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};};

@@ -955,10 +955,10 @@ async function navigateAccount(mode='account',agentId=''){
   if(mode==='login'){showSignIn();return;}
   if(mode==='recover'){showForgot();return;}
   if(mode==='entry'){if(authenticatedOwner())await navigateManager('entry');else presentation?.entry();return;}
-  if(authenticatedOwner()&&!agentId){await navigateManager(mode==='account'?'security':['profile','overview','appearance'].includes(mode)?'appearance':'agents');return;}
+  if(authenticatedOwner()&&!agentId){await navigateManager(mode==='account'?'security':['profile','overview','appearance'].includes(mode)?mode:'agents');return;}
   if(authenticatedOwner()&&agentId===selectedId){await navigateManager('overview');return;}
   if(agentId&&agentId!==selectedId&&(runtimePrepared||invitePrepared||backupPrepared)){message('请先完成当前文件的保存确认，再切换目标。原进度保持不变。','pending');return;}
-  if(vault.sessionToken){if(agentId&&agentId!==selectedId&&presentation?.dirty()){const confirmation=confirmationSnapshot();if(!await confirmAction('切换 Agent','当前有尚未保存的资料。放弃这些修改并读取另一位 Agent？','放弃修改并继续')||!sameConfirmation(confirmation))return;}const source=vault,lease=setBusy(true);try{if(agentId){entryStore?.rememberTarget(undefined,agentId);requestedAgentId=agentId;}const loaded=await loadAgents({resetProfile:!presentation?.dirty()||Boolean(agentId&&agentId!==selectedId)});if(loaded&&vault===source&&lease===busyRevision&&!vault.claimContext)presentation?.navigate(mode==='account'?'security':['profile','overview','appearance'].includes(mode)?(unavailableAgentId?'unavailable':'appearance'):'agents');}catch(error){if(vault===source&&lease===busyRevision){fail(error);if(error.status===401)showSignIn();}}finally{setBusy(false,lease);}return;}
+  if(vault.sessionToken){if(agentId&&agentId!==selectedId&&presentation?.dirty()){const confirmation=confirmationSnapshot();if(!await confirmAction('切换 Agent','当前有尚未保存的资料。放弃这些修改并读取另一位 Agent？','放弃修改并继续')||!sameConfirmation(confirmation))return;}const source=vault,lease=setBusy(true);try{if(agentId){entryStore?.rememberTarget(undefined,agentId);requestedAgentId=agentId;}const loaded=await loadAgents({resetProfile:!presentation?.dirty()||Boolean(agentId&&agentId!==selectedId)});if(loaded&&vault===source&&lease===busyRevision&&!vault.claimContext)presentation?.navigate(mode==='account'?'security':['profile','overview','appearance'].includes(mode)?(unavailableAgentId?'unavailable':mode):'agents');}catch(error){if(vault===source&&lease===busyRevision){fail(error);if(error.status===401)showSignIn();}}finally{setBusy(false,lease);}return;}
   showSignIn();
 }
 async function start(intent={}){if(started)return;started=true;
@@ -1002,6 +1002,14 @@ async function readPerception(operation,input={}, {signal}={}){
   try{const result=await api(path,{method,body,token:session,signal});if(!current())throw new DOMException('Context changed','AbortError');return result;}
   catch(error){if(current()&&error.status===401)expireAuthenticatedSession(source,session,generation);throw error;}
 }
+async function readFriends({signal}={}){
+  const source=vault,session=vault.sessionToken,generation=readGeneration,target=selectedId,revision=summary().observationRevision;
+  const current=()=>source===vault&&session===vault.sessionToken&&target===selectedId&&revision===summary().observationRevision&&authenticatedOwner();
+  if(!current())throw new ApiError(sessionPhase==='expired'?'session_expired':'authentication_required',401);
+  if(!target||!agents.some(agent=>agent.agentId===target))throw new ApiError('agent_required',409);
+  try{const result=await api(`/owner/agents/${encodeURIComponent(target)}/friends`,{token:session,signal});if(!current()||signal?.aborted)throw new DOMException('Context changed','AbortError');return result;}
+  catch(error){if(current()&&error.status===401)expireAuthenticatedSession(source,session,generation);throw error;}
+}
 async function readWallet({signal}={}){
   const source=vault,session=vault.sessionToken,generation=readGeneration,target=selectedId,revision=summary().observationRevision;
   const current=()=>source===vault&&session===vault.sessionToken&&target===selectedId&&revision===summary().observationRevision&&authenticatedOwner();
@@ -1033,7 +1041,7 @@ async function readOwnerWorldSummary(operation,input={}, {signal}={}){
 }
 const worldSummary=mountOwnerWorldSummary($('#owner-world-summary'),{read:readOwnerWorldSummary,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}});
 window.addEventListener('pagehide',event=>{if(!event.persisted)worldSummary.dispose();});
-return{start,open,select:selectAgent,refresh:refreshSummary,readPerception,readWallet,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
+return{start,open,select:selectAgent,refresh:refreshSummary,readPerception,readWallet,readFriends,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
   hudContext(){if(authenticatedOwner()&&['ready','refreshing'].includes(summary().phase))return{kind:'owner',ownerId:account.ownerId,agentId:agents.some(agent=>agent.agentId===selectedId)?selectedId:''};return sessionPhase==='anonymous'&&!vault.sessionToken?{kind:'guest',ownerId:'',agentId:''}:null;},
   attachPresentation(value){presentation=value;value.setNavigator(navigateManager);},
   notifyPresentation:controls,

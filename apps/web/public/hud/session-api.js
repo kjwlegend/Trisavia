@@ -1,2 +1,2 @@
 // The account controller is the only vault owner. This adapter exposes safe UI state.
-export function createSessionApi(controller){return{snapshot:controller.snapshot,subscribe:controller.subscribe,select:controller.select,refresh:controller.refresh,logout:controller.requestLogout,hudContext:controller.hudContext,readPerception:controller.readPerception,readWallet:controller.readWallet};}
+export function createSessionApi(controller){return{snapshot:controller.snapshot,subscribe:controller.subscribe,select:controller.select,refresh:controller.refresh,logout:controller.requestLogout,hudContext:controller.hudContext,readPerception:controller.readPerception,readWallet:controller.readWallet,readFriends:controller.readFriends};}
