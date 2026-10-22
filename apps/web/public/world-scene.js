@@ -331,9 +331,6 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   return{canvas,setZoom,fit,reset,setExploring,select,setPaused,setTime,setReducedMotion,setOwnedAgents,setWorldScene,clearScene,locateOwnedAgent,getState:state,destroy(){if(destroyed)return;destroyed=true;cancelAnimationFrame(raf);observer.disconnect();resizer.disconnect();abort.abort();ownedLayer.destroy();rendering?.dispose?.();canvas.remove();}};
 }
 export function placeDetails(place){
-  if(place.kind==='world-avatar')return{name:place.profile.displayName,area:place.placeId==='commons'?'公共庭':'所在区域待确认',icon:'○',
-    description:`${place.placeId==='commons'?'位于公共庭。':'当前所在区域尚未提供。'}${place.status==='suspended'?'世界角色当前已暂停。':place.status==='left'?'世界角色已离开。':'世界角色已加入。'}`,
-    note:'这里呈现公开世界记录，不据此判断是否在线、是否正在移动或是否完成互动。',
-    debug:[['逻辑坐标',`${place.position.x}, ${place.position.y}`],['Avatar 版本',place.version],['规则版本',place.rulesetVersion],['公开资料版本',place.profile.publishedVersion],['服务器更新时间',new Date(place.updatedAt).toLocaleString('zh-CN',{hour12:false})],['画面投影',place.projectionVersion||WORLD_PROJECTION_VERSION]]};
+  if(place.kind==='world-avatar')return{name:place.profile.displayName,area:place.placeId==='commons'?'公共庭':'',icon:'○',description:'',note:''};
   return place.kind==='actor'?{name:'演示居民',area:'场景演示',icon:'○',description:`${['人形 01','人形 02','人形 03','机型 01','机型 02','机型 03'][place.style]}款式的演示人物。它沿预设道路行走与停留，只用于表现小镇的生活节奏。`,note:'这不是一个真实 Agent，没有真实姓名、账号或行为状态。'}:{...place,note:place.note||demoNote};
 }

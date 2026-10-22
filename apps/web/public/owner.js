@@ -1002,6 +1002,24 @@ async function readPerception(operation,input={}, {signal}={}){
   try{const result=await api(path,{method,body,token:session,signal});if(!current())throw new DOMException('Context changed','AbortError');return result;}
   catch(error){if(current()&&error.status===401)expireAuthenticatedSession(source,session,generation);throw error;}
 }
+// Only the four read-only Owner interaction queries are exposed to the HUD.
+async function readInteraction(operation,input={}, {signal}={}){
+  const source=vault,session=vault.sessionToken,generation=readGeneration,target=selectedId,revision=summary().observationRevision;
+  const current=()=>source===vault&&session===vault.sessionToken&&target===selectedId&&revision===summary().observationRevision&&authenticatedOwner();
+  if(!current())throw new ApiError(sessionPhase==='expired'?'session_expired':'authentication_required',401);
+  if(!target||!agents.some(agent=>agent.agentId===target))throw new ApiError('agent_required',409);
+  if(!['artifacts','artifact','exchanges','exchange'].includes(operation))throw new ApiError('insufficient_scope',403);
+  const fields={agentId:target},validId=value=>typeof value==='string'&&value.length>0&&value.length<=180;
+  if(['artifacts','exchanges'].includes(operation)){
+    fields.limit=20;if(input.cursor!==undefined){if(typeof input.cursor!=='string'||!input.cursor||input.cursor.length>2048)throw new ApiError('invalid_request',422);fields.cursor=input.cursor;}
+  }
+  if(operation==='exchanges'){if(!['sent','received'].includes(input.direction))throw new ApiError('invalid_request',422);fields.direction=input.direction;}
+  if(operation==='artifact'||operation==='exchanges'&&input.artifact!==undefined){if(!validId(input.artifact?.artifactId)||!Number.isSafeInteger(input.artifact.revision)||input.artifact.revision<1)throw new ApiError('invalid_request',422);fields.artifact={artifactId:input.artifact.artifactId,revision:input.artifact.revision};}
+  if(operation==='exchange'){if(!validId(input.invitationId))throw new ApiError('invalid_request',422);fields.invitationId=input.invitationId;}
+  const body={protocolVersion:1,consumerId:'connet.owner.hud.v1',purpose:'human-inspect',operation:`interaction.owner_${operation}`,input:fields};
+  try{const result=await api('/gateway/query',{method:'POST',body,token:session,signal});if(!current()||signal?.aborted)throw new DOMException('Context changed','AbortError');return result;}
+  catch(error){if(current()&&error.status===401)expireAuthenticatedSession(source,session,generation);throw error;}
+}
 async function readFriends({signal}={}){
   const source=vault,session=vault.sessionToken,generation=readGeneration,target=selectedId,revision=summary().observationRevision;
   const current=()=>source===vault&&session===vault.sessionToken&&target===selectedId&&revision===summary().observationRevision&&authenticatedOwner();
@@ -1041,7 +1059,7 @@ async function readOwnerWorldSummary(operation,input={}, {signal}={}){
 }
 const worldSummary=mountOwnerWorldSummary($('#owner-world-summary'),{read:readOwnerWorldSummary,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}});
 window.addEventListener('pagehide',event=>{if(!event.persisted)worldSummary.dispose();});
-return{start,open,select:selectAgent,refresh:refreshSummary,readPerception,readWallet,readFriends,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
+return{start,open,select:selectAgent,refresh:refreshSummary,readPerception,readWallet,readFriends,readInteraction,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
   hudContext(){if(authenticatedOwner()&&['ready','refreshing'].includes(summary().phase))return{kind:'owner',ownerId:account.ownerId,agentId:agents.some(agent=>agent.agentId===selectedId)?selectedId:''};return sessionPhase==='anonymous'&&!vault.sessionToken?{kind:'guest',ownerId:'',agentId:''}:null;},
   attachPresentation(value){presentation=value;value.setNavigator(navigateManager);},
   notifyPresentation:controls,

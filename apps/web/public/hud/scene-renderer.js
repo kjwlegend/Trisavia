@@ -7,6 +7,9 @@ import {createWorldSceneProvider} from './world-scene-provider.js';
 import {nativeFrame} from '../world-pixel/native-ui.js';
 import {getPanelEnvironment} from './panel-environment.js';
 import {createWorldStatusHud} from './world-status.js';
+import {createPublicCharacterReader} from './public-character-reader.js';
+import {createPublicCharacterCard} from './public-character-card.js';
+import {freeAreas} from '../world-safe-area.js';
 let scene=null;
 export function initSceneRenderer({session,onSelectAgent=()=>{},rendering=null}={}){
 let mapReady=false,mapFailed=false,pageActive=true;
@@ -17,11 +20,12 @@ const statusHud=createWorldStatusHud($('#world-status-hud'),{onTime:epoch=>scene
 let returnFocus = null;
 let currentPlace = null;
 const detail=$('#world-detail'),detailTransition=createPanelTransition(detail),environment=getPanelEnvironment();detail.prepend(nativeFrame('lightWood'));
-const debug=el('details'),debugBody=el('dl','hud-facts');debug.id='world-detail-debug';debug.hidden=true;debug.append(el('summary','','技术信息'),debugBody);$('#world-detail-note').after(debug);
-function renderDetails(place,reset=false){
-  const details=placeDetails(place);$('#world-detail-area').textContent=details.area;$('#world-detail-title').textContent=details.name;$('#world-detail-icon').textContent=details.icon;$('#world-detail-description').textContent=details.description;$('#world-detail-note').textContent=place.kind==='world-avatar'&&worldData.phase==='recovering'?`连接正在恢复。这里保留 ${new Date(worldData.asOf).toLocaleString('zh-CN',{hour12:false})} 读取的公开记录。${details.note}`:details.note;
-  $('#world-detail-close').setAttribute('aria-label',place.kind==='world-avatar'?'关闭角色详情':'关闭场所说明');detail.dataset.agentId=place.kind==='world-avatar'?place.agentId:'';
-  debug.hidden=!details.debug;if(reset)debug.open=false;debugBody.replaceChildren();for(const [label,value]of details.debug||[])debugBody.append(el('dt','',label),el('dd','',value));return details;
+const publicCharacter=createPublicCharacterReader(),characterCard=createPublicCharacterCard(publicCharacter);$('.world-detail-body',detail).prepend(characterCard.node);
+function renderDetails(place){
+  const character=place.kind==='world-avatar';detail.classList.toggle('is-character-card',character);characterCard.node.hidden=!character;
+  $('#world-detail-close').setAttribute('aria-label',character?'关闭角色详情':'关闭场所说明');detail.dataset.agentId=character?place.agentId:'';
+  if(character){$('#world-detail-area').textContent='';$('#world-detail-title').textContent='角色资料';$('#world-detail-description').textContent='';$('#world-detail-note').textContent='';return{links:[]};}
+  const details=placeDetails(place);$('#world-detail-area').textContent=details.area;$('#world-detail-title').textContent=details.name;$('#world-detail-icon').textContent=details.icon;$('#world-detail-description').textContent=details.description;$('#world-detail-note').textContent=details.note;return details;
 }
 const list = $('#world-place-list'),places=rendering?.places||[COMMONS_PLACE];
 for (const area of [...new Set(places.map(place => place.area))]) {
@@ -40,16 +44,29 @@ for (const area of [...new Set(places.map(place => place.area))]) {
   }
   group.append(buttons); list.append(group);
 }
+function positionCharacterCard(){
+  if(currentPlace?.kind!=='world-avatar'||detail.hidden||!scene)return;
+  const state=scene.getState(),camera=state.camera,box=scene.canvas.getBoundingClientRect(),phone=camera.width<760;
+  const anchor={x:box.left+camera.width/2+(currentPlace.x-camera.x)*camera.scale,y:box.top+(state.mode==='overview'?(camera.height+(phone?112:88)-(phone?116:126))/2:camera.height/2)+(currentPlace.y-camera.y)*camera.scale};
+  const bounds={left:12,right:innerWidth-12,top:Math.max(12,document.querySelector('header')?.getBoundingClientRect().bottom+12||12),bottom:Math.min(innerHeight-12,$('#hud-dock')?.getBoundingClientRect().top-12||innerHeight-12)};
+  const blocked=['#world-status-hud','#hud-agent','#hud-locate-agent','.hud-map-tools'].flatMap(selector=>{const node=$(selector);if(!node||node.hidden||!node.getClientRects().length)return[];const rect=node.getBoundingClientRect();return[{left:rect.left-12,right:rect.right+12,top:rect.top-12,bottom:rect.bottom+12}];});
+  const areas=freeAreas(bounds,blocked).filter(area=>area.right-area.left>=Math.min(320,bounds.right-bounds.left)&&area.bottom-area.top>=Math.min(360,bounds.bottom-bounds.top));
+  const clamp=(value,min,max)=>Math.max(min,Math.min(max,value)),width=Math.min(320,bounds.right-bounds.left),height=Math.min(360,bounds.bottom-bounds.top);
+  const candidates=(areas.length?areas:[bounds]).flatMap(area=>[anchor.x+12,anchor.x-width-12].map(x=>({x:clamp(x,area.left,area.right-width),y:clamp(anchor.y-80,area.top,area.bottom-height)})));
+  candidates.sort((a,b)=>Math.hypot(a.x+width/2-anchor.x,a.y+80-anchor.y)-Math.hypot(b.x+width/2-anchor.x,b.y+80-anchor.y));
+  detail.style.setProperty('--character-card-left',`${Math.round(candidates[0].x)}px`);detail.style.setProperty('--character-card-top',`${Math.round(candidates[0].y)}px`);detail.style.setProperty('--character-card-max-height',`${height}px`);
+}
+window.addEventListener('resize',positionCharacterCard);
 function openPlace(place, origin) {
   document.dispatchEvent(new CustomEvent('world:place-open'));
   currentPlace = place;
   returnFocus = origin;
-  const details = renderDetails(place,true);
+  const details = renderDetails(place);if(place.kind==='world-avatar')void publicCharacter.open(place);else publicCharacter.clear();
   const links = $('#world-detail-links'); links.replaceChildren();
   for (const link of details.links || []) { const node = el('a', '', `${link.label} ↗`); node.href = link.href; links.append(node); }
   if(place.id==='noticeboard')for(const [category,label]of [['announcements','查看公开公告'],['events','查看事件计划与发生记录']]){const control=el('button','',label);control.type='button';control.addEventListener('click',()=>document.dispatchEvent(new CustomEvent('hud:world-content',{detail:{category}})));links.append(control);}
   for (const button of list.querySelectorAll('button')) button.setAttribute('aria-pressed', String(button.dataset.placeId === place.id));
-  environment.set('world',detail);detailTransition.show();
+  environment.set('world',detail);detailTransition.show();positionCharacterCard();
   $('#world-layout').classList.add('has-detail');
   scene?.select(place);
   $('#world-detail').focus({preventScroll: true});
@@ -57,7 +74,7 @@ function openPlace(place, origin) {
 }
 function closePlace(restoreFocus=true) {
   if (!currentPlace) return;
-  currentPlace = null;
+  currentPlace = null;publicCharacter.clear();
   environment.set('world',null);detailTransition.hide();
   $('#world-layout').classList.remove('has-detail');
   for (const button of list.querySelectorAll('button')) button.setAttribute('aria-pressed', 'false');
@@ -128,7 +145,7 @@ worldProvider.subscribe(value=>{
   if(currentPlace?.kind==='world-avatar'){
     const row=value.complete?value.avatars.find(avatar=>avatar.agentId===currentPlace.agentId):null;
     if(!row)closePlace(false);
-    else{const renderedState=scene?.getState().worldScene,rendered=renderedState?.avatars.find(avatar=>avatar.fact.agentId===row.agentId);currentPlace={...row,kind:'world-avatar',projectionVersion:renderedState?.projectionVersion,x:rendered?.x??currentPlace.x,y:rendered?.y??currentPlace.y};renderDetails(currentPlace);scene?.select(currentPlace);}
+    else{const renderedState=scene?.getState().worldScene,rendered=renderedState?.avatars.find(avatar=>avatar.fact.agentId===row.agentId);currentPlace={...row,kind:'world-avatar',projectionVersion:renderedState?.projectionVersion,x:rendered?.x??currentPlace.x,y:rendered?.y??currentPlace.y};void publicCharacter.observe(currentPlace);scene?.select(currentPlace);}
   }
 });
 const entryCopy=$('#world-entry-capabilities');let entryVisible=false,entryGeneration=0,entryAbort=null;
@@ -144,7 +161,7 @@ document.addEventListener('visibilitychange',()=>{statusHud.setVisible(pageActiv
 for (const link of document.querySelectorAll('a[href="#connect"]')) link.addEventListener('click', () => { $('#connect').open = true; });
 if (location.hash === '#connect') $('#connect').open = true;
 startScene();worldProvider.start();
-window.addEventListener('pagehide', event => {pageActive=false;stopEntryRead();worldProvider.setVisible(false);statusHud.setVisible(false);if (!event.persisted){entryObserver?.disconnect();sceneGeneration++;sceneAbort?.abort();worldProvider.dispose();statusHud.dispose();stopStatusSession?.();ownedAgents?.dispose();detailTransition.destroy();scene?.destroy();} });
+window.addEventListener('pagehide', event => {pageActive=false;stopEntryRead();worldProvider.setVisible(false);statusHud.setVisible(false);if (!event.persisted){entryObserver?.disconnect();sceneGeneration++;sceneAbort?.abort();worldProvider.dispose();statusHud.dispose();stopStatusSession?.();ownedAgents?.dispose();characterCard.dispose();publicCharacter.dispose();window.removeEventListener('resize',positionCharacterCard);detailTransition.destroy();scene?.destroy();} });
 window.addEventListener('pageshow',()=>{pageActive=true;if(scene&&!mapFailed){worldProvider.setVisible(scene.getState().visible);statusHud.setVisible(scene.getState().visible&&!document.hidden);}if(entryVisible)void readEntryCapabilities();});
 return{locateAgent(agentId){return mapReady&&scene?.locateOwnedAgent(agentId)||false;}};
 }
