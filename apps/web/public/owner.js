@@ -8,6 +8,8 @@ import {assertOwnerOperationResult} from './owner-operation-result.js';
 import {createOwnerEmailFlow} from './owner-email-flow.js';
 import {createOwnerReceiptReader,confirmUnknownOwnerOperation} from './owner-receipt.js';
 import {managerActions,managerInput,managerRequest,assertManagerResult,parseIntervalSeconds} from './owner-manager-commands.js';
+import {readFriendshipResult} from './hud/friendship-source.js';
+import {mountFriendshipOverview} from './hud/friendship-ui.js';
 import {mountOwnerWorldSummary} from './hud/owner-world-summary.js';
 
 export function createOwnerController(root,{entryStore,onState=()=>{},onView=()=>{},isVisible=()=>true,onLogout=()=>{},confirmAction=async()=>false,focusTitle=()=>{}}={}){
@@ -1020,6 +1022,51 @@ async function readInteraction(operation,input={}, {signal}={}){
   try{const result=await api('/gateway/query',{method:'POST',body,token:session,signal});if(!current()||signal?.aborted)throw new DOMException('Context changed','AbortError');return result;}
   catch(error){if(current()&&error.status===401)expireAuthenticatedSession(source,session,generation);throw error;}
 }
+const friendshipPending=new Map(),friendshipWrites=new Map();
+function friendshipContext(){
+  const source=vault,session=vault.sessionToken,generation=readGeneration,target=selectedId,revision=summary().observationRevision,ownerId=account?.ownerId;
+  const current=()=>source===vault&&session===vault.sessionToken&&target===selectedId&&revision===summary().observationRevision&&authenticatedOwner();
+  if(!current())throw new ApiError(sessionPhase==='expired'?'session_expired':'authentication_required',401);
+  if(!target||!agents.some(agent=>agent.agentId===target))throw new ApiError('agent_required',409);
+  return{source,session,generation,target,ownerId,current};
+}
+function friendshipInput(operation,input,target){
+  const fields={agentId:target},validId=value=>typeof value==='string'&&value.length>0&&value.length<=180;
+  if(['friends','inbox'].includes(operation)){fields.limit=20;if(input.cursor!==undefined){if(typeof input.cursor!=='string'||!input.cursor||input.cursor.length>2048)throw new ApiError('invalid_request',422);fields.cursor=input.cursor;}}
+  if(operation==='inbox'){if(!['received','sent'].includes(input.direction))throw new ApiError('invalid_request',422);fields.direction=input.direction;}
+  if(operation==='pair'){if(!validId(input.otherAgentId))throw new ApiError('invalid_request',422);fields.otherAgentId=input.otherAgentId;}
+  if(operation==='invitation'||['accept','decline','cancel'].includes(operation)){if(!validId(input.requestId))throw new ApiError('invalid_request',422);fields.requestId=input.requestId;}
+  if(['accept','decline','cancel'].includes(operation)){if(!Number.isSafeInteger(input.expectedVersion)||input.expectedVersion<1)throw new ApiError('invalid_request',422);fields.expectedVersion=input.expectedVersion;}
+  if(operation==='send'){if(!validId(input.toAgentId)||typeof input.message!=='string'||Array.from(input.message).length>120)throw new ApiError('invalid_request',422);fields.toAgentId=input.toAgentId;fields.message=input.message;}
+  return fields;
+}
+async function readFriendship(operation,input={}, {signal}={}){
+  if(!['overview','pair','friends','inbox','invitation'].includes(operation))throw new ApiError('insufficient_scope',403);const ctx=friendshipContext(),body={protocolVersion:1,consumerId:'connet.owner.hud.v1',purpose:'human-inspect',operation:`relationships.${operation}`,input:friendshipInput(operation,input,ctx.target)};
+  try{const result=await api('/gateway/query',{method:'POST',body,token:ctx.session,signal});if(!ctx.current()||signal?.aborted)throw new DOMException('Context changed','AbortError');return result;}
+  catch(error){if(ctx.current()&&error.status===401)expireAuthenticatedSession(ctx.source,ctx.session,ctx.generation);throw error;}
+}
+async function commandFriendship(operation,input={}){
+  if(!['send','accept','decline','cancel'].includes(operation))throw new ApiError('insufficient_scope',403);const ctx=friendshipContext(),fields=friendshipInput(operation,input,ctx.target),action=`relationships.invitation.${operation}`,scope=JSON.stringify([ctx.ownerId,ctx.target,action,fields.toAgentId||fields.requestId]),storageKey=`connet.owner.friendship.pending.v1:${scope}`;
+  if(friendshipWrites.has(scope))return friendshipWrites.get(scope);
+  let saved=friendshipPending.get(scope);if(!saved)try{const raw=sessionStorage.getItem(storageKey);if(raw)saved=JSON.parse(raw);}catch{throw new ApiError('private_storage_unavailable',0);}
+  const original=saved?.body;
+  if(original&&(original.operation!==action||JSON.stringify(original.input)!==JSON.stringify(fields)||typeof original.commandId!=='string'))throw new ApiError('friendship_operation_pending',409,{pending:original.input});
+  const replay=Boolean(original),body={protocolVersion:1,consumerId:'connet.owner.hud.v1',purpose:'human-inspect',operation:action,commandId:original?.commandId||id(),input:fields};
+  try{sessionStorage.setItem(storageKey,JSON.stringify({body}));}catch{throw new ApiError('private_storage_unavailable',0);}friendshipPending.set(scope,{body});
+  const task=(async()=>{
+    try{
+      let result;if(replay)try{result=await api('/gateway/receipts/query',{method:'POST',token:ctx.session,body:{protocolVersion:1,consumerId:body.consumerId,purpose:'human-inspect',operation:action,commandId:body.commandId}});}catch(error){if(error.status!==404)throw error;}
+      result??=await api('/gateway/commands',{method:'POST',token:ctx.session,body});const receipt=result?.data;
+      if(result?.protocolVersion!==1||receipt?.key?.domain!=='relationships'||receipt.key.action!==action||receipt.key.commandId!==body.commandId||receipt.key.principal?.kind!=='owner'||receipt.key.principal.id!==ctx.ownerId||!['committed','rejected','conflict','expired'].includes(receipt.outcome))throw new ApiError('response_unknown',0);
+      const projected=receipt.outcome==='committed'?readFriendshipResult(receipt.result,ctx.target):null;
+      friendshipPending.delete(scope);sessionStorage.removeItem(storageKey);
+      if(!ctx.current())throw new DOMException('Context changed','AbortError');
+      if(receipt.outcome!=='committed')throw new ApiError(receipt.result?.code||'state_conflict',409);
+      return{protocolVersion:result.protocolVersion,instanceId:result.instanceId,data:projected};
+    }catch(error){if(error.status>=400&&error.status<500&&!['unknown_commit','commit_result_unknown','response_unknown','retry_same_operation'].includes(error.code)){friendshipPending.delete(scope);try{sessionStorage.removeItem(storageKey);}catch{}}if(ctx.current()&&error.status===401)expireAuthenticatedSession(ctx.source,ctx.session,ctx.generation);throw error;}
+    finally{friendshipWrites.delete(scope);}
+  })();friendshipWrites.set(scope,task);return task;
+}
 async function readFriends({signal}={}){
   const source=vault,session=vault.sessionToken,generation=readGeneration,target=selectedId,revision=summary().observationRevision;
   const current=()=>source===vault&&session===vault.sessionToken&&target===selectedId&&revision===summary().observationRevision&&authenticatedOwner();
@@ -1057,9 +1104,10 @@ async function readOwnerWorldSummary(operation,input={}, {signal}={}){
   try{const result=await api(path,options);if(!current()||signal?.aborted)throw new DOMException('Context changed','AbortError');return result;}
   catch(error){if(current()&&error.status===401)expireAuthenticatedSession(source,session,generation);throw error;}
 }
+const friendshipSummary=mountFriendshipOverview($('#owner-friendship-summary'),{snapshot:()=>structuredClone(summary()),readFriendship,commandFriendship,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}});
 const worldSummary=mountOwnerWorldSummary($('#owner-world-summary'),{read:readOwnerWorldSummary,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}});
-window.addEventListener('pagehide',event=>{if(!event.persisted)worldSummary.dispose();});
-return{start,open,select:selectAgent,refresh:refreshSummary,readPerception,readWallet,readFriends,readInteraction,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
+window.addEventListener('pagehide',event=>{if(!event.persisted){worldSummary.dispose();friendshipSummary.dispose();}});
+return{start,open,select:selectAgent,refresh:refreshSummary,readPerception,readWallet,readFriends,readInteraction,readFriendship,commandFriendship,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
   hudContext(){if(authenticatedOwner()&&['ready','refreshing'].includes(summary().phase))return{kind:'owner',ownerId:account.ownerId,agentId:agents.some(agent=>agent.agentId===selectedId)?selectedId:''};return sessionPhase==='anonymous'&&!vault.sessionToken?{kind:'guest',ownerId:'',agentId:''}:null;},
   attachPresentation(value){presentation=value;value.setNavigator(navigateManager);},
   notifyPresentation:controls,

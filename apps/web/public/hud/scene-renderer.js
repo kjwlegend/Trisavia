@@ -20,7 +20,7 @@ const statusHud=createWorldStatusHud($('#world-status-hud'),{onTime:epoch=>scene
 let returnFocus = null;
 let currentPlace = null;
 const detail=$('#world-detail'),detailTransition=createPanelTransition(detail),environment=getPanelEnvironment();detail.prepend(nativeFrame('lightWood'));
-const publicCharacter=createPublicCharacterReader(),characterCard=createPublicCharacterCard(publicCharacter);$('.world-detail-body',detail).prepend(characterCard.node);
+const publicCharacter=createPublicCharacterReader(),characterCard=createPublicCharacterCard(publicCharacter,{session});$('.world-detail-body',detail).prepend(characterCard.node);
 function renderDetails(place){
   const character=place.kind==='world-avatar';detail.classList.toggle('is-character-card',character);characterCard.node.hidden=!character;
   $('#world-detail-close').setAttribute('aria-label',character?'关闭角色详情':'关闭场所说明');detail.dataset.agentId=character?place.agentId:'';
