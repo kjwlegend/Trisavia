@@ -1,6 +1,8 @@
-const preferenceKey='connet.audio.v1',manifestUrl='/assets/audio/town-v1/manifest.json';
+const preferenceKey='connet.audio.v1',manifestUrl='/assets/audio/town-v1/manifest.json',bgmManifestUrl='/assets/audio/town-v2/manifest.json';
 const liveCues=new Set(['ui-confirm','panel-open','panel-close','result-success','result-notice','result-error','world-focus']);
 const ticks=['dialogue-tick-a','dialogue-tick-b','dialogue-tick-c'];
+const sfxKeys=[...liveCues,'world-step-a','world-step-b',...ticks];
+const sfxSource=/^\/assets\/audio\/town-v1\/[a-zA-Z0-9][a-zA-Z0-9_.-]*\.(?:ogg|mp3|wav)$/,bgmSource=/^\/assets\/audio\/town-v2\/[a-zA-Z0-9][a-zA-Z0-9_.-]*\.(?:ogg|mp3|wav)$/;
 const clamp=value=>Math.max(0,Math.min(1,value));
 function browserStorage(){try{return globalThis.localStorage;}catch{return null;}}
 export function emitWorldAudio(cue,key=''){
@@ -25,10 +27,10 @@ export function createWorldAudio({storage=browserStorage(),request=globalThis.fe
   function active(){return !disposed&&preferences.enabled&&unlocked&&visible&&context?.state==='running';}
   function clearQuiet(){if(quietTimer!==null)clearTimer(quietTimer);quietTimer=null;}
   function quiet(immediate=false){generation++;clearQuiet();clearVoices();ramp(bgmGain,0,immediate?0:.2);ramp(sfxGain,0,immediate?0:.2);const stop=()=>{quietTimer=null;stopBgm();try{context?.suspend()?.catch(()=>{});}catch{}};if(immediate)stop();else quietTimer=setTimer(stop,210);}
-  function validTrack(track){return track&&Number.isFinite(track.duration)&&track.duration>0&&Array.isArray(track.sources)&&track.sources.length>0&&track.sources.length<=3&&track.sources.every(source=>typeof source.type==='string'&&/^\/assets\/audio\/town-v1\/[a-zA-Z0-9_.-]+$/.test(source.url));}
+  function validTrack(track,path){return track&&Number.isFinite(track.duration)&&track.duration>0&&Array.isArray(track.sources)&&track.sources.length>0&&track.sources.length<=3&&track.sources.every(source=>typeof source.type==='string'&&path.test(source.url));}
   async function loadManifest(){
     if(manifest)return manifest;if(loading)return loading;
-    loading=(async()=>{const response=await request(manifestUrl,{credentials:'omit'});if(!response.ok)throw Error('audio_unavailable');const value=await response.json(),loop=value?.bgm?.loop;if(value?.id!=='town-v1'||value.version!==1||!validTrack(value.bgm)||!loop||loop.start!==0||!Number.isFinite(loop.end)||loop.end<=0||loop.end>value.bgm.duration||![...liveCues,...ticks].every(key=>validTrack(value.sfx?.[key])))throw Error('audio_manifest_invalid');manifest=value;return value;})();
+    loading=(async()=>{const response=await request(manifestUrl,{credentials:'omit'});if(!response.ok)throw Error('audio_unavailable');const value=await response.json();if(value?.id!=='town-v1'||value.version!==1||!sfxKeys.every(key=>validTrack(value.sfx?.[key],sfxSource)))throw Error('audio_manifest_invalid');const bgmResponse=await request(bgmManifestUrl,{credentials:'omit'});if(!bgmResponse.ok)throw Error('audio_unavailable');const music=await bgmResponse.json(),loop=music?.bgm?.loop;if(music?.id!=='town-v2'||music.version!==2||!validTrack(music.bgm,bgmSource)||!loop||loop.start!==0||!Number.isFinite(loop.end)||loop.end<=0||loop.end>music.bgm.duration)throw Error('audio_manifest_invalid');manifest={...value,bgm:music.bgm};return manifest;})();
     try{return await loading;}finally{loading=null;}
   }
   async function buffer(track){
