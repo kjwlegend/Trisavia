@@ -20,8 +20,9 @@ import { initializeWalletAccount } from "../domains/wallet/repository.ts";
 import { createTrustedMailboxReceiver } from "./mailbox-service.ts";
 import { createPerceptionService, type PerceptionOptions } from "./perception-service.ts";
 import { initializePerceptionAgent } from "./perception-seed.ts";
+import {createOwnerFriendsReader} from "./owner-friends.ts";
 import type { PerceptionAction } from "../domains/perception/protocol.ts";
-export type M1Action = PerceptionAction | "capabilities" | "catalog" | "register" | "registrationResult" | "self" | "publicProfile" | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup" | "readRecovery" | "registerOwner" | "readAccount" | "claimAgent" | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites" | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveProfile" | "saveDraft" | "publishProfile" | "unpublishProfile" | "profilePolicy" | "createRecoveryRequest" | "readRecoveryRequest" | "cancelRecoveryRequest" | "recoveryAssistance" | "verifyRecoveryRequest" | "rejectRecoveryRequest" | "startRegistration" | "readRegistrationAttempt" | "sendRegistrationCode" | "verifyRegistrationEmail" | "cancelRegistration" | "startEmailRecovery" | "readEmailRecoveryAttempt" | "sendRecoveryCode" | "verifyRecoveryEmail" | "recoverByEmail" | "enableRecoveryBackup" | "readWorldAccess" | "saveWorldAccess" | "readMembership" | "join" | "leave" | "participation" | "receipt";
+export type M1Action = PerceptionAction | "readOwnerFriends" | "capabilities" | "catalog" | "register" | "registrationResult" | "self" | "publicProfile" | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup" | "readRecovery" | "registerOwner" | "readAccount" | "claimAgent" | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites" | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveProfile" | "saveDraft" | "publishProfile" | "unpublishProfile" | "profilePolicy" | "createRecoveryRequest" | "readRecoveryRequest" | "cancelRecoveryRequest" | "recoveryAssistance" | "verifyRecoveryRequest" | "rejectRecoveryRequest" | "startRegistration" | "readRegistrationAttempt" | "sendRegistrationCode" | "verifyRegistrationEmail" | "cancelRegistration" | "startEmailRecovery" | "readEmailRecoveryAttempt" | "sendRecoveryCode" | "verifyRecoveryEmail" | "recoverByEmail" | "enableRecoveryBackup" | "readWorldAccess" | "saveWorldAccess" | "readMembership" | "join" | "leave" | "participation" | "receipt";
 export interface M1Options {
     legacyAvatarIdentity?:LegacyAvatarIdentityReader<M1ReadSession>;
     perception?: PerceptionOptions;
@@ -324,6 +325,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         const agent = await target(tx, actor, agentId);
         return { agentId, ownerId: actor.data.ownerId!, runtimeVersion: agent.data.runtimeVersion!, runtimeActive: agent.data.runtimeActive!, profile: await readProfileView(tx,await required(profileRepository(tx), agentId)), membership: membershipView(await required(membershipRepository(tx), agentId)), worldAccess: worldAccessView(agent, asOf), profileUrl: profileUrl(agentId), management: await managementView(tx, agent), asOf };
     }
+    const readOwnerFriends=createOwnerFriendsReader(store,{now,...(options.legacyAvatarIdentity?{legacyAvatarIdentity:options.legacyAvatarIdentity}:{})});
     const wallet = createWalletService(store, authenticate, now);
     const receiveTrustedMessage = createTrustedMailboxReceiver(store, options.perception?.mailboxSources ?? [], authenticate, now);
     const perception = createPerceptionService(store, { authenticate }, { ...options.perception, now, ...(options.legacyAvatarIdentity?{legacyAvatarIdentity:options.legacyAvatarIdentity}:{}) });
@@ -341,6 +343,8 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
             return avatarCatalog();
         if (email.handles(action))
             return await email.invoke(action, raw, token, context.clientIp);
+        if (action === "readOwnerFriends")
+            return await readOwnerFriends(raw,token);
         if (action === "walletQuery")
             return await wallet.query(raw, token);
         if (perception.handles(action))

@@ -28,7 +28,8 @@ const objectTypes = {
   'world.place@1':'spaces.places', 'world.plan@1':'events.plans', 'world.occurrence@1':'events.occurrences',
 } as const;
 export const OBJECT_TABLES = objectTypes;
-export const MODELS: readonly Model[] = [
+/** Frozen input to the already-applied base schema migrations. */
+export const BASE_MODELS: readonly Model[] = [
   {logical:'agents',table:'iam.agents',fields:[...f('integer','runtimeVersion worldAccess.version worldAccess.intervalSeconds deliveryDeclaredGeneration'),...f('boolean','runtimeActive'),...f('timestamp','createdAt managementInitializedAt deliveryDeclaredAt'),...f('text','managementKind')]},
   {logical:'owners',table:'iam.human_accounts',fields:[...f('text','status epoch passwordSalt passwordHash username usernameKey email emailKey emailVerificationSource emailVerificationMode lastRecoveryVerificationMode lastRecoveryVerificationSource'),fk('claimedByOwnerId','iam.human_accounts'),...f('integer','authVersion handoffGeneration emailVersion'),...f('timestamp','createdAt initializedAt handoffGeneratedAt claimedAt emailVerifiedAt'),...f('boolean','emailVerified')],unique:[['usernameKey'],['emailKey']],check:[`status IN ('pending_setup','active','claimed')`]},
   {logical:'credentials',table:'iam.credentials',fields:[required('fingerprint'),required('kind'),required('verifier'),required('epoch'),required('active','boolean'),fk('agentId','iam.agents'),fk('ownerId','iam.human_accounts'),...f('timestamp','expiresAt'),...f('text','attemptId verifierKind consumedByAttemptId'),...f('integer','runtimeVersion ownerAuthVersion handoffGeneration')],unique:[['fingerprint']],check:[`kind IN ('runtime','bootstrap','registration_receipt','handoff','setup','owner_session','owner_recovery','invite','recovery_assistance','email_registration','email_recovery')`]},
@@ -55,6 +56,9 @@ export const MODELS: readonly Model[] = [
   {logical:'perception_catalog',table:'platform.administrative_receipts',matches:row=>row.data.kind==='administrative_receipt',fields:[...f('text','kind payloadHash'),...f('document','result')],immutable:true},
   {logical:'perception_catalog',table:'perception.observation_policies',matches:row=>row.data.kind==='owner_observation_policy',fields:[...f('text','kind sourceId sourceReference sourceAdministrator audience declaredBy.kind declaredBy.id'),...f('boolean','active layers.existence layers.summary layers.body layers.attachments'),...f('timestamp','declaredAt'),...f('strings','objectIds')]},
   ...Object.entries(objectTypes).map(([type,table]):Model=>({logical:'perception_catalog',table:type==='world.plan@1'?'events.plan_history':type==='world.occurrence@1'?'events.occurrence_history':table.replace(/\.\w+$/,'.content_history'),matches:row=>row.data.kind==='object_history'&&(row.data.content as JsonObject)?.type===type,fields:[...f('text','kind objectId'),...f('integer','contentVersion'),...f('timestamp','recordedAt'),...f('document','content')],immutable:true})),
+];
+export const MODELS:readonly Model[]=[...BASE_MODELS,
+  {logical:'friendships',table:'relationships.friendships',fields:[required('firstAgentId','text','iam.agents'),required('secondAgentId','text','iam.agents'),required('status'),required('confirmedAt','timestamp'),required('firstConfirmationId'),required('secondConfirmationId')],unique:[['firstAgentId','secondAgentId']],check:[`first_agent_id < second_agent_id`,`status IN ('confirmed','revoked')`,`length(first_confirmation_id)>0 AND length(second_confirmation_id)>0`,`first_confirmation_id <> second_confirmation_id`]},
 ];
 
 export function modelsFor(logical:M1Table):readonly Model[]{return MODELS.filter(model=>model.logical===logical);}
