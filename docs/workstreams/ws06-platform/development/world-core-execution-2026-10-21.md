@@ -535,3 +535,30 @@ D后继确认定位原浅底来自world-owned.css中`.hud-root .hud-locate-agent
 **13:30:53.628恢复写入，维护63.544秒；18893现运行`063ded7e630a419e64ad2def7ca8da82650f9614`，PID89326／PPID1**，原URL与登录／绑定保持。证据`outputs/world-core/policy-contrast-063ded7/`的qualification、maintenance-clearance、live／stopped-backup、三阶段continuity、closed-readiness及maintenance；source tar与554文件见§7.21。根已收到准确实际版本，可立即派原UI窄复验这两个点，本节不提前记普通UI通过。服务继续保持给该复验，其他维护分批协调。
 
 后继候选保护：原reason候选18ef528基于05b8，尚未包含本次063补丁；原qualification保留为qualification-before-contrast.json，当前部署资格标为held，后继必须先包含本次CSS再冻结并协调新的安全停点，不能用旧候选覆盖已交付反馈。B安装计划内05b8／PID73223也是历史输入，TD单列current-runtime-addendum记录063／89326，未来PG维护须fresh核真实应用和全部后续写入；归档工具仍未安装，429自然原因与容量治理均未因此关闭。
+
+
+### 7.23 已审归档工具实际安装与自然压缩核验（2026-10-22 14:05）
+
+根转来第九阶段安全停点 **13:36:46.687 +08:00**：原tab2、自己的Owner、A澄野A与B均原卷发，窗口／菜单全关，无未保存／确认且视口重置，此后仅离线整理。该阶段在实际1440／1024样本确认权限正常／逐项Tab焦点，以及定位正常／focus／Enter定位A/B且145%缩放保持；未改权限或提交，checked／disabled／hover仍仅作者工程范围。根将BL04／05仅在该样本内关闭，正式UI报告由原作者维护；TD不代改验收报告。根授权先安装R38归档工具，再单独发布包含063的已审提示，不新增批准门槛。
+
+本次准确资源先核为063／PID89326、历史8789原001ae3f／PID84411；共享PG包含 **63个非模板数据库**。fresh前后核对connet **57表1607行**、World **80表581行**，分别以各自原identity／环境配对。先取live／stopped双库逻辑dump及清单，再用固定4f90f9c工具完成整个cluster的pg_basebackup与pg_verifybackup，保存2089份归档、角色globals、connet配对与独立World sidecar；不把connet配对结果替代World。该备份主动切段另记，不能当自然样本。根已明确不停止8789应用，TD仅排空其数据库写门，应用全程保留PID84411。
+
+**13:51:22.765726**停止18893，按双库原工具关写门。最初误用World版gate校验旧connet，因schema不匹配被拒且无写入；改用connet原001ae3f工具及World063工具后通过，初始失败私有证据保留。正常停止原PG与其Colima profile后，完整保全20GiB root及80GiB data磁盘，并逐字节完整SHA核对；root SHA **`2d902c99fa499d8f7e7d17cd536de1fe1743cc609f5d8ccdd0f7cf4ef372100e`**，data SHA **`cd75089b2e33cd1a51d7a7211e0678e875f2add7eb6281a9f54fe0544c24a7c8`**。没有删库、删除／重压历史WAL、回灌备份或重建身份。
+
+原容器 **`d3ab4341aab23374306f786c23fb83c27408327666388f908c63be780cf9d731`** 更名`agents-era-pg-server-pre-archive-20261022T054600Z`并保留停止、restart=no；新容器 **`21984c2facc1549b5e6102c24078e070a038f55cd2f76a17fff0821b8ec59e04`** 沿用名称`agents-era-pg-server`、原`agents-era-pg-data`、loopback15432、原PG18.6固定image及所有secret／init。只替换实际配置副本中的archive_command并新增只读helper挂载；原live bind源文件未改。Docker API将原OomKillDisable=null规范化false，第一次严格spec核对因此停止在未启动阶段；确认仍启用OOM killer、memory=0且其他HostConfig仅Binds变化后记录该规范化并继续。两原／新容器没有同时写卷。
+
+14:00前安装启动后，63库名称／OID、PG system identifier、两套instance／epoch、两业务所有表全字段hash均与停点一致。archive_command实读为`sh /etc/postgresql/archive/command.sh "%p" "%f" /var/lib/postgresql/wal-archive`，helper逐字节等同R38固定源；archive_timeout实读1min即60秒。原063应用闭门恢复为PID96914，5个必要只读readiness均200，worldRevision29／3Avatar、capabilities及实际063 panels.css保持。停写空闲阶段没有自然样本，根要求不为等空闲WAL继续停写；**14:05:05.147995恢复两库原写门true，维护822.382秒**，不以仍待独立restore延长维护。
+
+现场自然归档在 **14:04:47.242290** 已产生，14:05:05核验通过：`000000010000000800000025.gz`为 **26920字节**，gzip完整解压 **16777216字节**，内容SHA **`35dce0df6c62c889f4abd861a24820c59010b7cf723b6f91e7bc6489a562f86a`** 与仍保留active pg_wal原段一致，压缩文件SHA **`27715f59599ed1cf5e6e9a64f471514ea312c73ef041b53b6189b8517af8182c`**。安装后至该样本没有调用pg_switch_wal，也无业务探针写入；自然阶段包含正常检查点及维护写门状态变化。archived_count安装前406、停机归档后407、自然样本后408；failed_count保持历史38，历史失败时间未变。
+
+普通证据目录 **`outputs/postgresql/archive-install-20261022T054600Z/`**：preflight、双库continuity／verification、physical-backup-receipt、paired-backup-receipt、cold-preservation、container-spec-verification、natural-archive-verification、readiness及maintenance；private目录0700／文件0600保留完整磁盘、备份与原配置。根已先收到本批实际回执，未等待429。本节确认新归档原子压缩安装和一个现场自然样本，不表示旧26.23GiB已释放、不表示所有未来内容有同样压缩率；历史原件、所有数据库和旧备份仍保留，长期容量保留策略OPEN，无新自动监控／删除／备份平台。R38作者隔离恢复与本次现场证据分别保留；新的整库隔离恢复另记实际结果，尚不在本节冒称完成。
+
+### 7.24 包含当前对比度的有限读取提示实际交付（2026-10-22 14:06）
+
+旧18ef候选没有直接上线。TD从18ef树精确加入原063的两个已审文件，独立index／commit-tree形成 **`b21f28b2c786d0b39ad00d15256c23f5c6045bb3`**，保留分支`codex/read-reasons-with-contrast-20261022`；不改作者工作区。七提示文件逐字节匹配R39／R40的A25df／De8c，两个对比度文件匹配R44的063，相对当时运行063仅4个已审提示生产文件变化；无新增生产diff，未重跑不变的作者24＋15项或合成UI。等价回执`outputs/world-ui-reliability/read-reasons-current-contrast/source-equivalence.json`，冻结 **556文件**于`outputs/world-core/reliability-b21f28b/source`，tar SHA **`803b93a9b8dd438afef09e8404db712e07e580fc0719f2e39bcbf55a1a3ae02a`**，依赖为独立目录且symlink均在内部。
+
+沿用根第九阶段安全停点及14:04指令，在归档恢复后fresh取live dump **482210字节**／SHA **`767bb8accdda4d2dbf2c318f77cf22262094ba1a553216cfd8b9a3f5522a1ed9`**，停止态dump **482211字节**／SHA **`7c99924c37604e725a47117eb1a1b89cda30d5027eb6aab0324365c8f70ebb9b`**，两者配对保全且pg_restore清单通过。**14:06:20.073692**停止063／PID96914，关World写门，以新冻结源闭门启动；80表581行全部业务语义不变，闭门启动前后全部列hash一致，原identity／instance／epoch及全部后续写入保留，无迁移／目录发布／seed／补余额。
+
+11个有限只读GET全部200／no-store，index与两个入口一致，common.js／world-scene-provider.js／063 panels.css的实际响应均逐字节匹配源；capabilities／catalog保持schema5／guide3，worldRevision29／3Avatar及公开事实保持。**14:06:38.544871恢复World原写门true，维护18.471秒；18893实际运行b21f28b／PID97734／PPID1**。PG没有再次重启，8789仍PID84411；公网和其他服务不改。证据`outputs/world-core/reliability-b21f28b/`中的qualification、maintenance-clearance、source-manifest、live／stopped-backup、三阶段continuity、closed-readiness与maintenance。
+
+提示只给原有读取附固定build及start／timer／manual／visible／recovery／unknown有限reason，白名单24有界桶，原配额、权限、请求数量和timer不变。提示属于非可信自报，不是消费者身份或因果证明。发布后仅看现有私有聚合日志 **90.086秒**（14:06:21.750863—14:07:51.836880），**新自然429样本0**；未制造429流量、未加监控timer、未因无样本无限等待。`natural-observation.json`保留该有限窗口；历史429根因及BL01长期观察仍OPEN，不由本次部署或短时无报错关闭。独立普通UI仅沿用其已验阶段范围，本节不声称新一轮UI或全权限验收通过。
