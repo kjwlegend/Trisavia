@@ -502,3 +502,36 @@ R39已接受A `25df02ab3f5e07f033b0dae68fba36c661e05f64`三路径，R40接受D `
 R38的B `ac93fff2bca98372a274f18cb1bb2c66d094fdfe`11路径也无冲突整合为**`4f90f9c73f25d9a6d04a9a393b049cd46e938179`**；逐字节核作者Git，应用文件没有变化。独立运维源码冻结`outputs/world-core/archive-ops-4f90f9c/source`，564文件，tar SHA256 **`50fbd9208be419cc96171ca4445cc67590d076ed49256e46f917d5d6d11ead6e`**；仅供工具安装／隔离恢复，禁止把它当当前应用版本。一次准备冻结误抄完整SHA，git archive在生成源码前报不存在tree；空候选与失败说明保留于invalid-ref-preserved，随后按实际git rev-parse结果冻结，未触服务／数据。
 
 只读确认当前PG配置及init的bind仍指向原m1-acceptance目录，未指向本次integration修改；容器d3ab…d731及agents-era-pg-data保持，没有archive helper挂载。B正仅在自有outputs整理具体安装／完整cluster保全／两业务identity配对及独立恢复方案，不执行现用资源动作。后续须根协调第八阶段安全停点，保全全部后续写入与完整现卷后再装helper、保持固定PG18.6 image／原volume／60秒间隔；验证自然后继归档及独立restore，不能以源码已合入或作者测试通过关闭容量事件。旧raw档、旧备份、历史库／测试库均保留，无自动删除／历史重压／新timer。
+
+
+### 7.21 人类反馈的权限四项与定位两处对比度窄修
+
+根收到人类“汇报给主指挥”的明确要求，并只读核实当前18893／05b8dca的Browser Comment：`#world-entry → Agent管理 → 小序 → 权限控制 → 仅由主人修改的字段`四个label.check（名字／形象／简介／兴趣）近白底配极浅奶油字难辨。样本1484×1376、模式Agent自主设定，定位`form#policy-form > fieldset > div.lock-list > label.check:nth-of-type(2)`；蓝色评论框不属产品缺陷。本条是新增真实反馈，不能被既有工程／静态通过覆盖，也不把未验四态预写已通过。
+
+TD即派原D从精确05b8dca、clean工作区另开`codex/policy-lock-contrast`，保留原622与e8c分支。归属限定`apps/web/public/world-pixel/panels.css`中的该锁定组主题及原`tests/e2e/world-core-look-panels.node.ts`定点工程；D已回执静态来源为旧label背景#eff2e7与新版浅字继承组合。要求先保留反例，再在独立合成fixture覆盖正常／勾选／聚焦／禁用的背景、文字、checkbox、边框和状态，1484×1376及1280短桌面；保持权限语义、保存和键盘操作，不操作真实小序或18893／当前库。固定窄diff仍须原reviewer，不重开整体设计／业务重构、不混入429或归档。
+
+当前独立第八阶段UI继续05b8dca／PID73223；根已让原UI纳入此组控件观察，补丁实际交付后另复验。TD已准备从05b8单独冻结补丁及fresh保全／同库核对步骤；即使main含后继工具源码，也不会据mainHEAD发布混合版本。安全停点尚未到，不启用维护。B安装方案已于自有outputs交付，SHA256 `30f6d2024969f95311e97d73cdeaf0fe5bb2d0c4e6a485e3c397029f70fd9f4d`，TD冻结于`outputs/postgresql/archive-install-plan-intake/`；仅方案，当前反馈窄修优先，不因此操作共享PG。
+
+
+原普通UI随后在自己的B行舟B／05b8dca／1440×900只读复现同一四项，未勾选、保存disabled，仅Tab聚焦名字；未改权限、未查看真实小序。根与TD均核真实截图，证据在main的`outputs/user-simulation/world-core-ui-20261021/panels-v2-05b8dca-20261022T050547Z/32-permissions-four-fields-1440.jpg`及33配对focus图。根另让UI核左下“定位”，其在关闭管理窗回世界、B为当前对象、1024×900的可用态仍浅底浅字，AX未标disabled、未写业务；证据39-world-locate-enabled-1024.jpg及配对txt。因此根明确扩大本次窄修为**权限四项＋该定位按钮两个实证点**，追加定位正常／hover／focus／disabled可读性与原点击语义，仍不作全面HUD重构。TD已派原D合并交付或在首提交后追加小提交，完整两点固定diff须原reviewer覆盖后一起发布；根安全停点尚未到。
+
+
+D后继确认定位原浅底来自world-owned.css中`.hud-root .hud-locate-agent`的#FAF8ED，v2主题组漏该按钮；两个实证点都不需增加生产文件，仍仅panels.css。权限原样四态／两尺寸基线完成，文字对比约1.0859:1，原勾选→policy PUT保存成功；定位基线首个错误为自有合成session缺interests，作者修测试fixture并保留失败，非新增产品问题。固定修复／最终工程与独审仍待，不把基线操作成功当对比度修复通过。
+
+
+原D最终固定`05b8dca → 063ded7e630a419e64ad2def7ca8da82650f9614`，仅panels.css17行及既有browser57行新增、分支clean。manifest SHA256 **`a75cba8997bc94995fdac02475047855a434dc32fa6bae6d5460d0a1a815a062`**；TD核两Git源码与55普通artifact hash并实看checked权限组及定位focus图，intake在`outputs/world-ui-reliability/policy-contrast-063ded7-intake/`。作者两targeted合成browser同次2/2、full typecheck／diff0；权限1484×1376／1280×800，定位1024×900／1280×800，全部请求intercept。权限normal／checked／disabled文字最低8.77／6.35／7.75:1，focus环8.19；定位normal／hover／disabled文字8.12／5.53／7.75:1，focus环7.58，最小边框3.09。真实Owner controller原CAS PUT的mock一次保存、键盘Tab／Space、busy-disabled与保存后重读保留；真实HUD调用原locateOwnedAgent仅平移相机，zoom／facts保持，disabled不二次dispatch。该作者证据不冒称真实PG权限写入或原普通UI复验；旧反例及fixture失败全部保留。
+
+根明确转来安全停点为**2026-10-22 13:22:51.687 +08:00**：原tab2、自己的Owner、当前A澄野A已保存回原卷发并刷新验证、B仍原卷发；全部窗口／菜单关闭，无待保存／确认，之后无输入，未改权限／小序。TD仅hash原50-safe-stop-viewport-reset.jpg／txt并记录`outputs/world-ui-reliability/policy-contrast-clearance/`，不操作者浏览器。根明确此次纯样式在原独审通过后直接fresh保全／交付，无新增批准；必须保全UI真实保存／恢复及其他后续记录，不能继续假定556行，不做schema／catalog迁移。独立候选`outputs/world-core/policy-contrast-063ded7/source`冻结554文件、tar SHA256 **`9ff693a4cb89297155a60b4e5f1d1157588733cee14427d62857619618a8fd20`**，只含05b8＋两点补丁，无429／归档。已送原reviewer，实际维护仍待其结论。
+
+
+### 7.22 两处对比度补丁实际交付（2026-10-22 13:30）
+
+原reviewer **R44接受05b8dca→063ded7两文件静态窄修，无新增实质发现**，两源码与55普通材料hash及同次2/2、typecheck／diff证据核齐，作者合成测试与独立真实UI仍分别记录。TD在integration取为`0348d94f9b153974d6e3eb295abb15a7769d4329`，两文件逐字节等同D原固定Git，无整合新增差异；实际运行使用§7.21独立冻结的**063ded7完整源码**，没有将main已包含的429／归档源码带入本次发布。
+
+北京时间**13:29:36**fresh live dump482211字节，SHA256 **`45d1d4bf604dbcb4feb7b379460ca50b6fbf67ba6dd2668874afb95ce447e9e1`**。**13:29:50**原05b8／PID73223正常SIGTERM停服并排空，13:29:54停止态fresh dump482210字节，SHA256 **`ac63c5d87175505452c81cfc75b5dacc4a84d21b2e04d2f5796893a8e4af4098`**。两份均配对identity／环境、0700／0600保全，并通过pg_restore清单验证；不称恢复演练。未操作真实Owner设置、未回灌／seed／迁移／目录发布，也未改PG服务、8789或公网。
+
+本次实时基线是**80表581行**，并非此前556行。停止态→闭门→新服务闭门启动，所有表语义hash一致，唯一维护排除仍是instance_state的writes_enabled／write_generation；闭门启动前后全部列hash一致，包括profiles v2 typed字段、用户UI保存／恢复及后续业务记录。原instance／epoch、配对identity SHA `da233bcdf1316505e28851bd673166164d000e9a8b701fcb19f7aec46038b612`保持。9次有限匿名GET均200／no-store；`/`、`/owner`同冻结index，实际`/assets/world-pixel/panels.css` SHA **`4bf1142e747619f48b8910ec245cc3833648a54d73aea748fe3ba8894a30d219`**匹配固定源。实时capabilities／目录不变，WorldRevision29、3Avatar及全部公开事实与此次停服前fresh快照一致。
+
+**13:30:53.628恢复写入，维护63.544秒；18893现运行`063ded7e630a419e64ad2def7ca8da82650f9614`，PID89326／PPID1**，原URL与登录／绑定保持。证据`outputs/world-core/policy-contrast-063ded7/`的qualification、maintenance-clearance、live／stopped-backup、三阶段continuity、closed-readiness及maintenance；source tar与554文件见§7.21。根已收到准确实际版本，可立即派原UI窄复验这两个点，本节不提前记普通UI通过。服务继续保持给该复验，其他维护分批协调。
+
+后继候选保护：原reason候选18ef528基于05b8，尚未包含本次063补丁；原qualification保留为qualification-before-contrast.json，当前部署资格标为held，后继必须先包含本次CSS再冻结并协调新的安全停点，不能用旧候选覆盖已交付反馈。B安装计划内05b8／PID73223也是历史输入，TD单列current-runtime-addendum记录063／89326，未来PG维护须fresh核真实应用和全部后续写入；归档工具仍未安装，429自然原因与容量治理均未因此关闭。
