@@ -443,3 +443,17 @@ WS01随后精确裁定已补原§3.2：`published=null`且无可靠已确认形�
 原D固定`07c7d18 → 1486c4aabeebbcfa1efec7b58d02cfd34ebd6d8e`，75路径＝70生产（含42原生UI PNG及2人物目录）＋5测试，原C三文件未碰、可靠性provider生产字节保持e005。TD逐文件对Git并核clean，11份证据hash匹配；manifest SHA256 `ba528072bab4c6f6bfb5cf561633bed254f7b1c992ab4c68b02233f75aad1203`，intake在`outputs/world-ui-reliability/d-v2-1486c4a-intake/`。作者40site、6面板Browser、fixed-head原World Browser5、tsc／25JS语法／diff均通过；Browser全路由合成、context已关闭，13截图及首跑失败原件保留，不代真实A/B保存组合或普通UI。TD实看role1440／inventory1024工程图，原reviewer R35已开始，尚未记接受／部署。
 
 A真实look HTTP两故事及受审B-only固定489文件源的实际隔离维护顺序1/1通过，末组旧WS02前置的默认shape与专属fixture最小World SELECT授权逐项修正，旧失败保留，最终固定尚待。C三自有WIP保留并重新唤醒，对齐固定D实际DOM后待固定A组合。12:00:49当前库一次只读预检为catalog-readers-1-schema-4／guide2／schema4；**perception.documents实际55行＝41 schema4＋14 guide1/2，schema5／guide3均空闲**。此前口述69不能当本表实际行数，现以当前预检更正，不猜其来源；A原fresh55证据仍保留隔离范围，维护前再fresh核。预检原件`outputs/world-ui-reliability/look-publication-preflight/current-public-document-ids.json`，未发布目录。
+
+后继口径纠正：A自核发现上述维护1/1的fresh初始化来自ad5，profiles v2已经存在；它证明了固定B helper调用、目录4→5、权限／写门与幂等顺序，**不能额外证明实际profiles v1→v2 DDL**。原B R34物理迁移证据保持独立；A正在同一隔离故事改用完整冻结e005先建v1并断言新列不存在，再固定ad5升级、最终helper发布，原日志不覆盖。原reviewer R35亦已正式暂不接受1486完整范围：WC-CR08／P3身份栏class错接、WC-CR09／P2合法超两行标题缺正文补全；原D已分别复现并接续单独修订，不能把其余已核范围与原40／6／5工程通过写成整版接受。
+
+### 7.17 人物API固定与v2独审修订（2026-10-22中午）
+
+原A固定`ad5f413 → 6adc1d5cf8504f36af4066bb5901e2fc0fb00e82`，29自属路径，B五路径未改。精确HEAD同次Gateway33＋WS0267＝**100/100**，fail／cancel／skip0、typecheck／diff0；原wallet测试同client并发查询的pg弃用warning保留，不称无warning。manifest SHA256 **`c243dd3b160c8a7efac06f3a0b63118fbbd2d2952a5fdaeaffa51fae7ba33c21`**，TD核29固定Git源码及31普通日志hash，证据`outputs/world-ui-reliability/a-look-6adc1d5-intake/`。原reviewer已接固定diff独审，尚未记A接受。
+
+最终100内的维护故事已从完整冻结e005初始化，先确认profiles仅v1、两个新typed列不存在，再以固定ad5实际追加v2，最后运行新目录helper；31原迁移行、原content_text／逻辑行与配对identity保持，仅新增一条迁移。55份旧exact文档原行／digest保持，新schema5文档41＋guide3文档7；80物理表边界、同actor／operation／载荷重放只允许原guard变化、闭门启动／health／wallet全表不变均已检查。先前ad5起点的1/1保留其较窄范围，不并入物理升级次数。旧QA默认断言与隔离fixture最小World SELECT权限修正、真实信箱姓名guard旧形状限制及holding item-1／item-10子串反例，各保留首次失败；新holding断言按精确引用／完整JSON值／原标题检查，未放宽来源授权。
+
+原D修订固定`1486c4a → bbaa834e37c95f16ce48c9f72d8c9210f5119c95`四路径。后继manifest SHA256 **`34565b12e7b95b21aa9768ed9d54578c32511fc9a67dd750c05372eeed47ad0d`**，TD核四源码与58份证据hash，另实看1024长名信箱和长标题正文图；原1486证据不改。原reviewer **R36接受后继并关闭WC-CR08／09，结合R35接受07c7d18→bbaa完整75路径指定静态范围**。身份栏八组合均44px／头像32px；合法180字普通／关联／返回标题正文完整，短标题不重复，长正文内部滚动保持close／back固定。作者新定点2/2与原reader单项1/1分列，不写完整40／6／5重跑，不代普通UI或实际Owner数据。
+
+C开始在自己的ignored outputs构建固定A6adc完整Git源＋Dbbaa的75归属文件覆盖，依赖独立复制，保留三测试WIP及源码hash；这是未完成审查的开发联测副本，不改TD integration生产树。随后仅在C随机自有PG／loopback端口运行原五故事和根指定的1024背包详情内部底部滚动、主窗／信箱子窗关闭可达定点；合成非空数据不进当前库。独审、工程组合与普通用户UI继续分别记录。
+
+B归档容量包另固定`ad5f413 → ac93fff2bca98372a274f18cb1bb2c66d094fdfe`11路径，原look分支保留。作者9/9＝8合成／CLI＋1真实隔离raw→gzip恢复，含两条post-base提交，v1 raw清单保留、追加gzip升级v2，恢复得到[1,2,3]；typecheck／sh-n／diff0，自有容器／卷已按登记清理。原reviewer按视觉主线之后排独审，尚未部署，不改写容量事件已结案。A／D另开reason诊断分支，白名单build／reason只用于有界聚合，保持配额和请求数；该独立批与归档包均不阻塞已合格的视觉交付。当前18893仍e005／82404，尚未执行look物理升级、目录发布或切服务。
