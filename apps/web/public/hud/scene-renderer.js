@@ -4,6 +4,8 @@ import {loadPixelTown,COMMONS_PLACE} from '../world-pixel/town.js';
 import {createOwnedAgentBinding} from './owned-agents.js';
 import {createPanelTransition} from './panel-transition.js';
 import {createWorldSceneProvider} from './world-scene-provider.js';
+import {nativeFrame} from '../world-pixel/native-ui.js';
+import {getPanelEnvironment} from './panel-environment.js';
 let scene=null;
 export function initSceneRenderer({session,onSelectAgent=()=>{},rendering=null}={}){
 let mapReady=false,mapFailed=false,pageActive=true;
@@ -12,7 +14,7 @@ const ownedAgents=session?createOwnedAgentBinding(session,onSelectAgent):null;
 const worldProvider=createWorldSceneProvider();let worldData=worldProvider.snapshot();
 let returnFocus = null;
 let currentPlace = null;
-const detail=$('#world-detail'),detailTransition=createPanelTransition(detail);
+const detail=$('#world-detail'),detailTransition=createPanelTransition(detail),environment=getPanelEnvironment();detail.prepend(nativeFrame('lightWood'));
 const debug=el('details'),debugBody=el('dl','hud-facts');debug.id='world-detail-debug';debug.hidden=true;debug.append(el('summary','','技术信息'),debugBody);$('#world-detail-note').after(debug);
 function renderDetails(place,reset=false){
   const details=placeDetails(place);$('#world-detail-area').textContent=details.area;$('#world-detail-title').textContent=details.name;$('#world-detail-icon').textContent=details.icon;$('#world-detail-description').textContent=details.description;$('#world-detail-note').textContent=place.kind==='world-avatar'&&worldData.phase==='recovering'?`连接正在恢复。这里保留 ${new Date(worldData.asOf).toLocaleString('zh-CN',{hour12:false})} 读取的公开记录。${details.note}`:details.note;
@@ -45,27 +47,27 @@ function openPlace(place, origin) {
   for (const link of details.links || []) { const node = el('a', '', `${link.label} ↗`); node.href = link.href; links.append(node); }
   if(place.id==='noticeboard')for(const [category,label]of [['announcements','查看公开公告'],['events','查看事件计划与发生记录']]){const control=el('button','',label);control.type='button';control.addEventListener('click',()=>document.dispatchEvent(new CustomEvent('hud:world-content',{detail:{category}})));links.append(control);}
   for (const button of list.querySelectorAll('button')) button.setAttribute('aria-pressed', String(button.dataset.placeId === place.id));
-  detailTransition.show();
+  environment.set('world',detail);detailTransition.show();
   $('#world-layout').classList.add('has-detail');
   scene?.select(place);
   $('#world-detail').focus({preventScroll: true});
-  if (origin !== scene?.canvas) $('#world-layout').scrollIntoView({block:'start',behavior:'instant'});
+
 }
 function closePlace(restoreFocus=true) {
   if (!currentPlace) return;
   currentPlace = null;
-  detailTransition.hide();
+  environment.set('world',null);detailTransition.hide();
   $('#world-layout').classList.remove('has-detail');
   for (const button of list.querySelectorAll('button')) button.setAttribute('aria-pressed', 'false');
   scene?.select(null);
   if(!restoreFocus)return;
   const target = returnFocus?.isConnected ? returnFocus : scene?.canvas || $('#world-place-directory > summary');
   target?.focus({preventScroll: true});
-  if (target !== scene?.canvas) target?.scrollIntoView({block:'nearest',behavior:'instant'});
+
 }
 function updateControls(state) {
   worldProvider.setVisible(pageActive&&!mapFailed&&state.visible);
-  document.dispatchEvent(new CustomEvent('world:state',{detail:{exploring:state.exploring}}));
+  document.dispatchEvent(new CustomEvent('world:state',{detail:{exploring:state.exploring,reducedMotion:state.reducedMotion}}));
   $('#world-explore').textContent=state.exploring?'退出探索':'探索地图';
   $('#world-explore').setAttribute('aria-pressed',String(state.exploring));
   $('#world-explore').hidden=state.mode==='overview';$('#world-reset').hidden=state.mode!=='overview';
@@ -124,7 +126,7 @@ worldProvider.subscribe(value=>{
   const source=$('.world-demo'),summary=$('summary',source),body=$('p',source);source.dataset.worldPhase=value.phase;
   summary.textContent=value.phase==='ready'?`服务器世界 · ${value.avatars.length} 个公开角色`:value.phase==='recovering'?'连接中断 · 正在恢复，显示上次画面':value.phase==='partial'?`服务器世界 · 已载入 ${value.avatars.length} 个角色（完整后显示）`:value.phase==='refreshing'?'服务器世界 · 正在刷新':value.phase==='paused'?'世界读取已暂停':value.phase==='loading'?'正在读取服务器世界…':'服务器世界暂不可用 · 正在重试';
   const retryReason=value.errorStatus===429?'读取较频繁，正在等待后重试。':value.errorStatus>=500?'服务暂忙，正在尝试恢复。':'网络暂时中断，正在尝试恢复。';
-  body.textContent=value.phase==='recovering'?`${retryReason}当前保留最后成功读取的公开画面，读取时间：${new Date(value.asOf).toLocaleString('zh-CN',{hour12:false})}。这不是当前已连接的状态；恢复后会按最新结果更新。`:['ready','partial','refreshing'].includes(value.phase)?`${value.avatars.length===0&&value.complete?'当前公开世界没有可显示的角色。':''}角色名称与位置来自服务器；${value.complete?'本次集合已完整读取。':'当前集合尚未完整。'}读取时间：${new Date(value.asOf).toLocaleString('zh-CN',{hour12:false})}。当前开放：公共庭；周边街区为景观预览，不代表真实到访、在线或移动目的地。发型为本地表现映射，不表示已保存的发型选择。`:value.phase==='paused'?'场景不可见时停止读取，返回后重新取得服务器事实。':value.phase==='loading'?'正在取得当前世界规则与公开角色，不使用演示角色补齐。':value.errorCode==='world_not_available'?'当前世界尚未开放或未就绪，旧角色资料已清除。稍后会重新确认。':['world_cursor_invalid','world_scene_changed','world_response_invalid'].includes(value.errorCode)?'世界集合或版本已变化，旧角色资料已清除。正在从头重新确认。':['world_not_accessible','not_found'].includes(value.errorCode)||[401,403,404].includes(value.errorStatus)?'当前公开世界不可查看，旧角色资料已清除。稍后会重新确认。':`${retryReason}当前没有可显示的成功读取画面。`;
+  body.textContent=value.phase==='recovering'?`${retryReason}当前保留最后成功读取的公开画面，读取时间：${new Date(value.asOf).toLocaleString('zh-CN',{hour12:false})}。这不是当前已连接的状态；恢复后会按最新结果更新。`:['ready','partial','refreshing'].includes(value.phase)?`${value.avatars.length===0&&value.complete?'当前公开世界没有可显示的角色。':''}角色名称与位置来自服务器；${value.complete?'本次集合已完整读取。':'当前集合尚未完整。'}读取时间：${new Date(value.asOf).toLocaleString('zh-CN',{hour12:false})}。当前开放：公共庭；周边街区为景观预览，不代表真实到访、在线或移动目的地。这里显示当前已公开保存的角色形象。`:value.phase==='paused'?'场景不可见时停止读取，返回后重新取得服务器事实。':value.phase==='loading'?'正在取得当前世界规则与公开角色，不使用演示角色补齐。':value.errorCode==='world_not_available'?'当前世界尚未开放或未就绪，旧角色资料已清除。稍后会重新确认。':['world_cursor_invalid','world_scene_changed','world_response_invalid'].includes(value.errorCode)?'世界集合或版本已变化，旧角色资料已清除。正在从头重新确认。':['world_not_accessible','not_found'].includes(value.errorCode)||[401,403,404].includes(value.errorStatus)?'当前公开世界不可查看，旧角色资料已清除。稍后会重新确认。':`${retryReason}当前没有可显示的成功读取画面。`;
   if(currentPlace?.kind==='world-avatar'){
     const row=value.complete?value.avatars.find(avatar=>avatar.agentId===currentPlace.agentId):null;
     if(!row)closePlace(false);

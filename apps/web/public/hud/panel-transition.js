@@ -1,6 +1,6 @@
 const windowFrames={
-  enter:[{opacity:0,transform:'translateY(8px) scale(.97)'},{opacity:1,transform:'translateY(0) scale(1)'}],
-  exit:[{opacity:1,transform:'translateY(0) scale(1)'},{opacity:0,transform:'translateY(8px) scale(.97)'}],
+  enter:[{opacity:0,transform:'translateY(6px) scale(.985)'},{opacity:1,transform:'translateY(0) scale(1)'}],
+  exit:[{opacity:1,transform:'translateY(0) scale(1)'},{opacity:0,transform:'translateY(6px) scale(.985)'}],
 };
 
 // The actual panel node stays mounted. Animation completion and the timeout
@@ -34,7 +34,7 @@ export function createPanelTransition(node,{
     state=visible?'opening':'closing';node.dataset.panelState=state;
     let resolve;const promise=new Promise(done=>{resolve=done;});active={promise,resolve,animation:null,timer:null};
     if(motion?.matches||typeof node.animate!=='function'){finish(turn,visible);return promise;}
-    const tooltip=variant==='tooltip',duration=tooltip?(visible?100:80):(visible?180:140);
+    const tooltip=variant==='tooltip',duration=tooltip?(visible?100:80):(visible?160:120);
     const frames=tooltip?[{opacity:visible?0:1},{opacity:visible?1:0}]:windowFrames[visible?'enter':'exit'].map(frame=>({...frame}));
     if(first)frames[0]=tooltip?{opacity:first.opacity}:first;
     try{

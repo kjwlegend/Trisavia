@@ -1,12 +1,11 @@
+import {resolveLook,drawLook} from './look.js';
 // Presentation only. The server appearance and world position remain unchanged.
 export const HUMAN_GEOMETRY=Object.freeze({width:96,height:64,anchor:{x:48,y:39},hitBox:{left:-9,right:9,top:-19,bottom:0},minHit:{width:38,height:52},hitPadding:{width:8,height:10}});
 export function humanHitSize(geometry,scale){const b=geometry.hitBox;return{width:Math.max(geometry.minHit?.width??44,(b.right-b.left)*scale+(geometry.hitPadding?.width??0)),height:Math.max(geometry.minHit?.height??44,(b.bottom-b.top)*scale+(geometry.hitPadding?.height??0))};}
-export function presentationHair(kit,entry){const color=entry.fact?.profile.appearance.color;if(color==='blue')return'curlyhair';if(color==='amber')return'longhair';let index=0;for(const char of String(entry.fact?.id||entry.agentId))index=(index*31+char.charCodeAt(0))>>>0;return kit.human.hairKeys[index%kit.human.hairKeys.length];}
+export function presentationHair(_kit,entry){return resolveLook(entry.fact?.profile.appearance,{avatarId:entry.fact?.id})?.nativeHairKey||null;}
 export function humanFrame(kit,entry,frame){const action=entry.walking?'walk':'idle',clip=kit.human.clips[action];let remaining=frame.reducedMotion||frame.paused?0:frame.elapsed%clip.durationMs;for(const current of clip.frames){if(remaining<current.duration)return{action,rect:current.rect};remaining-=current.duration;}return{action,rect:clip.frames[0].rect};}
 export function drawHuman(ctx,entry,frame,assets){
-  const {action,rect}=humanFrame(assets.kit,entry,frame),layers=assets.kit.human.layers,hair=presentationHair(assets.kit,entry),anchor=assets.kit.human.groundAnchor;
-  ctx.save();ctx.translate(Math.round(entry.x),Math.round(entry.y));if(entry.facing==='left')ctx.scale(-1,1);if(entry.fact?.status==='suspended')ctx.globalAlpha=.62;
-  for(const key of [layers.base[action],layers[hair][action]])ctx.drawImage(assets.images.get(key),...rect,-anchor[0],-anchor[1],rect[2],rect[3]);ctx.restore();
+  return drawLook(ctx,resolveLook(entry.fact?.profile.appearance,{avatarId:entry.fact?.id}),assets.images,{x:entry.x,y:entry.y,action:entry.walking?'walk':'idle',facing:entry.facing,elapsed:frame.elapsed,still:frame.reducedMotion||frame.paused,alpha:entry.fact?.status==='suspended'?.62:1});
 }
 export function drawHumanFoot(ctx,entry,selected=false,theme='day'){
   ctx.save();ctx.translate(Math.round(entry.x),Math.round(entry.y));ctx.fillStyle='#31492e27';ctx.fillRect(-5,-1,10,2);ctx.fillRect(-3,1,6,1);

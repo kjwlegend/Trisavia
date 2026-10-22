@@ -3,6 +3,7 @@
 export const WORLD_PROJECTION_VERSION='logical-grid-to-town@1';
 const invalid=()=>{const error=new Error('world_response_invalid');error.code='world_response_invalid';throw error;};
 const integer=value=>Number.isSafeInteger(value)&&value>=0;
+export function readAppearance(value){if(value&&typeof value.lookId==='string'&&value.lookId.length>0&&value.lookId.length<=100&&typeof value.catalogVersion==='string'&&value.catalogVersion.length>0&&value.catalogVersion.length<=100&&Object.keys(value).every(key=>['lookId','catalogVersion'].includes(key)))return{lookId:value.lookId,catalogVersion:value.catalogVersion};if(value?.template==='basic'&&['olive','cream','blue','coral'].includes(value.color)&&Object.keys(value).every(key=>['template','color'].includes(key)))return{template:'basic',color:value.color};invalid();}
 export function readWorldRules(data,worldId='default'){
   const {world,rules,asOf}=data||{};
   if(world?.worldId!==worldId||world.active!==true||!integer(world.revision)||!integer(asOf)||rules?.worldId!==worldId||!integer(rules.version)||world.rulesetVersion!==rules.version||!integer(rules.topologyVersion)||!Number.isSafeInteger(rules.width)||rules.width<1||!Number.isSafeInteger(rules.height)||rules.height<1)invalid();
@@ -13,9 +14,9 @@ export function readWorldPage(data,rules){
   const avatars=[];
   for(const row of data.avatars){
     const profile=row?.profile,p=row?.position;
-    if(typeof row?.id!=='string'||!row.id||typeof row.agentId!=='string'||!row.agentId||row.worldId!==rules.worldId||!integer(row.version)||!['idle','suspended','left'].includes(row.status)||row.rulesetVersion!==rules.version||!integer(p?.x)||p.x>=rules.width||!integer(p?.y)||p.y>=rules.height||!(row.placeId===null||typeof row.placeId==='string')||!integer(row.createdAt)||!integer(row.updatedAt)||profile?.agentId!==row.agentId||!integer(profile.publishedVersion)||typeof profile.displayName!=='string'||!profile.displayName||profile.appearance?.template!=='basic'||!['olive','cream','blue','coral'].includes(profile.appearance.color))invalid();
+    if(typeof row?.id!=='string'||!row.id||typeof row.agentId!=='string'||!row.agentId||row.worldId!==rules.worldId||!integer(row.version)||!['idle','suspended','left'].includes(row.status)||row.rulesetVersion!==rules.version||!integer(p?.x)||p.x>=rules.width||!integer(p?.y)||p.y>=rules.height||!(row.placeId===null||typeof row.placeId==='string')||!integer(row.createdAt)||!integer(row.updatedAt)||profile?.agentId!==row.agentId||!integer(profile.publishedVersion)||typeof profile.displayName!=='string'||!profile.displayName)invalid();
     if(row.status==='left')continue;
-    avatars.push({id:row.id,worldId:row.worldId,agentId:row.agentId,version:row.version,status:row.status,position:{x:p.x,y:p.y},placeId:row.placeId,rulesetVersion:row.rulesetVersion,createdAt:row.createdAt,updatedAt:row.updatedAt,profile:{agentId:row.agentId,publishedVersion:profile.publishedVersion,displayName:profile.displayName,appearance:{template:'basic',color:profile.appearance.color}}});
+    avatars.push({id:row.id,worldId:row.worldId,agentId:row.agentId,version:row.version,status:row.status,position:{x:p.x,y:p.y},placeId:row.placeId,rulesetVersion:row.rulesetVersion,createdAt:row.createdAt,updatedAt:row.updatedAt,profile:{agentId:row.agentId,publishedVersion:profile.publishedVersion,displayName:profile.displayName,appearance:readAppearance(profile.appearance)}});
   }
   return{worldId:rules.worldId,worldRevision:data.worldRevision,asOf:data.asOf,avatars,complete:data.complete,nextCursor:data.nextCursor};
 }

@@ -75,7 +75,7 @@ test('frozen bundle files retain the design hashes and the actual exported layou
 
 test('locked human body gives independent native sheets, synchronized frames, fixed mirrored anchor and CSS hit allowance',()=>{
  const kit=(globalThis as any).PIXEL_ASSETS;assert.deepEqual(humanHitSize(HUMAN_GEOMETRY,1),{width:38,height:52});assert.deepEqual(humanHitSize(HUMAN_GEOMETRY,3),{width:62,height:67});
- const entry={agentId:'a',x:264,y:136,walking:true,facing:'left',fact:{id:'avatar-a',status:'idle',profile:{appearance:{color:'blue'}}}};
+ const entry={agentId:'a',x:264,y:136,walking:true,facing:'left',fact:{id:'avatar-a',status:'idle',profile:{appearance:{template:'basic',color:'blue'}}}};
  assert.deepEqual(humanFrame(kit,entry,{elapsed:701,paused:false,reducedMotion:false}).rect,[672,0,96,64]);assert.deepEqual(humanFrame(kit,entry,{elapsed:701,reducedMotion:true}).rect,[0,0,96,64]);
  const calls:any[]=[],ctx={save(){},restore(){},translate(...a:any[]){calls.push(['translate',...a]);},scale(...a:any[]){calls.push(['scale',...a]);},drawImage(...a:any[]){calls.push(['image',...a]);}};
  drawHuman(ctx,entry,{elapsed:701,paused:false,reducedMotion:false},{kit,images:new Map([['human_base_walk','body'],['human_curlyhair_walk','hair']])});

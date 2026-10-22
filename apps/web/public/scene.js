@@ -1,28 +1,16 @@
+import {resolveLook,drawLook,drawLookPlaceholder} from './world-pixel/look.js';
+import {loadLookAssets} from './world-pixel/look-assets.js';
+import {mountPortrait} from './world-pixel/portrait.js';
 import {el} from './common.js';
-const palettes = {olive:'#467d50',cream:'#eadbbb',blue:'#357abb',coral:'#df735f'};
 function rect(ctx,x,y,w,h,color) { ctx.fillStyle=color;ctx.fillRect(x,y,w,h); }
-function person(ctx,x,y,color,variant=0,selected=false,pose={}) {
-  if (selected) {ctx.strokeStyle='#2050a0';ctx.lineWidth=1;ctx.strokeRect(x-5,y-1,11,5);}
-  rect(ctx,x-3,y,7,2,'#397b46');
-  const stride=pose.walking?[0,1,0,-1][pose.step%4]:0;
-  rect(ctx,x-2,y-5+stride,2,5,'#304060');rect(ctx,x+1,y-5-stride,2,5,'#304060');
-  rect(ctx,x-3,y-11,7,7,palettes[color]||palettes.olive);
-  rect(ctx,x-1,y-10,2,5,'#eff5e7');rect(ctx,x-4,y-10,1,5,'#eebf90');rect(ctx,x+4,y-10,1,5,'#eebf90');
-  rect(ctx,x-3,y-17,7,7,'#304060');rect(ctx,x-2,y-15,5,5,'#efc198');rect(ctx,x-3,y-17,7,3,variant?'#805d42':'#413f4b');
-  if(pose.direction==='N')rect(ctx,x-2,y-14,5,3,variant?'#805d42':'#413f4b');
-  else if(pose.direction==='E'||pose.direction==='W')rect(ctx,x+(pose.direction==='E'?2:-2),y-13,1,1,'#304060');
+export function avatar(node, fields={},_agentId='') {
+  return mountPortrait(node,fields.appearance??fields.publishedAppearance??fields.avatar,{label:fields.displayName?`${fields.displayName}的角色形象`:'角色形象'});
 }
-export function avatar(node, fields={},agentId='') {
-  const canvas=document.createElement('canvas');canvas.width=32;canvas.height=32;canvas.className='avatar';canvas.setAttribute('aria-hidden','true');
-  const ctx=canvas.getContext('2d');rect(ctx,0,0,32,32,'#e8efe0');person(ctx,16,27,fields.avatar?.color,hash(agentId)%2);node.replaceChildren(canvas);
+// Isolated local demonstration sprites also use the shared art definition.
+export function avatarSprite(fields={},_agentId='',pose={}){
+  const canvas=document.createElement('canvas');canvas.width=32;canvas.height=40;const ctx=canvas.getContext('2d'),look=resolveLook(fields.appearance??fields.avatar);drawLookPlaceholder(ctx,{x:16,y:38,scale:2});
+  if(look)void loadLookAssets().then(assets=>{ctx.clearRect(0,0,32,40);drawLook(ctx,look,assets.images,{x:16,y:38,scale:2,action:pose.walking?'walk':'idle',facing:pose.direction==='W'?'left':'right',still:true});}).catch(()=>{});return canvas;
 }
-// The world uses the same real basic avatar and palette, on a transparent sprite.
-export function avatarSprite(fields={},agentId='',pose={}){
-  const canvas=document.createElement('canvas');canvas.width=32;canvas.height=40;
-  const ctx=canvas.getContext('2d');if(!ctx)throw new Error('canvas_unavailable');
-  ctx.scale(2,2);person(ctx,8,18,fields.avatar?.color,hash(agentId)%2,false,pose);return canvas;
-}
-function hash(value) { return [...value].reduce((n,c)=>(n*31+c.charCodeAt(0))>>>0,7); }
 function building(ctx,x,y,w,h,glass=false) {
   rect(ctx,x+3,y+h-3,w,6,'#5b9b47');rect(ctx,x,y,w,h,'#304060');
   rect(ctx,x+2,y+2,w-4,h-4,'#d0d0c0');rect(ctx,x+3,y+2,w-6,10,'#f7f5e8');
@@ -66,7 +54,9 @@ export function courtyard(root,{agents=[],selectedId='',onSelect,compact=false}=
   for(const[x,y]of [[141,190],[174,190],[211,139],[230,116],[190,76],[106,131],[281,156]]){rect(ctx,x,y,3,3,'#4080b0');rect(ctx,x+1,y,1,1,'#60e8f0');}
   for(const[x,y]of [[6,6],[306,6],[6,188],[306,188],[139,188],[176,188]]){rect(ctx,x,y,8,10,'#304060');rect(ctx,x+1,y+1,6,7,'#d0d0c0');rect(ctx,x+1,y+1,6,2,'#f0f0e0');}
   const spots=[[155,165],[218,123],[103,127],[193,148],[157,83],[69,145]];
-  agents.slice(0,6).forEach((agent,i)=>{const p=agent.profile?.published||agent.profile?.draft||agent.profile||{};person(ctx,...spots[i],p.avatar?.color,hash(agent.agentId)%2,selectedId===agent.agentId);});
+  const background=document.createElement('canvas');background.width=320;background.height=208;background.getContext('2d').drawImage(canvas,0,0);
+  function paintPeople(assets){ctx.clearRect(0,0,320,208);ctx.drawImage(background,0,0);agents.slice(0,6).forEach((agent,i)=>{const p=agent.profile?.published||agent.profile||{},appearance=agent.appearance??agent.profile?.publishedAppearance??p.avatar,look=resolveLook(appearance),[x,y]=spots[i];if(selectedId===agent.agentId){ctx.strokeStyle='#efe6a2';ctx.strokeRect(x-10,y,20,3);}if(assets&&look)drawLook(ctx,look,assets.images,{x,y,still:true});else drawLookPlaceholder(ctx,{x,y});});}
+  paintPeople(null);void loadLookAssets().then(assets=>{if(root.firstChild===stage)paintPeople(assets);}).catch(()=>{});
   root.append(stage);
   const details=el('div','venue-details');details.setAttribute('aria-live','polite');
   const buttons=el('div','venue-buttons');buttons.setAttribute('aria-label','庭院场所');

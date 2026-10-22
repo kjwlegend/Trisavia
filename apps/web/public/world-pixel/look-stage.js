@@ -1,0 +1,19 @@
+import {el} from '../common.js';
+import {resolveLook,drawLook,drawLookPlaceholder} from './look.js';
+import {loadLookAssets} from './look-assets.js';
+import {nativeFrame} from './native-ui.js';
+export function createLookStage(){
+  const node=el('section','character-stage'),top=el('div','stage-title'),title=el('span','','角色预览'),status=el('span','stage-status'),scene=el('div','stage-scene'),canvas=el('canvas'),ground=el('div','stage-ground'),caption=el('div','stage-caption'),copy=el('div'),name=el('strong'),description=el('p'),controls=el('div','stage-action-controls');canvas.width=768;canvas.height=512;canvas.setAttribute('role','img');canvas.setAttribute('aria-label','完整人物预览');canvas.dataset.lookStage='';top.append(title,status);scene.append(canvas,ground);copy.append(name,description);caption.append(copy,controls);node.append(nativeFrame('lightWood'),top,scene,caption);
+  let appearance=null,dirty=false,active=false,visible=false,assets=null,action='idle',facing='right',raf=0,disposed=false,failed=false,loading=false;let worldReduced=false;const motion=matchMedia('(prefers-reduced-motion: reduce)');
+  const buttons=new Map();for(const [key,label]of [['idle','待机'],['walk','行走'],['turn','↔']]){const button=el('button','',label);button.type='button';button.dataset.previewAction=key;if(key==='turn')button.setAttribute('aria-label','切换人物朝向');button.addEventListener('click',()=>{if(key==='turn')facing=facing==='left'?'right':'left';else action=key;paint(performance.now());reconcile();});controls.append(button);buttons.set(key,button);}
+  function paint(time=0){const ctx=canvas.getContext('2d');ctx.clearRect(0,0,768,512);const look=resolveLook(appearance);if(assets&&look&&!failed)drawLook(ctx,look,assets.images,{x:384,y:310,scale:8,action,facing,elapsed:time,still:reduced()});else drawLookPlaceholder(ctx,{x:384,y:310,scale:8});}
+  const reduced=()=>motion.matches||worldReduced;
+  const animate=()=>active&&visible&&!document.hidden&&!reduced()&&!disposed&&assets&&!failed&&resolveLook(appearance);
+  function labels(){const look=resolveLook(appearance);for(const [key,button]of buttons)if(key!=='turn')button.setAttribute('aria-pressed',String(action===key));canvas.dataset.lookId=look?.key||'';status.textContent=!appearance?'尚未取得':failed?(dirty?'选择已保留':'已保存 · 图像暂不可用'):dirty?'预览中':'已保存';status.classList.toggle('previewing',dirty);description.textContent=failed?'形象素材暂时无法显示':look?`${look.label} · ${dirty?'尚未保存':'当前角色'}`:'暂无法显示';}
+  function frame(time){paint(time);if(animate())raf=requestAnimationFrame(frame);}
+  function reconcile(){cancelAnimationFrame(raf);raf=0;labels();paint(0);if(animate())raf=requestAnimationFrame(frame);if(active&&visible&&!assets&&!loading&&!failed)void load();}
+  async function load(){loading=true;try{assets=await loadLookAssets();failed=false;}catch{failed=true;}finally{loading=false;if(!disposed){retry.hidden=!failed;reconcile();}}}
+  const retry=el('button','stage-asset-retry','重试形象显示');retry.type='button';retry.hidden=true;retry.addEventListener('click',()=>{failed=false;retry.hidden=true;void load();});node.append(retry);
+  const observer=new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;reconcile();});observer.observe(node);document.addEventListener('visibilitychange',reconcile);motion.addEventListener('change',reconcile);const worldMotion=event=>{const next=Boolean(event.detail?.reducedMotion);if(next===worldReduced)return;worldReduced=next;reconcile();};document.addEventListener('world:state',worldMotion);
+  return{node,update(value,{displayName='',isDirty=false}={}){appearance=value;dirty=isDirty;name.textContent=displayName||'当前角色';reconcile();},active(value){active=value;reconcile();},dispose(){disposed=true;cancelAnimationFrame(raf);observer.disconnect();document.removeEventListener('visibilitychange',reconcile);motion.removeEventListener('change',reconcile);document.removeEventListener('world:state',worldMotion);}};
+}

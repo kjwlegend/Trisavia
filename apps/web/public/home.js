@@ -12,7 +12,7 @@ const accountNode=mountOwnerPanel();let hud=null,controller=null,renderer=null;
 const presentation=createOwnerPresentation(accountNode,{setTitle:value=>hud?.setAccountTitle(value),close:()=>hud?.close(),onChange:()=>controller?.notifyPresentation()});
 controller=createOwnerController(accountNode,{entryStore,isVisible:()=>hud?.isAccountOpen()||false,focusTitle:()=>hud?.focusAccountTitle(),onView:()=>hud?.setAccountTitle(controller?.getTitle()||'账户'),onLogout:()=>hud?.close(),confirmAction:(...args)=>presentation.confirm(...args)});controller.attachPresentation(presentation);
 const session=createSessionApi(controller);
-hud=createHud({session,accountNode,onLocateAgent:agentId=>renderer?.locateAgent(agentId),onOpenAccount:(mode,agentId)=>controller.open(mode,agentId),getAccountTitle:()=>controller.getTitle()});
+hud=createHud({session,accountNode,canLeaveAccount:()=>controller.leaveEditing(),onLocateAgent:agentId=>renderer?.locateAgent(agentId),onOpenAccount:(mode,agentId)=>controller.open(mode,agentId),getAccountTitle:()=>controller.getTitle()});
 renderer=initSceneRenderer({session,onSelectAgent:(agentId,origin)=>hud.openAccount('profile',agentId,origin)});
 const hadPrivateEntry=entryStore.pending;
 let entryRevision=0;

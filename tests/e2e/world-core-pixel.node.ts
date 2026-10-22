@@ -39,7 +39,7 @@ test('synthetic pixel town uses all native assets and real-shaped public facts w
 
   try{
    await page.goto(origin);await expect(page.locator('#world-canvas[data-rendering="pixel-town"]')).toBeVisible();await expect.poll(async()=>(await state(page))?.worldScene.avatars.length).toBe(3);
-   let value=await state(page);assert.equal(value.rendering.imageCount,19);assert.equal(data.images.size,19);assert.equal(value.camera.sourceWidth,768);assert.equal(value.camera.sourceHeight,512);assert.equal(value.worldScene.projectionVersion,'pixel-town-commons@1');assert.deepEqual(value.worldScene.avatars.map((row:any)=>[row.x,row.y]),[[264,136],[264,136],[504,376]]);assert.equal(value.actorCount,0);
+   let value=await state(page);assert.equal(value.rendering.imageCount,19);assert.equal([...data.images].filter(path=>path.startsWith('/assets/world-pixel/assets/')).length,19,'The original world image set remains complete beside the new native panel frames');assert.equal(value.camera.sourceWidth,768);assert.equal(value.camera.sourceHeight,512);assert.equal(value.worldScene.projectionVersion,'pixel-town-commons@1');assert.deepEqual(value.worldScene.avatars.map((row:any)=>[row.x,row.y]),[[264,136],[264,136],[504,376]]);assert.equal(value.actorCount,0);
    await expect(page.getByRole('navigation',{name:'世界功能'})).toBeVisible();for(const name of ['世界','个人','背包','信箱'])await expect(page.getByRole('button',{name,exact:true})).toBeVisible();
    await page.screenshot({path:resolve(out,`synthetic-${viewport.width}-fit-day.png`)});
    await page.getByRole('button',{name:'放大地图',exact:true}).click();assert.equal((await state(page)).camera.scale,2);await page.getByRole('button',{name:'放大地图',exact:true}).click();value=await state(page);assert.equal(value.camera.scale,3);

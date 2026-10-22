@@ -1,3 +1,4 @@
+import {APPEARANCE_VERSION,lookFor} from './world-pixel/look.js';
 function failure(code){const error=new Error(code);error.code=code;return error;}
 
 export const managerActions=new Set(['saveProfile','saveWorldAccess','saveDraft','publishProfile','join','profilePolicy','participation']);
@@ -27,7 +28,10 @@ export function managerInput(action,input){
   const fields=input.fields;if(!fields||typeof fields!=='object'||Array.isArray(fields)||Object.keys(fields).some(key=>!['displayName','avatar','bio','interests'].includes(key)))invalid();
   clean.fields={};
   if(fields.displayName!==undefined){if(typeof fields.displayName!=='string'||!fields.displayName.trim()||fields.displayName.length>60)invalid();clean.fields.displayName=fields.displayName;}
-  if(fields.avatar!==undefined){if(fields.avatar?.template!=='basic'||!['olive','cream','blue','coral'].includes(fields.avatar.color)||Object.keys(fields.avatar).some(key=>!['template','color'].includes(key)))invalid();clean.fields.avatar={template:'basic',color:fields.avatar.color};}
+  if(fields.avatar!==undefined){
+    if(fields.avatar?.lookId!==undefined){if(!lookFor(fields.avatar.lookId)||fields.avatar.catalogVersion!==APPEARANCE_VERSION||Object.keys(fields.avatar).some(key=>!['lookId','catalogVersion'].includes(key)))invalid();clean.fields.avatar={lookId:fields.avatar.lookId,catalogVersion:fields.avatar.catalogVersion};}
+    else{if(fields.avatar?.template!=='basic'||!['olive','cream','blue','coral'].includes(fields.avatar.color)||Object.keys(fields.avatar).some(key=>!['template','color'].includes(key)))invalid();clean.fields.avatar={template:'basic',color:fields.avatar.color};}
+  }
   if(fields.bio!==undefined){if(typeof fields.bio!=='string'||fields.bio.length>500)invalid();clean.fields.bio=fields.bio;}
   if(fields.interests!==undefined){if(!Array.isArray(fields.interests)||fields.interests.length>10||fields.interests.some(value=>typeof value!=='string'||!value.trim()||value.length>40))invalid();clean.fields.interests=[...fields.interests];}
   if(input.removeFields!==undefined){if(!Array.isArray(input.removeFields)||new Set(input.removeFields).size!==input.removeFields.length||input.removeFields.some(key=>!['bio','interests'].includes(key)||key in fields))invalid();clean.removeFields=[...input.removeFields];}

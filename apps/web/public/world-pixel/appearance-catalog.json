@@ -1,0 +1,1649 @@
+{
+  "version": "2026-10-21.appearance-v1.1",
+  "kind": "Finite native-art catalogue; visual keys only, not a WS01 API schema.",
+  "sourceCredit": {
+    "author": "Daniel Diggle",
+    "title": "Sunnyside World V2.1",
+    "officialUrl": "https://danieldiggle.itch.io/sunnyside",
+    "licenseEvidence": "asset-audit.md §2, observed 2026-10-21; no bundled LICENSE found; no package upload or PNG edits."
+  },
+  "images": {
+    "human_base_idle": {
+      "url": "assets/human-base-idle.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/Characters/Human/IDLE/base_idle_strip9.png",
+      "sha256": "fc4656a6355abc69d618ce31e0f3f2a66ac6d9b23b626640b556f0e8d5d29ac0",
+      "size": [
+        864,
+        64
+      ],
+      "bytes": 1117,
+      "sourcePolicy": "Existing frozen byte-identical world asset; no new copy."
+    },
+    "human_shorthair_idle": {
+      "url": "assets/human-shorthair-idle.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/Characters/Human/IDLE/shorthair_idle_strip9.png",
+      "sha256": "d85fc5899bb6bd1f067a0c3c65e3d8e03753de666097feccb9c559a7c0c4c940",
+      "size": [
+        864,
+        64
+      ],
+      "bytes": 613,
+      "sourcePolicy": "Existing frozen byte-identical world asset; no new copy."
+    },
+    "human_longhair_idle": {
+      "url": "assets/human-longhair-idle.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/Characters/Human/IDLE/longhair_idle_strip9.png",
+      "sha256": "915aca61cb44b23c1d249cc8ab49999ff5472f1348174b73efbe719ce2ae7e91",
+      "size": [
+        864,
+        64
+      ],
+      "bytes": 1417,
+      "sourcePolicy": "Existing frozen byte-identical world asset; no new copy."
+    },
+    "human_curlyhair_idle": {
+      "url": "assets/human-curlyhair-idle.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/Characters/Human/IDLE/curlyhair_idle_strip9.png",
+      "sha256": "6cfa97fe69741c9d46ba8565b3fc4ed135dd18f5b2481a21f4fb263e12ada674",
+      "size": [
+        864,
+        64
+      ],
+      "bytes": 1306,
+      "sourcePolicy": "Existing frozen byte-identical world asset; no new copy."
+    },
+    "human_bowlhair_idle": {
+      "url": "assets/human-bowlhair-idle.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/Characters/Human/IDLE/bowlhair_idle_strip9.png",
+      "sha256": "84c47c8b115a1e721b4c74da01504f98d90bc7684cc9151f803a27350ea7d450",
+      "size": [
+        864,
+        64
+      ],
+      "bytes": 1244,
+      "sourcePolicy": "Existing frozen byte-identical world asset; no new copy."
+    },
+    "human_mophair_idle": {
+      "url": "assets/human-mophair-idle.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/Characters/Human/IDLE/mophair_idle_strip9.png",
+      "sha256": "4c94241451d3d0ba5964cba5124fc48045c68972bbdd31d557b08bb6b20ebdf4",
+      "size": [
+        864,
+        64
+      ],
+      "bytes": 1139,
+      "sourcePolicy": "Existing frozen byte-identical world asset; no new copy."
+    },
+    "human_spikeyhair_idle": {
+      "url": "assets/human-spikeyhair-idle.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/Characters/Human/IDLE/spikeyhair_idle_strip9.png",
+      "sha256": "21ce30395e8e3ceedccbd039e3a744a6c1e34b4734f7826126edde98ffdefb7f",
+      "size": [
+        864,
+        64
+      ],
+      "bytes": 980,
+      "sourcePolicy": "Existing frozen byte-identical world asset; no new copy."
+    },
+    "human_base_walk": {
+      "url": "assets/human-base-walk.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/Characters/Human/WALKING/base_walk_strip8.png",
+      "sha256": "454c1172cebb5417acc7a59c9b711b42ff5e91d315bb1ab3ec11526c7a977110",
+      "size": [
+        768,
+        64
+      ],
+      "bytes": 1374,
+      "sourcePolicy": "Existing frozen byte-identical world asset; no new copy."
+    },
+    "human_shorthair_walk": {
+      "url": "assets/human-shorthair-walk.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/Characters/Human/WALKING/shorthair_walk_strip8.png",
+      "sha256": "9ca2c373d21f78f2e2221af2357def1595ff7f95389d18fe81242803ca6a86d2",
+      "size": [
+        768,
+        64
+      ],
+      "bytes": 607,
+      "sourcePolicy": "Existing frozen byte-identical world asset; no new copy."
+    },
+    "human_longhair_walk": {
+      "url": "assets/human-longhair-walk.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/Characters/Human/WALKING/longhair_walk_strip8.png",
+      "sha256": "e99a74d1c9fda8758a32db528718a63509333fb55aa4cfb5a9689292b370f11e",
+      "size": [
+        768,
+        64
+      ],
+      "bytes": 1319,
+      "sourcePolicy": "Existing frozen byte-identical world asset; no new copy."
+    },
+    "human_curlyhair_walk": {
+      "url": "assets/human-curlyhair-walk.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/Characters/Human/WALKING/curlyhair_walk_strip8.png",
+      "sha256": "f634a345b40459053cd1c5a7bc52dc99a7b53557057b5232d852cde2a1aad3f7",
+      "size": [
+        768,
+        64
+      ],
+      "bytes": 1372,
+      "sourcePolicy": "Existing frozen byte-identical world asset; no new copy."
+    },
+    "human_bowlhair_walk": {
+      "url": "assets/human-bowlhair-walk.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/Characters/Human/WALKING/bowlhair_walk_strip8.png",
+      "sha256": "dbf19ba50cca1fae6f3fe7dd1119a491df9d7878cdadfe4b1e47090cb41d105f",
+      "size": [
+        768,
+        64
+      ],
+      "bytes": 1211,
+      "sourcePolicy": "Existing frozen byte-identical world asset; no new copy."
+    },
+    "human_mophair_walk": {
+      "url": "assets/human-mophair-walk.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/Characters/Human/WALKING/mophair_walk_strip8.png",
+      "sha256": "c98d3d57d72cc5d5303d9fb4c85c6e77d1c223ed6d7ef58c445295871721cbaa",
+      "size": [
+        768,
+        64
+      ],
+      "bytes": 1033,
+      "sourcePolicy": "Existing frozen byte-identical world asset; no new copy."
+    },
+    "human_spikeyhair_walk": {
+      "url": "assets/human-spikeyhair-walk.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/Characters/Human/WALKING/spikeyhair_walk_strip8.png",
+      "sha256": "21a6aa20b8f160a21c75f29f485a9a948beb678ac6e2029462a066e509f66ca1",
+      "size": [
+        768,
+        64
+      ],
+      "bytes": 918,
+      "sourcePolicy": "Existing frozen byte-identical world asset; no new copy."
+    },
+    "ui_w_tl": {
+      "url": "panel-assets/w_box_9slice_tl.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/w_box_9slice_tl.png",
+      "sha256": "8a41281aed501b53af7bbd63c156cf607d68eab2e772b2cde64c98c82bfd61d7",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 95,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_w_tc": {
+      "url": "panel-assets/w_box_9slice_tc.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/w_box_9slice_tc.png",
+      "sha256": "101580ca5e6d39a67fcbcd5b008ebcbaca96132e117b52c87b5801f80469dc32",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 88,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_w_tr": {
+      "url": "panel-assets/w_box_9slice_tr.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/w_box_9slice_tr.png",
+      "sha256": "59767cc618b642e482f99143f95b557f1f6140f7982d7446dbf2ed7a292506cc",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 105,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_w_lc": {
+      "url": "panel-assets/w_box_9slice_lc.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/w_box_9slice_lc.png",
+      "sha256": "9f77a907ca2fa235242f9bad29f8c256a0df56ab644b701a33659610b41e4da6",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 84,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_w_c": {
+      "url": "panel-assets/w_box_9slice_c.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/w_box_9slice_c.png",
+      "sha256": "560aa8e811b1a82347c43dd5980e7177cbffd4fa3dc61fb8efd5d08ba6ed9e90",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 80,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_w_rc": {
+      "url": "panel-assets/w_box_9slice_rc.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/w_box_9slice_rc.png",
+      "sha256": "57fb7195393ce6018c2462894969e54857b5a1a3b4c989c2e30527a10fd79dcf",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 84,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_w_bl": {
+      "url": "panel-assets/w_box_9slice_bl.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/w_box_9slice_bl.png",
+      "sha256": "5c8f009692bdf9877fe8c844e3c15429b8f86f65e03ff02a9d71952d620dadb5",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 95,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_w_bc": {
+      "url": "panel-assets/w_box_9slice_bc.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/w_box_9slice_bc.png",
+      "sha256": "77a2c8f307dc53fcf3fc01c7b6168260fc6c4a01a25b23777fec690f00ba0a6a",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 87,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_w_br": {
+      "url": "panel-assets/w_box_9slice_br.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/w_box_9slice_br.png",
+      "sha256": "8745f67104076756e5f7a64bedc05e2ccdf6dfdd23a923d82c8ec3697e63b0c2",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 94,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_lt_tl": {
+      "url": "panel-assets/lt_box_9slice_tl.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/lt_box_9slice_tl.png",
+      "sha256": "90f407692ebf1d43cf1db280bec146f8fbdaf0f1fe74b120f217e956076955c2",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 95,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_lt_tc": {
+      "url": "panel-assets/lt_box_9slice_tc.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/lt_box_9slice_tc.png",
+      "sha256": "18baf4268da473cc36529b8e9c0680471f64425950c5b70abb085837f9f2e30b",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 88,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_lt_tr": {
+      "url": "panel-assets/lt_box_9slice_tr.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/lt_box_9slice_tr.png",
+      "sha256": "a1fd6e8fb6eff5a04a2f6a8dd00dd49e530d70b95ed3f0ac057751ba6c54b3ea",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 100,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_lt_lc": {
+      "url": "panel-assets/lt_box_9slice_lc.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/lt_box_9slice_lc.png",
+      "sha256": "15f25f665d3d111af2e8aa6ae9117ace4eb613ea68abaa65fbf6522c52adfb0d",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 87,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_lt_c": {
+      "url": "panel-assets/lt_box_9slice_c.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/lt_box_9slice_c.png",
+      "sha256": "6e28fc8be70663cfe10fa4ea92310249e1adda58c9bb506ae4f5f5e0dfdafc0d",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 80,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_lt_rc": {
+      "url": "panel-assets/lt_box_9slice_rc.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/lt_box_9slice_rc.png",
+      "sha256": "6e84d45cd0933c705920b75d289ce4376b7af2f6a0195aca7ceae38bd4c59089",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 87,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_lt_bl": {
+      "url": "panel-assets/lt_box_9slice_bl.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/lt_box_9slice_bl.png",
+      "sha256": "373ca8b3480275713b6410e6c6bf847c2551cf8e2d438ab6f207c648f9e290f9",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 97,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_lt_bc": {
+      "url": "panel-assets/lt_box_9slice_bc.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/lt_box_9slice_bc.png",
+      "sha256": "16a7cb8208ddff806e41fc81fb17d4b3923bf9f03588c78c7987579299f9bb16",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 86,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_lt_br": {
+      "url": "panel-assets/lt_box_9slice_br.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/lt_box_9slice_br.png",
+      "sha256": "c4d8664222a143ced374625a07dfcc4aac20bf1c4dfeecacc0f82ed001f16620",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 97,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_dt_tl": {
+      "url": "panel-assets/dt_box_9slice_tl.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/dt_box_9slice_tl.png",
+      "sha256": "fda7eb7139b3e1cdc2e5c13ab3496dca35755c3d7f2ca685cda72faa96841238",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 95,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_dt_tc": {
+      "url": "panel-assets/dt_box_9slice_tc.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/dt_box_9slice_tc.png",
+      "sha256": "cdbf9f9d6fb395620f8467d16da44f3142f63a0434b6771a8d1c015d6512565f",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 87,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_dt_tr": {
+      "url": "panel-assets/dt_box_9slice_tr.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/dt_box_9slice_tr.png",
+      "sha256": "4150a51f7d610d4e5b0568aa807886471639a9b733513cf6921b477b6a716752",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 102,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_dt_lc": {
+      "url": "panel-assets/dt_box_9slice_lc.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/dt_box_9slice_lc.png",
+      "sha256": "ebfad3fd950a63381d4ae86d8cac1ed6de17cf735320e9e200242e97ff4aa220",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 87,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_dt_c": {
+      "url": "panel-assets/dt_box_9slice_c.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/dt_box_9slice_c.png",
+      "sha256": "7a9836349ebb69333f9773a67a84f798e67710a7f88d2fda648a75f5abc277c1",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 80,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_dt_rc": {
+      "url": "panel-assets/dt_box_9slice_rc.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/dt_box_9slice_rc.png",
+      "sha256": "1769eba88f255b40d70ed4649499faa8637274e708b0d41fbb5f81780d81f059",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 87,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_dt_bl": {
+      "url": "panel-assets/dt_box_9slice_bl.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/dt_box_9slice_bl.png",
+      "sha256": "47c7cfa4471cfa17ee2ee95d58633de4f2c73d6def071f30fc75fde709f96244",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 97,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_dt_bc": {
+      "url": "panel-assets/dt_box_9slice_bc.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/dt_box_9slice_bc.png",
+      "sha256": "6ebb2f08844acec9b1f2bd136fd75bfe0e3d739d8969735fe6288e8f65a50ebe",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 88,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_dt_br": {
+      "url": "panel-assets/dt_box_9slice_br.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/9slice_box_white/dt_box_9slice_br.png",
+      "sha256": "2aa36e052a93e2561d59ad4f46cca9cd93e23531f5de5f0820e805f2146334f8",
+      "size": [
+        3,
+        3
+      ],
+      "bytes": 97,
+      "alphaBounds": [
+        0,
+        0,
+        3,
+        3
+      ]
+    },
+    "ui_confirm": {
+      "url": "panel-assets/confirm.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/confirm.png",
+      "sha256": "ef71a343dbb21630ccffc4f9730c3f02a99dfaf0e9edbd98c154b69b38ce5f98",
+      "size": [
+        12,
+        11
+      ],
+      "bytes": 208,
+      "alphaBounds": [
+        0,
+        0,
+        12,
+        11
+      ]
+    },
+    "ui_cancel": {
+      "url": "panel-assets/cancel.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/cancel.png",
+      "sha256": "99f8a84309c63968c43668dfa5f59e7bf616fe652b90baedce39ee7347de2e0f",
+      "size": [
+        11,
+        11
+      ],
+      "bytes": 240,
+      "alphaBounds": [
+        0,
+        0,
+        11,
+        11
+      ]
+    },
+    "ui_arrowLeft": {
+      "url": "panel-assets/arrow_left.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/arrow_left.png",
+      "sha256": "10259670cfe440f8ce866d26ddd3c46e6eb3c522459cc3beec2b2810c1782cac",
+      "size": [
+        11,
+        12
+      ],
+      "bytes": 216,
+      "alphaBounds": [
+        0,
+        0,
+        11,
+        12
+      ]
+    },
+    "ui_arrowRight": {
+      "url": "panel-assets/arrow_right.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/arrow_right.png",
+      "sha256": "385b4bc2b991dc99aecf53e1bd5275471c40e08c19323345d616877790c8b8a3",
+      "size": [
+        11,
+        12
+      ],
+      "bytes": 220,
+      "alphaBounds": [
+        0,
+        0,
+        11,
+        12
+      ]
+    },
+    "ui_arrowUp": {
+      "url": "panel-assets/arrow_up.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/arrow_up.png",
+      "sha256": "0e3b9e94708c5bd37d3629a8501628474e7b5ccf93c3671bc8b4476f4b3d80a0",
+      "size": [
+        10,
+        13
+      ],
+      "bytes": 233,
+      "alphaBounds": [
+        0,
+        0,
+        10,
+        13
+      ]
+    },
+    "ui_cursorArrow": {
+      "url": "panel-assets/cursor_01.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/cursor_01.png",
+      "sha256": "345a2f53fc8c99e578388ac886cd4a81f73db5e1d91a5eb5f0b636f89354f7e9",
+      "size": [
+        11,
+        19
+      ],
+      "bytes": 282,
+      "alphaBounds": [
+        0,
+        0,
+        11,
+        19
+      ]
+    },
+    "ui_cursorAlternate": {
+      "url": "panel-assets/cursor_02.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/cursor_02.png",
+      "sha256": "6d38a90e582c71f0b74b78cd9782fcccf1cf5e44fac0c1aa0f7facda1d39e08c",
+      "size": [
+        11,
+        14
+      ],
+      "bytes": 266,
+      "alphaBounds": [
+        0,
+        0,
+        11,
+        14
+      ]
+    },
+    "ui_selectionTopLeft": {
+      "url": "panel-assets/selectbox_tl.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/selectbox_tl.png",
+      "sha256": "d1f4eb7d50f2613813e8fbc980b21c2de6cc7407fa19a1725912c4085d9ecf55",
+      "size": [
+        8,
+        9
+      ],
+      "bytes": 153,
+      "alphaBounds": [
+        0,
+        0,
+        8,
+        9
+      ]
+    },
+    "ui_selectionTopRight": {
+      "url": "panel-assets/selectbox_tr.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/selectbox_tr.png",
+      "sha256": "c9ce7fdda49d0bd0fc64a7d03cc1cdf58c553b92666175a3d5af8ff2a5aede13",
+      "size": [
+        8,
+        9
+      ],
+      "bytes": 166,
+      "alphaBounds": [
+        0,
+        0,
+        8,
+        9
+      ]
+    },
+    "ui_selectionBottomLeft": {
+      "url": "panel-assets/selectbox_bl.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/selectbox_bl.png",
+      "sha256": "8fada879411a435a8c072a230db6150490fae77ad37e7e9d06590b69188307c8",
+      "size": [
+        8,
+        9
+      ],
+      "bytes": 142,
+      "alphaBounds": [
+        0,
+        0,
+        8,
+        9
+      ]
+    },
+    "ui_selectionBottomRight": {
+      "url": "panel-assets/selectbox_br.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/selectbox_br.png",
+      "sha256": "5980474d74fe771fb01b801d38cb950fe2b087bf400560f24d85eb99b2026aa0",
+      "size": [
+        8,
+        9
+      ],
+      "bytes": 135,
+      "alphaBounds": [
+        0,
+        0,
+        8,
+        9
+      ]
+    },
+    "ui_labelLeft": {
+      "url": "panel-assets/label_left.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/label_left.png",
+      "sha256": "bdf3d7df452ad3285c605dc59f716a39316768f9a8b971ac6ffa7a1bf5f2d59f",
+      "size": [
+        4,
+        13
+      ],
+      "bytes": 121,
+      "alphaBounds": [
+        0,
+        0,
+        4,
+        13
+      ]
+    },
+    "ui_labelMiddle": {
+      "url": "panel-assets/label_middle.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/label_middle.png",
+      "sha256": "cfe4b59c607d9e7d09e8826541d934c54dfe7ba36c31060e971f0317d4b3c6b8",
+      "size": [
+        16,
+        13
+      ],
+      "bytes": 105,
+      "alphaBounds": [
+        0,
+        0,
+        16,
+        13
+      ]
+    },
+    "ui_labelRight": {
+      "url": "panel-assets/label_right.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/label_right.png",
+      "sha256": "0bdfb89aca2b53facb776a1fffd3335c7b1e02a44239e4b7b747d3fda9ad3e64",
+      "size": [
+        4,
+        13
+      ],
+      "bytes": 137,
+      "alphaBounds": [
+        0,
+        0,
+        4,
+        13
+      ]
+    },
+    "ui_indicator": {
+      "url": "panel-assets/indicator.png",
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/UI/indicator.png",
+      "sha256": "dddabe49ee165e582deaea7f96219a9a98825a7efc9fa9649085788581a1cb10",
+      "size": [
+        8,
+        6
+      ],
+      "bytes": 140,
+      "alphaBounds": [
+        0,
+        0,
+        8,
+        6
+      ]
+    }
+  },
+  "shared": {
+    "frameSize": [
+      96,
+      64
+    ],
+    "groundAnchor": [
+      48,
+      39
+    ],
+    "renderAnchor": [
+      48,
+      39
+    ],
+    "engineeringOrigin": [
+      48,
+      64
+    ],
+    "layerOrder": [
+      "base",
+      "hair"
+    ],
+    "nativeFacing": "right",
+    "mirrorPolicy": "Mirror the complete base+hair composition around x=48, ground y=39; all layers share action/frame/time.",
+    "verticalMovePolicy": "Keep last horizontal facing; no verified native up/down human set in this export.",
+    "trimPolicy": "Keep original 96x64 canvas; do not centre each frame by alpha bounds.",
+    "sourceScalePolicy": "Integer source-pixel scaling with imageSmoothingEnabled=false. For chooser show whole character including feet, not a hair-only swatch.",
+    "previewCrop": {
+      "rect": [
+        36,
+        16,
+        28,
+        28
+      ],
+      "meaning": "Optional display viewport around the full visible person; preserve frame offsets and ground anchor, never store this as world coordinates."
+    },
+    "clips": {
+      "idle": {
+        "frameSize": [
+          96,
+          64
+        ],
+        "frameCount": 9,
+        "frames": [
+          {
+            "index": 0,
+            "rect": [
+              0,
+              0,
+              96,
+              64
+            ],
+            "durationMs": 125
+          },
+          {
+            "index": 1,
+            "rect": [
+              96,
+              0,
+              96,
+              64
+            ],
+            "durationMs": 125
+          },
+          {
+            "index": 2,
+            "rect": [
+              192,
+              0,
+              96,
+              64
+            ],
+            "durationMs": 125
+          },
+          {
+            "index": 3,
+            "rect": [
+              288,
+              0,
+              96,
+              64
+            ],
+            "durationMs": 125
+          },
+          {
+            "index": 4,
+            "rect": [
+              384,
+              0,
+              96,
+              64
+            ],
+            "durationMs": 125
+          },
+          {
+            "index": 5,
+            "rect": [
+              480,
+              0,
+              96,
+              64
+            ],
+            "durationMs": 125
+          },
+          {
+            "index": 6,
+            "rect": [
+              576,
+              0,
+              96,
+              64
+            ],
+            "durationMs": 125
+          },
+          {
+            "index": 7,
+            "rect": [
+              672,
+              0,
+              96,
+              64
+            ],
+            "durationMs": 125
+          },
+          {
+            "index": 8,
+            "rect": [
+              768,
+              0,
+              96,
+              64
+            ],
+            "durationMs": 125
+          }
+        ],
+        "loop": true,
+        "timingMeaning": "Preview timing choice, not a business activity or movement rate."
+      },
+      "walk": {
+        "frameSize": [
+          96,
+          64
+        ],
+        "frameCount": 8,
+        "frames": [
+          {
+            "index": 0,
+            "rect": [
+              0,
+              0,
+              96,
+              64
+            ],
+            "durationMs": 100
+          },
+          {
+            "index": 1,
+            "rect": [
+              96,
+              0,
+              96,
+              64
+            ],
+            "durationMs": 100
+          },
+          {
+            "index": 2,
+            "rect": [
+              192,
+              0,
+              96,
+              64
+            ],
+            "durationMs": 100
+          },
+          {
+            "index": 3,
+            "rect": [
+              288,
+              0,
+              96,
+              64
+            ],
+            "durationMs": 100
+          },
+          {
+            "index": 4,
+            "rect": [
+              384,
+              0,
+              96,
+              64
+            ],
+            "durationMs": 100
+          },
+          {
+            "index": 5,
+            "rect": [
+              480,
+              0,
+              96,
+              64
+            ],
+            "durationMs": 100
+          },
+          {
+            "index": 6,
+            "rect": [
+              576,
+              0,
+              96,
+              64
+            ],
+            "durationMs": 100
+          },
+          {
+            "index": 7,
+            "rect": [
+              672,
+              0,
+              96,
+              64
+            ],
+            "durationMs": 100
+          }
+        ],
+        "loop": true,
+        "timingMeaning": "Preview timing choice, not a business activity or movement rate."
+      }
+    }
+  },
+  "appearances": [
+    {
+      "key": "sunnyside-human-shorthair",
+      "label": "短发",
+      "nativeHairKey": "shorthair",
+      "sourceHairName": "Short hair",
+      "baseKey": "base",
+      "nativeColors": true,
+      "layers": [
+        "base",
+        "hair"
+      ],
+      "groundAnchor": [
+        48,
+        39
+      ],
+      "clips": {
+        "idle": {
+          "sharedClip": "idle",
+          "layers": [
+            {
+              "role": "base",
+              "imageKey": "human_base_idle"
+            },
+            {
+              "role": "hair",
+              "imageKey": "human_shorthair_idle"
+            }
+          ],
+          "synchronization": "Use one common frame index for both images."
+        },
+        "walk": {
+          "sharedClip": "walk",
+          "layers": [
+            {
+              "role": "base",
+              "imageKey": "human_base_walk"
+            },
+            {
+              "role": "hair",
+              "imageKey": "human_shorthair_walk"
+            }
+          ],
+          "synchronization": "Use one common frame index for both images."
+        }
+      },
+      "scope": "Complete original base + one original hair. Labels are display names; no new clothing, skin palette or equipment is implied."
+    },
+    {
+      "key": "sunnyside-human-longhair",
+      "label": "长发",
+      "nativeHairKey": "longhair",
+      "sourceHairName": "Long hair",
+      "baseKey": "base",
+      "nativeColors": true,
+      "layers": [
+        "base",
+        "hair"
+      ],
+      "groundAnchor": [
+        48,
+        39
+      ],
+      "clips": {
+        "idle": {
+          "sharedClip": "idle",
+          "layers": [
+            {
+              "role": "base",
+              "imageKey": "human_base_idle"
+            },
+            {
+              "role": "hair",
+              "imageKey": "human_longhair_idle"
+            }
+          ],
+          "synchronization": "Use one common frame index for both images."
+        },
+        "walk": {
+          "sharedClip": "walk",
+          "layers": [
+            {
+              "role": "base",
+              "imageKey": "human_base_walk"
+            },
+            {
+              "role": "hair",
+              "imageKey": "human_longhair_walk"
+            }
+          ],
+          "synchronization": "Use one common frame index for both images."
+        }
+      },
+      "scope": "Complete original base + one original hair. Labels are display names; no new clothing, skin palette or equipment is implied."
+    },
+    {
+      "key": "sunnyside-human-curlyhair",
+      "label": "卷发",
+      "nativeHairKey": "curlyhair",
+      "sourceHairName": "Curly hair",
+      "baseKey": "base",
+      "nativeColors": true,
+      "layers": [
+        "base",
+        "hair"
+      ],
+      "groundAnchor": [
+        48,
+        39
+      ],
+      "clips": {
+        "idle": {
+          "sharedClip": "idle",
+          "layers": [
+            {
+              "role": "base",
+              "imageKey": "human_base_idle"
+            },
+            {
+              "role": "hair",
+              "imageKey": "human_curlyhair_idle"
+            }
+          ],
+          "synchronization": "Use one common frame index for both images."
+        },
+        "walk": {
+          "sharedClip": "walk",
+          "layers": [
+            {
+              "role": "base",
+              "imageKey": "human_base_walk"
+            },
+            {
+              "role": "hair",
+              "imageKey": "human_curlyhair_walk"
+            }
+          ],
+          "synchronization": "Use one common frame index for both images."
+        }
+      },
+      "scope": "Complete original base + one original hair. Labels are display names; no new clothing, skin palette or equipment is implied."
+    },
+    {
+      "key": "sunnyside-human-bowlhair",
+      "label": "齐刘海",
+      "nativeHairKey": "bowlhair",
+      "sourceHairName": "Bowl cut",
+      "baseKey": "base",
+      "nativeColors": true,
+      "layers": [
+        "base",
+        "hair"
+      ],
+      "groundAnchor": [
+        48,
+        39
+      ],
+      "clips": {
+        "idle": {
+          "sharedClip": "idle",
+          "layers": [
+            {
+              "role": "base",
+              "imageKey": "human_base_idle"
+            },
+            {
+              "role": "hair",
+              "imageKey": "human_bowlhair_idle"
+            }
+          ],
+          "synchronization": "Use one common frame index for both images."
+        },
+        "walk": {
+          "sharedClip": "walk",
+          "layers": [
+            {
+              "role": "base",
+              "imageKey": "human_base_walk"
+            },
+            {
+              "role": "hair",
+              "imageKey": "human_bowlhair_walk"
+            }
+          ],
+          "synchronization": "Use one common frame index for both images."
+        }
+      },
+      "scope": "Complete original base + one original hair. Labels are display names; no new clothing, skin palette or equipment is implied."
+    },
+    {
+      "key": "sunnyside-human-mophair",
+      "label": "蓬松发",
+      "nativeHairKey": "mophair",
+      "sourceHairName": "Mop hair",
+      "baseKey": "base",
+      "nativeColors": true,
+      "layers": [
+        "base",
+        "hair"
+      ],
+      "groundAnchor": [
+        48,
+        39
+      ],
+      "clips": {
+        "idle": {
+          "sharedClip": "idle",
+          "layers": [
+            {
+              "role": "base",
+              "imageKey": "human_base_idle"
+            },
+            {
+              "role": "hair",
+              "imageKey": "human_mophair_idle"
+            }
+          ],
+          "synchronization": "Use one common frame index for both images."
+        },
+        "walk": {
+          "sharedClip": "walk",
+          "layers": [
+            {
+              "role": "base",
+              "imageKey": "human_base_walk"
+            },
+            {
+              "role": "hair",
+              "imageKey": "human_mophair_walk"
+            }
+          ],
+          "synchronization": "Use one common frame index for both images."
+        }
+      },
+      "scope": "Complete original base + one original hair. Labels are display names; no new clothing, skin palette or equipment is implied."
+    },
+    {
+      "key": "sunnyside-human-spikeyhair",
+      "label": "尖发",
+      "nativeHairKey": "spikeyhair",
+      "sourceHairName": "Spiky hair",
+      "baseKey": "base",
+      "nativeColors": true,
+      "layers": [
+        "base",
+        "hair"
+      ],
+      "groundAnchor": [
+        48,
+        39
+      ],
+      "clips": {
+        "idle": {
+          "sharedClip": "idle",
+          "layers": [
+            {
+              "role": "base",
+              "imageKey": "human_base_idle"
+            },
+            {
+              "role": "hair",
+              "imageKey": "human_spikeyhair_idle"
+            }
+          ],
+          "synchronization": "Use one common frame index for both images."
+        },
+        "walk": {
+          "sharedClip": "walk",
+          "layers": [
+            {
+              "role": "base",
+              "imageKey": "human_base_walk"
+            },
+            {
+              "role": "hair",
+              "imageKey": "human_spikeyhair_walk"
+            }
+          ],
+          "synchronization": "Use one common frame index for both images."
+        }
+      },
+      "scope": "Complete original base + one original hair. Labels are display names; no new clothing, skin palette or equipment is implied."
+    }
+  ],
+  "ui": {
+    "nineSlice": {
+      "white": {
+        "label": "原生白边框",
+        "pieces": {
+          "tl": "ui_w_tl",
+          "tc": "ui_w_tc",
+          "tr": "ui_w_tr",
+          "lc": "ui_w_lc",
+          "c": "ui_w_c",
+          "rc": "ui_w_rc",
+          "bl": "ui_w_bl",
+          "bc": "ui_w_bc",
+          "br": "ui_w_br"
+        },
+        "sourcePieceSize": [
+          3,
+          3
+        ],
+        "sourcePixelCssSize": 3,
+        "cornerCssSize": [
+          9,
+          9
+        ],
+        "centerColor": "#c0cbdc",
+        "rimColor": "#ffffff",
+        "outlineColor": "#181425",
+        "gridOrder": [
+          [
+            "tl",
+            "tc",
+            "tr"
+          ],
+          [
+            "lc",
+            "c",
+            "rc"
+          ],
+          [
+            "bl",
+            "bc",
+            "br"
+          ]
+        ],
+        "cssGridTemplate": "9px minmax(0, 1fr) 9px / 9px minmax(0, 1fr) 9px",
+        "scalePolicy": "Corners fixed at 9x9 CSS px; top/bottom extend horizontally, left/right vertically; uniform centre fills. image-rendering:pixelated. Do not scale the whole composed panel.",
+        "use": "Native frame style only; does not add appearance colour options."
+      },
+      "lightWood": {
+        "label": "原生浅木框",
+        "pieces": {
+          "tl": "ui_lt_tl",
+          "tc": "ui_lt_tc",
+          "tr": "ui_lt_tr",
+          "lc": "ui_lt_lc",
+          "c": "ui_lt_c",
+          "rc": "ui_lt_rc",
+          "bl": "ui_lt_bl",
+          "bc": "ui_lt_bc",
+          "br": "ui_lt_br"
+        },
+        "sourcePieceSize": [
+          3,
+          3
+        ],
+        "sourcePixelCssSize": 3,
+        "cornerCssSize": [
+          9,
+          9
+        ],
+        "centerColor": "#c28569",
+        "rimColor": "#ead4aa",
+        "outlineColor": "#181425",
+        "gridOrder": [
+          [
+            "tl",
+            "tc",
+            "tr"
+          ],
+          [
+            "lc",
+            "c",
+            "rc"
+          ],
+          [
+            "bl",
+            "bc",
+            "br"
+          ]
+        ],
+        "cssGridTemplate": "9px minmax(0, 1fr) 9px / 9px minmax(0, 1fr) 9px",
+        "scalePolicy": "Corners fixed at 9x9 CSS px; top/bottom extend horizontally, left/right vertically; uniform centre fills. image-rendering:pixelated. Do not scale the whole composed panel.",
+        "use": "Native frame style only; does not add appearance colour options."
+      },
+      "darkWood": {
+        "label": "原生深木框",
+        "pieces": {
+          "tl": "ui_dt_tl",
+          "tc": "ui_dt_tc",
+          "tr": "ui_dt_tr",
+          "lc": "ui_dt_lc",
+          "c": "ui_dt_c",
+          "rc": "ui_dt_rc",
+          "bl": "ui_dt_bl",
+          "bc": "ui_dt_bc",
+          "br": "ui_dt_br"
+        },
+        "sourcePieceSize": [
+          3,
+          3
+        ],
+        "sourcePixelCssSize": 3,
+        "cornerCssSize": [
+          9,
+          9
+        ],
+        "centerColor": "#945542",
+        "rimColor": "#e4a672",
+        "outlineColor": "#181425",
+        "gridOrder": [
+          [
+            "tl",
+            "tc",
+            "tr"
+          ],
+          [
+            "lc",
+            "c",
+            "rc"
+          ],
+          [
+            "bl",
+            "bc",
+            "br"
+          ]
+        ],
+        "cssGridTemplate": "9px minmax(0, 1fr) 9px / 9px minmax(0, 1fr) 9px",
+        "scalePolicy": "Corners fixed at 9x9 CSS px; top/bottom extend horizontally, left/right vertically; uniform centre fills. image-rendering:pixelated. Do not scale the whole composed panel.",
+        "use": "Native frame style only; does not add appearance colour options."
+      }
+    },
+    "defaultPanel": "lightWood",
+    "icons": {
+      "confirm": "ui_confirm",
+      "cancel": "ui_cancel",
+      "arrowLeft": "ui_arrowLeft",
+      "arrowRight": "ui_arrowRight",
+      "arrowUp": "ui_arrowUp",
+      "cursorArrow": "ui_cursorArrow",
+      "cursorAlternate": "ui_cursorAlternate",
+      "selectionTopLeft": "ui_selectionTopLeft",
+      "selectionTopRight": "ui_selectionTopRight",
+      "selectionBottomLeft": "ui_selectionBottomLeft",
+      "selectionBottomRight": "ui_selectionBottomRight",
+      "labelLeft": "ui_labelLeft",
+      "labelMiddle": "ui_labelMiddle",
+      "labelRight": "ui_labelRight",
+      "indicator": "ui_indicator"
+    },
+    "buttons": {
+      "nativeShell": "lightWood",
+      "positiveIcon": "ui_confirm",
+      "negativeIcon": "ui_cancel",
+      "independentCompleteButtonStateStripFound": false,
+      "note": "Use the native nine-slice as button shell with normal text and optional confirm/cancel icons. Do not label unrelated tools as button art. No native pressed/hover strip is claimed."
+    },
+    "selection": {
+      "cornerKeys": [
+        "ui_selectionTopLeft",
+        "ui_selectionTopRight",
+        "ui_selectionBottomLeft",
+        "ui_selectionBottomRight"
+      ],
+      "sourceCornerSize": [
+        8,
+        9
+      ],
+      "recommendedScale": 3,
+      "usage": "Place four native corners around the complete character cell; retain a keyboard-visible focus and readable label."
+    },
+    "labelBar": {
+      "left": "ui_labelLeft",
+      "middle": "ui_labelMiddle",
+      "right": "ui_labelRight",
+      "sourceHeight": 13,
+      "recommendedScale": 3,
+      "middlePolicy": "Repeat/stretch middle only horizontally; keep endcaps at 4x13 native pixels."
+    },
+    "cursor": {
+      "imageKey": "ui_cursorArrow",
+      "sourceSize": [
+        11,
+        19
+      ],
+      "hotspot": [
+        0,
+        0
+      ],
+      "cssSuggestion": "cursor:url(panel-assets/cursor_01.png) 0 0, auto;",
+      "note": "Optional. Native bitmap remains original size; do not replace keyboard focus."
+    },
+    "cssSuggestion": "/* Each of the 9 cells uses the matching native 3x3 PNG from ui.nineSlice. */\n.pixel-native-panel { position:relative; display:grid; grid-template:9px minmax(0,1fr) 9px / 9px minmax(0,1fr) 9px; isolation:isolate; }\n.pixel-native-panel > .slice { min-width:0; min-height:0; width:100%; height:100%; image-rendering:pixelated; pointer-events:none; }\n.pixel-native-panel > .panel-content { grid-area:2 / 2; z-index:1; min-width:0; padding:18px; }\n/* Place slice TL/TC/TR/LC/C/RC/BL/BC/BR in the matching grid cells explicitly. */\n/* Keep the nine corners pixel sharp. Text and click targets use normal CSS size. */\n"
+  },
+  "availabilityAudit": {
+    "scope": "Read-only Human PNG layer names and UI PNGs; this is not a repeat of the 430-file audit.",
+    "humanPngCount": 160,
+    "humanLayerPrefixes": {
+      "bowlhair": 20,
+      "mophair": 20,
+      "shorthair": 20,
+      "curlyhair": 20,
+      "base": 20,
+      "tools": 20,
+      "spikeyhair": 20,
+      "longhair": 20
+    },
+    "completeAppearanceCount": 6,
+    "independentClothingLayerFound": false,
+    "independentSkinPaletteLayerFound": false,
+    "independentEquipmentLayerFound": false,
+    "toolsLayerPresent": true,
+    "toolsMeaning": "Native action/tool overlay. Excluded from the six appearances; it is not a clothing layer or permission to equip items.",
+    "baseMeaning": "The same original base has baked body/skin/clothing pixels; this catalog does not invent adjustable wardrobe or skin colours.",
+    "excluded": [
+      "Goblin",
+      "Skeleton",
+      "Four-colour web palette selector",
+      "Unverified clothing, skin variants or equipment"
+    ]
+  },
+  "integrationBoundary": "Prototype and future world can share these stable visual keys. Actual account/avatar field names, persistence and business acceptance remain WS01 decisions.",
+  "defaultAppearanceKey": "sunnyside-human-shorthair",
+  "defaultAppearanceUse": "Initial explicit selection for a new appearance only. Never substitute this for an existing unknown key, missing legacy facts, or an asset-load failure.",
+  "legacyHashOrder": [
+    "shorthair",
+    "longhair",
+    "curlyhair",
+    "bowlhair",
+    "mophair",
+    "spikeyhair"
+  ],
+  "legacyResolution": {
+    "scope": "Preserve an existing historical appearance only; never apply this resolver to a new user selection.",
+    "precedence": [
+      "rendererHairToAppearanceKey",
+      "knownLegacyColorBranches",
+      "originalAvatarIdHash"
+    ],
+    "rendererHairToAppearanceKey": {
+      "shorthair": "sunnyside-human-shorthair",
+      "longhair": "sunnyside-human-longhair",
+      "curlyhair": "sunnyside-human-curlyhair",
+      "bowlhair": "sunnyside-human-bowlhair",
+      "mophair": "sunnyside-human-mophair",
+      "spikeyhair": "sunnyside-human-spikeyhair"
+    },
+    "knownLegacyColorBranches": {
+      "blue": "sunnyside-human-curlyhair",
+      "amber": "sunnyside-human-longhair"
+    },
+    "knownLegacyColorScope": "blue and amber refer only to the old renderer branches; amber is the historical amber branch, not a new appearance palette option.",
+    "originalAvatarIdHash": {
+      "requiredInput": "The original Avatar fact id as its original nonempty string.",
+      "initialIndex": 0,
+      "iteration": "JavaScript for...of over the original Avatar fact id; char.charCodeAt(0), matching the historical renderer.",
+      "step": "index = (index * 31 + char.charCodeAt(0)) >>> 0",
+      "result": "rendererHairToAppearanceKey[legacyHashOrder[index % 6]]",
+      "orderSource": "legacyHashOrder is fixed independently of appearances display order.",
+      "algorithm": "let index = 0; for (const char of originalAvatarId) { index = (index * 31 + char.charCodeAt(0)) >>> 0; } const appearanceKey = rendererHairToAppearanceKey[legacyHashOrder[index % 6]];",
+      "missingInputPolicy": "Unresolved: retain historical facts, show neutral human placeholder and 暂无法显示; do not hash another field or assign the default.",
+      "forbiddenSubstitutes": [
+        "name",
+        "displayName",
+        "agentId fallback",
+        "array position",
+        "new catalogue display order"
+      ]
+    },
+    "newSelectionPolicy": "Use the explicit selected stable appearance key. Do not hash or reinterpret it as a legacy value."
+  },
+  "assetFailure": {
+    "preserveSelectedAppearanceKey": true,
+    "preserveSavedAppearanceKey": true,
+    "render": "neutralHumanPlaceholder",
+    "placeholderMeaning": "A neutral human placeholder, never a substitute catalogue look.",
+    "message": "形象素材暂时无法显示",
+    "recovery": "Show retry and retry the same selected key. Keep selection and saved key unchanged.",
+    "writeBackDefault": false,
+    "unknownKey": {
+      "render": "neutralHumanPlaceholder",
+      "message": "暂无法显示",
+      "showRetry": true,
+      "preserveOriginalKey": true,
+      "allowArbitraryLook": false,
+      "writeBackDefault": false
+    }
+  }
+}
