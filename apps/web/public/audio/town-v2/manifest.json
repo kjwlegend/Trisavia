@@ -1,0 +1,113 @@
+{
+  "id": "town-v2",
+  "version": 2,
+  "source": "Original deterministic rhythmic recomposition and synthesis; no third-party samples or audio-generation API.",
+  "reproduce": "node scripts/audio/generate-town-v2.mjs",
+  "sampleRate": 48000,
+  "defaultWorldReplacement": false,
+  "sharedSfxManifest": "/assets/audio/town-v1/manifest.json",
+  "bgm": {
+    "id": "lanterns-in-the-breeze-light-steps",
+    "title": "风灯小镇 v2 · 轻步 / Lanterns in the Breeze – Light Steps",
+    "usage": "轻快律动A/B试听候选，尚未替换主世界默认",
+    "status": "audition",
+    "sources": [
+      {
+        "url": "/assets/audio/town-v2/lanterns-in-the-breeze-light-steps.ogg",
+        "type": "audio/ogg; codecs=opus",
+        "bytes": 1575194,
+        "sha256": "7ae26edd15711d496215dadbc4d7da99c84680d6d5fc0503be9b93b4c6aa4b60"
+      },
+      {
+        "url": "/assets/audio/town-v2/lanterns-in-the-breeze-light-steps.mp3",
+        "type": "audio/mpeg",
+        "bytes": 714261,
+        "sha256": "979d1bdf420240848c6cbc1b7d79d22a4c2b259163e856ac86513a7da023df2d"
+      },
+      {
+        "url": "/assets/audio/town-v2/lanterns-in-the-breeze-light-steps.wav",
+        "type": "audio/wav",
+        "bytes": 15360078,
+        "sha256": "09be7621eed2c7ba22d45343fc8c82e46b6f8694960a263ab46b12aacfc4d0eb"
+      }
+    ],
+    "duration": 80,
+    "frames": 3840000,
+    "loop": {
+      "start": 0,
+      "end": 80,
+      "startFrame": 0,
+      "endFrame": 3840000
+    },
+    "recommendedGain": 0.5,
+    "composition": {
+      "bpm": 96,
+      "meter": "4/4",
+      "bars": 32,
+      "key": "D major",
+      "form": "A / A′ / B / A″, 8 bars each",
+      "melodyRange": "D4–B5",
+      "rhythm": "Short warm bass on beats 1/3, soft wooden backbeats on 2/4, sparse offbeat chords; no heavy kick/snare or continuous hi-hat",
+      "loopMethod": "Circular note tails and room taps; no end fade"
+    },
+    "metrics": {
+      "frames": 3840000,
+      "duration": 80,
+      "sampleRate": 48000,
+      "channels": 2,
+      "peakDbFS": -9.593,
+      "rmsDbFS": -25.152,
+      "dc": 0.00004523,
+      "maxAdjacentStep": 0.03045654296875,
+      "loopBoundaryStep": [
+        0.000946044921875,
+        0.0010986328125
+      ],
+      "integratedLUFS": -23,
+      "truePeakDbTP": -9.59,
+      "loudnessRangeLU": 1.8,
+      "threshold": -33.01,
+      "offset": 0.12
+    },
+    "decoded": {
+      "ogg": {
+        "frames": 3840000,
+        "duration": 80,
+        "sampleRate": 48000,
+        "channels": 2,
+        "peakDbFS": -9.493,
+        "rmsDbFS": -25.154,
+        "dc": -0.0000262,
+        "maxAdjacentStep": 0.030487060546875,
+        "loopBoundaryStep": [
+          0.00201416015625,
+          0.000274658203125
+        ],
+        "integratedLUFS": -23,
+        "truePeakDbTP": -9.49,
+        "loudnessRangeLU": 1.8,
+        "threshold": -33.02,
+        "offset": 0.12
+      },
+      "mp3": {
+        "frames": 3840000,
+        "duration": 80,
+        "sampleRate": 48000,
+        "channels": 2,
+        "peakDbFS": -9.584,
+        "rmsDbFS": -25.152,
+        "dc": 0.00003038,
+        "maxAdjacentStep": 0.030242919921875,
+        "loopBoundaryStep": [
+          0.00091552734375,
+          0.000640869140625
+        ],
+        "integratedLUFS": -23.01,
+        "truePeakDbTP": -9.58,
+        "loudnessRangeLU": 1.8,
+        "threshold": -33.01,
+        "offset": 0.12
+      }
+    }
+  }
+}
