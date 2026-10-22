@@ -74,7 +74,7 @@ CREATE TABLE relationships.intimacy_facts(
 CREATE TRIGGER immutable_intimacy_fact BEFORE UPDATE OR DELETE ON relationships.intimacy_facts FOR EACH ROW EXECUTE FUNCTION platform.reject_immutable_content_change();
 CREATE FUNCTION relationships.protect_friendship_invitation() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
  IF NEW.version<>OLD.version+1 OR OLD.state<>'pending' OR NEW.state='pending'
- OR (to_jsonb(NEW)-ARRAY['version','state','responded_at','friendship_id','response_actor_kind','response_actor_id','response_confirmation_id','invalidation_code','_nulls']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['version','state','responded_at','friendship_id','response_actor_kind','response_actor_id','response_confirmation_id','invalidation_code','_nulls']) THEN RAISE EXCEPTION 'Fixed friendship invitation or terminal state changed' USING ERRCODE='23514';END IF;
+ OR (to_jsonb(NEW)-ARRAY['version','state','responded_at','friendship_id','response_actor_kind','response_actor_id','response_confirmation_id','invalidation_code','_nulls','first_agent_id','second_agent_id']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['version','state','responded_at','friendship_id','response_actor_kind','response_actor_id','response_confirmation_id','invalidation_code','_nulls','first_agent_id','second_agent_id']) THEN RAISE EXCEPTION 'Fixed friendship invitation or terminal state changed' USING ERRCODE='23514';END IF;
  RETURN NEW;END $$;
 CREATE TRIGGER friendship_invitation_transition BEFORE UPDATE ON relationships.friendship_invitations FOR EACH ROW EXECUTE FUNCTION relationships.protect_friendship_invitation();
 CREATE FUNCTION relationships.protect_friendship() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN

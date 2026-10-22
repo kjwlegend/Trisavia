@@ -47,6 +47,8 @@ export function expireFriendshipInvitation(invitation: FriendshipInvitation, now
 }
 export function invalidateFriendshipInvitation(invitation: FriendshipInvitation, input: { now: number; code?: string }): FriendshipInvitation {
   time(input.now); if(invitation.state!=='pending') return invitation;
+  if(input.now<invitation.createdAt)fail('invalid_request',400,'Friendship time moved backwards');
+  if(input.now>=invitation.deadline)return expireFriendshipInvitation(invitation,input.now);
   const code=input.code??'qualification_changed'; if(!/^[a-z][a-z0-9_]{0,99}$/.test(code))fail('invalid_request',400,'Invalid friendship invalidation');
   return { ...invitation,version:invitation.version+1,state:'cancelled',respondedAt:input.now,respondedBy:{kind:'system',id:'relationships-invalidation'},responseConfirmationId:null,invalidationCode:code };
 }

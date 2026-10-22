@@ -29,6 +29,6 @@ export async function worldFixture(){
   await setPostgresWriteGate(migrationOptions,{enabled:true});await bootstrapPlatformCatalog(legacy);
   const service=createM1Service(legacy,{now:()=>clock,email:{mode:'experience'}}),access=createRuntimeIdentity(identity.recoveryEpoch,()=>clock);
   const register=async()=>{const runtimeToken=randomUUID()+'.'+randomBytes(32).toString('base64url'),continuationToken=randomUUID()+'.'+randomBytes(32).toString('base64url');const result=await service.invoke('register',{operationId:randomUUID(),attemptId:randomUUID(),runtimeToken,continuationToken});return {agentId:result.agentId as string,ownerId:result.ownerId as string,runtimeToken};};
-  return {database,identity,options,migrationOptions,runtime,legacy,service,access,register,query,appQuery,prepared,now:()=>clock,tick:(ms:number)=>{clock+=ms;},gate:(enabled:boolean)=>setPostgresWriteGate(migrationOptions,{enabled}),openRuntime:async()=>{const store=await openRuntimeStore(options);stores.add(store);return store;},dispose};
+  return {database,identity,options,migrationOptions,runtime,legacy,service,access,register,query,appQuery,prepared,privateConnections:connections,now:()=>clock,tick:(ms:number)=>{clock+=ms;},gate:(enabled:boolean)=>setPostgresWriteGate(migrationOptions,{enabled}),openRuntime:async()=>{const store=await openRuntimeStore(options);stores.add(store);return store;},dispose};
  }catch(error){await dispose();throw error;}
 }
