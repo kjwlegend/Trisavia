@@ -7,6 +7,7 @@ import { runtimeSql } from './runtime-sql.ts';
 import { createWorldRepository } from './world-repository.ts';
 import { createInteractionRepository } from './interaction-repository.ts';
 import { createDecisionRepository } from './decision-repository.ts';
+import { createRelationshipsRepository } from './relationships-repository.ts';
 
 export interface OpenRuntimeStoreOptions extends OpenPostgresStoreOptions { now?:()=>number }
 const identities=new WeakMap<object,{scope:PostgresScope;session:M1ReadSession}>();
@@ -18,7 +19,7 @@ export function runtimeIdentitySession(context:RuntimeReadContext):M1ReadSession
 function createContext(scope:PostgresScope,options:OpenRuntimeStoreOptions):RuntimeTransaction{
  const sql=runtimeSql(scope,options.now??Date.now),legacy=createPostgresSession(scope.client,false,scope.alive);
  const core=createRuntimeRepositories(sql,options.recoveryEpoch);
- const adapters=[createWorldRepository(sql),createInteractionRepository(sql),createDecisionRepository(sql,options.recoveryEpoch)];
+ const adapters=[createWorldRepository(sql),createInteractionRepository(sql),createDecisionRepository(sql,options.recoveryEpoch),createRelationshipsRepository(sql)];
  const repositories=new Map<object,{reader:unknown;writer:unknown}>();
  for(const adapter of adapters)repositories.set(adapter.port,{reader:Object.freeze(adapter.reader),writer:Object.freeze(adapter.writer)});
  const base={instanceId:options.instanceId,recoveryEpoch:options.recoveryEpoch,now:sql.now,

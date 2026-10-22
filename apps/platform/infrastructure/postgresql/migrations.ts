@@ -4,7 +4,7 @@ import { StorageError } from '../../contracts/store.ts';
 import { column, BASE_MODELS as MODELS, type Field } from './model.ts';
 import { directFields, splitFields } from './codec.ts';
 import { RUNTIME_MIGRATIONS } from './runtime-migrations.ts';
-import { FRIENDSHIPS_MIGRATION } from './friendships-migration.ts';
+import { FRIENDSHIPS_MIGRATION, FRIENDSHIPS_LIFECYCLE_MIGRATION } from './friendships-migration.ts';
 
 export interface PostgresConnectionOptions { connectionString:string; instanceId:string; recoveryEpoch:string }
 const quote=(value:string)=>`'${value.replaceAll("'","''")}'`;
@@ -117,7 +117,7 @@ POSTGRES_MIGRATIONS.push({moduleId:'profiles',version:2,name:'explicit_appearanc
       AND avatar_catalog_version IS NOT NULL AND avatar_catalog_version='2026-10-21.appearance-v1.1'
       AND coalesce(content_text::jsonb->'avatar'=jsonb_build_object('lookId',avatar_look_id,'catalogVersion',avatar_catalog_version),false))
   );`,dependencies:['profiles']});
-POSTGRES_MIGRATIONS.push(FRIENDSHIPS_MIGRATION);
+POSTGRES_MIGRATIONS.push(FRIENDSHIPS_MIGRATION,FRIENDSHIPS_LIFECYCLE_MIGRATION);
 export const POSTGRES_SCHEMA_SIGNATURE=createHash('sha256').update(POSTGRES_MIGRATIONS.map(item=>`${item.moduleId}:${createHash('sha256').update(item.sql).digest('hex')}`).join('\n')).digest('hex');
 
 /** Explicit DDL-role operation; openPostgresStore never calls this. */
