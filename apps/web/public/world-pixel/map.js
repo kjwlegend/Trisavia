@@ -1,18 +1,21 @@
-export const PIXEL_MAP=Object.freeze({version:'pixel-town-commons@1',worldId:'default',rulesetVersion:1,topologyVersion:1,width:768,height:512,gridWidth:16,gridHeight:16,cellSize:16,origin:Object.freeze({x:264,y:136}),commons:Object.freeze({left:256,top:128,right:512,bottom:384})});
+export const PIXEL_LAYOUT_SHA256='93a2a1e8b30d2f04d85a3974326295f68360b3dd80b219dcbee111d78d3b7732';
+export const PIXEL_GEOMETRY_DIGEST='b2c52a8a77dcf352670d5fb95a755d442c5a424c27d4762b921e0ce817d4f772';
+export const PIXEL_MAP=Object.freeze({version:'pixel-town-v2',worldId:'default',rulesetVersion:2,topologyVersion:2,width:1536,height:1152,gridWidth:88,gridHeight:64,cellSize:16,origin:Object.freeze({x:520,y:520}),bounds:Object.freeze({minX:-28,minY:-28,maxX:59,maxY:35}),commons:Object.freeze({left:512,top:512,right:768,bottom:768})});
 export function assertPixelRules(rules){
-  if(rules?.worldId!==PIXEL_MAP.worldId||rules.version!==PIXEL_MAP.rulesetVersion||rules.topologyVersion!==PIXEL_MAP.topologyVersion||rules.width!==PIXEL_MAP.gridWidth||rules.height!==PIXEL_MAP.gridHeight)throw new Error('pixel_rules_incompatible');
+ const m=rules?.mapManifest,b=PIXEL_MAP.bounds;
+ if(rules?.worldId!==PIXEL_MAP.worldId||rules.version!==PIXEL_MAP.rulesetVersion||rules.topologyVersion!==PIXEL_MAP.topologyVersion||rules.width!==PIXEL_MAP.gridWidth||rules.height!==PIXEL_MAP.gridHeight||Object.keys(b).some(key=>rules.bounds?.[key]!==b[key])||m?.mapId!==PIXEL_MAP.version||m.version!==2||m.layoutUrl!=='/world-map-v2.json'||m.layoutSha256!==PIXEL_LAYOUT_SHA256||m.geometryDigest!==PIXEL_GEOMETRY_DIGEST||m.source?.width!==1536||m.source.height!==1152||m.tileSize!==16||m.origin?.x!==520||m.origin.y!==520||Object.keys(b).some(key=>m.bounds?.[key]!==b[key]))throw new Error('pixel_rules_incompatible');
 }
 export function pixelPoint(point,rules){
-  assertPixelRules(rules);
-  if(!Number.isSafeInteger(point?.x)||!Number.isSafeInteger(point?.y)||point.x<0||point.x>=16||point.y<0||point.y>=16)throw new Error('pixel_position_invalid');
-  return{x:PIXEL_MAP.origin.x+PIXEL_MAP.cellSize*point.x,y:PIXEL_MAP.origin.y+PIXEL_MAP.cellSize*point.y};
+ assertPixelRules(rules);const b=PIXEL_MAP.bounds;
+ if(!Number.isSafeInteger(point?.x)||!Number.isSafeInteger(point?.y)||point.x<b.minX||point.x>b.maxX||point.y<b.minY||point.y>b.maxY)throw new Error('pixel_position_invalid');
+ return{x:PIXEL_MAP.origin.x+PIXEL_MAP.cellSize*point.x,y:PIXEL_MAP.origin.y+PIXEL_MAP.cellSize*point.y};
 }
 export function assertPixelSnapshot(value,previous){
-  if(value.rules)assertPixelRules(value.rules);
-  if(value.phase==='demo')throw new Error('pixel_scene_requires_world');
-  if(!value.complete)return;
-  if(!value.rules||!Number.isSafeInteger(value.asOf)||!Number.isSafeInteger(value.worldRevision))throw new Error('pixel_snapshot_invalid');
-  if(previous?.complete&&(value.asOf<previous.asOf||value.worldRevision<previous.worldRevision))throw new Error('pixel_snapshot_stale');
-  const old=new Map((previous?.avatars||[]).map(row=>[row.agentId,row]));
-  for(const row of value.avatars){pixelPoint(row.position,value.rules);const prior=old.get(row.agentId);if(prior&&(row.id!==prior.id||row.version<prior.version||row.version===prior.version&&(row.position.x!==prior.position.x||row.position.y!==prior.position.y)))throw new Error('pixel_avatar_version_changed');}
+ if(value.rules)assertPixelRules(value.rules);
+ if(value.phase==='demo')throw new Error('pixel_scene_requires_world');
+ if(!value.complete)return;
+ if(!value.rules||!Number.isSafeInteger(value.asOf)||!Number.isSafeInteger(value.worldRevision))throw new Error('pixel_snapshot_invalid');
+ if(previous?.complete&&(value.asOf<previous.asOf||value.worldRevision<previous.worldRevision))throw new Error('pixel_snapshot_stale');
+ const old=new Map((previous?.avatars||[]).map(row=>[row.agentId,row]));
+ for(const row of value.avatars){pixelPoint(row.position,value.rules);const prior=old.get(row.agentId);if(prior&&(row.id!==prior.id||row.version<prior.version||row.version===prior.version&&(row.position.x!==prior.position.x||row.position.y!==prior.position.y||row.motion&&prior.motion&&JSON.stringify(row.motion)!==JSON.stringify(prior.motion))))throw new Error('pixel_avatar_version_changed');}
 }

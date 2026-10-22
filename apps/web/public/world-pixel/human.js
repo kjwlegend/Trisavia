@@ -11,17 +11,36 @@ export function drawHumanFoot(ctx,entry,selected=false,theme='day'){
   ctx.save();ctx.translate(Math.round(entry.x),Math.round(entry.y));ctx.fillStyle='#31492e27';ctx.fillRect(-5,-1,10,2);ctx.fillRect(-3,1,6,1);
   if(selected){ctx.fillStyle=theme==='dusk'?'#e5e8a9':'#f9f7c4';for(const rect of [[-7,-2,3,1],[4,-2,3,1],[-8,-1,1,3],[7,-1,1,3],[-6,3,12,1]])ctx.fillRect(...rect);ctx.fillStyle='#4c7c65';ctx.fillRect(-5,4,10,1);}ctx.restore();
 }
-// A bounded transition is allowed only between two received adjacent facts.
-export function receivePosition(entry,agent,{animate=true,now=performance.now()}={}){
-  const previous=entry.fact,dx=previous?agent.fact.position.x-previous.position.x:0,dy=previous?agent.fact.position.y-previous.position.y:0;
-  const compatible=animate&&previous&&agent.fact.version>previous.version&&Math.abs(dx)+Math.abs(dy)===1&&previous.status!=='suspended'&&agent.fact.status!=='suspended';
-  if(dx)entry.facing=dx<0?'left':'right';else entry.facing||='right';
-  const changed=!previous||dx!==0||dy!==0;
-  if(compatible){entry.transition={from:{x:entry.x,y:entry.y},to:{x:agent.x,y:agent.y},startedAt:now,deadline:now+180};entry.walking=true;}
-  else if(changed||!animate||agent.fact.status==='suspended'){entry.x=agent.x;entry.y=agent.y;entry.transition=null;entry.walking=false;}
-  entry.target={x:agent.x,y:agent.y};
+// Only committed server edges enter this presentation queue. Integer authority
+// stays in entry.fact; every visual layer uses the same continuous footpoint.
+export function receivePosition(entry,agent,{now=performance.now(),serverTime=now}={}){
+ const previous=entry.fact,motion=agent.renderMotion,target={x:agent.x,y:agent.y};
+ if(previous)advancePosition(entry,now,{serverTime});
+ entry.target=target;entry.renderPosition??={...target};entry.segments??=[];
+ if(!previous){entry.x=target.x;entry.y=target.y;entry.renderPosition={...target};}
+ if(motion){
+  if(entry.segmentId!==motion.segmentId){
+   const last=entry.segments.at(-1),connected=last&&last.to.x===motion.from.x&&last.to.y===motion.from.y,next=structuredClone(motion);
+   // A delivery gap cannot authorize a guessed connector or a diagonal shortcut.
+   if(!connected){entry.segments=[];entry.x=motion.from.x;entry.y=motion.from.y;entry.renderPosition={x:entry.x,y:entry.y};}
+   // Explicit retargeting can supersede a slower idle display window. Finish
+   // its known edge at the corner before the new edge; never blend diagonally.
+   if(connected&&last.arriveAt>next.startedAt){let join=serverTime;for(let i=0;i<entry.segments.length;i++){const edge=entry.segments[i];if(i===0)edge.from={x:entry.x,y:entry.y};edge.startedAt=join;edge.arriveAt=join+180;join=edge.arriveAt;}next.startedAt=Math.max(next.startedAt,join);next.arriveAt=Math.max(next.arriveAt,next.startedAt+180);}
+   entry.segments.push(next);entry.segmentId=motion.segmentId;
+  }
+ }else{
+  entry.segmentId??=null;const active=entry.segments[0],onEdge=active&&(target.x===active.to.x&&target.y===active.to.y);
+  if(onEdge&&entry.walking){entry.segments=[{from:{x:entry.x,y:entry.y},to:target,startedAt:serverTime,arriveAt:Math.max(serverTime+1,Math.min(active.arriveAt,serverTime+180))}];}
+  else{entry.segments=[];entry.x=target.x;entry.y=target.y;entry.renderPosition={...target};entry.walking=false;}
+ }
+ advancePosition(entry,now,{serverTime});
 }
-export function advancePosition(entry,now=performance.now(),{paused=false,visible=true}={}){
-  if(!entry.transition)return;if(paused||!visible){Object.assign(entry,entry.transition.to);entry.transition=null;entry.walking=false;return;}
-  const move=entry.transition,t=Math.max(0,Math.min(1,(now-move.startedAt)/(move.deadline-move.startedAt)));entry.x=move.from.x+(move.to.x-move.from.x)*t;entry.y=move.from.y+(move.to.y-move.from.y)*t;if(t===1){entry.transition=null;entry.walking=false;}
+export function advancePosition(entry,now=performance.now(),{serverTime=now}={}){
+ const segments=entry.segments;if(!segments?.length){entry.walking=false;return;}
+ while(segments.length){const segment=segments[0],t=Math.max(0,Math.min(1,(serverTime-segment.startedAt)/(segment.arriveAt-segment.startedAt)));
+  entry.x=segment.from.x+(segment.to.x-segment.from.x)*t;entry.y=segment.from.y+(segment.to.y-segment.from.y)*t;entry.renderPosition={x:entry.x,y:entry.y};
+  if(segment.to.x!==segment.from.x)entry.facing=segment.to.x<segment.from.x?'left':'right';
+  if(t<1){entry.walking=true;return;}segments.shift();
+ }
+ entry.walking=false;
 }
