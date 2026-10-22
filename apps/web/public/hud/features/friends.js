@@ -15,9 +15,9 @@ export function createFriendsFeature(session,{chooseAgent=()=>{}}={}){
     if(state.phase!=='ready')return;
     status.textContent=state.friends.length?'这里只显示已确认的好友和获准公开的资料。':'暂无可展示的已确认好友。';
     const list=el('ul','hud-friends-list');list.setAttribute('aria-label',`${agent.name} 的已确认好友`);
-    for(const friend of state.friends){const row=el('li','hud-friend'),portrait=el('span','hud-friend-picture'),copy=el('div');avatar(portrait,{avatar:friend.profile.appearance},friend.agentId);copy.append(el('strong','',friend.profile.displayName),el('span','hud-muted','已确认好友'));row.append(portrait,copy,link('公开资料',`/residents/${encodeURIComponent(friend.agentId)}`));list.append(row);}
-    node.append(list,button('刷新好友',()=>void reader.load(),'hud-friends-refresh'));
+    for(const friend of state.friends){const row=el('li','hud-friend'),portrait=el('span','hud-friend-picture'),copy=el('div');avatar(portrait,{avatar:friend.profile.appearance},friend.agentId);copy.append(el('strong','',friend.profile.displayName),el('span','hud-muted',`已确认好友 · 亲密度 ${friend.intimacyScore} / 100`));row.append(portrait,copy,link('公开资料',`/residents/${encodeURIComponent(friend.agentId)}`));list.append(row);}
+    node.append(el('p','hud-muted','亲密度由双方共享，只在成为好友后新发起并完成确认的文字交流中增加；浏览和发送邀请不会增加。'),list);if(!state.complete)node.append(button('继续载入好友',()=>reader.loadMore()));node.append(button('刷新好友',()=>void reader.load(),'hud-friends-refresh'));
   }
   const stop=reader.subscribe(value=>{state=value;render();});
-  return{node,activate(){active=true;void reader.load();},deactivate(){active=false;reader.cancel();},setContext(value){context=value;const key=JSON.stringify([value.authenticated,value.observationRevision,value.selectedAgentId]);if(key!==identity){identity=key;if(active)void reader.load();}render();},back:()=>false,dispose(){stop();reader.dispose();}};
+  return{node,activate(){active=true;void reader.load();},deactivate(){active=false;reader.cancel();},setContext(value){context=value;render();},back:()=>false,dispose(){stop();reader.dispose();}};
 }

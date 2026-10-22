@@ -1,5 +1,6 @@
 import {icon} from '../icons.js';
 import {avatar} from '../../scene.js';
+import {createFriendshipInbox} from '../friendship-ui.js';
 import {createOwnerArtifacts,createOwnerExchanges} from './owner-interactions.js';
 import {readPhase} from '../world-read-provider.js';
 import {el,button,focusNode,selectedAgent} from './shared.js';
@@ -74,7 +75,7 @@ export function createContentSwitcher(example,platform,{session,onEnterDemo=()=>
   switcher.append(control);
   function render(){control.textContent=demo?'返回平台内容':'查看界面示例';label.hidden=!demo;feedbackNode.hidden=!demo;example.node.hidden=!demo;platform.node.hidden=demo;node.replaceChildren(label,demo?example.node:platform.node,switcher);}
   render();
-  return{node,feedbackNode,feedbackSlot:example.feedbackSlot,flush:()=>example.flush?.(),activate(){active=true;(demo?example:platform).activate?.();},deactivate(){(demo?example:platform).deactivate?.();active=false;},setCompact(value){example.setCompact?.(value);platform.setCompact?.(value);},setContext(state){if(identity!==state.observationRevision){identity=state.observationRevision;if(demo)example.deactivate?.();demo=false;render();}example.setContext?.(state);platform.setContext?.(state);},back:()=>demo?example.back():platform.back(),showWorld(category){if(demo)example.deactivate?.();demo=false;render();platform.showWorld?.(category);},dispose(){example.dispose();platform.dispose();}};
+  return{node,feedbackNode,feedbackSlot:example.feedbackSlot,flush:()=>example.flush?.(),activate(){active=true;(demo?example:platform).activate?.();},deactivate(){(demo?example:platform).deactivate?.();active=false;},setCompact(value){example.setCompact?.(value);platform.setCompact?.(value);},setContext(state){if(identity!==state.observationRevision){identity=state.observationRevision;if(demo)example.deactivate?.();demo=false;render();}example.setContext?.(state);platform.setContext?.(state);},back:()=>demo?example.back():platform.back(),showFriendships(direction){if(demo)example.deactivate?.();demo=false;render();platform.showFriendships?.(direction);},showWorld(category){if(demo)example.deactivate?.();demo=false;render();platform.showWorld?.(category);},dispose(){example.dispose();platform.dispose();}};
 }
 
 export function createPlatformInventory(provider,{session,context,walletProvider,detailHost,chooseAgent=()=>{}}={}){
@@ -152,7 +153,8 @@ export function createPlatformMail(provider,{session,context,detailHost,chooseAg
   const node=el('section','hud-mail hud-platform-content'),list=el('div','hud-mail-list');list.id='hud-platform-mail-results';
   let key='messages',state=session.snapshot(),active=false,disposed=false,opened=null,detail=null,detailError=null,request=null,generation=0,related=null,relatedDetail=null,relatedError=null,relatedTop=0,readerTop=0;
   const views=Object.fromEntries(['messages','notifications','announcements','events'].map(key=>[key,{top:0,selected:'',bodyTop:{}}]));
-  const exchanges=createOwnerExchanges(session,{chooseAgent,detailHost,onDirection:()=>{provider.cancel('messages');render();if(active&&exchanges.direction==='received')void provider.load('messages');}});
+  const friendshipInbox=createFriendshipInbox(session,{chooseAgent,detailHost});
+  const exchanges=createOwnerExchanges(session,{chooseAgent,detailHost,additionalContent:friendshipInbox.node,onDirection:()=>{friendshipInbox.setDirection(exchanges.direction);provider.cancel('messages');render();if(active&&exchanges.direction==='received')void provider.load('messages');}});
   const currentSource=()=>provider.snapshot(key)||{phase:'idle',records:[],complete:false,nextPageToken:null};
   const detailTitle=()=>key==='messages'?'消息详情':key==='events'?'事件详情':key==='announcements'?'公告详情':'通知详情';
   let categoryScope='';
@@ -192,7 +194,7 @@ export function createPlatformMail(provider,{session,context,detailHost,chooseAg
     catch(error){if(g!==generation||disposed||error.name==='AbortError')return;detailError=error;renderDetail();}
   }
   function open(record){remember();opened=record;views[key].selected=keyOf(record);readerTop=views[key].bodyTop[keyOf(record)]||0;saveCategory();detail=null;detailError=null;related=null;detailHost.open(titleOf(opened),reader(),restore=>{if(detail&&currentSource().records.some(value=>keyOf(value)===keyOf(record)))views[key].bodyTop[keyOf(record)]=related?relatedTop:detailHost.body.scrollTop;saveCategory();cancel();if(restore)focusRow();opened=null;detail=null;related=null;list.scrollTop=views[key].top;});void read(record);}
-  function select(next){remember();close(false);exchanges.deactivate();provider.cancel(key);key=next;saveCategory();render();if(active){if(key==='messages')exchanges.activate();if(key!=='messages'||exchanges.direction==='received')void provider.load(key);}}
+  function select(next){remember();close(false);friendshipInbox.deactivate();exchanges.deactivate();provider.cancel(key);key=next;saveCategory();render();if(active){if(key==='messages'){friendshipInbox.activate();exchanges.activate();}if(key!=='messages'||exchanges.direction==='received')void provider.load(key);}}
   function render(){
     if(disposed)return;node.replaceChildren();const agent=selectedAgent(state),source=currentSource();
     node.append(agentBar(state,chooseAgent));
@@ -204,5 +206,5 @@ export function createPlatformMail(provider,{session,context,detailHost,chooseAg
     if(!source.records.length)list.append(feedback(source,key,()=>provider.load(key),chooseAgent));else list.append(pageFoot(source,key,provider));node.append(list);list.scrollTop=views[key].top;
   }
   const stop=provider.subscribe(changed=>{const source=provider.snapshot(changed);if(views[changed]&&['denied','session','resync'].includes(source.phase)){Object.assign(views[changed],{top:0,selected:'',bodyTop:{}});saveCategory();}if(changed!==key)return;if(!source.records.length&&opened){close(false);cancel();opened=null;detail=null;detailHost.clear();}render();}),stopCategory=context?.subscribe(()=>{restoreCategory();render();});restoreCategory();render();
-  return{node,activate(){active=true;restoreCategory();if(key==='messages')exchanges.activate();if(key!=='messages'||exchanges.direction==='received')void provider.load(key);},deactivate(){remember();active=false;exchanges.deactivate();close(false);provider.cancel(key);cancel();},setContext(next){if(state.observationRevision!==next.observationRevision){close(false);cancel();opened=null;detail=null;detailHost.clear();for(const view of Object.values(views))Object.assign(view,{top:0,selected:'',bodyTop:{}});restoreCategory(true);}state=next;render();},showWorld(category){select(category==='events'?'events':'announcements');},back(){if(!detailHost.isOpen)return false;if(related){cancel();related=null;renderDetail();detailHost.body.scrollTop=relatedTop;return true;}close();return true;},dispose(){disposed=true;exchanges.dispose();close(false);cancel();stop();stopCategory?.();}};
+  return{node,activate(){active=true;restoreCategory();if(key==='messages'){friendshipInbox.activate();exchanges.activate();}if(key!=='messages'||exchanges.direction==='received')void provider.load(key);},deactivate(){remember();active=false;friendshipInbox.deactivate();exchanges.deactivate();close(false);provider.cancel(key);cancel();},setContext(next){if(state.observationRevision!==next.observationRevision){close(false);cancel();opened=null;detail=null;detailHost.clear();for(const view of Object.values(views))Object.assign(view,{top:0,selected:'',bodyTop:{}});restoreCategory(true);}state=next;render();},showFriendships(direction='received'){exchanges.setDirection(direction);select('messages');},showWorld(category){select(category==='events'?'events':'announcements');},back(){if(!detailHost.isOpen)return false;if(related){cancel();related=null;renderDetail();detailHost.body.scrollTop=relatedTop;return true;}close();return true;},dispose(){disposed=true;friendshipInbox.dispose();exchanges.dispose();close(false);cancel();stop();stopCategory?.();}};
 }
