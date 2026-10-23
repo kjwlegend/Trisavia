@@ -271,3 +271,24 @@
 .hud-root .hud-window .account-root .profile-layout #profile-form .form-grid{display:grid;grid-template-columns:1fr;gap:12px}
 .hud-root .hud-window .account-root :is(input,textarea,select){font-weight:400}
 @media(max-height:850px){.hud-root .hud-window .account-root .manager-nav-group+.manager-nav-group{margin-top:8px;padding-top:8px}.hud-root .hud-window .account-root .manager-sidebar{padding-top:12px;padding-bottom:12px}}
+.hud-root .hud-window .account-root .manager-switch-picture{position:relative;width:36px;height:44px;overflow:hidden;display:block}
+.hud-root .hud-window .account-root .manager-switch-picture .avatar{position:absolute;max-width:none;width:96px;height:96px;left:50%;bottom:-6px;transform:translateX(-50%)}
+.hud-root .hud-window .account-root .manager-object-picture{position:relative;width:24px;height:28px;overflow:hidden;display:block}
+.hud-root .hud-window .account-root .manager-object-picture .avatar{position:absolute;max-width:none;width:64px;height:64px;left:50%;bottom:-4px;transform:translateX(-50%)}
+.hud-root .hud-window .account-root .identity-copy-feedback:empty{display:none}
+.hud-root .hud-window .account-root .identity-copy-feedback:not(:empty){display:block;margin-top:8px;font-size:12px;line-height:18px;color:var(--owner-accent)}
+.hud-root .hud-window .account-root .appearance-base-preview{display:grid;place-items:center;min-height:176px;background:#dfe5d44d;border:1px solid var(--owner-border);border-radius:8px;overflow:hidden}
+.hud-root .hud-window .account-root .appearance-base-preview canvas{width:288px;height:192px;max-width:none;image-rendering:pixelated}
+/* The owner frame also works before the map has measured its available area. */
+.paper-hud .hud-root .hud-window.is-account.is-manager{width:min(1000px,var(--world-panel-width,calc(100vw - 48px)));height:min(700px,calc(100dvh - 160px));max-height:calc(100dvh - 160px)}
+.paper-hud .hud-root .hud-window.is-account.is-manager:has(.account-confirm:not([hidden])){width:min(1000px,var(--world-panel-width,calc(100vw - 48px)));height:min(700px,calc(100dvh - 160px))}
+.hud-root .hud-window .account-root[data-layout=compact] .manager-sidebar,.hud-root .hud-window .account-root[data-layout=compact] .manager-object,.hud-root .hud-window .account-root[data-layout=compact] .manager-actions{display:none}
+.hud-root .hud-window .account-root[data-layout=compact] #manage-view{display:block!important;overflow:visible}
+.hud-root .hud-window .account-root[data-layout=compact] .manager-main{display:block;overflow:visible;background:transparent}
+.hud-root .hud-window .account-root[data-layout=compact] .manager-scroll{display:block;padding:0;overflow:visible}
+.hud-root .hud-window .account-root[data-layout=compact] .manager-pages{display:block;height:auto;min-height:0}
+.hud-root .hud-window .account-root .appearance-clothing-option{width:72px;height:64px;min-height:64px;border:1px solid var(--owner-border);border-radius:8px;padding:6px;display:flex;flex-direction:column;gap:4px;background:transparent}
+.hud-root .hud-window .account-root .appearance-clothing-option:before{display:none}
+.hud-root .hud-window .account-root .appearance-clothing-option .hud-icon{width:28px;height:28px;color:var(--swatch)}
+.hud-root .hud-window .account-root .appearance-clothing-option span{font-size:12px;line-height:18px;color:var(--owner-ink)}
+.hud-root .hud-window .account-root .appearance-clothing-option[aria-pressed=true]{border-color:var(--owner-accent);border-radius:8px;background:#ffffff40;box-shadow:inset 0 0 0 1px var(--owner-accent)}

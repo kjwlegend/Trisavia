@@ -1110,12 +1110,13 @@ async function readWorldActionPolicy({signal}={}){
   try{const value=await api(`/agents/${encodeURIComponent(ctx.target)}/world-action-policy`,{token:ctx.session,signal});if(!ctx.current()||signal?.aborted)throw new DOMException('Context changed','AbortError');return value;}
   catch(error){if(ctx.current()&&error.status===401)expireAuthenticatedSession(ctx.source,ctx.session,ctx.generation);throw error;}
 }
-async function readFriends({signal}={}){
+async function readFriends({signal,search,order,cursor,limit}={}){
   const source=vault,session=vault.sessionToken,generation=readGeneration,target=selectedId,revision=summary().observationRevision;
   const current=()=>source===vault&&session===vault.sessionToken&&target===selectedId&&revision===summary().observationRevision&&authenticatedOwner();
   if(!current())throw new ApiError(sessionPhase==='expired'?'session_expired':'authentication_required',401);
   if(!target||!agents.some(agent=>agent.agentId===target))throw new ApiError('agent_required',409);
-  try{const result=await api(`/owner/agents/${encodeURIComponent(target)}/friends`,{token:session,signal});if(!current()||signal?.aborted)throw new DOMException('Context changed','AbortError');return result;}
+  const fields=friendshipInput('friends',{search,order,cursor,limit},target),query=new URLSearchParams();for(const [key,value]of Object.entries(fields))if(key!=='agentId')query.set(key,String(value));
+  try{const result=await api(`/owner/agents/${encodeURIComponent(target)}/friends?${query}`,{token:session,signal});if(!current()||signal?.aborted)throw new DOMException('Context changed','AbortError');return result;}
   catch(error){if(current()&&error.status===401)expireAuthenticatedSession(source,session,generation);throw error;}
 }
 async function readWallet({signal}={}){

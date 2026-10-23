@@ -1,5 +1,5 @@
 // Identity dates are server facts. Never derive them from login, binding or avatar dates.
-const validTime=value=>Number.isSafeInteger(value)&&value>=0;
+const validTime=value=>Number.isSafeInteger(value)&&value>=0&&value<=8640000000000000;
 export function ownerIdentityFacts(agent){
   const identity=agent?.identity;
   const createdAt=identity?.createdAt;

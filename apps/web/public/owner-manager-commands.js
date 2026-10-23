@@ -1,4 +1,5 @@
 import {APPEARANCE_VERSION,lookFor} from './world-pixel/look.js';
+import {paletteOptions} from './world-pixel/appearance-palette.js';
 function failure(code){const error=new Error(code);error.code=code;return error;}
 
 export const managerActions=new Set(['saveProfile','saveWorldAccess','saveWorldActionPolicy','saveDraft','publishProfile','join','profilePolicy','participation']);
@@ -30,7 +31,7 @@ export function managerInput(action,input){
   clean.fields={};
   if(fields.displayName!==undefined){if(typeof fields.displayName!=='string'||!fields.displayName.trim()||fields.displayName.length>60)invalid();clean.fields.displayName=fields.displayName;}
   if(fields.avatar!==undefined){
-    if(fields.avatar?.lookId!==undefined){if(!lookFor(fields.avatar.lookId)||fields.avatar.catalogVersion!==APPEARANCE_VERSION||Object.keys(fields.avatar).some(key=>!['lookId','catalogVersion'].includes(key)))invalid();clean.fields.avatar={lookId:fields.avatar.lookId,catalogVersion:fields.avatar.catalogVersion};}
+    if(fields.avatar?.lookId!==undefined){if(!lookFor(fields.avatar.lookId)||fields.avatar.catalogVersion!==APPEARANCE_VERSION||Object.keys(fields.avatar).some(key=>!['lookId','catalogVersion','hairColorId','clothingColorId'].includes(key)))invalid();clean.fields.avatar={lookId:fields.avatar.lookId,catalogVersion:fields.avatar.catalogVersion};for(const [kind,key]of [['hair','hairColorId'],['clothing','clothingColorId']])if(fields.avatar[key]!==undefined){if(!paletteOptions(kind).some(option=>option.id===fields.avatar[key]))invalid();clean.fields.avatar[key]=fields.avatar[key];}}
     else{if(fields.avatar?.template!=='basic'||!['olive','cream','blue','coral'].includes(fields.avatar.color)||Object.keys(fields.avatar).some(key=>!['template','color'].includes(key)))invalid();clean.fields.avatar={template:'basic',color:fields.avatar.color};}
   }
   if(fields.bio!==undefined){if(typeof fields.bio!=='string'||fields.bio.length>500)invalid();clean.fields.bio=fields.bio;}
