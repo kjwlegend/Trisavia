@@ -9,7 +9,6 @@ import {createOwnerEmailFlow} from './owner-email-flow.js';
 import {createOwnerReceiptReader,confirmUnknownOwnerOperation} from './owner-receipt.js';
 import {managerActions,managerInput,managerRequest,assertManagerResult,parseIntervalSeconds} from './owner-manager-commands.js';
 import {readFriendshipResult} from './hud/friendship-source.js';
-import {mountFriendshipOverview} from './hud/friendship-ui.js';
 import {worldAccessAdoptionText} from './world-access-status.js';
 import {mountWorldActionPolicy} from './owner-world-action-policy.js';
 import {mountOwnerWorldSummary} from './hud/owner-world-summary.js';
@@ -548,7 +547,7 @@ async function loadAgents({resetProfile=true}={}){
       requestedAgentId='';
     }
     if(unavailableAgentId)selectedId='';
-    else if(!agents.some(a=>a.agentId===selectedId)){selectedId=readAgentSelection(result.ownerId,agents)||agents[0]?.agentId||'';selectionGeneration++;resetProfile=true;}
+    else if(!agents.some(a=>a.agentId===selectedId)){selectedId=readAgentSelection(result.ownerId,agents)||'';selectionGeneration++;resetProfile=true;}
     if(selectedId)rememberAgentSelection(result.ownerId,agents,selectedId);
     renderList();renderAgent(resetProfile);await loadInvites(session,generation);
     if(!currentRead())return false;presentation?.managed();controls();if(unavailableAgentId)presentation?.unavailable(unavailableAgentId);else if(explicitTarget)presentation?.navigate('overview');if(vault.claimContext)showClaim();return true;
@@ -1043,7 +1042,13 @@ function friendshipContext(){
 }
 function friendshipInput(operation,input,target){
   const fields={agentId:target},validId=value=>typeof value==='string'&&value.length>0&&value.length<=180;
-  if(['friends','inbox'].includes(operation)){fields.limit=20;if(input.cursor!==undefined){if(typeof input.cursor!=='string'||!input.cursor||input.cursor.length>2048)throw new ApiError('invalid_request',422);fields.cursor=input.cursor;}}
+  if(['friends','inbox'].includes(operation)){
+    fields.limit=input.limit??20;if(!Number.isSafeInteger(fields.limit)||fields.limit<1||fields.limit>100)throw new ApiError('invalid_request',422);
+    if(input.cursor!==undefined){if(typeof input.cursor!=='string'||!input.cursor||input.cursor.length>2048)throw new ApiError('invalid_request',422);fields.cursor=input.cursor;}
+    if(input.search!==undefined){if(typeof input.search!=='string'||Array.from(input.search).length>100)throw new ApiError('invalid_request',422);fields.search=input.search;}
+    if(input.order!==undefined){if(!['newest','oldest'].includes(input.order))throw new ApiError('invalid_request',422);fields.order=input.order;}
+    if(operation==='inbox'&&input.state!==undefined){if(!['all','pending','accepted','declined','cancelled','expired'].includes(input.state))throw new ApiError('invalid_request',422);fields.state=input.state;}
+  }
   if(operation==='inbox'){if(!['received','sent'].includes(input.direction))throw new ApiError('invalid_request',422);fields.direction=input.direction;}
   if(operation==='pair'){if(!validId(input.otherAgentId))throw new ApiError('invalid_request',422);fields.otherAgentId=input.otherAgentId;}
   if(operation==='invitation'||['accept','decline','cancel'].includes(operation)){if(!validId(input.requestId))throw new ApiError('invalid_request',422);fields.requestId=input.requestId;}
@@ -1089,6 +1094,16 @@ async function commandFriendship(operation,input={}){
     }catch(error){if(error.status>=400&&error.status<500&&!['unknown_commit','commit_result_unknown','response_unknown','retry_same_operation'].includes(error.code)){friendshipPending.delete(scope);try{sessionStorage.removeItem(storageKey);}catch{}}if(ctx.current()&&error.status===401)expireAuthenticatedSession(ctx.source,ctx.session,ctx.generation);throw error;}
     finally{friendshipWrites.delete(scope);}
   })();friendshipWrites.set(scope,task);return task;
+}
+// Exactly one authorized mailbox page; the view owns search and continuation.
+async function readMailbox(input={}, {signal}={}){
+  const ctx=friendshipContext(),body={box:input.box,limit:input.limit??20};
+  if(!['received','sent'].includes(body.box)||!Number.isSafeInteger(body.limit)||body.limit<1||body.limit>50)throw new ApiError('invalid_request',422);
+  if(input.search!==undefined){if(typeof input.search!=='string'||Array.from(input.search).length>100)throw new ApiError('invalid_request',422);body.search=input.search;}
+  if(input.order!==undefined){if(!['newest','oldest'].includes(input.order))throw new ApiError('invalid_request',422);body.order=input.order;}
+  if(input.cursor!==undefined){if(typeof input.cursor!=='string'||!input.cursor||input.cursor.length>4096)throw new ApiError('invalid_request',422);body.cursor=input.cursor;}
+  try{const result=await api(`/owner/agents/${encodeURIComponent(ctx.target)}/mailbox/query`,{method:'POST',body,token:ctx.session,signal});if(!ctx.current()||signal?.aborted)throw new DOMException('Context changed','AbortError');return result;}
+  catch(error){if(ctx.current()&&error.status===401)expireAuthenticatedSession(ctx.source,ctx.session,ctx.generation);throw error;}
 }
 async function readWorldActionPolicy({signal}={}){
   const ctx=friendshipContext();
@@ -1143,11 +1158,10 @@ async function readOwnerWorldSummary(operation,input={}, {signal}={}){
   catch(error){if(current()&&error.status===401)expireAuthenticatedSession(source,session,generation);throw error;}
 }
 const worldActionSettings=mountWorldActionPolicy($('#world-autonomy-form'),{session:{snapshot:()=>structuredClone(summary()),readWorldActionPolicy,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}},changed:controls,dirty:()=>presentation?.dirty('world-autonomy-form'),remember:()=>presentation?.rememberForm('world-autonomy-form'),onSave:({agentId,expectedVersion,mode})=>{if(agentId!==selectedId||hasPending())return;return command({action:'saveWorldActionPolicy',path:`/owner/agents/${encodeURIComponent(agentId)}/world-action-policy`,method:'PUT',targetId:agentId,fields:{expectedVersion,mode}});}});
-const friendshipSummary=mountFriendshipOverview($('#owner-friendship-summary'),{snapshot:()=>structuredClone(summary()),readFriendship,commandFriendship,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}});
 const behaviorLogs=mountOwnerBehaviorLogs($('#owner-behavior-logs'),{snapshot:()=>structuredClone(summary()),readBehaviorHistory,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}});
 const worldSummary=mountOwnerWorldSummary($('#owner-world-summary'),{read:readOwnerWorldSummary,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}});
-window.addEventListener('pagehide',event=>{if(!event.persisted){behaviorLogs.dispose();worldSummary.dispose();friendshipSummary.dispose();worldActionSettings.dispose();}});
-return{start,open,select:selectAgent,refresh:refreshSummary,readPerception,readWallet,readFriends,readInteraction,readFriendship,readTownService,commandFriendship,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
+window.addEventListener('pagehide',event=>{if(!event.persisted){behaviorLogs.dispose();worldSummary.dispose();worldActionSettings.dispose();}});
+return{start,open,select:selectAgent,refresh:refreshSummary,readPerception,readWallet,readFriends,readInteraction,readFriendship,readMailbox,readTownService,commandFriendship,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
   hudContext(){if(authenticatedOwner()&&['ready','refreshing'].includes(summary().phase))return{kind:'owner',ownerId:account.ownerId,agentId:agents.some(agent=>agent.agentId===selectedId)?selectedId:''};return sessionPhase==='anonymous'&&!vault.sessionToken?{kind:'guest',ownerId:'',agentId:''}:null;},
   attachPresentation(value){presentation=value;value.setNavigator(navigateManager);},
   notifyPresentation:controls,
