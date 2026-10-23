@@ -1,0 +1,14 @@
+import {hashRuntimeRequest} from '../runtime/command.ts';
+import {RuntimeError} from '../../contracts/runtime-store.ts';
+import {BEHAVIOR_NODES,BEHAVIOR_SCOPES,type BehaviorRecordDraft} from './types.ts';
+import type {JsonObject} from '../../contracts/store.ts';
+export function behaviorRecordId(draft:Pick<BehaviorRecordDraft,'sourceDomain'|'sourceEventId'|'agentId'|'node'>):string{return hashRuntimeRequest({sourceDomain:draft.sourceDomain,sourceEventId:draft.sourceEventId,agentId:draft.agentId,node:draft.node});}
+export function validateBehaviorDraft(d:BehaviorRecordDraft):void{
+ const stable=(v:unknown,max=256)=>typeof v==='string'&&v.length>0&&v.length<=max&&!/[\u0000-\u001f]/u.test(v);
+ if(!BEHAVIOR_SCOPES.includes(d.scope)||!BEHAVIOR_NODES.includes(d.node)||!['world','relationships','interaction'].includes(d.sourceDomain)||!stable(d.agentId)||!stable(d.sourceEventId)||!stable(d.sourceRef.id)||!['movement','avatar','friendship_invitation','interaction_invitation','interaction_activity'].includes(d.sourceRef.type)||!Number.isSafeInteger(d.sourceRef.version)||d.sourceRef.version<1||!Number.isSafeInteger(d.occurredAt)||d.occurredAt<0||!Number.isSafeInteger(d.recordedAt)||d.recordedAt<d.occurredAt||!stable(d.causationId)||!stable(d.correlationId)||![d.initiator,d.executor].every(a=>['agent','owner','system'].includes(a.kind)&&stable(a.id))||!['external_agent','owner','rules','system'].includes(d.origin))throw new RuntimeError('invalid_usage','Invalid bounded behavior fact');
+ if(d.sourceDomain!==(d.scope.startsWith('world_')?'world':d.scope)||!d.node.startsWith(d.sourceDomain+'.'))throw new RuntimeError('invalid_usage','Behavior source differs from its node');
+ if(d.ownerAudience&&(d.ownerAudience.sourceDomain!==d.sourceDomain||!stable(d.ownerAudience.ownerId)||!stable(d.ownerAudience.bindingId)||!stable(d.ownerAudience.authorizationVersion)||!Number.isSafeInteger(d.ownerAudience.bindingVersion)||d.ownerAudience.bindingVersion<1||!Number.isSafeInteger(d.ownerAudience.sharingGeneration)||d.ownerAudience.sharingGeneration<1))throw new RuntimeError('invalid_usage','Invalid Owner audience proof');
+ const p=d.publicProjection;if(p&&(d.sourceDomain!=='world'||!['world.movement.started','world.movement.completed','world.idle.completed'].includes(d.node)||p.policyVersion!==1||!stable(p.worldId)||!Number.isSafeInteger(p.sharingGeneration)||p.sharingGeneration<1||p.placeId!==null&&!stable(p.placeId,128)||p.placeName!==null&&!stable(p.placeName,120)))throw new RuntimeError('invalid_usage','Invalid public behavior projection');
+ if(Buffer.byteLength(JSON.stringify(d))>4096)throw new RuntimeError('invalid_usage','Behavior fact exceeds bounded metadata');
+}
+export function sameBehavior(left:BehaviorRecordDraft,right:BehaviorRecordDraft):boolean{return hashRuntimeRequest({...left,recordedAt:0} as unknown as JsonObject)===hashRuntimeRequest({...right,recordedAt:0} as unknown as JsonObject);}

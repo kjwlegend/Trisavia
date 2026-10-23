@@ -1,3 +1,4 @@
+import {BEHAVIOR_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/behavior-migration.ts';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { privateFile, readRuntime, requirePrivateFile, docker, type RuntimeConfig } from './postgresql/runtime.ts';
@@ -5,10 +6,10 @@ import { applicationSchemas } from './postgresql/permissions.ts';
 import { checkedWorldDatabase } from './world-core-database.ts';
 import { migratePostgres, POSTGRES_SCHEMA_SIGNATURE } from '../apps/platform/infrastructure/postgresql/migrations.ts';
 
-export const worldCoreSchemas=[...applicationSchemas,'runtime','world','interaction','decision'] as const;
+export const worldCoreSchemas=[...applicationSchemas,'runtime','world','interaction','decision','behavior'] as const;
 /** Maintenance entry only. The application role cannot migrate or alter identity/write gates. */
 export async function grantWorldCorePermissions(config:RuntimeConfig,database:string):Promise<void>{
- checkedWorldDatabase(database);const old=applicationSchemas.join(','),added='runtime,world,interaction,decision';
+ checkedWorldDatabase(database);const old=applicationSchemas.join(','),added='runtime,world,interaction,decision,behavior';
  const sql=`BEGIN;
  REVOKE ALL ON SCHEMA ${old},${added} FROM connet_app;
  GRANT USAGE ON SCHEMA ${old},${added} TO connet_app;
@@ -18,6 +19,7 @@ export async function grantWorldCorePermissions(config:RuntimeConfig,database:st
  GRANT SELECT ON platform.module_migrations,platform.legacy_schema_migrations,platform.instance_state TO connet_app;
  GRANT UPDATE(write_generation) ON platform.instance_state TO connet_app;
  REVOKE ALL ON runtime.event_clock FROM connet_app;GRANT SELECT,UPDATE(position) ON runtime.event_clock TO connet_app;
+ ${BEHAVIOR_PERMISSIONS_SQL}
  COMMIT;`;
  await docker(['exec','-i',`${config.project}-server`,'psql','-X','-v','ON_ERROR_STOP=1','-U','postgres','-d',database],{input:sql});
 }
