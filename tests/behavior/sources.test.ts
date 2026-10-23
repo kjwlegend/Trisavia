@@ -5,9 +5,10 @@ import {bootstrapWorld,createWorldService} from '../../apps/platform/application
 import {bootstrapInteraction,createInteractionService} from '../../apps/platform/application/interaction-service.ts';
 import {createRelationshipsService} from '../../apps/platform/application/relationships-service.ts';
 import {createDeterministicScheduler} from '../../apps/platform/infrastructure/scheduling/deterministic-scheduler.ts';
-import {BEHAVIOR_SCOPES,type BehaviorObservationAccess} from '../../apps/platform/domains/behavior/types.ts';
+import {BEHAVIOR_SCOPES,type BehaviorObservationAccess,type BehaviorRecord} from '../../apps/platform/domains/behavior/types.ts';
 import type {RuntimeReadContext} from '../../apps/platform/contracts/runtime-store.ts';
 import type {JsonObject} from '../../apps/platform/contracts/store.ts';
+import {DEFAULT_WORLD_RULES} from '../../apps/platform/domains/world/rules.ts';
 
 async function setup(){const f=coreFixture(),a=f.addAgent('logs-a'),b=f.addAgent('logs-b');
  const observation:BehaviorObservationAccess<RuntimeReadContext>={async capture(_ctx,id,sourceDomain){return {ownerId:'owner-'+id,bindingId:'binding-'+id,bindingVersion:1,authorizationVersion:'proof-'+id,sharingGeneration:1,sourceDomain};}};
@@ -58,4 +59,57 @@ test('idle emits only actual completed segments, persists five-minute cadence, a
  // Recreating the service/scheduler does not reset persisted eligibility; no timer manufactures a missed row.
  const resumed=createWorldService(f.identity),afterRestart=createDeterministicScheduler({store:f.store,workerId:'restarted-log',batchLimit:10,handlers:[{kind:'world.idle.step',version:1,run:resumed.handleIdleTask}]});f.now=first.occurredAt+300001;await afterRestart.runDue();for(let i=0;i<5&&records().length===1;i++)await tick();assert.equal(records().length,2);assert(records()[1]!.occurredAt-first.occurredAt>=300000);
  const before=records().length;f.membership('logs-a',{ownerPaused:true});f.now+=600000;await tick();assert.equal(records().length,before);const coverage=await f.behavior.getCoverage();assert.equal(coverage.find(c=>c.scope==='world_idle')!.partial,true);
+});
+
+test('movement details use actual step times and only committed route places from the original map',async()=>{
+ const f=coreFixture(),a=f.addAgent('detail-a'),world=createWorldService(f.identity),rules={...structuredClone(DEFAULT_WORLD_RULES),places:[{id:'commons',bounds:{left:1,top:0,right:1,bottom:0},access:'members' as const,capacity:null}]};
+ await f.store.transaction(async ctx=>{await bootstrapWorld(ctx,rules);for(const scope of BEHAVIOR_SCOPES)await f.behavior.activateCoverage(scope,f.now);});
+ const run=(action:string,input:JsonObject)=>f.store.transaction(ctx=>world.execute(ctx,a,f.key(a,action),input));
+ await run('world.avatar.create',{worldId:'default',expectedRulesetVersion:1});const avatar=(await f.world.getAvatar('default','detail-a'))!;
+ await f.world.saveAvatar({...avatar,version:avatar.version+1,position:{x:0,y:0},placeId:null},avatar.version);
+ const requestAt=f.now;await run('world.avatar.move',{worldId:'default',expectedVersion:avatar.version+1,expectedRulesetVersion:1,expectedTopologyVersion:1,path:[1,2,3].map(x=>({x,y:0}))});
+ const rows=()=>[...f.state.behaviorRecords.values()],describe=(row:BehaviorRecord)=>f.store.read(ctx=>world.describeBehavior(ctx,row,'owner'));
+ const pending=(await describe(rows()[0]!))!;assert.equal(pending.startedAt,null);assert.equal(pending.endedAt,null);assert.equal(pending.journey?.completedSteps,0);assert.equal(pending.location?.to?.name,'未命名开放区域');
+ const scheduler=createDeterministicScheduler({store:f.store,workerId:'detail-steps',batchLimit:10,handlers:[{kind:'world.movement.step',version:1,run:world.handleTask}]});
+ f.now+=12000;await scheduler.runDue();const started=(await describe(rows().find(r=>r.node==='world.movement.started')!))!;
+ assert.equal(started.startedAt,f.now);assert.notEqual(started.startedAt,requestAt);assert.equal(started.endedAt,null);assert.equal(started.journey?.completedSteps,1);assert.equal(started.location?.to?.name,'公共庭');
+ const publicStarted=(await f.store.read(ctx=>world.describeBehavior(ctx,rows().find(r=>r.node==='world.movement.started')!,'public')))!;assert.equal(publicStarted.journey?.plannedSteps,null);assert.equal(publicStarted.journey?.completedSteps,1);assert.equal(publicStarted.location?.to?.name,'公共庭');assert.deepEqual(publicStarted.participants,[]);
+ f.now+=2000;await scheduler.runDue();f.now+=3000;await scheduler.runDue();const complete=rows().find(r=>r.node==='world.movement.completed')!,details=(await describe(complete))!;
+ assert.equal(details.startedAt,requestAt+12000);assert.equal(details.endedAt,f.now);assert.equal(details.durationMs,5000);assert.deepEqual(details.journey,{completedSteps:3,plannedSteps:3});assert.deepEqual(details.location?.via,[{kind:'place',name:'公共庭'}]);
+ assert(!JSON.stringify(details).includes('"x"'));assert(!JSON.stringify(details).includes('"y"'));
+ // Synthetic legacy event: rebuild from persisted plan + original events, not today's map or Avatar.
+ delete f.state.events.find(e=>e.eventId===complete.sourceEventId)!.payload.behaviorDetails;
+ const later={...structuredClone(DEFAULT_WORLD_RULES),version:2,topologyVersion:2};await f.world.activateRuleset(later,(await f.world.getWorld('default'))!.revision);
+ const legacy=(await describe(complete))!;assert.equal(legacy.location?.rulesetVersion,1);assert.deepEqual(legacy.location?.via,[{kind:'place',name:'公共庭'}]);assert.equal(legacy.durationMs,5000);
+ f.membership('detail-a',{state:'left',sharingGeneration:2});assert.equal(await describe(complete),null);
+});
+
+test('new idle detail follows the persisted real segment; legacy idle never borrows current location or time',async()=>{
+ const {f,move,world,records,enable,scheduler}=await setup();await move('world.avatar.create',{worldId:'default',expectedRulesetVersion:1});await enable();
+ const tick=async()=>{const task=[...f.state.tasks.values()].find(t=>t.kind==='world.idle.step')!;f.now=Math.max(f.now,task.dueAt);await scheduler.runDue();};
+ for(let i=0;i<10&&!records().length;i++)await tick();const row=records()[0]!,details=(await f.store.read(ctx=>world.describeBehavior(ctx,row,'public')))!;
+ assert.equal(details.phase,'wander');assert.equal(details.completeness,'recorded');assert.equal(details.endedAt,row.occurredAt);assert.equal(details.durationMs,details.endedAt!-details.startedAt!);assert(details.journey!.completedSteps!>=1&&details.journey!.completedSteps!<=3);assert.equal(details.journey?.plannedSteps,null);
+ const own=(await f.store.read(ctx=>world.describeBehavior(ctx,row,'owner')))!;assert.equal(own.journey?.completedSteps,own.journey?.plannedSteps);
+ const frozen=structuredClone(details);f.now+=100000;assert.deepEqual(await f.store.read(ctx=>world.describeBehavior(ctx,row,'public')),frozen);
+ delete f.state.events.find(e=>e.eventId===row.sourceEventId)!.payload.behaviorDetails;
+ const legacy=(await f.store.read(ctx=>world.describeBehavior(ctx,row,'owner')))!;assert.equal(legacy.completeness,'partial');assert.equal(legacy.startedAt,null);assert.equal(legacy.durationMs,null);assert.equal(legacy.endedAt,row.occurredAt);assert.equal(legacy.location?.from??null,null);assert.equal(legacy.journey,null);assert(legacy.gaps.length>0);
+});
+
+test('social detail keeps per-node outcomes and source participant references without body copies or public access',async()=>{
+ const {f,a,b,relationships,interaction,social,records,enable}=await setup();await enable();
+ const friendship=(who:typeof a,action:string,input:JsonObject)=>f.store.transaction(ctx=>relationships.execute(ctx,who,{...f.key(who,action),domain:'relationships'},input));
+ const sent=await friendship(a,'relationships.invitation.send',{toAgentId:'logs-b',message:'PRIVATE NOTE'}),request=(sent.result.request as JsonObject).requestId!;const sentAt=f.now;
+ f.now+=2500;await friendship(b,'relationships.invitation.decline',{requestId:request,expectedVersion:1});
+ const send=records().find(r=>r.agentId==='logs-a'&&r.node==='relationships.invitation.sent')!,declined=records().find(r=>r.agentId==='logs-a'&&r.node==='relationships.invitation.declined')!;
+ const sentDetails=(await f.store.read(ctx=>relationships.describeBehavior(ctx,send,'owner')))!;assert.equal(sentDetails.resultCode,'friendship_pending');assert.equal(sentDetails.endedAt,null);
+ const declinedDetails=(await f.store.read(ctx=>relationships.describeBehavior(ctx,declined,'owner')))!;assert.equal(declinedDetails.durationMs,2500);assert.equal(declinedDetails.startedAt,sentAt);assert.equal(declinedDetails.resultCode,'friendship_declined');assert.deepEqual(declinedDetails.participants,[{agentId:'logs-a',role:'sender'},{agentId:'logs-b',role:'recipient'}]);assert.equal(await f.store.read(ctx=>relationships.describeBehavior(ctx,declined,'public')),null);
+ const work=await social(a,'interaction.artifact.create',{title:'PRIVATE TITLE',body:'PRIVATE BODY'}),inv=await social(a,'interaction.invitation.send',{worldId:'default',toAgentId:'logs-b',artifact:work.result.artifact!,expectedArtifactVersion:1,templateVersion:1,configVersion:1,intent:'PRIVATE INTENT'});
+ f.now+=1000;const accepted=await social(b,'interaction.invitation.accept',{invitationId:inv.result.invitationId!,expectedVersion:1}),activity=accepted.result.activity as JsonObject,acceptedAt=f.now;
+ f.now+=2000;await social(b,'interaction.activity.submit_feedback',{activityId:activity.activityId!,expectedVersion:1,body:'PRIVATE FEEDBACK'});const submitted=records().find(r=>r.agentId==='logs-a'&&r.node==='interaction.feedback.submitted')!;
+ f.now+=3000;await social(a,'interaction.activity.close',{activityId:activity.activityId!,expectedVersion:2});const closed=records().find(r=>r.agentId==='logs-a'&&r.node==='interaction.activity.closed')!;
+ const before=(await f.store.read(ctx=>interaction.describeBehavior(ctx,submitted,'owner')))!,after=(await f.store.read(ctx=>interaction.describeBehavior(ctx,closed,'owner')))!;
+ assert.equal(before.resultCode,'waiting_ack_submitted_unconfirmed');assert.equal(before.endedAt,null);assert.equal(after.resultCode,'closed_received_confirmed');assert.equal(after.startedAt,acceptedAt);assert.equal(after.durationMs,5000);assert(!JSON.stringify([sentDetails,declinedDetails,before,after]).includes('PRIVATE'));
+ delete f.state.events.find(e=>e.eventId===submitted.sourceEventId)!.payload.behaviorDetails;assert.deepEqual(await f.store.read(ctx=>interaction.describeBehavior(ctx,submitted,'owner')),before);
+ assert.equal(await f.store.read(ctx=>interaction.describeBehavior(ctx,closed,'public')),null);
+ await social(b,'interaction.policy.block',{agentId:'logs-a',expectedVersion:1});assert.equal(await f.store.read(ctx=>interaction.describeBehavior(ctx,closed,'owner')),null);assert.equal(await f.store.read(ctx=>relationships.describeBehavior(ctx,declined,'owner')),null);
 });

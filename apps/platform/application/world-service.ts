@@ -1,6 +1,7 @@
 import {BEHAVIOR_REPOSITORY} from '../domains/behavior/repository.ts';
 import {behaviorEnabled,recordBehaviorSource} from '../domains/behavior/sources.ts';
-import type {BehaviorObservationAccess,BehaviorPublicProjection,BehaviorRecord,BehaviorNode} from '../domains/behavior/types.ts';
+import {behaviorSourceEvent,detailPayload,storedBehaviorDetails,worldBehaviorDetails} from '../domains/behavior/details.ts';
+import type {BehaviorDetails,BehaviorObservationAccess,BehaviorPublicProjection,BehaviorRecord,BehaviorNode} from '../domains/behavior/types.ts';
 import {assertWorldActionAllowed} from '../domains/access/world-action-policy.ts';
 import { randomUUID } from 'node:crypto';
 import type { CommandKey, CommandReceipt, IdleTaskRecurrence, RuntimeEvent, RuntimeReadContext, RuntimeTask, RuntimeTransaction } from '../contracts/runtime-store.ts';
@@ -81,6 +82,24 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
       await participation(context,record.agentId,proof.worldId,false);const {rules}=await rulesFor(context,proof.worldId);return proof.placeId===null||rules.places.some(p=>p.id===proof.placeId&&p.access==='members');
     }catch(error){if(error instanceof M1Error&&error.statusCode<500)return false;throw error;}
   }
+  async function movementDetails(context:RuntimeReadContext,movement:WorldMovement,at:number,steps=movement.nextStep,state=movement.state):Promise<BehaviorDetails>{
+    const history=steps>0?await context.events.list({domain:'world',subjectId:movement.id,limit:100}):[];
+    const first=history.find(e=>e.occurredAt<=at&&['world.movement.running','world.movement.completed'].includes(e.kind)&&e.payload.nextStep===1);
+    const rules=await context.repository(WORLD_REPOSITORY).getRuleset(movement.worldId,movement.rulesetVersion);
+    const startedAt=steps>0?(first?.occurredAt??(steps===1?at:null)):null;
+    return worldBehaviorDetails({phase:'movement',rules,origin:movement.origin,path:movement.path.slice(0,steps),startedAt,endedAt:['completed','stopped'].includes(state)?at:null,plannedSteps:movement.path.length,resultCode:state==='stopped'?(movement.stoppedCode??'movement_stopped'):'movement_'+state,gaps:steps>1&&startedAt===null?['首个实际移动节点时间未记录']:[]});
+  }
+  async function describeBehavior(context:RuntimeReadContext,record:BehaviorRecord,audience:'owner'|'public'):Promise<BehaviorDetails|null>{
+    if(!await canObserveBehavior(context,record,audience))return null;
+    const project=(details:BehaviorDetails):BehaviorDetails=>audience==='public'?{...details,journey:details.journey?{completedSteps:details.journey.completedSteps,plannedSteps:null}:null,participants:[]}:details;
+    const event=await behaviorSourceEvent(context,record),stored=storedBehaviorDetails(event);if(stored)return project(stored);
+    if(record.sourceRef.type==='movement'){
+      const movement=await context.repository(WORLD_REPOSITORY).getMovement(record.sourceRef.id);if(!movement)return null;
+      const state=event.kind.slice('world.movement.'.length) as WorldMovement['state'],steps=event.payload.nextStep;
+      if(typeof steps==='number'&&Number.isSafeInteger(steps)&&steps>=0&&steps<=movement.path.length){const details=await movementDetails(context,movement,event.occurredAt,steps,state);if(state==='stopped')details.resultCode=typeof event.payload.stoppedCode==='string'?event.payload.stoppedCode:'movement_stopped';return project(details);}
+    }
+    return {version:1,completeness:'partial',phase:record.scope==='world_idle'?'wander':'movement',startedAt:null,endedAt:['world.movement.completed','world.movement.stopped','world.idle.completed'].includes(record.node)?record.occurredAt:null,durationMs:null,location:record.publicProjection?.placeName?{from:null,to:{kind:'place',name:record.publicProjection.placeName},via:[],mapId:null,rulesetVersion:null,topologyVersion:null}:null,journey:null,participants:[],resultCode:record.scope==='world_idle'?'idle_completed':'movement_details_unrecorded',gaps:['起点、经过与耗时未记录']};
+  }
   async function commitPosition(context: RuntimeTransaction, rules: WorldRuleset, avatar: WorldAvatar, cell: GridPoint, source:'explicit'|'idle'='idle',movementId:string|null=null): Promise<WorldAvatar> {
     const destination = validatePath(rules, avatar.position, [cell])[0]!;
     await capacity(context, rules, [destination], avatar.agentId);
@@ -123,14 +142,18 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
     if (payload.explicitStamp !== explicitStamp || payload.avatarVersion !== avatar.version) return rest(explicitStamp);
     const { rules } = await rulesFor(context, worldId);
     let path: GridPoint[];
+    let journey: {origin:GridPoint;startedAt:number;path:GridPoint[]}|null=null;
     if (!Array.isArray(payload.path) || payload.path.length > IDLE_LIFE_POLICY_V1.maxPathLength) fail('invalid_task', 400, 'Invalid bounded idle path');
     if (payload.path.length) {
       if (payload.qualification !== qualification || payload.rulesetVersion !== rules.version || payload.topologyVersion !== rules.topologyVersion) return rest(explicitStamp);
       path = payload.path as unknown as GridPoint[];
+      const saved=payload.behaviorJourney as unknown as {origin:GridPoint;startedAt:number;path:GridPoint[]}|undefined;
+      if(saved&&saved.origin&&Number.isSafeInteger(saved.origin.x)&&Number.isSafeInteger(saved.origin.y)&&Number.isSafeInteger(saved.startedAt)&&saved.startedAt>=0&&saved.startedAt<=now&&Array.isArray(saved.path)&&saved.path.length<IDLE_LIFE_POLICY_V1.maxPathLength&&saved.path.every(p=>p&&Number.isSafeInteger(p.x)&&Number.isSafeInteger(p.y)))journey=structuredClone(saved);
     } else {
       const neighbors = await repository.listAvatars(worldId, { limit: 100 });
       path = idlePath(rules, avatar.position, neighbors.filter(other => other.agentId !== agentId).map(other => other.position), idleSeed(avatar.id + ':' + avatar.version));
       if (!path.length) return rest(explicitStamp);
+      journey={origin:{...avatar.position},startedAt:now,path:[]};
     }
     const step = path[0]!;
     const neighbors = await repository.listAvatars(worldId, { limit: 100 });
@@ -142,13 +165,16 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
     });
     let next: WorldAvatar;
     try { next = await commitPosition(context, rules, avatar, step); } catch (error) { if (error instanceof M1Error && error.statusCode < 500) return rest(explicitStamp); throw error; }
+    if(journey)journey.path.push({...step});
     await repository.advanceRevision(worldId, world.revision);
     if(path.length===1&&await behaviorEnabled(context,'world_idle')&&await context.repository(BEHAVIOR_REPOSITORY).shouldRecordIdle(agentId,now)){
-      const event=await context.events.append({eventId:'idle-completed:'+next.id+':'+next.version,domain:'world',kind:'world.idle.completed',schemaVersion:1,subject:{type:'avatar',id:next.id,version:next.version},worldId,actor:{kind:'system',id:'world-rules'},source:'rules',occurredAt:now,causationId:task.taskId,correlationId:task.taskId,audience:{kind:'agents',agentIds:[agentId]},payload:{avatarId:next.id,avatarVersion:next.version,worldId,policyVersion:1}});
+      const details=worldBehaviorDetails({phase:'wander',rules,origin:journey?.origin??null,path:journey?.path??[step],startedAt:journey?.startedAt??null,endedAt:now,plannedSteps:journey?.path.length??null,resultCode:'idle_completed',partial:!journey,gaps:journey?[]:['本段开始时细节尚未记录，起点与耗时未知']});
+      if(!journey)details.journey!.completedSteps=null;
+      const event=await context.events.append({eventId:'idle-completed:'+next.id+':'+next.version,domain:'world',kind:'world.idle.completed',schemaVersion:1,subject:{type:'avatar',id:next.id,version:next.version},worldId,actor:{kind:'system',id:'world-rules'},source:'rules',occurredAt:now,causationId:task.taskId,correlationId:task.taskId,audience:{kind:'agents',agentIds:[agentId]},payload:{avatarId:next.id,avatarVersion:next.version,worldId,policyVersion:1,behaviorDetails:detailPayload(details)}});
       await recordBehaviorSource(context,options.observation??{capture:async(ctx,id,domain)=>await identity.captureOwnerObservation?.(ctx,id,domain)??null},{event,scope:'world_idle',sourceRef:{type:'avatar',id:next.id,version:next.version},perspectives:[{agentId,node:'world.idle.completed',publicProjection:await behaviorPublic(context,agentId,worldId,next.position)}]});
     }
     return again(path.length > 1 ? IDLE_LIFE_POLICY_V1.stepIntervalMs : restMs(next), { worldId, agentId, path: path.slice(1) as unknown as JsonObject[], avatarVersion: next.version,
-      qualification, rulesetVersion: rules.version, topologyVersion: rules.topologyVersion, explicitStamp });
+      qualification, rulesetVersion: rules.version, topologyVersion: rules.topologyVersion, explicitStamp,...(journey&&path.length>1?{behaviorJourney:JSON.parse(JSON.stringify(journey)) as JsonObject}:{}) });
   }
   async function scheduleStep(context: RuntimeTransaction, movement: WorldMovement, actionPolicyVersion: number): Promise<void> {
     if (movement.nextDueAt === null) return;
@@ -157,11 +183,12 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
       generation: await context.tasks.currentGeneration('world'), maxAttempts: 5, payloadVersion: 1, payload: { actionPolicyVersion } });
   }
   async function movementFact(context: RuntimeTransaction, key: CommandKey, movement: WorldMovement, revision: number): Promise<string[]> {
+    const node:BehaviorNode|undefined=movement.state==='pending'?'world.movement.received':movement.state==='completed'?'world.movement.completed':movement.state==='stopped'?'world.movement.stopped':movement.nextStep===1?'world.movement.started':undefined;
+    const details=node&&await behaviorEnabled(context,'world_explicit')?await movementDetails(context,movement,context.now()):null;
     const eventId = randomUUID(); const event=await context.events.append({ eventId, domain: 'world', kind: 'world.movement.' + movement.state, schemaVersion: 1,
       subject: { type: 'movement', id: movement.id, version: movement.version }, worldId: movement.worldId, actor: key.principal,
       source: key.principal.kind === 'system' ? 'rules' : 'external_agent', occurredAt: context.now(), causationId: key.commandId, correlationId: movement.commandId,
-      audience: { kind: 'agents', agentIds: [movement.agentId] }, payload: movementResult(movement, revision) });
-    const node:BehaviorNode|undefined=movement.state==='pending'?'world.movement.received':movement.state==='completed'?'world.movement.completed':movement.state==='stopped'?'world.movement.stopped':movement.nextStep===1?'world.movement.started':undefined;
+      audience: { kind: 'agents', agentIds: [movement.agentId] }, payload: {...movementResult(movement, revision),...(details?{behaviorDetails:detailPayload(details)}:{})} });
     if(node){let publicProjection:BehaviorPublicProjection|null=null;
       if(['world.movement.started','world.movement.completed'].includes(node)&&await behaviorEnabled(context,'world_explicit'))publicProjection=await behaviorPublic(context,movement.agentId,movement.worldId,node==='world.movement.started'?movement.origin:movement.path[movement.nextStep-1]!);
       await recordBehaviorSource(context,options.observation??{capture:async(ctx,id,domain)=>await identity.captureOwnerObservation?.(ctx,id,domain)??null},{event,scope:'world_explicit',sourceRef:{type:'movement',id:movement.id,version:movement.version},perspectives:[{agentId:movement.agentId,node,publicProjection}],initiator:{kind:'agent',id:movement.agentId},origin:'external_agent'});
@@ -318,7 +345,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
     if (!avatar || avatar.status === 'left') fail('avatar_not_found', 404, 'Avatar is not available');
     return { worldId, worldRevision: world.revision, asOf: context.now(), avatar: await projectedAvatar(context,avatar) };
   }
-  return { execute, readAvatar, handleTask, handleIdleTask, ensureIdleLife,canObserveBehavior,
+  return { execute, readAvatar, handleTask, handleIdleTask, ensureIdleLife,canObserveBehavior,describeBehavior,
     async readMapManifest(context:RuntimeReadContext,principal:Principal,worldId:string){await participation(context,await authorize(context,principal),worldId,false);return mapProjection(context,worldId);},
     async readNpcs(context:RuntimeReadContext,principal:Principal,worldId:string){await participation(context,await authorize(context,principal),worldId,false);return mapProjection(context,worldId,true);},
     async readPublicMapManifest(context:RuntimeReadContext,worldId:string){return mapProjection(context,worldId);},
