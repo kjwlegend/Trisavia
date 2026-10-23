@@ -104,6 +104,7 @@ function updateControls(state) {
   reduceMotion.setAttribute('aria-pressed',String(state.reducedMotion));
   const text = state.worldScene?.phase==='recovering'?'连接正在恢复 · 角色保留最近读取的位置':state.worldScene?.phase!=='demo'?'服务器角色位置按读取结果显示 · 画布动画不代表在线':state.paused ? state.pauseReason === 'reduced' ? '静止展示 · 已遵循系统的减少动态设置' : state.pauseReason === 'performance' ? '静止展示 · 可手动播放演示' : '静止展示 · 演示动态已暂停' : !state.visible ? '演示动态在地图可见时继续' : '人物与环境为演示动态';
   if ($('#world-motion-status').textContent !== text) $('#world-motion-status').textContent = text;
+  positionCharacterCard();
 }
 async function startScene() {
   const generation=++sceneGeneration;sceneAbort?.abort();sceneAbort=new AbortController();ownedAgents?.attach(null);
@@ -132,8 +133,8 @@ document.addEventListener('hud:open',()=>closePlace(false));
 $('#world-detail-close').addEventListener('click', closePlace);
 $('#world-back').addEventListener('click', closePlace);
 document.addEventListener('keydown', event => {if(event.key!=='Escape'||event.defaultPrevented||document.querySelector('#hud-window:not([hidden]):not([data-panel-state=closing])')||detailTransition.state==='closing'||event.target.closest?.('input,textarea,select,[contenteditable=true]'))return;if(currentPlace){event.preventDefault();closePlace();}else if(scene?.getState().exploring){event.preventDefault();scene.setExploring(false);scene.canvas.focus({preventScroll:true});}});
-$('#world-zoom-out').addEventListener('click', () => { if (scene) scene.setZoom(scene.getState().zoom - .25); });
-$('#world-zoom-in').addEventListener('click', () => { if (scene) scene.setZoom(scene.getState().zoom + .25); });
+$('#world-zoom-out').addEventListener('click', () => scene?.zoomBy(-1));
+$('#world-zoom-in').addEventListener('click', () => scene?.zoomBy(1));
 $('#world-fit').addEventListener('click', () => scene?.fit());
 $('#world-explore').addEventListener('click',()=>scene?.setExploring(!scene.getState().exploring));
 $('#world-reset').addEventListener('click',()=>scene?.reset());

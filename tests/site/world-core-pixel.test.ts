@@ -28,9 +28,9 @@ test('fixed pixel mapping places every logical cell centre inside commons withou
  assert.throws(()=>assertPixelRules({...rules,version:2}),/incompatible/u);assert.throws(()=>assertPixelRules({...rules,width:32}),/incompatible/u);assert.throws(()=>pixelPoint({x:16,y:0},rules),/invalid/u);
 });
 
-test('fit keeps the whole source stage inside HUD insets while close views use native integer density',()=>{
+test('fit keeps the whole source stage inside HUD insets and manual zoom uses reversible small steps',()=>{
  const fit=pixelFitScale(PIXEL_MAP,{width:1440,height:900},{top:88,bottom:126,left:16,right:16});
- assert.ok(fit*768<=1408&&fit*512<=686);assert.equal(nextPixelScale(fit,1,fit),2);assert.equal(nextPixelScale(2,1,fit),3);assert.equal(nextPixelScale(3,-1,fit),2);assert.equal(nextPixelScale(2,-1,fit),fit);assert.equal(nextPixelScale(2,0,fit),2);
+ assert.ok(fit*768<=1408&&fit*512<=686);for(const current of [fit,.88,1.13,2.6]){const lower=Math.min(fit,current),higher=nextPixelScale(current,1,lower);assert.ok(Math.abs(higher-current-.1)<1e-8);assert.ok(Math.abs(nextPixelScale(higher,-1,lower)-current)<1e-8);}assert.equal(nextPixelScale(fit,-1,fit),fit);assert.equal(nextPixelScale(3,1,fit),3);assert.equal(nextPixelScale(2,0,fit),2);
 });
 
 test('render layer uses dictionary rects and native anchors, preserving forest pixel density and exact public facts',()=>{

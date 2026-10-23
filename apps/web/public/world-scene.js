@@ -174,6 +174,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   if(!rendering)blockedRects.push(...[[0,376],[392,1144],[1160,W]].map(([left,right])=>({left,right,top:96,bottom:192})));
   const ownedLayer=createOwnedAgentLayer(root,graph,{blockedRects,renderer:rendering,onSelect:selectAgent,onOverlayChange:()=>{if(!destroyed)refreshOwnedHover();}});
   const camera={x:W/2,y:H/2,zoom:1,base:1,width:0,height:0,dpr:1};
+  let zoomMotion=null;
   let hoverPointer=null,hoverProjection='';
   let mode=rendering?'overview':'initial',exploring=false;
   let worldView={phase:!rendering&&worldSource==='demo'?'demo':'loading',enabled:null,rules:null,avatars:[],npcs:[],complete:false,asOf:null,worldRevision:null},ownedProjection={agents:[],selectedAgentId:''};
@@ -190,7 +191,10 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   function overviewScale(){const i=overviewInsets();return rendering?rendering.camera.fit({width:W,height:H},camera,i):Math.max(.01,Math.min((camera.width-i.left-i.right)/W,(camera.height-i.top-i.bottom)/H));}
   function screenCenter(){if(mode!=='overview')return{x:camera.width/2,y:camera.height/2};const i=overviewInsets();return{x:(camera.width+i.left-i.right)/2,y:(camera.height+i.top-i.bottom)/2};}
   function notify(){canvas.classList.toggle('is-exploring',exploring);onChange(state());}
-  function clampCamera(){const scale=camera.base*camera.zoom;for(const [axis,size,view]of [['x',W,camera.width],['y',H,camera.height]]){const half=view/(2*scale);camera[axis]=size*scale<=view?size/2:Math.max(half,Math.min(size-half,camera[axis]));}}
+  function clampCamera(){const scale=camera.base*camera.zoom;for(const [axis,size,view]of [['x',W,camera.width],['y',H,camera.height]]){const half=view/(2*scale),minimum=Math.min(half,size-half),maximum=Math.max(half,size-half);camera[axis]=Math.max(minimum,Math.min(maximum,camera[axis]));}}
+  function applyZoom(zoom,anchor,point){camera.zoom=zoom;const scale=camera.base*zoom;camera.x=point.x-(anchor.x-camera.width/2)/scale;camera.y=point.y-(anchor.y-camera.height/2)/scale;clampCamera();}
+  function advanceZoom(time){if(!zoomMotion)return;const move=zoomMotion,t=Math.max(0,Math.min(1,(time-move.startedAt)/160)),ease=1-(1-t)**3;applyZoom(move.from+(move.to-move.from)*ease,move.anchor,move.point);if(t===1)zoomMotion=null;notify();}
+  function stopZoom(){if(zoomMotion){advanceZoom(performance.now());zoomMotion=null;}}
   function fail(){if(broken)return;broken=true;cancelAnimationFrame(raf);raf=0;onError();}
   function draw(){
     if(destroyed||broken||!camera.width||!camera.height)return;
@@ -221,6 +225,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
     raf=0;if(!running()){lastTime=null;return;}
     if(lastTime===null){lastTime=time;lastDraw=time;}
     const dt=Math.min((time-lastTime)/1000,.05);lastTime=time;elapsed+=dt;
+    advanceZoom(time);
     for(const actor of actors.slice(0,actorLimit))updateActor(actor,dt,graph);
     // The sprite tick is capped; received positions use the untruncated monotonic clock.
     ownedLayer.step(dt,{now:time,serverTime:clock.now(),paused,visible:visible&&!document.hidden});
@@ -236,6 +241,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   }
   function reconcile(){cancelAnimationFrame(raf);raf=0;lastTime=null;lastDraw=0;if(running())raf=requestAnimationFrame(frame);else{ownedLayer.step(0,{serverTime:clock.now(),paused:true,visible:false});draw();}}
   function resize(){
+    stopZoom();
     const box=root.getBoundingClientRect(),oldScale=camera.base*camera.zoom;camera.width=box.width;camera.height=box.height;camera.dpr=Math.min(devicePixelRatio||1,2);camera.base=rendering?1:Math.max(.01,Math.max(box.width/W,box.height/H));
     canvas.width=Math.max(1,Math.round(box.width*camera.dpr));canvas.height=Math.max(1,Math.round(box.height*camera.dpr));
     if(mode==='initial'){camera.zoom=rendering?overviewScale():1;camera.x=!rendering&&box.width<760&&box.height>box.width?960:W/2;camera.y=H/2;}
@@ -243,15 +249,16 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
     else camera.zoom=Math.max(overviewScale()/camera.base,Math.min(3,oldScale/camera.base));
     clampCamera();draw();notify();
   }
-  function setZoom(value){mode='custom';camera.zoom=rendering?rendering.camera.nextScale(camera.zoom,Math.sign(value-camera.zoom),overviewScale()):Math.max(overviewScale()/camera.base,Math.min(3,value));clampCamera();draw();notify();}
-  function setExploring(value){exploring=Boolean(value);pointers.clear();drag=null;pinch=null;canvas.classList.remove('is-dragging');notify();}
-  function fit(){mode='overview';exploring=false;camera.zoom=overviewScale()/camera.base;camera.x=W/2;camera.y=H/2;draw();notify();}
+  function setZoom(value,{anchor={x:camera.width/2,y:camera.height/2},immediate=false}={}){if(!Number.isFinite(value))return;advanceZoom(performance.now());const target=Math.max(overviewScale()/camera.base,Math.min(3,value)),point=worldPoint(anchor.x,anchor.y);if(Math.abs(target-camera.zoom)<1e-9){zoomMotion=null;return;}mode='custom';zoomMotion=null;if(immediate||reduced.matches||reduceOverride||!running())applyZoom(target,anchor,point);else{zoomMotion={from:camera.zoom,to:target,anchor,point,startedAt:performance.now()};applyZoom(camera.zoom,anchor,point);}draw();notify();}
+  function zoomBy(direction){const base=zoomMotion?.to??camera.zoom,target=rendering?rendering.camera.nextScale(base,direction,overviewScale()):base+Math.sign(direction)*.1;setZoom(target);}
+  function setExploring(value){stopZoom();exploring=Boolean(value);pointers.clear();drag=null;pinch=null;canvas.classList.remove('is-dragging');notify();}
+  function fit(){zoomMotion=null;mode='overview';exploring=false;camera.zoom=overviewScale()/camera.base;camera.x=W/2;camera.y=H/2;draw();notify();}
   function reset(){if(rendering){fit();return;}mode='initial';exploring=false;resize();}
   // Opening, switching or closing a reading panel never takes the camera.
   function select(place){selected=place??null;draw();notify();}
   function setPaused(value){paused=Boolean(value)||reduced.matches;pauseReason=reduced.matches?'reduced':'user';reconcile();notify();}
   function setTime(value){if(!Number.isFinite(value)||value<0||value>8.64e15)return;sceneTime=value;light=daylightAt(value);stillLight=daylightAt(value,{reducedMotion:true});draw();}
-  function setReducedMotion(value){reduceOverride=Boolean(value);reconcile();notify();}
+  function setReducedMotion(value){reduceOverride=Boolean(value);if(reduceOverride&&zoomMotion)advanceZoom(Infinity);reconcile();notify();}
   function applyAgents(){
     rendering?.setNpcs?.(worldView.complete?worldView.npcs||[]:[],worldView.rules);
     if(!rendering&&worldView.phase==='demo')ownedLayer.set(ownedProjection);
@@ -265,6 +272,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   function selectAgent(agentId,origin){const entry=ownedLayer.actors().find(row=>row.agentId===agentId);if(!entry)return;if(entry.owned)onOwnedSelect(agentId,origin);else if(entry.fact)onSelect({...structuredClone(entry.fact),kind:'world-avatar',projectionVersion:entry.projectionVersion,x:entry.x,y:entry.y},origin);}
   function locateOwnedAgent(agentId){
     const point=ownedLayer.point(agentId);if(!point||destroyed||broken)return false;
+    stopZoom();
     const scale=camera.base*camera.zoom,bounds=root.getBoundingClientRect();
     // Explicit location uses the normal full-stage projection. Compute the
     // destination before changing mode, and admit only reachable safe centres.
@@ -296,14 +304,14 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   canvas.addEventListener('pointerdown',e=>{
     if(e.pointerType==='touch'){hoverPointer=null;ownedLayer.hover('');}
     else hoverPointer={clientX:e.clientX,clientY:e.clientY};
-    if(e.button!==0)return;const p=local(e);pointers.set(e.pointerId,p);canvas.setPointerCapture(e.pointerId);
+    if(e.button!==0)return;stopZoom();const p=local(e);pointers.set(e.pointerId,p);canvas.setPointerCapture(e.pointerId);
     if(pointers.size===1)drag={start:p,last:p,moved:false,type:e.pointerType};
     if(pointers.size===2&&exploring){const [a,b]=[...pointers.values()];pinch={distance:Math.hypot(a.x-b.x,a.y-b.y),zoom:camera.zoom};if(drag)drag.moved=true;}
   },eventOptions);
   canvas.addEventListener('pointermove',e=>{
     if(e.pointerType!=='touch')hoverPointer={clientX:e.clientX,clientY:e.clientY};
     const p=local(e);if(!pointers.has(e.pointerId)){refreshOwnedHover();return;}pointers.set(e.pointerId,p);
-    if(pinch&&pointers.size===2){const[a,b]=[...pointers.values()];setZoom(pinch.zoom*Math.hypot(a.x-b.x,a.y-b.y)/Math.max(1,pinch.distance));return;}
+    if(pinch&&pointers.size===2){const[a,b]=[...pointers.values()];setZoom(pinch.zoom*Math.hypot(a.x-b.x,a.y-b.y)/Math.max(1,pinch.distance),{anchor:{x:(a.x+b.x)/2,y:(a.y+b.y)/2},immediate:true});return;}
     if(!drag)return;
     if(Math.hypot(p.x-drag.start.x,p.y-drag.start.y)>6){drag.moved=true;ownedLayer.hover('');}
     if(drag.type==='touch'&&!exploring)return;
@@ -318,18 +326,18 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   canvas.addEventListener('pointerup',e=>finishPointer(e),eventOptions);canvas.addEventListener('pointercancel',e=>finishPointer(e,true),eventOptions);
   canvas.addEventListener('pointerleave',()=>{hoverPointer=null;ownedLayer.hover('');},eventOptions);
   window.addEventListener('blur',()=>{hoverPointer=null;ownedLayer.hover('');},eventOptions);
-  canvas.addEventListener('wheel',e=>{if(!(e.ctrlKey||e.metaKey))return;hoverPointer={clientX:e.clientX,clientY:e.clientY};e.preventDefault();setZoom(camera.zoom*(e.deltaY<0?1.15:1/1.15));},{...eventOptions,passive:false});
+  canvas.addEventListener('wheel',e=>{if(!(e.ctrlKey||e.metaKey)||!e.deltaY)return;hoverPointer={clientX:e.clientX,clientY:e.clientY};e.preventDefault();const delta=Math.max(-240,Math.min(240,e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?camera.height:1)));setZoom((zoomMotion?.to??camera.zoom)*Math.exp(-delta*.0015),{anchor:local(e)});},{...eventOptions,passive:false});
   canvas.addEventListener('keydown',e=>{
     if(e.target!==canvas)return;
     if(['+','=','-','_','Home','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key))e.preventDefault();else return;
-    if(e.key==='Home')fit();else if(['+','='].includes(e.key))setZoom(camera.zoom+.25);else if(['-','_'].includes(e.key))setZoom(camera.zoom-.25);
-    else{mode='custom';const step=64/(camera.base*camera.zoom);if(e.key==='ArrowLeft')camera.x-=step;if(e.key==='ArrowRight')camera.x+=step;if(e.key==='ArrowUp')camera.y-=step;if(e.key==='ArrowDown')camera.y+=step;clampCamera();draw();notify();}
+    if(e.key==='Home')fit();else if(['+','='].includes(e.key))zoomBy(1);else if(['-','_'].includes(e.key))zoomBy(-1);
+    else{stopZoom();mode='custom';const step=64/(camera.base*camera.zoom);if(e.key==='ArrowLeft')camera.x-=step;if(e.key==='ArrowRight')camera.x+=step;if(e.key==='ArrowUp')camera.y-=step;if(e.key==='ArrowDown')camera.y+=step;clampCamera();draw();notify();}
   },eventOptions);
-  reduced.addEventListener('change',e=>{if(e.matches){paused=true;pauseReason='reduced';reconcile();notify();}},eventOptions);
+  reduced.addEventListener('change',e=>{if(e.matches){if(zoomMotion)advanceZoom(Infinity);paused=true;pauseReason='reduced';reconcile();notify();}},eventOptions);
   document.addEventListener('visibilitychange',()=>{reconcile();notify();},eventOptions);
   const observer=new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;reconcile();notify();},{threshold:.01});observer.observe(root);
   const resizer=new ResizeObserver(resize);resizer.observe(root);resize();reconcile();notify();
-  return{canvas,setZoom,fit,reset,setExploring,select,setPaused,setTime,setReducedMotion,setOwnedAgents,setWorldScene,clearScene,locateOwnedAgent,getState:state,destroy(){if(destroyed)return;destroyed=true;cancelAnimationFrame(raf);observer.disconnect();resizer.disconnect();abort.abort();ownedLayer.destroy();rendering?.dispose?.();canvas.remove();}};
+  return{canvas,setZoom,zoomBy,fit,reset,setExploring,select,setPaused,setTime,setReducedMotion,setOwnedAgents,setWorldScene,clearScene,locateOwnedAgent,getState:state,destroy(){if(destroyed)return;destroyed=true;zoomMotion=null;cancelAnimationFrame(raf);observer.disconnect();resizer.disconnect();abort.abort();ownedLayer.destroy();rendering?.dispose?.();canvas.remove();}};
 }
 export function placeDetails(place){
   if(place.kind==='world-avatar')return{name:place.profile.displayName,area:place.placeId==='commons'?'公共庭':'',icon:'○',description:'',note:''};
