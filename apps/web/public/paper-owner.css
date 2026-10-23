@@ -299,3 +299,13 @@
 .hud-root .hud-window .account-root summary{color:var(--owner-ink)}
 .hud-root .hud-window .account-root .entry-prompt-details{border-color:var(--owner-border)}
 .hud-root .hud-window .account-root .entry-prompt-details>summary{font-size:14px;line-height:22px;color:var(--owner-ink)}
+/* Design owner review O01–O04: one form axis, one object label, restrained portrait. */
+.hud-root .hud-window .account-root .profile-layout #profile-form .form-grid>label{display:flex;flex-direction:column;align-items:stretch;gap:6px;margin:0;min-width:0}
+.hud-root .hud-window .account-root .profile-layout #profile-form .form-grid{gap:14px}
+.hud-root .hud-window .account-root #manager-portrait .avatar{width:264px;height:264px;bottom:14px}
+.hud-root .hud-window .account-root .manager-object{gap:4px}
+.hud-root .hud-window .account-root .manager-object-picture{margin-right:4px}
+.hud-root .hud-window .account-root .manager-object strong{margin-right:auto}
+.hud-root .hud-window .account-root .manager-page-heading>.text-button{display:inline-flex;align-items:center;gap:8px}
+.hud-root .hud-window .account-root .manager-page-heading>.text-button .hud-icon,.hud-root .hud-window .account-root #manager-copy-id .hud-icon{width:16px;height:16px}
+.hud-root .hud-window .account-root #manager-copy-id{width:32px;min-width:32px;height:32px;min-height:32px;padding:8px;margin-top:-5px}
