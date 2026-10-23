@@ -292,3 +292,10 @@
 .hud-root .hud-window .account-root .appearance-clothing-option .hud-icon{width:28px;height:28px;color:var(--swatch)}
 .hud-root .hud-window .account-root .appearance-clothing-option span{font-size:12px;line-height:18px;color:var(--owner-ink)}
 .hud-root .hud-window .account-root .appearance-clothing-option[aria-pressed=true]{border-color:var(--owner-accent);border-radius:8px;background:#ffffff40;box-shadow:inset 0 0 0 1px var(--owner-accent)}
+.hud-root .hud-window .account-root .appearance-color-option:not(.appearance-clothing-option){width:36px;height:36px;min-height:36px;padding:5px}
+.hud-root .hud-window .account-root .stage-action-controls button{min-height:36px;padding:6px 10px}
+.hud-root .hud-window .account-root #manager-copy-id{width:36px;min-width:36px;height:36px;min-height:36px;padding:8px;margin-top:-7px}
+.hud-root .hud-window .account-root #manage-view[hidden]{display:none!important}
+.hud-root .hud-window .account-root summary{color:var(--owner-ink)}
+.hud-root .hud-window .account-root .entry-prompt-details{border-color:var(--owner-border)}
+.hud-root .hud-window .account-root .entry-prompt-details>summary{font-size:14px;line-height:22px;color:var(--owner-ink)}
