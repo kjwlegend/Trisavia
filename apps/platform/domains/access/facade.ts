@@ -53,5 +53,18 @@ export function createIdentityAccess<Context extends object>(options:{session:(c
    const appearance=await readAppearance(tx,agentId,avatar,options.legacyAvatarIdentity);if(!appearance)return null;
    return Object.freeze({agentId,publishedVersion:Number(profile.data.publishedVersion),displayName:published.displayName,appearance:Object.freeze(appearance)});
   },
+  async captureOwnerObservation(context,agentId,sourceDomain){
+   if(!['world','relationships','interaction'].includes(sourceDomain))return null;
+   const tx=options.session(context),agent=await agentRepository(tx).get(agentId),member=await membershipRepository(tx).get(agentId);
+   if(!agent||!member)return null;
+   const bindings=await managementBindingRepository(tx).pageByActiveAndAgentId(true,agentId,{limit:2});
+   if(bindings.length!==1)return null;
+   const binding=bindings[0]!,ownerId=String(binding.data.ownerId),owner=await humanAccountRepository(tx).get(ownerId);
+   if(!owner||owner.data.status!=='active'||owner.data.epoch!==options.recoveryEpoch)return null;
+   const sharingGeneration=Number(member.data.sharingGeneration??1);
+   if(!Number.isSafeInteger(sharingGeneration)||sharingGeneration<1)return null;
+   const basis={ownerId,bindingId:binding.id,bindingVersion:binding.version,sharingGeneration,sourceDomain};
+   return Object.freeze({...basis,authorizationVersion:payloadHash(basis)});
+  },
  };
 }

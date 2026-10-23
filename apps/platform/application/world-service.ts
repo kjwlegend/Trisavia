@@ -1,3 +1,6 @@
+import {BEHAVIOR_REPOSITORY} from '../domains/behavior/repository.ts';
+import {behaviorEnabled,recordBehaviorSource} from '../domains/behavior/sources.ts';
+import type {BehaviorObservationAccess,BehaviorPublicProjection,BehaviorRecord,BehaviorNode} from '../domains/behavior/types.ts';
 import {assertWorldActionAllowed} from '../domains/access/world-action-policy.ts';
 import { randomUUID } from 'node:crypto';
 import type { CommandKey, CommandReceipt, IdleTaskRecurrence, RuntimeEvent, RuntimeReadContext, RuntimeTask, RuntimeTransaction } from '../contracts/runtime-store.ts';
@@ -26,7 +29,7 @@ export async function verifyWorldReadiness(context: RuntimeReadContext, worldId 
   assertRuleset(rules);
 }
 const actions = ['world.avatar.create', 'world.avatar.move', 'world.avatar.leave', 'world.movement.stop'];
-export function createWorldService(identity: IdentityAccess<RuntimeReadContext>) {
+export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,options:{observation?:BehaviorObservationAccess<RuntimeReadContext>}={}) {
   const cursors = createWorldCursor();
   async function authorize(context: RuntimeReadContext, principal: Principal): Promise<string> {
     if (principal.kind !== 'agent') fail('agent_identity_required', 403, 'This action requires the Agent identity');
@@ -63,6 +66,20 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
         if (await repository.countAtPlace(rules.worldId, place.id, agentId) >= place.capacity) fail('place_capacity_reached', 409, 'The place is at capacity');
       }
     }
+  }
+  async function behaviorPublic(context:RuntimeReadContext,agentId:string,worldId:string,position:GridPoint):Promise<BehaviorPublicProjection|null>{
+    await participation(context,agentId,worldId,false);const status=await identity.readParticipation(context,agentId),{rules}=await rulesFor(context,worldId);
+    if(!await identity.readPublicAgent(context,agentId))return null;const place=containingPlace(rules,position);if(place?.access==='closed')return null;
+    return {policyVersion:1,worldId,sharingGeneration:status.membership.sharingGeneration,placeId:place?.id??null,placeName:place?.id==='commons'?'公共庭':null};
+  }
+  async function canObserveBehavior(context:RuntimeReadContext,record:BehaviorRecord,audience:'owner'|'public'):Promise<boolean>{
+    if(record.sourceDomain!=='world'||!['movement','avatar'].includes(record.sourceRef.type))return false;
+    try{const status=await identity.readParticipation(context,record.agentId);if(status.membership.state!=='joined'||status.membership.platformRestricted)return false;
+      const repo=context.repository(WORLD_REPOSITORY),target=record.sourceRef.type==='movement'?await repo.getMovement(record.sourceRef.id):await repo.getAvatar(status.membership.worldId,record.agentId);
+      if(!target||('agentId'in target&&target.agentId!==record.agentId)||target.id!==record.sourceRef.id||target.version<record.sourceRef.version)return false;
+      if(audience==='owner')return true;const proof=record.publicProjection;if(!proof||proof.sharingGeneration!==status.membership.sharingGeneration||proof.worldId!==status.membership.worldId||!await identity.readPublicAgent(context,record.agentId))return false;
+      await participation(context,record.agentId,proof.worldId,false);const {rules}=await rulesFor(context,proof.worldId);return proof.placeId===null||rules.places.some(p=>p.id===proof.placeId&&p.access==='members');
+    }catch(error){if(error instanceof M1Error&&error.statusCode<500)return false;throw error;}
   }
   async function commitPosition(context: RuntimeTransaction, rules: WorldRuleset, avatar: WorldAvatar, cell: GridPoint, source:'explicit'|'idle'='idle',movementId:string|null=null): Promise<WorldAvatar> {
     const destination = validatePath(rules, avatar.position, [cell])[0]!;
@@ -126,6 +143,10 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
     let next: WorldAvatar;
     try { next = await commitPosition(context, rules, avatar, step); } catch (error) { if (error instanceof M1Error && error.statusCode < 500) return rest(explicitStamp); throw error; }
     await repository.advanceRevision(worldId, world.revision);
+    if(path.length===1&&await behaviorEnabled(context,'world_idle')&&await context.repository(BEHAVIOR_REPOSITORY).shouldRecordIdle(agentId,now)){
+      const event=await context.events.append({eventId:'idle-completed:'+next.id+':'+next.version,domain:'world',kind:'world.idle.completed',schemaVersion:1,subject:{type:'avatar',id:next.id,version:next.version},worldId,actor:{kind:'system',id:'world-rules'},source:'rules',occurredAt:now,causationId:task.taskId,correlationId:task.taskId,audience:{kind:'agents',agentIds:[agentId]},payload:{avatarId:next.id,avatarVersion:next.version,worldId,policyVersion:1}});
+      await recordBehaviorSource(context,options.observation??{capture:async(ctx,id,domain)=>await identity.captureOwnerObservation?.(ctx,id,domain)??null},{event,scope:'world_idle',sourceRef:{type:'avatar',id:next.id,version:next.version},perspectives:[{agentId,node:'world.idle.completed',publicProjection:await behaviorPublic(context,agentId,worldId,next.position)}]});
+    }
     return again(path.length > 1 ? IDLE_LIFE_POLICY_V1.stepIntervalMs : restMs(next), { worldId, agentId, path: path.slice(1) as unknown as JsonObject[], avatarVersion: next.version,
       qualification, rulesetVersion: rules.version, topologyVersion: rules.topologyVersion, explicitStamp });
   }
@@ -136,10 +157,15 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
       generation: await context.tasks.currentGeneration('world'), maxAttempts: 5, payloadVersion: 1, payload: { actionPolicyVersion } });
   }
   async function movementFact(context: RuntimeTransaction, key: CommandKey, movement: WorldMovement, revision: number): Promise<string[]> {
-    const eventId = randomUUID(); await context.events.append({ eventId, domain: 'world', kind: 'world.movement.' + movement.state, schemaVersion: 1,
+    const eventId = randomUUID(); const event=await context.events.append({ eventId, domain: 'world', kind: 'world.movement.' + movement.state, schemaVersion: 1,
       subject: { type: 'movement', id: movement.id, version: movement.version }, worldId: movement.worldId, actor: key.principal,
       source: key.principal.kind === 'system' ? 'rules' : 'external_agent', occurredAt: context.now(), causationId: key.commandId, correlationId: movement.commandId,
       audience: { kind: 'agents', agentIds: [movement.agentId] }, payload: movementResult(movement, revision) });
+    const node:BehaviorNode|undefined=movement.state==='pending'?'world.movement.received':movement.state==='completed'?'world.movement.completed':movement.state==='stopped'?'world.movement.stopped':movement.nextStep===1?'world.movement.started':undefined;
+    if(node){let publicProjection:BehaviorPublicProjection|null=null;
+      if(['world.movement.started','world.movement.completed'].includes(node)&&await behaviorEnabled(context,'world_explicit'))publicProjection=await behaviorPublic(context,movement.agentId,movement.worldId,node==='world.movement.started'?movement.origin:movement.path[movement.nextStep-1]!);
+      await recordBehaviorSource(context,options.observation??{capture:async(ctx,id,domain)=>await identity.captureOwnerObservation?.(ctx,id,domain)??null},{event,scope:'world_explicit',sourceRef:{type:'movement',id:movement.id,version:movement.version},perspectives:[{agentId:movement.agentId,node,publicProjection}],initiator:{kind:'agent',id:movement.agentId},origin:'external_agent'});
+    }
     await context.outbox.enqueue({ outboxId: randomUUID(), eventId, consumerId: 'world-projection', dedupeKey: eventId, generation: await context.tasks.currentGeneration('world'), dueAt: context.now(), maxAttempts: 5 }); return [eventId];
   }
   function currentPlanRules(movement:WorldMovement,rules:WorldRuleset):boolean {
@@ -292,7 +318,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>)
     if (!avatar || avatar.status === 'left') fail('avatar_not_found', 404, 'Avatar is not available');
     return { worldId, worldRevision: world.revision, asOf: context.now(), avatar: await projectedAvatar(context,avatar) };
   }
-  return { execute, readAvatar, handleTask, handleIdleTask, ensureIdleLife,
+  return { execute, readAvatar, handleTask, handleIdleTask, ensureIdleLife,canObserveBehavior,
     async readMapManifest(context:RuntimeReadContext,principal:Principal,worldId:string){await participation(context,await authorize(context,principal),worldId,false);return mapProjection(context,worldId);},
     async readNpcs(context:RuntimeReadContext,principal:Principal,worldId:string){await participation(context,await authorize(context,principal),worldId,false);return mapProjection(context,worldId,true);},
     async readPublicMapManifest(context:RuntimeReadContext,worldId:string){return mapProjection(context,worldId);},

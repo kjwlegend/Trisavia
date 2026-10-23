@@ -1,3 +1,6 @@
+import {BEHAVIOR_REPOSITORY} from '../domains/behavior/repository.ts';
+import {recordBehaviorSource} from '../domains/behavior/sources.ts';
+import type {BehaviorObservationAccess,BehaviorRecord,BehaviorNode} from '../domains/behavior/types.ts';
 import {assertWorldActionAllowed} from '../domains/access/world-action-policy.ts';
 import { randomUUID } from 'node:crypto';
 import {createInteractionOwnerReader} from './interaction-owner-read.ts';
@@ -42,7 +45,7 @@ function safeActivity(activity: FeedbackActivity, now: number): JsonObject {
     feedbackId: activity.feedbackId, endedAt: activity.endedAt, endedByAgentId: activity.endedByAgentId };
 }
 export interface CompletedTextFeedback {activityId:string;fromAgentId:string;toAgentId:string;invitationCreatedAt:number;completedAt:number}
-export function createInteractionService(identity: IdentityAccess<RuntimeReadContext>, decisions: DecisionIntentSink,hooks:{onCompletedFeedback?:(context:RuntimeTransaction,fact:CompletedTextFeedback)=>Promise<void>}={}) {
+export function createInteractionService(identity: IdentityAccess<RuntimeReadContext>, decisions: DecisionIntentSink,hooks:{observation?:BehaviorObservationAccess<RuntimeReadContext>;onCompletedFeedback?:(context:RuntimeTransaction,fact:CompletedTextFeedback)=>Promise<void>}={}) {
   const cursors = createInteractionCursor();
   async function actor(context: RuntimeReadContext, principal: Principal): Promise<string> {
     if (principal.kind !== 'agent') fail('agent_identity_required', 403, 'This action requires the Agent identity');
@@ -81,9 +84,11 @@ export function createInteractionService(identity: IdentityAccess<RuntimeReadCon
   }
   async function emit(context: RuntimeTransaction, key: CommandKey, kind: string, subject: { type: string; id: string; version: number }, agentIds: string[], payload: JsonObject, worldId?: string): Promise<string[]> {
     const eventId = randomUUID();
-    await context.events.append({ eventId, domain: 'interaction', kind, schemaVersion: 1, subject, ...(worldId ? { worldId } : {}), actor: key.principal,
+    const event=await context.events.append({ eventId, domain: 'interaction', kind, schemaVersion: 1, subject, ...(worldId ? { worldId } : {}), actor: key.principal,
       source: key.principal.kind === 'system' ? 'rules' : 'external_agent', occurredAt: context.now(), causationId: key.commandId, correlationId: key.commandId,
       audience: { kind: 'agents', agentIds }, payload });
+    const nodes:Record<string,BehaviorNode>={'interaction.invitation.accept':'interaction.invitation.accepted','interaction.invitation.decline':'interaction.invitation.declined','interaction.invitation.withdraw':'interaction.invitation.withdrawn','interaction.invitation.expire':'interaction.invitation.expired','interaction.activity.submit_feedback':'interaction.feedback.submitted','interaction.activity.close':'interaction.activity.closed','interaction.activity.leave':'interaction.activity.left','interaction.activity.expire':'interaction.activity.expired'};
+    const shared=nodes[kind];if(kind==='interaction.invitation.send'||shared)await recordBehaviorSource(context,hooks.observation??{capture:async(ctx,id,domain)=>await identity.captureOwnerObservation?.(ctx,id,domain)??null},{event,scope:'interaction',sourceRef:{type:subject.type==='invitation'?'interaction_invitation':'interaction_activity',id:subject.id,version:subject.version},perspectives:agentIds.map((agentId,index)=>({agentId,node:shared??(index===0?'interaction.invitation.sent':'interaction.invitation.received')}))});
     await context.outbox.enqueue({ outboxId: randomUUID(), eventId, consumerId: 'interaction-projection', dedupeKey: eventId,
       generation: await context.tasks.currentGeneration('interaction'), dueAt: context.now(), maxAttempts: 5 }); return [eventId];
   }
@@ -159,6 +164,9 @@ export function createInteractionService(identity: IdentityAccess<RuntimeReadCon
           const artifact = await ownArtifact(current, agentId, input.artifact); expected(input.expectedVersion, artifact.version);
           if (artifact.withdrawnAt !== null) return { result: { artifact: { ...artifactReference(input.artifact) }, version: artifact.version, withdrawn: true }, eventIds: [] };
           const next = { ...artifact, version: artifact.version + 1, withdrawnAt: now }; await repository.saveArtifact(next, artifact.version);
+          await current.repository(BEHAVIOR_REPOSITORY).invalidateVisibility([agentId]);let afterId:string|undefined;
+          for(;;){const rows=await repository.listInvitations(agentId,{artifact:{artifactId:artifact.artifactId,revision:artifact.revision},limit:100,...(afterId?{afterId}:{})});for(const row of rows)await current.repository(BEHAVIOR_REPOSITORY).invalidateVisibility([row.fromAgentId,row.toAgentId]);if(rows.length<100)break;afterId=rows.at(-1)!.id;}
+
           const result = { artifact: { artifactId: artifact.artifactId, revision: artifact.revision }, version: next.version, withdrawn: true };
           return { result, eventIds: await emit(current, key, key.action, { type: 'artifact', id: artifact.artifactId, version: next.version }, [agentId], result) };
         }
@@ -168,7 +176,7 @@ export function createInteractionService(identity: IdentityAccess<RuntimeReadCon
           const blocking = key.action.endsWith('.block'), old = policy.blockedByAgentIds.includes(agentId);
           if (blocking === old) return { result: { agentId: target, version: policy.version, blocked: blocking, sharedGeneration: policy.sharedGeneration }, eventIds: [] };
           const next = { ...policy, version: policy.version + 1, blockedByAgentIds: blocking ? [...policy.blockedByAgentIds, agentId].sort() : policy.blockedByAgentIds.filter(id => id !== agentId), sharedGeneration: blocking ? policy.sharedGeneration + 1 : policy.sharedGeneration, updatedAt: now };
-          await repository.savePair(next, policy.version); const result = { agentId: target, version: next.version, blocked: blocking, sharedGeneration: next.sharedGeneration };
+          await repository.savePair(next, policy.version); await current.repository(BEHAVIOR_REPOSITORY).invalidateVisibility([agentId,target]); const result = { agentId: target, version: next.version, blocked: blocking, sharedGeneration: next.sharedGeneration };
           return { result, eventIds: await emit(current, key, key.action, { type: 'pair', id: a + ':' + b, version: next.version }, [agentId, target], { sharedGeneration: next.sharedGeneration, invalidated: blocking }) };
         }
         if (key.action === 'interaction.invitation.send') {
@@ -194,7 +202,7 @@ export function createInteractionService(identity: IdentityAccess<RuntimeReadCon
             return { result, eventIds: await emit(current, key, key.action, { type: 'invitation', id: invitation.id, version: accepted.invitation.version }, [invitation.fromAgentId, invitation.toAgentId], result, invitation.worldId) };
           }
           const next = key.action.endsWith('.decline') ? declineInvitation(invitation, agentId, now, input.reason) : withdrawInvitation(invitation, agentId, now);
-          await repository.saveInvitation(next, invitation.version); await cancelStages(current, next, undefined, key, 'invitation_ended'); const result = safeInvitation(next, now);
+          await repository.saveInvitation(next, invitation.version);if(key.action.endsWith('.withdraw'))await current.repository(BEHAVIOR_REPOSITORY).invalidateVisibility([invitation.fromAgentId,invitation.toAgentId]); await cancelStages(current, next, undefined, key, 'invitation_ended'); const result = safeInvitation(next, now);
           return { result, eventIds: await emit(current, key, key.action, { type: 'invitation', id: invitation.id, version: next.version }, [invitation.fromAgentId, invitation.toAgentId], result, invitation.worldId) };
         }
         const feedbackToWithdraw = key.action === 'interaction.feedback.withdraw' ? await repository.getFeedback(identifier(input.feedbackId)) : undefined;
@@ -202,7 +210,7 @@ export function createInteractionService(identity: IdentityAccess<RuntimeReadCon
         if (key.action === 'interaction.feedback.withdraw') {
           if (!feedbackToWithdraw || feedbackToWithdraw.authorAgentId !== agentId) absent(); expected(input.expectedVersion, feedbackToWithdraw.version);
           if (feedbackToWithdraw.withdrawnAt !== null) return { result: { feedbackId: feedbackToWithdraw.id, activityId, version: feedbackToWithdraw.version, withdrawn: true }, eventIds: [] };
-          const next = { ...feedbackToWithdraw, version: feedbackToWithdraw.version + 1, withdrawnAt: now }; await repository.saveFeedback(next, feedbackToWithdraw.version);
+          const next = { ...feedbackToWithdraw, version: feedbackToWithdraw.version + 1, withdrawnAt: now }; await repository.saveFeedback(next, feedbackToWithdraw.version);await current.repository(BEHAVIOR_REPOSITORY).invalidateVisibility([invitation.fromAgentId,invitation.toAgentId]);
           await cancelStages(current, invitation, activity, key, 'feedback_withdrawn'); const result = { feedbackId: next.id, activityId, version: next.version, withdrawn: true };
           return { result, eventIds: await emit(current, key, key.action, { type: 'feedback', id: next.id, version: next.version }, [invitation.fromAgentId, invitation.toAgentId], result, invitation.worldId) };
         }
@@ -275,7 +283,15 @@ export function createInteractionService(identity: IdentityAccess<RuntimeReadCon
   const decisionTarget: DecisionTarget = { inspect, async execute(context, principal, key, action, input) {
     if (key.action !== action) fail('invalid_request', 400, 'Decision action differs from target command'); return execute(context, principal, key, input);
   } };
-  return { ...createInteractionOwnerReader(identity,{bundle,participant}), execute, inspect, decisionTarget, handleTask, readInvitation, authorizeReceipt,
+  async function behaviorSource(context:RuntimeReadContext,record:BehaviorRecord){
+    if(record.sourceDomain!=='interaction')return null;
+    let invitationId:string;if(record.sourceRef.type==='interaction_invitation')invitationId=record.sourceRef.id;else if(record.sourceRef.type==='interaction_activity'){const activity=await context.repository(INTERACTION_REPOSITORY).getActivity(record.sourceRef.id);if(!activity||activity.version<record.sourceRef.version)return null;invitationId=activity.invitationId;}else return null;
+    const source=await bundle(context,record.agentId,invitationId);if(record.sourceRef.type==='interaction_invitation'&&source.invitation.version<record.sourceRef.version)return null;
+    if(record.sourceRef.type==='interaction_activity'&&source.activity?.feedbackId&&!await visibleFeedback(context,source.activity))return null;return source;
+  }
+  async function canObserveBehavior(context:RuntimeReadContext,record:BehaviorRecord,audience:'owner'|'public'){if(audience!=='owner')return false;try{return await behaviorSource(context,record)!==null;}catch(error){if(error instanceof M1Error&&error.statusCode<500)return false;throw error;}}
+  async function behaviorDetailRef(context:RuntimeReadContext,record:BehaviorRecord){if(!await canObserveBehavior(context,record,'owner'))return null;const source=await behaviorSource(context,record);return source?{invitationId:source.invitation.id}:null;}
+  return { ...createInteractionOwnerReader(identity,{bundle,participant}), execute, inspect, decisionTarget, handleTask, readInvitation, authorizeReceipt,canObserveBehavior,behaviorDetailRef,
     async authorizeEvent(context: RuntimeReadContext, principal: Principal, event: RuntimeEvent) {
       const agentId = await actor(context, principal); if (event.domain !== 'interaction' || !event.audience.agentIds.includes(agentId)) absent();
       if (event.subject.type === 'invitation') await bundle(context, agentId, event.subject.id);

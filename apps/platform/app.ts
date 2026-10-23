@@ -10,7 +10,10 @@ import type { PerceptionOptions } from './application/perception-service.ts';
 import { openPostgresRuntimeStore } from './infrastructure/postgresql/runtime-store.ts';
 import type { RuntimeStore } from './contracts/runtime-store.ts';
 import type { JsonObject } from './contracts/store.ts';
-import { createRuntimeIdentity } from './application/runtime-identity.ts';
+import { createRuntimeIdentity,createRuntimeObservation } from './application/runtime-identity.ts';
+import { behaviorSourcesEnabled,createBehaviorLogService } from './application/behavior-log-service.ts';
+import { behaviorGatewayOperations,behaviorPublicReads,behaviorGatewayGuide } from './application/agent-gateway-behavior.ts';
+import { registerBehaviorLogRoutes } from './transport/http/behavior-log-routes.ts';
 import { createWorldService, verifyWorldReadiness } from './application/world-service.ts';
 import { createRelationshipsService } from './application/relationships-service.ts';
 import { relationshipsGatewayOperations, relationshipsGatewayGuide } from './application/agent-gateway-relationships.ts';
@@ -48,7 +51,9 @@ export async function buildApp(options:BuildAppOptions):Promise<FastifyInstance>
    runtime=await openPostgresRuntimeStore({...options,...(options.clock?{now:options.clock}:{})});
    await runtime.read(ctx=>verifyWorldReadiness(ctx));
    const identity=createRuntimeIdentity(options.recoveryEpoch,options.clock??Date.now,readLegacyAvatarIdentity);
-   const world=createWorldService(identity),relationships=createRelationshipsService(identity),operations=[...worldGatewayOperations(world),...relationshipsGatewayOperations(relationships)],guides=[worldGatewayGuide,relationshipsGatewayGuide];
+   const behaviorEnabled=options.worldCoreInteractionEnabled===true&&await runtime.read(behaviorSourcesEnabled),observation=behaviorEnabled?createRuntimeObservation(identity):undefined;
+   const world=createWorldService(identity,{...(observation?{observation}:{})}),relationships=createRelationshipsService(identity,{...(observation?{observation}:{})}),operations=[...worldGatewayOperations(world),...relationshipsGatewayOperations(relationships)],guides=[worldGatewayGuide,relationshipsGatewayGuide],publicReads=worldPublicReads(world);
+   let behaviorLogs:ReturnType<typeof createBehaviorLogService>|undefined;
    friendshipOwnerRead=(raw,token)=>runtime!.read(async ctx=>{
     const input=object(raw,['agentId']),principal=await identity.authenticate(ctx,token,['owner_session']),friends:JsonObject[]=[];let cursor:string|undefined;
     for(let page=0;page<3;page++){
@@ -63,13 +68,14 @@ export async function buildApp(options:BuildAppOptions):Promise<FastifyInstance>
     await runtime.read(async ctx=>{await verifyInteractionReadiness(ctx);if(await ctx.tasks.currentGeneration('decision')<1)fail('decision_unavailable',503,'Decision lifecycle is not initialized');});
     let interaction:ReturnType<typeof createInteractionService>;
     const decision=createDecisionService({identity,target:{inspect:(...args)=>interaction.decisionTarget.inspect(...args),execute:(...args)=>interaction.decisionTarget.execute(...args)}});
-    interaction=createInteractionService(identity,decision.sink,{onCompletedFeedback:(ctx,fact)=>relationships.recordCompletedFeedback(ctx,fact)});
+    interaction=createInteractionService(identity,decision.sink,{...(observation?{observation}:{}),onCompletedFeedback:(ctx,fact)=>relationships.recordCompletedFeedback(ctx,fact)});
     operations.push(...interactionGatewayOperations(interaction,identity),...decisionGatewayOperations(decision));guides.push(interactionGatewayGuide,decisionGatewayGuide);
+    if(behaviorEnabled){behaviorLogs=createBehaviorLogService(identity,{world,relationships,interaction});operations.push(...behaviorGatewayOperations(behaviorLogs));guides.push(behaviorGatewayGuide);publicReads.push(...behaviorPublicReads(behaviorLogs));}
     handlers.push({kind:'interaction.invitation.expire',version:1,run:interaction.handleTask},{kind:'interaction.activity.expire',version:1,run:interaction.handleTask},{kind:'decision.expire',version:1,run:async(ctx,scheduled)=>{if(!scheduled.lease)fail('invalid_task',400,'Decision expiry requires a lease');const task=await ctx.tasks.assertLease(scheduled.lease,ctx.now());if(task.domain!=='decision'||task.kind!=='decision.expire'||task.handlerVersion!==1||task.payloadVersion!==1||task.target.type!=='decision.request'||task.payload.decisionId!==task.target.id)fail('invalid_task',400,'Unsupported Decision task');await decision.expire(ctx,task.target.id);}});
    }
-   const gateway=createAgentGateway({store:runtime,identity,operations,publicReads:worldPublicReads(world),guides});
+   const gateway=createAgentGateway({store:runtime,identity,operations,publicReads,guides});
    gatewayCapabilities=()=>({...gateway.capabilities(),worldSimulation:{enabled:true,actionAdvancement:'deterministic-rule-tasks',movementPolicyVersion:1,stepIntervalMs:1000,pollIntervalMs:1000,idleLife:{enabled:true,policyVersion:IDLE_LIFE_POLICY_V1.version,stepIntervalMs:IDLE_LIFE_POLICY_V1.stepIntervalMs,maxPathLength:IDLE_LIFE_POLICY_V1.maxPathLength,minRestMs:IDLE_LIFE_POLICY_V1.minRestMs,restJitterMs:IDLE_LIFE_POLICY_V1.restJitterMs},externalAgentExecution:false}});
-   registerWorldObservationRoutes(gateway,registerAgentGatewayRoutes(app,gateway,{instanceId:store.instanceId,now:options.clock??Date.now}));
+   const gatewayHttp=registerAgentGatewayRoutes(app,gateway,{instanceId:store.instanceId,now:options.clock??Date.now});registerWorldObservationRoutes(gateway,gatewayHttp);if(behaviorLogs)registerBehaviorLogRoutes(gateway,gatewayHttp);
    const scheduler=createDeterministicScheduler({store:runtime,workerId:`world-rules-${process.pid}`,handlers,batchLimit:10,leaseMs:30000});
    let nextIdleDiscovery=0,idleAfter:string|undefined;
    ruleDriver=createWorldRuleDriver({async runDue(){const now=(options.clock??Date.now)();if(now>=nextIdleDiscovery){idleAfter=await runtime!.transaction(ctx=>world.ensureIdleLife(ctx,'default',idleAfter));nextIdleDiscovery=now+IDLE_LIFE_POLICY_V1.scanIntervalMs;}return scheduler.runDue();},close:()=>scheduler.close()});app.addHook('onReady',async()=>{ruleDriver!.start();});
