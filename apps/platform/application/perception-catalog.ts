@@ -40,6 +40,7 @@ export async function initializePerceptionCatalog(tx: M1Transaction,publication?
     // Keep the original catalog-1 and exact guide1 bytes. Only this explicit fresh
     // bootstrap publishes the next reader contract; readiness/GET never call it.
     await publishImplementedReadersInTransaction(tx, { expectedCatalogRevision: 'catalog-1', revision: `catalog-readers-1-schema-${PERCEPTION_SCHEMA_VERSION}`, guideVersion: 2, actorId: 'platform-bootstrap', stamp: Date.now() });
+    await publishFreshPaperHudCatalogInTransaction(tx,{expectedCatalogRevision:'catalog-readers-1-schema-6',expectedGuideVersion:2});
 }
 async function storeDocuments(tx: M1Transaction, version: number, body: string): Promise<void> {
     const collectionQuery = await ownerNotificationCollectionDeclaration(tx);
@@ -197,6 +198,32 @@ export async function publishNpcServiceReadersInTransaction(tx:M1Transaction,opt
     await rememberCatalogRevision(tx,data);
     await catalogRepository(tx).replace({...current,version:current.version+1,data},current.version);
     return {changed:true,catalogRevision:data.catalogRevision,skillCatalogRevision:data.skillCatalogRevision,guideVersion:data.guideVersion,schemaVersion:PERCEPTION_SCHEMA_VERSION,newGuideDocuments:7,sourceTransitions:[{sourceId:NPC_SERVICE_ITEMS_SOURCE,before:null,after:'enabled'}]};
+}
+/** Fresh schema6 guide repair only; production's schema5/guide11 release remains separate. */
+export async function publishFreshPaperHudCatalogInTransaction(tx:M1Transaction,options:{expectedCatalogRevision:string;expectedGuideVersion:number}):Promise<JsonObject>{
+    const allowed=options.expectedCatalogRevision==='catalog-readers-1-schema-6'&&options.expectedGuideVersion===2||options.expectedCatalogRevision==='catalog-npc-services-1'&&options.expectedGuideVersion===3;
+    if(!allowed)fail('version_conflict',409,'An exact fresh schema6 predecessor is required');
+    const current=await catalogRepository(tx).get('current'),revision='catalog-fresh-paper-hud-1',guideVersion=options.expectedGuideVersion+1;
+    if(!current||current.data.schemaVersion!==6||PERCEPTION_SCHEMA_VERSION!==6)fail('version_conflict',409,'The fresh schema6 catalog is required');
+    const repeated=current.data.catalogRevision===revision&&current.data.guideVersion===guideVersion;
+    if(!repeated&&(current.data.catalogRevision!==options.expectedCatalogRevision||current.data.guideVersion!==options.expectedGuideVersion))fail('version_conflict',409,'The expected fresh catalog or guide changed');
+    const modules=['perception','world','profiles','items','inventory','mailbox','wallet'];
+    if(!repeated){
+        await rememberCatalogRevision(tx,current.data);
+        for(const moduleId of modules){
+            const previous=await catalogRepository(tx).get(`guide:${moduleId}:${options.expectedGuideVersion}`),document=previous?.data.document as JsonObject|undefined;
+            if(!document||typeof document.text!=='string'||await catalogRepository(tx).get(`guide:${moduleId}:${guideVersion}`))fail('version_conflict',409,'The exact current or next fresh guide is unavailable');
+            let text=document.text.replaceAll(appearanceGuide,PAPER_HUD_APPEARANCE_GUIDE);
+            if(!text.includes(PAPER_HUD_APPEARANCE_GUIDE))text+='\n'+PAPER_HUD_APPEARANCE_GUIDE;
+            if(!text.includes(PAPER_HUD_OWNER_MAILBOX_GUIDE))text+='\n'+PAPER_HUD_OWNER_MAILBOX_GUIDE;
+            const next={...document,version:guideVersion,http:HTTP_GUIDE,text};
+            await catalogRepository(tx).insert({id:`guide:${moduleId}:${guideVersion}`,version:1,data:{document:next,digest:key(next)}});
+        }
+        const data={...current.data,catalogRevision:revision,skillCatalogRevision:`skills-${revision}`,guideVersion};
+        await rememberCatalogRevision(tx,data);
+        await catalogRepository(tx).replace({...current,version:current.version+1,data},current.version);
+    }
+    return {changed:!repeated,catalogRevision:revision,skillCatalogRevision:`skills-${revision}`,schemaVersion:6,guideVersion,newGuideDocuments:repeated?0:7,newSchemaDocuments:0,guideDigests:await mapAsync(modules,async moduleId=>({moduleId,digest:(await catalogRepository(tx).get(`guide:${moduleId}:${guideVersion}`))!.data.digest!}))};
 }
 /** Named read-shape release. Copy current exact text and preserve every old document and source state. */
 export async function publishPaperHudCatalogInTransaction(tx:M1Transaction):Promise<JsonObject>{
