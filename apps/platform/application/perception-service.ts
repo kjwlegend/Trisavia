@@ -51,6 +51,9 @@ type Candidate = {
     policy?: StoredRow;
 };
 const common = ['protocolVersion', 'channel', 'purpose', 'consumerId', 'scope', 'limit', 'pageToken', 'budget', 'decision'];
+// Exact metadata includes both the document and its canonical UTF-8 serialization.
+// Keep that bounded envelope separate from list/detail content read budgets.
+const DOCUMENT_RESPONSE_MAX_BYTES = 256 * 1024;
 export function createPerceptionService(store: M1Store, auth: PerceptionAuth, options: PerceptionOptions = {}) {
     const appearanceReaders=new WeakMap<M1ReadSession,LegacyAvatarIdentityReader<M1ReadSession>>();
     function bindMeteredAppearance(original:M1Transaction,reader:M1Transaction,meter:ReturnType<typeof meteredRead>):void {
@@ -707,7 +710,7 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
                 data = await confirm(tx, a, input);
             else
                 data = await activity(tx, a, input);
-            const result = await response(tx, a, requestId, data, action === 'perceptionOverview' ? bounded(plain(input.budget as JsonValue).maxResponseBytes, 16384, 16384, 'maxResponseBytes') : ['perceptionList', 'perceptionDetail'].includes(action) ? readBudget(input).maxResponseBytes : 65536);
+            const result = await response(tx, a, requestId, data, action === 'perceptionOverview' ? bounded(plain(input.budget as JsonValue).maxResponseBytes, 16384, 16384, 'maxResponseBytes') : ['perceptionList', 'perceptionDetail'].includes(action) ? readBudget(input).maxResponseBytes : ['perceptionSchema', 'perceptionGuide'].includes(action) ? DOCUMENT_RESPONSE_MAX_BYTES : 65536);
             if (!['perceptionActivity', 'confirmAgentRead', 'queryAgentRead'].includes(action)) {
                 const targets = action === 'perceptionDetail' || action === 'queryAgentRead' ? [ref(input.ref)] : Array.isArray(data.records) ? data.records.map(v => ref(plain(v).ref)) : [];
                 const privateRead = input.channel === 'inbox' || input.channel === 'inventory' || action === 'queryAgentRead' || (action === 'perceptionOverview' && (data.sections as JsonObject[]).some(s => s.channel !== 'world'));

@@ -7,6 +7,8 @@ import {initializePerceptionCatalog,publishPerceptionCatalog} from '../../apps/p
 import {publishAgentHumanVoiceGuide,publishTextExchangeGuide,publishFriendshipGuide,publishAgentAutonomyGuide,publishWorldMapV2Guide} from '../../apps/platform/application/perception-admin.ts';
 import {createPerceptionService} from '../../apps/platform/application/perception-service.ts';
 import {registerPerceptionRoutes} from '../../apps/platform/transport/http/perception-routes.ts';
+import {registerM1Routes} from '../../apps/platform/transport/http/m1-routes.ts';
+import {fail} from '../../apps/platform/domains/common/errors.ts';
 import {registerSiteRoutes} from '../../apps/platform/transport/http/site-routes.ts';
 import {createAgentGateway} from '../../apps/platform/application/agent-gateway.ts';
 import {worldGatewayGuide,worldGatewayOperations} from '../../apps/platform/application/agent-gateway-world.ts';
@@ -144,4 +146,43 @@ test('map guide8 accepts the actual long current revision, preserves exact guide
   const historical=await app.inject({method:'GET',url:'/v1/perception/guides/world?version=7',headers:{authorization:'Bearer pre-map-runtime'}});assert.equal(historical.statusCode,200);assert.equal(historical.json().data.digest,old.data.digest);
  }finally{await app.close();}
  const afterReads=f.snapshot();await assert.rejects(publishWorldMapV2Guide(f.store,{...options,operationId:randomUUID(),expectedRecoveryEpoch:'wrong'}));assert.deepEqual(f.snapshot(),afterReads);
+});
+
+test('cumulative exact guides remain readable by Owner and runtime without widening list or detail budgets',async()=>{
+ const f=memory();await f.store.transaction(initializePerceptionCatalog);
+ const retained=(await f.tx.get('perception_catalog','guide:world:2'))!.data.document as JsonObject;
+ // Retained public guidance grows across releases. Cover at least the live guide8
+ // canonical size (32,355 UTF-8 bytes), without using private content or a live store.
+ await publishPerceptionCatalog(f.store,{revision:'isolated-cumulative-guide8',guideVersion:8,guideText:String(retained.text)+'\n'+'既有公开说明。'.repeat(200)});
+ const documents=f.rows('perception_catalog').filter(row=>/^(guide|schema):/.test(row.id));
+ const service=createPerceptionService(f.store,{authenticate:async(_tx,token)=>{
+  if(token==='synthetic-owner')return {id:'synthetic-owner',version:1,data:{kind:'owner_session',ownerId:'synthetic-owner',ownerAuthVersion:1}};
+  if(token==='synthetic-runtime')return {id:'synthetic-runtime',version:1,data:{kind:'runtime',agentId:'synthetic-agent',runtimeVersion:1}};
+  return fail('authentication_failed',401,'Authentication failed');
+ }});
+ const app=Fastify(),http={invokeHttp:service.invoke} as unknown as M1Service;registerM1Routes(app,http);registerPerceptionRoutes(app,http);
+ try{
+  for(const token of ['synthetic-owner','synthetic-runtime']){
+   const headers={authorization:`Bearer ${token}`};
+   for(const moduleId of ['inventory','mailbox','world','wallet']){
+    const response=await app.inject({method:'GET',url:`/v1/perception/guides/${moduleId}?version=8`,headers});
+    assert.equal(response.statusCode,200,response.body);const data=response.json().data;
+    assert(Buffer.byteLength(data.canonicalDocument)>=32355);assert(Buffer.byteLength(response.body)>65536);assert(Buffer.byteLength(response.body)<=256*1024);
+    assert.equal(sha(data.canonicalDocument),data.digest);assert.deepEqual(JSON.parse(data.canonicalDocument),data.document);
+    assert.deepEqual(data.document,(await f.tx.get('perception_catalog',`guide:${moduleId}:8`))!.data.document);
+   }
+   for(const schemaId of ['perception.list-query','perception.list-result']){
+    const response=await app.inject({method:'GET',url:`/v1/perception/schemas/${schemaId}?version=5`,headers});assert.equal(response.statusCode,200);
+    const data=response.json().data;assert.equal(sha(data.canonicalDocument),data.digest);assert.deepEqual(JSON.parse(data.canonicalDocument),data.document);
+   }
+  }
+  const anonymous=await app.inject({method:'GET',url:'/v1/perception/guides/world?version=8'});assert.equal(anonymous.statusCode,401);assert.equal(anonymous.json().error.code,'authentication_failed');
+  const headers={authorization:'Bearer synthetic-owner'},context={protocolVersion:1,consumerId:'isolated-budget-check',purpose:'human-inspect',channel:'world'};
+  for(const [path,input] of [['list',{...context,categoryId:'announcements'}],['detail',{...context,ref:{moduleId:'world',type:'world.rules@1',id:'world-rules'}}]] as const){
+   for(const maxResponseBytes of [1,65537]){
+    const response=await app.inject({method:'POST',url:`/v1/perception/${path}`,headers,payload:{...input,budget:{maxResponseBytes}}});assert.equal(response.statusCode,422);assert.equal(response.json().error.code,maxResponseBytes===1?'budget_too_small':'invalid_request');
+   }
+  }
+  for(const row of documents)assert.deepEqual(await f.tx.get('perception_catalog',row.id),row,'Reads preserve every exact document and digest');
+ }finally{await app.close();}
 });
