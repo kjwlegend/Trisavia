@@ -12,7 +12,7 @@ export interface AgentParticipation {
  readonly membership:Readonly<{worldId:string;version:number;state:string;ownerPaused:boolean;ownerPauseVersion:number;platformRestricted:boolean;platformVersion:number;sharingGeneration:number}>;
 }
 export interface PublicAgentView {readonly agentId:string;readonly publishedVersion:number;readonly displayName:string;readonly appearance:Readonly<ProfileAvatar>}
-export type OwnerObservationDomain='world'|'relationships'|'interaction';
+export type OwnerObservationDomain='world'|'relationships'|'interaction'|'town_services';
 /** Source-owned observation at the instant a fact commits; never a credential or transferable grant. */
 export interface OwnerAudienceProof {readonly ownerId:string;readonly bindingId:string;readonly bindingVersion:number;readonly authorizationVersion:string;readonly sharingGeneration:number;readonly sourceDomain:OwnerObservationDomain}
 /** Context is the current guarded transaction; principals must never be reused across contexts. */

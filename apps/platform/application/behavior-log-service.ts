@@ -13,7 +13,7 @@ interface BehaviorSource {
  behaviorDetailRef?(ctx:RuntimeReadContext,record:BehaviorRecord):Promise<{invitationId:string}|null>;
  invitation?(ctx:RuntimeReadContext,p:Principal,input:JsonObject):Promise<unknown>;
 }
-type Sources=Record<OwnerObservationDomain,BehaviorSource>;
+type Sources=Record<'world'|'relationships'|'interaction',BehaviorSource>&Partial<Record<OwnerObservationDomain,BehaviorSource>>;
 type Cut={maxSequence:number;asOf:number};
 type Anchor={cut:Cut;after:{occurredAt:number;id:string}};
 const absent=():never=>fail('target_not_accessible',404,'Target is not accessible');
@@ -58,13 +58,14 @@ export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadCont
  async function coverage(ctx:RuntimeReadContext,asOf:number){const rows=await ctx.repository(BEHAVIOR_REPOSITORY).getCoverage();if(BEHAVIOR_SCOPES.some(scope=>!rows.some(row=>row.scope===scope)))fail('behavior_unavailable',503,'Behavior sources have not been enabled');const starts=rows.map(row=>row.fromAt),gaps=['启用前的记录未补录'];gaps.push('普通移动与漫游过程不纳入用户日志');if(new Set(starts).size>1)gaps.push('各来源启用时间不同，更早记录不完整');return {from:Math.min(...starts),to:asOf,complete:rows.every(row=>!row.partial)&&new Set(starts).size===1,gaps};}
  async function visible(ctx:RuntimeReadContext,row:BehaviorRecord,audience:'owner'|'public',p?:Principal){
   if(USER_LOG_PROCESS_NODES.includes(row.node))return false;
+  const source=sources[row.sourceDomain];if(!source)return false;
   if(audience==='public'&&!row.publicProjection)return false;
   if(audience==='owner'){
    if(p?.kind!=='owner'||row.ownerAudience?.ownerId!==p.ownerId)return false;
    const current=await identity.captureOwnerObservation?.(ctx,row.agentId,row.sourceDomain);
    if(!current||current.ownerId!==p.ownerId||current.authorizationVersion!==row.ownerAudience.authorizationVersion||current.bindingId!==row.ownerAudience.bindingId||current.bindingVersion!==row.ownerAudience.bindingVersion||current.sharingGeneration!==row.ownerAudience.sharingGeneration)return false;
   }
-  return await sources[row.sourceDomain].canObserveBehavior(ctx,row,audience);
+  return await source.canObserveBehavior(ctx,row,audience);
  }
  async function item(ctx:RuntimeReadContext,row:BehaviorRecord,timeZone:string,owner?:Principal):Promise<JsonObject>{
   const profile=await identity.readPublicAgent(ctx,row.agentId),[originalTitle,action,originalResult]=natural[row.node];let title=originalTitle,result=originalResult;
@@ -79,7 +80,7 @@ export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadCont
   }
   if(owner&&row.sourceRef.type==='interaction_invitation')detail={operation:'interaction.owner_exchange',input:{agentId:row.agentId,invitationId:row.sourceRef.id}};
   if(owner&&row.sourceRef.type==='interaction_activity'){const ref=await sources.interaction.behaviorDetailRef?.(ctx,row);if(ref)detail={operation:'interaction.owner_exchange',input:{agentId:row.agentId,invitationId:ref.invitationId}};}
-  const described=await sources[row.sourceDomain].describeBehavior(ctx,row,owner?'owner':'public');let details:JsonObject|null=null;
+  const described=await sources[row.sourceDomain]!.describeBehavior(ctx,row,owner?'owner':'public');let details:JsonObject|null=null;
   if(described){
    const participants:JsonObject[]=[];
    for(const participant of described.participants){const visibleProfile=participant.agentId===row.agentId?profile:await identity.readPublicAgent(ctx,participant.agentId);if(visibleProfile)participants.push({agentId:participant.agentId,displayName:visibleProfile.displayName,role:participant.role});}

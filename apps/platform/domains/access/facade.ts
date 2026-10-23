@@ -54,7 +54,7 @@ export function createIdentityAccess<Context extends object>(options:{session:(c
    return Object.freeze({agentId,publishedVersion:Number(profile.data.publishedVersion),displayName:published.displayName,appearance:Object.freeze(appearance)});
   },
   async captureOwnerObservation(context,agentId,sourceDomain){
-   if(!['world','relationships','interaction'].includes(sourceDomain))return null;
+   if(!['world','relationships','interaction','town_services'].includes(sourceDomain))return null;
    const tx=options.session(context),agent=await agentRepository(tx).get(agentId),member=await membershipRepository(tx).get(agentId);
    if(!agent||!member)return null;
    const bindings=await managementBindingRepository(tx).pageByActiveAndAgentId(true,agentId,{limit:2});
