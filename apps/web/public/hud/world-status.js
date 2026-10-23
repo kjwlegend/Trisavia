@@ -1,5 +1,6 @@
 import {createSceneClock,shanghaiTime} from './world-time.js';
 const put=(node,text)=>{if(node.textContent!==text)node.textContent=text;};
+const compactTime=new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
 export function sceneStatus(value,selectedAgentId=''){
   const rows=value.complete?value.avatars:[],selected=rows.find(row=>row.agentId===selectedAgentId),places=new Set(rows.map(row=>row.placeId).filter(Boolean)),open=value.rules?.places?.filter(place=>place.access==='members')||[];
   const placeId=selected?.placeId||(places.size===1?[...places][0]:open.length===1?open[0].id:null),place=selected?selected.placeId==='commons'?'公共庭':value.rules?.mapManifest?.mapId==='pixel-town-v2'?'小镇街区':null:value.rules?.mapManifest?.mapId==='pixel-town-v2'?'连续小镇':placeId==='commons'?'公共庭':null;
@@ -9,9 +10,9 @@ export function sceneStatus(value,selectedAgentId=''){
 export function createWorldStatusHud(root,{onTime=()=>{},clock=createSceneClock(),setTimer=setTimeout,clearTimer=clearTimeout}={}){
   const location=root.querySelector('#world-current-place'),count=root.querySelector('#world-scene-count'),time=root.querySelector('#world-current-time'),status=root.querySelector('#world-read-status');let value={phase:'loading',complete:false,avatars:[]},selectedAgentId='',visible=true,timer=null,disposed=false;
   function render(){const text=sceneStatus(value,selectedAgentId);put(location,text.location);put(count,text.count);put(status,text.status);if(count.title!==text.status)count.title=text.status;}
-  function paintTime(){const epoch=clock.now();put(time,shanghaiTime(epoch).text);time.dateTime=new Date(epoch).toISOString();if(time.dataset.timeSource!==clock.source){time.dataset.timeSource=clock.source;time.title=`Asia/Shanghai · ${clock.source==='local'?'本机时间，等待服务器校准':'服务器时间已校准'}`;}onTime(epoch);}
+  function paintTime(){const epoch=clock.now(),full=shanghaiTime(epoch).text;put(time,root.closest('.paper-hud')?compactTime.format(epoch):full);time.dateTime=new Date(epoch).toISOString();time.dataset.timeSource=clock.source;time.title=`${full} · Asia/Shanghai · ${clock.source==='local'?'本机时间，等待服务器校准':'服务器时间已校准'}`;onTime(epoch);}
   function tick(){timer=null;if(disposed||!visible)return;paintTime();timer=setTimer(tick,1000);}
-  function position(){const header=document.querySelector('header'),map=root.parentElement;if(header&&map)root.style.top=`${Math.max(12,header.getBoundingClientRect().bottom-map.getBoundingClientRect().top+12)}px`;}
+  function position(){const header=document.querySelector('header'),map=root.parentElement;if(header&&map)root.style.top=`${Math.max(12,header.getBoundingClientRect().bottom-map.getBoundingClientRect().top+(root.closest('.paper-hud')?22:12))}px`;}
   const observer=new ResizeObserver(position);const header=document.querySelector('header');if(header)observer.observe(header);position();tick();
   return{clock,update(next){value=next;if(next.phase==='ready'&&clock.calibrate(next.serverTime,next.instanceId,next.timeSource)&&visible)paintTime();render();},select(agentId){selectedAgentId=agentId;render();},setVisible(next){next=Boolean(next);if(disposed||next===visible)return;visible=next;if(timer!==null)clearTimer(timer);timer=null;if(visible)tick();},dispose(){disposed=true;if(timer!==null)clearTimer(timer);observer.disconnect();}};
 }

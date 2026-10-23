@@ -7,8 +7,9 @@ export function createWorldControls(root){
   const menu=el('div','hud-map-menu'),more=button('更多',()=>toggle());menu.id='hud-map-menu';menu.hidden=true;menu.setAttribute('role','group');menu.setAttribute('aria-label','更多地图工具');
   more.id='hud-map-more';more.setAttribute('aria-controls',menu.id);more.setAttribute('aria-expanded','false');list.textContent='场所';
   const logs=button('',()=>document.dispatchEvent(new Event('hud:world-logs')));logs.id='hud-open-world-logs';logs.setAttribute('aria-label','世界日志');logs.title='世界日志';logs.append(icon('document'),el('span','','日志'));
+  fit.replaceChildren(icon('world'),el('span','','全景'));list.replaceChildren(icon('place'),el('span','','场所'));more.replaceChildren(icon('more'),el('span','','更多'));
   menu.append(document.querySelector('#world-explore'),document.querySelector('#world-reset'),document.querySelector('#world-pause'),document.querySelector('#world-learn'));
-  controls.classList.add('hud-map-tools');controls.replaceChildren(zoom,fit,list,logs,more,menu);root.append(controls);
+  const actions=el('div','hud-map-actions');actions.append(fit,list,logs,more);controls.classList.add('hud-map-tools');controls.replaceChildren(zoom,actions,menu);root.append(controls);
   function close(restore=false){if(menu.hidden)return;menu.hidden=true;more.setAttribute('aria-expanded','false');if(restore)more.focus({preventScroll:true});}
   function toggle(){menu.hidden=!menu.hidden;more.setAttribute('aria-expanded',String(!menu.hidden));}
   menu.addEventListener('click',event=>{if(event.target.closest('button,a'))close(true);});
