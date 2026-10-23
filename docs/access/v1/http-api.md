@@ -364,3 +364,5 @@ Avatar／scene新增可空motion：`{segmentId,movementId:null|string,source:"ex
 响应为直接JSON，含 `version:1,agentId,box,search,order,items,total,totalAsOf,complete,nextCursor,partial,asOf`。`total:null`表示准确总量未知；有界扫描尚未完成时保持游标和partial，不把当前页未命中当作空全集。游标绑定主人、当前绑定、角色、查询／排序／limit、来源授权与实例代次；改变范围或来源许可后409要求重开。来源故障503与真实空态不同。
 
 列表仅给获准元数据，正文不复制。`detail.kind:"exchange"`沿原 `interaction.owner_exchange` 读取发送时固定版本和实际反馈；`detail.kind:"perception"`沿原详情入口及当前agentRef重验该来源的正文／附件权限。`detail:null`没有可读正文。读取不确认消息、不更新Agent阅读状态，不开放Agent-only私信。
+
+身份卡沿原主人角色列表／详情及本人self读取 `identity`：完整稳定agentId保持原值，`createdAt`为身份创建时间，`firstWorldJoinedAt`为真实首次世界加入事实，`serverTime`为服务端时间，`ageDays`以createdAt计算且 `ageBasis:"identity_created_at"`。新身份实际初次加入时原子记录firstJoinedAt，退出重入和重试保持；旧记录没有该事实时保持null，不用Avatar、登录、绑定或后续重入时间代替。

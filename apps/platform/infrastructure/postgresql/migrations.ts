@@ -135,6 +135,15 @@ POSTGRES_MIGRATIONS.push({moduleId:'iam',version:6,name:'owner_world_action_poli
 POSTGRES_MIGRATIONS.push(WORLD_TOPOLOGY_MIGRATION);
 POSTGRES_MIGRATIONS.push(BEHAVIOR_MIGRATION);
 POSTGRES_MIGRATIONS.push(TOWN_SERVICES_MIGRATION,TOWN_BEHAVIOR_MIGRATION);
+// Existing rows deliberately remain unknown; only a new authoritative first join writes this fact.
+POSTGRES_MIGRATIONS.push({moduleId:'iam',version:7,name:'source_first_world_join',dependencies:['iam'],sql:`
+ ALTER TABLE iam.world_memberships ADD COLUMN first_joined_at timestamptz CHECK(first_joined_at >= '1970-01-01'::timestamptz);
+ ALTER TABLE iam.world_memberships DROP CONSTRAINT world_memberships__present_check;
+ ALTER TABLE iam.world_memberships ADD CONSTRAINT world_memberships__present_check CHECK(_present <@ ARRAY[${[...membershipAllowed,quote('firstJoinedAt')].join(',')}]::text[]);
+ CREATE FUNCTION iam.preserve_first_world_join() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+  IF OLD.first_joined_at IS NOT NULL AND NEW.first_joined_at IS DISTINCT FROM OLD.first_joined_at THEN RAISE EXCEPTION 'First world join cannot be rewritten' USING ERRCODE='23514';END IF;
+  RETURN NEW;END $$;
+ CREATE TRIGGER immutable_first_world_join BEFORE UPDATE ON iam.world_memberships FOR EACH ROW EXECUTE FUNCTION iam.preserve_first_world_join();`});
 export const POSTGRES_SCHEMA_SIGNATURE=createHash('sha256').update(POSTGRES_MIGRATIONS.map(item=>`${item.moduleId}:${createHash('sha256').update(item.sql).digest('hex')}`).join('\n')).digest('hex');
 
 /** Explicit DDL-role operation; openPostgresStore never calls this. */

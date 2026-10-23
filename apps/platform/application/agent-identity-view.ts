@@ -1,6 +1,6 @@
 import type {JsonObject,StoredRow} from '../contracts/store.ts';
 
-function knownTimestamp(value:unknown,serverTime:number):number|null {
+export function knownTimestamp(value:unknown,serverTime:number):number|null {
  return typeof value==='number'&&Number.isSafeInteger(value)&&value>=0&&value<=serverTime?value:null;
 }
 /** Source timestamps only. Neither account access nor Avatar creation proves first world membership. */

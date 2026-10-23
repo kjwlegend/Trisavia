@@ -23,7 +23,7 @@ import { createPerceptionService, type PerceptionOptions } from "./perception-se
 import { initializePerceptionAgent } from "./perception-seed.ts";
 import {createOwnerFriendsReader} from "./owner-friends.ts";
 import {HOST_PARTICIPATION_GUIDANCE} from './agent-hourly-participation-guide.ts';
-import {agentIdentityView} from './agent-identity-view.ts';
+import {agentIdentityView,knownTimestamp} from './agent-identity-view.ts';
 import type { PerceptionAction } from "../domains/perception/protocol.ts";
 export type M1Action = PerceptionAction | "readOwnerFriends" | "queryOwnerMailbox" | "capabilities" | "catalog" | "register" | "registrationResult" | "self" | "publicProfile" | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup" | "readRecovery" | "registerOwner" | "readAccount" | "claimAgent" | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites" | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveProfile" | "saveDraft" | "publishProfile" | "unpublishProfile" | "profilePolicy" | "createRecoveryRequest" | "readRecoveryRequest" | "cancelRecoveryRequest" | "recoveryAssistance" | "verifyRecoveryRequest" | "rejectRecoveryRequest" | "startRegistration" | "readRegistrationAttempt" | "sendRegistrationCode" | "verifyRegistrationEmail" | "cancelRegistration" | "startEmailRecovery" | "readEmailRecoveryAttempt" | "sendRecoveryCode" | "verifyRecoveryEmail" | "recoverByEmail" | "enableRecoveryBackup" | "readWorldActionPolicy" | "saveWorldActionPolicy" | "readWorldAccess" | "saveWorldAccess" | "adoptWorldAccess" | "readMembership" | "join" | "leave" | "participation" | "receipt";
 export interface M1Options {
@@ -182,7 +182,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         return { agentId: agent.id, version: currentVersion, intervalSeconds, adoption, asOf };
     }
     function membershipView(row: StoredRow): JsonObject {
-        return { agentId: row.data.agentId!, worldId: row.data.worldId!, version: row.version, state: row.data.state!, ownerPaused: row.data.ownerPaused!, ownerPauseVersion: row.data.ownerPauseVersion!, platformRestricted: row.data.platformRestricted!, platformVersion: row.data.platformVersion! };
+        return { agentId: row.data.agentId!, worldId: row.data.worldId!, firstJoinedAt:knownTimestamp(row.data.firstJoinedAt,now()), version: row.version, state: row.data.state!, ownerPaused: row.data.ownerPaused!, ownerPauseVersion: row.data.ownerPauseVersion!, platformRestricted: row.data.platformRestricted!, platformVersion: row.data.platformVersion! };
     }
     async function target(tx: M1ReadSession, credential: CredentialRow, agentId: string): Promise<StoredRow> {
         if (credential.data.kind === "runtime") {
@@ -467,7 +467,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     await registrationRepository(tx).insert(registration);
                     const initialProfile = defaultPublicProfile(agentId);
                     await profileRepository(tx).insert({ id: agentId, version: 1, data: { agentId, policyVersion: 1, mode: "agent_autonomous", lockedFields: [], draft: initialProfile, published: initialProfile, publishedVersion: 1, confirmationSource: "platform_default" } });
-                    await membershipRepository(tx).insert({ id: agentId, version: 1, data: { agentId, worldId: "default", state: "joined", ownerPaused: false, ownerPauseVersion: 1, platformRestricted: false, platformVersion: 1, sharingGeneration: 1 } });
+                    await membershipRepository(tx).insert({ id: agentId, version: 1, data: { agentId, worldId: "default", state: "joined", firstJoinedAt:stamp, ownerPaused: false, ownerPauseVersion: 1, platformRestricted: false, platformVersion: 1, sharingGeneration: 1 } });
                     await initializeWalletAccount(tx, agentId, stamp);
                     await initializePerceptionAgent(tx, agentId, stamp);
                     return registrationView(registration);
@@ -815,7 +815,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     if (version(input.expectedProfileVersion, "expectedProfileVersion") !== profile.version)
                         fail("version_conflict", 409, "Profile changed", { version: profile.version });
                     joinPermission(profile);
-                    return membershipView(member.data.state === "joined" ? member : await update(membershipRepository(tx), member, { state: "joined" }));
+                    return membershipView(member.data.state === "joined" ? member : await update(membershipRepository(tx), member, { state: "joined", ...(member.data.state==="not_joined"&&member.data.firstJoinedAt==null?{firstJoinedAt:now()}:{}) }));
                 });
             }
             if (action === "receipt") {
