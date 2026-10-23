@@ -46,7 +46,11 @@ function eventTime(record,detail){
 function statusText(record){return({demo_planned:'演示计划，尚无发生结果',demo_occurred:'演示发生记录',committed:'内容已发布'})[record?.summary?.status]||'';}
 function agentBar(state,chooseAgent){const bar=el('div','hud-platform-agent'),agent=selectedAgent(state),picture=el('div','hud-platform-agent-picture');if(agent)avatar(picture,{avatar:agent.avatar},agent.agentId);else picture.append(icon('profile'));bar.append(picture,el('strong','',agent?.name||'尚未选择 Agent'),button(state.authenticated?'切换 Agent':'登录账号',chooseAgent));return bar;}
 function tabs(options,current,select){const bar=el('div','hud-filters');for(const [key,label]of options){const control=button(label,()=>select(key));control.dataset.platformTab=key;control.setAttribute('aria-pressed',String(key===current));bar.append(control);}return bar;}
-const emptyText={holdings:'这个 Agent 暂无持有物品。',items:'当前没有可查看的物品。',messages:'这个 Agent 暂无消息。',notifications:'这个 Agent 暂无通知。',announcements:'当前没有可查看的公告。',events:'当前没有可查看的事件。'};
+const emptyText={holdings:'背包里还没有物品。',items:'当前没有可查看的物品。',messages:'还没有收到消息。',notifications:'暂无通知。',announcements:'暂无公告。',events:'暂无事件记录。'};
+function accessState(state,kind,chooseAgent){
+  if(state.authenticated&&selectedAgent(state))return null;
+  const box=el('section','hud-access-state'),expired=state.phase==='expired';box.append(icon(kind==='背包'?'inventory':'mail'),el('h3','',state.authenticated?'选择一位 Agent':expired?'重新登录，继续查看':'和你的 Agent 一起探索小镇'),el('p','hud-muted',state.authenticated?`请选择要查看${kind}的 Agent。`:expired?'登录已失效，请重新登录后继续。':`登录后，可以查看你所管理 Agent 的${kind}。`),button(state.authenticated?'选择 Agent':expired?'重新登录':'登录／注册',chooseAgent));return box;
+}
 function feedback(state,key,retry,chooseAgent){
   const box=el('div','hud-feedback');box.setAttribute('role','status');
   let message=['idle','pending'].includes(state.phase)?'正在确认可查看的内容……':state.phase==='loading'?'正在载入内容……':state.phase==='no_agent'?'请选择要查看的 Agent。':state.phase==='session'?'登录状态已失效或尚未登录，请登录后查看。':state.phase==='denied'?'当前账号无权查看这类内容。':state.phase==='resync'?'内容已变化，请重新载入当前列表。':state.phase==='not_enabled'?key==='holdings'?'主人查看背包的入口尚未开放。':key==='messages'?'消息读取暂未开放。':key==='notifications'?'主人查看这类通知的入口尚未开放。':key==='events'?'事件读取暂未开放。':'这类内容的读取暂未开放。':state.phase==='unavailable'?'内容来源暂不可用，请稍后重试。':state.phase==='partial'?'后续内容暂时无法载入。已显示部分内容，尚未全部载入。':state.phase==='ready'&&state.complete?emptyText[key]:'暂时无法载入，请稍后重试。';
@@ -132,7 +136,7 @@ export function createPlatformInventory(provider,{session,context,walletProvider
     if(!same(selected,chosen)){if(active&&chosen)void read(chosen);else details.replaceChildren();}else renderDetail();
   }
   function render(){
-    if(disposed)return;node.replaceChildren();const view=views[key],agent=selectedAgent(state);
+    if(disposed)return;node.replaceChildren();const view=views[key],agent=selectedAgent(state),access=accessState(state,'背包',chooseAgent);if(access){clear();node.append(access);return;}
     const info=agentBar(state,chooseAgent);info.classList.add('hud-inventory-context');info.append(walletStatus());node.append(info);
     const chooseCategory=next=>{remember();view.category=next;view.top=0;view.selected='';view.detailTop=0;saveInventory();if(active){if(next==='work'){provider.cancel(key);authored.activate();}else{authored.deactivate();void provider.load(key);}}render();};
     if(view.category==='work'){node.append(tabs([['all','持有物品'],['work','我的作品'],['prop','虚拟道具']],view.category,chooseCategory),authored.node);return;}
@@ -195,8 +199,8 @@ export function createPlatformMail(provider,{session,context,detailHost,chooseAg
   function select(next){remember();close(false);exchanges.deactivate();provider.cancel(key);key=next;saveCategory();render();if(active){if(key==='messages'){exchanges.activate();}if(key!=='messages'||exchanges.direction==='received')void provider.load(key);}}
   function render(){
     if(disposed)return;node.replaceChildren();const agent=selectedAgent(state),source=currentSource();
-    node.append(agentBar(state,chooseAgent));
     node.append(tabs([['messages','消息'],['notifications','通知'],['announcements','公告'],['events','事件']],key,select));
+    const access=['messages','notifications'].includes(key)?accessState(state,'信箱',chooseAgent):null;if(access){node.append(access);return;}if(state.authenticated&&agent)node.prepend(agentBar(state,chooseAgent));
     if(key==='messages'){node.append(exchanges.node);if(exchanges.direction==='sent')return;}
     node.append(el('p','hud-muted',['messages','notifications'].includes(key)?state.authenticated?`阅读者：你 · 收件对象：${agent?.name||'请选择 Agent'}`:'请登录后查看 Agent 的消息':'公开内容 · 不代表私人来信'),el('p','hud-muted','当前可查看内容'));
     const heading=el('h3','hud-list-heading',key==='messages'?'其他获准消息':key==='notifications'?'获准通知':key==='events'?'事件计划与发生记录':'公开公告');heading.tabIndex=-1;node.append(heading);list.replaceChildren();

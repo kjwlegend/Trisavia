@@ -17,7 +17,7 @@ export function createFriendsFeature(session,{chooseAgent=()=>{},detailHost}={})
     if(state.phase==='loading'){status.textContent='正在读取已确认的好友…';return;}
     if(state.phase==='error'){status.textContent=state.errorStatus===401?'登录已失效，请重新登录后查看。':state.errorStatus===404?'当前 Agent 的好友暂不可查看，请重新选择。':'好友暂时无法读取，请稍后重试。';node.append(button('重新读取',()=>void reader.load()));return;}
     if(state.phase!=='ready')return;
-    status.textContent=state.friends.length?'这里只显示已确认的好友和获准公开的资料。':'暂无可展示的已确认好友。';
+    status.textContent=state.friends.length?'这里只显示已确认的好友和获准公开的资料。':'暂无可显示的好友。可以在角色资料中发送好友邀请。';
     const list=el('ul','hud-friends-list');list.setAttribute('aria-label',`${agent.name} 的已确认好友`);
     for(const friend of state.friends){const row=el('li','hud-friend'),portrait=el('span','hud-friend-picture'),copy=el('div');avatar(portrait,{avatar:friend.profile.appearance},friend.agentId);copy.append(el('strong','',friend.profile.displayName),el('span','hud-muted',`已确认好友 · 亲密度 ${friend.intimacyScore} / 100`));row.append(portrait,copy,link('公开资料',`/residents/${encodeURIComponent(friend.agentId)}`));list.append(row);}
     node.append(el('p','hud-muted','亲密度由双方共享，只在成为好友后新发起并完成确认的文字交流中增加；浏览和发送邀请不会增加。'),list);if(!state.complete)node.append(button('继续载入好友',()=>reader.loadMore()));node.append(button('刷新好友',()=>void reader.load(),'hud-friends-refresh'));
