@@ -18,7 +18,7 @@ export function createAppearancePicker(form,{changed=()=>{},isDirty=()=>false}={
   grid.setAttribute('role','group');grid.setAttribute('aria-label','选择发型');hair.append(grid);
   const colorGroups=new Map();for(const [kind,label,node]of [['hair','发色',hairColor],['clothing','服装配色',clothing]]){const options=el('div','appearance-color-options');options.setAttribute('role','group');options.setAttribute('aria-label',label);node.append(el('strong','',label),options);colorGroups.set(kind,options);}
   panel.append(base,hair,hairColor,clothing);editor.append(tabs,message,panel);layout.append(stage.node,editor);form.prepend(input,version,hairInput,clothingInput,layout,summary);
-  const catalogue=createLookCatalogue();let agent=null,editable=false,active=false,assets=null,disposed=false,assetError=false,attribute='hair';
+  const catalogue=createLookCatalogue();let agent=null,editable=false,active=false,assets=null,disposed=false,assetError=false,attribute='hair',explicitOriginal={hair:false,clothing:false};
   const attributeTabs=new Map();
   for(const [key,label]of [['base','基础形象'],['hair','发型'],['hairColor','发色'],['clothing','服装配色']]){
     const button=el('button','',label);button.type='button';button.dataset.appearanceAttribute=key;button.setAttribute('aria-pressed',String(key===attribute));button.addEventListener('click',()=>{attribute=key;showAttribute();});tabs.append(button);attributeTabs.set(key,button);
@@ -27,7 +27,7 @@ export function createAppearancePicker(form,{changed=()=>{},isDirty=()=>false}={
     base.hidden=attribute!=='base';hair.hidden=attribute!=='hair';hairColor.hidden=!['hair','hairColor'].includes(attribute);clothing.hidden=!['hair','clothing'].includes(attribute);
     for(const [key,button]of attributeTabs){button.setAttribute('aria-pressed',String(key===attribute));button.setAttribute('aria-selected',String(key===attribute));}
   }
-  function selected(){return input.value?{lookId:input.value,catalogVersion:version.value,...(hairInput.value!=='original'?{hairColorId:hairInput.value}:{}),...(clothingInput.value!=='original'?{clothingColorId:clothingInput.value}:{})}:null;}
+  function selected(){return input.value?{lookId:input.value,catalogVersion:version.value,...(hairInput.value!=='original'||explicitOriginal.hair?{hairColorId:hairInput.value}:{}),...(clothingInput.value!=='original'||explicitOriginal.clothing?{clothingColorId:clothingInput.value}:{})}:null;}
   const colorsReady=data=>data?.colorCustomization?.version===1;
   function selectionLabel(value){const look=resolveLook(value),colors=appearanceColors(value);return look?[look.label,...['hair','clothing'].map(kind=>(paletteOptions(kind).find(option=>option.id===colors[kind==='hair'?'hairColorId':'clothingColorId'])?.displayName||'原色')+(kind==='hair'?'发色':'服装'))].join(' · '):'暂无法显示';}
   function saved(){return agent?.profile?.publishedAppearance??agent?.profile?.published?.avatar??null;}
@@ -67,7 +67,7 @@ export function createAppearancePicker(form,{changed=()=>{},isDirty=()=>false}={
   return{
     stage,node:layout,
     selection(){const value=selected(),catalog=catalogue.snapshot();if(catalog.phase!=='ready'||catalog.data.catalogVersion!==value?.catalogVersion||!catalog.data.looks.some(look=>look.lookId===value.lookId&&look.selectable))return null;if(!colorsReady(catalog.data)&&(value.hairColorId!==undefined||value.clothingColorId!==undefined))return null;return value;},
-    reset(value){agent=value;const appearance=saved(),colors=appearanceColors(appearance);hairInput.value=colors.hairColorId;clothingInput.value=colors.clothingColorId;input.value=typeof appearance?.lookId==='string'?appearance.lookId:'';version.value=typeof appearance?.catalogVersion==='string'?appearance.catalogVersion:APPEARANCE_VERSION;render();},
+    reset(value){agent=value;const appearance=saved(),colors=appearanceColors(appearance);explicitOriginal={hair:Object.hasOwn(appearance||{},'hairColorId'),clothing:Object.hasOwn(appearance||{},'clothingColorId')};hairInput.value=colors.hairColorId;clothingInput.value=colors.clothingColorId;input.value=typeof appearance?.lookId==='string'?appearance.lookId:'';version.value=typeof appearance?.catalogVersion==='string'?appearance.catalogVersion:APPEARANCE_VERSION;render();},
     agent(value){agent=value;render();},refresh:render,
     editable(value){if(editable!==value){editable=value;render();}else{for(const button of grid.querySelectorAll('button'))button.disabled=!editable||!catalogue.snapshot().data?.looks.some(item=>item.lookId===button.dataset.lookId&&item.selectable);for(const button of panel.querySelectorAll('[data-appearance-color-id]'))button.disabled=!editable||catalogue.snapshot().phase!=='ready'||!colorsReady(catalogue.snapshot().data);}},
     active(value){if(active===value)return;active=value;stage.active(value);if(value){void catalogue.load();if(!assets&&!assetError)void load();}else catalogue.cancel();},
