@@ -5,6 +5,7 @@ import { fail } from '../domains/common/errors.ts';
 import { key, plain, refId,OPERATIONS,TYPE_DEFINITIONS, type ObjectRef } from '../domains/perception/protocol.ts';
 import { publishCatalogInTransaction, publishImplementedReadersInTransaction, publishNpcServiceReadersInTransaction, IMPLEMENTED_READER_SOURCES,initializePerceptionCatalog } from './perception-catalog.ts';
 import {CURRENT_WORLD_MAP_TOWN_GUIDE,TOWN_SERVICES_GUIDE} from './agent-town-services-guide.ts';
+import {CURRENT_HOURLY_AUTONOMY_GUIDE,CURRENT_HOURLY_HUMAN_GUIDE,HOURLY_HOST_GUIDE} from './agent-hourly-participation-guide.ts';
 import {PERCEPTION_SCHEMA_VERSION} from '../domains/perception/schemas.ts';
 import {APPEARANCE_CATALOG_VERSION,APPEARANCE_CATALOG_DIGEST,APPEARANCE_ASSET_VERSION} from '../domains/profile/appearance-catalog.ts';
 import {AGENT_HUMAN_VOICE_GUIDE,AGENT_TEXT_EXCHANGE_GUIDE,CURRENT_TEXT_EXCHANGE_GUIDE,AGENT_FRIENDSHIP_GUIDE,CURRENT_FRIENDSHIP_GUIDE,AGENT_AUTONOMY_GUIDE,AGENT_WORLD_MAP_V2_GUIDE} from './agent-human-voice.ts';
@@ -190,6 +191,25 @@ export async function publishNpcServiceReaders(store:M1Store,options:Administrat
         if(!current||typeof document.text!=='string')fail('version_conflict',409,'The current exact guide is missing');
         const corrected=document.text.replaceAll(AGENT_WORLD_MAP_V2_GUIDE,CURRENT_WORLD_MAP_TOWN_GUIDE).replaceAll('聊天和服务尚未实现，不声称已支持；数值不代表模型感情。','Agent之间的聊天和服务计分尚未实现；NPC服务使用独立熟悉度，不增加好友亲密度，也不表示模型感情。');
         return await publishNpcServiceReadersInTransaction(tx,{...options,guideText:corrected+'\n'+TOWN_SERVICES_GUIDE});
+    });
+}
+/** Guide-only hourly host onboarding. Stored frequency, sources and business facts are untouched. */
+export async function publishAgentHourlyGuide(store:M1Store,options:AdministrativeCommand&{expectedInstanceId:string;expectedRecoveryEpoch:string;expectedCatalogRevision:string;revision:string;expectedGuideVersion:number;guideVersion:number}):Promise<JsonObject>{
+    if(options.expectedInstanceId!==store.instanceId||options.expectedRecoveryEpoch!==store.recoveryEpoch)fail('version_conflict',409,'The explicit target instance or recovery epoch differs');
+    if(options.expectedCatalogRevision!=='catalog-npc-services-1'||options.revision!=='catalog-hourly-onboarding-1'||options.expectedGuideVersion!==9||options.guideVersion!==10)throw new Error('The exact next hourly onboarding release is required');
+    const payload:JsonObject={action:'publishAgentHourlyGuide',release:'agent-hourly-host-guide@1',instanceId:store.instanceId,recoveryEpoch:store.recoveryEpoch,expectedCatalogRevision:options.expectedCatalogRevision,revision:options.revision,expectedGuideVersion:options.expectedGuideVersion,guideVersion:options.guideVersion,autonomy:CURRENT_HOURLY_AUTONOMY_GUIDE,human:CURRENT_HOURLY_HUMAN_GUIDE,host:HOURLY_HOST_GUIDE};
+    return command(store,options,payload,async tx=>{
+        const current=await catalogRepository(tx).get('current');
+        if(!current||current.data.schemaVersion!==PERCEPTION_SCHEMA_VERSION||current.data.catalogRevision!==options.expectedCatalogRevision||current.data.guideVersion!==options.expectedGuideVersion)fail('version_conflict',409,'The current catalog or guide changed');
+        for(const moduleId of ['perception','world','profiles','items','inventory','mailbox','wallet']){
+            if(!await catalogRepository(tx).get(`guide:${moduleId}:9`)||await catalogRepository(tx).get(`guide:${moduleId}:10`))fail('version_conflict',409,'The exact current or next guide is unavailable');
+        }
+        const before=plain((await catalogRepository(tx).get('guide:world:9'))?.data.document);
+        if(typeof before.text!=='string'||!before.text.includes(AGENT_AUTONOMY_GUIDE))fail('version_conflict',409,'The retained current autonomous guidance is missing');
+        const corrected=before.text.replaceAll(AGENT_AUTONOMY_GUIDE,CURRENT_HOURLY_AUTONOMY_GUIDE).replaceAll(AGENT_HUMAN_VOICE_GUIDE,CURRENT_HOURLY_HUMAN_GUIDE).replaceAll('已经来到 connet.ai','已经来到 Trisavia（新领）');
+        await publishCatalogInTransaction(tx,{revision:options.revision,guideVersion:10,guideText:corrected+'\n'+HOURLY_HOST_GUIDE});
+        const after=(await catalogRepository(tx).get('current'))!;
+        return {changed:true,catalogRevision:after.data.catalogRevision!,skillCatalogRevision:after.data.skillCatalogRevision!,guideVersion:10,schemaVersion:PERCEPTION_SCHEMA_VERSION,newGuideDocuments:7};
     });
 }
 /** Reviewed maintenance release. No arbitrary source, guide text, audience or object grant can be supplied. */

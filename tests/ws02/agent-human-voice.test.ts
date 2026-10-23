@@ -4,7 +4,8 @@ import test from 'node:test';
 import Fastify from 'fastify';
 import {AGENT_HUMAN_VOICE_GUIDE,AGENT_TEXT_EXCHANGE_GUIDE,AGENT_FRIENDSHIP_GUIDE,AGENT_AUTONOMY_GUIDE,AGENT_WORLD_MAP_V2_GUIDE} from '../../apps/platform/application/agent-human-voice.ts';
 import {initializePerceptionCatalog,publishPerceptionCatalog} from '../../apps/platform/application/perception-catalog.ts';
-import {publishAgentHumanVoiceGuide,publishTextExchangeGuide,publishFriendshipGuide,publishAgentAutonomyGuide,publishWorldMapV2Guide,publishNpcServiceReaders} from '../../apps/platform/application/perception-admin.ts';
+import {publishAgentHumanVoiceGuide,publishTextExchangeGuide,publishFriendshipGuide,publishAgentAutonomyGuide,publishWorldMapV2Guide,publishNpcServiceReaders,publishAgentHourlyGuide} from '../../apps/platform/application/perception-admin.ts';
+import {CURRENT_HOURLY_AUTONOMY_GUIDE,HOURLY_HOST_GUIDE} from '../../apps/platform/application/agent-hourly-participation-guide.ts';
 import {catalogData} from '../../apps/platform/application/perception-catalog.ts';
 import {refId} from '../../apps/platform/domains/perception/protocol.ts';
 import {TOWN_ITEM_DEFINITIONS} from '../../apps/platform/domains/town-services/catalog.ts';
@@ -206,4 +207,23 @@ test('named NPC item-source release preserves prior exact guides and permissions
  assert.notEqual((await service.capabilities()).catalogRevision,oldCapabilities.catalogRevision);assert.notEqual((await service.capabilities()).skillCatalogRevision,oldCapabilities.skillCatalogRevision);
  const listed=((await service.invoke('perceptionList',input,'synthetic')).data as JsonObject).records as JsonObject[];assert.equal(listed.length,2);assert(listed.every(row=>(row.summary as JsonObject).dataMode==='real'&&row.sourceId==='npc-service-items'));
  const app=Fastify();registerPerceptionRoutes(app,{invokeHttp:service.invoke} as unknown as M1Service);try{for(const moduleId of ['perception','world','profiles','items','inventory','mailbox','wallet']){const response=await app.inject({method:'GET',url:`/v1/perception/guides/${moduleId}?version=9`,headers:{authorization:'Bearer pre-town-runtime'}});assert.equal(response.statusCode,200);const data=response.json().data;assert.equal(sha(data.canonicalDocument),data.digest);assert.deepEqual(JSON.parse(data.canonicalDocument),data.document);assert.match(data.document.text,/town_services\.welcome\.claim/);assert(!data.document.text.includes('scene顶层npcs为独立server-managed只读定义'));}}finally{await app.close();}
+});
+
+test('hourly onboarding guide10 replaces the obsolete default while preserving every exact guide, source and existing Agent arrangement',async()=>{
+ const f=memory();await f.store.transaction(initializePerceptionCatalog);
+ const text=String(((await f.tx.get('perception_catalog','guide:world:2'))!.data.document as JsonObject).text);
+ await publishPerceptionCatalog(f.store,{revision:'catalog-map-v2-1',guideVersion:8,guideText:text});
+ for(const item of Object.values(TOWN_ITEM_DEFINITIONS)){const ref={moduleId:'items',type:'items.item@1',id:item.id};await f.tx.insert('perception_objects',{id:refId(ref),version:1,data:{ref,categoryId:'items',sourceId:'npc-service-items',dataMode:'real',public:true,active:true,available:true}});}
+ await publishNpcServiceReaders(f.store,{actorId:'fixture-npc-maintainer',operationId:randomUUID(),expectedInstanceId:f.store.instanceId,expectedRecoveryEpoch:f.store.recoveryEpoch,expectedCatalogRevision:'catalog-map-v2-1',revision:'catalog-npc-services-1',expectedGuideVersion:8,guideVersion:9});
+ for(const [id,intervalSeconds,paused,manual] of [['old-null',null,false,false],['old-hour',3600,false,false],['old-paused',600,true,false],['old-manual',null,false,true]] as const){await f.tx.insert('agents',{id,version:3,data:{worldAccess:{version:2,intervalSeconds},runtimeActive:true}});await f.tx.insert('memberships',{id,version:2,data:{agentId:id,ownerPaused:paused,manual}});}
+ const before=f.snapshot(),options={actorId:'isolated-hourly-maintainer',operationId:randomUUID(),expectedInstanceId:f.store.instanceId,expectedRecoveryEpoch:f.store.recoveryEpoch,expectedCatalogRevision:'catalog-npc-services-1',revision:'catalog-hourly-onboarding-1',expectedGuideVersion:9,guideVersion:10};
+ const receipt=await publishAgentHourlyGuide(f.store,options),published=f.snapshot();assert.equal(receipt.newGuideDocuments,7);assert.equal(receipt.schemaVersion,5);assert.deepEqual(await publishAgentHourlyGuide(f.store,options),receipt);assert.deepEqual(f.snapshot(),published);
+ for(const row of before.perception_catalog!.filter(row=>/^(guide|schema|catalog-revision):/.test(row.id)))assert.deepEqual(await f.tx.get('perception_catalog',row.id),row);
+ assert.deepEqual((await f.tx.get('perception_catalog','current'))!.data.sourceStates,(before.perception_catalog!.find(row=>row.id==='current'))!.data.sourceStates);
+ for(const table of M1_TABLES)if(!['perception_catalog','perception_access'].includes(table))assert.deepEqual(f.rows(table),before[table]);
+ const service=createPerceptionService(f.store,{authenticate:async()=>({id:'existing-hourly-runtime',version:1,data:{kind:'runtime',agentId:'old-null',runtimeVersion:1}})}),app=Fastify();registerPerceptionRoutes(app,{invokeHttp:service.invoke} as unknown as M1Service);
+ try{
+  assert.equal((await service.capabilities()).catalogRevision,'catalog-hourly-onboarding-1');
+  for(const moduleId of ['perception','world','profiles','items','inventory','mailbox','wallet']){const response=await app.inject({method:'GET',url:`/v1/perception/guides/${moduleId}?version=10`,headers:{authorization:'Bearer existing-hourly-runtime'}});assert.equal(response.statusCode,200);const exact=response.json().data;assert.equal(sha(exact.canonicalDocument),exact.digest);assert.deepEqual(JSON.parse(exact.canonicalDocument),exact.document);assert(exact.document.text.includes(CURRENT_HOURLY_AUTONOMY_GUIDE));assert(exact.document.text.includes(HOURLY_HOST_GUIDE));assert.match(exact.document.text,/3600秒/);assert.match(exact.document.text,/关联前不创建任务/);assert.match(exact.document.text,/management\.managementStatus/);assert(!exact.document.text.includes('建议600秒'));assert(!exact.document.text.includes('擅自600覆盖'));}
+ }finally{await app.close();}
 });
