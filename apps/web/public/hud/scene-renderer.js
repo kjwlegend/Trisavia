@@ -38,7 +38,7 @@ async function tryPublicFocus(){
   if(profile.phase!=='ready'){focusMessage([403,404].includes(profile.errorStatus)?'这位居民的公开档案暂不可查看。':'暂时无法确认公开资料，请重试定位。',true);return;}
   if(!latest||profile.data.publishedVersion<latest.profile.publishedVersion){focusMessage('公开位置或资料已更新，暂时无法定位，请重试。',true);return;}
   const place=publicPlace(latest);if(!place||!scene.locateOwnedAgent(latest.agentId)){focusMessage('地图暂时无法定位这位居民，请重试。',true);return;}
-  publicCharacter.observe(place);publicFocus=null;focusMessage('');openPlace(place,scene.canvas,{reuseProfile:true});
+  publicCharacter.observe(place);publicFocus=null;focusMessage('');openPlace(place,scene.canvas,{reuseProfile:true,fromPublicFocus:true});
 }
 function focusPublicResident(agentId){cancelPublicFocus();if(!/^[A-Za-z0-9_-]{8,100}$/.test(agentId)){focusMessage('这个居民档案链接暂时无法定位。');return;}publicFocus={agentId,waiting:true,reading:false};focusMessage('正在寻找这位居民的公开位置…');void tryPublicFocus();}
 focusRetry.addEventListener('click',()=>{if(!publicFocus)return;publicFocus.waiting=true;focusMessage('正在重新确认公开位置…');void worldProvider.refresh();});
@@ -83,7 +83,8 @@ function positionCharacterCard(){
 }
 const characterSize=new ResizeObserver(positionCharacterCard);characterSize.observe(characterCard.node);
 window.addEventListener('resize',positionCharacterCard);
-function openPlace(place, origin,{reuseProfile=false}={}) {
+function openPlace(place, origin,{reuseProfile=false,fromPublicFocus=false}={}) {
+  if(!fromPublicFocus)cancelPublicFocus();
   if(place.kind==='world-avatar')emitWorldAudio('world-focus');
   document.dispatchEvent(new CustomEvent('world:place-open'));
   currentPlace = place;
