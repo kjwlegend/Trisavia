@@ -12,3 +12,16 @@ export function validateBehaviorDraft(d:BehaviorRecordDraft):void{
  if(Buffer.byteLength(JSON.stringify(d))>4096)throw new RuntimeError('invalid_usage','Behavior fact exceeds bounded metadata');
 }
 export function sameBehavior(left:BehaviorRecordDraft,right:BehaviorRecordDraft):boolean{return hashRuntimeRequest({...left,recordedAt:0} as unknown as JsonObject)===hashRuntimeRequest({...right,recordedAt:0} as unknown as JsonObject);}
+
+export interface BehaviorEventProof {eventId:string;domain:string;kind:string;subject:{type:string;id:string;version:number};actor:{kind:string;id:string};occurredAt:number;agentIds:string[];nextStep?:number}
+export function validateBehaviorEvent(d:BehaviorRecordDraft,e:BehaviorEventProof):void{
+ const types:Record<BehaviorRecordDraft['sourceRef']['type'],string>={movement:'movement',avatar:'avatar',friendship_invitation:'friendship.invitation',interaction_invitation:'invitation',interaction_activity:'activity'};
+ const nodes:Record<string,string[]>={
+  'world.movement.pending':['world.movement.received'],'world.movement.running':['world.movement.started'],'world.movement.completed':['world.movement.completed'],'world.movement.stopped':['world.movement.stopped'],'world.idle.completed':['world.idle.completed'],
+  'friendship.invitation.pending':['relationships.invitation.sent','relationships.invitation.received'],...Object.fromEntries(['accepted','declined','cancelled','expired'].map(s=>['friendship.invitation.'+s,['relationships.invitation.'+s]])),
+  'interaction.invitation.send':['interaction.invitation.sent','interaction.invitation.received'],...Object.fromEntries([['accept','accepted'],['decline','declined'],['withdraw','withdrawn'],['expire','expired']].map(([a,b])=>['interaction.invitation.'+a,['interaction.invitation.'+b]])),
+  'interaction.activity.submit_feedback':['interaction.feedback.submitted'],'interaction.activity.close':['interaction.activity.closed'],'interaction.activity.leave':['interaction.activity.left'],'interaction.activity.expire':['interaction.activity.expired'],
+ };
+ if(e.eventId!==d.sourceEventId||e.domain!==d.sourceDomain||e.subject.id!==d.sourceRef.id||e.subject.version!==d.sourceRef.version||e.subject.type!==types[d.sourceRef.type]||e.occurredAt!==d.occurredAt||e.actor.id!==d.executor.id||e.actor.kind!==d.executor.kind||!e.agentIds.includes(d.agentId)||!nodes[e.kind]?.includes(d.node)||e.kind==='world.movement.running'&&e.nextStep!==1)throw new RuntimeError('invalid_usage','Behavior projection does not match its committed source fact');
+ if((d.node.endsWith('.sent')||d.node.endsWith('.received'))&&!d.node.startsWith('world.')&&e.agentIds[d.node.endsWith('.sent')?0:1]!==d.agentId)throw new RuntimeError('invalid_usage','Behavior perspective differs from its source');
+}

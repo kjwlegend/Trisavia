@@ -145,7 +145,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
     await repository.advanceRevision(worldId, world.revision);
     if(path.length===1&&await behaviorEnabled(context,'world_idle')&&await context.repository(BEHAVIOR_REPOSITORY).shouldRecordIdle(agentId,now)){
       const event=await context.events.append({eventId:'idle-completed:'+next.id+':'+next.version,domain:'world',kind:'world.idle.completed',schemaVersion:1,subject:{type:'avatar',id:next.id,version:next.version},worldId,actor:{kind:'system',id:'world-rules'},source:'rules',occurredAt:now,causationId:task.taskId,correlationId:task.taskId,audience:{kind:'agents',agentIds:[agentId]},payload:{avatarId:next.id,avatarVersion:next.version,worldId,policyVersion:1}});
-      await recordBehaviorSource(context,options.observation,{event,scope:'world_idle',sourceRef:{type:'avatar',id:next.id,version:next.version},perspectives:[{agentId,node:'world.idle.completed',publicProjection:await behaviorPublic(context,agentId,worldId,next.position)}]});
+      await recordBehaviorSource(context,options.observation??{capture:async(ctx,id,domain)=>await identity.captureOwnerObservation?.(ctx,id,domain)??null},{event,scope:'world_idle',sourceRef:{type:'avatar',id:next.id,version:next.version},perspectives:[{agentId,node:'world.idle.completed',publicProjection:await behaviorPublic(context,agentId,worldId,next.position)}]});
     }
     return again(path.length > 1 ? IDLE_LIFE_POLICY_V1.stepIntervalMs : restMs(next), { worldId, agentId, path: path.slice(1) as unknown as JsonObject[], avatarVersion: next.version,
       qualification, rulesetVersion: rules.version, topologyVersion: rules.topologyVersion, explicitStamp });
@@ -164,7 +164,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
     const node:BehaviorNode|undefined=movement.state==='pending'?'world.movement.received':movement.state==='completed'?'world.movement.completed':movement.state==='stopped'?'world.movement.stopped':movement.nextStep===1?'world.movement.started':undefined;
     if(node){let publicProjection:BehaviorPublicProjection|null=null;
       if(['world.movement.started','world.movement.completed'].includes(node)&&await behaviorEnabled(context,'world_explicit'))publicProjection=await behaviorPublic(context,movement.agentId,movement.worldId,node==='world.movement.started'?movement.origin:movement.path[movement.nextStep-1]!);
-      await recordBehaviorSource(context,options.observation,{event,scope:'world_explicit',sourceRef:{type:'movement',id:movement.id,version:movement.version},perspectives:[{agentId:movement.agentId,node,publicProjection}],initiator:{kind:'agent',id:movement.agentId},origin:'external_agent'});
+      await recordBehaviorSource(context,options.observation??{capture:async(ctx,id,domain)=>await identity.captureOwnerObservation?.(ctx,id,domain)??null},{event,scope:'world_explicit',sourceRef:{type:'movement',id:movement.id,version:movement.version},perspectives:[{agentId:movement.agentId,node,publicProjection}],initiator:{kind:'agent',id:movement.agentId},origin:'external_agent'});
     }
     await context.outbox.enqueue({ outboxId: randomUUID(), eventId, consumerId: 'world-projection', dedupeKey: eventId, generation: await context.tasks.currentGeneration('world'), dueAt: context.now(), maxAttempts: 5 }); return [eventId];
   }
