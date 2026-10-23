@@ -5,6 +5,7 @@ import {createOwnerManager,managerPages} from './owner-manager.js';
 import {bindOnboardingPrompt} from './onboarding-prompt.js';
 import {createAppearancePicker} from './world-pixel/appearance-picker.js';
 import {createLookStage} from './world-pixel/look-stage.js';
+import {worldAccessAdoptionText} from './world-access-status.js';
 
 export function mountOwnerPanel(){const root=el('section','account-root');root.id='account-root';root.innerHTML=ownerMarkup;return root;}
 export function createOwnerPresentation(root,{setTitle=()=>{},close=()=>{},onChange=()=>{}}={}){
@@ -61,7 +62,12 @@ export function createOwnerPresentation(root,{setTitle=()=>{},close=()=>{},onCha
     account(value){facts.textContent=value?`当前账号：${value.username} · ${value.emailVerified?'邮箱已验证':value.emailVerificationMode==='experience'?'邮箱归属未核实（体验模式）':'邮箱尚未验证'}${value.email?` · ${value.email}`:''}`:'';},
     state(value){authenticated=value.authenticated===true;selectedAgentId=value.selectedAgentId;if(!value.authenticated||currentAgent?.agentId!==selectedAgentId){currentAgent=null;appearancePicker.reset(null);profileStage.update(null);}manager.state(value);if(authenticated&&currentAgent?.agentId===selectedAgentId)manager.agent(currentAgent);},agent(value){const keepAppearance=formBaselines.has('appearance-form')&&formBaselines.get('appearance-form')!==oneFormSnapshot('appearance-form');currentAgent=value;appearancePicker.agent(value);if(!keepAppearance){appearancePicker.reset(value);formBaselines.set('appearance-form',oneFormSnapshot('appearance-form'));}manager.agent(value);},resetAppearance(){appearancePicker.reset(currentAgent);formBaselines.set('appearance-form',oneFormSnapshot('appearance-form'));baseline=formSnapshot();manager.previewAppearance();},selectedAppearance:()=>appearancePicker.selection(),
     unavailable(agentId){unavailableId.textContent=agentId;navigate('unavailable');},
-    success(value){success.replaceChildren(el('h3','',value.title),el('p','',value.username),el('p','',value.agentName||'你还没有关联的 Agent，可以稍后添加。'));for(const [label,handler]of [[value.agentName?'管理这位 Agent':'邀请我的 Agent 加入',()=>requestNavigate(value.agentName?'overview':'invite')],['回到世界',close]]){const button=el('button','',label);button.type='button';button.addEventListener('click',handler);success.append(button);}navigate('success');},
+    success(value){
+      const linked=value.agentLinked===true;success.replaceChildren(el('h3','',value.title),el('p','',value.username),el('p','',linked?value.agentName:value.bindingUnavailable?'暂时无法核对这位 Agent 的当前关联状态。请先查看我的 Agent。':'你还没有关联的 Agent，可以稍后添加。'));
+      if(linked){success.append(el('h3','','下一步'),el('p','','回到你的 Agent，告诉它：“我已关联”。'),el('p','small-text','由它核对关联，并在自己的工具中确认参与安排。网页不会替它创建定时任务。'));
+        const access=value.worldAccess,interval=Number.isSafeInteger(access?.intervalSeconds)&&access.intervalSeconds>0?access.intervalSeconds%3600===0?`每 ${access.intervalSeconds/3600} 小时`:access.intervalSeconds%60===0?`每 ${access.intervalSeconds/60} 分钟`:`每 ${access.intervalSeconds} 秒`:access?.intervalSeconds===null?'留空，下次同步时停止定时查看':'暂未取得';success.append(el('p','small-text',`已保存的期望间隔：${interval}。`),el('p','small-text',worldAccessAdoptionText(access)));}
+      const actions=[[linked?'管理这位 Agent':value.bindingUnavailable?'查看我的 Agent':'邀请我的 Agent 加入',()=>requestNavigate(linked?'overview':value.bindingUnavailable?'agents':'invite')],...(linked?[['查看参与安排',()=>requestNavigate('participation')]]:[]),['回到 Trisavia（新领）',close]];for(const [label,handler]of actions){const button=el('button','',label);button.type='button';button.addEventListener('click',handler);success.append(button);}navigate('success');
+    },
     get confirming(){return Boolean(resolveConfirmation);},
     confirm(title,text,label='确认'){
       if(resolveConfirmation)return Promise.resolve(false);confirmTitle.textContent=title;confirmText.textContent=text;yes.textContent=label;confirmTarget.replaceChildren();const full=isManager(),selected=full?$('#selected-name'):target.querySelector('strong');if(selected?.textContent)confirmTarget.append(el('small','','当前对象'),el('strong','',selected.textContent));

@@ -76,7 +76,7 @@ export function createOwnerEmailFlow(hooks){
     const reg=!progress||registration(),status=currentView?.status;
     const exp=experience();
     $('#email-title').textContent=reg?(status==='email_proved'?'完成注册':progress?.target||proposedTarget?'注册并关联 Agent':'创建主人账号'):exp?'找回体验验证':'通过注册邮箱找回登录';
-    $('#email-intro').textContent=exp?(reg?'填写账号资料，完成体验验证后再提交注册。当前不发送邮件，也不核实邮箱归属。':'当前使用四位体验码，不发送邮件，也不核实邮箱归属。仍需本次有效 Agent 找回请求。'):reg?'填写账号资料，验证邮箱后完成注册。登录备份是可选的备用方式。':'验证码只会发往账号原已存邮箱。请在此网页输入，不要告诉 Agent。';
+    $('#email-intro').textContent=(exp?(reg?'填写账号资料，完成体验验证后再提交注册。当前不发送邮件，也不核实邮箱归属。':'当前使用四位体验码，不发送邮件，也不核实邮箱归属。仍需本次有效 Agent 找回请求。'):reg?'填写账号资料，验证邮箱后完成注册。登录备份是可选的备用方式。':'验证码只会发往账号原已存邮箱。请在此网页输入，不要告诉 Agent。')+(reg&&(progress?.target||proposedTarget)?'完成关联后，回到 Agent 告诉它“我已关联”，再由它确认参与安排。':'');
     $('#email-mode-notice').hidden=!exp&&!modeMismatch();$('#email-mode-notice').textContent=modeMismatch()?mismatchMessage():exp?'体验验证码：1234，无需查收邮件':'';
     $('#email-address-hint').textContent=exp?'当前为体验模式，不发送邮件；邮箱可作为登录名。':'请使用你能收信的邮箱，验证后可用于登录和找回。';
     $('#email-code-label').textContent=exp?'体验验证码':'邮箱验证码';$('#email-code').maxLength=codeLength();$('#email-code').pattern=`[0-9]{${codeLength()}}`;
