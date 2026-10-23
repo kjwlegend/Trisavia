@@ -12,6 +12,7 @@ import {registerAgentGatewayRoutes} from '../../apps/platform/transport/http/age
 import {createWorldService} from '../../apps/platform/application/world-service.ts';
 import {worldGatewayGuide,worldGatewayOperations} from '../../apps/platform/application/agent-gateway-world.ts';
 import {coreFixture} from '../world/runtime-fixture.ts';
+import {defaultPublicProfile} from '../../apps/platform/domains/profile/profile-rules.ts';
 import {M1_TABLES,type M1Table,type M1Store,type M1Transaction,type StoredRow,type JsonObject,type ExactFilters} from '../../apps/platform/contracts/store.ts';
 
 /** Pre-existing synthetic identity/token rows precede the new policy; no registration or real PG is used. */
@@ -45,6 +46,18 @@ test('an original runtime discovers and reads latest policy; Owner observe rejec
   assert.equal((await t.call('PUT',ownerPath,t.runtime,{operationId:randomUUID(),expectedVersion:1,mode:'autonomous'})).status,403);assert.equal((await t.call('GET',`/v1/agents/${t.otherId}/world-action-policy`,t.runtime)).status,404);assert.equal((await t.call('GET',`/v1/agents/${t.otherId}/world-action-policy`,t.owner)).status,404);
   const restored=await t.call('PUT',ownerPath,t.owner,{operationId:randomUUID(),expectedVersion:1,mode:'autonomous'});assert.equal(restored.data.version,2);const leaveId=randomUUID(),left=await t.call('POST',`/v1/agents/${t.agentId}/membership/leave`,t.runtime,{operationId:leaveId,expectedVersion:1});assert.equal(left.status,200);assert.equal(left.data.outcome,'committed');
   await t.call('PUT',ownerPath,t.owner,{operationId:randomUUID(),expectedVersion:2,mode:'observe'});const receipt=await t.call('GET',`/v1/operations/${leaveId}?scope=agent:${t.agentId}&action=leave`,t.runtime);assert.equal(receipt.status,200);assert.equal(receipt.data.receiptId,left.data.receiptId);assert.deepEqual(t.rows('credentials'),t.credentialsBefore,'The exact original runtime is retained without replacement');
+ }finally{await t.close();}
+});
+
+test('Owner identity cards use source creation and first-join facts with server age, preserve full IDs and never guess missing dates',async()=>{
+ const t=await fixture();try{
+  const fields=defaultPublicProfile(t.agentId);t.put('profiles',t.agentId,{agentId:t.agentId,policyVersion:1,mode:'agent_autonomous',lockedFields:[],draft:fields,published:fields,publishedVersion:1});
+  const membership=t.rows('memberships').find(row=>row.id===t.agentId)!;t.put('memberships',t.agentId,{...membership.data,ownerPaused:true,firstJoinedAt:t.now-200000});
+  const agents=t.rows('agents'),before=t.rows('memberships'),response=await t.call('GET',`/v1/owner/agents/${t.agentId}`,t.owner);assert.equal(response.status,200);assert.equal(response.data.agentId,t.agentId);assert.deepEqual(response.data.identity,{version:1,createdAt:t.now-86400000,firstWorldJoinedAt:t.now-200000,serverTime:t.now,ageDays:1,ageBasis:'identity_created_at'});assert.equal(response.data.membership.ownerPaused,true);
+  const listed=await t.call('GET','/v1/owner/agents',t.owner);assert.deepEqual(listed.data.agents[0].identity,response.data.identity);assert.deepEqual(t.rows('agents'),agents);assert.deepEqual(t.rows('memberships'),before);
+  assert.equal((await t.call('GET',`/v1/owner/agents/${t.otherId}`,t.owner)).status,404);assert.equal((await t.call('GET',`/v1/owner/agents/${t.agentId}`,t.runtime)).status,403);
+  t.put('agents',t.agentId,{runtimeVersion:1,runtimeActive:true});t.put('memberships',t.agentId,membership.data);const missing=await t.call('GET',`/v1/owner/agents/${t.agentId}`,t.owner);assert.equal(missing.data.identity.createdAt,null);assert.equal(missing.data.identity.firstWorldJoinedAt,null);assert.equal(missing.data.identity.ageDays,null,'Joined state cannot manufacture a join timestamp or identity age');
+  t.put('agents',t.agentId,{runtimeVersion:1,runtimeActive:true,createdAt:t.now+1});assert.equal((await t.call('GET',`/v1/owner/agents/${t.agentId}`,t.owner)).data.identity.ageDays,null,'Future timestamps are not negative ages');
  }finally{await t.close();}
 });
 

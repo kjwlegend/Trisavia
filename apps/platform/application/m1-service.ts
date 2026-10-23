@@ -23,6 +23,7 @@ import { createPerceptionService, type PerceptionOptions } from "./perception-se
 import { initializePerceptionAgent } from "./perception-seed.ts";
 import {createOwnerFriendsReader} from "./owner-friends.ts";
 import {HOST_PARTICIPATION_GUIDANCE} from './agent-hourly-participation-guide.ts';
+import {agentIdentityView} from './agent-identity-view.ts';
 import type { PerceptionAction } from "../domains/perception/protocol.ts";
 export type M1Action = PerceptionAction | "readOwnerFriends" | "capabilities" | "catalog" | "register" | "registrationResult" | "self" | "publicProfile" | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup" | "readRecovery" | "registerOwner" | "readAccount" | "claimAgent" | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites" | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveProfile" | "saveDraft" | "publishProfile" | "unpublishProfile" | "profilePolicy" | "createRecoveryRequest" | "readRecoveryRequest" | "cancelRecoveryRequest" | "recoveryAssistance" | "verifyRecoveryRequest" | "rejectRecoveryRequest" | "startRegistration" | "readRegistrationAttempt" | "sendRegistrationCode" | "verifyRegistrationEmail" | "cancelRegistration" | "startEmailRecovery" | "readEmailRecoveryAttempt" | "sendRecoveryCode" | "verifyRecoveryEmail" | "recoverByEmail" | "enableRecoveryBackup" | "readWorldActionPolicy" | "saveWorldActionPolicy" | "readWorldAccess" | "saveWorldAccess" | "adoptWorldAccess" | "readMembership" | "join" | "leave" | "participation" | "receipt";
 export interface M1Options {
@@ -331,8 +332,8 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         };
     }
     async function ownerView(tx: M1ReadSession, actor: CredentialRow, agentId: string, asOf: number): Promise<JsonObject> {
-        const agent = await target(tx, actor, agentId);
-        return { agentId, ownerId: actor.data.ownerId!, runtimeVersion: agent.data.runtimeVersion!, runtimeActive: agent.data.runtimeActive!, profile: await readProfileView(tx,await required(profileRepository(tx), agentId)), membership: membershipView(await required(membershipRepository(tx), agentId)), worldAccess: worldAccessView(agent, asOf), profileUrl: profileUrl(agentId), management: await managementView(tx, agent), asOf };
+        const agent = await target(tx, actor, agentId),member=await required(membershipRepository(tx), agentId);
+        return { agentId, ownerId: actor.data.ownerId!, runtimeVersion: agent.data.runtimeVersion!, runtimeActive: agent.data.runtimeActive!, identity:agentIdentityView(agent,member,asOf), profile: await readProfileView(tx,await required(profileRepository(tx), agentId)), membership: membershipView(member), worldAccess: worldAccessView(agent, asOf), profileUrl: profileUrl(agentId), management: await managementView(tx, agent), asOf };
     }
     const readOwnerFriends=createOwnerFriendsReader(store,{now,...(options.legacyAvatarIdentity?{legacyAvatarIdentity:options.legacyAvatarIdentity}:{})});
     const wallet = createWalletService(store, authenticate, now);
@@ -483,7 +484,8 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                 const actor = await authenticate(tx, token, ["runtime"]);
                 const agentId = actor.data.agentId!;
                 const registration = (await registrationRepository(tx).findByAgentId(agentId))[0]!;
-                return { agentId, ownerId: scalarString(registration, "ownerId"), instanceId: store.instanceId, runtimeVersion: actor.data.runtimeVersion!, profile: await readProfileView(tx,await required(profileRepository(tx), agentId)), membership: membershipView(await required(membershipRepository(tx), agentId)), profileUrl: profileUrl(agentId), management: await managementView(tx, await required(agentRepository(tx), agentId)), worldAccess: worldAccessView(await required(agentRepository(tx), agentId), asOf), effectiveActions: await effectiveActions(tx, actor, agentId), asOf };
+                const agent=await required(agentRepository(tx),agentId),member=await required(membershipRepository(tx),agentId);
+                return { agentId, ownerId: scalarString(registration, "ownerId"), instanceId: store.instanceId, runtimeVersion: actor.data.runtimeVersion!, identity:agentIdentityView(agent,member,asOf), profile: await readProfileView(tx,await required(profileRepository(tx), agentId)), membership: membershipView(member), profileUrl: profileUrl(agentId), management: await managementView(tx, agent), worldAccess: worldAccessView(agent, asOf), effectiveActions: await effectiveActions(tx, actor, agentId), asOf };
             }
             if (action === "issueHandoff") {
                 const input = object(raw, ["operationId", "expectedGeneration", "handoffToken"]);
