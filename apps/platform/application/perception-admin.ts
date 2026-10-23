@@ -3,16 +3,23 @@ import { randomUUID } from 'node:crypto';
 import type { JsonObject, M1Store, M1Transaction } from '../contracts/store.ts';
 import { fail } from '../domains/common/errors.ts';
 import { key, plain, refId,OPERATIONS,TYPE_DEFINITIONS, type ObjectRef } from '../domains/perception/protocol.ts';
-import { publishCatalogInTransaction, publishImplementedReadersInTransaction, publishNpcServiceReadersInTransaction, IMPLEMENTED_READER_SOURCES,initializePerceptionCatalog } from './perception-catalog.ts';
+import { publishPaperHudCatalogInTransaction,publishCatalogInTransaction, publishImplementedReadersInTransaction, publishNpcServiceReadersInTransaction, IMPLEMENTED_READER_SOURCES,initializePerceptionCatalog } from './perception-catalog.ts';
 import {CURRENT_WORLD_MAP_TOWN_GUIDE,TOWN_SERVICES_GUIDE} from './agent-town-services-guide.ts';
 import {CURRENT_HOURLY_AUTONOMY_GUIDE,FROZEN_HOURLY_HUMAN_GUIDE,FROZEN_HOURLY_HOST_GUIDE} from './agent-hourly-participation-guide.ts';
 import {PERCEPTION_SCHEMA_VERSION} from '../domains/perception/schemas.ts';
-import {APPEARANCE_CATALOG_VERSION,APPEARANCE_CATALOG_DIGEST,APPEARANCE_ASSET_VERSION} from '../domains/profile/appearance-catalog.ts';
+import {APPEARANCE_COLORS_DIGEST,APPEARANCE_CATALOG_VERSION,APPEARANCE_CATALOG_DIGEST,APPEARANCE_ASSET_VERSION} from '../domains/profile/appearance-catalog.ts';
 import {AGENT_HUMAN_VOICE_GUIDE,AGENT_TEXT_EXCHANGE_GUIDE,CURRENT_TEXT_EXCHANGE_GUIDE,AGENT_FRIENDSHIP_GUIDE,CURRENT_FRIENDSHIP_GUIDE,AGENT_AUTONOMY_GUIDE,AGENT_WORLD_MAP_V2_GUIDE} from './agent-human-voice.ts';
 interface AdministrativeCommand {
     operationId: string;
     actorId: string;
     now?: () => number;
+}
+/** Exact schema5/guide11 -> schema6/guide12 release; never changes source states or business rows. */
+export async function publishPaperHudCatalog(store:M1Store,options:AdministrativeCommand&{expectedInstanceId:string;expectedRecoveryEpoch:string;expectedCatalogRevision:string;revision:string;expectedGuideVersion:number;guideVersion:number}):Promise<JsonObject>{
+    if(options.expectedInstanceId!==store.instanceId||options.expectedRecoveryEpoch!==store.recoveryEpoch)fail('version_conflict',409,'The explicit target instance or recovery epoch differs');
+    if(options.expectedCatalogRevision!=='catalog-city-name-1'||options.revision!=='catalog-paper-hud-1'||options.expectedGuideVersion!==11||options.guideVersion!==12)throw new Error('The exact next paper HUD release is required');
+    const payload:JsonObject={action:'publishPaperHudCatalog',release:'paper-hud@1',instanceId:store.instanceId,recoveryEpoch:store.recoveryEpoch,expectedCatalogRevision:options.expectedCatalogRevision,revision:options.revision,expectedGuideVersion:11,guideVersion:12,schemaVersion:6,appearanceColorsDigest:APPEARANCE_COLORS_DIGEST};
+    return command(store,options,payload,async tx=>({...payload,...await publishPaperHudCatalogInTransaction(tx)}));
 }
 async function command(store: M1Store, options: AdministrativeCommand, payload: JsonObject, work: (tx: M1Transaction, stamp: number) => Promise<JsonObject>): Promise<JsonObject> {
     if (!/^[A-Za-z0-9_.:@-]{1,100}$/.test(options.actorId) || !/^.{8,100}$/u.test(options.operationId))

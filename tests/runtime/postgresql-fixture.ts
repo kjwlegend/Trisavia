@@ -12,7 +12,7 @@ import { bootstrapPlatformCatalog } from '../../apps/platform/application/bootst
 import { createM1Service } from '../../apps/platform/application/m1-service.ts';
 import { createRuntimeIdentity } from '../../apps/platform/application/runtime-identity.ts';
 import type { RuntimeReadContext } from '../../apps/platform/contracts/runtime-store.ts';
-export async function worldFixture(){
+export async function worldFixture(setup:{bootstrap?:boolean}={}){
  const runtimeFile=process.env.WORLD_CORE_TEST_RUNTIME;if(!runtimeFile)throw new Error('Set WORLD_CORE_TEST_RUNTIME to the explicit private local PG runtime');
  const config=await readRuntime(runtimeFile),directory=await mkdtemp(join(tmpdir(),'world-core-b-')),database='world_core_b_'+randomBytes(10).toString('hex');
  const identity={instanceId:'instance_'+randomUUID(),recoveryEpoch:'epoch_'+randomUUID()};let connections:string|undefined;
@@ -26,7 +26,7 @@ export async function worldFixture(){
   const runtime=await openRuntimeStore(options);stores.add(runtime);const legacy=await openPostgresStore(options);stores.add(legacy);
   const query=async(sql:string,values:unknown[]=[])=>{const pool=new Pool({connectionString:migrationOptions.connectionString,max:1});try{return(await pool.query(sql,values)).rows;}finally{await pool.end();}};
   const appQuery=async(sql:string,values:unknown[]=[])=>{const pool=new Pool({connectionString:options.connectionString,max:1});try{return(await pool.query(sql,values)).rows;}finally{await pool.end();}};
-  await setPostgresWriteGate(migrationOptions,{enabled:true});await bootstrapPlatformCatalog(legacy);
+  await setPostgresWriteGate(migrationOptions,{enabled:true});if(setup.bootstrap!==false)await bootstrapPlatformCatalog(legacy);
   const service=createM1Service(legacy,{now:()=>clock,email:{mode:'experience'}}),access=createRuntimeIdentity(identity.recoveryEpoch,()=>clock);
   const register=async()=>{const runtimeToken=randomUUID()+'.'+randomBytes(32).toString('base64url'),continuationToken=randomUUID()+'.'+randomBytes(32).toString('base64url');const result=await service.invoke('register',{operationId:randomUUID(),attemptId:randomUUID(),runtimeToken,continuationToken});return {agentId:result.agentId as string,ownerId:result.ownerId as string,runtimeToken,continuationToken};};
   return {database,identity,options,migrationOptions,runtime,legacy,service,access,register,query,appQuery,prepared,privateConnections:connections,now:()=>clock,tick:(ms:number)=>{clock+=ms;},gate:(enabled:boolean)=>setPostgresWriteGate(migrationOptions,{enabled}),openRuntime:async()=>{const store=await openRuntimeStore(options);stores.add(store);return store;},dispose};

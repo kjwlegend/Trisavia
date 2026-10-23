@@ -366,3 +366,5 @@ Avatar／scene新增可空motion：`{segmentId,movementId:null|string,source:"ex
 列表仅给获准元数据，正文不复制。`detail.kind:"exchange"`沿原 `interaction.owner_exchange` 读取发送时固定版本和实际反馈；`detail.kind:"perception"`沿原详情入口及当前agentRef重验该来源的正文／附件权限。`detail:null`没有可读正文。读取不确认消息、不更新Agent阅读状态，不开放Agent-only私信。
 
 身份卡沿原主人角色列表／详情及本人self读取 `identity`：完整稳定agentId保持原值，`createdAt`为身份创建时间，`firstWorldJoinedAt`为真实首次世界加入事实，`serverTime`为服务端时间，`ageDays`以createdAt计算且 `ageBasis:"identity_created_at"`。新身份实际初次加入时原子记录firstJoinedAt，退出重入和重试保持；旧记录没有该事实时保持null，不用Avatar、登录、绑定或后续重入时间代替。
+
+人物目录version3保留原六款lookId及原catalogVersion／素材摘要，另给 `colorCustomization` 与同源 `/assets/world-pixel/appearance-colors-v1.json` 的文件摘要。avatar可选 `hairColorId`（original/chestnut/ink/ash/blue）及 `clothingColorId`（original/forest/clay/cream）；省略配色保持原像素。沿原资料保存、字段锁、版本和operationId规则，不开放任意色值。公开profile／scene与好友只投影已发布配色；编辑预览和世界共享同一有限目录，发层与服装像素定域调色，保留肤色、围巾和轮廓，原PNG不覆盖。

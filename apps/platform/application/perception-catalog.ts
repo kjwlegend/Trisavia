@@ -6,6 +6,7 @@ import { HTTP_GUIDE, operationSchema, typeSchema, errorSchema, PERCEPTION_SCHEMA
 import { perceptionCategories,NPC_SERVICE_ITEMS_SOURCE,plain, OPERATIONS, TYPE_DEFINITIONS, key, refId, RULES_REF } from '../domains/perception/protocol.ts';
 import { declareOwnerNotificationCollectionQuery, ownerNotificationCollectionDeclaration } from './perception-collection-query.ts';
 import { AGENT_HUMAN_VOICE_GUIDE,CURRENT_TEXT_EXCHANGE_GUIDE,CURRENT_FRIENDSHIP_GUIDE,AGENT_AUTONOMY_GUIDE,AGENT_WORLD_MAP_V2_GUIDE } from './agent-human-voice.ts';
+import {PAPER_HUD_APPEARANCE_GUIDE,PAPER_HUD_OWNER_MAILBOX_GUIDE} from './agent-paper-hud-guide.ts';
 import {TOWN_ITEM_DEFINITIONS} from '../domains/town-services/catalog.ts';
 export const IMPLEMENTED_READER_SOURCES = ['holdings', 'demo-items', 'direct-messages', 'direct-mail', 'demo-announcements', 'demo-events', 'platform-publications'] as const;
 const readerGuide = '既有读取器与演示内容独立：目录来源 enabled 只表示已实现的读取接口可用，不表示已有内容、已生成持有关系或已授予私有对象权限；历史 sourceId 中的 demo 字样也不授权。主人通知集合由 ws02-notifications-collection-query@1 单独允许当前绑定主人查询；成功空集合仅表示当前没有可查看内容，不透露被过滤对象、数量或标识。该集合声明没有对象 ID，存在／摘要／正文／附件层均不授权；每条通知仍另验合法收件、当前绑定和对象来源分层声明。未声明或已撤销集合权限仍拒绝，不把拒绝或来源不可用伪装为空；公告／事件仅按当前公开来源读取。启用读取器不会 seed 内容或创建／恢复 grant，不推定 World／Interaction 事件已投递为通知。';
@@ -24,7 +25,7 @@ export async function initializePerceptionCatalog(tx: M1Transaction,publication?
             const text = plainGuideText((await catalogRepository(tx).get(`guide:world:${previous.data.guideVersion}`))?.data.document);
             const guideVersion = publication?.guideVersion??Number(previous.data.guideVersion) + 1;
             if(!Number.isSafeInteger(guideVersion)||guideVersion<=Number(previous.data.guideVersion))fail('version_conflict',409,'A schema upgrade requires a newer guide version');
-            await storeDocuments(tx, guideVersion, `${typeof text === 'string' ? text : guide}\n${ownerGuide}\n${titleGuide}\n${domainGuide}\n${appearanceGuide}\n${AGENT_HUMAN_VOICE_GUIDE}\n${CURRENT_TEXT_EXCHANGE_GUIDE}\n${CURRENT_FRIENDSHIP_GUIDE}\n${AGENT_AUTONOMY_GUIDE}\n${AGENT_WORLD_MAP_V2_GUIDE}`);
+            await storeDocuments(tx, guideVersion, `${typeof text === 'string' ? text : guide}\n${ownerGuide}\n${titleGuide}\n${domainGuide}\n${PAPER_HUD_APPEARANCE_GUIDE}\n${AGENT_HUMAN_VOICE_GUIDE}\n${CURRENT_TEXT_EXCHANGE_GUIDE}\n${CURRENT_FRIENDSHIP_GUIDE}\n${AGENT_AUTONOMY_GUIDE}\n${AGENT_WORLD_MAP_V2_GUIDE}`);
             const sourceStates = { ...(previous.data.sourceStates as JsonObject), 'direct-messages': (previous.data.sourceStates as JsonObject)['direct-messages'] ?? 'enabled', 'wallet-accounts': (previous.data.sourceStates as JsonObject)['wallet-accounts'] ?? 'enabled' };
             const revision = publication?.revision??`${String(previous.data.catalogRevision).slice(0, 85)}-schema-${PERCEPTION_SCHEMA_VERSION}`;
             await rememberCatalogRevision(tx, { ...previous.data, sourceStates, guideVersion, schemaVersion: PERCEPTION_SCHEMA_VERSION, catalogRevision: revision, skillCatalogRevision: `skills-${revision}` });
@@ -52,6 +53,9 @@ async function storeDocuments(tx: M1Transaction, version: number, body: string):
         if (!existing)
             await catalogRepository(tx).insert({ id, version: 1, data: { document, digest: key(document) } });
     }
+    await storeSchemaDocuments(tx);
+}
+async function storeSchemaDocuments(tx:M1Transaction):Promise<void>{
     for (const operation of OPERATIONS) {
         for (const suffix of ['query', 'result'] as const) {
             const schemaId = `perception.${operation.id}-${suffix}`, id = `schema:${schemaId}:${PERCEPTION_SCHEMA_VERSION}`;
@@ -193,6 +197,27 @@ export async function publishNpcServiceReadersInTransaction(tx:M1Transaction,opt
     await rememberCatalogRevision(tx,data);
     await catalogRepository(tx).replace({...current,version:current.version+1,data},current.version);
     return {changed:true,catalogRevision:data.catalogRevision,skillCatalogRevision:data.skillCatalogRevision,guideVersion:data.guideVersion,schemaVersion:PERCEPTION_SCHEMA_VERSION,newGuideDocuments:7,sourceTransitions:[{sourceId:NPC_SERVICE_ITEMS_SOURCE,before:null,after:'enabled'}]};
+}
+/** Named read-shape release. Copy current exact text and preserve every old document and source state. */
+export async function publishPaperHudCatalogInTransaction(tx:M1Transaction):Promise<JsonObject>{
+    const current=await catalogRepository(tx).get('current');
+    if(!current||current.data.schemaVersion!==5||current.data.guideVersion!==11||current.data.catalogRevision!=='catalog-city-name-1'||PERCEPTION_SCHEMA_VERSION!==6)fail('version_conflict',409,'The expected pre-paper catalog changed');
+    const modules=['perception','world','profiles','items','inventory','mailbox','wallet'];
+    const schemaIds=[...OPERATIONS.flatMap(operation=>[`perception.${operation.id}-query`,`perception.${operation.id}-result`]),...TYPE_DEFINITIONS.flatMap(type=>[`${type.prefix}-summary`,`${type.prefix}-detail`]),'perception.error-result'];
+    for(const schemaId of schemaIds)if(await catalogRepository(tx).get(`schema:${schemaId}:6`))fail('version_conflict',409,'A target exact schema is already occupied');
+    await rememberCatalogRevision(tx,current.data);
+    for(const moduleId of modules){
+        const previous=await catalogRepository(tx).get(`guide:${moduleId}:11`),document=previous?.data.document as JsonObject|undefined;
+        if(!document||typeof document.text!=='string'||await catalogRepository(tx).get(`guide:${moduleId}:12`))fail('version_conflict',409,'The exact current or next guide is unavailable');
+        const corrected=document.text.replaceAll(appearanceGuide,PAPER_HUD_APPEARANCE_GUIDE);
+        const next={...document,version:12,http:HTTP_GUIDE,text:(corrected.includes(PAPER_HUD_APPEARANCE_GUIDE)?corrected:corrected+'\n'+PAPER_HUD_APPEARANCE_GUIDE)+'\n'+PAPER_HUD_OWNER_MAILBOX_GUIDE};
+        await catalogRepository(tx).insert({id:`guide:${moduleId}:12`,version:1,data:{document:next,digest:key(next)}});
+    }
+    await storeSchemaDocuments(tx);
+    const data={...current.data,schemaVersion:6,guideVersion:12,catalogRevision:'catalog-paper-hud-1',skillCatalogRevision:'skills-catalog-paper-hud-1'};
+    await rememberCatalogRevision(tx,data);
+    await catalogRepository(tx).replace({...current,version:current.version+1,data},current.version);
+    return {changed:true,catalogRevision:data.catalogRevision,skillCatalogRevision:data.skillCatalogRevision,schemaVersion:6,guideVersion:12,newGuideDocuments:7,newSchemaDocuments:OPERATIONS.length*2+TYPE_DEFINITIONS.length*2+1,guideDigests:await mapAsync(modules,async moduleId=>({moduleId,digest:(await catalogRepository(tx).get(`guide:${moduleId}:12`))!.data.digest!}))};
 }
 export async function catalogData(tx: M1Transaction): Promise<JsonObject> {
     const current = (await catalogRepository(tx).get('current'))!, guideVersion = Number(current.data.guideVersion);

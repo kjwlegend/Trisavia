@@ -144,6 +144,24 @@ POSTGRES_MIGRATIONS.push({moduleId:'iam',version:7,name:'source_first_world_join
   IF OLD.first_joined_at IS NOT NULL AND NEW.first_joined_at IS DISTINCT FROM OLD.first_joined_at THEN RAISE EXCEPTION 'First world join cannot be rewritten' USING ERRCODE='23514';END IF;
   RETURN NEW;END $$;
  CREATE TRIGGER immutable_first_world_join BEFORE UPDATE ON iam.world_memberships FOR EACH ROW EXECUTE FUNCTION iam.preserve_first_world_join();`});
+POSTGRES_MIGRATIONS.push({moduleId:'profiles',version:3,name:'bounded_hair_and_clothing_colors',dependencies:['profiles'],sql:`
+ ALTER TABLE profiles.profile_contents ADD COLUMN avatar_hair_color_id text COLLATE "C" CHECK(avatar_hair_color_id IN ('original','chestnut','ink','ash','blue')),
+ ADD COLUMN avatar_clothing_color_id text COLLATE "C" CHECK(avatar_clothing_color_id IN ('original','forest','clay','cream'));
+ ALTER TABLE profiles.profile_contents DROP CONSTRAINT profile_contents_content_schema_version_check;
+ ALTER TABLE profiles.profile_contents ADD CONSTRAINT profile_contents_content_schema_version_check CHECK(content_schema_version IN (1,2,3));
+ ALTER TABLE profiles.profile_contents DROP CONSTRAINT profile_contents_avatar_union_check;
+ ALTER TABLE profiles.profile_contents ADD CONSTRAINT profile_contents_avatar_union_check CHECK(
+  (content_schema_version=1 AND avatar_look_id IS NULL AND avatar_catalog_version IS NULL AND avatar_hair_color_id IS NULL AND avatar_clothing_color_id IS NULL AND
+   CASE WHEN NOT (content_text::jsonb ? 'avatar') OR content_text::jsonb->'avatar'='null'::jsonb THEN true
+    WHEN jsonb_typeof(content_text::jsonb->'avatar')='object' THEN ((content_text::jsonb->'avatar') - 'template' - 'color')='{}'::jsonb ELSE false END)
+  OR (content_schema_version IN (2,3) AND avatar_template IS NULL AND avatar_color IS NULL
+   AND avatar_look_id IS NOT NULL AND avatar_look_id IN ('sunnyside-human-shorthair','sunnyside-human-longhair','sunnyside-human-curlyhair','sunnyside-human-bowlhair','sunnyside-human-mophair','sunnyside-human-spikeyhair')
+   AND avatar_catalog_version IS NOT NULL AND avatar_catalog_version='2026-10-21.appearance-v1.1'
+   AND ((content_schema_version=2 AND avatar_hair_color_id IS NULL AND avatar_clothing_color_id IS NULL) OR (content_schema_version=3 AND num_nonnulls(avatar_hair_color_id,avatar_clothing_color_id)>0))
+   AND coalesce(content_text::jsonb->'avatar'=(jsonb_build_object('lookId',avatar_look_id,'catalogVersion',avatar_catalog_version)
+    || CASE WHEN avatar_hair_color_id IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('hairColorId',avatar_hair_color_id) END
+    || CASE WHEN avatar_clothing_color_id IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('clothingColorId',avatar_clothing_color_id) END),false))
+ );`});
 export const POSTGRES_SCHEMA_SIGNATURE=createHash('sha256').update(POSTGRES_MIGRATIONS.map(item=>`${item.moduleId}:${createHash('sha256').update(item.sql).digest('hex')}`).join('\n')).digest('hex');
 
 /** Explicit DDL-role operation; openPostgresStore never calls this. */

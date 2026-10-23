@@ -45,7 +45,7 @@ test('exact friend and request HTTP schemas expose whole-source search, effectiv
   assert.equal((await t.query('owner-a','friends',{agentId:'agent-a',limit:1,order:'newest',cursor:first.data.nextCursor})).status,409);
   const accepted=await t.query('owner-a','inbox',{agentId:'agent-a',direction:'sent',state:'accepted',search:'AGENT',order:'newest',limit:1});assert.equal(accepted.status,200);assert.equal(accepted.data.total,2);assert.equal(accepted.data.items[0].state,'accepted');
   const empty=await t.query('owner-a','inbox',{agentId:'agent-a',direction:'sent',state:'pending'});assert.equal(empty.data.total,0);assert.deepEqual(empty.data.items,[]);assert.equal(empty.data.complete,true);
-  const discovery=t.gateway.discovery();for(const id of ['relationships.friends','relationships.inbox'])assert.equal(discovery.operations.find(op=>op.id===id)!.inputSchema.version,2);assert.equal(t.gateway.guide('relationships','3').document.version,3);
+  const discovery=t.gateway.discovery();for(const id of ['relationships.friends','relationships.inbox'])assert.equal(discovery.operations.find(op=>op.id===id)!.inputSchema.version,3);assert.equal(t.gateway.guide('relationships',String(relationshipsGatewayGuide.version)).document.version,relationshipsGatewayGuide.version);
  }finally{await t.close();}
 });
 
