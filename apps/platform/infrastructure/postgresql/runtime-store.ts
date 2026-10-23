@@ -1,4 +1,6 @@
 import {createBehaviorRepository} from './behavior-repository.ts';
+import {createTownRepository} from './town-services-repository.ts';
+import {createServiceInventoryRepository} from './service-inventory-repository.ts';
 import { StorageError, type M1ReadSession } from '../../contracts/store.ts';
 import type { RuntimeStore, RuntimeReadContext, RuntimeTransaction, RuntimeRepositoryPort } from '../../contracts/runtime-store.ts';
 import { openPostgresTransactionHost, type OpenPostgresStoreOptions, type PostgresScope } from './transaction-host.ts';
@@ -20,7 +22,7 @@ export function runtimeIdentitySession(context:RuntimeReadContext):M1ReadSession
 function createContext(scope:PostgresScope,options:OpenRuntimeStoreOptions):RuntimeTransaction{
  const sql=runtimeSql(scope,options.now??Date.now),legacy=createPostgresSession(scope.client,false,scope.alive);
  const core=createRuntimeRepositories(sql,options.recoveryEpoch);
- const adapters=[createWorldRepository(sql),createInteractionRepository(sql),createDecisionRepository(sql,options.recoveryEpoch),createRelationshipsRepository(sql),createBehaviorRepository(sql)];
+ const adapters=[createWorldRepository(sql),createInteractionRepository(sql),createDecisionRepository(sql,options.recoveryEpoch),createRelationshipsRepository(sql),createBehaviorRepository(sql),createTownRepository(sql),createServiceInventoryRepository(sql)];
  const repositories=new Map<object,{reader:unknown;writer:unknown}>();
  for(const adapter of adapters)repositories.set(adapter.port,{reader:Object.freeze(adapter.reader),writer:Object.freeze(adapter.writer)});
  const base={instanceId:options.instanceId,recoveryEpoch:options.recoveryEpoch,now:sql.now,

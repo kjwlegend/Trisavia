@@ -13,6 +13,8 @@ import { WORLD_REPOSITORY } from '../domains/world/repository.ts';
 import { assertCell, assertRuleset, containingPlace, DEFAULT_WORLD_RULES, validatePath } from '../domains/world/rules.ts';
 import { MOVEMENT_POLICY_V1, type GridPoint, type WorldAvatar, type WorldMovement, type WorldRuleset, type WorldMapManifest, type WorldNpc } from '../domains/world/types.ts';
 import { IDLE_LIFE_POLICY_V1, idlePath, idleSeed, spawnCandidates } from '../domains/world/idle-life.ts';
+import type {CurrentTownNpc} from '../domains/town-services/types.ts';
+export interface WorldActivityAccess {isOccupied(context:RuntimeTransaction,worldId:string,agentId:string):Promise<boolean>;interrupt(context:RuntimeTransaction,worldId:string,agentId:string,reason:string):Promise<void>}
 
 /** Explicit maintenance initialization. Opening the store or serving HTTP never seeds a world. */
 export async function bootstrapWorld(context: RuntimeTransaction, rules: WorldRuleset = structuredClone(DEFAULT_WORLD_RULES)): Promise<void> {
@@ -28,7 +30,7 @@ export async function verifyWorldReadiness(context: RuntimeReadContext, worldId 
   assertRuleset(rules);
 }
 const actions = ['world.avatar.create', 'world.avatar.move', 'world.avatar.leave', 'world.movement.stop'];
-export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,options:{observation?:BehaviorObservationAccess<RuntimeReadContext>}={}) {
+export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,options:{observation?:BehaviorObservationAccess<RuntimeReadContext>;activities?:WorldActivityAccess;currentNpcs?:(context:RuntimeReadContext,worldId:string)=>Promise<{catalogVersion:number;npcs:CurrentTownNpc[]}>}={}) {
   const cursors = createWorldCursor();
   async function authorize(context: RuntimeReadContext, principal: Principal): Promise<string> {
     if (principal.kind !== 'agent') fail('agent_identity_required', 403, 'This action requires the Agent identity');
@@ -126,6 +128,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
     const rest = (explicitStamp = String(payload.explicitStamp ?? ''), delay = avatar ? restMs(avatar) : 30000) => again(delay, { worldId, agentId, path: [], avatarVersion: avatar?.version ?? 1, qualification: '', explicitStamp });
     if (!world?.active || !avatar || avatar.id !== task.target.id || avatar.status !== 'idle') return rest();
     try { assertWorldActionAllowed((await identity.readParticipation(context, agentId)).actionPolicy, 'world.idle.step'); await participation(context, agentId, worldId, true); } catch (error) { if (error instanceof M1Error && error.statusCode < 500) return rest(); throw error; }
+    if(await options.activities?.isOccupied(context,worldId,agentId))return rest();
     const status = await identity.readParticipation(context, agentId);
     const qualification = [context.recoveryEpoch, status.runtimeVersion, status.membership.ownerPauseVersion, status.membership.platformVersion, status.membership.sharingGeneration, status.actionPolicy.version].join(':');
     const explicit = await repository.getLatestMovement(worldId, agentId), explicitStamp = explicit ? explicit.id + ':' + explicit.version : '';
@@ -223,9 +226,10 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
     return {...structuredClone(avatar),motion:cancelled?null:structuredClone(motion)};
   }
   type MapCut={worldId:string;worldRevision:number;rulesetVersion:number;topologyVersion:number;asOf:number};
+  async function npcProjection(context:RuntimeReadContext,worldId:string,rules:WorldRuleset):Promise<{npcs:WorldNpc[]|CurrentTownNpc[];npcCatalogVersion:number|null}>{if(options.currentNpcs){const active=await options.currentNpcs(context,worldId);return {npcs:active.npcs,npcCatalogVersion:active.catalogVersion};}return {npcs:structuredClone(rules.mapManifest?.npcs??[]),npcCatalogVersion:null};}
   async function mapProjection(context:RuntimeReadContext,worldId:string):Promise<MapCut&{manifest:WorldMapManifest|null}>;
-  async function mapProjection(context:RuntimeReadContext,worldId:string,npcs:true):Promise<MapCut&{npcs:WorldNpc[]}>;
-  async function mapProjection(context:RuntimeReadContext,worldId:string,npcs=false){const {world,rules}=await rulesFor(context,worldId);return {worldId,worldRevision:world.revision,rulesetVersion:rules.version,topologyVersion:rules.topologyVersion,...(npcs?{npcs:structuredClone(rules.mapManifest?.npcs??[])}:{manifest:structuredClone(rules.mapManifest??null)}),asOf:context.now()};}
+  async function mapProjection(context:RuntimeReadContext,worldId:string,npcs:true):Promise<MapCut&{npcs:WorldNpc[]|CurrentTownNpc[];npcCatalogVersion:number|null}>;
+  async function mapProjection(context:RuntimeReadContext,worldId:string,npcs=false):Promise<MapCut&({npcs:WorldNpc[]|CurrentTownNpc[];npcCatalogVersion:number|null}|{manifest:WorldMapManifest|null})>{const {world,rules}=await rulesFor(context,worldId);return {worldId,worldRevision:world.revision,rulesetVersion:rules.version,topologyVersion:rules.topologyVersion,...(npcs?await npcProjection(context,worldId,rules):{manifest:structuredClone(rules.mapManifest??null)}),asOf:context.now()};}
   async function sceneProjection(context: RuntimeReadContext, worldId: string, observer: string, options: { cursor?: string; limit?: number } = {}) {
       const limit = options.limit ?? 50;
       if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100 || options.cursor !== undefined && typeof options.cursor !== 'string') fail('invalid_request', 400, 'Invalid scene query');
@@ -243,7 +247,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
         }
         if (avatars.length < limit && candidates.length < batchSize) complete = true;
       }
-      return { worldId, worldRevision: world.revision, asOf: context.now(), scope: 'world', avatars,npcs:structuredClone(rules.mapManifest?.npcs??[]), complete, nextCursor: !complete && after ? cursors.encode(after, scope, context.now()) : null };
+      return { worldId, worldRevision: world.revision, asOf: context.now(), scope: 'world', avatars,...await npcProjection(context,worldId,rules), complete, nextCursor: !complete && after ? cursors.encode(after, scope, context.now()) : null };
   }
   async function execute(context: RuntimeTransaction, principal: Principal, key: CommandKey, input: JsonObject): Promise<CommandReceipt> {
     if (key.domain !== 'world' || !actions.includes(key.action) || principal.kind !== 'agent' || key.principal.kind !== 'agent' || key.principal.id !== principal.agentId) fail('invalid_request', 400, 'Invalid world command identity');
@@ -296,11 +300,12 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
         } else {
           if (!old || old.status === 'left') fail('avatar_not_found', 404, 'Avatar is not available');
           if (version(request.expectedVersion) !== old.version) fail('version_conflict', 409, 'Avatar has changed');
-          if (key.action === 'world.avatar.leave') { const active = await repository.getActiveMovement(worldId, agentId); if (active) await repository.saveMovement(stopped(active, now, 'avatar_left'), active.version); avatar = { ...old, version: old.version + 1, status: 'left', placeId: null, updatedAt: now,motion:null }; kind = 'world.avatar.left'; }
+          if (key.action === 'world.avatar.leave') { await options.activities?.interrupt(current,worldId,agentId,'avatar_left'); const active = await repository.getActiveMovement(worldId, agentId); if (active) await repository.saveMovement(stopped(active, now, 'avatar_left'), active.version); avatar = { ...old, version: old.version + 1, status: 'left', placeId: null, updatedAt: now,motion:null }; kind = 'world.avatar.left'; }
           else {
             if (version(request.expectedRulesetVersion, 'expectedRulesetVersion') !== rules.version || version(request.expectedTopologyVersion, 'expectedTopologyVersion') !== rules.topologyVersion) fail('version_conflict', 409, 'World rules have changed');
             if (await repository.getActiveMovement(worldId, agentId)) fail('movement_in_progress', 409, 'The Avatar already has an active movement');
             const path = validatePath(rules, old.position, request.path); await capacity(current, rules, path, agentId);
+            await options.activities?.interrupt(current,worldId,agentId,'movement_requested');
             const status = await identity.readParticipation(current, agentId);
             const movement: WorldMovement = { id: randomUUID(), worldId, agentId, avatarId: old.id, version: 1, state: 'pending', origin: { ...old.position }, path,
               nextStep: 0, expectedAvatarVersion: old.version, rulesetVersion: rules.version, topologyVersion: rules.topologyVersion, policyVersion: MOVEMENT_POLICY_V1.version,

@@ -1,4 +1,5 @@
 import {BEHAVIOR_MIGRATION} from './behavior-migration.ts';
+import {TOWN_SERVICES_MIGRATION,TOWN_BEHAVIOR_MIGRATION} from './town-services-migration.ts';
 import {WORLD_TOPOLOGY_MIGRATION} from './world-topology-migration.ts';
 import { createHash } from 'node:crypto';
 import { Pool } from 'pg';
@@ -133,6 +134,7 @@ POSTGRES_MIGRATIONS.push({moduleId:'iam',version:6,name:'owner_world_action_poli
  ALTER TABLE iam.agents ADD CONSTRAINT agents__present_check CHECK(_present <@ ARRAY[${[...actionPolicyAllowed].map(quote).join(',')}]::text[]);`,dependencies:['iam']});
 POSTGRES_MIGRATIONS.push(WORLD_TOPOLOGY_MIGRATION);
 POSTGRES_MIGRATIONS.push(BEHAVIOR_MIGRATION);
+POSTGRES_MIGRATIONS.push(TOWN_SERVICES_MIGRATION,TOWN_BEHAVIOR_MIGRATION);
 export const POSTGRES_SCHEMA_SIGNATURE=createHash('sha256').update(POSTGRES_MIGRATIONS.map(item=>`${item.moduleId}:${createHash('sha256').update(item.sql).digest('hex')}`).join('\n')).digest('hex');
 
 /** Explicit DDL-role operation; openPostgresStore never calls this. */

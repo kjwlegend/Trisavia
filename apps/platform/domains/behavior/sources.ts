@@ -7,7 +7,7 @@ export async function behaviorEnabled(context:RuntimeReadContext,scope:BehaviorS
 export async function recordBehaviorSource(context:RuntimeTransaction,observation:BehaviorObservationAccess<RuntimeReadContext>|undefined,input:{event:RuntimeEvent;scope:BehaviorScope;sourceRef:BehaviorRecordDraft['sourceRef'];perspectives:{agentId:string;node:BehaviorNode;publicProjection?:BehaviorPublicProjection|null}[];initiator?:RuntimeActor;origin?:RuntimeSource}):Promise<void>{
  if(!await behaviorEnabled(context,input.scope,input.event.occurredAt))return;
  if(input.perspectives.length>2)throw new Error('Behavior source exceeds its bounded perspectives');
- const domain=input.scope.startsWith('world_')?'world':input.scope as 'relationships'|'interaction',repo=context.repository(BEHAVIOR_REPOSITORY);
+ const domain=input.scope.startsWith('world_')?'world':input.scope as 'relationships'|'interaction'|'town_services',repo=context.repository(BEHAVIOR_REPOSITORY);
  for(const view of input.perspectives){const ownerAudience=await observation?.capture(context,view.agentId,domain)??null;
   await repo.append({scope:input.scope,sourceDomain:domain,sourceEventId:input.event.eventId,sourceRef:{...input.sourceRef},node:view.node,agentId:view.agentId,occurredAt:input.event.occurredAt,recordedAt:context.now(),causationId:input.event.causationId,correlationId:input.event.correlationId,initiator:input.initiator??input.event.actor,executor:input.event.actor,origin:input.origin??input.event.source,ownerAudience,publicProjection:view.publicProjection??null});
  }

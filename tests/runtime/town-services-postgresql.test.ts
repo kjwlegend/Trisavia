@@ -1,0 +1,48 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {randomUUID} from 'node:crypto';
+import {readFile} from 'node:fs/promises';
+import {join} from 'node:path';
+import {worldFixture} from './postgresql-fixture.ts';
+import {bootstrapWorld,createWorldService} from '../../apps/platform/application/world-service.ts';
+import {createTownService} from '../../apps/platform/application/town-services.ts';
+import {townV2Rules,TOWN_V2_LAYOUT_SHA256} from '../../apps/platform/domains/world/town-v2.ts';
+import {WORLD_REPOSITORY} from '../../apps/platform/domains/world/repository.ts';
+import {SERVICE_INVENTORY_REPOSITORY,TOWN_REPOSITORY} from '../../apps/platform/domains/town-services/repository.ts';
+import {BEHAVIOR_PERMISSIONS_SQL} from '../../apps/platform/infrastructure/postgresql/behavior-migration.ts';
+import {migratePostgres} from '../../apps/platform/infrastructure/postgresql/migrations.ts';
+import {prepareTownServices} from '../../scripts/town-services-prepare.ts';
+import {createDeterministicScheduler} from '../../apps/platform/infrastructure/scheduling/deterministic-scheduler.ts';
+import {contentRepository,sourceGrantRepository} from '../../apps/platform/domains/perception/repository.ts';
+import type {JsonObject} from '../../apps/platform/contracts/store.ts';
+test('one isolated PG: town activation, source codec, once-only service effects and persisted rest',async t=>{
+ const f=await worldFixture();try{
+  const rules=townV2Rules(JSON.parse(await readFile(new URL('../../apps/web/public/world-map-v2.json',import.meta.url),'utf8')),TOWN_V2_LAYOUT_SHA256),town=createTownService(f.access),world=createWorldService(f.access,{activities:town.worldActivity,currentNpcs:town.currentNpcs});
+  await f.runtime.transaction(ctx=>bootstrapWorld(ctx,rules));const beforeRules=await f.query('SELECT * FROM world.rulesets');
+  await f.query("INSERT INTO behavior.coverage(scope,from_at,policy_version,partial) SELECT unnest(ARRAY['world_explicit','world_idle','relationships','interaction']),$1,1,false",[f.now()-1000]);const oldCoverage=await f.query('SELECT * FROM behavior.coverage ORDER BY scope');
+  await f.gate(false);const prepare=()=>prepareTownServices(join(f.privateConnections,'migration-database-url'),join(f.privateConnections,'identity.json'),f.database,{activate:true,now:f.now});
+  await t.test('new migration and activation are idempotent, preserve old coverage/map, and create no Agent service state',async()=>{
+   await migratePostgres(f.migrationOptions);const first=await prepare();f.tick(1000);const second=await prepare();assert.equal(first.activatedAt,second.activatedAt);assert.equal(first.catalogVersion,1);assert.deepEqual(await f.query('SELECT * FROM world.rulesets'),beforeRules);assert.deepEqual(await f.query("SELECT * FROM behavior.coverage WHERE scope<>'town_services' ORDER BY scope"),oldCoverage);
+   assert.deepEqual(await f.query('SELECT (SELECT count(*)::integer FROM town_services.npcs) AS npcs,(SELECT count(*)::integer FROM town_services.operations) AS ops,(SELECT count(*)::integer FROM town_services.item_instances) AS items,(SELECT count(*)::integer FROM town_services.npc_relations) AS relations'),[{npcs:3,ops:0,items:0,relations:0}]);
+   assert.deepEqual(await f.query("SELECT count(*)::integer AS count FROM perception.reference_aliases WHERE external_id LIKE 'npc-item:%'"),[{count:2}]);assert.deepEqual(await f.appQuery("SELECT has_table_privilege(current_user,'town_services.control','UPDATE') AS activate,has_table_privilege(current_user,'town_services.catalogs','INSERT') AS define,has_table_privilege(current_user,'town_services.operations','DELETE') AS erase"),[{activate:false,define:false,erase:false}]);
+  });
+  await f.gate(true);const a=await f.register(),principal=()=>f.runtime.read(ctx=>f.access.authenticate(ctx,a.runtimeToken,['runtime']));
+  const run=(action:string,input:JsonObject,id=randomUUID())=>f.runtime.transaction(async ctx=>town.execute(ctx,await f.access.authenticate(ctx,a.runtimeToken,['runtime']),{domain:'town_services',action,commandId:id,principal:{kind:'agent',id:a.agentId},recoveryEpoch:ctx.recoveryEpoch},input));
+  await f.runtime.transaction(async ctx=>world.execute(ctx,await f.access.authenticate(ctx,a.runtimeToken,['runtime']),{domain:'world',action:'world.avatar.create',commandId:randomUUID(),principal:{kind:'agent',id:a.agentId},recoveryEpoch:ctx.recoveryEpoch},{worldId:'default',expectedRulesetVersion:2}));
+  const place=(npcId:string)=>f.runtime.transaction(async ctx=>{const c=(await ctx.repository(TOWN_REPOSITORY).getCatalog())!,repo=ctx.repository(WORLD_REPOSITORY),v=(await repo.getAvatar('default',a.agentId))!;await repo.saveAvatar({...v,version:v.version+1,position:{...c.npcs.find(n=>n.npcId===npcId)!.approachCells[0]!},placeId:null,motion:null},v.version);});
+  const items=()=>f.runtime.read(ctx=>ctx.repository(SERVICE_INVENTORY_REPOSITORY).list(a.agentId,{limit:10}));
+  await t.test('concurrent claims issue one pair through the real item/alias/holding codec; redeem faults roll back and retry once',async()=>{
+   await place('npc-mayor');const input={npcId:'npc-mayor',expectedCatalogVersion:1},claims=await Promise.all([run('town_services.welcome.claim',input),run('town_services.welcome.claim',input)]);assert(claims.every(r=>r.outcome==='committed'));assert.equal(claims.filter(r=>r.result.changed).length,1);assert.equal((await items()).length,2);
+   const holdings=await f.legacy.read(tx=>sourceGrantRepository(tx).pageByAgentIdAndKind(a.agentId,'holding',{limit:10}));assert.equal(holdings.length,2);assert(holdings.every(h=>h.data.quantity===1&&h.data.active===true&&h.data.dataMode==='real'));
+   const definition=await f.legacy.read(tx=>contentRepository(tx).get(String(holdings[0]!.data.objectId)));assert.equal(definition?.data.sourceId,'npc-service-items');assert.equal((definition?.data.ref as JsonObject).type,'items.item@1');
+   await place('npc-tavern');const voucher=(await items()).find(i=>i.kind==='tavern_voucher')!,request={npcId:'npc-tavern',expectedCatalogVersion:1,itemInstanceId:voucher.id,expectedItemVersion:voucher.version,topic:'welcome'},before=await f.query('SELECT (SELECT count(*) FROM town_services.operations) AS ops,(SELECT count(*) FROM town_services.familiarity_facts) AS scores,(SELECT count(*) FROM runtime.events) AS events,(SELECT count(*) FROM behavior.records) AS logs');
+   await f.query('REVOKE INSERT ON behavior.records FROM connet_app');await assert.rejects(()=>run('town_services.tavern.redeem',request));assert.deepEqual(await f.query('SELECT (SELECT count(*) FROM town_services.operations) AS ops,(SELECT count(*) FROM town_services.familiarity_facts) AS scores,(SELECT count(*) FROM runtime.events) AS events,(SELECT count(*) FROM behavior.records) AS logs'),before);assert.equal((await items()).find(i=>i.id===voucher.id)!.state,'available');await f.query(BEHAVIOR_PERMISSIONS_SQL);
+   const id=randomUUID(),used=await run('town_services.tavern.redeem',request,id);assert.equal(used.outcome,'committed');assert.deepEqual(await run('town_services.tavern.redeem',request,id),used);assert.equal((await run('town_services.tavern.redeem',request)).outcome,'conflict');const spent=await f.legacy.read(tx=>sourceGrantRepository(tx).get(voucher.holdingId));assert.equal(spent?.data.quantity,0);assert.equal(spent?.data.active,false);assert.deepEqual(await f.query('SELECT count(*)::integer AS count FROM town_services.familiarity_facts'),[{count:2}]);
+  });
+  await t.test('rest cancellation releases the same voucher and completion survives reopen with one consumption and score',async()=>{
+   await place('npc-innkeeper');const voucher=async()=>(await items()).find(i=>i.kind==='inn_voucher')!,start=async()=>{const v=await voucher();return run('town_services.inn.rest.start',{npcId:'npc-innkeeper',expectedCatalogVersion:1,itemInstanceId:v.id,expectedItemVersion:v.version});};
+   const first=await start(),op=first.result.operation as JsonObject;assert.equal((await voucher()).state,'reserved');await run('town_services.inn.rest.cancel',{operationId:op.operationId!,expectedVersion:op.version!});assert.equal((await voucher()).state,'available');
+   const again=await start();const reopened=await f.openRuntime(),recreated=createTownService(f.access);f.tick(60000);const scheduler=createDeterministicScheduler({store:reopened,workerId:'pg-town-restarted',handlers:[{kind:'town_services.inn.rest.complete',version:1,run:recreated.handleTask}]});const result=await scheduler.runDue();assert.equal(result.retried,0);assert.equal(result.failed,0);assert.equal((await voucher()).state,'consumed');const current=await f.runtime.read(ctx=>ctx.repository(TOWN_REPOSITORY).getOperation(String((again.result.operation as JsonObject).operationId)));assert.equal(current?.state,'completed');assert.deepEqual(await f.query('SELECT count(*)::integer AS count FROM town_services.familiarity_facts'),[{count:3}]);await scheduler.runDue();assert.deepEqual(await f.query('SELECT count(*)::integer AS count FROM town_services.familiarity_facts'),[{count:3}]);const spent=await voucher(),held=await f.legacy.read(tx=>sourceGrantRepository(tx).get(spent.holdingId));assert.equal(held?.data.quantity,0);const p=await principal();assert.equal(p.kind,'agent');if(p.kind==='agent')assert.equal(p.agentId,a.agentId);
+  });
+ }finally{await f.dispose();}
+});

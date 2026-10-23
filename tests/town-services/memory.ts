@@ -1,0 +1,26 @@
+import type {TownCatalog,TownOperation,TownNpcRelationship,TownItemInstance} from '../../apps/platform/domains/town-services/types.ts';
+import type {TownRepository,ServiceInventoryRepository} from '../../apps/platform/domains/town-services/repository.ts';
+import {RuntimeError} from '../../apps/platform/contracts/runtime-store.ts';
+const copy=<T>(v:T):T=>structuredClone(v),pair=(a:string,b:string)=>JSON.stringify([a,b]);
+export interface TownMemory {catalogs:Map<number,TownCatalog>;active:number|null;operations:Map<string,TownOperation>;relations:Map<string,TownNpcRelationship>;items:Map<string,TownItemInstance>;scores:Map<string,{npcId:string;serviceId:string;operationId:string;completedAt:number;agentId:string}>;holdings:Map<string,{version:number;quantity:number;state:string}>}
+export const emptyTownMemory=():TownMemory=>({catalogs:new Map(),active:null,operations:new Map(),relations:new Map(),items:new Map(),scores:new Map(),holdings:new Map()});
+export function townMemory(state:()=>TownMemory,now:()=>number,fault:(at:string)=>void){
+ function save<T extends{version:number}>(map:Map<string,T>,id:string,v:T,expected:number|null){const old=map.get(id);if(expected===null?!!old:old?.version!==expected)throw new RuntimeError('version_conflict','Synthetic CAS failed');map.set(id,copy(v));}
+ const town:TownRepository={
+  async getCatalog(v){return copy(state().catalogs.get(v??state().active??0));},async activateCatalog(c){if(!state().catalogs.has(c.version))state().catalogs.set(c.version,copy(c));state().active=c.version;},
+  async getOperation(id){return copy(state().operations.get(id));},async findClaim(a,c){return copy([...state().operations.values()].find(o=>o.agentId===a&&o.campaignId===c&&o.state==='completed'));},async activeRest(a){return copy([...state().operations.values()].find(o=>o.agentId===a&&o.state==='active'));},
+  async saveOperation(o,v){fault('town-operation');save(state().operations,o.id,o,v);},async listOperations(a,o){return copy([...state().operations.values()].filter(v=>v.agentId===a&&(!o.afterId||v.id>o.afterId)).sort((a,b)=>a.id<b.id?-1:1).slice(0,o.limit));},
+  async getRelationship(a,n){return copy(state().relations.get(pair(a,n)));},async listRelationships(a,o){return copy([...state().relations.values()].filter(v=>v.agentId===a&&(!o.afterNpcId||v.npcId>o.afterNpcId)).sort((a,b)=>a.npcId<b.npcId?-1:1).slice(0,o.limit));},async saveRelationship(v,e){fault('npc-relation');save(state().relations,pair(v.agentId,v.npcId),v,e);},
+  async completedServices(a){return copy([...state().scores.values()].filter(v=>v.agentId===a).map(({agentId,...v})=>v));},
+  async awardFamiliarity(id){const o=await town.getOperation(id);if(!o||o.state!=='completed'||o.serviceId==='greet')throw new RuntimeError('invalid_usage','Invalid familiarity source');let r=await town.getRelationship(o.agentId,o.npcId);if(!r){r={agentId:o.agentId,npcId:o.npcId,version:1,familiarity:0,createdAt:now(),updatedAt:now()};await town.saveRelationship(r,null);}const key=pair(pair(o.agentId,o.npcId),o.serviceId);if(state().scores.has(key))return {relationship:r,changed:false};fault('npc-score');state().scores.set(key,{agentId:o.agentId,npcId:o.npcId,serviceId:o.serviceId,operationId:o.id,completedAt:o.endedAt!});const next={...r,version:r.version+1,familiarity:Math.min(100,r.familiarity+1),updatedAt:now()};await town.saveRelationship(next,r.version);return {relationship:next,changed:true};},
+ };
+ const inventory:ServiceInventoryRepository={
+  async get(id){return copy(state().items.get(id));},async list(a,o){return copy([...state().items.values()].filter(i=>i.agentId===a&&(!o.afterId||i.id>o.afterId)).sort((a,b)=>a.id<b.id?-1:1).slice(0,o.limit));},
+  async issue(v){fault('service-inventory');save(state().items,v.id,v,null);state().holdings.set(v.holdingId,{version:1,quantity:1,state:v.state});},
+  async reserve(id,v,operationId){const old=await inventory.get(id);if(!old||old.version!==v||old.state!=='available')throw new RuntimeError('version_conflict','Item unavailable');return mutate({...old,version:v+1,state:'reserved',reservationId:operationId,updatedAt:now()},v);},
+  async release(id,operationId){const old=await inventory.get(id);if(!old)throw new RuntimeError('invalid_usage','Item missing');if(old.state==='available')return old;if(old.state!=='reserved'||old.reservationId!==operationId)throw new RuntimeError('version_conflict','Reservation changed');return mutate({...old,version:old.version+1,state:'available',reservationId:null,updatedAt:now()},old.version);},
+  async consume(id,v,operationId,reservation){const old=await inventory.get(id);if(!old||old.version!==v||(reservation?old.state!=='reserved'||old.reservationId!==reservation:old.state!=='available'))throw new RuntimeError('version_conflict','Item unavailable');return mutate({...old,version:v+1,state:'consumed',reservationId:null,consumedBy:operationId,updatedAt:now()},v);},
+ };
+ function mutate(v:TownItemInstance,expected:number){fault('service-inventory');save(state().items,v.id,v,expected);fault('holding');state().holdings.set(v.holdingId,{version:v.version,quantity:v.state==='consumed'?0:1,state:v.state});return copy(v);}
+ return {town,inventory};
+}
