@@ -12,6 +12,13 @@ export const CATEGORIES = [
   { categoryId:'messages',channel:'inbox',sourceIds:['direct-messages'],scopeKinds:['world'],metrics:[{metricId:'all',unit:'received_messages',description:'本人当前有效收件关系；与旧平台通知及其未确认数分开',sourceIds:['direct-messages']}] },
   { categoryId:'rules',channel:'world',sourceIds:['world-meta'],scopeKinds:['world'],metrics:[{metricId:'all',unit:'rules',description:'当前世界说明规则',sourceIds:['world-meta']}] },
 ] as const;
+export const NPC_SERVICE_ITEMS_SOURCE = 'npc-service-items';
+export interface PerceptionCategory {categoryId:string;channel:'world'|'inventory'|'inbox';sourceIds:readonly string[];scopeKinds:readonly string[];metrics:readonly {metricId:string;unit:string;description:string;sourceIds:readonly string[]}[]}
+/** A new real source enters the directory only through its explicit catalog release. */
+export function perceptionCategories(sourceStates:JsonObject):readonly PerceptionCategory[] {
+ if(!Object.hasOwn(sourceStates,NPC_SERVICE_ITEMS_SOURCE))return CATEGORIES;
+ return CATEGORIES.map(category=>category.categoryId==='items'?{...category,sourceIds:[...category.sourceIds,NPC_SERVICE_ITEMS_SOURCE],metrics:category.metrics.map(metric=>({...metric,description:'当前来源许可的作品与真实道具定义；持有和使用资格另验',sourceIds:[...metric.sourceIds,NPC_SERVICE_ITEMS_SOURCE]}))}:category.categoryId==='holdings'?{...category,metrics:category.metrics.map(metric=>({...metric,description:'本人当前获准的真实持有记录；使用、预留和消费须调用具名来源服务'}))}:category);
+}
 export const TYPE_DEFINITIONS = [
   {moduleId:'world',type:'world.rules@1',prefix:'world.rules'}, {moduleId:'profiles',type:'profiles.agent@1',prefix:'profiles.agent'},
   {moduleId:'items',type:'items.item@1',prefix:'items.item'}, {moduleId:'inventory',type:'inventory.holding@1',prefix:'inventory.holding'},

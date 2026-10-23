@@ -17,7 +17,7 @@ type Sources=Record<'world'|'relationships'|'interaction',BehaviorSource>&Partia
 type Cut={maxSequence:number;asOf:number};
 type Anchor={cut:Cut;after:{occurredAt:number;id:string}};
 const absent=():never=>fail('target_not_accessible',404,'Target is not accessible');
-const phaseLabels:Record<BehaviorDetails['phase'],string>={movement:'移动',wander:'日常漫游',friendship_request:'好友申请',text_invitation:'文字交流邀请',text_feedback:'文字反馈'};
+const phaseLabels:Record<BehaviorDetails['phase'],string>={movement:'移动',wander:'日常漫游',friendship_request:'好友申请',text_invitation:'文字交流邀请',text_feedback:'文字反馈',npc_service:'镇民服务'};
 function actorLabel(kind:'agent'|'owner'|'system',executor=false){return kind==='owner'?'主人明确操作':kind==='system'?(executor?'世界系统推进':'世界系统发起'):(executor?'角色执行':'角色发起');}
 const natural:Record<BehaviorRecord['node'],[string,string,string]>={
  'world.movement.received':['移动请求已收到','提交移动','已收到前往请求'],
@@ -59,7 +59,7 @@ function limitOf(value:unknown){const limit=value??20;if(typeof limit!=='number'
 /** Source projections, read authorization and human wording; it never changes a business or read state. */
 export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadContext>,sources:Sources){
  const cursors=createGatewayContinuation(1024);
- async function coverage(ctx:RuntimeReadContext,asOf:number){const rows=await ctx.repository(BEHAVIOR_REPOSITORY).getCoverage();if(BEHAVIOR_SCOPES.some(scope=>!rows.some(row=>row.scope===scope)))fail('behavior_unavailable',503,'Behavior sources have not been enabled');const starts=rows.map(row=>row.fromAt),gaps=['启用前的记录未补录'];gaps.push('普通移动与漫游过程不纳入用户日志');if(new Set(starts).size>1)gaps.push('各来源启用时间不同，更早记录不完整');return {from:Math.min(...starts),to:asOf,complete:rows.every(row=>!row.partial)&&new Set(starts).size===1,gaps};}
+ async function coverage(ctx:RuntimeReadContext,asOf:number){const rows=await ctx.repository(BEHAVIOR_REPOSITORY).getCoverage();if(BEHAVIOR_SCOPES.some(scope=>!rows.some(row=>row.scope===scope)))fail('behavior_unavailable',503,'Behavior sources have not been enabled');const starts=rows.map(row=>row.fromAt),gaps=['启用前的记录未补录'];if(new Set(starts).size>1)gaps.push('各来源启用时间不同，更早记录不完整');return {from:Math.min(...starts),to:asOf,complete:rows.every(row=>!row.partial)&&new Set(starts).size===1,gaps};}
  async function visible(ctx:RuntimeReadContext,row:BehaviorRecord,audience:'owner'|'public',p?:Principal){
   if(USER_LOG_PROCESS_NODES.includes(row.node))return false;
   const source=sources[row.sourceDomain];if(!source)return false;
@@ -86,13 +86,22 @@ export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadCont
   if(owner&&row.sourceRef.type==='interaction_activity'){const ref=await sources.interaction.behaviorDetailRef?.(ctx,row);if(ref)detail={operation:'interaction.owner_exchange',input:{agentId:row.agentId,invitationId:ref.invitationId}};}
   const described=await sources[row.sourceDomain]!.describeBehavior(ctx,row,owner?'owner':'public');let details:JsonObject|null=null;
   if(described){
+   const service=described.service;
+   if(service){
+    if(row.node==='town_services.greeted')title=result='拜访了'+service.npcName;
+    if(row.node==='town_services.service.started'){title='在石岸旅舍开始休息';result='已开始休息，休息券已预留，尚未完成';}
+    if(row.node==='town_services.service.completed'){
+     title=result=service.serviceId==='welcome.claim'?'从镇长那里领到新人礼包':service.serviceId==='tavern.host'?'在港湾酒馆使用招待券，喝了一杯迎新茶':service.serviceId==='inn.rest'?'在石岸旅舍使用休息券，完成休息':'已完成'+service.serviceName;
+    }
+    if(row.node==='town_services.service.cancelled')title=result=service.serviceName+'已取消';
+   }
    const participants:JsonObject[]=[];
    for(const participant of described.participants){const visibleProfile=participant.agentId===row.agentId?profile:await identity.readPublicAgent(ctx,participant.agentId);if(visibleProfile)participants.push({agentId:participant.agentId,displayName:visibleProfile.displayName,role:participant.role});}
    // Public movement does not disclose whether a human initiated the action.
    // Only the separately authorized Owner view retains that actor distinction.
    const initiator=owner?{kind:row.initiator.kind,label:actorLabel(row.initiator.kind)}:row.node==='world.idle.completed'?{kind:'system',label:'日常系统漫游'}:null;
-   const executor=owner?{kind:row.executor.kind,label:actorLabel(row.executor.kind,true)}:row.sourceDomain==='world'?{kind:'system',label:'世界系统推进'}:null;
-   details={version:1,completeness:described.completeness,phase:described.phase,phaseLabel:phaseLabels[described.phase],summary:result,timeRange:{startedAt:described.startedAt,endedAt:described.endedAt,durationMs:described.durationMs},location:described.location?{from:described.location.from?{...described.location.from}:null,to:described.location.to?{...described.location.to}:null,via:described.location.via.map(place=>({...place}))}:null,journey:described.journey?{...described.journey}:null,participants,initiator,executor,gaps:[...described.gaps]};
+   const executor=row.sourceDomain==='town_services'&&row.executor.kind==='system'?{kind:'system',label:'镇民服务规则执行'}:owner?{kind:row.executor.kind,label:actorLabel(row.executor.kind,true)}:row.sourceDomain==='world'?{kind:'system',label:'世界系统推进'}:null;
+   details={version:1,completeness:described.completeness,phase:described.phase,phaseLabel:phaseLabels[described.phase],summary:result,timeRange:{startedAt:described.startedAt,endedAt:described.endedAt,durationMs:described.durationMs},location:described.location?{from:described.location.from?{...described.location.from}:null,to:described.location.to?{...described.location.to}:null,via:described.location.via.map(place=>({...place}))}:null,journey:described.journey?{...described.journey}:null,participants,initiator,executor,service:service?{...service}:null,gaps:[...described.gaps]};
   }
   const time=new Intl.DateTimeFormat('en-GB',{timeZone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(row.occurredAt);
   return {id:row.id,agent:{agentId:row.agentId,displayName:profile?.displayName??null},title,action,result,occurredAt:row.occurredAt,date:localDate(row.occurredAt,timeZone),time,details,source:{domain:row.sourceDomain,node:row.node,detail}};

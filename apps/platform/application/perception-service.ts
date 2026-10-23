@@ -10,7 +10,7 @@ import { randomUUID } from 'node:crypto';
 import type { JsonObject, JsonValue, M1ReadSession, M1Store, M1Transaction, StoredRow } from '../contracts/store.ts';
 import {projectAvatar,readAppearance,type LegacyAvatarIdentityReader} from '../domains/profile/appearance.ts';
 import { fail, M1Error, object, text, version } from '../domains/common/errors.ts';
-import { CATEGORIES, OPERATIONS, TYPE_DEFINITIONS, RULES_REF, bounded, key, plain, ref, refId, type ObjectRef, type PerceptionAction, canonicalDocument } from '../domains/perception/protocol.ts';
+import { perceptionCategories, OPERATIONS, TYPE_DEFINITIONS, RULES_REF, bounded, key, plain, ref, refId, type ObjectRef, type PerceptionAction, canonicalDocument } from '../domains/perception/protocol.ts';
 import { catalogData, initializePerceptionCatalog } from './perception-catalog.ts';
 import { PERCEPTION_SCHEMA_VERSION } from '../domains/perception/schemas.ts';
 import { grantId } from './perception-seed.ts';
@@ -126,7 +126,8 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
                 fail('target_not_accessible', 404, 'Target is not accessible');
             await checkSource(tx, 'holdings');
             const itemPermitted = item && item.data.active === true && item.data.available === true && item.data.public === true && await currentSource(tx, String(item.data.sourceId)) === 'enabled';
-            return { ref: r, grant: g, row: { id: g.id, version: g.version, data: { ref: r, categoryId: 'holdings', metricId: 'held', channel: 'inventory', sourceId: 'holdings', title: itemPermitted ? item.data.title! : '持有记录', body: g.data.dataMode === 'demo' ? '明确标识的示例持有记录，不代表经济资产、货币或交易权。' : '当前获准的持有关系记录；不授使用、转移、删除或交易权。', ...(itemPermitted ? { itemRef: item.data.ref!, ...(item.data.itemKind ? { itemKind: item.data.itemKind } : {}) } : {}), quantity: g.data.quantity ?? 1, status: g.data.status ?? 'active', public: false, active: true, available: true, dataMode: g.data.dataMode ?? 'real', attachments: [], source: g.data.source ?? { kind: g.data.dataMode === 'demo' ? 'demo_holding' : 'holding_record' } } } };
+            const townItem=plain(g.data.source).kind==='npc_service_item',body=townItem&&g.data.status==='available'?'这张券当前可用；使用仍须本人到对应服务点按当前条件办理，不可转赠。':townItem&&g.data.status==='reserved'?'这张券正在为一次服务预留，尚未消耗；不可转赠。':g.data.dataMode==='demo'?'明确标识的示例持有记录，不代表经济资产、货币或交易权。':'当前获准的持有关系记录；不授使用、转移、删除或交易权。';
+            return { ref: r, grant: g, row: { id: g.id, version: g.version, data: { ref: r, categoryId: 'holdings', metricId: 'held', channel: 'inventory', sourceId: 'holdings', title: itemPermitted ? item.data.title! : '持有记录', body, ...(itemPermitted ? { itemRef: item.data.ref!, ...(item.data.itemKind ? { itemKind: item.data.itemKind } : {}) } : {}), quantity: g.data.quantity ?? 1, status: g.data.status ?? 'active', public: false, active: true, available: true, dataMode: g.data.dataMode ?? 'real', attachments: [], source: g.data.source ?? { kind: g.data.dataMode === 'demo' ? 'demo_holding' : 'holding_record' } } } };
         }
         if (r.moduleId === 'mailbox' && r.type === 'mailbox.direct-message@1') {
             if (channel !== 'inbox' || !a.agentId)
@@ -248,11 +249,12 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
             scanned+=auxiliaryRows;
         }
         else {
+            const sourceIds=perceptionCategories(plain((await catalogRepository(tx).get('current'))!.data.sourceStates)).find(category=>category.categoryId===categoryId)?.sourceIds??[];
             const rows = await contentRepository(tx).pageByCategoryId(categoryId, { limit: max });
             complete = rows.length < max;
             for (const row of rows.slice(0, max)) {
                 scanned++;
-                if (row.data.public !== true || row.data.active !== true || row.data.available !== true || (metricId && row.data.metricId !== metricId))
+                if (!sourceIds.includes(String(row.data.sourceId)) || row.data.public !== true || row.data.active !== true || row.data.available !== true || (metricId && row.data.metricId !== metricId))
                     continue;
                 candidates.push({ row, ref: ref(row.data.ref) });
             }
@@ -389,8 +391,9 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
         const budget = input.budget === undefined ? {} : object(input.budget, ['maxSections', 'maxResponseBytes', 'maxSourceReads', 'maxScannedRows', 'deadlineMs']);
         const maxSections = bounded(budget.maxSections, 8, 8, 'maxSections'), maxRows = bounded(budget.maxScannedRows, 200, 200, 'maxScannedRows'), maxReads = bounded(budget.maxSourceReads, 8, 8, 'maxSourceReads'), deadline = now() + bounded(budget.deadlineMs, 250, 250, 'deadlineMs');
         const maxBytes = bounded(budget.maxResponseBytes, 16384, 16384, 'maxResponseBytes');
-        const categoryIds = input.categoryIds === undefined ? CATEGORIES.filter(c => c.categoryId !== 'rules').map(c => c.categoryId) : input.categoryIds;
-        if (!Array.isArray(categoryIds) || categoryIds.length > 8 || new Set(categoryIds).size !== categoryIds.length || categoryIds.some(id => !CATEGORIES.some(c => c.categoryId === id)))
+        const categories=perceptionCategories(plain((await catalogRepository(tx).get('current'))!.data.sourceStates));
+        const categoryIds = input.categoryIds === undefined ? categories.filter(c => c.categoryId !== 'rules').map(c => c.categoryId) : input.categoryIds;
+        if (!Array.isArray(categoryIds) || categoryIds.length > 8 || new Set(categoryIds).size !== categoryIds.length || categoryIds.some(id => !categories.some(c => c.categoryId === id)))
             fail('invalid_request', 422, 'Invalid overview categories');
         const known = input.knownContentRevisions === undefined ? [] : input.knownContentRevisions;
         if (!Array.isArray(known) || known.length > 16)
@@ -409,7 +412,7 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
         let scanned = 0, reads = 0;
         const started = Date.now();
         for (const categoryId of categoryIds.slice(0, maxSections)) {
-            const category = CATEGORIES.find(c => c.categoryId === categoryId)!;
+            const category = categories.find(c => c.categoryId === categoryId)!;
             if (a.kind !== 'runtime' && category.channel !== 'world')
                 fail('insufficient_scope', 403, 'Agent private views are not granted to a managing owner');
             const metrics: JsonObject[] = [];
@@ -453,7 +456,7 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
         const ctx = validateContext(input, a);
         a = await readActor(tx, a, input, String(input.channel));
         bindMeteredAppearance(original,tx,meter);
-        const categoryId = text(input.categoryId, 'categoryId', 1, 60), category = CATEGORIES.find(c => c.categoryId === categoryId);
+        const categoryId = text(input.categoryId, 'categoryId', 1, 60), category = perceptionCategories(plain((await catalogRepository(tx).get('current'))!.data.sourceStates)).find(c => c.categoryId === categoryId);
         if (!category || input.channel !== category.channel)
             fail('invalid_request', 422, 'Category does not belong to the channel');
         const metricId = input.metricId === undefined ? null : text(input.metricId, 'metricId', 1, 60);

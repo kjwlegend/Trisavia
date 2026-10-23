@@ -3,7 +3,8 @@ import { randomUUID } from 'node:crypto';
 import type { JsonObject, M1Store, M1Transaction } from '../contracts/store.ts';
 import { fail } from '../domains/common/errors.ts';
 import { key, plain, refId,OPERATIONS,TYPE_DEFINITIONS, type ObjectRef } from '../domains/perception/protocol.ts';
-import { publishCatalogInTransaction, publishImplementedReadersInTransaction, IMPLEMENTED_READER_SOURCES,initializePerceptionCatalog } from './perception-catalog.ts';
+import { publishCatalogInTransaction, publishImplementedReadersInTransaction, publishNpcServiceReadersInTransaction, IMPLEMENTED_READER_SOURCES,initializePerceptionCatalog } from './perception-catalog.ts';
+import {CURRENT_WORLD_MAP_TOWN_GUIDE,TOWN_SERVICES_GUIDE} from './agent-town-services-guide.ts';
 import {PERCEPTION_SCHEMA_VERSION} from '../domains/perception/schemas.ts';
 import {APPEARANCE_CATALOG_VERSION,APPEARANCE_CATALOG_DIGEST,APPEARANCE_ASSET_VERSION} from '../domains/profile/appearance-catalog.ts';
 import {AGENT_HUMAN_VOICE_GUIDE,AGENT_TEXT_EXCHANGE_GUIDE,CURRENT_TEXT_EXCHANGE_GUIDE,AGENT_FRIENDSHIP_GUIDE,CURRENT_FRIENDSHIP_GUIDE,AGENT_AUTONOMY_GUIDE,AGENT_WORLD_MAP_V2_GUIDE} from './agent-human-voice.ts';
@@ -177,6 +178,18 @@ export async function publishWorldMapV2Guide(store:M1Store,options:Administrativ
         await publishCatalogInTransaction(tx,{revision:options.revision,guideVersion:options.guideVersion,guideText:document.text.includes(AGENT_WORLD_MAP_V2_GUIDE)?document.text:`${document.text}\n${AGENT_WORLD_MAP_V2_GUIDE}`});
         const published=(await catalogRepository(tx).get('current'))!;
         return {changed:true,catalogRevision:published.data.catalogRevision!,skillCatalogRevision:published.data.skillCatalogRevision!,guideVersion:published.data.guideVersion!,schemaVersion:published.data.schemaVersion!,newGuideDocuments:modules.length};
+    });
+}
+/** Fixed town-service item reader release; never an Agent capability or business grant. */
+export async function publishNpcServiceReaders(store:M1Store,options:AdministrativeCommand&{expectedInstanceId:string;expectedRecoveryEpoch:string;expectedCatalogRevision:string;revision:string;expectedGuideVersion:number;guideVersion:number}):Promise<JsonObject>{
+    if(options.expectedInstanceId!==store.instanceId||options.expectedRecoveryEpoch!==store.recoveryEpoch)fail('version_conflict',409,'The explicit target instance or recovery epoch differs');
+    if(!/^[A-Za-z0-9_-]{1,100}$/.test(options.expectedCatalogRevision)||options.revision!=='catalog-npc-services-1'||!Number.isSafeInteger(options.expectedGuideVersion)||options.expectedGuideVersion<1||options.guideVersion!==options.expectedGuideVersion+1)throw new Error('An explicit current catalog and next town-service guide version are required');
+    const payload:JsonObject={action:'publishNpcServiceReaders',release:'town-services-readers@1',instanceId:store.instanceId,recoveryEpoch:store.recoveryEpoch,expectedCatalogRevision:options.expectedCatalogRevision,revision:options.revision,expectedGuideVersion:options.expectedGuideVersion,guideVersion:options.guideVersion,guideText:TOWN_SERVICES_GUIDE};
+    return command(store,options,payload,async tx=>{
+        const current=await catalogRepository(tx).get('current'),previous=await catalogRepository(tx).get(`guide:world:${options.expectedGuideVersion}`),document=plain(previous?.data.document);
+        if(!current||typeof document.text!=='string')fail('version_conflict',409,'The current exact guide is missing');
+        const corrected=document.text.replaceAll(AGENT_WORLD_MAP_V2_GUIDE,CURRENT_WORLD_MAP_TOWN_GUIDE).replaceAll('聊天和服务尚未实现，不声称已支持；数值不代表模型感情。','Agent之间的聊天和服务计分尚未实现；NPC服务使用独立熟悉度，不增加好友亲密度，也不表示模型感情。');
+        return await publishNpcServiceReadersInTransaction(tx,{...options,guideText:corrected+'\n'+TOWN_SERVICES_GUIDE});
     });
 }
 /** Reviewed maintenance release. No arbitrary source, guide text, audience or object grant can be supplied. */

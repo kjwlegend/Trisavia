@@ -4,7 +4,10 @@ import test from 'node:test';
 import Fastify from 'fastify';
 import {AGENT_HUMAN_VOICE_GUIDE,AGENT_TEXT_EXCHANGE_GUIDE,AGENT_FRIENDSHIP_GUIDE,AGENT_AUTONOMY_GUIDE,AGENT_WORLD_MAP_V2_GUIDE} from '../../apps/platform/application/agent-human-voice.ts';
 import {initializePerceptionCatalog,publishPerceptionCatalog} from '../../apps/platform/application/perception-catalog.ts';
-import {publishAgentHumanVoiceGuide,publishTextExchangeGuide,publishFriendshipGuide,publishAgentAutonomyGuide,publishWorldMapV2Guide} from '../../apps/platform/application/perception-admin.ts';
+import {publishAgentHumanVoiceGuide,publishTextExchangeGuide,publishFriendshipGuide,publishAgentAutonomyGuide,publishWorldMapV2Guide,publishNpcServiceReaders} from '../../apps/platform/application/perception-admin.ts';
+import {catalogData} from '../../apps/platform/application/perception-catalog.ts';
+import {refId} from '../../apps/platform/domains/perception/protocol.ts';
+import {TOWN_ITEM_DEFINITIONS} from '../../apps/platform/domains/town-services/catalog.ts';
 import {createPerceptionService} from '../../apps/platform/application/perception-service.ts';
 import {registerPerceptionRoutes} from '../../apps/platform/transport/http/perception-routes.ts';
 import {registerM1Routes} from '../../apps/platform/transport/http/m1-routes.ts';
@@ -185,4 +188,22 @@ test('cumulative exact guides remain readable by Owner and runtime without widen
   }
   for(const row of documents)assert.deepEqual(await f.tx.get('perception_catalog',row.id),row,'Reads preserve every exact document and digest');
  }finally{await app.close();}
+});
+
+test('named NPC item-source release preserves prior exact guides and permissions while enabling real items only after preparation',async()=>{
+ const f=memory();await f.store.transaction(initializePerceptionCatalog);const retained=(await f.tx.get('perception_catalog','guide:world:2'))!.data.document as JsonObject;
+ await publishPerceptionCatalog(f.store,{revision:'catalog-map-v2-1',guideVersion:8,guideText:String(retained.text)});
+ const current=(await f.tx.get('perception_catalog','current'))!;await f.tx.update('perception_catalog',{...current,version:current.version+1,data:{...current.data,sourceStates:{...current.data.sourceStates as JsonObject,'direct-mail':'unavailable'}}},current.version);
+ const options={actorId:'synthetic-town-maintainer',operationId:randomUUID(),expectedInstanceId:f.store.instanceId,expectedRecoveryEpoch:f.store.recoveryEpoch,expectedCatalogRevision:'catalog-map-v2-1',revision:'catalog-npc-services-1',expectedGuideVersion:8,guideVersion:9},beforePreparation=f.snapshot();
+ await assert.rejects(publishNpcServiceReaders(f.store,options));assert.deepEqual(f.snapshot(),beforePreparation);
+ for(const item of Object.values(TOWN_ITEM_DEFINITIONS)){const ref={moduleId:'items',type:'items.item@1',id:item.id};await f.tx.insert('perception_objects',{id:refId(ref),version:1,data:{ref,moduleId:'items',type:ref.type,refId:ref.id,categoryId:'items',metricId:'all',channel:'world',sourceId:'npc-service-items',title:item.title,body:item.text,itemKind:'prop',public:true,active:true,available:true,dataMode:'real',attachments:[],source:{kind:'town_service_item',reference:item.id}}});}
+ const service=createPerceptionService(f.store,{authenticate:async()=>({id:'pre-town-runtime',version:1,data:{kind:'runtime',agentId:'pre-town-agent',runtimeVersion:1}})}),input={protocolVersion:1,consumerId:'synthetic-town-reader',purpose:'agent-inspect',channel:'world',categoryId:'items'};
+ assert.deepEqual(((await service.invoke('perceptionList',input,'synthetic')).data as JsonObject).records,[],'Prepared definitions are not discovered through an unpublished source');
+ const before=f.snapshot(),oldCapabilities=await service.capabilities(),receipt=await publishNpcServiceReaders(f.store,options),published=f.snapshot();assert.equal(receipt.newGuideDocuments,7);assert.equal(receipt.schemaVersion,5);assert.deepEqual(await publishNpcServiceReaders(f.store,options),receipt);assert.deepEqual(f.snapshot(),published);
+ for(const row of before.perception_catalog!.filter(row=>/^(guide|schema|catalog-revision):/.test(row.id)))assert.deepEqual(await f.tx.get('perception_catalog',row.id),row);
+ const states=(await f.tx.get('perception_catalog','current'))!.data.sourceStates as JsonObject;assert.deepEqual(states,{...current.data.sourceStates as JsonObject,'direct-mail':'unavailable','npc-service-items':'enabled'});assert.equal(f.rows('perception_grants').length,0,'Publishing a reader does not issue a voucher or holding');
+ const catalog=await catalogData(f.tx);assert.deepEqual((catalog.categories as JsonObject[]).find(c=>c.categoryId==='items')!.sourceIds,['demo-items','npc-service-items']);assert((catalog.sources as JsonObject[]).some(s=>s.sourceId==='npc-service-items'&&s.state==='enabled'));
+ assert.notEqual((await service.capabilities()).catalogRevision,oldCapabilities.catalogRevision);assert.notEqual((await service.capabilities()).skillCatalogRevision,oldCapabilities.skillCatalogRevision);
+ const listed=((await service.invoke('perceptionList',input,'synthetic')).data as JsonObject).records as JsonObject[];assert.equal(listed.length,2);assert(listed.every(row=>(row.summary as JsonObject).dataMode==='real'&&row.sourceId==='npc-service-items'));
+ const app=Fastify();registerPerceptionRoutes(app,{invokeHttp:service.invoke} as unknown as M1Service);try{for(const moduleId of ['perception','world','profiles','items','inventory','mailbox','wallet']){const response=await app.inject({method:'GET',url:`/v1/perception/guides/${moduleId}?version=9`,headers:{authorization:'Bearer pre-town-runtime'}});assert.equal(response.statusCode,200);const data=response.json().data;assert.equal(sha(data.canonicalDocument),data.digest);assert.deepEqual(JSON.parse(data.canonicalDocument),data.document);assert.match(data.document.text,/town_services\.welcome\.claim/);assert(!data.document.text.includes('scene顶层npcs为独立server-managed只读定义'));}}finally{await app.close();}
 });

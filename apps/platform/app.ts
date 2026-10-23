@@ -29,6 +29,12 @@ import { interactionGatewayGuide, interactionGatewayOperations } from './applica
 import { decisionGatewayGuide, decisionGatewayOperations } from './application/agent-gateway-decision.ts';
 import { fail, object } from './domains/common/errors.ts';
 import { IDLE_LIFE_POLICY_V1 } from './domains/world/idle-life.ts';
+import {createTownService} from './application/town-services.ts';
+import {TOWN_REPOSITORY} from './domains/town-services/repository.ts';
+import {townGatewayGuide,townGatewayOperations,townPublicReads} from './application/agent-gateway-town.ts';
+import {registerTownObservationRoutes} from './transport/http/town-services-routes.ts';
+import {catalogRepository} from './domains/perception/repository.ts';
+import {NPC_SERVICE_ITEMS_SOURCE,plain} from './domains/perception/protocol.ts';
 
 export interface BuildAppOptions extends OpenPostgresStoreOptions {
  perception?:PerceptionOptions;email?:EmailConfig;clock?:()=>number;trustProxyLoopback?:boolean;worldCoreEnabled?:boolean;worldCoreInteractionEnabled?:boolean;
@@ -52,7 +58,11 @@ export async function buildApp(options:BuildAppOptions):Promise<FastifyInstance>
    await runtime.read(ctx=>verifyWorldReadiness(ctx));
    const identity=createRuntimeIdentity(options.recoveryEpoch,options.clock??Date.now,readLegacyAvatarIdentity);
    const behaviorEnabled=options.worldCoreInteractionEnabled===true&&await runtime.read(behaviorSourcesEnabled),observation=behaviorEnabled?createRuntimeObservation(identity):undefined;
-   const world=createWorldService(identity,{...(observation?{observation}:{})}),relationships=createRelationshipsService(identity,{...(observation?{observation}:{})}),operations=[...worldGatewayOperations(world),...relationshipsGatewayOperations(relationships)],guides=[worldGatewayGuide,relationshipsGatewayGuide],publicReads=worldPublicReads(world);
+   const townEnabled=await runtime.read(async ctx=>!!await ctx.repository(TOWN_REPOSITORY).getCatalog());
+   if(townEnabled&&(!behaviorEnabled||!await store.read(async tx=>plain((await catalogRepository(tx).get('current'))?.data.sourceStates)[NPC_SERVICE_ITEMS_SOURCE]==='enabled')))fail('town_services_unavailable',503,'Activate the source coverage and exact real item catalog before starting town services');
+   const town=townEnabled?createTownService(identity,{...(observation?{observation}:{})}):undefined;
+   const world=createWorldService(identity,{...(observation?{observation}:{}),...(town?{activities:town.worldActivity,currentNpcs:town.currentNpcs}:{})}),relationships=createRelationshipsService(identity,{...(observation?{observation}:{})}),operations=[...worldGatewayOperations(world),...relationshipsGatewayOperations(relationships)],guides=[worldGatewayGuide,relationshipsGatewayGuide],publicReads=worldPublicReads(world);
+   if(town){operations.push(...townGatewayOperations(town));guides.push(townGatewayGuide);publicReads.push(...townPublicReads(town));}
    let behaviorLogs:ReturnType<typeof createBehaviorLogService>|undefined;
    friendshipOwnerRead=(raw,token)=>runtime!.read(async ctx=>{
     const input=object(raw,['agentId']),principal=await identity.authenticate(ctx,token,['owner_session']),friends:JsonObject[]=[];let cursor:string|undefined;
@@ -64,18 +74,20 @@ export async function buildApp(options:BuildAppOptions):Promise<FastifyInstance>
     fail('source_unavailable',503,'Use the bounded friendship reader to read this collection');
    });
    const handlers:DeterministicTaskHandler[]=[{kind:'world.movement.step',version:1,run:world.handleTask},{kind:'world.idle.step',version:1,run:world.handleIdleTask}];
+   if(town)handlers.push({kind:'town_services.inn.rest.complete',version:1,run:town.handleTask});
    if(options.worldCoreInteractionEnabled===true){
     await runtime.read(async ctx=>{await verifyInteractionReadiness(ctx);if(await ctx.tasks.currentGeneration('decision')<1)fail('decision_unavailable',503,'Decision lifecycle is not initialized');});
     let interaction:ReturnType<typeof createInteractionService>;
     const decision=createDecisionService({identity,target:{inspect:(...args)=>interaction.decisionTarget.inspect(...args),execute:(...args)=>interaction.decisionTarget.execute(...args)}});
     interaction=createInteractionService(identity,decision.sink,{...(observation?{observation}:{}),onCompletedFeedback:(ctx,fact)=>relationships.recordCompletedFeedback(ctx,fact)});
     operations.push(...interactionGatewayOperations(interaction,identity),...decisionGatewayOperations(decision));guides.push(interactionGatewayGuide,decisionGatewayGuide);
-    if(behaviorEnabled){behaviorLogs=createBehaviorLogService(identity,{world,relationships,interaction});operations.push(...behaviorGatewayOperations(behaviorLogs));guides.push(behaviorGatewayGuide);publicReads.push(...behaviorPublicReads(behaviorLogs));}
+    if(behaviorEnabled){behaviorLogs=createBehaviorLogService(identity,{world,relationships,interaction,...(town?{town_services:town}:{})});operations.push(...behaviorGatewayOperations(behaviorLogs));guides.push(behaviorGatewayGuide);publicReads.push(...behaviorPublicReads(behaviorLogs));}
     handlers.push({kind:'interaction.invitation.expire',version:1,run:interaction.handleTask},{kind:'interaction.activity.expire',version:1,run:interaction.handleTask},{kind:'decision.expire',version:1,run:async(ctx,scheduled)=>{if(!scheduled.lease)fail('invalid_task',400,'Decision expiry requires a lease');const task=await ctx.tasks.assertLease(scheduled.lease,ctx.now());if(task.domain!=='decision'||task.kind!=='decision.expire'||task.handlerVersion!==1||task.payloadVersion!==1||task.target.type!=='decision.request'||task.payload.decisionId!==task.target.id)fail('invalid_task',400,'Unsupported Decision task');await decision.expire(ctx,task.target.id);}});
    }
    const gateway=createAgentGateway({store:runtime,identity,operations,publicReads,guides});
    gatewayCapabilities=()=>({...gateway.capabilities(),worldSimulation:{enabled:true,actionAdvancement:'deterministic-rule-tasks',movementPolicyVersion:1,stepIntervalMs:1000,pollIntervalMs:1000,idleLife:{enabled:true,policyVersion:IDLE_LIFE_POLICY_V1.version,stepIntervalMs:IDLE_LIFE_POLICY_V1.stepIntervalMs,maxPathLength:IDLE_LIFE_POLICY_V1.maxPathLength,minRestMs:IDLE_LIFE_POLICY_V1.minRestMs,restJitterMs:IDLE_LIFE_POLICY_V1.restJitterMs},externalAgentExecution:false}});
    const gatewayHttp=registerAgentGatewayRoutes(app,gateway,{instanceId:store.instanceId,now:options.clock??Date.now});registerWorldObservationRoutes(gateway,gatewayHttp);if(behaviorLogs)registerBehaviorLogRoutes(gateway,gatewayHttp);
+   if(town)registerTownObservationRoutes(gateway,gatewayHttp);
    const scheduler=createDeterministicScheduler({store:runtime,workerId:`world-rules-${process.pid}`,handlers,batchLimit:10,leaseMs:30000});
    let nextIdleDiscovery=0,idleAfter:string|undefined;
    ruleDriver=createWorldRuleDriver({async runDue(){const now=(options.clock??Date.now)();if(now>=nextIdleDiscovery){idleAfter=await runtime!.transaction(ctx=>world.ensureIdleLife(ctx,'default',idleAfter));nextIdleDiscovery=now+IDLE_LIFE_POLICY_V1.scanIntervalMs;}return scheduler.runDue();},close:()=>scheduler.close()});app.addHook('onReady',async()=>{ruleDriver!.start();});

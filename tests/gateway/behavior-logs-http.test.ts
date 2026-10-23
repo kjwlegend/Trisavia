@@ -53,7 +53,7 @@ test('all three read faces exclude old process noise before their limits and pre
   for(const read of [await t.publicRead('/v1/world/logs?worldId=default'),await t.publicRead('/v1/world/agent-logs?agentId=a'),await t.query({agentId:'a'})]){assert.equal(read.status,200);assert.deepEqual(read.data.items,[]);assert.equal(read.data.nextPageToken,null);assert.equal(read.data.partial,false);}
   assert.deepEqual(t.f.state,before,'Selection never deletes or rewrites old runtime or behavior facts');
   for(const suffix of ['&limit=50','&fromDate=2026-10-21','&pageToken=older','&cutoff=1','&userLogOnly=false'])assert.equal((await t.publicRead('/v1/world/agent-logs?agentId=a'+suffix)).status,400);
-  const ref=t.gateway.discovery().modules.find(m=>m.moduleId==='behavior')!.usageGuide,guide=(await t.app.inject({method:'GET',url:ref.path})).json().data;assert.equal(ref.version,3);assert.equal(createHash('sha256').update(guide.canonicalDocument).digest('hex'),guide.digest);assert.match(guide.document.description,/普通移动/);
+  const ref=t.gateway.discovery().modules.find(m=>m.moduleId==='behavior')!.usageGuide,guide=(await t.app.inject({method:'GET',url:ref.path})).json().data;assert.equal(ref.version,4);assert.equal(createHash('sha256').update(guide.canonicalDocument).digest('hex'),guide.digest);assert.match(guide.document.description,/普通移动/);
  }finally{await t.close();}
 });
 
@@ -65,7 +65,7 @@ test('Owner dates and stable same-time pagination freeze new facts and bind scop
   assert.equal((await t.query({...input,pageToken:first.data.nextPageToken,timeZone:'UTC'})).status,409);assert.equal((await t.query({...input,pageToken:first.data.nextPageToken,toDate:'2026-10-22'})).status,409);
   await t.f.behavior.invalidateVisibility(['a']);assert.equal((await t.query({...input,pageToken:first.data.nextPageToken})).status,409);
   t.f.state.publicAgents.delete('a');t.f.membership('a',{ownerPaused:true});assert.equal((await t.query(input)).data.items.length,2,'Private Owner history survives public withdrawal and Owner pause');assert.equal((await t.publicRead('/v1/world/agent-logs?agentId=a')).status,404);
-  t.bindings.set('a',{ownerId:'owner-b',id:'new-binding-a',version:1});assert.equal((await t.query(input)).status,404);const newOwner=await t.query(input,'owner-b');assert.equal(newOwner.status,200);assert.deepEqual(newOwner.data.items,[],'A new Owner does not inherit prior private audience');assert(newOwner.data.historyCoverage.gaps.includes('普通移动与漫游过程不纳入用户日志'));
+  t.bindings.set('a',{ownerId:'owner-b',id:'new-binding-a',version:1});assert.equal((await t.query(input)).status,404);const newOwner=await t.query(input,'owner-b');assert.equal(newOwner.status,200);assert.deepEqual(newOwner.data.items,[],'A new Owner does not inherit prior private audience');assert(newOwner.data.historyCoverage.gaps.includes('启用前的记录未补录'));
  }finally{await t.close();}
 });
 
