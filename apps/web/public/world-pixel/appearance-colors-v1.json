@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "hairColors": [
+    {
+      "id": "original",
+      "displayName": "原色",
+      "swatch": "#E17418"
+    },
+    {
+      "id": "chestnut",
+      "displayName": "栗棕",
+      "swatch": "#704534"
+    },
+    {
+      "id": "ink",
+      "displayName": "墨黑",
+      "swatch": "#37333D"
+    },
+    {
+      "id": "ash",
+      "displayName": "亚麻灰",
+      "swatch": "#88877C"
+    },
+    {
+      "id": "blue",
+      "displayName": "雾蓝",
+      "swatch": "#4F6C8B"
+    }
+  ],
+  "clothingColors": [
+    {
+      "id": "original",
+      "displayName": "原色",
+      "swatch": "#374464"
+    },
+    {
+      "id": "forest",
+      "displayName": "苔绿",
+      "swatch": "#526B4D"
+    },
+    {
+      "id": "clay",
+      "displayName": "陶土",
+      "swatch": "#9F6048"
+    },
+    {
+      "id": "cream",
+      "displayName": "米杏",
+      "swatch": "#C8B486"
+    }
+  ]
+}
