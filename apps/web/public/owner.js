@@ -615,11 +615,12 @@ function renderAgent(resetProfile=true){
   $('#pause-agent').textContent=member.ownerPaused?'恢复 Agent 行动':'暂停 Agent 行动';$('#member-description').textContent=member.platformRestricted?'当前存在平台限制。主人无法通过访问安排或暂停开关解除。':'';
 }
 async function refresh(resetProfile=false){
-  if(hasPending()||emailFlow.unfinished||assistance.token||vault.claimContext||recoveryPrepared)return;const busyLease=setBusy(true);
+  if(hasPending()||emailFlow.unfinished||assistance.token||vault.claimContext||recoveryPrepared)return;const retainedDraft=!resetProfile&&Boolean(presentation?.dirty()),previousAgentId=selectedId,previousVersion=current()?.profile.version,busyLease=setBusy(true);
   try{const loaded=await loadAgents({resetProfile});if(!loaded||busyLease!==busyRevision)return;
     if(unavailableAgentId){message('这个 Agent 当前不可用，请明确选择自己的 Agent 后再编辑。','error');return;}
-    if(current()&&!resetProfile)$('#draft-note').textContent=`已读取服务器最新版本 ${current().profile.version}，表单输入仍保留。请核对目前公开版本，再确认保存。`;
-    message('已读取最新状态，表单输入仍保留。','success');
+    const concurrentUpdate=!resetProfile&&current()?.agentId===previousAgentId&&current()?.profile.version!==previousVersion,retainedInput=retainedDraft||concurrentUpdate;
+    $('#draft-note').textContent=retainedInput?'你的输入仍保留。请核对当前对外资料后再保存。':'';
+    message(retainedInput?'已读取最新资料，你的输入仍保留。请核对后再保存。':current()?'资料已是最新。':'状态已是最新。','success');
   }catch(error){if(busyLease!==busyRevision)return;fail(error);if(error.status===401)showSignIn();}
   finally{setBusy(false,busyLease);}
 }
