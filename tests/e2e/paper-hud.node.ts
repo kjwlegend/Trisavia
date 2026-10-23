@@ -26,7 +26,7 @@ test('paper HUD uses real scene chrome and keeps all four navigation entries at 
     return route.fulfill({status:404,json:{error:{code:'fixture_not_found'}}});
   });
   const page=await context.newPage(),errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));await page.goto(origin);await expect(page.locator('#world-scene-count')).toContainText('4');await expect(page.locator('#hud-agent-select')).toHaveText('工程居民');
-  for(const [width,height]of [[1600,1000],[1440,900],[1280,800]]){
+  for(const [width,height]of [[1600,1000],[1440,900],[1280,800]] as const){
     await page.setViewportSize({width,height});await expect(page.locator('#hud-open-world-logs')).toBeVisible();await expect(page.locator('#world-zoom-in')).toBeInViewport();await expect(page.locator('#world-zoom-out')).toBeInViewport();await expect(page.locator('#hud-dock button')).toHaveCount(4);await expect(page.locator('#hud-locate-agent')).toBeVisible();
     const boxes=await page.locator('#hud-dock,.hud-agent-card,.hud-map-tools,#world-status-hud').evaluateAll(nodes=>nodes.map(node=>{const b=node.getBoundingClientRect();return{x:b.x,y:b.y,width:b.width,height:b.height};}));
     assert.ok(boxes.every(b=>b.x>=0&&b.y>=54&&b.x+b.width<=width&&b.y+b.height<=height));assert.equal(await page.locator("#hud-dock").evaluate(node=>node.getBoundingClientRect().height),76);assert.equal(await page.locator('header').evaluate(node=>node.getBoundingClientRect().height),54);
