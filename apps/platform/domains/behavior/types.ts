@@ -21,5 +21,15 @@ export interface BehaviorRecordDraft {
  ownerAudience:OwnerAudienceProof|null;publicProjection:BehaviorPublicProjection|null;
 }
 export interface BehaviorRecord extends BehaviorRecordDraft {id:string;sequence:number}
+/** Source facts only. Display names and natural summaries remain in the authorized read model. */
+export interface BehaviorLocation {kind:'place'|'entrance'|'bridge'|'stairs'|'map_region';name:string}
+export interface BehaviorDetails {
+ version:1;completeness:'recorded'|'partial';phase:'movement'|'wander'|'friendship_request'|'text_invitation'|'text_feedback';
+ startedAt:number|null;endedAt:number|null;durationMs:number|null;
+ location:{from:BehaviorLocation|null;to:BehaviorLocation|null;via:BehaviorLocation[];mapId:string|null;rulesetVersion:number|null;topologyVersion:number|null}|null;
+ journey:{completedSteps:number|null;plannedSteps:number|null}|null;
+ participants:{agentId:string;role:'sender'|'recipient'}[];
+ resultCode:string;gaps:string[];
+}
 export interface BehaviorListInput {agentId?:string;publicOnly?:boolean;maxSequence:number;fromAt?:number;toAt?:number;after?:{occurredAt:number;id:string};limit:number}
 export const IDLE_BEHAVIOR_INTERVAL_MS=300000;

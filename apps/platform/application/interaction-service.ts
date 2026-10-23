@@ -1,5 +1,6 @@
 import {BEHAVIOR_REPOSITORY} from '../domains/behavior/repository.ts';
 import {recordBehaviorSource} from '../domains/behavior/sources.ts';
+import {behaviorSourceEvent,detailPayload,socialBehaviorDetails,storedBehaviorDetails} from '../domains/behavior/details.ts';
 import type {BehaviorObservationAccess,BehaviorRecord,BehaviorNode} from '../domains/behavior/types.ts';
 import {assertWorldActionAllowed} from '../domains/access/world-action-policy.ts';
 import { randomUUID } from 'node:crypto';
@@ -82,11 +83,19 @@ export function createInteractionService(identity: IdentityAccess<RuntimeReadCon
   async function visibleFeedback(context: RuntimeReadContext, activity: FeedbackActivity): Promise<FeedbackContribution | undefined> {
     const feedback = await currentFeedback(context, activity); return feedback?.withdrawnAt === null ? feedback : undefined;
   }
+  async function interactionBehaviorDetails(context:RuntimeReadContext,kind:string,subject:{type:string;id:string},at:number,payload:JsonObject){
+    if(!['invitation','activity'].includes(subject.type))return null;const repo=context.repository(INTERACTION_REPOSITORY),activity=subject.type==='activity'?await repo.getActivity(subject.id):undefined;
+    const invitation=await repo.getInvitation(activity?.invitationId??subject.id);if(!invitation)return null;
+    const phase=subject.type==='activity'?'text_feedback':'text_invitation',ended=subject.type==='activity'?['interaction.activity.close','interaction.activity.leave','interaction.activity.expire'].includes(kind):kind!=='interaction.invitation.send';
+    const resultCode=subject.type==='activity'?[typeof payload.state==='string'?payload.state:'unknown',typeof payload.outcome==='string'?payload.outcome:'unknown'].join('_'):'text_invitation_'+kind.slice('interaction.invitation.'.length);
+    return socialBehaviorDetails({phase,startedAt:activity?.acceptedAt??invitation.createdAt,endedAt:ended?at:null,fromAgentId:invitation.fromAgentId,toAgentId:invitation.toAgentId,resultCode});
+  }
   async function emit(context: RuntimeTransaction, key: CommandKey, kind: string, subject: { type: string; id: string; version: number }, agentIds: string[], payload: JsonObject, worldId?: string): Promise<string[]> {
     const eventId = randomUUID();
+    const details=await interactionBehaviorDetails(context,kind,subject,context.now(),payload);
     const event=await context.events.append({ eventId, domain: 'interaction', kind, schemaVersion: 1, subject, ...(worldId ? { worldId } : {}), actor: key.principal,
       source: key.principal.kind === 'system' ? 'rules' : 'external_agent', occurredAt: context.now(), causationId: key.commandId, correlationId: key.commandId,
-      audience: { kind: 'agents', agentIds }, payload });
+      audience: { kind: 'agents', agentIds }, payload:{...payload,...(details?{behaviorDetails:detailPayload(details)}:{})} });
     const nodes:Record<string,BehaviorNode>={'interaction.invitation.accept':'interaction.invitation.accepted','interaction.invitation.decline':'interaction.invitation.declined','interaction.invitation.withdraw':'interaction.invitation.withdrawn','interaction.invitation.expire':'interaction.invitation.expired','interaction.activity.submit_feedback':'interaction.feedback.submitted','interaction.activity.close':'interaction.activity.closed','interaction.activity.leave':'interaction.activity.left','interaction.activity.expire':'interaction.activity.expired'};
     const shared=nodes[kind];if(kind==='interaction.invitation.send'||shared)await recordBehaviorSource(context,hooks.observation??{capture:async(ctx,id,domain)=>await identity.captureOwnerObservation?.(ctx,id,domain)??null},{event,scope:'interaction',sourceRef:{type:subject.type==='invitation'?'interaction_invitation':'interaction_activity',id:subject.id,version:subject.version},perspectives:agentIds.map((agentId,index)=>({agentId,node:shared??(index===0?'interaction.invitation.sent':'interaction.invitation.received')}))});
     await context.outbox.enqueue({ outboxId: randomUUID(), eventId, consumerId: 'interaction-projection', dedupeKey: eventId,
@@ -291,7 +300,8 @@ export function createInteractionService(identity: IdentityAccess<RuntimeReadCon
   }
   async function canObserveBehavior(context:RuntimeReadContext,record:BehaviorRecord,audience:'owner'|'public'){if(audience!=='owner')return false;try{return await behaviorSource(context,record)!==null;}catch(error){if(error instanceof M1Error&&error.statusCode<500)return false;throw error;}}
   async function behaviorDetailRef(context:RuntimeReadContext,record:BehaviorRecord){if(!await canObserveBehavior(context,record,'owner'))return null;const source=await behaviorSource(context,record);return source?{invitationId:source.invitation.id}:null;}
-  return { ...createInteractionOwnerReader(identity,{bundle,participant}), execute, inspect, decisionTarget, handleTask, readInvitation, authorizeReceipt,canObserveBehavior,behaviorDetailRef,
+  async function describeBehavior(context:RuntimeReadContext,record:BehaviorRecord,audience:'owner'|'public'){if(!await canObserveBehavior(context,record,audience))return null;const event=await behaviorSourceEvent(context,record);return storedBehaviorDetails(event)??await interactionBehaviorDetails(context,event.kind,event.subject,event.occurredAt,event.payload);}
+  return { ...createInteractionOwnerReader(identity,{bundle,participant}), execute, inspect, decisionTarget, handleTask, readInvitation, authorizeReceipt,canObserveBehavior,behaviorDetailRef,describeBehavior,
     async authorizeEvent(context: RuntimeReadContext, principal: Principal, event: RuntimeEvent) {
       const agentId = await actor(context, principal); if (event.domain !== 'interaction' || !event.audience.agentIds.includes(agentId)) absent();
       if (event.subject.type === 'invitation') await bundle(context, agentId, event.subject.id);
