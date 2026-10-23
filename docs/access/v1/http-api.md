@@ -339,8 +339,10 @@ Avatar／scene新增可空motion：`{segmentId,movementId:null|string,source:"ex
 
 ### 世界日志与个人日志
 
-仅实时Gateway目录已启用 `behavior` 时可用，精确指南为 `/v1/gateway/guides/behavior?version=1`。公开 `GET /v1/world/logs` 仅接受可选 `worldId=default,timeZone`，各角色当前获准最近10条合并全世界最新30条以内；`GET /v1/world/agent-logs` 接受 `agentId,timeZone`，仅该角色当前获准最近10条。公共面拒绝日期、limit、pageToken或客户端旧截止，不通过筛选补入更早记录。
+仅实时Gateway目录已启用 `behavior` 时可用，精确指南为 `/v1/gateway/guides/behavior?version=2`。公开 `GET /v1/world/logs` 仅接受可选 `worldId=default,timeZone`，各角色当前获准最近10条合并全世界最新30条以内；`GET /v1/world/agent-logs` 接受 `agentId,timeZone`，仅该角色当前获准最近10条。公共面拒绝日期、limit、pageToken或客户端旧截止，不通过筛选补入更早记录。
 
 主人按标准Gateway query调用 `behavior.owner_history`，`purpose:human-inspect`、当前Owner会话，input为 `{agentId,timeZone?,fromDate?,toDate?,limit?,pageToken?}`。日期为YYYY-MM-DD且包含起止当地日，按IANA时区转换UTC半开范围；默认20、最多50。按发生时间／稳定ID倒序，首页冻结纳入截止，新事实刷新后出现；令牌绑定读者、Agent、范围、授权版本和截止，换范围或授权变化重开。运行凭据不具有主人历史权限。
+
+每条可带来源已保存的 `details`：真实开始／结束／耗时、获准起终地点及经过区域、已完成步数与当前可展示的参与者，主人动作、角色发起和系统推进分开。空值或 `completeness:partial` 明确缺失；不从现在的位置或结果补造旧细节。未结束的动作没有结束时间，移动耗时以首末实际提交步为准，单步可为0。公共面不含未执行目标、计划步数、真人操作者或私文；地点仅来源许可名称，没有坐标或逐格路径。
 
 三读面统一data含 `worldId,agentId,timeZone,items,historyCoverage,partial,nextPageToken,asOf`。item给人物、自然title/action/result、occurredAt、当地date/time及获准source详情入口；不含私有坐标、路线、目标、附言、作品／反馈正文或凭据。historyCoverage区分可查起点、截止与缺口，启用前不补录，日常漫游仅记录部分真实完成节点；来源故障503与真实空态分开，扫描未完成partial=true，公共nextPageToken恒null。主人仅看发生时获准受众与当前绑定／来源字段权交集，新主人不继承旧私密历史。查询不确认消息、接受好友、标Agent已读、执行到期或触发计划。

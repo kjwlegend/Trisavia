@@ -2,13 +2,14 @@ import type {RuntimeReadContext} from '../contracts/runtime-store.ts';
 import type {JsonObject} from '../contracts/store.ts';
 import type {IdentityAccess,OwnerObservationDomain,Principal} from '../domains/access/public.ts';
 import {BEHAVIOR_REPOSITORY} from '../domains/behavior/repository.ts';
-import {BEHAVIOR_SCOPES,type BehaviorRecord} from '../domains/behavior/types.ts';
+import {BEHAVIOR_SCOPES,type BehaviorDetails,type BehaviorRecord} from '../domains/behavior/types.ts';
 import {fail,M1Error,object,text} from '../domains/common/errors.ts';
 import {hashRuntimeRequest} from '../domains/runtime/command.ts';
 import {createGatewayContinuation} from './agent-gateway-continuation.ts';
 
 interface BehaviorSource {
  canObserveBehavior(ctx:RuntimeReadContext,record:BehaviorRecord,audience:'owner'|'public'):Promise<boolean>;
+ describeBehavior(ctx:RuntimeReadContext,record:BehaviorRecord,audience:'owner'|'public'):Promise<BehaviorDetails|null>;
  behaviorDetailRef?(ctx:RuntimeReadContext,record:BehaviorRecord):Promise<{invitationId:string}|null>;
  invitation?(ctx:RuntimeReadContext,p:Principal,input:JsonObject):Promise<unknown>;
 }
@@ -16,6 +17,8 @@ type Sources=Record<OwnerObservationDomain,BehaviorSource>;
 type Cut={maxSequence:number;asOf:number};
 type Anchor={cut:Cut;after:{occurredAt:number;id:string}};
 const absent=():never=>fail('target_not_accessible',404,'Target is not accessible');
+const phaseLabels:Record<BehaviorDetails['phase'],string>={movement:'移动',wander:'日常漫游',friendship_request:'好友申请',text_invitation:'文字交流邀请',text_feedback:'文字反馈'};
+function actorLabel(kind:'agent'|'owner'|'system',executor=false){return kind==='owner'?'主人明确操作':kind==='system'?(executor?'世界系统推进':'世界系统发起'):(executor?'角色执行':'角色发起');}
 const natural:Record<BehaviorRecord['node'],[string,string,string]>={
  'world.movement.received':['移动请求已收到','提交移动','已收到前往请求'],
  'world.movement.started':['已经出发','移动','已出发'],
@@ -75,8 +78,18 @@ export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadCont
   }
   if(owner&&row.sourceRef.type==='interaction_invitation')detail={operation:'interaction.owner_exchange',input:{agentId:row.agentId,invitationId:row.sourceRef.id}};
   if(owner&&row.sourceRef.type==='interaction_activity'){const ref=await sources.interaction.behaviorDetailRef?.(ctx,row);if(ref)detail={operation:'interaction.owner_exchange',input:{agentId:row.agentId,invitationId:ref.invitationId}};}
+  const described=await sources[row.sourceDomain].describeBehavior(ctx,row,owner?'owner':'public');let details:JsonObject|null=null;
+  if(described){
+   const participants:JsonObject[]=[];
+   for(const participant of described.participants){const visibleProfile=participant.agentId===row.agentId?profile:await identity.readPublicAgent(ctx,participant.agentId);if(visibleProfile)participants.push({agentId:participant.agentId,displayName:visibleProfile.displayName,role:participant.role});}
+   // Public movement does not disclose whether a human initiated the action.
+   // Only the separately authorized Owner view retains that actor distinction.
+   const initiator=owner?{kind:row.initiator.kind,label:actorLabel(row.initiator.kind)}:row.node==='world.idle.completed'?{kind:'system',label:'日常系统漫游'}:null;
+   const executor=owner?{kind:row.executor.kind,label:actorLabel(row.executor.kind,true)}:row.sourceDomain==='world'?{kind:'system',label:'世界系统推进'}:null;
+   details={version:1,completeness:described.completeness,phase:described.phase,phaseLabel:phaseLabels[described.phase],summary:result,timeRange:{startedAt:described.startedAt,endedAt:described.endedAt,durationMs:described.durationMs},location:described.location?{from:described.location.from?{...described.location.from}:null,to:described.location.to?{...described.location.to}:null,via:described.location.via.map(place=>({...place}))}:null,journey:described.journey?{...described.journey}:null,participants,initiator,executor,gaps:[...described.gaps]};
+  }
   const time=new Intl.DateTimeFormat('en-GB',{timeZone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(row.occurredAt);
-  return {id:row.id,agent:{agentId:row.agentId,displayName:profile?.displayName??null},title,action,result,occurredAt:row.occurredAt,date:localDate(row.occurredAt,timeZone),time,source:{domain:row.sourceDomain,node:row.node,detail}};
+  return {id:row.id,agent:{agentId:row.agentId,displayName:profile?.displayName??null},title,action,result,occurredAt:row.occurredAt,date:localDate(row.occurredAt,timeZone),time,details,source:{domain:row.sourceDomain,node:row.node,detail}};
  }
  function base(agentId:string|null,timeZone:string,items:JsonObject[],historyCoverage:JsonObject,partial:boolean,nextPageToken:string|null,asOf:number){return {worldId:'default',agentId,timeZone,items,historyCoverage,partial,nextPageToken,asOf};}
  async function publicRead(ctx:RuntimeReadContext,input:JsonObject,agentId:string|null){

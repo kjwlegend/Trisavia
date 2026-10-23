@@ -11,6 +11,7 @@ import {behaviorGatewayGuide,behaviorGatewayOperations,behaviorPublicReads} from
 import {createAgentGateway} from '../../apps/platform/application/agent-gateway.ts';
 import {registerAgentGatewayRoutes} from '../../apps/platform/transport/http/agent-gateway-routes.ts';
 import {registerBehaviorLogRoutes} from '../../apps/platform/transport/http/behavior-log-routes.ts';
+import {createDeterministicScheduler} from '../../apps/platform/infrastructure/scheduling/deterministic-scheduler.ts';
 import {createIdentityAccess} from '../../apps/platform/domains/access/facade.ts';
 import {hashRuntimeRequest} from '../../apps/platform/domains/runtime/command.ts';
 import {BEHAVIOR_SCOPES,type BehaviorRecord,type BehaviorNode} from '../../apps/platform/domains/behavior/types.ts';
@@ -51,7 +52,7 @@ test('public world feed aggregates authorized per-Agent recent tens, not one rol
   perAgent.sort((a,b)=>Number(b.occurredAt)-Number(a.occurredAt)||(String(a.id)<String(b.id)?1:-1));assert.deepEqual(world.data.items,perAgent.slice(0,30));assert(new Set(world.data.items.map((row:any)=>row.agent.agentId)).size>1);
   for(const suffix of ['&limit=50','&fromDate=2026-10-21','&pageToken=older','&cutoff=1'])assert.equal((await t.publicRead('/v1/world/agent-logs?agentId=a'+suffix)).status,400);
   assert.deepEqual(t.f.state,before,'Public reads do not advance tasks, events, business states or read markers');assert(!JSON.stringify(world.data).includes('sourceRef'));assert(!JSON.stringify(world.data).includes('position'));
-  const ref=t.gateway.discovery().modules.find(m=>m.moduleId==='behavior')!.usageGuide,guide=(await t.app.inject({method:'GET',url:ref.path})).json().data;assert.equal(ref.version,1);assert.equal(createHash('sha256').update(guide.canonicalDocument).digest('hex'),guide.digest);
+  const ref=t.gateway.discovery().modules.find(m=>m.moduleId==='behavior')!.usageGuide,guide=(await t.app.inject({method:'GET',url:ref.path})).json().data;assert.equal(ref.version,2);assert.equal(createHash('sha256').update(guide.canonicalDocument).digest('hex'),guide.digest);
  }finally{await t.close();}
 });
 
@@ -82,4 +83,34 @@ test('the real identity facade captures only the then-active unique Owner bindin
  const session={get:async(table:string,id:string)=>rows.get(table+':'+id),scan:async(table:string,filters:Record<string,unknown>)=>[...rows].filter(([key,row])=>key.startsWith(table+':')&&Object.entries(filters).every(([field,value])=>row.data[field]===value)).map(([,row])=>row)} as unknown as M1ReadSession;
  const identity=createIdentityAccess({session:()=>session,recoveryEpoch:'e'}),first=await identity.captureOwnerObservation!({},'a','world');assert.equal(first!.ownerId,'o');assert(!JSON.stringify(first).includes('credential'));
  rows.get('owners:o')!.data.authVersion=2;assert.deepEqual(await identity.captureOwnerObservation!({},'a','world'),first,'Password/session rotation is not a historical content grant change');rows.get('bindings:b')!.version=2;assert.notEqual((await identity.captureOwnerObservation!({},'a','world'))!.authorizationVersion,first!.authorizationVersion);rows.get('bindings:b')!.data.active=false;assert.equal(await identity.captureOwnerObservation!({},'a','world'),null);
+});
+
+test('log HTTP details preserve actual movement timing, public limits and explicit missing legacy facts',async()=>{
+ const t=await fixture();try{
+  await t.add('a',t.f.now-60000);
+  const a=t.agents.get('a')!,avatar=(await t.f.world.getAvatar('default','a'))!;
+  await t.f.world.saveAvatar({...avatar,version:avatar.version+1,position:{x:0,y:0}},avatar.version);
+  await t.f.store.transaction(ctx=>t.world.execute(ctx,a,t.f.key(a,'world.avatar.move'),{worldId:'default',expectedVersion:avatar.version+1,expectedRulesetVersion:1,expectedTopologyVersion:1,path:[{x:1,y:0},{x:2,y:0}]}));
+  const scheduler=createDeterministicScheduler({store:t.f.store,workerId:'synthetic-http-detail',batchLimit:10,handlers:[{kind:'world.movement.step',version:1,run:t.world.handleTask}]});
+  t.f.now+=12000;await scheduler.runDue();const startedAt=t.f.now;t.f.now+=3000;await scheduler.runDue();
+  const before=structuredClone(t.f.state),own=await t.query({agentId:'a',limit:50});assert.equal(own.status,200);
+  const completed=own.data.items.find((row:any)=>row.source.node==='world.movement.completed'),started=own.data.items.find((row:any)=>row.source.node==='world.movement.started'),legacy=own.data.items.find((row:any)=>row.source.node==='world.idle.completed');
+  assert.deepEqual(completed.details.timeRange,{startedAt,endedAt:t.f.now,durationMs:3000});assert.deepEqual(completed.details.journey,{completedSteps:2,plannedSteps:2});assert.equal(completed.details.phaseLabel,'移动');assert.equal(completed.details.initiator.label,'角色发起');assert.equal(completed.details.executor.label,'世界系统推进');assert.equal(started.details.timeRange.endedAt,null);
+  assert.equal(legacy.details.completeness,'partial');assert.equal(legacy.details.timeRange.startedAt,null);assert.equal(legacy.details.timeRange.durationMs,null);assert.equal(legacy.details.location.from,null);assert(legacy.details.gaps.includes('起点、经过与耗时未记录'));
+  const recent=await t.publicRead('/v1/world/agent-logs?agentId=a');assert.equal(recent.status,200);const visible=recent.data.items.find((row:any)=>row.source.node==='world.movement.completed');assert.equal(visible.details.journey.plannedSteps,null);assert.equal(visible.details.journey.completedSteps,2);assert.equal(visible.details.initiator,null);assert.deepEqual(visible.details.participants,[]);
+  for(const row of [...own.data.items,...recent.data.items]){assert(!JSON.stringify(row.details).includes('"x"'));assert(!JSON.stringify(row.details).includes('"y"'));assert(!JSON.stringify(row.details).includes('mapId'));assert(!JSON.stringify(row.details).includes('rulesetVersion'));}
+  assert.deepEqual(t.f.state,before,'Detail reads do not advance the source or change historical facts');
+  for(const op of t.gateway.discovery().operations)assert.equal(op.outputSchema.version,2);
+ }finally{await t.close();}
+});
+
+test('Owner social details distinguish human initiation and retain only currently permitted public participant names',async()=>{
+ const t=await fixture();try{
+  const owner=await t.identity.authenticate(t.f.context,'owner-a',['owner_session']);
+  await t.f.store.transaction(ctx=>t.relationships.execute(ctx,owner,{...t.f.key(owner,'relationships.invitation.send'),domain:'relationships'},{agentId:'a',toAgentId:'b',message:'SYNTHETIC PRIVATE NOTE'}));
+  const own=await t.query({agentId:'a'});assert.equal(own.status,200);const sent=own.data.items.find((row:any)=>row.source.node==='relationships.invitation.sent');assert.equal(sent.details.initiator.kind,'owner');assert.equal(sent.details.initiator.label,'主人明确操作');assert.equal(sent.details.timeRange.endedAt,null);assert.equal(sent.details.phaseLabel,'好友申请');assert.deepEqual(sent.details.participants.map((p:any)=>p.agentId),['a','b']);assert(!JSON.stringify(sent).includes('PRIVATE NOTE'));assert(!JSON.stringify(sent.details).includes('owner-a'));
+  t.f.state.publicAgents.delete('b');const filtered=await t.query({agentId:'a'});assert.equal(filtered.status,200);const hidden=filtered.data.items.find((row:any)=>row.source.node==='relationships.invitation.sent');assert.deepEqual(hidden.details.participants.map((p:any)=>p.agentId),['a']);
+  const world=await t.publicRead('/v1/world/logs');assert.equal(world.status,200);assert.deepEqual(world.data.items,[],'Social details are never added to the public world feed');
+  assert.equal((await t.query({agentId:'a'},'a')).status,403);assert.equal((await t.query({agentId:'a'},'owner-b')).status,404);
+ }finally{await t.close();}
 });
