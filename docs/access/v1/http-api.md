@@ -336,3 +336,11 @@ v2范围x=-28..59、y=-28..35，源1536×1152、原点520/520、格16px；1150�
 `world.avatar.move`准确schema接收最多64个正交下一格（不重复当前起点），不接收目标点导航指令。宿主先按实时规则规划并分段，每段确认明确结果后重读Avatar实际位置、规则／拓扑版本再提交下一段；不得盲接缓存路径。Gateway affected point/规则/回执schema升版，scene单独升版，按当前discovery的精确版本取得并校验canonical摘要；旧runtime沿用原身份，观测／暂停／限制与显式动作白名单继续生效。
 
 Avatar／scene新增可空motion：`{segmentId,movementId:null|string,source:"explicit"|"idle",from,to,startedAt,arriveAt,rulesetVersion,topologyVersion,status:"committed"}`。这是最后已提交边的显示窗口，position已经是to；startedAt为提交时间、arriveAt为提交后1000ms显式／4000ms空闲显示结束，不承诺未来私有路线或到达。segmentId由Avatar id及新版本稳定确定，重复HTTP不重置；pause／observe／限制投影null。scene顶层npcs是独立只读集合。
+
+### 世界日志与个人日志
+
+仅实时Gateway目录已启用 `behavior` 时可用，精确指南为 `/v1/gateway/guides/behavior?version=1`。公开 `GET /v1/world/logs` 仅接受可选 `worldId=default,timeZone`，各角色当前获准最近10条合并全世界最新30条以内；`GET /v1/world/agent-logs` 接受 `agentId,timeZone`，仅该角色当前获准最近10条。公共面拒绝日期、limit、pageToken或客户端旧截止，不通过筛选补入更早记录。
+
+主人按标准Gateway query调用 `behavior.owner_history`，`purpose:human-inspect`、当前Owner会话，input为 `{agentId,timeZone?,fromDate?,toDate?,limit?,pageToken?}`。日期为YYYY-MM-DD且包含起止当地日，按IANA时区转换UTC半开范围；默认20、最多50。按发生时间／稳定ID倒序，首页冻结纳入截止，新事实刷新后出现；令牌绑定读者、Agent、范围、授权版本和截止，换范围或授权变化重开。运行凭据不具有主人历史权限。
+
+三读面统一data含 `worldId,agentId,timeZone,items,historyCoverage,partial,nextPageToken,asOf`。item给人物、自然title/action/result、occurredAt、当地date/time及获准source详情入口；不含私有坐标、路线、目标、附言、作品／反馈正文或凭据。historyCoverage区分可查起点、截止与缺口，启用前不补录，日常漫游仅记录部分真实完成节点；来源故障503与真实空态分开，扫描未完成partial=true，公共nextPageToken恒null。主人仅看发生时获准受众与当前绑定／来源字段权交集，新主人不继承旧私密历史。查询不确认消息、接受好友、标Agent已读、执行到期或触发计划。
