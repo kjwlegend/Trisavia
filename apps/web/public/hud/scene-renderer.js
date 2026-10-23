@@ -118,7 +118,7 @@ function closePlace(restoreFocus=true) {
 
 }
 function updateControls(state) {
-  worldProvider.setVisible(pageActive&&!mapFailed&&state.visible);statusHud.setVisible(pageActive&&!document.hidden&&state.visible);
+  worldProvider.setVisible(pageActive&&!mapFailed&&state.visible);statusHud.setVisible(pageActive&&!document.hidden);
   document.dispatchEvent(new CustomEvent('world:state',{detail:{exploring:state.exploring,reducedMotion:state.reducedMotion}}));
   $('#world-explore').textContent=state.exploring?'退出探索':'探索地图';
   $('#world-explore').setAttribute('aria-pressed',String(state.exploring));
@@ -196,7 +196,7 @@ async function readEntryCapabilities(){
   catch(error){if(generation===entryGeneration&&!controller.signal.aborted&&error.name!=='AbortError')entryCopy.textContent=entryCapabilityText(null);}
 }
 const entryObserver=entryCopy?new IntersectionObserver(entries=>{const next=entries[0].isIntersecting;if(next===entryVisible)return;entryVisible=next;if(next)void readEntryCapabilities();else stopEntryRead();},{threshold:.01}):null;if(entryCopy)entryObserver.observe(entryCopy);
-document.addEventListener('visibilitychange',()=>{statusHud.setVisible(pageActive&&!document.hidden&&scene?.getState().visible!==false);if(document.hidden)stopEntryRead();else if(entryVisible)void readEntryCapabilities();});
+document.addEventListener('visibilitychange',()=>{statusHud.setVisible(pageActive&&!document.hidden);if(document.hidden)stopEntryRead();else if(entryVisible)void readEntryCapabilities();});
 for (const link of document.querySelectorAll('a[href="#connect"]')) link.addEventListener('click', () => { $('#connect').open = true; });
 if (location.hash === '#connect') $('#connect').open = true;
 startScene();worldProvider.start();

@@ -1,6 +1,31 @@
-const paths={"friends":"M3 2h4v4H3zM9 3h4v4H9zM1 9h8v5H1zM10 10h5v4h-5z","profile": "M5 1h6v1h1v5h-1v1H5V7H4V2h1zM4 9h8v1h2v5H2v-5h2z", "inventory": "M5 1h6v3h2v2h1v9H2V6h1V4h2zm1 1v2h4V2zM4 6v7h8V6zM5 9h6v3H5z", "mail": "M1 3h14v10H1zm2 2v6h10V5h-2v2H9v2H7V7H5V5zM5 5h6v1H5z", "document": "M3 1h7v2h3v12H3zm2 2v10h6V5H9V3zM6 7h4v1H6zm0 3h4v1H6z", "world": "M1 2h4v1h6V2h4v12h-4v1H5v-1H1zm2 2v8h2V4zm4 1v8h2V5zm4-1v8h2V4z", "close": "M2 2h2v2h2v2h4V4h2V2h2v2h-2v2h-2v4h2v2h2v2h-2v-2h-2v-2H6v2H4v2H2v-2h2v-2h2V6H4V4H2z", "chevron": "M2 5h2v2h2v2h4V7h2V5h2v2h-2v2h-2v2H6V9H4V7H2z", "clock": "M4 1h8v1h2v2h1v8h-1v2h-2v1H4v-1H2v-2H1V4h1V2h2zm0 2v1H3v8h1v1h8v-1h1V4h-1V3zM7 4h2v4h3v2H7z", "notice": "M7 1h2v2h3v2h1v6h2v2H1v-2h2V5h1V3h3zm-2 4v6h6V5zM6 14h4v1H6z", "appearance": "M5 1h6v1h2v1h2v5h-3v7H4V8H1V3h2V2h2zm1 2H4v1H3v2h3v7h4V6h3V4h-1V3h-2v2H6z", "plus": "M7 1h2v6h6v2H9v6H7V9H1V7h6z", "settings": "M1 3h3V1h2v2h9v2H6v2H4V5H1zm0 8h9V9h2v2h3v2h-3v2h-2v-2H1z", "shield": "M7 1h2v1h4v1h2v7h-2v2h-2v2H9v1H7v-1H5v-2H3v-2H1V3h2V2h4zm-2 3H3v5h2v2h2v2h2v-2h2V9h2V4H9V3H7v1z", "key": "M3 1h6v1h2v6H9v2h2v2h2v-2h2v5h-5v-2H8v-2H6V9H3V8H1V3h2zm0 2v4h4V3z", "view": "M1 5h2V3h10v2h2v6h-2v2H3v-2H1zm4 0v6h6V5z"};
-paths.location='M8 1a5 5 0 0 0-5 5c0 4 5 9 5 9s5-5 5-9a5 5 0 0 0-5-5zm0 3a2 2 0 1 1 0 4 2 2 0 0 1 0-4z';
-paths.place='M1 6 8 1l7 5v9H1zm3 1v5h3V7zm5 0v5h3V7z';
-paths.more='M4 8a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm5.5 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm5.5 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z';
-export function icon(name){const node=document.createElementNS('http://www.w3.org/2000/svg','svg');node.setAttribute('viewBox','0 0 16 16');node.setAttribute('fill','currentColor');node.setAttribute('aria-hidden','true');node.classList.add('hud-icon');const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('fill-rule','evenodd');path.setAttribute('d',paths[name]||paths.document);node.append(path);return node;}
+const paths={
+ profile:'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2',
+ friends:'M14 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM2 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2M18 3a4 4 0 0 1 0 8M22 21v-2a6 6 0 0 0-3-5.2',
+ inventory:'M9 5V3h6v2M7 5h10a3 3 0 0 1 3 3v13H4V8a3 3 0 0 1 3-3ZM8 12h8v5H8ZM4 9h16',
+ mail:'M3 5h18v14H3ZM3 6l9 7 9-7',
+ document:'M14 3H5v18h14V8ZM14 3v5h5M8 12h8M8 16h8',
+ world:'M3 5l6-2 6 2 6-2v16l-6 2-6-2-6 2ZM9 3v16M15 5v16',
+ place:'M3 10l9-7 9 7M5 9v12h14V9M9 21v-7h6v7',
+ close:'M6 6l12 12M18 6 6 18',chevron:'M6 9l6 6 6-6',
+ clock:'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM12 7v5l3 2',
+ notice:'M5 17h14l-2-3V9a5 5 0 0 0-10 0v5ZM10 21h4M12 3V2',
+ appearance:'M8 3l4 3 4-3 6 4-3 5-3-2v11H8V10l-3 2-3-5Z',
+ plus:'M12 4v16M4 12h16',settings:'M4 7h16M4 17h16M8 4v6M16 14v6',
+ shield:'M12 3l8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z',
+ key:'M14 8a5 5 0 1 1-10 0 5 5 0 0 1 10 0ZM13 11l8 8v2h-4v-3h-3v-3',
+ view:'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12ZM15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',
+ location:'M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0ZM14 10a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z',
+ more:'M5 12h.01M12 12h.01M19 12h.01',refresh:'M20 8V3l-3 3a8 8 0 0 0-13 5M4 16v5l3-3a8 8 0 0 0 13-5',
+ connection:'M9 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM21 19a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM8 7l8 10M14 3h7v7M21 3l-6 6',
+ sound:'M3 9h4l5-4v14l-5-4H3ZM16 8a6 6 0 0 1 0 8M19 5a10 10 0 0 1 0 14',
+ 'sound-off':'M3 9h4l5-4v14l-5-4H3ZM16 9l6 6M22 9l-6 6',
+ sun:'M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM12 1v2M12 21v2M1 12h2M21 12h2M4 4l1.5 1.5M18.5 18.5 20 20M4 20l1.5-1.5M18.5 5.5 20 4',
+ dusk:'M3 17h18M6 17a6 6 0 0 1 12 0M12 3v4M4 9l2 2M20 9l-2 2M4 21h16',
+ moon:'M21 14a9 9 0 0 1-11-11 9 9 0 1 0 11 11Z',
+ book:'M12 5C8 2 3 4 3 4v16s5-2 9 1c4-3 9-1 9-1V4s-5-2-9 1ZM12 5v16',
+ record:'M9 4H5v17h14V4h-4M9 3h6v4H9ZM8 11h8M8 15h8M8 18h5',
+ 'people-connect':'M9 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM1 20v-2a5 5 0 0 1 10 0v2M21 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM13 20v-2a5 5 0 0 1 10 0v2M10 10h4M12 8v4',
+};
+paths.logs=paths.book;paths.link=paths.connection;paths.invite=paths['people-connect'];paths.copy='M9 9h12v12H9ZM15 5V3H3v12h2';
+export function icon(name){const node=document.createElementNS('http://www.w3.org/2000/svg','svg');node.setAttribute('viewBox','0 0 24 24');node.setAttribute('fill','none');node.setAttribute('stroke','currentColor');node.setAttribute('stroke-width','1.8');node.setAttribute('stroke-linecap','round');node.setAttribute('stroke-linejoin','round');node.setAttribute('aria-hidden','true');node.classList.add('hud-icon');const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',paths[name]||paths.document);node.append(path);return node;}
 export function illustration(kind='card',variant=0){const node=document.createElementNS('http://www.w3.org/2000/svg','svg');node.setAttribute('viewBox','0 0 64 64');node.setAttribute('aria-hidden','true');node.classList.add('hud-illustration');const colors=['#8db7bc','#d6ba80','#96b393','#a9a0be'],color=colors[variant%4];node.innerHTML=kind==='plant'?`<path d="M32 53V22M32 41q-18-2-15-13 14-2 15 13m0-8q15-2 15-14-15 0-15 14" fill="#91b68a" stroke="#648b69" stroke-width="2"/><g fill="#f5d986"><circle cx="32" cy="15" r="7"/><circle cx="25" cy="20" r="7"/><circle cx="39" cy="20" r="7"/><circle cx="32" cy="25" r="7"/></g><circle cx="32" cy="20" r="5" fill="#fff8df"/>`:kind==='book'?`<rect x="13" y="6" width="39" height="51" rx="4" fill="${color}" stroke="#728c89"/><path d="M20 7v48M14 52h38" fill="none" stroke="#f4ebcd" stroke-width="3"/><rect x="27" y="17" width="18" height="23" rx="2" fill="#f4f1db"/><path d="M30 24h12m-12 5h12m-12 5h8" stroke="#789387" stroke-width="2"/>`:`<rect x="5" y="9" width="54" height="46" rx="3" fill="#fbf7e6" stroke="#9baba0"/><path d="M9 13h46v27H9Z" fill="#b8dce3"/><path d="m9 36 12-13 12 12 10-11 12 14v8H9Z" fill="#a2bd81"/><path d="m25 33 10-9 11 9v13H25Z" fill="${color}"/><path d="m23 33 12-11 13 11" fill="none" stroke="#f1e8c6" stroke-width="3"/><path d="M32 37h6v9" fill="#faf3d7"/><circle cx="17" cy="20" r="4" fill="#fff2bb"/>`;return node;}

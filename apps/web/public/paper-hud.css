@@ -35,14 +35,19 @@
 .paper-hud :is(.hud-account,.hud-entry,.world-audio .world-audio-button){background:transparent!important;color:var(--paper-ink)!important;box-shadow:none!important;border:0!important;border-radius:8px!important;min-height:36px;height:36px;padding:6px 8px;display:flex;align-items:center;gap:8px;font-size:14px}
 .paper-hud .hud-account{max-width:240px}
 .paper-hud .hud-entry{white-space:nowrap}
+.paper-hud .world-audio .world-audio-button{display:flex;align-items:center;gap:8px}
 .paper-hud .world-audio{color:var(--paper-ink);font-size:14px;border-left:1px solid var(--paper-border);padding-left:16px}
 .paper-hud .world-audio-panel{top:62px;background:var(--paper-surface);border:1px solid var(--paper-border);border-radius:12px;box-shadow:var(--paper-shadow);padding:20px;color:var(--paper-ink)}
 .paper-hud .world-audio-panel h2{font-size:18px;color:var(--paper-ink)}
 .paper-hud .world-audio-panel .world-audio-note{color:var(--paper-muted)}
 .paper-hud .world-audio-panel input[type=range]{accent-color:#678367}
-.paper-hud .world-status-hud{top:76px;left:24px;width:208px;min-height:88px;padding:10px 12px;gap:2px;border:1px solid var(--paper-border);border-radius:8px;box-shadow:0 2px 8px #19352716;clip-path:none;background:var(--paper-surface);color:var(--paper-ink)}
+.paper-hud .world-status-hud{top:76px;left:24px;width:184px;min-height:96px;padding:12px;grid-template-rows:24px 22px 18px;gap:2px;border:1px solid var(--paper-border);border-radius:8px;box-shadow:0 2px 8px #19352716;clip-path:none;background:var(--paper-surface);color:var(--paper-ink)}
 .paper-hud .world-status-hud :is(strong,span,time){color:var(--paper-ink);font-size:12px;line-height:18px}
-.paper-hud .world-status-hud strong{font-size:14px;line-height:22px}
+.paper-hud .world-status-hud strong{font-size:16px;line-height:24px;padding-right:20px}
+.paper-hud .world-status-hud #world-scene-count{font-size:14px;line-height:22px}
+.paper-hud .paper-light-mode{position:absolute;right:12px;top:14px;display:block;width:18px;height:18px;color:#b77734}
+.paper-hud .paper-light-mode .hud-icon{width:18px;height:18px}
+.paper-hud .paper-light-mode[data-period=night]{color:#647c8e}
 .paper-hud .world-status-hud time{font-family:inherit;width:auto;font-variant-numeric:tabular-nums}
 .paper-hud .hud-root .world-controls.hud-map-tools{position:absolute;top:76px;right:24px;left:auto;bottom:auto;transform:none;width:auto;height:44px;max-width:none;display:flex;align-items:center;gap:12px;padding:0;border:0!important;background:transparent!important;box-shadow:none!important;border-radius:0!important;color:var(--paper-ink)!important}
 .paper-hud :is(.world-zoom-controls,.hud-map-actions){height:44px;display:flex;align-items:stretch;gap:0;background:var(--paper-surface);border:1px solid var(--paper-border);border-radius:8px;box-shadow:0 2px 8px #19352716;overflow:hidden}
@@ -90,5 +95,6 @@
 .paper-hud .hud-window.is-account:not(.is-manager){height:auto;max-height:calc(100dvh - 112px)}
 .paper-hud .hud-root .hud-detail-window{width:min(840px,var(--world-panel-width));height:min(820px,calc(100dvh - 160px))}
 .paper-hud .hud-window .native-frame,.paper-hud .world-detail>.native-frame{display:none}
+.paper-hud .hud-root .hud-window>.hud-window-header #hud-close .hud-icon,.paper-hud .world-detail .world-detail-top button .hud-icon{width:20px;height:20px}
 @media(max-width:1100px){.paper-hud .hud-agent-card{width:260px}.paper-hud .hud-dock{width:380px}.paper-hud .hud-map-tools{gap:8px}.paper-hud .hud-map-tools :is(button,a){padding:6px 10px}}
 @media(max-width:759px){.paper-hud .nav-wrap{padding:0 12px}.paper-hud .brand{font-size:20px;gap:6px}.paper-hud .brand .brand-mark{width:32px}.paper-hud header nav{gap:4px}.paper-hud .world-audio{padding-left:4px}.paper-hud .hud-agent-card{left:12px;bottom:100px;width:250px}.paper-hud .hud-dock{bottom:12px;width:min(440px,calc(100vw - 24px))}.paper-hud .hud-map-tools{right:12px;top:76px}.paper-hud .hud-map-tools :is(button,a){padding:6px}.paper-hud .hud-map-tools .hud-icon{display:none}.paper-hud .world-status-hud{left:12px;top:132px}.paper-hud .hud-root .hud-window{height:min(700px,calc(100dvh - 120px));max-height:calc(100dvh - 120px)}}
