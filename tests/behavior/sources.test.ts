@@ -5,10 +5,9 @@ import {bootstrapWorld,createWorldService} from '../../apps/platform/application
 import {bootstrapInteraction,createInteractionService} from '../../apps/platform/application/interaction-service.ts';
 import {createRelationshipsService} from '../../apps/platform/application/relationships-service.ts';
 import {createDeterministicScheduler} from '../../apps/platform/infrastructure/scheduling/deterministic-scheduler.ts';
-import {BEHAVIOR_SCOPES,type BehaviorObservationAccess,type BehaviorRecord} from '../../apps/platform/domains/behavior/types.ts';
+import {BEHAVIOR_SCOPES,type BehaviorObservationAccess} from '../../apps/platform/domains/behavior/types.ts';
 import type {RuntimeReadContext} from '../../apps/platform/contracts/runtime-store.ts';
 import type {JsonObject} from '../../apps/platform/contracts/store.ts';
-import {DEFAULT_WORLD_RULES} from '../../apps/platform/domains/world/rules.ts';
 
 async function setup(){const f=coreFixture(),a=f.addAgent('logs-a'),b=f.addAgent('logs-b');
  const observation:BehaviorObservationAccess<RuntimeReadContext>={async capture(_ctx,id,sourceDomain){return {ownerId:'owner-'+id,bindingId:'binding-'+id,bindingVersion:1,authorizationVersion:'proof-'+id,sharingGeneration:1,sourceDomain};}};
@@ -21,20 +20,17 @@ async function setup(){const f=coreFixture(),a=f.addAgent('logs-a'),b=f.addAgent
  const scheduler=createDeterministicScheduler({store:f.store,workerId:'behavior-test',batchLimit:10,handlers:[{kind:'world.movement.step',version:1,run:world.handleTask},{kind:'world.idle.step',version:1,run:world.handleIdleTask}]});
  return {f,a,b,world,interaction,relationships,move,social,records,enable,scheduler};}
 
-test('explicit nodes start at activation, first running once, final arrival once, and one-cell plans do not invent departures',async()=>{
- const x=await setup(),{f,a,world,move,records,enable,scheduler}=x;
- await move('world.avatar.create',{worldId:'default',expectedRulesetVersion:1});assert.equal(records().length,0);await enable();
- const avatar=(await f.world.getAvatar('default','logs-a'))!,dx=avatar.position.x<13?1:-1;
- const pending=await move('world.avatar.move',{worldId:'default',expectedVersion:avatar.version,expectedRulesetVersion:1,expectedTopologyVersion:1,path:[1,2,3].map(i=>({x:avatar.position.x+i*dx,y:avatar.position.y}))},'stable-log-move');
- for(let i=0;i<3;i++){f.now+=1000;await scheduler.runDue();}
- assert.deepEqual(records().map(r=>r.node),['world.movement.received','world.movement.started','world.movement.completed']);
- assert(records().every(r=>r.initiator.kind==='agent'&&r.origin==='external_agent'));assert.equal(records()[1]!.executor.kind,'system');assert.equal(records()[0]!.publicProjection,null);assert(records().slice(1).every(r=>r.publicProjection!==null));
- const source=f.state.events.find(e=>e.eventId===records()[1]!.sourceEventId)!;assert.equal(source.audience.kind,'agents');assert(records().every(r=>r.ownerAudience?.ownerId==='owner-logs-a'));
- await f.store.transaction(ctx=>world.execute(ctx,a,pending.key,{worldId:'default',expectedVersion:avatar.version,expectedRulesetVersion:1,expectedTopologyVersion:1,path:[1,2,3].map(i=>({x:avatar.position.x+i*dx,y:avatar.position.y}))}));assert.equal(records().length,3);
- const current=(await f.world.getAvatar('default','logs-a'))!,target={x:current.position.x-dx,y:current.position.y};await move('world.avatar.move',{worldId:'default',expectedVersion:current.version,expectedRulesetVersion:1,expectedTopologyVersion:1,path:[target]});f.now+=1000;await scheduler.runDue();assert.equal(records().filter(r=>r.node==='world.movement.started').length,1);assert.equal(records().filter(r=>r.node==='world.movement.completed').length,2);
- const stoppedAt=(await f.world.getAvatar('default','logs-a'))!;const toStop=await move('world.avatar.move',{worldId:'default',expectedVersion:stoppedAt.version,expectedRulesetVersion:1,expectedTopologyVersion:1,path:[{x:stoppedAt.position.x+dx,y:stoppedAt.position.y},{...stoppedAt.position}]});await move('world.movement.stop',{worldId:'default',movementId:toStop.result.movementId!,expectedVersion:1});assert.equal(records().at(-1)!.node,'world.movement.stopped');assert.equal(records().at(-1)!.publicProjection,null);
- f.membership('logs-a',{ownerPaused:true});f.state.publicAgents.delete('logs-a');const log=records()[1]!;assert.equal(await f.store.read(ctx=>world.canObserveBehavior(ctx,log,'owner')),true);assert.equal(await f.store.read(ctx=>world.canObserveBehavior(ctx,log,'public')),false);
- const before={records:records().length,movements:f.state.movements.size,events:f.state.events.length};f.membership('logs-a',{ownerPaused:false});f.failAt='behavior';await assert.rejects(()=>move('world.avatar.move',{worldId:'default',expectedVersion:(f.state.avatars.values().next().value!).version,expectedRulesetVersion:1,expectedTopologyVersion:1,path:[{x:target.x+dx,y:target.y}]}));assert.deepEqual({records:records().length,movements:f.state.movements.size,events:f.state.events.length},before);
+test('ordinary movement keeps authoritative states, runtime facts and receipts without user behavior process records',async()=>{
+ const {f,a,move,records,enable,scheduler}=await setup();await move('world.avatar.create',{worldId:'default',expectedRulesetVersion:1});await enable();
+ const avatar=(await f.world.getAvatar('default','logs-a'))!,dx=avatar.position.x<13?1:-1,path=[1,2,3].map(i=>({x:avatar.position.x+i*dx,y:avatar.position.y}));
+ f.failAt='behavior';const pending=await move('world.avatar.move',{worldId:'default',expectedVersion:avatar.version,expectedRulesetVersion:1,expectedTopologyVersion:1,path},'stable-log-move');
+ assert.equal(pending.outcome,'committed');for(let i=0;i<3;i++){f.now+=1000;await scheduler.runDue();}
+ assert.equal(records().length,0);assert.equal((await f.world.getMovement(String(pending.result.movementId)))?.state,'completed');assert.deepEqual((await f.world.getAvatar('default','logs-a'))?.position,path.at(-1));
+ const events=f.state.events.filter(e=>e.subject.id===pending.result.movementId);assert.deepEqual(events.map(e=>e.kind),['world.movement.pending','world.movement.running','world.movement.running','world.movement.completed']);assert(events.every(e=>e.audience.kind==='agents'&&e.payload.behaviorDetails===undefined));assert(events.every(e=>[...f.state.outbox.values()].some(o=>o.eventId===e.eventId)));
+ const replay=await f.store.transaction(ctx=>createWorldService(f.identity).execute(ctx,a,pending.key,{worldId:'default',expectedVersion:avatar.version,expectedRulesetVersion:1,expectedTopologyVersion:1,path}));assert.deepEqual(replay,pending);assert.equal(records().length,0);
+ const current=(await f.world.getAvatar('default','logs-a'))!;const stop=await move('world.avatar.move',{worldId:'default',expectedVersion:current.version,expectedRulesetVersion:1,expectedTopologyVersion:1,path:[{x:current.position.x-dx,y:current.position.y}]});
+ const stopped=await move('world.movement.stop',{worldId:'default',movementId:stop.result.movementId!,expectedVersion:1});assert.equal(stopped.result.state,'stopped');assert(f.state.events.some(e=>e.subject.id===stop.result.movementId&&e.kind==='world.movement.stopped'));assert.equal(records().length,0);
+ f.failAt='event';const before={events:f.state.events.length,movements:f.state.movements.size,receipts:f.state.receipts.size};await assert.rejects(()=>move('world.avatar.move',{worldId:'default',expectedVersion:current.version,expectedRulesetVersion:1,expectedTopologyVersion:1,path:[{x:current.position.x-dx,y:current.position.y}]}));assert.deepEqual({events:f.state.events.length,movements:f.state.movements.size,receipts:f.state.receipts.size},before);
 });
 
 test('social facts are per perspective, text outcomes are distinct, and neither bodies nor counterparty profiles are copied',async()=>{
@@ -51,48 +47,15 @@ test('social facts are per perspective, text outcomes are distinct, and neither 
  const before=await f.behavior.visibilityVersion('logs-a');await social(b,'interaction.policy.block',{agentId:'logs-a',expectedVersion:1});assert.equal(await f.behavior.visibilityVersion('logs-a'),before+1);assert.equal(await f.store.read(ctx=>relationships.canObserveBehavior(ctx,own,'owner')),false);assert.equal(await f.store.read(ctx=>interaction.canObserveBehavior(ctx,closed,'owner')),false);
 });
 
-test('idle emits only actual completed segments, persists five-minute cadence, and never backfills or logs every cell',async()=>{
- const x=await setup(),{f,move,records,enable,world,scheduler}=x;await move('world.avatar.create',{worldId:'default',expectedRulesetVersion:1});await enable();
- const tick=async()=>{const task=[...f.state.tasks.values()].find(t=>t.kind==='world.idle.step')!;f.now=Math.max(f.now,task.dueAt);await scheduler.runDue();};
- for(let i=0;i<10&&records().length===0;i++)await tick();assert.equal(records().length,1);const first=records()[0]!;assert.equal(first.node,'world.idle.completed');assert.equal(first.origin,'rules');assert.equal(first.initiator.kind,'system');assert.equal(first.sourceRef.version,(await f.world.getAvatar('default','logs-a'))!.version);
- for(let i=0;i<5;i++)await tick();assert.equal(records().length,1);assert.equal(await f.behavior.shouldRecordIdle('logs-a',first.occurredAt+299999),false);
- // Recreating the service/scheduler does not reset persisted eligibility; no timer manufactures a missed row.
- const resumed=createWorldService(f.identity),afterRestart=createDeterministicScheduler({store:f.store,workerId:'restarted-log',batchLimit:10,handlers:[{kind:'world.idle.step',version:1,run:resumed.handleIdleTask}]});f.now=first.occurredAt+300001;await afterRestart.runDue();for(let i=0;i<5&&records().length===1;i++)await tick();assert.equal(records().length,2);assert(records()[1]!.occurredAt-first.occurredAt>=300000);
- const before=records().length;f.membership('logs-a',{ownerPaused:true});f.now+=600000;await tick();assert.equal(records().length,before);const coverage=await f.behavior.getCoverage();assert.equal(coverage.find(c=>c.scope==='world_idle')!.partial,true);
-});
-
-test('movement details use actual step times and only committed route places from the original map',async()=>{
- const f=coreFixture(),a=f.addAgent('detail-a'),world=createWorldService(f.identity),rules={...structuredClone(DEFAULT_WORLD_RULES),places:[{id:'commons',bounds:{left:1,top:0,right:1,bottom:0},access:'members' as const,capacity:null}]};
- await f.store.transaction(async ctx=>{await bootstrapWorld(ctx,rules);for(const scope of BEHAVIOR_SCOPES)await f.behavior.activateCoverage(scope,f.now);});
- const run=(action:string,input:JsonObject)=>f.store.transaction(ctx=>world.execute(ctx,a,f.key(a,action),input));
- await run('world.avatar.create',{worldId:'default',expectedRulesetVersion:1});const avatar=(await f.world.getAvatar('default','detail-a'))!;
- await f.world.saveAvatar({...avatar,version:avatar.version+1,position:{x:0,y:0},placeId:null},avatar.version);
- const requestAt=f.now;await run('world.avatar.move',{worldId:'default',expectedVersion:avatar.version+1,expectedRulesetVersion:1,expectedTopologyVersion:1,path:[1,2,3].map(x=>({x,y:0}))});
- const rows=()=>[...f.state.behaviorRecords.values()],describe=(row:BehaviorRecord)=>f.store.read(ctx=>world.describeBehavior(ctx,row,'owner'));
- const pending=(await describe(rows()[0]!))!;assert.equal(pending.startedAt,null);assert.equal(pending.endedAt,null);assert.equal(pending.journey?.completedSteps,0);assert.equal(pending.location?.to?.name,'未命名开放区域');
- const scheduler=createDeterministicScheduler({store:f.store,workerId:'detail-steps',batchLimit:10,handlers:[{kind:'world.movement.step',version:1,run:world.handleTask}]});
- f.now+=12000;await scheduler.runDue();const started=(await describe(rows().find(r=>r.node==='world.movement.started')!))!;
- assert.equal(started.startedAt,f.now);assert.notEqual(started.startedAt,requestAt);assert.equal(started.endedAt,null);assert.equal(started.journey?.completedSteps,1);assert.equal(started.location?.to?.name,'公共庭');
- const publicStarted=(await f.store.read(ctx=>world.describeBehavior(ctx,rows().find(r=>r.node==='world.movement.started')!,'public')))!;assert.equal(publicStarted.journey?.plannedSteps,null);assert.equal(publicStarted.journey?.completedSteps,1);assert.equal(publicStarted.location?.to?.name,'公共庭');assert.deepEqual(publicStarted.participants,[]);
- f.now+=2000;await scheduler.runDue();f.now+=3000;await scheduler.runDue();const complete=rows().find(r=>r.node==='world.movement.completed')!,details=(await describe(complete))!;
- assert.equal(details.startedAt,requestAt+12000);assert.equal(details.endedAt,f.now);assert.equal(details.durationMs,5000);assert.deepEqual(details.journey,{completedSteps:3,plannedSteps:3});assert.deepEqual(details.location?.via,[{kind:'place',name:'公共庭'}]);
- assert(!JSON.stringify(details).includes('"x"'));assert(!JSON.stringify(details).includes('"y"'));
- // Synthetic legacy event: rebuild from persisted plan + original events, not today's map or Avatar.
- delete f.state.events.find(e=>e.eventId===complete.sourceEventId)!.payload.behaviorDetails;
- const later={...structuredClone(DEFAULT_WORLD_RULES),version:2,topologyVersion:2};await f.world.activateRuleset(later,(await f.world.getWorld('default'))!.revision);
- const legacy=(await describe(complete))!;assert.equal(legacy.location?.rulesetVersion,1);assert.deepEqual(legacy.location?.via,[{kind:'place',name:'公共庭'}]);assert.equal(legacy.durationMs,5000);
- f.membership('detail-a',{state:'left',sharingGeneration:2});assert.equal(await describe(complete),null);
-});
-
-test('new idle detail follows the persisted real segment; legacy idle never borrows current location or time',async()=>{
- const {f,move,world,records,enable,scheduler}=await setup();await move('world.avatar.create',{worldId:'default',expectedRulesetVersion:1});await enable();
- const tick=async()=>{const task=[...f.state.tasks.values()].find(t=>t.kind==='world.idle.step')!;f.now=Math.max(f.now,task.dueAt);await scheduler.runDue();};
- for(let i=0;i<10&&!records().length;i++)await tick();const row=records()[0]!,details=(await f.store.read(ctx=>world.describeBehavior(ctx,row,'public')))!;
- assert.equal(details.phase,'wander');assert.equal(details.completeness,'recorded');assert.equal(details.endedAt,row.occurredAt);assert.equal(details.durationMs,details.endedAt!-details.startedAt!);assert(details.journey!.completedSteps!>=1&&details.journey!.completedSteps!<=3);assert.equal(details.journey?.plannedSteps,null);
- const own=(await f.store.read(ctx=>world.describeBehavior(ctx,row,'owner')))!;assert.equal(own.journey?.completedSteps,own.journey?.plannedSteps);
- const frozen=structuredClone(details);f.now+=100000;assert.deepEqual(await f.store.read(ctx=>world.describeBehavior(ctx,row,'public')),frozen);
- delete f.state.events.find(e=>e.eventId===row.sourceEventId)!.payload.behaviorDetails;
- const legacy=(await f.store.read(ctx=>world.describeBehavior(ctx,row,'owner')))!;assert.equal(legacy.completeness,'partial');assert.equal(legacy.startedAt,null);assert.equal(legacy.durationMs,null);assert.equal(legacy.endedAt,row.occurredAt);assert.equal(legacy.location?.from??null,null);assert.equal(legacy.journey,null);assert(legacy.gaps.length>0);
+test('ordinary idle still moves across restart and accepts legacy task payloads without accumulating log details',async()=>{
+ const {f,move,records,enable,scheduler}=await setup();await move('world.avatar.create',{worldId:'default',expectedRulesetVersion:1});await enable();f.failAt='behavior';
+ const original=(await f.world.getAvatar('default','logs-a'))!,eventsBefore=f.state.events.length;
+ const tick=async(driver=scheduler)=>{const task=[...f.state.tasks.values()].find(t=>t.kind==='world.idle.step')!;f.now=Math.max(f.now,task.dueAt);await driver.runDue();};
+ for(let i=0;i<6;i++)await tick();assert((await f.world.getAvatar('default','logs-a'))!.version>original.version);assert.equal(records().length,0);assert.equal(f.state.events.length,eventsBefore);
+ const task=[...f.state.tasks.values()].find(t=>t.kind==='world.idle.step')!;task.payload.behaviorJourney={origin:{x:0,y:0},startedAt:1,path:[{x:1,y:0}]};
+ const resumed=createWorldService(f.identity),afterRestart=createDeterministicScheduler({store:f.store,workerId:'resumed-noise',batchLimit:10,handlers:[{kind:'world.idle.step',version:1,run:resumed.handleIdleTask}]});
+ const beforeRestart=(await f.world.getAvatar('default','logs-a'))!.version;for(let i=0;i<6;i++)await tick(afterRestart);assert((await f.world.getAvatar('default','logs-a'))!.version>beforeRestart);assert.equal(records().length,0);assert.equal(f.state.events.length,eventsBefore);assert([...f.state.tasks.values()].filter(t=>t.kind==='world.idle.step').every(t=>t.payload.behaviorJourney===undefined));
+ const paused=(await f.world.getAvatar('default','logs-a'))!.version;f.membership('logs-a',{ownerPaused:true});f.now+=600000;await tick(afterRestart);assert.equal((await f.world.getAvatar('default','logs-a'))!.version,paused);assert.equal(records().length,0);
 });
 
 test('social detail keeps per-node outcomes and source participant references without body copies or public access',async()=>{
