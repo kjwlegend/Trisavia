@@ -309,3 +309,4 @@
 .hud-root .hud-window .account-root .manager-page-heading>.text-button{display:inline-flex;align-items:center;gap:8px}
 .hud-root .hud-window .account-root .manager-page-heading>.text-button .hud-icon,.hud-root .hud-window .account-root #manager-copy-id .hud-icon{width:16px;height:16px}
 .hud-root .hud-window .account-root #manager-copy-id{width:32px;min-width:32px;height:32px;min-height:32px;padding:8px;margin-top:-5px}
+.hud-root .hud-window .account-root .choice-summary[data-dirty=false] strong:last-child{color:var(--owner-ink)}
