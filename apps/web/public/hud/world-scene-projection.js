@@ -1,5 +1,6 @@
 // Public DTO validation and display projection. No client route or future
 // movement is inferred from scenery; the native renderer verifies its manifest.
+import appearanceColors from '../world-pixel/appearance-colors-v1.json' with {type:'json'};
 export const WORLD_PROJECTION_VERSION='logical-grid-to-town@1';
 const invalid=()=>{const error=new Error('world_response_invalid');error.code='world_response_invalid';throw error;};
 const integer=value=>Number.isSafeInteger(value)&&value>=0;
@@ -13,7 +14,7 @@ export function readWorldNpcs(rows,rules){
   seen.add(row.npcId);return{npcId:row.npcId,name:row.name,role:row.role,position:{...row.position},approachCells:row.approachCells.map(p=>({...p})),appearance:readAppearance(row.appearance),serverManaged:true,readOnly:!current,countsAsAgent:false,status:row.status,actions:[...row.actions],...(current?{definitionVersion:row.definitionVersion,buildingId:row.buildingId,serviceIds:[...row.serviceIds]}:{})};
  });
 }
-export function readAppearance(value){if(value&&typeof value.lookId==='string'&&value.lookId.length>0&&value.lookId.length<=100&&typeof value.catalogVersion==='string'&&value.catalogVersion.length>0&&value.catalogVersion.length<=100&&Object.keys(value).every(key=>['lookId','catalogVersion'].includes(key)))return{lookId:value.lookId,catalogVersion:value.catalogVersion};if(value?.template==='basic'&&['olive','cream','blue','coral'].includes(value.color)&&Object.keys(value).every(key=>['template','color'].includes(key)))return{template:'basic',color:value.color};invalid();}
+export function readAppearance(value){if(value&&typeof value.lookId==='string'&&value.lookId.length>0&&value.lookId.length<=100&&typeof value.catalogVersion==='string'&&value.catalogVersion.length>0&&value.catalogVersion.length<=100&&Object.keys(value).every(key=>['lookId','catalogVersion','hairColorId','clothingColorId'].includes(key))&&['hair','clothing'].every(kind=>value[kind+'ColorId']===undefined||appearanceColors[kind==='hair'?'hairColors':'clothingColors'].some(color=>color.id===value[kind+'ColorId'])))return{lookId:value.lookId,catalogVersion:value.catalogVersion,...(value.hairColorId!==undefined?{hairColorId:value.hairColorId}:{}),...(value.clothingColorId!==undefined?{clothingColorId:value.clothingColorId}:{})};if(value?.template==='basic'&&['olive','cream','blue','coral'].includes(value.color)&&Object.keys(value).every(key=>['template','color'].includes(key)))return{template:'basic',color:value.color};invalid();}
 export function readWorldRules(data,worldId='default'){
   const {world,rules,asOf}=data||{};
   if(world?.worldId!==worldId||world.active!==true||!integer(world.revision)||!integer(asOf)||rules?.worldId!==worldId||!integer(rules.version)||world.rulesetVersion!==rules.version||!integer(rules.topologyVersion)||!Number.isSafeInteger(rules.width)||rules.width<1||!Number.isSafeInteger(rules.height)||rules.height<1)invalid();

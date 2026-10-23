@@ -1,4 +1,5 @@
 import './appearance-catalog.js';
+import {appearanceColors,appearanceLayer} from './appearance-palette.js';
 // This finite art dictionary resolves appearance identities, never authority.
 export const APPEARANCE_CATALOG=globalThis.PIXEL_APPEARANCE_CATALOG;
 export const APPEARANCE_VERSION=APPEARANCE_CATALOG.version;
@@ -15,7 +16,7 @@ export function legacyLook(appearance,{avatarId,rendererHair}={}){
   return lookFor(rules.rendererHairToAppearanceKey[APPEARANCE_CATALOG.legacyHashOrder[index%APPEARANCE_CATALOG.legacyHashOrder.length]]);
 }
 export function resolveLook(appearance,legacyEvidence){
-  if(typeof appearance?.lookId==='string')return appearance.catalogVersion===APPEARANCE_VERSION?lookFor(appearance.lookId):null;
+  if(typeof appearance?.lookId==='string'){const look=appearance.catalogVersion===APPEARANCE_VERSION?lookFor(appearance.lookId):null;return look?{...look,colors:appearanceColors(appearance)}:null;}
   return legacyLook(appearance,legacyEvidence);
 }
 export function lookFrame(action='idle',elapsed=0,still=false){
@@ -30,6 +31,6 @@ export function drawLook(ctx,look,images,{x=0,y=0,scale=1,action='idle',facing='
   const definition=typeof look==='string'?lookFor(look):look,frame=lookFrame(action,elapsed,still),layers=definition?.clips?.[action]?.layers;
   if(!definition||!frame||!layers||layers.some(layer=>!images?.get(layer.imageKey))){drawLookPlaceholder(ctx,{x,y,scale});return false;}
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.translate(Math.round(x),Math.round(y));ctx.scale((facing==='left'?-1:1)*scale,scale);ctx.globalAlpha=alpha;
-  for(const layer of layers)ctx.drawImage(images.get(layer.imageKey),...frame.rect,-definition.groundAnchor[0],-definition.groundAnchor[1],...APPEARANCE_CATALOG.shared.frameSize);
+  for(const layer of layers){const kind=layer.imageKey.includes('_base_')?'clothing':'hair',colorId=definition.colors?.[kind==='hair'?'hairColorId':'clothingColorId']||'original';ctx.drawImage(appearanceLayer(images.get(layer.imageKey),kind,colorId,layer.imageKey),...frame.rect,-definition.groundAnchor[0],-definition.groundAnchor[1],...APPEARANCE_CATALOG.shared.frameSize);}
   ctx.restore();return true;
 }
