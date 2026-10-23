@@ -13,6 +13,7 @@ import {mountFriendshipOverview} from './hud/friendship-ui.js';
 import {worldAccessAdoptionText} from './world-access-status.js';
 import {mountWorldActionPolicy} from './owner-world-action-policy.js';
 import {mountOwnerWorldSummary} from './hud/owner-world-summary.js';
+import {mountOwnerBehaviorLogs} from './hud/behavior-logs.js';
 import {emitWorldAudio} from './world-audio.js';
 
 export function createOwnerController(root,{entryStore,onState=()=>{},onView=()=>{},isVisible=()=>true,onLogout=()=>{},confirmAction=async()=>false,focusTitle=()=>{}}={}){
@@ -904,7 +905,7 @@ async function navigateManager(next){
   if(next==='refresh'){await refresh(false);return;}
   if(next==='repair-appearance'&&appearanceRequiredAgentId===selectedId&&current()&&!current().profile.published){presentation?.navigate('appearance');controls();return;}
   if(next==='discard-appearance'){if(presentation?.dirty('appearance-form')){const confirmation=confirmationSnapshot();if(!await confirmAction('放弃形象修改','恢复为最近确认保存的角色？','放弃修改')||!sameConfirmation(confirmation))return;presentation.resetAppearance();controls();}return;}
-  if(!['agents','overview','profile','appearance','participation','policy','runtime','records','invite','security','public-preview','unavailable','entry'].includes(next))return;
+  if(!['agents','overview','profile','appearance','logs','participation','policy','runtime','records','invite','security','public-preview','unavailable','entry'].includes(next))return;
   if(next===presentation?.page)return;
   if(runtimePrepared||invitePrepared||backupPrepared){message('请先完成当前文件的保存确认。收起窗口会保留这次准备。','pending');return;}
   const requiresAgent=!['agents','invite','security','unavailable','entry'].includes(next);
@@ -1099,6 +1100,16 @@ async function readWallet({signal}={}){
   try{const result=await api('/wallet/query',{method:'POST',body,token:session,signal});if(!current())throw new DOMException('Context changed','AbortError');return result;}
   catch(error){if(current()&&error.status===401)expireAuthenticatedSession(source,session,generation);throw error;}
 }
+async function readBehaviorHistory(input={}, {signal}={}){
+  const ctx=friendshipContext(),fields={agentId:ctx.target,timeZone:input.timeZone,limit:20};
+  if(typeof fields.timeZone!=='string'||fields.timeZone.length>100)throw new ApiError('invalid_request',422);
+  try{new Intl.DateTimeFormat('en',{timeZone:fields.timeZone});}catch{throw new ApiError('invalid_request',422);}
+  for(const key of ['fromDate','toDate'])if(input[key]!==undefined){if(typeof input[key]!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(input[key]))throw new ApiError('invalid_request',422);fields[key]=input[key];}
+  if(fields.fromDate&&fields.toDate&&fields.fromDate>fields.toDate)throw new ApiError('invalid_request',422);
+  if(input.pageToken!==undefined){if(typeof input.pageToken!=='string'||!input.pageToken||input.pageToken.length>4096)throw new ApiError('invalid_request',422);fields.pageToken=input.pageToken;}
+  try{const result=await api('/gateway/query',{method:'POST',token:ctx.session,signal,body:{protocolVersion:1,consumerId:'connet.owner.hud.v1',purpose:'human-inspect',operation:'behavior.owner_history',input:fields}});if(!ctx.current()||signal?.aborted)throw new DOMException('Context changed','AbortError');return result;}
+  catch(error){if(ctx.current()&&error.status===401)expireAuthenticatedSession(ctx.source,ctx.session,ctx.generation);throw error;}
+}
 async function readOwnerWorldSummary(operation,input={}, {signal}={}){
   const source=vault,session=vault.sessionToken,generation=readGeneration,target=selectedId,revision=summary().observationRevision;
   const current=()=>source===vault&&session===vault.sessionToken&&target===selectedId&&revision===summary().observationRevision&&authenticatedOwner();
@@ -1121,8 +1132,9 @@ async function readOwnerWorldSummary(operation,input={}, {signal}={}){
 }
 const worldActionSettings=mountWorldActionPolicy($('#world-autonomy-form'),{session:{snapshot:()=>structuredClone(summary()),readWorldActionPolicy,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}},changed:controls,dirty:()=>presentation?.dirty('world-autonomy-form'),remember:()=>presentation?.rememberForm('world-autonomy-form'),onSave:({agentId,expectedVersion,mode})=>{if(agentId!==selectedId||hasPending())return;return command({action:'saveWorldActionPolicy',path:`/owner/agents/${encodeURIComponent(agentId)}/world-action-policy`,method:'PUT',targetId:agentId,fields:{expectedVersion,mode}});}});
 const friendshipSummary=mountFriendshipOverview($('#owner-friendship-summary'),{snapshot:()=>structuredClone(summary()),readFriendship,commandFriendship,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}});
+const behaviorLogs=mountOwnerBehaviorLogs($('#owner-behavior-logs'),{snapshot:()=>structuredClone(summary()),readBehaviorHistory,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}});
 const worldSummary=mountOwnerWorldSummary($('#owner-world-summary'),{read:readOwnerWorldSummary,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}});
-window.addEventListener('pagehide',event=>{if(!event.persisted){worldSummary.dispose();friendshipSummary.dispose();worldActionSettings.dispose();}});
+window.addEventListener('pagehide',event=>{if(!event.persisted){behaviorLogs.dispose();worldSummary.dispose();friendshipSummary.dispose();worldActionSettings.dispose();}});
 return{start,open,select:selectAgent,refresh:refreshSummary,readPerception,readWallet,readFriends,readInteraction,readFriendship,commandFriendship,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
   hudContext(){if(authenticatedOwner()&&['ready','refreshing'].includes(summary().phase))return{kind:'owner',ownerId:account.ownerId,agentId:agents.some(agent=>agent.agentId===selectedId)?selectedId:''};return sessionPhase==='anonymous'&&!vault.sessionToken?{kind:'guest',ownerId:'',agentId:''}:null;},
   attachPresentation(value){presentation=value;value.setNavigator(navigateManager);},

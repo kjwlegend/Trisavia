@@ -1,12 +1,14 @@
 import {el,button} from './shared.js';
+import {icon} from '../icons.js';
 
 // Reuse the renderer's controls and listeners; World itself opens no panel.
 export function createWorldControls(root){
   const controls=document.querySelector('.world-controls'),zoom=document.querySelector('.world-zoom-controls'),fit=document.querySelector('#world-fit'),list=document.querySelector('#world-open-list');
   const menu=el('div','hud-map-menu'),more=button('更多',()=>toggle());menu.id='hud-map-menu';menu.hidden=true;menu.setAttribute('role','group');menu.setAttribute('aria-label','更多地图工具');
   more.id='hud-map-more';more.setAttribute('aria-controls',menu.id);more.setAttribute('aria-expanded','false');list.textContent='场所';
+  const logs=button('',()=>document.dispatchEvent(new Event('hud:world-logs')));logs.id='hud-open-world-logs';logs.setAttribute('aria-label','世界日志');logs.title='世界日志';logs.append(icon('document'),el('span','','日志'));
   menu.append(document.querySelector('#world-explore'),document.querySelector('#world-reset'),document.querySelector('#world-pause'),document.querySelector('#world-learn'));
-  controls.classList.add('hud-map-tools');controls.replaceChildren(zoom,fit,list,more,menu);root.append(controls);
+  controls.classList.add('hud-map-tools');controls.replaceChildren(zoom,fit,list,logs,more,menu);root.append(controls);
   function close(restore=false){if(menu.hidden)return;menu.hidden=true;more.setAttribute('aria-expanded','false');if(restore)more.focus({preventScroll:true});}
   function toggle(){menu.hidden=!menu.hidden;more.setAttribute('aria-expanded',String(!menu.hidden));}
   menu.addEventListener('click',event=>{if(event.target.closest('button,a'))close(true);});
