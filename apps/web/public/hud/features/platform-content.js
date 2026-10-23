@@ -24,10 +24,11 @@ export function readSavedMailNavigation(raw){
 const relatedKind=ref=>ref?.type==='items.item@1'?'物品':ref?.type==='world.announcement@1'?'公告':'事件';
 function senderText(value,detail=false){const sender=value?.summary?.sender||value?.content?.sender;if(typeof sender?.displayName!=='string'||!sender.displayName.trim())return '发件人不可显示';const kind=sender.kind==='agent'?'Agent':sender.kind==='human'?'人类':'';return detail?`发件人：${sender.displayName}${kind?'（'+kind+'）':''}`:`来自：${sender.displayName}${kind?' · '+kind:''}`;}
 function messageTime(value){const content=value?.summary||value?.content||{};const sent=time(content.sentAt),received=time(content.receivedAt);return sent?`发送于 ${sent}`:received?`接收于 ${received}`:'消息时间未提供';}
-const dataLabel=(record,holding=false)=>record?.summary?.dataMode==='demo'||record?.content?.dataMode==='demo'?holding?'演示持有记录':'演示内容':record?.summary?.source?.kind==='administrative_publication'||record?.content?.source?.kind==='administrative_publication'?'平台发布':'平台内容';
+const dataLabel=(record,holding=false)=>['town_service_definition','npc_service_item'].includes(record?.summary?.source?.kind||record?.content?.source?.kind)?holding?'实际持有':'小镇服务券':record?.summary?.dataMode==='demo'||record?.content?.dataMode==='demo'?holding?'演示持有记录':'演示内容':record?.summary?.source?.kind==='administrative_publication'||record?.content?.source?.kind==='administrative_publication'?'平台发布':'平台内容';
 const time=value=>typeof value==='number'&&Number.isFinite(value)?new Date(value).toLocaleString('zh-CN',{hour12:false}):'';
 function sourceText(value){
   const source=value?.summary?.source||value?.content?.source;
+  if(['town_service_definition','npc_service_item'].includes(source?.kind))return '来源：小镇服务';
   if(source?.kind==='demo_seed')return '来源：平台演示内容';
   if(source?.kind==='demo_holding')return '来源：平台演示持有记录';
   if(source?.kind==='administrative_publication')return `来源：平台内容发布${typeof source.administrator==='string'?' · '+source.administrator:''}`;
@@ -116,7 +117,7 @@ export function createPlatformInventory(provider,{session,context,walletProvider
       if(detail.item)details.append(contentBody({summary:{title:titleOf(selected)}},detail.item));else details.append(el('p','hud-muted',detail.itemError?'引用物品目前不可查看。':'物品正文未向当前账号开放。'));
       details.append(el('h3','','持有说明'),badge(selected,true));
       const quantity=detail.own.content.quantity??selected.summary.quantity;if(Number.isSafeInteger(quantity))details.append(el('p','',`记录数量：${quantity}`));
-      if(selected.summary.status==='active')details.append(el('p','hud-muted','持有状态：有效'));
+      if(selected.summary.status==='active')details.append(el('p','hud-muted','持有状态：有效'));else if(selected.summary.source?.kind==='npc_service_item')details.append(el('p','hud-muted',selected.summary.status==='reserved'?'持有状态：已保留，尚未消耗':selected.summary.status==='available'?'持有状态：可用':''));
       details.append(contentBody(selected,detail.own));
     }else details.append(contentBody(selected,detail.own));
     if(preview){details.prepend(button('返回物品详情',()=>{preview=false;renderDetail();},'hud-back'));}
@@ -202,8 +203,8 @@ export function createPlatformMail(provider,{session,context,detailHost,chooseAg
     node.append(tabs([['messages','消息'],['notifications','通知'],['announcements','公告'],['events','事件']],key,select));
     const access=['messages','notifications'].includes(key)?accessState(state,'信箱',chooseAgent):null;if(access){node.append(access);return;}if(state.authenticated&&agent)node.prepend(agentBar(state,chooseAgent));
     if(key==='messages'){node.append(exchanges.node);if(exchanges.direction==='sent')return;}
-    node.append(el('p','hud-muted',['messages','notifications'].includes(key)?state.authenticated?`阅读者：你 · 收件对象：${agent?.name||'请选择 Agent'}`:'请登录后查看 Agent 的消息':'公开内容 · 不代表私人来信'),el('p','hud-muted','当前可查看内容'));
-    const heading=el('h3','hud-list-heading',key==='messages'?'其他获准消息':key==='notifications'?'获准通知':key==='events'?'事件计划与发生记录':'公开公告');heading.tabIndex=-1;node.append(heading);list.replaceChildren();
+    node.append(el('p','hud-muted',['messages','notifications'].includes(key)?state.authenticated?`所属角色：${agent?.name||'请选择 Agent'}`:'请登录后查看 Agent 的消息':'公开内容 · 不代表私人来信'),el('p','hud-muted','当前可查看内容'));
+    const heading=el('h3','hud-list-heading',key==='messages'?'消息':key==='notifications'?'通知':key==='events'?'事件计划与发生记录':'公开公告');heading.tabIndex=-1;node.append(heading);list.replaceChildren();
     for(const record of source.records){const row=el('div','hud-message-row hud-platform-message-row'),control=button('',()=>open(record),'hud-message-open');control.dataset.platformMessage=record.ref.id;control.setAttribute('aria-pressed',String(keyOf(record)===views[key].selected));const text=el('span','hud-message-summary'),byline=el('span','hud-muted',key==='messages'?senderText(record):sourceText(record));if(key==='messages'){byline.dataset.senderName='';byline.title=byline.textContent;}text.append(el('strong','',`${key==='events'?eventLabel(record)+' · ':''}${titleOf(record)}`),byline);control.append(icon(key==='events'?'clock':key==='messages'?'mail':'notice'),text);const meta=el('span','hud-message-byline');byline.replaceWith(meta);meta.append(byline,badge(record));row.append(control);const published=time(record.summary.source?.publishedAt);control.append(el('time','',key==='messages'?messageTime(record):key==='events'?eventTime(record):published?`发布于 ${published}`:'发布时间未提供'));list.append(row);}
     if(!source.records.length)list.append(feedback(source,key,()=>provider.load(key),chooseAgent));else list.append(pageFoot(source,key,provider));node.append(list);list.scrollTop=views[key].top;
   }

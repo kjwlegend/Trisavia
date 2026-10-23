@@ -5,7 +5,14 @@ const invalid=()=>{const error=new Error('world_response_invalid');error.code='w
 const integer=value=>Number.isSafeInteger(value)&&value>=0;
 const within=(p,rules)=>Number.isSafeInteger(p?.x)&&Number.isSafeInteger(p?.y)&&p.x>=(rules.bounds?.minX??0)&&p.x<=(rules.bounds?.maxX??rules.width-1)&&p.y>=(rules.bounds?.minY??0)&&p.y<=(rules.bounds?.maxY??rules.height-1);
 export function readWorldMotion(value,row,rules){if(value==null)return null;if(!(value.movementId===null||typeof value.movementId==='string'&&value.movementId)||typeof value.segmentId!=='string'||value.segmentId!==row.id+':'+row.version||!['explicit','idle'].includes(value.source)||value.status!=='committed'||!within(value.from,rules)||!within(value.to,rules)||Math.abs(value.from.x-value.to.x)+Math.abs(value.from.y-value.to.y)!==1||value.to.x!==row.position.x||value.to.y!==row.position.y||!((value.rulesetVersion===rules.version&&value.topologyVersion===rules.topologyVersion)||(rules.version===2&&value.rulesetVersion===1&&value.topologyVersion===1&&[value.from,value.to].every(p=>p.x>=0&&p.x<16&&p.y>=0&&p.y<16)))||!integer(value.startedAt)||!integer(value.arriveAt)||value.arriveAt-value.startedAt!==(value.source==='idle'?4000:1000))invalid();return{segmentId:value.segmentId,movementId:value.movementId,source:value.source,from:{...value.from},to:{...value.to},startedAt:value.startedAt,arriveAt:value.arriveAt,rulesetVersion:value.rulesetVersion,topologyVersion:value.topologyVersion,status:'committed'};}
-export function readWorldNpcs(rows,rules){if(!Array.isArray(rows))invalid();const seen=new Set();return rows.map(row=>{if(typeof row?.npcId!=='string'||!row.npcId||seen.has(row.npcId)||typeof row.name!=='string'||!row.name||typeof row.role!=='string'||!within(row.position,rules)||!Array.isArray(row.approachCells)||row.approachCells.some(p=>!within(p,rules))||row.serverManaged!==true||row.readOnly!==true||row.countsAsAgent!==false||row.status!=='service_unavailable'||!Array.isArray(row.actions)||row.actions.length)invalid();seen.add(row.npcId);return{npcId:row.npcId,name:row.name,role:row.role,position:{...row.position},approachCells:row.approachCells.map(p=>({...p})),appearance:readAppearance(row.appearance),serverManaged:true,readOnly:true,countsAsAgent:false,status:'service_unavailable',actions:[]};});}
+export function readWorldNpcs(rows,rules){
+ if(!Array.isArray(rows))invalid();const seen=new Set();return rows.map(row=>{
+  if(typeof row?.npcId!=='string'||!row.npcId||seen.has(row.npcId)||typeof row.name!=='string'||!row.name||typeof row.role!=='string'||!within(row.position,rules)||!Array.isArray(row.approachCells)||row.approachCells.some(p=>!within(p,rules))||row.serverManaged!==true||row.countsAsAgent!==false||!Array.isArray(row.actions)||row.actions.some(action=>typeof action!=='string'))invalid();
+  const current=row.readOnly===false&&row.status==='available';
+  if(current?(!Number.isSafeInteger(row.definitionVersion)||row.definitionVersion<1||typeof row.buildingId!=='string'||!Array.isArray(row.serviceIds)||row.serviceIds.some(id=>!['welcome.claim','tavern.host','inn.rest','greet'].includes(id))):row.readOnly!==true||row.status!=='service_unavailable'||row.actions.length)invalid();
+  seen.add(row.npcId);return{npcId:row.npcId,name:row.name,role:row.role,position:{...row.position},approachCells:row.approachCells.map(p=>({...p})),appearance:readAppearance(row.appearance),serverManaged:true,readOnly:!current,countsAsAgent:false,status:row.status,actions:[...row.actions],...(current?{definitionVersion:row.definitionVersion,buildingId:row.buildingId,serviceIds:[...row.serviceIds]}:{})};
+ });
+}
 export function readAppearance(value){if(value&&typeof value.lookId==='string'&&value.lookId.length>0&&value.lookId.length<=100&&typeof value.catalogVersion==='string'&&value.catalogVersion.length>0&&value.catalogVersion.length<=100&&Object.keys(value).every(key=>['lookId','catalogVersion'].includes(key)))return{lookId:value.lookId,catalogVersion:value.catalogVersion};if(value?.template==='basic'&&['olive','cream','blue','coral'].includes(value.color)&&Object.keys(value).every(key=>['template','color'].includes(key)))return{template:'basic',color:value.color};invalid();}
 export function readWorldRules(data,worldId='default'){
   const {world,rules,asOf}=data||{};
@@ -17,6 +24,7 @@ export function readWorldRules(data,worldId='default'){
 }
 export function readWorldPage(data,rules){
   if(data?.worldId!==rules.worldId||data.scope!=='world'||!integer(data.worldRevision)||!integer(data.asOf)||!Array.isArray(data.avatars)||typeof data.complete!=='boolean'||(data.complete?data.nextCursor!==null:typeof data.nextCursor!=='string'||!data.nextCursor))invalid();
+  if(data.npcCatalogVersion!==undefined&&data.npcCatalogVersion!==null&&(!integer(data.npcCatalogVersion)||data.npcCatalogVersion<1))invalid();
   const avatars=[];
   for(const row of data.avatars){
     const profile=row?.profile,p=row?.position;
@@ -24,7 +32,7 @@ export function readWorldPage(data,rules){
     if(row.status==='left')continue;
     avatars.push({id:row.id,worldId:row.worldId,agentId:row.agentId,version:row.version,status:row.status,position:{x:p.x,y:p.y},motion:readWorldMotion(row.motion,row,rules),placeId:row.placeId,rulesetVersion:row.rulesetVersion,createdAt:row.createdAt,updatedAt:row.updatedAt,profile:{agentId:row.agentId,publishedVersion:profile.publishedVersion,displayName:profile.displayName,appearance:readAppearance(profile.appearance)}});
   }
-  return{worldId:rules.worldId,worldRevision:data.worldRevision,asOf:data.asOf,avatars,npcs:readWorldNpcs(data.npcs??[],rules),complete:data.complete,nextCursor:data.nextCursor};
+  return{worldId:rules.worldId,worldRevision:data.worldRevision,asOf:data.asOf,avatars,npcCatalogVersion:data.npcCatalogVersion??null,npcs:readWorldNpcs(data.npcs??[],rules),complete:data.complete,nextCursor:data.nextCursor};
 }
 export function projectWorldAvatars(avatars,rules,{width=1536,height=1024,projectPoint,projectionVersion=WORLD_PROJECTION_VERSION}={}){
   return avatars.map(row=>({agentId:row.agentId,name:row.profile.displayName,avatar:{...row.profile.appearance},fact:structuredClone(row),projectionVersion,

@@ -2,16 +2,19 @@ import {avatar} from '../../scene.js';
 import {el,button,link,selectedAgent} from './shared.js';
 import {createFriendsReadProvider} from '../friends-read-provider.js';
 import {createFriendshipInbox} from '../friendship-ui.js';
+import {createTownRelationships} from '../town-services.js';
 export function createFriendsFeature(session,{chooseAgent=()=>{},detailHost}={}){
   const node=el('section','hud-feature hud-friends');node.id='hud-feature-friends';const reader=createFriendsReadProvider(session),requests=createFriendshipInbox(session,{chooseAgent,detailHost});
+  const town=createTownRelationships(session,{openNpc:npc=>document.dispatchEvent(new CustomEvent('world:town-service',{detail:{npcId:npc.npcId}}))});
   let context=session.snapshot(),active=false,view='friends',state=reader.snapshot();
-  function select(next){if(next===view)return;reader.cancel();requests.deactivate();view=next;if(next!=='friends')requests.setDirection(next);if(active){if(next==='friends')void reader.load();else requests.activate();}render();}
+  function select(next){if(next===view)return;reader.cancel();requests.deactivate();town.deactivate();view=next;if(!['friends','town'].includes(next))requests.setDirection(next);if(active){if(next==='friends')void reader.load();else if(next==='town')town.activate();else requests.activate();}render();}
   function render(){
     node.replaceChildren();const agent=selectedAgent(context);
     if(!context.authenticated){node.append(el('p','','登录后，可以查看当前 Agent 的好友与申请。'),button('登录／注册',chooseAgent));return;}
     if(!agent||!['ready','refreshing'].includes(context.phase)){node.append(el('p','','先选择一位自己的 Agent，再查看它的好友与申请。'),button('选择 Agent',chooseAgent));return;}
     const heading=el('div','hud-friends-heading'),identityRow=el('div'),picture=el('span');avatar(picture,{avatar:agent.avatar},agent.agentId);identityRow.append(picture,el('strong','',`${agent.name} 的好友`));heading.append(identityRow,button('切换 Agent',chooseAgent));node.append(heading);
-    const tabs=el('div','hud-filters hud-friends-tabs');for(const [key,label]of [['friends','好友'],['received','收到的申请'],['sent','发出的申请']]){const control=button(label,()=>select(key));control.dataset.friendshipTab=key;control.setAttribute('aria-pressed',String(view===key));tabs.append(control);}node.append(tabs);
+    const tabs=el('div','hud-filters hud-friends-tabs');for(const [key,label]of [['friends','Agent好友'],['town','镇民关系'],['received','收到的申请'],['sent','发出的申请']]){const control=button(label,()=>select(key));control.dataset.friendshipTab=key;control.setAttribute('aria-pressed',String(view===key));tabs.append(control);}node.append(tabs);
+    if(view==='town'){node.append(town.node);return;}
     if(view!=='friends'){node.append(requests.node);return;}
     const status=el('p','hud-muted');status.setAttribute('role','status');node.append(status);
     if(state.phase==='loading'){status.textContent='正在读取已确认的好友…';return;}
@@ -23,5 +26,5 @@ export function createFriendsFeature(session,{chooseAgent=()=>{},detailHost}={})
     node.append(el('p','hud-muted','亲密度由双方共享，只在成为好友后新发起并完成确认的文字交流中增加；浏览和发送邀请不会增加。'),list);if(!state.complete)node.append(button('继续载入好友',()=>reader.loadMore()));node.append(button('刷新好友',()=>void reader.load(),'hud-friends-refresh'));
   }
   const stop=reader.subscribe(value=>{state=value;render();});
-  return{node,activate(){active=true;if(view==='friends')void reader.load();else requests.activate();},deactivate(){active=false;reader.cancel();requests.deactivate();},setContext(value){context=value;render();},showRequests(direction='received'){select(direction==='sent'?'sent':'received');},back:()=>false,dispose(){stop();reader.dispose();requests.dispose();}};
+  return{node,activate(){active=true;if(view==='friends')void reader.load();else if(view==='town')town.activate();else requests.activate();},deactivate(){active=false;reader.cancel();requests.deactivate();town.deactivate();},setContext(value){context=value;town.setContext(value);render();},showRequests(direction='received'){select(direction==='sent'?'sent':'received');},back:()=>false,dispose(){stop();reader.dispose();requests.dispose();town.dispose();}};
 }

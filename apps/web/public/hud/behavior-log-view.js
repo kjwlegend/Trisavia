@@ -1,7 +1,7 @@
 import {el} from '../common.js';
 import {icon} from './icons.js';
 import {browserLogTimeZone,logDateTime} from './behavior-log-reader.js';
-const labels={world:'世界行动',relationships:'好友',interaction:'作品交流'};
+const labels={world:'世界行动',relationships:'好友',interaction:'作品交流',town_services:'小镇服务'};
 const control=(label,run)=>{const node=el('button','',label);node.type='button';node.addEventListener('click',run);return node;};
 const duration=value=>{const hours=Math.floor(value/3600000),minutes=Math.floor(value%3600000/60000),seconds=value%60000/1000;return[hours?`${hours}小时`:'',minutes?`${minutes}分`:'',seconds||!hours&&!minutes?`${seconds}秒`:''].filter(Boolean).join('');};
 const detailTime=(value,timeZone)=>new Intl.DateTimeFormat('zh-CN',{timeZone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).format(value);
@@ -12,6 +12,7 @@ function recordDetail(item,timeZone){
  const places=details.location;if(places||['movement','wander'].includes(details.phase)){const section=el('section');section.append(el('h4','','地点'),el('p','',`起点：${places?.from?.name||'未记录'}\n终点：${places?.to?.name||'未记录'}`));node.append(section);}
  const time=details.timeRange,facts=el('dl','behavior-log-facts');for(const [label,value]of [['开始',time.startedAt===null?'未记录':detailTime(time.startedAt,timeZone)],['结束',time.endedAt===null?'未记录':detailTime(time.endedAt,timeZone)],['实际耗时',time.durationMs===null?'未记录':duration(time.durationMs)]])facts.append(el('dt','',label),el('dd','',value));const times=el('section');times.append(el('h4','',`时间（${timeZone}）`));if(time.startedAt===null&&time.endedAt!==null)times.append(el('p','hud-muted','这条记录只保存了完成时间。'));times.append(facts);node.append(times);
  const journey=details.journey;if(places?.via.length||journey?.completedSteps!==null&&journey?.completedSteps!==undefined){const route=el('section');route.append(el('h4','','路径摘要'));if(places?.via.length)route.append(el('p','',`实际经过：${places.via.map(place=>place.name).join('、')}`));if(journey?.completedSteps!==null&&journey?.completedSteps!==undefined)route.append(el('p','',`已走过 ${journey.completedSteps} 格${journey.plannedSteps===null?'':`（原计划 ${journey.plannedSteps} 格）`}。`));node.append(route);}
+ if(details.service){const service=details.service,section=el('section');section.append(el('h4','','小镇服务'),el('p','',`${service.npcName} · ${service.serviceName}`));if(service.choice)section.append(el('p','',`本次选择：${service.choice}`));if(service.response)section.append(el('p','',service.response));node.append(section);}
  if(details.participants.length){const people=el('section');people.append(el('h4','','交流对象'));for(const person of details.participants)people.append(el('p','',`${person.role==='sender'?'发起方':'接收方'}：${person.displayName}`));node.append(people);}
  if(details.completeness==='partial'||details.gaps.length){const gaps=el('section','behavior-log-detail-gaps');gaps.append(el('h4','','记录范围'));if(details.completeness==='partial')gaps.append(el('p','hud-muted','这条记录只保留了部分细节。'));for(const gap of details.gaps)gaps.append(el('p','hud-muted',gap));node.append(gaps);}return node;
 }

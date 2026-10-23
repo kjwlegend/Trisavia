@@ -1056,6 +1056,17 @@ async function readFriendship(operation,input={}, {signal}={}){
   try{const result=await api('/gateway/query',{method:'POST',body,token:ctx.session,signal});if(!ctx.current()||signal?.aborted)throw new DOMException('Context changed','AbortError');return result;}
   catch(error){if(ctx.current()&&error.status===401)expireAuthenticatedSession(ctx.source,ctx.session,ctx.generation);throw error;}
 }
+// Town services remain Agent-only writes. The Owner can inspect only the
+// currently selected, still-bound Agent through this restricted read facade.
+async function readTownService(operation,input={}, {signal}={}){
+  if(!['progress','inventory','relationships','operation'].includes(operation))throw new ApiError('insufficient_scope',403);
+  const ctx=friendshipContext(),fields={agentId:ctx.target};
+  if(['inventory','relationships'].includes(operation)){fields.limit=50;const key=operation==='inventory'?'afterId':'afterNpcId';if(input[key]!==undefined){if(typeof input[key]!=='string'||!input[key]||input[key].length>180)throw new ApiError('invalid_request',422);fields[key]=input[key];}}
+  if(operation==='operation'){if(typeof input.operationId!=='string'||!input.operationId||input.operationId.length>180)throw new ApiError('invalid_request',422);fields.operationId=input.operationId;}
+  const body={protocolVersion:1,consumerId:'connet.owner.hud.v1',purpose:'human-inspect',operation:`town_services.${operation}`,input:fields};
+  try{const result=await api('/gateway/query',{method:'POST',body,token:ctx.session,signal});if(!ctx.current()||signal?.aborted)throw new DOMException('Context changed','AbortError');return result;}
+  catch(error){if(ctx.current()&&error.status===401)expireAuthenticatedSession(ctx.source,ctx.session,ctx.generation);throw error;}
+}
 async function commandFriendship(operation,input={}){
   if(!['send','accept','decline','cancel'].includes(operation))throw new ApiError('insufficient_scope',403);const ctx=friendshipContext(),fields=friendshipInput(operation,input,ctx.target),action=`relationships.invitation.${operation}`,scope=JSON.stringify([ctx.ownerId,ctx.target,action,fields.toAgentId||fields.requestId]),storageKey=`connet.owner.friendship.pending.v1:${scope}`;
   if(friendshipWrites.has(scope))return friendshipWrites.get(scope);
@@ -1136,7 +1147,7 @@ const friendshipSummary=mountFriendshipOverview($('#owner-friendship-summary'),{
 const behaviorLogs=mountOwnerBehaviorLogs($('#owner-behavior-logs'),{snapshot:()=>structuredClone(summary()),readBehaviorHistory,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}});
 const worldSummary=mountOwnerWorldSummary($('#owner-world-summary'),{read:readOwnerWorldSummary,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}});
 window.addEventListener('pagehide',event=>{if(!event.persisted){behaviorLogs.dispose();worldSummary.dispose();friendshipSummary.dispose();worldActionSettings.dispose();}});
-return{start,open,select:selectAgent,refresh:refreshSummary,readPerception,readWallet,readFriends,readInteraction,readFriendship,commandFriendship,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
+return{start,open,select:selectAgent,refresh:refreshSummary,readPerception,readWallet,readFriends,readInteraction,readFriendship,readTownService,commandFriendship,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
   hudContext(){if(authenticatedOwner()&&['ready','refreshing'].includes(summary().phase))return{kind:'owner',ownerId:account.ownerId,agentId:agents.some(agent=>agent.agentId===selectedId)?selectedId:''};return sessionPhase==='anonymous'&&!vault.sessionToken?{kind:'guest',ownerId:'',agentId:''}:null;},
   attachPresentation(value){presentation=value;value.setNavigator(navigateManager);},
   notifyPresentation:controls,

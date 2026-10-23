@@ -6,6 +6,7 @@ import {projectWorldAvatars,WORLD_PROJECTION_VERSION} from './hud/world-scene-pr
 import {freeAreas,worldOverlayRects} from './world-safe-area.js';
 import {assertPixelSnapshot} from './world-pixel/map.js';
 import {humanHitSize} from './world-pixel/human.js';
+import {createTownTargets} from './world-town-targets.js';
 export const WORLD_SIZE = Object.freeze({ width: 1536, height: 1024 });
 const W = WORLD_SIZE.width, H = WORLD_SIZE.height;
 const demoNote = '这是背景演示场所，不表示真实 Agent 的到访或活动。角色位置与互动以服务器记录为准。';
@@ -173,6 +174,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   // graph supplies their north/south entry ports; no route is made over water.
   if(!rendering)blockedRects.push(...[[0,376],[392,1144],[1160,W]].map(([left,right])=>({left,right,top:96,bottom:192})));
   const ownedLayer=createOwnedAgentLayer(root,graph,{blockedRects,renderer:rendering,onSelect:selectAgent,onOverlayChange:()=>{if(!destroyed)refreshOwnedHover();}});
+  const townTargets=createTownTargets(root,onSelect);let townNotice=null;
   const camera={x:W/2,y:H/2,zoom:1,base:1,width:0,height:0,dpr:1};
   let zoomMotion=null;
   let hoverPointer=null,hoverProjection='';
@@ -185,7 +187,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   const abort=new AbortController(),eventOptions={signal:abort.signal};
   const state=()=>({mode,exploring,minZoom:overviewScale()/camera.base,zoom:camera.zoom,paused,pauseReason,theme:light.period,lighting:structuredClone(currentLight()),reducedMotion:reduced.matches||reduceOverride,visible:visible&&!document.hidden,actorCount:actorLimit,quality,frames,...metrics,camera:{x:camera.x,y:camera.y,scale:camera.base*camera.zoom,width:camera.width,height:camera.height,sourceWidth:W,sourceHeight:H,coordinateSpace:rendering?'source-pixel':'legacy-town-pixel'},actors:actors.slice(0,actorLimit).map(a=>({id:a.id,x:a.x,y:a.y,pause:a.pause})),selectedId:selected?.id??null,
     rendering:rendering?{backend:'pixel-town',mapVersion:rendering.mapSpec.version,assetVersion:rendering.sourceVersion,imageCount:rendering.imageCount}:null,
-    worldScene:{npcs:structuredClone(worldView.npcs||[]),phase:worldView.phase,enabled:worldView.enabled,asOf:worldView.asOf,worldRevision:worldView.worldRevision,complete:worldView.complete,errorCode:worldView.errorCode??null,errorStatus:worldView.errorStatus??null,retryAt:worldView.retryAt??null,lastSuccessAt:worldView.lastSuccessAt??null,projectionVersion:rendering?.mapSpec.version||WORLD_PROJECTION_VERSION,avatars:ownedLayer.actors().filter(row=>row.fact).map(row=>({fact:structuredClone(row.fact),x:row.x,y:row.y,walking:row.walking,renderPosition:structuredClone(row.renderPosition)}))}});
+    worldScene:{npcCatalogVersion:worldView.npcCatalogVersion??null,npcs:structuredClone(worldView.npcs||[]),phase:worldView.phase,enabled:worldView.enabled,asOf:worldView.asOf,worldRevision:worldView.worldRevision,complete:worldView.complete,errorCode:worldView.errorCode??null,errorStatus:worldView.errorStatus??null,retryAt:worldView.retryAt??null,lastSuccessAt:worldView.lastSuccessAt??null,projectionVersion:rendering?.mapSpec.version||WORLD_PROJECTION_VERSION,avatars:ownedLayer.actors().filter(row=>row.fact).map(row=>({fact:structuredClone(row.fact),x:row.x,y:row.y,walking:row.walking,renderPosition:structuredClone(row.renderPosition)}))}});
   // Projection uses the whole viewport; overview reserves room for the two overlays.
   function overviewInsets(){const phone=camera.width<760;return {top:phone?112:88,bottom:phone?116:126,left:16,right:16};}
   function overviewScale(){const i=overviewInsets();return rendering?rendering.camera.fit({width:W,height:H},camera,i):Math.max(.01,Math.min((camera.width-i.left-i.right)/W,(camera.height-i.top-i.bottom)/H));}
@@ -216,6 +218,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
       if(selected){if(rendering&&selected.kind==='world-avatar'){const entry=ownedLayer.actors().find(row=>row.agentId===selected.agentId);if(entry)rendering.drawSelection(ctx,entry,scale,renderFrame);}else if(!rendering){const isActor=['actor','world-avatar'].includes(selected.kind);ctx.strokeStyle='#557f9a';ctx.lineWidth=2/Math.max(scale,.4);ctx.setLineDash([5/scale,4/scale]);ctx.beginPath();ctx.ellipse(selected.x,selected.y+3,isActor?13:Math.min(selected.w/2+12,70),isActor?6:16,0,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);}}
       if(rendering){rendering.drawUpper?.(ctx,renderFrame);rendering.drawEffects?.(ctx,{...renderFrame,quality:environment?quality:1});for(const entry of ownedLayer.actors())if(entry.agentId===ownedProjection.selectedAgentId||entry.agentId===selected?.agentId)rendering.drawSelection(ctx,entry,scale,renderFrame);}
       ctx.restore();
+      townTargets.layout({scale,point:(x,y)=>({x:(x-camera.x)*scale+center.x,y:(y-camera.y)*scale+center.y})});
       ownedLayer.layout({scale,point:(x,y)=>({x:(x-camera.x)*scale+center.x,y:(y-camera.y)*scale+center.y})});
       frames++;drawMs+=performance.now()-start;
     }catch{fail();}
@@ -261,9 +264,12 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   function setReducedMotion(value){reduceOverride=Boolean(value);if(reduceOverride&&zoomMotion)advanceZoom(Infinity);reconcile();notify();}
   function applyAgents(){
     rendering?.setNpcs?.(worldView.complete?worldView.npcs||[]:[],worldView.rules);
+    rendering?.setNotice?.(worldView.complete&&townNotice?.catalogVersion===worldView.npcCatalogVersion?townNotice:null,worldView.rules);
+    townTargets.set([...(rendering?.npcs||[]),...(rendering?.serviceTargets||[]),...stagePlaces.filter(place=>place.serviceNpc)]);
     if(!rendering&&worldView.phase==='demo')ownedLayer.set(ownedProjection);
     else{const ids=new Set(ownedProjection.agents.map(row=>row.agentId)),project=rendering?rendering.projectAvatars:projectWorldAvatars;ownedLayer.set({source:'server',serverTime:clock.now(),selectedAgentId:ownedProjection.selectedAgentId,agents:worldView.rules?project(worldView.avatars,worldView.rules,WORLD_SIZE).map(row=>({...row,owned:ids.has(row.agentId)})):[]});}
   }
+  function setTownNotice(value){townNotice=value;applyAgents();draw();}
   function setOwnedAgents(projection){if(destroyed)return;ownedProjection=structuredClone(projection);applyAgents();draw();}
   function clearScene(){if(destroyed)return;worldView={...worldView,phase:'unavailable',rules:null,avatars:[],npcs:[],asOf:null,complete:false,worldRevision:null};actorLimit=0;selected=null;applyAgents();draw();notify();}
   function setWorldScene(value){if(destroyed)return;
@@ -291,18 +297,21 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   function worldPoint(x,y){const s=camera.base*camera.zoom;const c=screenCenter();return{x:(x-c.x)/s+camera.x,y:(y-c.y)/s+camera.y};}
   function hit(x,y,cycle=false){
     const p=worldPoint(x,y);
-    const owned=ownedLayer.hit(p,camera.base*camera.zoom,cycle);if(owned)return owned;
+    const town=[...(rendering?.npcs||[]),...(rendering?.serviceTargets||[])].sort((a,b)=>b.y-a.y).find(o=>p.x>o.x-o.w/2-5&&p.x<o.x+o.w/2+5&&p.y>o.y-o.anchor.y-5&&p.y<o.y+o.h-o.anchor.y+5);
+    const owned=ownedLayer.hit(p,camera.base*camera.zoom,cycle);if(owned){const b=ownedLayer.geometry(owned.agentId).hitBox,overBody=p.x>=owned.x+b.left&&p.x<=owned.x+b.right&&p.y>=owned.y+b.top&&p.y<=owned.y+b.bottom;if(!town||overBody)return owned;}
+    // An Agent's enlarged pointer target must not cover a visible NPC or notice.
+    if(town)return town;
     for(const actor of [...actors.slice(0,actorLimit)].reverse())if(Math.abs(p.x-actor.x)<12&&p.y>actor.y-34&&p.y<actor.y+7)return actor;
-    return [...stagePlaces,...(rendering?.npcs||[])].sort((a,b)=>b.y-a.y).find(o=>!(rendering&&o.id==='commons')&&p.x>o.x-o.w/2-5&&p.x<o.x+o.w/2+5&&p.y>o.y-o.anchor.y-5&&p.y<o.y+o.h-o.anchor.y+5);
+    return [...stagePlaces,...(rendering?.npcs||[]),...(rendering?.serviceTargets||[])].sort((a,b)=>b.y-a.y).find(o=>!(rendering&&o.id==='commons')&&p.x>o.x-o.w/2-5&&p.x<o.x+o.w/2+5&&p.y>o.y-o.anchor.y-5&&p.y<o.y+o.h-o.anchor.y+5);
   }
   const pointers=new Map();let drag=null,pinch=null;
   const local=e=>{const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};};
   function refreshOwnedHover(){
-    if(!hoverPointer||(pointers.size&&drag?.moved)||document.elementFromPoint(hoverPointer.clientX,hoverPointer.clientY)!==canvas){ownedLayer.hover('');return null;}
-    const p=local(hoverPointer),target=hit(p.x,p.y);ownedLayer.hover(target?.kind==='owned-agent'?target.agentId:'');canvas.style.cursor=target?'pointer':'grab';return target;
+    if(!hoverPointer||(pointers.size&&drag?.moved)||document.elementFromPoint(hoverPointer.clientX,hoverPointer.clientY)!==canvas){ownedLayer.hover('');townTargets.hover(null);return null;}
+    const p=local(hoverPointer),target=hit(p.x,p.y);ownedLayer.hover(target?.kind==='owned-agent'?target.agentId:'');townTargets.hover(target?.kind==='world-npc'||target?.kind==='town-notice'||target?.serviceNpc?target:null);canvas.style.cursor=target?'pointer':'grab';return target;
   }
   canvas.addEventListener('pointerdown',e=>{
-    if(e.pointerType==='touch'){hoverPointer=null;ownedLayer.hover('');}
+    if(e.pointerType==='touch'){hoverPointer=null;ownedLayer.hover('');townTargets.hover(null);}
     else hoverPointer={clientX:e.clientX,clientY:e.clientY};
     if(e.button!==0)return;stopZoom();const p=local(e);pointers.set(e.pointerId,p);canvas.setPointerCapture(e.pointerId);
     if(pointers.size===1)drag={start:p,last:p,moved:false,type:e.pointerType};
@@ -313,7 +322,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
     const p=local(e);if(!pointers.has(e.pointerId)){refreshOwnedHover();return;}pointers.set(e.pointerId,p);
     if(pinch&&pointers.size===2){const[a,b]=[...pointers.values()];setZoom(pinch.zoom*Math.hypot(a.x-b.x,a.y-b.y)/Math.max(1,pinch.distance),{anchor:{x:(a.x+b.x)/2,y:(a.y+b.y)/2},immediate:true});return;}
     if(!drag)return;
-    if(Math.hypot(p.x-drag.start.x,p.y-drag.start.y)>6){drag.moved=true;ownedLayer.hover('');}
+    if(Math.hypot(p.x-drag.start.x,p.y-drag.start.y)>6){drag.moved=true;ownedLayer.hover('');townTargets.hover(null);}
     if(drag.type==='touch'&&!exploring)return;
     if(drag.moved){mode='custom';const s=camera.base*camera.zoom;camera.x-=(p.x-drag.last.x)/s;camera.y-=(p.y-drag.last.y)/s;clampCamera();canvas.classList.add('is-dragging');draw();}drag.last=p;
   },eventOptions);
@@ -324,8 +333,8 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
     if(!pointers.size){drag=null;pinch=null;canvas.classList.remove('is-dragging');}else{pinch=null;if(drag){drag.moved=true;drag.last=[...pointers.values()][0];}}
   }
   canvas.addEventListener('pointerup',e=>finishPointer(e),eventOptions);canvas.addEventListener('pointercancel',e=>finishPointer(e,true),eventOptions);
-  canvas.addEventListener('pointerleave',()=>{hoverPointer=null;ownedLayer.hover('');},eventOptions);
-  window.addEventListener('blur',()=>{hoverPointer=null;ownedLayer.hover('');},eventOptions);
+  canvas.addEventListener('pointerleave',()=>{hoverPointer=null;ownedLayer.hover('');townTargets.hover(null);},eventOptions);
+  window.addEventListener('blur',()=>{hoverPointer=null;ownedLayer.hover('');townTargets.hover(null);},eventOptions);
   canvas.addEventListener('wheel',e=>{if(!(e.ctrlKey||e.metaKey)||!e.deltaY)return;hoverPointer={clientX:e.clientX,clientY:e.clientY};e.preventDefault();const delta=Math.max(-240,Math.min(240,e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?camera.height:1)));setZoom((zoomMotion?.to??camera.zoom)*Math.exp(-delta*.0015),{anchor:local(e)});},{...eventOptions,passive:false});
   canvas.addEventListener('keydown',e=>{
     if(e.target!==canvas)return;
@@ -337,7 +346,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   document.addEventListener('visibilitychange',()=>{reconcile();notify();},eventOptions);
   const observer=new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;reconcile();notify();},{threshold:.01});observer.observe(root);
   const resizer=new ResizeObserver(resize);resizer.observe(root);resize();reconcile();notify();
-  return{canvas,setZoom,zoomBy,fit,reset,setExploring,select,setPaused,setTime,setReducedMotion,setOwnedAgents,setWorldScene,clearScene,locateOwnedAgent,getState:state,destroy(){if(destroyed)return;destroyed=true;zoomMotion=null;cancelAnimationFrame(raf);observer.disconnect();resizer.disconnect();abort.abort();ownedLayer.destroy();rendering?.dispose?.();canvas.remove();}};
+  return{canvas,setZoom,zoomBy,fit,reset,setExploring,select,setPaused,setTime,setReducedMotion,setOwnedAgents,setWorldScene,setTownNotice,clearScene,locateOwnedAgent,getState:state,destroy(){if(destroyed)return;destroyed=true;zoomMotion=null;cancelAnimationFrame(raf);observer.disconnect();resizer.disconnect();abort.abort();ownedLayer.destroy();townTargets.destroy();rendering?.dispose?.();canvas.remove();}};
 }
 export function placeDetails(place){
   if(place.kind==='world-avatar')return{name:place.profile.displayName,area:place.placeId==='commons'?'公共庭':'',icon:'○',description:'',note:''};
