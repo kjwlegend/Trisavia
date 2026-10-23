@@ -1,240 +1,273 @@
 /* Paper HUD v3. Loaded after the shared HUD styles; all rules are owner scoped. */
-.account-root{--owner-paper:var(--paper-surface,var(--paper,#F7F3E8));--owner-ink:var(--paper-ink,#263F36);--owner-muted:var(--paper-muted,#68746E);--owner-sage:var(--paper-sage,#DFE5D4);--owner-accent:var(--paper-accent,#BE6346);--owner-border:var(--paper-border,#D8D2C6);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:22px;color:var(--owner-ink)}
-.hud-root .hud-window.is-account.is-manager{width:min(1000px,calc(100vw - 48px));height:min(700px,calc(100vh - 160px));max-height:calc(100vh - 160px);min-height:0;border:1px solid var(--paper-border,#D8D2C6);border-radius:12px;background:var(--paper-surface,var(--paper,#F7F3E8));box-shadow:0 12px 32px #263f3626}
+.hud-root .hud-window .account-root{--owner-paper:var(--paper-surface,var(--paper,#F7F3E8));--owner-ink:var(--paper-ink,#263F36);--owner-muted:var(--paper-muted,#68746E);--owner-sage:var(--paper-sage,#DFE5D4);--owner-accent:var(--paper-accent,#BE6346);--owner-border:var(--paper-border,#D8D2C6);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:22px;color:var(--owner-ink)}
+.hud-root .hud-window.is-account.is-manager{width:min(1000px,calc(100vw - 48px));height:min(700px,calc(100vh - 160px));max-height:calc(100vh - 160px);min-height:0;border:1px solid var(--paper-border,#D8D2C6);border-radius:12px;background:var(--paper-surface,var(--paper,#F7F3E8));box-shadow:0 12px 32px #263f3626;padding:0;--hud-text:var(--paper-ink,#263F36);--hud-muted:var(--paper-muted,#68746E);--hud-line:var(--paper-border,#D8D2C6);--hud-accent:var(--paper-accent,#BE6346);--hud-selected:var(--paper-sage,#DFE5D4)}
 .hud-root .hud-window.is-account>.hud-window-header{height:52px;min-height:52px;padding:10px 16px 10px 24px;border-bottom:1px solid var(--paper-border,#D8D2C6);background:transparent;color:var(--paper-ink,#263F36)}
 .hud-root .hud-window.is-account>.hud-window-header h2{font:600 20px/28px system-ui,sans-serif;letter-spacing:0;color:inherit}
 .hud-root .hud-window.is-account>.hud-window-header button{min-width:36px;min-height:36px;width:36px;height:36px;padding:8px;background:transparent;border:0;box-shadow:none;color:inherit}
-.hud-root .hud-window.is-account.is-manager>.hud-window-body{padding:0!important;overflow:hidden;display:flex;flex-direction:column;min-height:0}
-.account-root[data-layout=manager],.account-root[data-layout=manager]>.account-content{display:flex;flex:1;min-height:0;flex-direction:column}
-.account-root[data-layout=manager] #manage-view,.account-root[data-layout=manager] #manage-view:is([data-manager-page=appearance],[data-manager-page=profile]){display:grid!important;grid-template-columns:216px minmax(0,1fr);min-height:0;min-width:0;overflow:hidden;flex:1;margin:0;gap:0}
-.account-root .manager-sidebar{display:flex;padding:16px 12px;background:transparent;border-right:1px solid var(--owner-border);overflow-y:auto;overflow-x:hidden;min-height:0;gap:0;scrollbar-width:thin}
-.account-root .manager-sidebar .manager-switch{display:flex;align-items:center;min-height:52px;width:100%;padding:4px 8px;margin:0 0 12px;gap:10px;border:1px solid var(--owner-border);border-radius:8px;background:#ffffff26;color:var(--owner-ink)}
-.account-root .manager-switch-picture,.account-root .manager-switch-picture .avatar{width:36px;height:40px;flex:none;object-fit:contain;image-rendering:pixelated}
-.account-root .manager-switch small{font-size:12px;line-height:18px;color:var(--owner-muted)}
-.account-root .manager-switch strong{font-size:14px;line-height:22px;font-weight:600}
-.account-root .manager-switch>.hud-icon{width:16px;height:16px}
-.account-root .manager-nav-group+.manager-nav-group{margin-top:12px;padding-top:10px;border-top:1px solid var(--owner-border)}
-.account-root .manager-nav-caption{font-size:12px;line-height:18px;color:var(--owner-muted);padding:0 12px 4px;letter-spacing:0}
-.account-root .manager-nav-button{min-height:36px;padding:7px 10px;gap:12px;margin:2px 0;border:0;border-radius:8px;background:transparent;box-shadow:none;color:var(--owner-ink);font-size:14px;line-height:22px;font-weight:400}
-.account-root .manager-nav-button .hud-icon{width:20px;height:20px;flex:none;color:inherit}
-.account-root .manager-nav-button:hover:not(:disabled){background:#dfe5d480}
-.account-root .manager-nav-button[aria-current=page]{color:var(--owner-ink);background:var(--owner-sage);box-shadow:inset 3px 0 var(--owner-accent)}
-.account-root .manager-main{display:flex;flex-direction:column;overflow:hidden;min-width:0;min-height:0;background:#ffffff30}
-.account-root .manager-object{display:flex;min-height:40px;gap:8px;padding:4px 24px;border-bottom:1px solid var(--owner-border);background:transparent;color:var(--owner-muted);font-size:12px;line-height:18px;flex:none}
-.account-root .manager-object strong{color:var(--owner-ink);font-size:12px;line-height:18px}
-.account-root .manager-object-picture,.account-root .manager-object-picture .avatar{width:24px;height:28px;flex:none;object-fit:contain}
-.account-root .manager-object button{min-height:32px;padding:4px 8px;font-size:12px;line-height:18px;background:transparent;border:0;box-shadow:none}
-.account-root .manager-scroll{flex:1;min-height:0;min-width:0;overflow:auto;overscroll-behavior:contain;padding:20px 24px;scrollbar-width:thin;scrollbar-color:var(--owner-border) transparent}
-.account-root .manager-pages,.account-root .account-page{min-width:0;height:auto;min-height:0}
-.account-root .manager-page-heading{display:block;position:relative;margin:0 0 16px;padding:0;min-height:28px}
-.account-root .manager-page-heading h1,.account-root .account-confirm h1,.account-root [data-account-page=public-preview]>h1{font:600 20px/28px inherit;font-family:inherit;font-size:20px;line-height:28px;letter-spacing:0;margin:0;color:var(--owner-ink)}
-.account-root .manager-page-heading p{font-size:14px;line-height:22px;color:var(--owner-muted);margin:4px 0 0}
-.account-root .manager-page-heading>.text-button{top:-4px;right:0;min-height:36px;padding:6px 0}
-.account-root [data-account-page=profile]>.manager-page-heading{margin-bottom:12px;padding-right:125px}
-.account-root [data-account-page=profile]>.manager-page-heading p{display:none}
-.account-root .role-tabs{display:flex;flex:none;gap:0;margin:0 0 0;padding:0;border-bottom:1px solid var(--owner-border)}
-.account-root .role-tabs button{min-height:40px;min-width:104px;border:0;border-radius:8px 8px 0 0;padding:8px 20px;background:transparent;color:var(--owner-muted);box-shadow:none;font-size:14px;line-height:22px}
-.account-root .role-tabs button[aria-pressed=true]{background:#ffffff40;color:var(--owner-ink);box-shadow:inset 0 -3px var(--owner-accent);font-weight:600}
-.account-root input,.account-root textarea,.account-root select,.account-root[data-layout=manager] :is(input,textarea,select){min-width:0;min-height:40px;border:1px solid var(--owner-border);border-radius:8px;padding:8px 12px;background:#ffffff65;color:var(--owner-ink);font:400 14px/22px inherit;font-family:inherit;font-size:14px;line-height:22px;box-shadow:none}
-.account-root textarea,.account-root[data-layout=manager] textarea{min-height:84px;resize:vertical}
-.account-root input[type=checkbox],.account-root input[type=radio]{width:16px;height:16px;min-height:16px;accent-color:var(--owner-accent);padding:0;flex:none}
-.account-root label,.account-root[data-layout=manager] label{color:var(--owner-ink);font-size:14px;line-height:22px;gap:6px;margin:0}
-.account-root p,.account-root .small-text,.account-root .form-hint,.account-root details,.account-root .notice{font-size:14px;line-height:22px;color:var(--owner-muted)}
-.account-root .form-hint,.account-root .manager-action-note,.account-root .subtle-note{font-size:12px;line-height:18px;color:var(--owner-muted)}
-.account-root h2,.account-root h3{font-size:16px;line-height:24px;font-weight:600;letter-spacing:0;color:var(--owner-ink)}
-.account-root button,.account-root .button,.account-root .text-button{min-height:36px;padding:6px 12px;border:1px solid var(--owner-border);border-radius:8px;background:#ffffff35;color:var(--owner-ink);box-shadow:none;font:400 14px/22px inherit;font-family:inherit;font-size:14px;line-height:22px;letter-spacing:0;text-shadow:none}
-.account-root .text-button{border-color:transparent;background:transparent;color:var(--owner-muted)}
-.account-root button:hover:not(:disabled),.account-root .button:hover{background:#dfe5d480;border-color:#b8c2ae}
-.account-root button.primary,.account-root .manager-actions .primary{font-size:14px;font-weight:600;background:var(--owner-accent);border-color:var(--owner-accent);color:#fffaf3}
-.account-root button.primary:hover:not(:disabled){background:#a9543a;border-color:#a9543a}
-.account-root button.danger{color:#9d442e;border-color:#c99b8c;background:#fff4ec}
-.account-root :is(button,input,textarea,select):disabled{opacity:.48;cursor:not-allowed;filter:none}
-.account-root :focus-visible{outline:2px solid var(--owner-accent);outline-offset:3px}
-.account-root .manager-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:none;min-height:64px;padding:12px 20px;border-top:1px solid var(--owner-border);background:transparent}
-.account-root .manager-action-note{margin-right:auto;max-width:340px}
-.account-root .manager-actions button{min-height:38px;padding:7px 20px;font-size:14px;line-height:22px;white-space:nowrap}
-.account-root .manager-soft,.account-root .preview-card{padding:16px;margin:0 0 16px;border:1px solid var(--owner-border);border-radius:8px;background:#dfe5d43d;box-shadow:none}
-.account-root .manager-soft p{font-size:14px;line-height:22px}
-.account-root .manager-soft h3{margin:0 0 8px}
-.account-root .notice{border:1px solid var(--owner-border);border-radius:8px;padding:12px 16px;background:#e7ecdf;color:var(--owner-ink)}
-.account-root .notice.error{background:#f6e6db;border-color:#d4a68f;color:#8d422c}
-.account-root .notice.success{background:#e3ead9;border-color:#b5c4a8;color:#36523e}
-.account-root .manager-feedback:empty,.account-root .manager-feedback:has(>[hidden]):not(:has(>:not([hidden]))){display:none}
-.account-root .manager-feedback>.notice{margin:0 0 16px}
-.account-root .resident-identity-card{position:relative;padding:20px 24px 24px;border:1px solid #c7ceb9;border-radius:8px;background:#f8f7ee;box-shadow:inset 0 0 0 2px #dfe5d433;margin:0 0 20px}
-.account-root .resident-identity-card:before,.account-root .resident-identity-card:after{content:'⌜';position:absolute;left:8px;top:4px;font-size:28px;line-height:28px;color:#c4ceaf;pointer-events:none}
-.account-root .resident-identity-card:after{left:auto;top:auto;right:8px;bottom:4px;rotate:180deg}
-.account-root .resident-identity-card>h2{margin:0 0 20px;padding:0 0 12px;border-bottom:1px solid var(--owner-border);font-size:20px;line-height:28px}
-.account-root .resident-identity-content{display:grid;grid-template-columns:180px minmax(0,1fr);gap:32px;align-items:start}
-.account-root .manager-portrait{display:grid;place-items:center;position:relative;width:180px;height:216px;flex:none;overflow:hidden;border-radius:8px;background:linear-gradient(145deg,#e8d5ba,#efe5cf);box-shadow:none}
-.account-root .manager-portrait:after{width:88px;height:14px;bottom:29px;background:#8a81652b;border:0}
-.account-root .manager-portrait .avatar{position:relative;width:144px;height:180px;object-fit:contain;image-rendering:pixelated;z-index:1;border-radius:0}
-.account-root .resident-identity-copy h1{font-size:24px;line-height:32px;margin:0 0 8px;font-weight:650;overflow-wrap:anywhere;color:var(--owner-ink)}
-.account-root .resident-identity-copy>p{margin:0 0 16px;max-height:66px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
-.account-root .resident-identity-facts{display:grid;grid-template-columns:112px minmax(0,1fr);gap:8px 16px;border-top:1px solid var(--owner-border);padding-top:12px;margin:0;font-size:14px;line-height:22px}
-.account-root .resident-identity-facts dt{color:var(--owner-muted)}
-.account-root .resident-identity-facts dd{margin:0;min-width:0;color:var(--owner-ink);overflow-wrap:anywhere}
-.account-root .resident-agent-id{display:flex;align-items:start;gap:6px}
-.account-root #manager-agent-id{min-width:0;overflow-wrap:anywhere;user-select:all;font-size:13px}
-.account-root #manager-copy-id{flex:none;display:grid;place-items:center;min-width:28px;width:28px;min-height:28px;height:28px;padding:4px;margin-top:-3px;border:0;background:transparent;color:var(--owner-ink)}
-.account-root #manager-copy-id .hud-icon{width:16px;height:16px}
-.account-root #manager-membership-state[data-joined=true]:before{content:'';display:inline-block;width:9px;height:9px;margin-right:8px;border-radius:50%;background:#50845c}
-.account-root .manager-shortcuts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.account-root .manager-shortcuts>button{display:flex;align-items:center;gap:16px;min-height:80px;padding:16px 20px;text-align:left;background:#ffffff30}
-.account-root .manager-shortcuts>button:last-child{grid-column:1/-1;min-height:60px}
-.account-root .manager-shortcuts>button>span:nth-child(2){flex:1;min-width:0}
-.account-root .manager-shortcuts strong{display:block;font-size:16px;line-height:24px}
-.account-root .manager-shortcuts small{display:block;font-size:12px;line-height:18px;color:var(--owner-muted);margin-top:4px}
-.account-root .manager-shortcut-icon .hud-icon{width:26px;height:26px}
-.account-root .manager-shortcuts>button>span:last-child{font-size:24px;color:var(--owner-muted)}
-.account-root .profile-layout{display:grid;grid-template-columns:204px minmax(0,1fr);gap:20px;padding:12px;margin:0;min-height:0;height:auto;border:1px solid var(--owner-border);border-radius:0 8px 8px 8px;background:#ffffff30;align-items:stretch}
-.account-root .profile-character-preview{display:flex;flex-direction:column;gap:12px;align-items:stretch;padding:16px;background:#e9e8db80;border-radius:8px;min-width:0}
-.account-root .profile-preview-label{font-size:14px;line-height:22px}
-.account-root .profile-layout .character-stage{width:100%;height:164px;min-height:164px;padding:0;margin:0;background:var(--owner-sage);border:0;border-radius:8px;box-shadow:none}
-.account-root .character-stage>.native-frame,.account-root .character-stage .stage-scene:before,.account-root .character-stage .stage-scene:after{display:none}
-.account-root .profile-layout .stage-title,.account-root .profile-layout .stage-caption,.account-root .profile-layout .stage-ground{display:none!important}
-.account-root .character-stage .stage-scene{position:relative;min-height:0;height:100%!important;overflow:hidden;background:transparent;box-shadow:none;border:0}
-.account-root .profile-layout .stage-scene canvas{position:absolute;max-width:none;width:384px;height:256px;left:50%;top:50%;transform:translate(-50%,-50%);image-rendering:pixelated}
-.account-root .profile-character-preview>button{font-size:14px;min-height:36px;padding:6px 8px}
-.account-root .profile-layout .character-editor{min-width:0;padding:4px 0 0;overflow:visible}
-.account-root .profile-layout #profile-panel{display:block;padding:0;border:0;background:transparent}
-.account-root .profile-layout #profile-panel>.section-heading{display:none}
-.account-root .profile-layout #confirmation-source:empty,.account-root .profile-layout #draft-note:empty{display:none}
-.account-root .profile-layout .form-grid{display:grid;gap:12px;grid-template-columns:1fr}
-.account-root .profile-layout .form-grid>label{display:grid;grid-template-columns:44px minmax(0,1fr);align-items:start;gap:12px;padding:0;margin:0}
-.account-root .profile-layout .form-grid>label:last-child{display:flex;flex-direction:column;gap:6px}
-.account-root .profile-layout #display-name{font-size:14px}
-.account-root .profile-layout #profile-form textarea{min-height:84px}
-.account-root .profile-layout .preview-card{display:block;margin:16px 0 0;padding:0;border-radius:8px;background:#ffffff30}
-.account-root .preview-card>strong{display:block;padding:8px 12px;border-bottom:1px solid var(--owner-border);font-size:14px;background:#dfe5d44d}
-.account-root #published-preview{padding:10px 12px;font-size:14px;line-height:22px}
-.account-root #published-preview>p{margin:6px 0 8px;white-space:pre-wrap;overflow-wrap:anywhere}
-.account-root .tag-row{display:flex;flex-wrap:wrap;gap:6px}
-.account-root .tag{padding:2px 10px;border:0;border-radius:16px;background:var(--owner-sage);font-size:12px;line-height:18px;color:var(--owner-ink)}
-.account-root #appearance-form{display:flex;flex-direction:column;gap:12px;height:auto;min-height:0}
-.account-root .selection-layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:24px;padding:12px 16px;min-height:0;height:auto;align-items:stretch;border:1px solid var(--owner-border);border-radius:8px;background:#ffffff30}
-.account-root .selection-layout .character-stage{width:240px;height:408px;min-height:408px;padding:0;margin:0;position:relative;background:var(--owner-sage);border:0;border-radius:8px;box-shadow:none;overflow:hidden;display:flex;flex-direction:column}
-.account-root .selection-layout .stage-title{position:static!important;order:2;background:transparent;display:flex;justify-content:center;height:32px;min-height:32px;padding:0 8px;color:var(--owner-ink)}
-.account-root .selection-layout .stage-title>span:first-child{display:none}
-.account-root .selection-layout .stage-status{font:400 14px/22px inherit;color:var(--owner-ink);font-size:14px;line-height:22px;padding:0;background:none}
-.account-root .selection-layout .stage-scene{flex:1;min-height:0;height:auto!important}
-.account-root .selection-layout .stage-scene canvas{position:absolute;max-width:none;width:768px;height:512px;left:50%;top:50%;transform:translate(-50%,-50%);image-rendering:pixelated}
-.account-root .selection-layout .stage-ground{display:none}
-.account-root .selection-layout .stage-caption{display:flex;order:3;min-height:42px;padding:0 8px 8px;justify-content:center;border:0;background:transparent}
-.account-root .selection-layout .stage-caption>div:first-child{display:none}
-.account-root .stage-action-controls{display:flex;gap:4px;justify-content:center}
-.account-root .stage-action-controls button{font-size:12px;line-height:18px;min-height:28px;padding:4px 8px}
-.account-root .selection-layout .character-editor{min-width:0;overflow:visible;padding:0}
-.account-root .selection-heading{margin:0 0 12px}
-.account-root .selection-heading h3{margin:0;font-size:14px;line-height:22px}
-.account-root .look-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.account-root .look-option{position:relative;display:flex;flex-direction:column;align-items:center;height:104px;min-width:0;padding:4px 8px;border:1px solid var(--owner-border);border-radius:8px;background:transparent;color:var(--owner-ink);box-shadow:none;overflow:hidden}
-.account-root .look-option>.native-frame,.account-root .look-number,.account-root .native-selection-corners,.account-root .look-saved-label{display:none}
-.account-root .look-option[aria-pressed=true]{border-color:var(--owner-accent);background:#fffdf64d;box-shadow:inset 0 0 0 1px var(--owner-accent)}
-.account-root .look-option .look-portrait{position:relative;width:100%;height:70px;overflow:hidden}
-.account-root .look-option .look-portrait canvas{position:absolute;width:288px;height:192px;max-width:none;left:50%;top:-58px;transform:translateX(-50%);image-rendering:pixelated}
-.account-root .look-option .look-label{display:block;width:100%;height:22px;padding:0!important;font:400 14px/22px inherit;font-size:14px;line-height:22px;color:var(--owner-ink);text-align:center}
-.account-root .look-option .look-selected-marker{display:grid;place-items:center;position:absolute;top:6px;right:6px;width:18px;height:18px;border-radius:50%;font:600 12px/18px system-ui;color:#fff;background:var(--owner-accent);border:0;box-shadow:none}
-.account-root .choice-summary{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;padding:10px 16px;margin:0;border:1px solid var(--owner-border);border-radius:8px;font-size:12px;line-height:18px;background:#ffffff30;color:var(--owner-muted)}
-.account-root .choice-summary strong{font-size:12px;line-height:18px;color:var(--owner-ink)}
-.account-root .choice-summary strong:last-child{color:var(--owner-accent)}
-.account-root .look-catalogue-message:empty{display:none}
-.account-root .look-catalogue-message p{font-size:12px;line-height:18px;margin-bottom:8px}
-.account-root .appearance-attribute-tabs{display:flex;gap:0;border-bottom:1px solid var(--owner-border);margin:0 0 12px}
-.account-root .appearance-attribute-tabs button{flex:1;border:0;border-radius:0;background:transparent;padding:6px 4px;color:var(--owner-muted)}
-.account-root .appearance-attribute-tabs button[aria-selected=true]{box-shadow:inset 0 -3px var(--owner-accent);color:var(--owner-accent);font-weight:600}
-.account-root .appearance-color-group{display:grid;grid-template-columns:44px minmax(0,1fr);align-items:center;gap:12px;margin-top:16px}
-.account-root .appearance-color-group>strong{font-size:14px;line-height:22px;font-weight:600}
-.account-root .appearance-color-options{display:flex;flex-wrap:wrap;gap:10px}
-.account-root .appearance-color-option{display:grid;place-items:center;position:relative;width:32px;height:32px;min-height:32px;padding:3px;border:1px solid transparent;background:transparent;border-radius:50%}
-.account-root .appearance-color-option:before{content:'';display:block;width:24px;height:24px;border-radius:50%;background:var(--swatch);border:1px solid #263f3626}
-.account-root .appearance-color-option[aria-pressed=true]{border-color:var(--owner-accent);box-shadow:0 0 0 1px var(--owner-accent);background:transparent}
-.account-root .appearance-color-option:hover:not(:disabled){background:transparent}
-.account-root .appearance-property-note{font-size:12px;line-height:18px;margin:8px 0 0}
-.account-root #agent-list{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
-.account-root #agent-list button{display:flex;align-items:center;gap:16px;min-width:0;min-height:96px;padding:16px;border:1px solid var(--owner-border);border-radius:8px;text-align:left;background:#ffffff35}
-.account-root #agent-list button[aria-pressed=true]{background:var(--owner-sage);border-color:#a5b39a;box-shadow:inset 3px 0 var(--owner-accent)}
-.account-root #agent-list .avatar{width:48px;height:56px;object-fit:contain}
-.account-root #agent-list strong{font-size:16px;line-height:24px}
-.account-root #agent-list small{font-size:12px;line-height:18px;margin-top:4px;color:var(--owner-muted);overflow-wrap:anywhere}
-.account-root #policy-panel .lock-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.account-root #policy-panel .lock-list label{display:flex;align-items:center;gap:8px;min-height:40px;padding:8px 12px;background:#dfe5d466;border:1px solid var(--owner-border);border-radius:8px;color:var(--owner-ink)}
-.account-root .world-autonomy-option{display:flex;align-items:start;gap:10px;padding:12px;border:1px solid var(--owner-border);border-radius:8px;color:var(--owner-ink);background:transparent}
-.account-root .world-autonomy-option:has(input:checked){border-color:var(--owner-accent);background:#dfe5d466}
-.account-root .world-autonomy-option strong{font-size:14px;line-height:22px;color:var(--owner-ink)}
-.account-root .world-autonomy-option small{font-size:12px;line-height:18px;color:var(--owner-muted)}
-.account-root .world-autonomy-option input{margin-top:3px}
-.account-root .settings-help{margin-top:12px;border-top:1px solid var(--owner-border);padding-top:8px}
-.account-root .settings-help p{font-size:12px;line-height:18px}
-.account-root .management-stage{display:grid;gap:0;border:1px solid var(--owner-border);border-radius:8px;overflow:hidden;margin-bottom:16px}
-.account-root .management-stage>div{display:grid;grid-template-columns:132px minmax(0,1fr);gap:16px;padding:14px 16px;border-bottom:1px solid var(--owner-border);font-size:14px;line-height:22px;background:#ffffff30}
-.account-root .management-stage>div:last-child{border:0}
-.account-root .management-stage strong{font-weight:600;color:var(--owner-ink)}
-.account-root .management-stage span{color:var(--owner-muted)}
-.account-root #owner-diagnostics>summary{display:none}
-.account-root .access-confirm,.account-root #backup-confirm{margin-top:16px;padding:16px;border:1px solid #c99b8c;border-radius:8px;background:#f4e7da}
-.account-root .check{display:flex;align-items:start;gap:8px;font-size:14px;line-height:22px;color:var(--owner-ink)}
-.account-root .check input{margin-top:3px}
-.account-root .invite-row{display:flex;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid var(--owner-border)}
-.account-root .invite-row>div{flex:1;min-width:0}
-.account-root .invite-row p{margin:0}
-.account-root .invite-row summary{font-size:12px;line-height:18px;min-height:28px}
-.account-root .manager-confirm-target{padding:16px;border:1px solid var(--owner-border);border-radius:8px;background:var(--owner-sage)}
-.account-root[data-layout=manager] .account-confirm{display:flex;flex-direction:column;gap:16px;padding:8px 0;border:0;background:none}
-.account-root .account-confirm p{color:var(--owner-ink)}
-.account-root .manager-hero{display:flex;align-items:center;gap:24px;margin:24px 0}
-.account-root .manager-hero h2{font-size:24px;line-height:32px;margin:0 0 12px}
-.account-root .manager-hero p{white-space:pre-wrap;overflow-wrap:anywhere}
-.account-root .manager-public-link{display:inline-flex;align-items:center;min-height:36px;color:var(--owner-ink)}
-.account-root #manage-view[data-manager-page=logs] .manager-scroll{display:block;overflow:auto}
-.account-root #manage-view[data-manager-page=logs] .manager-pages,.account-root #manage-view[data-manager-page=logs] .account-page[data-account-page=logs]{display:block;min-height:0;height:auto}
-.account-root #owner-behavior-logs{height:440px;min-height:320px;display:flex;flex-direction:column}
-.account-root #manage-view[data-manager-page=logs] .manager-actions{min-height:48px;height:auto;padding:8px 20px;border-top:1px solid var(--owner-border)}
-.account-root .behavior-logs{color:var(--owner-ink);gap:12px}
-.account-root .behavior-log-tools label{font-size:12px;line-height:18px}
-.account-root .behavior-log-tools :is(input,select){font-size:12px;line-height:18px;min-height:36px;background:#ffffff65;color:var(--owner-ink);border-color:var(--owner-border)}
-.account-root .behavior-log-status,.account-root .behavior-log-coverage,.account-root .behavior-log-date,.account-root .behavior-log-row time,.account-root .behavior-log-copy small,.account-root .behavior-log-facts dt{color:var(--owner-muted)}
-.account-root .behavior-log-date,.account-root .behavior-log-row,.account-root .behavior-log-detail>section{border-color:var(--owner-border)}
-.account-root .behavior-log-row{color:var(--owner-ink);min-height:60px;border-radius:0}
-.account-root .behavior-log-avatar{background:var(--owner-sage);border-color:var(--owner-border)}
-.account-root .behavior-log-avatar .hud-icon,.account-root .behavior-log-detail h4{color:var(--owner-ink)}
-.account-root .owner-past-interactions{margin-top:16px;border-top:1px solid var(--owner-border);padding-top:8px}
-.account-root .owner-past-interactions>summary{font-size:14px;line-height:22px}
-.account-root .owner-world-summary-record{padding:12px 0;border-bottom:1px solid var(--owner-border);font-size:14px;line-height:22px}
-.account-root .owner-world-summary-record time{font-size:12px;line-height:18px;color:var(--owner-muted)}
-.hud-root .hud-window.is-account:not(.is-manager){width:min(480px,calc(100vw - 48px));max-height:calc(100vh - 112px);height:auto;min-height:0;border:1px solid var(--paper-border,#D8D2C6);border-radius:12px;background:var(--paper-surface,var(--paper,#F7F3E8));box-shadow:0 12px 32px #263f3626}
+.hud-root .hud-window.is-account.is-manager>.hud-window-body{padding:0!important;overflow:hidden;display:flex;flex-direction:column;min-height:0;background:transparent}
+.hud-root .hud-window .account-root[data-layout=manager],.hud-root .hud-window .account-root[data-layout=manager]>.account-content{display:flex;flex:1;min-height:0;flex-direction:column}
+.hud-root .hud-window .account-root[data-layout=manager] #manage-view,.hud-root .hud-window .account-root[data-layout=manager] #manage-view:is([data-manager-page=appearance],[data-manager-page=profile]){display:grid!important;grid-template-columns:216px minmax(0,1fr);min-height:0;min-width:0;overflow:hidden;flex:1;margin:0;gap:0}
+.hud-root .hud-window .account-root .manager-sidebar{display:flex;padding:16px 12px;background:transparent;border-right:1px solid var(--owner-border);overflow-y:auto;overflow-x:hidden;min-height:0;gap:0;scrollbar-width:thin}
+.hud-root .hud-window .account-root .manager-sidebar .manager-switch{display:flex;align-items:center;min-height:52px;width:100%;padding:4px 8px;margin:0 0 12px;gap:10px;border:1px solid var(--owner-border);border-radius:8px;background:#ffffff26;color:var(--owner-ink)}
+.hud-root .hud-window .account-root .manager-switch-picture,.hud-root .hud-window .account-root .manager-switch-picture .avatar{width:36px;height:40px;flex:none;object-fit:contain;image-rendering:pixelated}
+.hud-root .hud-window .account-root .manager-switch small{font-size:12px;line-height:18px;color:var(--owner-muted)}
+.hud-root .hud-window .account-root .manager-switch strong{font-size:14px;line-height:22px;font-weight:600}
+.hud-root .hud-window .account-root .manager-switch>.hud-icon{width:16px;height:16px}
+.hud-root .hud-window .account-root .manager-nav-group+.manager-nav-group{margin-top:12px;padding-top:10px;border-top:1px solid var(--owner-border)}
+.hud-root .hud-window .account-root .manager-nav-caption{font-size:12px;line-height:18px;color:var(--owner-muted);padding:0 12px 4px;letter-spacing:0}
+.hud-root .hud-window .account-root .manager-nav-button{min-height:36px;padding:7px 10px;gap:12px;margin:2px 0;border:0;border-radius:8px;background:transparent;box-shadow:none;color:var(--owner-ink);font-size:14px;line-height:22px;font-weight:400}
+.hud-root .hud-window .account-root .manager-nav-button .hud-icon{width:20px;height:20px;flex:none;color:inherit}
+.hud-root .hud-window .account-root .manager-nav-button:hover:not(:disabled){background:#dfe5d480}
+.hud-root .hud-window .account-root .manager-nav-button[aria-current=page]{color:var(--owner-ink);background:var(--owner-sage);box-shadow:inset 3px 0 var(--owner-accent)}
+.hud-root .hud-window .account-root .manager-main{display:flex;flex-direction:column;overflow:hidden;min-width:0;min-height:0;background:#ffffff30}
+.hud-root .hud-window .account-root .manager-object{display:flex;min-height:40px;gap:8px;padding:4px 24px;border-bottom:1px solid var(--owner-border);background:transparent;color:var(--owner-muted);font-size:12px;line-height:18px;flex:none}
+.hud-root .hud-window .account-root .manager-object strong{color:var(--owner-ink);font-size:12px;line-height:18px}
+.hud-root .hud-window .account-root .manager-object-picture,.hud-root .hud-window .account-root .manager-object-picture .avatar{width:24px;height:28px;flex:none;object-fit:contain}
+.hud-root .hud-window .account-root .manager-object button{min-height:32px;padding:4px 8px;font-size:12px;line-height:18px;background:transparent;border:0;box-shadow:none}
+.hud-root .hud-window .account-root .manager-scroll{flex:1;min-height:0;min-width:0;overflow:auto;overscroll-behavior:contain;padding:20px 24px;scrollbar-width:thin;scrollbar-color:var(--owner-border) transparent}
+.hud-root .hud-window .account-root .manager-pages,.hud-root .hud-window .account-root .account-page{min-width:0;height:auto;min-height:0}
+.hud-root .hud-window .account-root .manager-page-heading{display:block;position:relative;margin:0 0 16px;padding:0;min-height:28px}
+.hud-root .hud-window .account-root .manager-page-heading h1,.hud-root .hud-window .account-root .account-confirm h1,.hud-root .hud-window .account-root [data-account-page=public-preview]>h1{font:600 20px/28px inherit;font-family:inherit;font-size:20px;line-height:28px;letter-spacing:0;margin:0;color:var(--owner-ink)}
+.hud-root .hud-window .account-root .manager-page-heading p{font-size:14px;line-height:22px;color:var(--owner-muted);margin:4px 0 0}
+.hud-root .hud-window .account-root .manager-page-heading>.text-button{top:-4px;right:0;min-height:36px;padding:6px 0}
+.hud-root .hud-window .account-root [data-account-page=profile]>.manager-page-heading{margin-bottom:12px;padding-right:125px}
+.hud-root .hud-window .account-root [data-account-page=profile]>.manager-page-heading p{display:none}
+.hud-root .hud-window .account-root .role-tabs{display:flex;flex:none;gap:0;margin:0 0 0;padding:0;border-bottom:1px solid var(--owner-border)}
+.hud-root .hud-window .account-root .role-tabs button{min-height:40px;min-width:104px;border:0;border-radius:8px 8px 0 0;padding:8px 20px;background:transparent;color:var(--owner-muted);box-shadow:none;font-size:14px;line-height:22px}
+.hud-root .hud-window .account-root .role-tabs button[aria-pressed=true]{background:#ffffff40;color:var(--owner-ink);box-shadow:inset 0 -3px var(--owner-accent);font-weight:600}
+.hud-root .hud-window .account-root input,.hud-root .hud-window .account-root textarea,.hud-root .hud-window .account-root select,.hud-root .hud-window .account-root[data-layout=manager] :is(input,textarea,select){min-width:0;min-height:40px;border:1px solid var(--owner-border);border-radius:8px;padding:8px 12px;background:#ffffff65;color:var(--owner-ink);font:400 14px/22px inherit;font-family:inherit;font-size:14px;line-height:22px;box-shadow:none}
+.hud-root .hud-window .account-root textarea,.hud-root .hud-window .account-root[data-layout=manager] textarea{min-height:84px;resize:vertical}
+.hud-root .hud-window .account-root input[type=checkbox],.hud-root .hud-window .account-root input[type=radio]{width:16px;height:16px;min-height:16px;accent-color:var(--owner-accent);padding:0;flex:none}
+.hud-root .hud-window .account-root label,.hud-root .hud-window .account-root[data-layout=manager] label{color:var(--owner-ink);font-size:14px;line-height:22px;gap:6px;margin:0}
+.hud-root .hud-window .account-root p,.hud-root .hud-window .account-root .small-text,.hud-root .hud-window .account-root .form-hint,.hud-root .hud-window .account-root details,.hud-root .hud-window .account-root .notice{font-size:14px;line-height:22px;color:var(--owner-muted)}
+.hud-root .hud-window .account-root .form-hint,.hud-root .hud-window .account-root .manager-action-note,.hud-root .hud-window .account-root .subtle-note{font-size:12px;line-height:18px;color:var(--owner-muted)}
+.hud-root .hud-window .account-root h2,.hud-root .hud-window .account-root h3{font-size:16px;line-height:24px;font-weight:600;letter-spacing:0;color:var(--owner-ink)}
+.hud-root .hud-window .account-root button,.hud-root .hud-window .account-root .button,.hud-root .hud-window .account-root .text-button{min-height:36px;padding:6px 12px;border:1px solid var(--owner-border);border-radius:8px;background:#ffffff35;color:var(--owner-ink);box-shadow:none;font:400 14px/22px inherit;font-family:inherit;font-size:14px;line-height:22px;letter-spacing:0;text-shadow:none}
+.hud-root .hud-window .account-root .text-button{border-color:transparent;background:transparent;color:var(--owner-muted)}
+.hud-root .hud-window .account-root button:hover:not(:disabled),.hud-root .hud-window .account-root .button:hover{background:#dfe5d480;border-color:#b8c2ae}
+.hud-root .hud-window .account-root button.primary,.hud-root .hud-window .account-root .manager-actions .primary{font-size:14px;font-weight:600;background:var(--owner-accent);border-color:var(--owner-accent);color:#fffaf3}
+.hud-root .hud-window .account-root button.primary:hover:not(:disabled){background:#a9543a;border-color:#a9543a}
+.hud-root .hud-window .account-root button.danger{color:#9d442e;border-color:#c99b8c;background:#fff4ec}
+.hud-root .hud-window .account-root :is(button,input,textarea,select):disabled{opacity:.48;cursor:not-allowed;filter:none}
+.hud-root .hud-window .account-root :focus-visible{outline:2px solid var(--owner-accent);outline-offset:3px}
+.hud-root .hud-window .account-root .manager-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:none;min-height:64px;padding:12px 20px;border-top:1px solid var(--owner-border);background:transparent}
+.hud-root .hud-window .account-root .manager-action-note{margin-right:auto;max-width:340px}
+.hud-root .hud-window .account-root .manager-actions button{min-height:38px;padding:7px 20px;font-size:14px;line-height:22px;white-space:nowrap}
+.hud-root .hud-window .account-root .manager-soft,.hud-root .hud-window .account-root .preview-card{padding:16px;margin:0 0 16px;border:1px solid var(--owner-border);border-radius:8px;background:#dfe5d43d;box-shadow:none}
+.hud-root .hud-window .account-root .manager-soft p{font-size:14px;line-height:22px}
+.hud-root .hud-window .account-root .manager-soft h3{margin:0 0 8px}
+.hud-root .hud-window .account-root .notice{border:1px solid var(--owner-border);border-radius:8px;padding:12px 16px;background:#e7ecdf;color:var(--owner-ink)}
+.hud-root .hud-window .account-root .notice.error{background:#f6e6db;border-color:#d4a68f;color:#8d422c}
+.hud-root .hud-window .account-root .notice.success{background:#e3ead9;border-color:#b5c4a8;color:#36523e}
+.hud-root .hud-window .account-root .manager-feedback:empty,.hud-root .hud-window .account-root .manager-feedback:has(>[hidden]):not(:has(>:not([hidden]))){display:none}
+.hud-root .hud-window .account-root .manager-feedback>.notice{margin:0 0 16px}
+.hud-root .hud-window .account-root .resident-identity-card{position:relative;padding:20px 24px 24px;border:1px solid #c7ceb9;border-radius:8px;background:#f8f7ee;box-shadow:inset 0 0 0 2px #dfe5d433;margin:0 0 20px}
+.hud-root .hud-window .account-root .resident-identity-card:before,.hud-root .hud-window .account-root .resident-identity-card:after{content:'⌜';position:absolute;left:8px;top:4px;font-size:28px;line-height:28px;color:#c4ceaf;pointer-events:none}
+.hud-root .hud-window .account-root .resident-identity-card:after{left:auto;top:auto;right:8px;bottom:4px;rotate:180deg}
+.hud-root .hud-window .account-root .resident-identity-card>h2{margin:0 0 20px;padding:0 0 12px;border-bottom:1px solid var(--owner-border);font-size:20px;line-height:28px}
+.hud-root .hud-window .account-root .resident-identity-content{display:grid;grid-template-columns:180px minmax(0,1fr);gap:32px;align-items:start}
+.hud-root .hud-window .account-root .manager-portrait{display:grid;place-items:center;position:relative;width:180px;height:216px;flex:none;overflow:hidden;border-radius:8px;background:linear-gradient(145deg,#e8d5ba,#efe5cf);box-shadow:none}
+.hud-root .hud-window .account-root .manager-portrait:after{width:88px;height:14px;bottom:29px;background:#8a81652b;border:0}
+.hud-root .hud-window .account-root .manager-portrait .avatar{position:relative;width:144px;height:180px;object-fit:contain;image-rendering:pixelated;z-index:1;border-radius:0}
+.hud-root .hud-window .account-root .resident-identity-copy h1{font-size:24px;line-height:32px;margin:0 0 8px;font-weight:650;overflow-wrap:anywhere;color:var(--owner-ink)}
+.hud-root .hud-window .account-root .resident-identity-copy>p{margin:0 0 16px;max-height:66px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
+.hud-root .hud-window .account-root .resident-identity-facts{display:grid;grid-template-columns:112px minmax(0,1fr);gap:8px 16px;border-top:1px solid var(--owner-border);padding-top:12px;margin:0;font-size:14px;line-height:22px}
+.hud-root .hud-window .account-root .resident-identity-facts dt{color:var(--owner-muted)}
+.hud-root .hud-window .account-root .resident-identity-facts dd{margin:0;min-width:0;color:var(--owner-ink);overflow-wrap:anywhere}
+.hud-root .hud-window .account-root .resident-agent-id{display:flex;align-items:start;gap:6px}
+.hud-root .hud-window .account-root #manager-agent-id{min-width:0;overflow-wrap:anywhere;user-select:all;font-size:13px}
+.hud-root .hud-window .account-root #manager-copy-id{flex:none;display:grid;place-items:center;min-width:28px;width:28px;min-height:28px;height:28px;padding:4px;margin-top:-3px;border:0;background:transparent;color:var(--owner-ink)}
+.hud-root .hud-window .account-root #manager-copy-id .hud-icon{width:16px;height:16px}
+.hud-root .hud-window .account-root #manager-membership-state[data-joined=true]:before{content:'';display:inline-block;width:9px;height:9px;margin-right:8px;border-radius:50%;background:#50845c}
+.hud-root .hud-window .account-root .manager-shortcuts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.hud-root .hud-window .account-root .manager-shortcuts>button{display:flex;align-items:center;gap:16px;min-height:80px;padding:16px 20px;text-align:left;background:#ffffff30}
+.hud-root .hud-window .account-root .manager-shortcuts>button:last-child{grid-column:1/-1;min-height:60px}
+.hud-root .hud-window .account-root .manager-shortcuts>button>span:nth-child(2){flex:1;min-width:0}
+.hud-root .hud-window .account-root .manager-shortcuts strong{display:block;font-size:16px;line-height:24px}
+.hud-root .hud-window .account-root .manager-shortcuts small{display:block;font-size:12px;line-height:18px;color:var(--owner-muted);margin-top:4px}
+.hud-root .hud-window .account-root .manager-shortcut-icon .hud-icon{width:26px;height:26px}
+.hud-root .hud-window .account-root .manager-shortcuts>button>span:last-child{font-size:24px;color:var(--owner-muted)}
+.hud-root .hud-window .account-root .profile-layout{display:grid;grid-template-columns:204px minmax(0,1fr);gap:20px;padding:12px;margin:0;min-height:0;height:auto;border:1px solid var(--owner-border);border-radius:0 8px 8px 8px;background:#ffffff30;align-items:stretch}
+.hud-root .hud-window .account-root .profile-character-preview{display:flex;flex-direction:column;gap:12px;align-items:stretch;padding:16px;background:#e9e8db80;border-radius:8px;min-width:0}
+.hud-root .hud-window .account-root .profile-preview-label{font-size:14px;line-height:22px}
+.hud-root .hud-window .account-root .profile-layout .character-stage{width:100%;height:164px;min-height:164px;padding:0;margin:0;background:var(--owner-sage);border:0;border-radius:8px;box-shadow:none}
+.hud-root .hud-window .account-root .character-stage>.native-frame,.hud-root .hud-window .account-root .character-stage .stage-scene:before,.hud-root .hud-window .account-root .character-stage .stage-scene:after{display:none}
+.hud-root .hud-window .account-root .profile-layout .stage-title,.hud-root .hud-window .account-root .profile-layout .stage-caption,.hud-root .hud-window .account-root .profile-layout .stage-ground{display:none!important}
+.hud-root .hud-window .account-root .character-stage .stage-scene{position:relative;min-height:0;height:100%!important;overflow:hidden;background:transparent;box-shadow:none;border:0}
+.hud-root .hud-window .account-root .profile-layout .stage-scene canvas{position:absolute;max-width:none;width:384px;height:256px;left:50%;top:50%;transform:translate(-50%,-50%);image-rendering:pixelated}
+.hud-root .hud-window .account-root .profile-character-preview>button{font-size:14px;min-height:36px;padding:6px 8px}
+.hud-root .hud-window .account-root .profile-layout .character-editor{min-width:0;padding:4px 0 0;overflow:visible}
+.hud-root .hud-window .account-root .profile-layout #profile-panel{display:block;padding:0;border:0;background:transparent}
+.hud-root .hud-window .account-root .profile-layout #profile-panel>.section-heading{display:none}
+.hud-root .hud-window .account-root .profile-layout #confirmation-source:empty,.hud-root .hud-window .account-root .profile-layout #draft-note:empty{display:none}
+.hud-root .hud-window .account-root .profile-layout .form-grid{display:grid;gap:12px;grid-template-columns:1fr}
+.hud-root .hud-window .account-root .profile-layout .form-grid>label{display:grid;grid-template-columns:44px minmax(0,1fr);align-items:start;gap:12px;padding:0;margin:0}
+.hud-root .hud-window .account-root .profile-layout .form-grid>label:last-child{display:flex;flex-direction:column;gap:6px}
+.hud-root .hud-window .account-root .profile-layout #display-name{font-size:14px}
+.hud-root .hud-window .account-root .profile-layout #profile-form textarea{min-height:84px}
+.hud-root .hud-window .account-root .profile-layout .preview-card{display:block;margin:16px 0 0;padding:0;border-radius:8px;background:#ffffff30}
+.hud-root .hud-window .account-root .preview-card>strong{display:block;padding:8px 12px;border-bottom:1px solid var(--owner-border);font-size:14px;background:#dfe5d44d}
+.hud-root .hud-window .account-root #published-preview{padding:10px 12px;font-size:14px;line-height:22px}
+.hud-root .hud-window .account-root #published-preview>p{margin:6px 0 8px;white-space:pre-wrap;overflow-wrap:anywhere}
+.hud-root .hud-window .account-root .tag-row{display:flex;flex-wrap:wrap;gap:6px}
+.hud-root .hud-window .account-root .tag{padding:2px 10px;border:0;border-radius:16px;background:var(--owner-sage);font-size:12px;line-height:18px;color:var(--owner-ink)}
+.hud-root .hud-window .account-root #appearance-form{display:flex;flex-direction:column;gap:12px;height:auto;min-height:0}
+.hud-root .hud-window .account-root .selection-layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:24px;padding:12px 16px;min-height:0;height:auto;align-items:stretch;border:1px solid var(--owner-border);border-radius:8px;background:#ffffff30}
+.hud-root .hud-window .account-root .selection-layout .character-stage{width:240px;height:408px;min-height:408px;padding:0;margin:0;position:relative;background:var(--owner-sage);border:0;border-radius:8px;box-shadow:none;overflow:hidden;display:flex;flex-direction:column}
+.hud-root .hud-window .account-root .selection-layout .stage-title{position:static!important;order:2;background:transparent;display:flex;justify-content:center;height:32px;min-height:32px;padding:0 8px;color:var(--owner-ink)}
+.hud-root .hud-window .account-root .selection-layout .stage-title>span:first-child{display:none}
+.hud-root .hud-window .account-root .selection-layout .stage-status{font:400 14px/22px inherit;color:var(--owner-ink);font-size:14px;line-height:22px;padding:0;background:none}
+.hud-root .hud-window .account-root .selection-layout .stage-scene{flex:1;min-height:0;height:auto!important}
+.hud-root .hud-window .account-root .selection-layout .stage-scene canvas{position:absolute;max-width:none;width:768px;height:512px;left:50%;top:50%;transform:translate(-50%,-50%);image-rendering:pixelated}
+.hud-root .hud-window .account-root .selection-layout .stage-ground{display:none}
+.hud-root .hud-window .account-root .selection-layout .stage-caption{display:flex;order:3;min-height:42px;padding:0 8px 8px;justify-content:center;border:0;background:transparent}
+.hud-root .hud-window .account-root .selection-layout .stage-caption>div:first-child{display:none}
+.hud-root .hud-window .account-root .stage-action-controls{display:flex;gap:4px;justify-content:center}
+.hud-root .hud-window .account-root .stage-action-controls button{font-size:12px;line-height:18px;min-height:28px;padding:4px 8px}
+.hud-root .hud-window .account-root .selection-layout .character-editor{min-width:0;overflow:visible;padding:0}
+.hud-root .hud-window .account-root .selection-heading{margin:0 0 12px}
+.hud-root .hud-window .account-root .selection-heading h3{margin:0;font-size:14px;line-height:22px}
+.hud-root .hud-window .account-root .look-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hud-root .hud-window .account-root .look-option{position:relative;display:flex;flex-direction:column;align-items:center;height:104px;min-width:0;padding:4px 8px;border:1px solid var(--owner-border);border-radius:8px;background:transparent;color:var(--owner-ink);box-shadow:none;overflow:hidden}
+.hud-root .hud-window .account-root .look-option>.native-frame,.hud-root .hud-window .account-root .look-number,.hud-root .hud-window .account-root .native-selection-corners,.hud-root .hud-window .account-root .look-saved-label{display:none}
+.hud-root .hud-window .account-root .look-option[aria-pressed=true]{border-color:var(--owner-accent);background:#fffdf64d;box-shadow:inset 0 0 0 1px var(--owner-accent)}
+.hud-root .hud-window .account-root .look-option .look-portrait{position:relative;width:100%;height:70px;overflow:hidden}
+.hud-root .hud-window .account-root .look-option .look-portrait canvas{position:absolute;width:288px;height:192px;max-width:none;left:50%;top:-58px;transform:translateX(-50%);image-rendering:pixelated}
+.hud-root .hud-window .account-root .look-option .look-label{display:block;width:100%;height:22px;padding:0!important;font:400 14px/22px inherit;font-size:14px;line-height:22px;color:var(--owner-ink);text-align:center}
+.hud-root .hud-window .account-root .look-option .look-selected-marker{display:grid;place-items:center;position:absolute;top:6px;right:6px;width:18px;height:18px;border-radius:50%;font:600 12px/18px system-ui;color:#fff;background:var(--owner-accent);border:0;box-shadow:none}
+.hud-root .hud-window .account-root .choice-summary{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;padding:10px 16px;margin:0;border:1px solid var(--owner-border);border-radius:8px;font-size:12px;line-height:18px;background:#ffffff30;color:var(--owner-muted)}
+.hud-root .hud-window .account-root .choice-summary strong{font-size:12px;line-height:18px;color:var(--owner-ink)}
+.hud-root .hud-window .account-root .choice-summary strong:last-child{color:var(--owner-accent)}
+.hud-root .hud-window .account-root .look-catalogue-message:empty{display:none}
+.hud-root .hud-window .account-root .look-catalogue-message p{font-size:12px;line-height:18px;margin-bottom:8px}
+.hud-root .hud-window .account-root .appearance-attribute-tabs{display:flex;gap:0;border-bottom:1px solid var(--owner-border);margin:0 0 12px}
+.hud-root .hud-window .account-root .appearance-attribute-tabs button{flex:1;border:0;border-radius:0;background:transparent;padding:6px 4px;color:var(--owner-muted)}
+.hud-root .hud-window .account-root .appearance-attribute-tabs button[aria-selected=true]{box-shadow:inset 0 -3px var(--owner-accent);color:var(--owner-accent);font-weight:600}
+.hud-root .hud-window .account-root .appearance-color-group{display:grid;grid-template-columns:44px minmax(0,1fr);align-items:center;gap:12px;margin-top:16px}
+.hud-root .hud-window .account-root .appearance-color-group>strong{font-size:14px;line-height:22px;font-weight:600}
+.hud-root .hud-window .account-root .appearance-color-options{display:flex;flex-wrap:wrap;gap:10px}
+.hud-root .hud-window .account-root .appearance-color-option{display:grid;place-items:center;position:relative;width:32px;height:32px;min-height:32px;padding:3px;border:1px solid transparent;background:transparent;border-radius:50%}
+.hud-root .hud-window .account-root .appearance-color-option:before{content:'';display:block;width:24px;height:24px;border-radius:50%;background:var(--swatch);border:1px solid #263f3626}
+.hud-root .hud-window .account-root .appearance-color-option[aria-pressed=true]{border-color:var(--owner-accent);box-shadow:0 0 0 1px var(--owner-accent);background:transparent}
+.hud-root .hud-window .account-root .appearance-color-option:hover:not(:disabled){background:transparent}
+.hud-root .hud-window .account-root .appearance-property-note{font-size:12px;line-height:18px;margin:8px 0 0}
+.hud-root .hud-window .account-root #agent-list{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.hud-root .hud-window .account-root #agent-list button{display:flex;align-items:center;gap:16px;min-width:0;min-height:96px;padding:16px;border:1px solid var(--owner-border);border-radius:8px;text-align:left;background:#ffffff35}
+.hud-root .hud-window .account-root #agent-list button[aria-pressed=true]{background:var(--owner-sage);border-color:#a5b39a;box-shadow:inset 3px 0 var(--owner-accent)}
+.hud-root .hud-window .account-root #agent-list .avatar{width:48px;height:56px;object-fit:contain}
+.hud-root .hud-window .account-root #agent-list strong{font-size:16px;line-height:24px}
+.hud-root .hud-window .account-root #agent-list small{font-size:12px;line-height:18px;margin-top:4px;color:var(--owner-muted);overflow-wrap:anywhere}
+.hud-root .hud-window .account-root #policy-panel .lock-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hud-root .hud-window .account-root #policy-panel .lock-list label{display:flex;align-items:center;gap:8px;min-height:40px;padding:8px 12px;background:#dfe5d466;border:1px solid var(--owner-border);border-radius:8px;color:var(--owner-ink)}
+.hud-root .hud-window .account-root .world-autonomy-option{display:flex;align-items:start;gap:10px;padding:12px;border:1px solid var(--owner-border);border-radius:8px;color:var(--owner-ink);background:transparent}
+.hud-root .hud-window .account-root .world-autonomy-option:has(input:checked){border-color:var(--owner-accent);background:#dfe5d466}
+.hud-root .hud-window .account-root .world-autonomy-option strong{font-size:14px;line-height:22px;color:var(--owner-ink)}
+.hud-root .hud-window .account-root .world-autonomy-option small{font-size:12px;line-height:18px;color:var(--owner-muted)}
+.hud-root .hud-window .account-root .world-autonomy-option input{margin-top:3px}
+.hud-root .hud-window .account-root .settings-help{margin-top:12px;border-top:1px solid var(--owner-border);padding-top:8px}
+.hud-root .hud-window .account-root .settings-help p{font-size:12px;line-height:18px}
+.hud-root .hud-window .account-root .management-stage{display:grid;gap:0;border:1px solid var(--owner-border);border-radius:8px;overflow:hidden;margin-bottom:16px}
+.hud-root .hud-window .account-root .management-stage>div{display:grid;grid-template-columns:132px minmax(0,1fr);gap:16px;padding:14px 16px;border-bottom:1px solid var(--owner-border);font-size:14px;line-height:22px;background:#ffffff30}
+.hud-root .hud-window .account-root .management-stage>div:last-child{border:0}
+.hud-root .hud-window .account-root .management-stage strong{font-weight:600;color:var(--owner-ink)}
+.hud-root .hud-window .account-root .management-stage span{color:var(--owner-muted)}
+.hud-root .hud-window .account-root #owner-diagnostics>summary{display:none}
+.hud-root .hud-window .account-root .access-confirm,.hud-root .hud-window .account-root #backup-confirm{margin-top:16px;padding:16px;border:1px solid #c99b8c;border-radius:8px;background:#f4e7da}
+.hud-root .hud-window .account-root .check{display:flex;align-items:start;gap:8px;font-size:14px;line-height:22px;color:var(--owner-ink)}
+.hud-root .hud-window .account-root .check input{margin-top:3px}
+.hud-root .hud-window .account-root .invite-row{display:flex;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid var(--owner-border)}
+.hud-root .hud-window .account-root .invite-row>div{flex:1;min-width:0}
+.hud-root .hud-window .account-root .invite-row p{margin:0}
+.hud-root .hud-window .account-root .invite-row summary{font-size:12px;line-height:18px;min-height:28px}
+.hud-root .hud-window .account-root .manager-confirm-target{padding:16px;border:1px solid var(--owner-border);border-radius:8px;background:var(--owner-sage)}
+.hud-root .hud-window .account-root[data-layout=manager] .account-confirm{display:flex;flex-direction:column;gap:16px;padding:8px 0;border:0;background:none}
+.hud-root .hud-window .account-root .account-confirm p{color:var(--owner-ink)}
+.hud-root .hud-window .account-root .manager-hero{display:flex;align-items:center;gap:24px;margin:24px 0}
+.hud-root .hud-window .account-root .manager-hero h2{font-size:24px;line-height:32px;margin:0 0 12px}
+.hud-root .hud-window .account-root .manager-hero p{white-space:pre-wrap;overflow-wrap:anywhere}
+.hud-root .hud-window .account-root .manager-public-link{display:inline-flex;align-items:center;min-height:36px;color:var(--owner-ink)}
+.hud-root .hud-window .account-root #manage-view[data-manager-page=logs] .manager-scroll{display:block;overflow:auto}
+.hud-root .hud-window .account-root #manage-view[data-manager-page=logs] .manager-pages,.hud-root .hud-window .account-root #manage-view[data-manager-page=logs] .account-page[data-account-page=logs]{display:block;min-height:0;height:auto}
+.hud-root .hud-window .account-root #owner-behavior-logs{height:440px;min-height:320px;display:flex;flex-direction:column}
+.hud-root .hud-window .account-root #manage-view[data-manager-page=logs] .manager-actions{min-height:48px;height:auto;padding:8px 20px;border-top:1px solid var(--owner-border)}
+.hud-root .hud-window .account-root .behavior-logs{color:var(--owner-ink);gap:12px}
+.hud-root .hud-window .account-root .behavior-log-tools label{font-size:12px;line-height:18px}
+.hud-root .hud-window .account-root .behavior-log-tools :is(input,select){font-size:12px;line-height:18px;min-height:36px;background:#ffffff65;color:var(--owner-ink);border-color:var(--owner-border)}
+.hud-root .hud-window .account-root .behavior-log-status,.hud-root .hud-window .account-root .behavior-log-coverage,.hud-root .hud-window .account-root .behavior-log-date,.hud-root .hud-window .account-root .behavior-log-row time,.hud-root .hud-window .account-root .behavior-log-copy small,.hud-root .hud-window .account-root .behavior-log-facts dt{color:var(--owner-muted)}
+.hud-root .hud-window .account-root .behavior-log-date,.hud-root .hud-window .account-root .behavior-log-row,.hud-root .hud-window .account-root .behavior-log-detail>section{border-color:var(--owner-border)}
+.hud-root .hud-window .account-root .behavior-log-row{color:var(--owner-ink);min-height:60px;border-radius:0}
+.hud-root .hud-window .account-root .behavior-log-avatar{background:var(--owner-sage);border-color:var(--owner-border)}
+.hud-root .hud-window .account-root .behavior-log-avatar .hud-icon,.hud-root .hud-window .account-root .behavior-log-detail h4{color:var(--owner-ink)}
+.hud-root .hud-window .account-root .owner-past-interactions{margin-top:16px;border-top:1px solid var(--owner-border);padding-top:8px}
+.hud-root .hud-window .account-root .owner-past-interactions>summary{font-size:14px;line-height:22px}
+.hud-root .hud-window .account-root .owner-world-summary-record{padding:12px 0;border-bottom:1px solid var(--owner-border);font-size:14px;line-height:22px}
+.hud-root .hud-window .account-root .owner-world-summary-record time{font-size:12px;line-height:18px;color:var(--owner-muted)}
+.hud-root .hud-window.is-account:not(.is-manager){width:min(480px,calc(100vw - 48px));max-height:calc(100vh - 112px);height:auto;min-height:0;border:1px solid var(--paper-border,#D8D2C6);border-radius:12px;background:var(--paper-surface,var(--paper,#F7F3E8));box-shadow:0 12px 32px #263f3626;padding:0;--hud-text:var(--paper-ink,#263F36);--hud-muted:var(--paper-muted,#68746E);--hud-line:var(--paper-border,#D8D2C6);--hud-accent:var(--paper-accent,#BE6346);--hud-selected:var(--paper-sage,#DFE5D4)}
 .hud-root .hud-window.is-account:not(.is-manager)>.hud-window-body{padding:24px;overflow:auto;scrollbar-width:thin}
-.account-root[data-layout=compact] :is(input:not([type=checkbox]):not([type=radio]),select){min-height:44px}
-.account-root[data-layout=compact] .auth-panel form{gap:16px}
-.account-root[data-layout=compact] .auth-panel h2{font-size:20px;line-height:28px}
-.account-root .password-field{position:relative;display:flex;min-width:0}
-.account-root .password-field input{width:100%;padding-right:66px}
-.account-root .password-toggle{position:absolute;right:3px;top:3px;min-height:38px;padding:5px 10px;border:0;background:transparent;font-size:12px;color:var(--owner-muted)}
-.account-root .file-picker{display:block;padding:16px;border:1px dashed #a8b69c;border-radius:8px;background:#dfe5d44d;color:var(--owner-ink)}
-.account-root .file-picker input{width:100%;font-size:12px;background:transparent;border:0;padding:4px 0;min-height:36px}
-.account-root .auth-alternatives{display:flex;justify-content:space-between;gap:12px;margin-top:12px}
-.account-root .auth-alternatives button{padding:6px 0}
-.account-root .auth-back{width:100%;margin-top:16px}
-.account-root .account-back{margin-top:16px}
-.account-root .entry-prompt-details pre{font-size:12px;line-height:18px;white-space:pre-wrap;overflow-wrap:anywhere;background:#dfe5d44d;border:1px solid var(--owner-border);border-radius:8px;padding:16px;color:var(--owner-ink)}
-.account-root .account-target{padding:0 0 16px;margin:0 0 16px;border-color:var(--owner-border)}
-.account-root .saved-setup-progress{background:#dfe5d44d;border-color:var(--owner-border)}
+.hud-root .hud-window .account-root[data-layout=compact] :is(input:not([type=checkbox]):not([type=radio]),select){min-height:44px}
+.hud-root .hud-window .account-root[data-layout=compact] .auth-panel form{gap:16px}
+.hud-root .hud-window .account-root[data-layout=compact] .auth-panel h2{font-size:20px;line-height:28px}
+.hud-root .hud-window .account-root .password-field{position:relative;display:flex;min-width:0}
+.hud-root .hud-window .account-root .password-field input{width:100%;padding-right:66px}
+.hud-root .hud-window .account-root .password-toggle{position:absolute;right:3px;top:3px;min-height:38px;padding:5px 10px;border:0;background:transparent;font-size:12px;color:var(--owner-muted)}
+.hud-root .hud-window .account-root .file-picker{display:block;padding:16px;border:1px dashed #a8b69c;border-radius:8px;background:#dfe5d44d;color:var(--owner-ink)}
+.hud-root .hud-window .account-root .file-picker input{width:100%;font-size:12px;background:transparent;border:0;padding:4px 0;min-height:36px}
+.hud-root .hud-window .account-root .auth-alternatives{display:flex;justify-content:space-between;gap:12px;margin-top:12px}
+.hud-root .hud-window .account-root .auth-alternatives button{padding:6px 0}
+.hud-root .hud-window .account-root .auth-back{width:100%;margin-top:16px}
+.hud-root .hud-window .account-root .account-back{margin-top:16px}
+.hud-root .hud-window .account-root .entry-prompt-details pre{font-size:12px;line-height:18px;white-space:pre-wrap;overflow-wrap:anywhere;background:#dfe5d44d;border:1px solid var(--owner-border);border-radius:8px;padding:16px;color:var(--owner-ink)}
+.hud-root .hud-window .account-root .account-target{padding:0 0 16px;margin:0 0 16px;border-color:var(--owner-border)}
+.hud-root .hud-window .account-root .saved-setup-progress{background:#dfe5d44d;border-color:var(--owner-border)}
 @media(max-height:850px){
  .hud-root .hud-window.is-account.is-manager{height:calc(100vh - 112px);max-height:calc(100vh - 112px)}
- .account-root .manager-sidebar{padding-top:12px;padding-bottom:12px}
- .account-root .manager-nav-group+.manager-nav-group{margin-top:8px;padding-top:6px}
- .account-root .manager-scroll{padding-top:16px;padding-bottom:16px}
- .account-root .resident-identity-card{padding:16px 20px;margin-bottom:16px}
- .account-root .resident-identity-card>h2{margin-bottom:16px}
- .account-root .manager-shortcuts>button{padding:12px 16px;min-height:72px}
+ .hud-root .hud-window .account-root .manager-sidebar{padding-top:12px;padding-bottom:12px}
+ .hud-root .hud-window .account-root .manager-nav-group+.manager-nav-group{margin-top:8px;padding-top:6px}
+ .hud-root .hud-window .account-root .manager-scroll{padding-top:16px;padding-bottom:16px}
+ .hud-root .hud-window .account-root .resident-identity-card{padding:16px 20px;margin-bottom:16px}
+ .hud-root .hud-window .account-root .resident-identity-card>h2{margin-bottom:16px}
+ .hud-root .hud-window .account-root .manager-shortcuts>button{padding:12px 16px;min-height:72px}
 }
 @media(max-width:900px){
- .account-root[data-layout=manager] #manage-view,.account-root[data-layout=manager] #manage-view:is([data-manager-page=appearance],[data-manager-page=profile]){grid-template-columns:188px minmax(0,1fr)}
- .account-root .manager-scroll{padding-left:16px;padding-right:16px}
- .account-root .resident-identity-content{grid-template-columns:140px minmax(0,1fr);gap:20px}
- .account-root .resident-identity-content .manager-portrait{width:140px;height:196px}
- .account-root .resident-identity-facts{grid-template-columns:88px minmax(0,1fr);gap:8px}
- .account-root .profile-layout{grid-template-columns:160px minmax(0,1fr);gap:16px}
- .account-root .selection-layout{grid-template-columns:180px minmax(0,1fr);gap:16px;padding:12px}
- .account-root .selection-layout .character-stage{width:180px}
+ .hud-root .hud-window .account-root[data-layout=manager] #manage-view,.hud-root .hud-window .account-root[data-layout=manager] #manage-view:is([data-manager-page=appearance],[data-manager-page=profile]){grid-template-columns:188px minmax(0,1fr)}
+ .hud-root .hud-window .account-root .manager-scroll{padding-left:16px;padding-right:16px}
+ .hud-root .hud-window .account-root .resident-identity-content{grid-template-columns:140px minmax(0,1fr);gap:20px}
+ .hud-root .hud-window .account-root .resident-identity-content .manager-portrait{width:140px;height:196px}
+ .hud-root .hud-window .account-root .resident-identity-facts{grid-template-columns:88px minmax(0,1fr);gap:8px}
+ .hud-root .hud-window .account-root .profile-layout{grid-template-columns:160px minmax(0,1fr);gap:16px}
+ .hud-root .hud-window .account-root .selection-layout{grid-template-columns:180px minmax(0,1fr);gap:16px;padding:12px}
+ .hud-root .hud-window .account-root .selection-layout .character-stage{width:180px}
 }
+
+.hud-root .hud-window.is-account>.native-frame{display:none}
+.hud-root .hud-window.is-account>.hud-window-body{background:transparent;color:var(--paper-ink,#263F36)}
+/* Restore owner geometry where legacy editor selectors include #manage-view. */
+.hud-root .hud-window.is-account{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+.hud-root .hud-window.is-account>.hud-window-header h2{text-shadow:none;font-weight:600}
+.hud-root .hud-window .account-root #manage-view:is([data-manager-page=appearance],[data-manager-page=profile]) .manager-scroll{display:block;padding:16px 24px;overflow:auto}
+.hud-root .hud-window .account-root #manage-view:is([data-manager-page=appearance],[data-manager-page=profile]) .manager-feedback{padding:0;max-height:none;overflow:visible;background:transparent}
+.hud-root .hud-window .account-root #manage-view:is([data-manager-page=appearance],[data-manager-page=profile]) .manager-pages{display:block;min-height:0;height:auto}
+.hud-root .hud-window .account-root #manage-view:is([data-manager-page=appearance],[data-manager-page=profile]) .account-page{display:block;height:auto;min-height:0}
+.hud-root .hud-window .account-root #manage-view:is([data-manager-page=appearance],[data-manager-page=profile]) .manager-page-heading{display:block}
+.hud-root .hud-window .account-root #manage-view[data-manager-page=profile] .manager-object{display:flex}
+.hud-root .hud-window .account-root #manage-view[data-manager-page=profile] .role-tabs{display:flex}
+.hud-root .hud-window .account-root .look-option .look-portrait{background:transparent;box-shadow:none}
+.hud-root .hud-window .account-root .look-option .look-label,.hud-root .hud-window .account-root .look-option[aria-pressed=true] .look-label{background:transparent;color:var(--owner-ink);letter-spacing:0}
+.hud-root .hud-window .account-root .look-option[aria-pressed=true]{outline:0;outline-offset:0;box-shadow:inset 0 0 0 1px var(--owner-accent)}
+.hud-root .hud-window .account-root .manager-portrait .avatar{position:absolute;width:384px;height:384px;max-width:none;left:50%;bottom:0;transform:translateX(-50%)}
+.hud-root .hud-window .account-root .profile-layout .stage-scene canvas{width:512px;height:342px}
+.hud-root .hud-window .account-root .stage-status:before{display:none}
+.hud-root .hud-window .account-root .appearance-color-group{grid-template-columns:64px minmax(0,1fr)}
+.hud-root .hud-window .account-root .manager-sidebar{scrollbar-gutter:auto}
+.hud-root .hud-window .account-root .profile-layout .form-grid{row-gap:12px}
+.hud-root .hud-window .account-root .manager-nav-caption{display:none}
+.hud-root .hud-window .account-root .manager-nav-button{margin:0;min-height:36px;padding:6px 10px}
+.hud-root .hud-window .account-root .manager-nav-group+.manager-nav-group{margin-top:10px;padding-top:10px}
+.hud-root .hud-window .account-root .manager-switch{margin-bottom:12px}
+.hud-root .hud-window .account-root .manager-portrait .avatar{width:288px;height:288px;bottom:8px}
+.hud-root .hud-window .account-root .role-tabs{background:transparent;box-shadow:none}
+.hud-root .hud-window .account-root .role-tabs button{background:transparent;box-shadow:none;color:var(--owner-muted)}
+.hud-root .hud-window .account-root .role-tabs button[aria-pressed=true]{background:#ffffff40;box-shadow:inset 0 -3px var(--owner-accent);color:var(--owner-ink)}
+.hud-root .hud-window .account-root .profile-layout #profile-form .form-grid{display:grid;grid-template-columns:1fr;gap:12px}
+.hud-root .hud-window .account-root :is(input,textarea,select){font-weight:400}
+@media(max-height:850px){.hud-root .hud-window .account-root .manager-nav-group+.manager-nav-group{margin-top:8px;padding-top:8px}.hud-root .hud-window .account-root .manager-sidebar{padding-top:12px;padding-bottom:12px}}

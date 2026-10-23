@@ -35,7 +35,7 @@ export function createOwnerManager(root,manage,sections,{navigate=()=>{},refresh
   <button type="button" data-manager-go="participation"><span class="manager-shortcut-icon" data-shortcut-icon="world"></span><span><strong>世界访问</strong><small>查看与管理此角色在当前世界的访问设置。</small></span><span aria-hidden="true">›</span></button>
   <button type="button" data-manager-go="runtime"><span class="manager-shortcut-icon" data-shortcut-icon="key"></span><span><strong>运行连接</strong><small>查看这位角色的运行授权与已建立的连接。</small></span><span aria-hidden="true">›</span></button></div>`;
   for(const node of overview.querySelectorAll('[data-shortcut-icon]'))node.append(icon(node.dataset.shortcutIcon));
-  const copyId=$('#manager-copy-id');copyId.append(icon('copy'));
+  const copyId=$('#manager-copy-id');copyId.append(el('span','','⧉'));
   copyId.addEventListener('click',async()=>{const id=currentAgent?.agentId;if(!id)return;try{await navigator.clipboard.writeText(id);$('#manager-copy-id-status').textContent='Agent ID 已复制';copyId.setAttribute('aria-label','Agent ID 已复制');}catch{$('#manager-copy-id-status').textContent='复制失败，请选择完整 Agent ID 复制';copyId.setAttribute('aria-label','复制失败，重试复制完整 Agent ID');}});
   const preview=sections['public-preview'];preview.innerHTML='<h1>对外资料预览</h1><p>当前已保存的角色资料。</p><div class="manager-hero"><div class="manager-portrait" id="manager-public-avatar"></div><div><h2 id="manager-public-name"></h2><p id="manager-public-bio"></p><div id="manager-public-interests" class="tag-row"></div></div></div>';
   const personalLogs=el('section');personalLogs.id='owner-behavior-logs';sections.logs.append(personalLogs);

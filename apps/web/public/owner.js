@@ -542,7 +542,7 @@ async function loadAgents({resetProfile=true}={}){
     if(requestedAgentId){
       explicitTarget=true;
       entryStore?.rememberTarget(result.ownerId,requestedAgentId);
-      if(agents.some(agent=>agent.agentId===requestedAgentId)){if(selectedId!==requestedAgentId)selectionGeneration++;selectedId=requestedAgentId;unavailableAgentId='';message('已打开当前获准的 Agent 资料。');}
+      if(agents.some(agent=>agent.agentId===requestedAgentId)){if(selectedId!==requestedAgentId)selectionGeneration++;selectedId=requestedAgentId;unavailableAgentId='';message('');}
       else{unavailableAgentId=requestedAgentId;selectedId='';selectionGeneration++;message('这个 Agent 当前不可用，请明确选择自己的 Agent 后再编辑。','error');}
       requestedAgentId='';
     }
