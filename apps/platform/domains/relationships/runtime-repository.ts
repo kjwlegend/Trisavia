@@ -1,5 +1,6 @@
 import { defineRuntimeRepository } from '../../contracts/runtime-store.ts';
 import type { CompletedFeedbackFact, Friendship, FriendshipInvitation } from './types.ts';
+import type {InvitationPage,RelationshipPage} from './queries.ts';
 
 export interface RelationshipsRepository {
   /** Canonical transaction lock. Application locks the WS03 pair first to serialize block/accept. */
@@ -10,8 +11,9 @@ export interface RelationshipsRepository {
   getInvitation(id: string): Promise<FriendshipInvitation | undefined>;
   saveInvitation(value: FriendshipInvitation, expectedVersion: number | null): Promise<void>;
   saveFriendship(value: Friendship, expectedVersion: number | null): Promise<void>;
-  listInvitations(agentId: string, options: { afterId?: string; direction?: 'incoming' | 'outgoing'; limit: number }): Promise<FriendshipInvitation[]>;
-  listConfirmed(agentId: string, options: { afterId?: string; limit: number }): Promise<Friendship[]>;
+  /** Candidates only: the service still checks every current public/member/pair/sharing permission. */
+  listInvitations(agentId: string, options: InvitationPage): Promise<FriendshipInvitation[]>;
+  listConfirmed(agentId: string, options: RelationshipPage): Promise<Friendship[]>;
   /** The trusted WS03 close hook uses this same transaction. No historical scan, nested store or source writes. */
   recordCompletedFeedback(fact: CompletedFeedbackFact): Promise<{ changed: boolean; friendship: Friendship | null }>;
 }

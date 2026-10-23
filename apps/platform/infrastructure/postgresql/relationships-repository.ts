@@ -2,6 +2,7 @@ import { RuntimeError } from '../../contracts/runtime-store.ts';
 import { RELATIONSHIPS_REPOSITORY, type RelationshipsReader, type RelationshipsRepository } from '../../domains/relationships/runtime-repository.ts';
 import type { Friendship, FriendshipInvitation } from '../../domains/relationships/types.ts';
 import { canonicalFriendshipPair } from '../../domains/relationships/transitions.ts';
+import {relationshipOrder,relationshipSearch,relationshipState,type RelationshipPage} from '../../domains/relationships/queries.ts';
 import { hashRuntimeRequest } from '../../domains/runtime/command.ts';
 import type { JsonObject } from '../../contracts/store.ts';
 import { checkVersion, integer, number, text, type RuntimeSql } from './runtime-sql.ts';
@@ -16,6 +17,19 @@ const invitation = (row: Row): FriendshipInvitation => ({ id: row.id, version: n
 const fixedHash = (value: object, mutable: string[]) => hashRuntimeRequest(Object.fromEntries(Object.entries(value).filter(([key]) => !mutable.includes(key))) as JsonObject);
 const relationFields = ['firstAgentId', 'secondAgentId', 'status', 'confirmedAt', 'firstConfirmationId', 'secondConfirmationId', 'intimacyScore'];
 const invitationFields = ['fromAgentId', 'toAgentId', 'message', 'state', 'createdAt', 'deadline', 'respondedAt', 'friendshipId', 'senderActorKind', 'senderActorId', 'responseActorKind', 'responseActorId', 'senderConfirmationId', 'responseConfirmationId', 'invalidationCode', 'sharedGeneration', 'fromSharingGeneration', 'toSharingGeneration'];
+
+function seek(input:RelationshipPage,column:'confirmed_at'|'created_at'){
+  integer(input.limit,1,100);const search=relationshipSearch(input.search);
+  if(input.after&&(!input.order||input.afterId!==undefined))throw new RuntimeError('invalid_usage','Time seek requires one explicit order');
+  const direction=input.order===undefined?'ASC':relationshipOrder(input.order)==='newest'?'DESC':'ASC',comparison=direction==='DESC'?'<':'>';
+  return {search,order:input.order===undefined?'r.id COLLATE "C" ASC':`r.${column} ${direction},r.id COLLATE "C" ${direction}`,
+    condition:`($2::text IS NULL OR r.id>$2 COLLATE "C") AND ($4::timestamptz IS NULL OR (r.${column},r.id COLLATE "C")${comparison}($4::timestamptz,$5::text COLLATE "C"))`,
+    values:[input.afterId===undefined?null:text(input.afterId),input.limit,input.after?date(input.after.at):null,input.after?text(input.after.id):null,search]};
+}
+// This is a candidate restriction, never an authorization join. The application
+// reuses the public identity and relationship source guards before projecting/counting.
+const profileJoin=(other:string)=>`LEFT JOIN profiles.agent_profiles p ON p.agent_id=${other} LEFT JOIN profiles.profile_contents pc ON pc.parent_id=p.id AND pc.stage='published'`;
+const nameMatch=(other:string)=>`($6::text='' OR strpos(lower(${other}),$6)>0 OR strpos(lower(pc.display_name),$6)>0)`;
 
 export function createRelationshipsRepository(sql: RuntimeSql): { port: typeof RELATIONSHIPS_REPOSITORY; reader: RelationshipsReader; writer: RelationshipsRepository } {
   const repo: RelationshipsRepository = {
@@ -52,11 +66,16 @@ export function createRelationshipsRepository(sql: RuntimeSql): { port: typeof R
       }
     },
     async listInvitations(agentId, input) {
-      integer(input.limit, 1, 100); if (input.direction !== undefined && !['incoming', 'outgoing'].includes(input.direction)) throw new RuntimeError('invalid_usage', 'Invalid friendship direction');
-      const scope = input.direction === 'incoming' ? 'to_agent_id=$1' : input.direction === 'outgoing' ? 'from_agent_id=$1' : '(from_agent_id=$1 OR to_agent_id=$1)';
-      return (await sql.query(`SELECT * FROM relationships.friendship_invitations WHERE ${scope} AND ($2::text IS NULL OR id>$2 COLLATE "C") ORDER BY id COLLATE "C" LIMIT $3`, [text(agentId), input.afterId === undefined ? null : text(input.afterId), input.limit])).map(invitation);
+      const page=seek(input,'created_at');if (input.direction !== undefined && !['incoming', 'outgoing'].includes(input.direction)) throw new RuntimeError('invalid_usage', 'Invalid friendship direction');
+      const state=relationshipState(input.state),asOf=input.asOf===undefined?sql.now():integer(input.asOf);
+      const scope = input.direction === 'incoming' ? 'r.to_agent_id=$1' : input.direction === 'outgoing' ? 'r.from_agent_id=$1' : '(r.from_agent_id=$1 OR r.to_agent_id=$1)';
+      const other='(CASE WHEN r.from_agent_id=$1 THEN r.to_agent_id ELSE r.from_agent_id END)';
+      return (await sql.query(`SELECT r.* FROM relationships.friendship_invitations r ${profileJoin(other)} WHERE ${scope} AND ${page.condition} AND ${nameMatch(other)} AND ($7::text IS NULL OR (CASE WHEN r.state='pending' AND r.deadline<=$8 THEN 'expired' ELSE r.state END)=$7) ORDER BY ${page.order} LIMIT $3`,[text(agentId),...page.values,state??null,date(asOf)])).map(invitation);
     },
-    async listConfirmed(agentId, input) { integer(input.limit, 1, 100); return (await sql.query('SELECT * FROM relationships.friendships WHERE (first_agent_id=$1 OR second_agent_id=$1) AND status=\'confirmed\' AND ($2::text IS NULL OR id>$2 COLLATE "C") ORDER BY id COLLATE "C" LIMIT $3', [text(agentId), input.afterId === undefined ? null : text(input.afterId), input.limit])).map(friendship); },
+    async listConfirmed(agentId, input) {
+      const page=seek(input,'confirmed_at'),other='(CASE WHEN r.first_agent_id=$1 THEN r.second_agent_id ELSE r.first_agent_id END)';
+      return (await sql.query(`SELECT r.* FROM relationships.friendships r ${profileJoin(other)} WHERE (r.first_agent_id=$1 OR r.second_agent_id=$1) AND r.status='confirmed' AND ${page.condition} AND ${nameMatch(other)} ORDER BY ${page.order} LIMIT $3`,[text(agentId),...page.values])).map(friendship);
+    },
     async recordCompletedFeedback(fact) {
       sql.writable(); integer(fact.invitationCreatedAt); integer(fact.completedAt, fact.invitationCreatedAt); text(fact.activityId);
       await repo.lockPair(fact.fromAgentId, fact.toAgentId);

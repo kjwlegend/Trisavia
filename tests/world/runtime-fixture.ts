@@ -13,6 +13,7 @@ import type { DecisionIntentSink } from '../../apps/platform/domains/decision/pu
 import type { DecisionIntent } from '../../apps/platform/domains/decision/repository.ts';
 import type { RelationshipsRepository } from '../../apps/platform/domains/relationships/runtime-repository.ts';
 import type { CompletedFeedbackFact, Friendship, FriendshipInvitation } from '../../apps/platform/domains/relationships/types.ts';
+import {compareRelationshipAnchor,matchesRelationshipSearch,type RelationshipPage} from '../../apps/platform/domains/relationships/queries.ts';
 import { fail } from '../../apps/platform/domains/common/errors.ts';
 
 const copy = <T>(value: T): T => structuredClone(value);
@@ -66,6 +67,11 @@ export function coreFixture() {
     async saveActivity(a, expected) { fault('activity'); save(state.activities,a.id,a,expected); }, async getFeedback(id) { return copy(state.feedback.get(id)); }, async saveFeedback(f, expected) { save(state.feedback,f.id,f,expected); },
     async listInvitations(a,o) { return copy([...state.invitations.values()].filter(i => [i.fromAgentId,i.toAgentId].includes(a) && (!o.afterId || i.id > o.afterId) && (!o.artifact||i.artifact.artifactId===o.artifact.artifactId&&i.artifact.revision===o.artifact.revision)).sort((a,b) => a.id.localeCompare(b.id)).slice(0,o.limit)); },
   };
+  function relationshipPage<T extends {id:string}>(rows:T[],o:RelationshipPage,at:(r:T)=>number,other:(r:T)=>string){
+    const cmp=(a:T,b:T)=>compareRelationshipAnchor({at:at(a),id:a.id},{at:at(b),id:b.id})*(o.order==='newest'?-1:1);
+    return copy(rows.filter(row=>(!o.afterId||row.id>o.afterId)&&(!o.after||compareRelationshipAnchor({at:at(row),id:row.id},o.after)*(o.order==='newest'?-1:1)>0)&&matchesRelationshipSearch(o.search??'',other(row),state.publicAgents.get(other(row))?.displayName??''))
+      .sort(o.order?cmp:(a,b)=>a.id<b.id?-1:a.id>b.id?1:0).slice(0,o.limit));
+  }
   const relationships: RelationshipsRepository = {
     async lockPair(a,b){if(a===b)throw new RuntimeError('invalid_usage','Distinct friendship pair required');},
     async getFriendship(id){return copy(state.friendships.get(id));},
@@ -74,8 +80,8 @@ export function coreFixture() {
     async getInvitation(id){return copy(state.friendshipInvitations.get(id));},
     async saveInvitation(value,expected){fault('friendship-invitation');if(value.state==='pending'&&[...state.friendshipInvitations.values()].some(row=>row.id!==value.id&&row.state==='pending'&&[row.fromAgentId,row.toAgentId].includes(value.fromAgentId)&&[row.fromAgentId,row.toAgentId].includes(value.toAgentId)))throw new RuntimeError('version_conflict','Pending friendship pair already exists');save(state.friendshipInvitations,value.id,value,expected);},
     async saveFriendship(value,expected){fault('friendship');if([...state.friendships.values()].some(row=>row.id!==value.id&&row.firstAgentId===value.firstAgentId&&row.secondAgentId===value.secondAgentId))throw new RuntimeError('version_conflict','Friendship pair already exists');save(state.friendships,value.id,value,expected);},
-    async listInvitations(id,o){return copy([...state.friendshipInvitations.values()].filter(row=>(o.direction==='incoming'?row.toAgentId===id:o.direction==='outgoing'?row.fromAgentId===id:[row.fromAgentId,row.toAgentId].includes(id))&&(!o.afterId||row.id>o.afterId)).sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0).slice(0,o.limit));},
-    async listConfirmed(id,o){return copy([...state.friendships.values()].filter(row=>row.status==='confirmed'&&[row.firstAgentId,row.secondAgentId].includes(id)&&(!o.afterId||row.id>o.afterId)).sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0).slice(0,o.limit));},
+    async listInvitations(id,o){return relationshipPage([...state.friendshipInvitations.values()].filter(row=>(o.direction==='incoming'?row.toAgentId===id:o.direction==='outgoing'?row.fromAgentId===id:[row.fromAgentId,row.toAgentId].includes(id))&&(!o.state||(row.state==='pending'&&(o.asOf??stamp)>=row.deadline?'expired':row.state)===o.state)),o,r=>r.createdAt,r=>r.fromAgentId===id?r.toAgentId:r.fromAgentId);},
+    async listConfirmed(id,o){return relationshipPage([...state.friendships.values()].filter(row=>row.status==='confirmed'&&[row.firstAgentId,row.secondAgentId].includes(id)),o,r=>r.confirmedAt,r=>r.firstAgentId===id?r.secondAgentId:r.firstAgentId);},
     async recordCompletedFeedback(fact){const current=await relationships.getFriendshipForPair(fact.fromAgentId,fact.toAgentId);if(!current)return{changed:false,friendship:null};if(current.status!=='confirmed'||fact.invitationCreatedAt<=current.confirmedAt)return{changed:false,friendship:current};const key=JSON.stringify([current.id,'interaction',fact.activityId,'text_feedback_completed']),old=state.intimacyFacts.get(key);if(old){if(JSON.stringify(old)!==JSON.stringify(fact))throw new RuntimeError('command_conflict','Completed friendship source changed');return{changed:false,friendship:current};}fault('intimacy-fact');state.intimacyFacts.set(key,copy(fact));if(current.intimacyScore>=100)return{changed:false,friendship:current};const next={...current,version:current.version+1,intimacyScore:current.intimacyScore+1};await relationships.saveFriendship(next,current.version);return{changed:true,friendship:next};},
   };
   const behavior:BehaviorRepository={
