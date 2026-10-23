@@ -46,7 +46,7 @@ export function createOwnerMailboxRepository(sql:RuntimeSql):{port:typeof OWNER_
    integer(input.limit,1,100);if(!['received','sent'].includes(input.box)||!['newest','oldest'].includes(input.order)||input.sourceIds.length>5)throw new TypeError('Invalid fixed mailbox query');
    const operator=input.order==='newest'?'<':'>',direction=input.order==='newest'?'DESC':'ASC';
    const rows=await sql.query(`WITH candidates AS (${union}) SELECT key,version,at,kind,channel,module_id,type,ref_id,invitation_id FROM candidates
-    WHERE (kind='exchange' OR source_id=ANY($3::text[])) AND ($4::boolean OR type<>'mailbox.message@1')
+    WHERE (kind='exchange' OR source_id=ANY($3::text[])) AND (kind='exchange' OR $4::boolean OR type<>'mailbox.message@1')
     AND ($5::text IS NULL OR CASE WHEN $6::timestamptz IS NULL THEN at IS NULL AND key COLLATE "C" ${operator} $5 ELSE at IS NULL OR at ${operator} $6 OR at=$6 AND key COLLATE "C" ${operator} $5 END)
     ORDER BY at ${direction} NULLS LAST,key COLLATE "C" ${direction} LIMIT $7`,[text(input.agentId),input.box,input.sourceIds,input.legacyNotifications,input.after?.key??null,input.after?.occurredAt==null?null:new Date(integer(input.after.occurredAt)),input.limit]);
    return rows.map(row=>({key:text(row.key,300),version:number(row.version),occurredAt:row.at===null?null:integer((row.at as Date).getTime()),source:row.kind==='exchange'?{kind:'exchange',invitationId:text(row.invitation_id)}:{kind:'perception',channel:row.channel,ref:{moduleId:row.module_id,type:row.type,id:row.ref_id}}} as OwnerMailboxCandidate));

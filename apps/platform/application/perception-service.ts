@@ -749,8 +749,9 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
                 const sender=plain(d.sender),senderRef=plain(sender.ref),source=plain(d.source);
                 const knownTime=(v:unknown):number|null=>typeof v==='number'&&Number.isSafeInteger(v)&&v>=0?v:null;
                 const eventKind=d.eventKind==='plan'||d.eventKind==='occurrence'?d.eventKind:null;
-                const occurredAt=category==='message'?knownTime(d.receivedAt):category==='notification'?knownTime(c.grant?.data.createdAt):knownTime(d.occurredAt)??knownTime(source.publishedAt);
-                const timeKind:OwnerMailboxItem['timeKind']=occurredAt===null?'unknown':category==='message'||category==='notification'?'received':eventKind==='plan'?'scheduled':eventKind==='occurrence'?'occurred':'published';
+                const eventTime=knownTime(d.occurredAt);
+                const occurredAt=category==='message'?knownTime(d.receivedAt):category==='notification'?knownTime(c.grant?.data.createdAt):eventTime??knownTime(source.publishedAt);
+                const timeKind:OwnerMailboxItem['timeKind']=occurredAt===null?'unknown':category==='message'||category==='notification'?'received':eventTime===null?'published':eventKind==='plan'?'scheduled':eventKind==='occurrence'?'occurred':'published';
                 const detailAvailable=d.available===true&&(channel==='world'||ownerLayer(c.policy,'body'));
                 return {key:ownerMailboxKey(r),category,eventKind,source:{id:String(d.sourceId),label:category==='message'?'来信':category==='notification'?'通知':category==='announcement'?'公告':'事件'},ref:r,version:c.row.version,title:typeof d.title==='string'?d.title:null,summary:null,counterparty:category==='message'?{agentId:senderRef.moduleId==='profiles'&&senderRef.type==='profiles.agent@1'&&typeof senderRef.id==='string'?senderRef.id:null,displayName:typeof sender.displayName==='string'?sender.displayName:null}:null,occurredAt,timeKind,status:typeof d.status==='string'?{code:d.status,label:d.status==='active'?'有效':d.status==='completed'?'已结束':'当前记录'}:null,detail:detailAvailable?{kind:'perception',channel,ref:r}:null};
             }};
