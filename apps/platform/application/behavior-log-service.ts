@@ -2,7 +2,7 @@ import type {RuntimeReadContext} from '../contracts/runtime-store.ts';
 import type {JsonObject} from '../contracts/store.ts';
 import type {IdentityAccess,OwnerObservationDomain,Principal} from '../domains/access/public.ts';
 import {BEHAVIOR_REPOSITORY} from '../domains/behavior/repository.ts';
-import {BEHAVIOR_SCOPES,type BehaviorDetails,type BehaviorRecord} from '../domains/behavior/types.ts';
+import {BEHAVIOR_SCOPES,USER_LOG_PROCESS_NODES,type BehaviorDetails,type BehaviorRecord} from '../domains/behavior/types.ts';
 import {fail,M1Error,object,text} from '../domains/common/errors.ts';
 import {hashRuntimeRequest} from '../domains/runtime/command.ts';
 import {createGatewayContinuation} from './agent-gateway-continuation.ts';
@@ -55,8 +55,9 @@ function limitOf(value:unknown){const limit=value??20;if(typeof limit!=='number'
 /** Source projections, read authorization and human wording; it never changes a business or read state. */
 export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadContext>,sources:Sources){
  const cursors=createGatewayContinuation(1024);
- async function coverage(ctx:RuntimeReadContext,asOf:number){const rows=await ctx.repository(BEHAVIOR_REPOSITORY).getCoverage();if(BEHAVIOR_SCOPES.some(scope=>!rows.some(row=>row.scope===scope)))fail('behavior_unavailable',503,'Behavior sources have not been enabled');const starts=rows.map(row=>row.fromAt),gaps=['启用前的记录未补录'];if(rows.some(row=>row.scope==='world_idle'&&row.partial))gaps.push('日常漫游仅记录部分完成节点');if(new Set(starts).size>1)gaps.push('各来源启用时间不同，更早记录不完整');return {from:Math.min(...starts),to:asOf,complete:rows.every(row=>!row.partial)&&new Set(starts).size===1,gaps};}
+ async function coverage(ctx:RuntimeReadContext,asOf:number){const rows=await ctx.repository(BEHAVIOR_REPOSITORY).getCoverage();if(BEHAVIOR_SCOPES.some(scope=>!rows.some(row=>row.scope===scope)))fail('behavior_unavailable',503,'Behavior sources have not been enabled');const starts=rows.map(row=>row.fromAt),gaps=['启用前的记录未补录'];gaps.push('普通移动与漫游过程不纳入用户日志');if(new Set(starts).size>1)gaps.push('各来源启用时间不同，更早记录不完整');return {from:Math.min(...starts),to:asOf,complete:rows.every(row=>!row.partial)&&new Set(starts).size===1,gaps};}
  async function visible(ctx:RuntimeReadContext,row:BehaviorRecord,audience:'owner'|'public',p?:Principal){
+  if(USER_LOG_PROCESS_NODES.includes(row.node))return false;
   if(audience==='public'&&!row.publicProjection)return false;
   if(audience==='owner'){
    if(p?.kind!=='owner'||row.ownerAudience?.ownerId!==p.ownerId)return false;
@@ -97,7 +98,7 @@ export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadCont
   const timeZone=timeZoneOf(input.timeZone);if(agentId!==null&&!await identity.readPublicAgent(ctx,agentId))absent();
   const repo=ctx.repository(BEHAVIOR_REPOSITORY),cut=await repo.cut(),historyCoverage=await coverage(ctx,cut.asOf),items:JsonObject[]=[],counts=new Map<string,number>(),cap=agentId===null?30:10;
   let after:{occurredAt:number;id:string}|undefined,scanned=0,complete=false;
-  while(scanned<500&&items.length<cap&&!complete){const size=Math.min(50,500-scanned),rows=await repo.list({maxSequence:cut.maxSequence,publicOnly:true,toAt:cut.asOf+1,...(agentId===null?{}:{agentId}),...(after?{after}:{}),limit:size});if(!rows.length){complete=true;break;}
+  while(scanned<500&&items.length<cap&&!complete){const size=Math.min(50,500-scanned),rows=await repo.list({maxSequence:cut.maxSequence,userLogOnly:true,publicOnly:true,toAt:cut.asOf+1,...(agentId===null?{}:{agentId}),...(after?{after}:{}),limit:size});if(!rows.length){complete=true;break;}
    for(const row of rows){scanned++;after={occurredAt:row.occurredAt,id:row.id};if((counts.get(row.agentId)??0)>=10)continue;if(!await visible(ctx,row,'public'))continue;counts.set(row.agentId,(counts.get(row.agentId)??0)+1);items.push(await item(ctx,row,timeZone));if(items.length===cap)break;}
    if(rows.length<size)complete=true;
   }
@@ -111,12 +112,12 @@ export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadCont
    const agentId=text(input.agentId,'agentId',1,100),authority=await identity.authorizeAgent(ctx,p,agentId),participation=await identity.readParticipation(ctx,agentId),proof=await identity.captureOwnerObservation?.(ctx,agentId,'world');
    if(!proof||proof.ownerId!==p.ownerId||!authority.binding)absent();
    const timeZone=timeZoneOf(input.timeZone),range=rangeOf(input,timeZone),limit=limitOf(input.limit),repo=ctx.repository(BEHAVIOR_REPOSITORY),profile=await identity.readPublicAgent(ctx,agentId);
-   const scope={instanceId:ctx.instanceId,recoveryEpoch:ctx.recoveryEpoch,principal:p.ownerId,authorizationVersion:hashRuntimeRequest({authority:authority.authorizationVersion,proof:{...proof},participation:{...participation,membership:{...participation.membership}},profile:profile?{publishedVersion:profile.publishedVersion,displayName:profile.displayName}:null,visibilityVersion:await repo.visibilityVersion(agentId)}),query:'behavior.owner_history',target:JSON.stringify([agentId,timeZone,range.fromDate,range.toDate]),limit};
+   const scope={instanceId:ctx.instanceId,recoveryEpoch:ctx.recoveryEpoch,principal:p.ownerId,authorizationVersion:hashRuntimeRequest({authority:authority.authorizationVersion,proof:{...proof},participation:{...participation,membership:{...participation.membership}},profile:profile?{publishedVersion:profile.publishedVersion,displayName:profile.displayName}:null,visibilityVersion:await repo.visibilityVersion(agentId)}),query:'behavior.owner_history:business-events-v1',target:JSON.stringify([agentId,timeZone,range.fromDate,range.toDate]),limit};
    let anchor:Anchor|undefined;if(input.pageToken!==undefined){try{anchor=JSON.parse(cursors.decode(text(input.pageToken,'pageToken',1,2048),scope,ctx.now())) as Anchor;if(!Number.isSafeInteger(anchor.cut.maxSequence)||anchor.cut.maxSequence<0||!Number.isSafeInteger(anchor.cut.asOf)||anchor.cut.asOf>ctx.now()||!Number.isSafeInteger(anchor.after.occurredAt)||typeof anchor.after.id!=='string')throw new Error('Invalid anchor');}catch{fail('invalid_cursor',409,'Restart the current history query');}}
-   const cut=anchor?.cut??await repo.cut(),historyCoverage=await coverage(ctx,cut.asOf),items:JsonObject[]=[];let after=anchor?.after,scanned=0,complete=false,byteBudget=0,budgetHit=false;
-   while(items.length<limit&&scanned<500&&!complete&&!budgetHit){const size=Math.min(50,500-scanned),rows=await repo.list({agentId,maxSequence:cut.maxSequence,...(range.fromAt===undefined?{}:{fromAt:Math.max(0,range.fromAt)}),toAt:Math.max(0,Math.min(range.toAt??cut.asOf+1,cut.asOf+1)),...(after?{after}:{}),limit:size});if(!rows.length){complete=true;break;}
-    for(let i=0;i<rows.length;i++){const row=rows[i]!;scanned++;if(await visible(ctx,row,'owner',p)){const projected=await item(ctx,row,timeZone,p),bytes=Buffer.byteLength(JSON.stringify(projected));if(byteBudget+bytes>60000){budgetHit=true;break;}items.push(projected);byteBudget+=bytes;}after={occurredAt:row.occurredAt,id:row.id};if(items.length===limit){complete=i===rows.length-1&&rows.length<size;break;}}
-    if(!budgetHit&&items.length<limit&&rows.length<size)complete=true;
+   const cut=anchor?.cut??await repo.cut(),historyCoverage=await coverage(ctx,cut.asOf),items:JsonObject[]=[];let after=anchor?.after,scanned=0,complete=false,byteBudget=0,budgetHit=false,hasMore=false;
+   while(scanned<500&&!complete&&!budgetHit&&!hasMore){const size=Math.min(50,500-scanned),rows=await repo.list({agentId,userLogOnly:true,maxSequence:cut.maxSequence,...(range.fromAt===undefined?{}:{fromAt:Math.max(0,range.fromAt)}),toAt:Math.max(0,Math.min(range.toAt??cut.asOf+1,cut.asOf+1)),...(after?{after}:{}),limit:size});if(!rows.length){complete=true;break;}
+    for(let i=0;i<rows.length;i++){const row=rows[i]!;scanned++;if(await visible(ctx,row,'owner',p)){if(items.length===limit){hasMore=true;break;}const projected=await item(ctx,row,timeZone,p),bytes=Buffer.byteLength(JSON.stringify(projected));if(byteBudget+bytes>60000){budgetHit=true;break;}items.push(projected);byteBudget+=bytes;}after={occurredAt:row.occurredAt,id:row.id};}
+    if(!budgetHit&&!hasMore&&rows.length<size)complete=true;
    }
    return base(agentId,timeZone,items,historyCoverage,!complete&&(scanned>=500||budgetHit),!complete&&after?cursors.encode(JSON.stringify({cut,after}),scope,ctx.now()):null,cut.asOf);
   },

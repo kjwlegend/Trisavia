@@ -14,10 +14,12 @@ import {registerBehaviorLogRoutes} from '../../apps/platform/transport/http/beha
 import {createDeterministicScheduler} from '../../apps/platform/infrastructure/scheduling/deterministic-scheduler.ts';
 import {createIdentityAccess} from '../../apps/platform/domains/access/facade.ts';
 import {hashRuntimeRequest} from '../../apps/platform/domains/runtime/command.ts';
-import {BEHAVIOR_SCOPES,type BehaviorRecord,type BehaviorNode} from '../../apps/platform/domains/behavior/types.ts';
+import {BEHAVIOR_SCOPES,USER_LOG_PROCESS_NODES,type BehaviorRecord,type BehaviorNode} from '../../apps/platform/domains/behavior/types.ts';
 import type {IdentityAccess,OwnerAudienceProof,Principal} from '../../apps/platform/domains/access/public.ts';
 import type {RuntimeReadContext} from '../../apps/platform/contracts/runtime-store.ts';
 import type {M1ReadSession,JsonObject,StoredRow} from '../../apps/platform/contracts/store.ts';
+import {createBehaviorRepository} from '../../apps/platform/infrastructure/postgresql/behavior-repository.ts';
+import type {RuntimeSql} from '../../apps/platform/infrastructure/postgresql/runtime-sql.ts';
 import {fail} from '../../apps/platform/domains/common/errors.ts';
 
 /** Isolated facts only: no actual user, identity, text, credential, service or database. */
@@ -40,31 +42,30 @@ async function fixture(){
  const publicRead=(url:string)=>app.inject({method:'GET',url}).then(r=>check(r,url.startsWith('/v1/world/agent-logs')?'behavior.public_recent':'behavior.public_world'));
  let next=0;
  async function add(agentId:string,occurredAt:number,options:{public?:boolean;oldOwner?:OwnerAudienceProof;node?:BehaviorNode;generation?:number}={}){const avatar=(await f.world.getAvatar('default',agentId))!,ownerAudience=options.oldOwner??await observation.capture(f.context,agentId,'world');const sourceEventId='synthetic-event-'+(++next);await f.context.events.append({eventId:sourceEventId,domain:'world',kind:'world.idle.completed',schemaVersion:1,subject:{type:'avatar',id:avatar.id,version:1},actor:{kind:'system',id:'idle-rules'},source:'rules',occurredAt,causationId:'synthetic-cause',correlationId:'synthetic-correlation',audience:{kind:'agents',agentIds:[agentId]},payload:{}});return f.behavior.append({scope:'world_idle',sourceDomain:'world',sourceEventId,sourceRef:{type:'avatar',id:avatar.id,version:1},node:options.node??'world.idle.completed',agentId,occurredAt,recordedAt:f.now,causationId:'synthetic-cause',correlationId:'synthetic-correlation',initiator:{kind:'system',id:'idle-rules'},executor:{kind:'system',id:'idle-rules'},origin:'rules',ownerAudience,publicProjection:options.public===false?null:{policyVersion:1,worldId:'default',sharingGeneration:options.generation??1,placeId:'commons',placeName:'公共庭'}});}
- return {f,agents,bindings,identity,world,relationships,interaction,service,gateway,app,query,publicRead,add,async close(){await app.close();await validator.close();}};
+ async function addBusiness(agentId:string,at:number){const saved=f.now;f.now=at;try{const p=agents.get(agentId)!,before=new Set(f.state.behaviorRecords.keys()),send=(action:string,input:JsonObject)=>f.store.transaction(ctx=>interaction.execute(ctx,p,f.key(p,action,randomUUID()),input));const work=await send('interaction.artifact.create',{title:'Synthetic log work',body:'SYNTHETIC PRIVATE BODY'});await send('interaction.invitation.send',{worldId:'default',toAgentId:agentId==='a'?'b':'c',artifact:work.result.artifact!,expectedArtifactVersion:1,templateVersion:1,configVersion:1,intent:'Synthetic invitation'});return [...f.state.behaviorRecords.values()].find(row=>!before.has(row.id)&&row.agentId===agentId&&row.node==='interaction.invitation.sent')!;}finally{f.now=saved;}}
+ return {f,agents,bindings,identity,world,relationships,interaction,service,gateway,app,query,publicRead,add,addBusiness,async close(){await app.close();await validator.close();}};
 }
 
-test('public world feed aggregates authorized per-Agent recent tens, not one role, and rejects historical bypasses',async()=>{
+test('all three read faces exclude old process noise before their limits and preserve the source facts',async()=>{
  const t=await fixture();try{
-  for(let i=0;i<14;i++)for(const [index,id] of ['a','b','c','d'].entries())await t.add(id,t.f.now-i*1000-index,{public:i%4!==0});
-  for(let i=0;i<12;i++)await t.add('a',t.f.now-i,{generation:2}); // Newer but no longer shared: filter before the ten limit.
-  const before=structuredClone(t.f.state),world=await t.publicRead('/v1/world/logs?worldId=default&timeZone=Asia%2FShanghai');assert.equal(world.status,200);assert.equal(world.data.items.length,30);assert.equal(world.data.nextPageToken,null);assert.equal(world.data.partial,false);
-  const perAgent:JsonObject[]=[];for(const id of ['a','b','c','d']){const recent=await t.publicRead('/v1/world/agent-logs?agentId='+id+'&timeZone=Asia%2FShanghai');assert.equal(recent.data.items.length,10);perAgent.push(...recent.data.items);assert(world.data.items.filter((row:any)=>row.agent.agentId===id).length<=10);}
-  perAgent.sort((a,b)=>Number(b.occurredAt)-Number(a.occurredAt)||(String(a.id)<String(b.id)?1:-1));assert.deepEqual(world.data.items,perAgent.slice(0,30));assert(new Set(world.data.items.map((row:any)=>row.agent.agentId)).size>1);
-  for(const suffix of ['&limit=50','&fromDate=2026-10-21','&pageToken=older','&cutoff=1'])assert.equal((await t.publicRead('/v1/world/agent-logs?agentId=a'+suffix)).status,400);
-  assert.deepEqual(t.f.state,before,'Public reads do not advance tasks, events, business states or read markers');assert(!JSON.stringify(world.data).includes('sourceRef'));assert(!JSON.stringify(world.data).includes('position'));
-  const ref=t.gateway.discovery().modules.find(m=>m.moduleId==='behavior')!.usageGuide,guide=(await t.app.inject({method:'GET',url:ref.path})).json().data;assert.equal(ref.version,2);assert.equal(createHash('sha256').update(guide.canonicalDocument).digest('hex'),guide.digest);
+  for(let i=0;i<620;i++)await t.add('a',t.f.now-i);
+  const before=structuredClone(t.f.state);
+  for(const read of [await t.publicRead('/v1/world/logs?worldId=default'),await t.publicRead('/v1/world/agent-logs?agentId=a'),await t.query({agentId:'a'})]){assert.equal(read.status,200);assert.deepEqual(read.data.items,[]);assert.equal(read.data.nextPageToken,null);assert.equal(read.data.partial,false);}
+  assert.deepEqual(t.f.state,before,'Selection never deletes or rewrites old runtime or behavior facts');
+  for(const suffix of ['&limit=50','&fromDate=2026-10-21','&pageToken=older','&cutoff=1','&userLogOnly=false'])assert.equal((await t.publicRead('/v1/world/agent-logs?agentId=a'+suffix)).status,400);
+  const ref=t.gateway.discovery().modules.find(m=>m.moduleId==='behavior')!.usageGuide,guide=(await t.app.inject({method:'GET',url:ref.path})).json().data;assert.equal(ref.version,3);assert.equal(createHash('sha256').update(guide.canonicalDocument).digest('hex'),guide.digest);assert.match(guide.document.description,/普通移动/);
  }finally{await t.close();}
 });
 
 test('Owner dates and stable same-time pagination freeze new facts and bind scope, current audience and source visibility',async()=>{
  const t=await fixture();try{
-  const at=Date.parse('2026-10-22T16:00:00Z');await t.add('a',at-1);for(let i=0;i<5;i++)await t.add('a',at);await t.add('b',at);const input={agentId:'a',timeZone:'Asia/Shanghai',fromDate:'2026-10-22',toDate:'2026-10-23',limit:2},first=await t.query(input);assert.equal(first.status,200);assert(first.data.nextPageToken);assert(first.data.items.every((r:any)=>r.date==='2026-10-23'&&r.time==='00:00'));
-  const inserted=await t.add('a',at-100),items=[...first.data.items];let token=first.data.nextPageToken;while(token){const page=await t.query({...input,pageToken:token});assert.equal(page.status,200);items.push(...page.data.items);token=page.data.nextPageToken;}assert.equal(items.length,6);assert(!items.some(row=>row.id===inserted.id));assert.equal(new Set(items.map(row=>row.id)).size,6);assert.equal(items.at(-1).date,'2026-10-22');assert.equal(items.at(-1).time,'23:59');assert.deepEqual(items.filter(row=>row.occurredAt===at).map(row=>row.id),items.filter(row=>row.occurredAt===at).map(row=>row.id).sort().reverse());
+  const at=Date.parse('2026-10-22T16:00:00Z');await t.addBusiness('a',at-1);for(let i=0;i<5;i++)await t.addBusiness('a',at);await t.addBusiness('b',at);for(let i=0;i<620;i++)await t.add('a',at+1+i);const input={agentId:'a',timeZone:'Asia/Shanghai',fromDate:'2026-10-22',toDate:'2026-10-23',limit:2},first=await t.query(input);assert.equal(first.status,200);assert(first.data.nextPageToken);assert(first.data.items.every((r:any)=>r.date==='2026-10-23'&&r.time==='00:00'));
+  const inserted=await t.addBusiness('a',at-100),items=[...first.data.items];let token=first.data.nextPageToken;while(token){const page=await t.query({...input,pageToken:token});assert.equal(page.status,200);items.push(...page.data.items);token=page.data.nextPageToken;}assert.equal(items.length,6);assert(!items.some(row=>row.id===inserted.id));assert.equal(new Set(items.map(row=>row.id)).size,6);assert.equal(items.at(-1).date,'2026-10-22');assert.equal(items.at(-1).time,'23:59');assert.deepEqual(items.filter(row=>row.occurredAt===at).map(row=>row.id),items.filter(row=>row.occurredAt===at).map(row=>row.id).sort().reverse());
   assert.equal((await t.query(input,'a')).status,403);assert.equal((await t.query(input,'owner-b')).status,404);assert.equal((await t.query({...input,agentId:'b'})).status,404);
   assert.equal((await t.query({...input,pageToken:first.data.nextPageToken,timeZone:'UTC'})).status,409);assert.equal((await t.query({...input,pageToken:first.data.nextPageToken,toDate:'2026-10-22'})).status,409);
   await t.f.behavior.invalidateVisibility(['a']);assert.equal((await t.query({...input,pageToken:first.data.nextPageToken})).status,409);
   t.f.state.publicAgents.delete('a');t.f.membership('a',{ownerPaused:true});assert.equal((await t.query(input)).data.items.length,2,'Private Owner history survives public withdrawal and Owner pause');assert.equal((await t.publicRead('/v1/world/agent-logs?agentId=a')).status,404);
-  t.bindings.set('a',{ownerId:'owner-b',id:'new-binding-a',version:1});assert.equal((await t.query(input)).status,404);const newOwner=await t.query(input,'owner-b');assert.equal(newOwner.status,200);assert.deepEqual(newOwner.data.items,[],'A new Owner does not inherit prior private audience');assert(newOwner.data.historyCoverage.gaps.includes('日常漫游仅记录部分完成节点'));
+  t.bindings.set('a',{ownerId:'owner-b',id:'new-binding-a',version:1});assert.equal((await t.query(input)).status,404);const newOwner=await t.query(input,'owner-b');assert.equal(newOwner.status,200);assert.deepEqual(newOwner.data.items,[],'A new Owner does not inherit prior private audience');assert(newOwner.data.historyCoverage.gaps.includes('普通移动与漫游过程不纳入用户日志'));
  }finally{await t.close();}
 });
 
@@ -72,7 +73,8 @@ test('actual source withdrawal invalidates continuation; summaries never copy te
  const t=await fixture();try{
   const a=t.agents.get('a')!,b=t.agents.get('b')!,command=(p:Principal,action:string,input:JsonObject)=>t.f.store.transaction(ctx=>t.interaction.execute(ctx,p,t.f.key(p,action,randomUUID()),input));
   const created=await command(a,'interaction.artifact.create',{title:'Synthetic work',body:'SYNTHETIC PRIVATE BODY MUST NEVER ENTER LOGS'}),sent=await command(a,'interaction.invitation.send',{worldId:'default',toAgentId:'b',artifact:created.result.artifact!,expectedArtifactVersion:1,templateVersion:1,configVersion:1,intent:'Synthetic invitation'});
-  await command(b,'interaction.invitation.accept',{invitationId:sent.result.invitationId!,expectedVersion:1});const input={agentId:'a',limit:1},first=await t.query(input);assert.equal(first.data.items.length,1);assert(first.data.nextPageToken);assert(!JSON.stringify(first.data).includes('PRIVATE BODY'));assert.equal(first.data.items[0].source.detail.operation,'interaction.owner_exchange');
+  await command(b,'interaction.invitation.accept',{invitationId:sent.result.invitationId!,expectedVersion:1});const input={agentId:'a',limit:1},first=await t.query(input);assert.equal(first.data.items.length,1);assert(first.data.nextPageToken);assert(!JSON.stringify(first.data).includes('PRIVATE BODY'));assert.equal(first.data.items[0].source.detail.operation,'interaction.owner_exchange');assert.equal(first.data.items[0].source.node,'interaction.invitation.accepted');
+  const describe=t.interaction.describeBehavior;t.interaction.describeBehavior=async()=>{throw new Error('isolated source failure');};assert.equal((await t.query(input)).status,503);t.interaction.describeBehavior=describe;
   await command(a,'interaction.artifact.withdraw',{artifact:created.result.artifact!,expectedVersion:1});assert.equal((await t.query({...input,pageToken:first.data.nextPageToken})).status,409);assert.deepEqual((await t.query(input)).data.items,[]);
   const original=t.f.behavior.getCoverage;t.f.behavior.getCoverage=async()=>{throw new Error('isolated source failure');};assert.equal((await t.publicRead('/v1/world/logs')).status,503);assert.equal((await t.query(input)).status,503);t.f.behavior.getCoverage=original;
  }finally{await t.close();}
@@ -85,22 +87,15 @@ test('the real identity facade captures only the then-active unique Owner bindin
  rows.get('owners:o')!.data.authVersion=2;assert.deepEqual(await identity.captureOwnerObservation!({},'a','world'),first,'Password/session rotation is not a historical content grant change');rows.get('bindings:b')!.version=2;assert.notEqual((await identity.captureOwnerObservation!({},'a','world'))!.authorizationVersion,first!.authorizationVersion);rows.get('bindings:b')!.data.active=false;assert.equal(await identity.captureOwnerObservation!({},'a','world'),null);
 });
 
-test('log HTTP details preserve actual movement timing, public limits and explicit missing legacy facts',async()=>{
+test('ordinary explicit movement rows remain outside user logs and old service cursors must restart',async()=>{
  const t=await fixture();try{
-  await t.add('a',t.f.now-60000);
-  const a=t.agents.get('a')!,avatar=(await t.f.world.getAvatar('default','a'))!;
-  await t.f.world.saveAvatar({...avatar,version:avatar.version+1,position:{x:0,y:0}},avatar.version);
+  const a=t.agents.get('a')!,avatar=(await t.f.world.getAvatar('default','a'))!;await t.f.world.saveAvatar({...avatar,version:avatar.version+1,position:{x:0,y:0}},avatar.version);
   await t.f.store.transaction(ctx=>t.world.execute(ctx,a,t.f.key(a,'world.avatar.move'),{worldId:'default',expectedVersion:avatar.version+1,expectedRulesetVersion:1,expectedTopologyVersion:1,path:[{x:1,y:0},{x:2,y:0}]}));
-  const scheduler=createDeterministicScheduler({store:t.f.store,workerId:'synthetic-http-detail',batchLimit:10,handlers:[{kind:'world.movement.step',version:1,run:t.world.handleTask}]});
-  t.f.now+=12000;await scheduler.runDue();const startedAt=t.f.now;t.f.now+=3000;await scheduler.runDue();
-  const before=structuredClone(t.f.state),own=await t.query({agentId:'a',limit:50});assert.equal(own.status,200);
-  const completed=own.data.items.find((row:any)=>row.source.node==='world.movement.completed'),started=own.data.items.find((row:any)=>row.source.node==='world.movement.started'),legacy=own.data.items.find((row:any)=>row.source.node==='world.idle.completed');
-  assert.deepEqual(completed.details.timeRange,{startedAt,endedAt:t.f.now,durationMs:3000});assert.deepEqual(completed.details.journey,{completedSteps:2,plannedSteps:2});assert.equal(completed.details.phaseLabel,'移动');assert.equal(completed.details.initiator.label,'角色发起');assert.equal(completed.details.executor.label,'世界系统推进');assert.equal(started.details.timeRange.endedAt,null);
-  assert.equal(legacy.details.completeness,'partial');assert.equal(legacy.details.timeRange.startedAt,null);assert.equal(legacy.details.timeRange.durationMs,null);assert.equal(legacy.details.location.from,null);assert(legacy.details.gaps.includes('起点、经过与耗时未记录'));
-  const recent=await t.publicRead('/v1/world/agent-logs?agentId=a');assert.equal(recent.status,200);const visible=recent.data.items.find((row:any)=>row.source.node==='world.movement.completed');assert.equal(visible.details.journey.plannedSteps,null);assert.equal(visible.details.journey.completedSteps,2);assert.equal(visible.details.initiator,null);assert.deepEqual(visible.details.participants,[]);
-  for(const row of [...own.data.items,...recent.data.items]){assert(!JSON.stringify(row.details).includes('"x"'));assert(!JSON.stringify(row.details).includes('"y"'));assert(!JSON.stringify(row.details).includes('mapId'));assert(!JSON.stringify(row.details).includes('rulesetVersion'));}
-  assert.deepEqual(t.f.state,before,'Detail reads do not advance the source or change historical facts');
-  for(const op of t.gateway.discovery().operations)assert.equal(op.outputSchema.version,2);
+  const scheduler=createDeterministicScheduler({store:t.f.store,workerId:'synthetic-log-selection',batchLimit:10,handlers:[{kind:'world.movement.step',version:1,run:t.world.handleTask}]});t.f.now+=12000;await scheduler.runDue();t.f.now+=3000;await scheduler.runDue();
+  assert.deepEqual((await t.query({agentId:'a'})).data.items,[]);assert.deepEqual((await t.publicRead('/v1/world/agent-logs?agentId=a')).data.items,[]);
+  for(let i=0;i<3;i++)await t.addBusiness('a',t.f.now-i);const first=await t.query({agentId:'a',limit:1});assert(first.data.nextPageToken);
+  const reloaded=createBehaviorLogService(t.identity,{world:t.world,relationships:t.relationships,interaction:t.interaction}),owner=await t.identity.authenticate(t.f.context,'owner-a',['owner_session']);
+  await assert.rejects(reloaded.ownerHistory(t.f.context,owner,{agentId:'a',limit:1,pageToken:first.data.nextPageToken}),(error:any)=>error.code==='invalid_cursor'&&error.statusCode===409);
  }finally{await t.close();}
 });
 
@@ -113,4 +108,11 @@ test('Owner social details distinguish human initiation and retain only currentl
   const world=await t.publicRead('/v1/world/logs');assert.equal(world.status,200);assert.deepEqual(world.data.items,[],'Social details are never added to the public world feed');
   assert.equal((await t.query({agentId:'a'},'a')).status,403);assert.equal((await t.query({agentId:'a'},'owner-b')).status,404);
  }finally{await t.close();}
+});
+
+// Verify the real SQL adapter filters before LIMIT rather than spending the row budget on hidden process nodes.
+test('PostgreSQL user-log selection is a fixed internal predicate before keyset LIMIT',async()=>{
+ const queries:{sql:string;values:unknown[]}[]=[],sql={query:async(query:string,values:unknown[]=[])=>{queries.push({sql:query,values});return[];}} as unknown as RuntimeSql;
+ await createBehaviorRepository(sql).reader.list({agentId:'a',maxSequence:900,userLogOnly:true,after:{occurredAt:700,id:'anchor'},limit:20});
+ assert.match(queries[0]!.sql,/node <> ALL\(\$[0-9]+::text\[\]\)/);assert(queries[0]!.sql.indexOf('node <> ALL')<queries[0]!.sql.indexOf('LIMIT'));assert(queries[0]!.values.includes(USER_LOG_PROCESS_NODES));assert.equal(USER_LOG_PROCESS_NODES.length,5);assert.equal(queries[0]!.values.at(-1),20);
 });

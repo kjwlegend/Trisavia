@@ -1,5 +1,5 @@
 import {BEHAVIOR_REPOSITORY,type BehaviorRepository,type BehaviorReader} from '../../domains/behavior/repository.ts';
-import {IDLE_BEHAVIOR_INTERVAL_MS,type BehaviorCoverage,type BehaviorRecord,type BehaviorRecordDraft} from '../../domains/behavior/types.ts';
+import {IDLE_BEHAVIOR_INTERVAL_MS,USER_LOG_PROCESS_NODES,type BehaviorCoverage,type BehaviorRecord,type BehaviorRecordDraft} from '../../domains/behavior/types.ts';
 import {behaviorRecordId,sameBehavior,validateBehaviorDraft,validateBehaviorEvent} from '../../domains/behavior/records.ts';
 import {RuntimeError} from '../../contracts/runtime-store.ts';
 import {integer,number,text,type RuntimeSql} from './runtime-sql.ts';
@@ -13,6 +13,7 @@ export function createBehaviorRepository(sql:RuntimeSql):{port:typeof BEHAVIOR_R
   async cut(){const row=(await sql.query('SELECT coalesce(max(sequence),0) AS max_sequence FROM behavior.records'))[0]!;return {maxSequence:number(row.max_sequence),asOf:sql.now()};},
   async get(id){const row=(await sql.query('SELECT * FROM behavior.records WHERE id=$1',[text(id)]))[0];return row?record(row):undefined;},
   async list(input){integer(input.limit,1,100);integer(input.maxSequence);const values:unknown[]=[input.maxSequence],where=['sequence<=$1'];const add=(clause:string,value:unknown)=>{values.push(value);where.push(clause.replace('?',`$${values.length}`));};
+   if(input.userLogOnly!==undefined&&input.userLogOnly!==true)throw new RuntimeError('invalid_usage','Invalid user-log selection');if(input.userLogOnly)add('node <> ALL(?::text[])',USER_LOG_PROCESS_NODES);
    if(input.agentId!==undefined)add('agent_id=?',text(input.agentId));if(input.publicOnly)where.push('public_projection IS NOT NULL');if(input.fromAt!==undefined)add('occurred_at>=?',integer(input.fromAt));if(input.toAt!==undefined)add('occurred_at<?',integer(input.toAt));
    if(input.after){values.push(integer(input.after.occurredAt),text(input.after.id));where.push(`(occurred_at,id COLLATE "C")<($${values.length-1},$${values.length} COLLATE "C")`);}values.push(input.limit);
    return(await sql.query(`SELECT * FROM behavior.records WHERE ${where.join(' AND ')} ORDER BY occurred_at DESC,id COLLATE "C" DESC LIMIT $${values.length}`,values)).map(record);},

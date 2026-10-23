@@ -10,6 +10,8 @@ export const BEHAVIOR_NODES=[
  'interaction.feedback.submitted','interaction.activity.closed','interaction.activity.left','interaction.activity.expired',
 ] as const;
 export type BehaviorNode=typeof BEHAVIOR_NODES[number];
+/** Internal user-log selection, never a client-supplied list of filters. */
+export const USER_LOG_PROCESS_NODES:readonly BehaviorNode[]=Object.freeze(['world.movement.received','world.movement.started','world.movement.completed','world.movement.stopped','world.idle.completed']);
 export interface BehaviorObservationAccess<C extends object>{capture(context:C,agentId:string,sourceDomain:OwnerObservationDomain):Promise<OwnerAudienceProof|null>}
 export interface BehaviorCoverage {scope:BehaviorScope;fromAt:number;policyVersion:1;partial:boolean}
 export interface BehaviorPublicProjection {policyVersion:1;worldId:string;sharingGeneration:number;placeId:string|null;placeName:string|null}
@@ -31,5 +33,5 @@ export interface BehaviorDetails {
  participants:{agentId:string;role:'sender'|'recipient'}[];
  resultCode:string;gaps:string[];
 }
-export interface BehaviorListInput {agentId?:string;publicOnly?:boolean;maxSequence:number;fromAt?:number;toAt?:number;after?:{occurredAt:number;id:string};limit:number}
+export interface BehaviorListInput {agentId?:string;publicOnly?:boolean;userLogOnly?:true;maxSequence:number;fromAt?:number;toAt?:number;after?:{occurredAt:number;id:string};limit:number}
 export const IDLE_BEHAVIOR_INTERVAL_MS=300000;
