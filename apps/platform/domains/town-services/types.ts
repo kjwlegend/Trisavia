@@ -1,0 +1,14 @@
+import type {GridPoint} from '../world/types.ts';
+export const TOWN_COMMANDS=['town_services.npc.greet','town_services.welcome.claim','town_services.tavern.redeem','town_services.inn.rest.start','town_services.inn.rest.cancel'] as const;
+export const TOWN_QUERIES=['town_services.npcs','town_services.service','town_services.notice','town_services.progress','town_services.inventory','town_services.relationships','town_services.operation'] as const;
+export type TownCommand=typeof TOWN_COMMANDS[number];
+export type TownQuery=typeof TOWN_QUERIES[number];
+export type TownServiceId='welcome.claim'|'tavern.host'|'inn.rest'|'greet';
+export type TownItemKind='tavern_voucher'|'inn_voucher';
+export interface CurrentTownNpc {npcId:string;definitionVersion:number;name:string;role:string;buildingId:string;position:GridPoint;approachCells:GridPoint[];appearance:{lookId:string;catalogVersion:string};serverManaged:true;countsAsAgent:false;readOnly:false;status:'available';serviceIds:TownServiceId[];actions:string[]}
+export interface TownServiceDefinition {serviceId:TownServiceId;npcId:string;name:string;description:string;action:string;durationMs:number;itemCost:TownItemKind|null;publicSummary:boolean;topics:{id:'welcome'|'town';label:string;response:string}[]}
+export interface TownCatalog {version:number;activatedAt:number;map:{mapId:string;layoutSha256:string;geometryDigest:string;rulesetVersion:number;topologyVersion:number};campaignId:string;npcs:CurrentTownNpc[];services:TownServiceDefinition[];notice:{objectId:'notice';name:string;position:GridPoint;approachCells:GridPoint[];version:number;title:string;text:string;serviceIds:TownServiceId[]}}
+export interface TownQualification {runtimeVersion:number;policyVersion:number;ownerPauseVersion:number;platformVersion:number;sharingGeneration:number;avatarId:string;position:GridPoint;recoveryEpoch:string}
+export interface TownOperation {id:string;version:number;agentId:string;npcId:string;serviceId:TownServiceId;catalogVersion:number;campaignId:string|null;state:'active'|'completed'|'cancelled';startedAt:number;endedAt:number|null;itemInstanceId:string|null;topic:'welcome'|'town'|null;response:string|null;cancelCode:string|null;qualification:TownQualification}
+export interface TownNpcRelationship {agentId:string;npcId:string;version:number;familiarity:number;createdAt:number;updatedAt:number}
+export interface TownItemInstance {id:string;version:number;agentId:string;kind:TownItemKind;state:'available'|'reserved'|'consumed';sourceOperationId:string;issuedAt:number;updatedAt:number;reservationId:string|null;consumedBy:string|null;holdingId:string}
