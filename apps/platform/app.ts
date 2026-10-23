@@ -6,6 +6,10 @@ import { openPostgresStore,readLegacyAvatarIdentity, type OpenPostgresStoreOptio
 import { registerM1Routes } from './transport/http/m1-routes.ts';
 import { registerSiteRoutes } from './transport/http/site-routes.ts';
 import { registerPerceptionRoutes } from './transport/http/perception-routes.ts';
+import {createPerceptionService} from './application/perception-service.ts';
+import {createOwnerMailboxService} from './application/owner-mailbox-service.ts';
+import {authenticateCredential} from './domains/access/authentication.ts';
+import {runtimeIdentitySession} from './infrastructure/postgresql/runtime-store.ts';
 import type { PerceptionOptions } from './application/perception-service.ts';
 import { openPostgresRuntimeStore } from './infrastructure/postgresql/runtime-store.ts';
 import type { RuntimeStore } from './contracts/runtime-store.ts';
@@ -27,7 +31,7 @@ import { createInteractionService, verifyInteractionReadiness } from './applicat
 import { createDecisionService } from './application/decision-service.ts';
 import { interactionGatewayGuide, interactionGatewayOperations } from './application/agent-gateway-interaction.ts';
 import { decisionGatewayGuide, decisionGatewayOperations } from './application/agent-gateway-decision.ts';
-import { fail, object } from './domains/common/errors.ts';
+import { fail, M1Error, object } from './domains/common/errors.ts';
 import { IDLE_LIFE_POLICY_V1 } from './domains/world/idle-life.ts';
 import {createTownService} from './application/town-services.ts';
 import {TOWN_REPOSITORY} from './domains/town-services/repository.ts';
@@ -52,6 +56,7 @@ export async function buildApp(options:BuildAppOptions):Promise<FastifyInstance>
   app.addHook('onClose',async()=>{try{await runtime?.close();}finally{await store.close();}});
   app.setNotFoundHandler((_request,reply)=>reply.code(404).send({error:{code:'not_found',message:'Route not found'}}));
   let gatewayCapabilities:(()=>JsonObject)|undefined;
+  let ownerMailboxRead:((raw:unknown,token:unknown)=>Promise<JsonObject>)|undefined;
   let friendshipOwnerRead:((raw:unknown,token:unknown)=>Promise<JsonObject>)|undefined;
   if(options.worldCoreEnabled===true){
    runtime=await openPostgresRuntimeStore({...options,...(options.clock?{now:options.clock}:{})});
@@ -75,6 +80,9 @@ export async function buildApp(options:BuildAppOptions):Promise<FastifyInstance>
     let interaction:ReturnType<typeof createInteractionService>;
     const decision=createDecisionService({identity,target:{inspect:(...args)=>interaction.decisionTarget.inspect(...args),execute:(...args)=>interaction.decisionTarget.execute(...args)}});
     interaction=createInteractionService(identity,decision.sink,{...(observation?{observation}:{}),onCompletedFeedback:(ctx,fact)=>relationships.recordCompletedFeedback(ctx,fact)});
+    const mailboxPerception=createPerceptionService(store,{authenticate:(session,token,kinds)=>authenticateCredential(session,token,kinds,{recoveryEpoch:store.recoveryEpoch,now:options.clock??Date.now})},{...options.perception,...(options.clock?{now:options.clock}:{}),legacyAvatarIdentity:readLegacyAvatarIdentity});
+    const mailbox=createOwnerMailboxService(identity,{perception:(ctx,token,agentId)=>mailboxPerception.ownerMailboxContext(runtimeIdentitySession(ctx),token,agentId),exchange:interaction.readOwnerExchange});
+    ownerMailboxRead=async(raw,token)=>{try{return await runtime!.read(ctx=>mailbox.query(ctx,token,raw));}catch(error){if(error instanceof M1Error)throw error;fail("source_unavailable",503,"Mailbox collection source is unavailable");}};
     operations.push(...interactionGatewayOperations(interaction,identity),...decisionGatewayOperations(decision));guides.push(interactionGatewayGuide,decisionGatewayGuide);
     if(behaviorEnabled){behaviorLogs=createBehaviorLogService(identity,{world,relationships,interaction,...(town?{town_services:town}:{})});operations.push(...behaviorGatewayOperations(behaviorLogs));guides.push(behaviorGatewayGuide);publicReads.push(...behaviorPublicReads(behaviorLogs));}
     handlers.push({kind:'interaction.invitation.expire',version:1,run:interaction.handleTask},{kind:'interaction.activity.expire',version:1,run:interaction.handleTask},{kind:'decision.expire',version:1,run:async(ctx,scheduled)=>{if(!scheduled.lease)fail('invalid_task',400,'Decision expiry requires a lease');const task=await ctx.tasks.assertLease(scheduled.lease,ctx.now());if(task.domain!=='decision'||task.kind!=='decision.expire'||task.handlerVersion!==1||task.payloadVersion!==1||task.target.type!=='decision.request'||task.payload.decisionId!==task.target.id)fail('invalid_task',400,'Unsupported Decision task');await decision.expire(ctx,task.target.id);}});
@@ -88,7 +96,7 @@ export async function buildApp(options:BuildAppOptions):Promise<FastifyInstance>
    ruleDriver=createWorldRuleDriver({async runDue(){const now=(options.clock??Date.now)();if(now>=nextIdleDiscovery){idleAfter=await runtime!.transaction(ctx=>world.ensureIdleLife(ctx,'default',idleAfter));nextIdleDiscovery=now+IDLE_LIFE_POLICY_V1.scanIntervalMs;}return scheduler.runDue();},close:()=>scheduler.close()});app.addHook('onReady',async()=>{ruleDriver!.start();});
   }
   app.get('/health',async(_request,reply)=>{try{if(runtime)await runtime.read(ctx=>verifyWorldReadiness(ctx));return await store.read(async()=>({status:'ok',phase:'M1',apiVersion:'1',instanceId:store.instanceId,...(runtime?{worldCore:'ready'}:{})}));}catch{return reply.code(503).send({status:'unavailable',error:{code:'storage_unavailable'}});}});
-  const service=createM1Service(store,{legacyAvatarIdentity:readLegacyAvatarIdentity,...(options.clock?{now:options.clock}:{}),...(options.email?{email:options.email}:{}),...(options.perception?{perception:options.perception}:{}),...(gatewayCapabilities?{gateway:gatewayCapabilities}:{}),...(friendshipOwnerRead?{friendshipOwnerRead}:{})});
+  const service=createM1Service(store,{legacyAvatarIdentity:readLegacyAvatarIdentity,...(options.clock?{now:options.clock}:{}),...(options.email?{email:options.email}:{}),...(options.perception?{perception:options.perception}:{}),...(gatewayCapabilities?{gateway:gatewayCapabilities}:{}),...(friendshipOwnerRead?{friendshipOwnerRead}:{}),...(ownerMailboxRead?{ownerMailboxRead}:{})});
   registerM1Routes(app,service);registerPerceptionRoutes(app,service);registerSiteRoutes(app);return app;
  }catch(error){try{await ruleDriver?.close();await runtime?.close();}finally{await store.close();}throw error;}
 }

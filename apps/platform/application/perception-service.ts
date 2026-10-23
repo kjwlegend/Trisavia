@@ -18,6 +18,8 @@ import { mailboxRepository, mailboxRef, mailboxReceiptAuthorizationVersion, save
 import { mailboxSender, validateMailboxSources, type TrustedMailboxSource } from './mailbox-service.ts';
 import { ownerObservation, ownerLayer, OWNER_OBSERVATION_ID } from './perception-owner-observation.ts';
 import { mayQueryOwnerNotifications, OWNER_NOTIFICATION_COLLECTION_QUERY_ID } from './perception-collection-query.ts';
+import type {OwnerMailboxItem,OwnerMailboxPerceptionContext} from './owner-mailbox-types.ts';
+import {ownerMailboxKey} from './owner-mailbox-types.ts';
 export interface PerceptionOptions {
     legacyAvatarIdentity?:LegacyAvatarIdentityReader<M1ReadSession>;
     mailboxSources?: readonly TrustedMailboxSource[];
@@ -726,7 +728,34 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
             fail(rejection.code, Number(rejection.statusCode), 'The original confirmation was rejected');
         return result;
     }
-    return { invoke, handles: (action: string) => OPERATIONS.some(o => o.action === action && o.id !== 'wallet-query'), capabilities: async () => await store.read(async (tx) => { const c = (await catalogRepository(tx).get('current'))!; return { protocolVersion: 1, discovery: { method: 'GET', path: '/v1/perception/discovery' }, catalogRevision: c.data.catalogRevision!, skillCatalogRevision: c.data.skillCatalogRevision!, manualOnly: true, snapshot: false, changes: false, activity: true, confirmation: true, ownerObservation: { agentRefRequired: true, inventory: true, inbox: 'source-authorized', messages: 'source-authorized', readerState: false, confirmation: false } }; }), async readReceipt(tx: M1Transaction, token: unknown, row: StoredRow): Promise<JsonObject> {
+    return { invoke,
+        /** Composition-only source seam. It uses the same current per-object guards as ordinary reads. */
+        async ownerMailboxContext(session:M1ReadSession,token:unknown,agentId:string):Promise<OwnerMailboxPerceptionContext>{
+            // These helpers perform reads only. The supplied PostgreSQL scope remains read-only.
+            const tx=session as M1Transaction,authenticated=await actor(tx,token);
+            if(authenticated.kind!=='owner_session')fail('insufficient_scope',403,'The current Owner session is required');
+            const a=await readActor(tx,authenticated,{agentRef:{moduleId:'profiles',type:'profiles.agent@1',id:agentId}},'inbox');
+            const legacyNotifications=await mayQueryOwnerNotifications(tx);
+            const states=plain((await catalogRepository(tx).get('current'))?.data.sourceStates),sourceIds:string[]=[];
+            for(const id of ['direct-messages',...(legacyNotifications?['direct-mail']:[]),'demo-announcements','demo-events','platform-publications']){
+                const state=states[id]??'not_enabled';if(state==='enabled')sourceIds.push(id);else if(state!=='not_enabled')fail('source_unavailable',503,'A mailbox source is unavailable');
+            }
+            return {authorizationVersion:await permission(tx,a),legacyNotifications,sourceIds,async project(r,channel){
+                if(r.type==='mailbox.message@1'&&!legacyNotifications)return null;
+                let c:Candidate;
+                try{c=await readable(tx,a,r,channel,true);}catch(error){if(error instanceof M1Error&&error.code==='target_not_accessible'&&error.statusCode===404)return null;throw error;}
+                const d=c.row.data,category:OwnerMailboxItem['category']|null=d.categoryId==='messages'?'message':d.categoryId==='notifications'?'notification':d.categoryId==='announcements'?'announcement':d.categoryId==='events'?'event':null;
+                if(!category||category==='notification'&&!legacyNotifications)return null;
+                const sender=plain(d.sender),senderRef=plain(sender.ref),source=plain(d.source);
+                const knownTime=(v:unknown):number|null=>typeof v==='number'&&Number.isSafeInteger(v)&&v>=0?v:null;
+                const eventKind=d.eventKind==='plan'||d.eventKind==='occurrence'?d.eventKind:null;
+                const occurredAt=category==='message'?knownTime(d.receivedAt):category==='notification'?knownTime(c.grant?.data.createdAt):knownTime(d.occurredAt)??knownTime(source.publishedAt);
+                const timeKind:OwnerMailboxItem['timeKind']=occurredAt===null?'unknown':category==='message'||category==='notification'?'received':eventKind==='plan'?'scheduled':eventKind==='occurrence'?'occurred':'published';
+                const detailAvailable=d.available===true&&(channel==='world'||ownerLayer(c.policy,'body'));
+                return {key:ownerMailboxKey(r),category,eventKind,source:{id:String(d.sourceId),label:category==='message'?'来信':category==='notification'?'通知':category==='announcement'?'公告':'事件'},ref:r,version:c.row.version,title:typeof d.title==='string'?d.title:null,summary:null,counterparty:category==='message'?{agentId:senderRef.moduleId==='profiles'&&senderRef.type==='profiles.agent@1'&&typeof senderRef.id==='string'?senderRef.id:null,displayName:typeof sender.displayName==='string'?sender.displayName:null}:null,occurredAt,timeKind,status:typeof d.status==='string'?{code:d.status,label:d.status==='active'?'有效':d.status==='completed'?'已结束':'当前记录'}:null,detail:detailAvailable?{kind:'perception',channel,ref:r}:null};
+            }};
+        },
+        handles: (action: string) => OPERATIONS.some(o => o.action === action && o.id !== 'wallet-query'), capabilities: async () => await store.read(async (tx) => { const c = (await catalogRepository(tx).get('current'))!; return { protocolVersion: 1, discovery: { method: 'GET', path: '/v1/perception/discovery' }, catalogRevision: c.data.catalogRevision!, skillCatalogRevision: c.data.skillCatalogRevision!, manualOnly: true, snapshot: false, changes: false, activity: true, confirmation: true, ownerObservation: { agentRefRequired: true, inventory: true, inbox: 'source-authorized', messages: 'source-authorized', readerState: false, confirmation: false } }; }), async readReceipt(tx: M1Transaction, token: unknown, row: StoredRow): Promise<JsonObject> {
             const a = await actor(tx, token);
             if (a.kind !== 'runtime' || row.data.scope !== `perception-agent:${a.agentId}` || row.data.action !== 'confirmAgentRead')
                 fail('target_not_accessible', 404, 'Operation is not accessible');

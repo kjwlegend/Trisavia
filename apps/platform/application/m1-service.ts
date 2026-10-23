@@ -25,12 +25,13 @@ import {createOwnerFriendsReader} from "./owner-friends.ts";
 import {HOST_PARTICIPATION_GUIDANCE} from './agent-hourly-participation-guide.ts';
 import {agentIdentityView} from './agent-identity-view.ts';
 import type { PerceptionAction } from "../domains/perception/protocol.ts";
-export type M1Action = PerceptionAction | "readOwnerFriends" | "capabilities" | "catalog" | "register" | "registrationResult" | "self" | "publicProfile" | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup" | "readRecovery" | "registerOwner" | "readAccount" | "claimAgent" | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites" | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveProfile" | "saveDraft" | "publishProfile" | "unpublishProfile" | "profilePolicy" | "createRecoveryRequest" | "readRecoveryRequest" | "cancelRecoveryRequest" | "recoveryAssistance" | "verifyRecoveryRequest" | "rejectRecoveryRequest" | "startRegistration" | "readRegistrationAttempt" | "sendRegistrationCode" | "verifyRegistrationEmail" | "cancelRegistration" | "startEmailRecovery" | "readEmailRecoveryAttempt" | "sendRecoveryCode" | "verifyRecoveryEmail" | "recoverByEmail" | "enableRecoveryBackup" | "readWorldActionPolicy" | "saveWorldActionPolicy" | "readWorldAccess" | "saveWorldAccess" | "adoptWorldAccess" | "readMembership" | "join" | "leave" | "participation" | "receipt";
+export type M1Action = PerceptionAction | "readOwnerFriends" | "queryOwnerMailbox" | "capabilities" | "catalog" | "register" | "registrationResult" | "self" | "publicProfile" | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup" | "readRecovery" | "registerOwner" | "readAccount" | "claimAgent" | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites" | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveProfile" | "saveDraft" | "publishProfile" | "unpublishProfile" | "profilePolicy" | "createRecoveryRequest" | "readRecoveryRequest" | "cancelRecoveryRequest" | "recoveryAssistance" | "verifyRecoveryRequest" | "rejectRecoveryRequest" | "startRegistration" | "readRegistrationAttempt" | "sendRegistrationCode" | "verifyRegistrationEmail" | "cancelRegistration" | "startEmailRecovery" | "readEmailRecoveryAttempt" | "sendRecoveryCode" | "verifyRecoveryEmail" | "recoverByEmail" | "enableRecoveryBackup" | "readWorldActionPolicy" | "saveWorldActionPolicy" | "readWorldAccess" | "saveWorldAccess" | "adoptWorldAccess" | "readMembership" | "join" | "leave" | "participation" | "receipt";
 export interface M1Options {
     legacyAvatarIdentity?:LegacyAvatarIdentityReader<M1ReadSession>;
     perception?: PerceptionOptions;
     /** Composition-owned source reader. Keeps Owner REST and Gateway on the same current authorization. */
     friendshipOwnerRead?:(raw:unknown,token:unknown)=>Promise<JsonObject>;
+    ownerMailboxRead?:(raw:unknown,token:unknown)=>Promise<JsonObject>;
     /** Composition-owned module discovery. M1 does not implement those modules. */
     gateway?: () => JsonObject;
     now?: () => number;
@@ -347,12 +348,16 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     } = {}): Promise<JsonObject> {
         if (action === "capabilities") {
             const gateway = options.gateway?.();
-            return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, ownerRecoveryAssistance: true, ownerEmailVerification: email.configured, ownerEmailRecovery: email.configured, emailMode: email.mode, runtimeReplacement: true, defaultPublicRole: true, profileSave: "immediate-public", worldAccessPreference: true, scheduling: false, hostParticipation: HOST_PARTICIPATION_GUIDANCE, perception: true, perceptionApi: await perception.capabilities(), walletApi: wallet.capabilities(), interaction: Array.isArray(gateway?.modules) && gateway.modules.includes("interaction"), ...(gateway ? { gateway } : {}), operations: FOUNDATION_HTTP_OPERATIONS.map((operation) => ({ ...operation, actors: [...operation.actors], receiptScopes: { ...operation.receiptScopes }, requiredVersions: [...operation.requiredVersions] })) };
+            return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, ownerRecoveryAssistance: true, ownerEmailVerification: email.configured, ownerEmailRecovery: email.configured, emailMode: email.mode, runtimeReplacement: true, defaultPublicRole: true, profileSave: "immediate-public", worldAccessPreference: true, scheduling: false, hostParticipation: HOST_PARTICIPATION_GUIDANCE, perception: true, perceptionApi: await perception.capabilities(), walletApi: wallet.capabilities(), ...(options.ownerMailboxRead?{ownerMailboxApi:{version:1,method:"POST",path:"/v1/owner/agents/:agentId/mailbox/query",boxes:["received","sent"],search:"currently-authorized-list-metadata",defaultLimit:20,maxLimit:50,readOnly:true,confirmation:false}}:{}), interaction: Array.isArray(gateway?.modules) && gateway.modules.includes("interaction"), ...(gateway ? { gateway } : {}), operations: FOUNDATION_HTTP_OPERATIONS.filter(operation=>operation.action!=="queryOwnerMailbox"||!!options.ownerMailboxRead).map((operation) => ({ ...operation, actors: [...operation.actors], receiptScopes: { ...operation.receiptScopes }, requiredVersions: [...operation.requiredVersions] })) };
         }
         if (action === "catalog")
             return avatarCatalog();
         if (email.handles(action))
             return await email.invoke(action, raw, token, context.clientIp);
+        if (action === "queryOwnerMailbox") {
+            if(!options.ownerMailboxRead)fail("source_unavailable",503,"Mailbox collection source is unavailable");
+            return await options.ownerMailboxRead(raw,token);
+        }
         if (action === "readOwnerFriends")
             return await (options.friendshipOwnerRead??readOwnerFriends)(raw,token);
         if (action === "walletQuery")

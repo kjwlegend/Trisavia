@@ -1,6 +1,7 @@
 /** Canonical implemented Agent foundation operations; this is not a skills registry. */
 export const FOUNDATION_HTTP_OPERATIONS = [
   { action: 'readOwnerFriends', method: 'GET', path: '/v1/owner/agents/:agentId/friends', actors: ['owner_session'], receiptScopes: {}, requiredVersions: [] },
+  { action: 'queryOwnerMailbox', method: 'POST', path: '/v1/owner/agents/:agentId/mailbox/query', actors: ['owner_session'], receiptScopes: {}, requiredVersions: [] },
   { action: 'capabilities', method: 'GET', path: '/v1/capabilities', actors: ['anonymous'], receiptScopes: {}, requiredVersions: [] },
   { action: 'catalog', method: 'GET', path: '/v1/avatar-catalog', actors: ['anonymous'], receiptScopes: {}, requiredVersions: [] },
   { action: 'publicProfile', method: 'GET', path: '/v1/public/agents/:agentId', actors: ['anonymous'], receiptScopes: {}, requiredVersions: [] },

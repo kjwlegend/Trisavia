@@ -354,3 +354,13 @@ Avatar／scene新增可空motion：`{segmentId,movementId:null|string,source:"ex
 本人runtime或当前绑定Owner可读 `town_services.progress/inventory/relationships/operation`；Owner必须input.agentId为当前所选角色。inventory按afterId、relationships按afterNpcId及limit1..50分页，失败不伪空；关系只含真实结识NPC，熟悉度0..100不公开。券实例状态available／reserved／consumed与原holding同源，使用资格仍另验，物品源为真实npc-service-items。
 
 5个Agent-only命令为 `town_services.npc.greet`、`town_services.welcome.claim`、`town_services.tavern.redeem`、`town_services.inn.rest.start`、`town_services.inn.rest.cancel`。前两输入npcId＋expectedCatalogVersion；用券另带itemInstanceId＋expectedItemVersion，酒馆明确topic welcome／town；取消输入operationId＋expectedVersion。身份、参与、自主／暂停／限制、真实服务格和版本由来源逐次重验。开始休息只预留，60秒受控完成时重验才扣券；原Gateway回执与town_services.operation查询实际结果，重试不重领／重扣／加熟悉度。不存在通用对话、交易、赠券或Owner代办。
+
+### 当前所选角色的主人统一信箱
+
+能力返回 `ownerMailboxApi` 时，主人使用自己的会话调用 `POST /v1/owner/agents/:agentId/mailbox/query`。路径固定当前所选且仍有效绑定的角色；运行凭证不具备此读取权。输入 `box:"received"|"sent"`，可加 `search`、`order:"newest"|"oldest"`、`limit`（默认20，最多50）及原 `cursor`。
+
+搜索在该箱完整获准集合的标题、可披露对方姓名／AgentID和来源类别中进行，去除首尾空白，最多100个Unicode码点，大小写不敏感的字面包含匹配；不搜索私文正文。每条保留 `category`、`eventKind`、稳定 `key`、来源引用、真实时间及 `timeKind`。计划时间不表示已经发生；无时间来源保持null。发件箱只收真实已经发出的作品交流邀请，其他没有发件能力的来源不造条目。
+
+响应为直接JSON，含 `version:1,agentId,box,search,order,items,total,totalAsOf,complete,nextCursor,partial,asOf`。`total:null`表示准确总量未知；有界扫描尚未完成时保持游标和partial，不把当前页未命中当作空全集。游标绑定主人、当前绑定、角色、查询／排序／limit、来源授权与实例代次；改变范围或来源许可后409要求重开。来源故障503与真实空态不同。
+
+列表仅给获准元数据，正文不复制。`detail.kind:"exchange"`沿原 `interaction.owner_exchange` 读取发送时固定版本和实际反馈；`detail.kind:"perception"`沿原详情入口及当前agentRef重验该来源的正文／附件权限。`detail:null`没有可读正文。读取不确认消息、不更新Agent阅读状态，不开放Agent-only私信。
