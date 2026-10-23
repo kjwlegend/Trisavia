@@ -15,15 +15,17 @@ controller=createOwnerController(accountNode,{entryStore,isVisible:()=>hud?.isAc
 const session=createSessionApi(controller);
 hud=createHud({session,accountNode,canLeaveAccount:()=>controller.leaveEditing(),onLocateAgent:agentId=>renderer?.locateAgent(agentId),onOpenAccount:(mode,agentId)=>controller.open(mode,agentId),getAccountTitle:()=>controller.getTitle()});
 renderer=initSceneRenderer({session,onSelectAgent:(agentId,origin)=>hud.openAccount('profile',agentId,origin)});
+const publicUrl=new URL(location.href),publicTargets=publicUrl.searchParams.getAll('resident');let publicTarget=null;
+if(publicUrl.pathname==='/'&&publicTargets.length){publicUrl.searchParams.delete('resident');history.replaceState(history.state,'',publicUrl.pathname+publicUrl.search+publicUrl.hash);publicTarget=publicTargets.length===1&&/^[A-Za-z0-9_-]{8,100}$/.test(publicTargets[0])?publicTargets[0]:'';renderer.focusPublicResident(publicTarget);}
 const audio=mountWorldAudio();let audioIdentity=session.snapshot().observationRevision;session.subscribe(state=>{if(audioIdentity!==state.observationRevision){audioIdentity=state.observationRevision;audio.clearEffects();}});
 const hadPrivateEntry=entryStore.pending;
 let entryRevision=0;
 window.addEventListener('hashchange',()=>{entryRevision++;try{const next=entryStore.capture();if(next.mode)hud.openAccount(next.mode,next.agentId);}catch{const alert=document.createElement('p');alert.className='notice error world-startup-error';alert.setAttribute('role','alert');alert.textContent='无法安全保存这次入口，请允许会话存储后重新打开。原任务保持不变。';$('#main').prepend(alert);}});
 document.addEventListener('click',event=>{if(event.defaultPrevented)return;const link=event.target.closest('a[href]');if(!link)return;const url=new URL(link.href,location.origin);if(url.origin!==location.origin||url.pathname!=='/owner')return;const privateParams=new URLSearchParams(url.hash.slice(1));if(privateParams.has('handoff')||privateParams.has('assistance'))return;event.preventDefault();const params=new URLSearchParams(url.hash.slice(1));hud.openAccount(url.hash==='#register'?'register':url.hash==='#login'?'login':params.get('agent')?'profile':'account',params.get('agent')||'',link);});
 $('.brand').addEventListener('click',event=>{if(event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;event.preventDefault();hud.close(false);$('#world-canvas')?.focus({preventScroll:true});});
-if(intent.mode||controller.snapshot().continuation)hud.openAccount('resume');
+if(publicTarget===null&&(intent.mode||controller.snapshot().continuation))hud.openAccount('resume');
 await controller.start(intent);
-if(!entryRevision&&intent.mode&&intent.mode!=='profile'&&!hadPrivateEntry&&!controller.snapshot().continuation)hud.openAccount(intent.mode,intent.agentId);
+if(publicTarget===null&&!entryRevision&&intent.mode&&intent.mode!=='profile'&&!hadPrivateEntry&&!controller.snapshot().continuation)hud.openAccount(intent.mode,intent.agentId);
 hud.setAccountTitle(controller.getTitle());
 }
 export {getWorldState};

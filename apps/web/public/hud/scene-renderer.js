@@ -20,6 +20,28 @@ const worldProvider=createWorldSceneProvider();let worldData=worldProvider.snaps
 const statusHud=createWorldStatusHud($('#world-status-hud'),{onTime:epoch=>scene?.setTime(epoch)}),stopStatusSession=session?.subscribe(value=>statusHud.select(value.authenticated?value.selectedAgentId:''));
 let returnFocus = null;
 let currentPlace = null;
+let publicFocus=null,publicFocusGeneration=0;
+const focusNotice=el('section','world-public-focus-notice'),focusText=el('p'),focusRetry=el('button','','重试定位');focusNotice.hidden=true;focusNotice.setAttribute('role','status');focusRetry.type='button';focusNotice.append(focusText,focusRetry);$('#world-scene').parentNode.append(focusNotice);
+function focusMessage(text,retry=false){focusNotice.hidden=!text;focusText.textContent=text;focusRetry.hidden=!retry;}
+function cancelPublicFocus(){publicFocusGeneration++;publicFocus=null;focusMessage('');}
+function publicPlace(row){const state=scene?.getState().worldScene,rendered=state?.avatars.find(avatar=>avatar.fact.agentId===row.agentId);return rendered?{...row,kind:'world-avatar',projectionVersion:state.projectionVersion,x:rendered.x,y:rendered.y}:null;}
+async function tryPublicFocus(){
+  const pending=publicFocus;if(!pending||pending.reading||!pending.waiting||!mapReady)return;
+  if(['error','unavailable','recovering'].includes(worldData.phase)){pending.waiting=false;focusMessage('当前无法取得这位居民的最新公开位置，请稍后重试。',true);return;}
+  if(worldData.phase!=='ready')return;
+  if(!worldData.complete||!worldData.lastSuccessAt||Date.now()-worldData.lastSuccessAt>5000){pending.waiting=false;focusMessage('公开位置尚未更新，暂时无法定位，请重试。',true);return;}
+  const row=worldData.avatars.find(avatar=>avatar.agentId===pending.agentId);if(!row){pending.waiting=false;focusMessage('当前公开场景中没有这位居民的可定位位置。',true);return;}
+  const initialPlace=publicPlace(row);if(!initialPlace){pending.waiting=false;focusMessage('地图暂时无法定位这位居民，请重试。',true);return;}
+  pending.reading=true;const turn=publicFocusGeneration;await publicCharacter.open(initialPlace);
+  if(turn!==publicFocusGeneration||publicFocus!==pending)return;pending.reading=false;pending.waiting=false;
+  const profile=publicCharacter.snapshot(),latest=worldData.phase==='ready'&&worldData.complete&&Date.now()-worldData.lastSuccessAt<=5000?worldData.avatars.find(avatar=>avatar.agentId===pending.agentId):null;
+  if(profile.phase!=='ready'){focusMessage([403,404].includes(profile.errorStatus)?'这位居民的公开档案暂不可查看。':'暂时无法确认公开资料，请重试定位。',true);return;}
+  if(!latest||profile.data.publishedVersion<latest.profile.publishedVersion){focusMessage('公开位置或资料已更新，暂时无法定位，请重试。',true);return;}
+  const place=publicPlace(latest);if(!place||!scene.locateOwnedAgent(latest.agentId)){focusMessage('地图暂时无法定位这位居民，请重试。',true);return;}
+  publicCharacter.observe(place);publicFocus=null;focusMessage('');openPlace(place,scene.canvas,{reuseProfile:true});
+}
+function focusPublicResident(agentId){cancelPublicFocus();if(!/^[A-Za-z0-9_-]{8,100}$/.test(agentId)){focusMessage('这个居民档案链接暂时无法定位。');return;}publicFocus={agentId,waiting:true,reading:false};focusMessage('正在寻找这位居民的公开位置…');void tryPublicFocus();}
+focusRetry.addEventListener('click',()=>{if(!publicFocus)return;publicFocus.waiting=true;focusMessage('正在重新确认公开位置…');void worldProvider.refresh();});
 const detail=$('#world-detail'),detailTransition=createPanelTransition(detail),environment=getPanelEnvironment();detail.prepend(nativeFrame('lightWood'));
 const publicCharacter=createPublicCharacterReader(),characterCard=createPublicCharacterCard(publicCharacter,{session});$('.world-detail-body',detail).prepend(characterCard.node);
 function renderDetails(place){
@@ -61,12 +83,12 @@ function positionCharacterCard(){
 }
 const characterSize=new ResizeObserver(positionCharacterCard);characterSize.observe(characterCard.node);
 window.addEventListener('resize',positionCharacterCard);
-function openPlace(place, origin) {
+function openPlace(place, origin,{reuseProfile=false}={}) {
   if(place.kind==='world-avatar')emitWorldAudio('world-focus');
   document.dispatchEvent(new CustomEvent('world:place-open'));
   currentPlace = place;
   returnFocus = origin;
-  const details = renderDetails(place);if(place.kind==='world-avatar')void publicCharacter.open(place);else publicCharacter.clear();
+  const details = renderDetails(place);if(place.kind==='world-avatar'){if(!reuseProfile)void publicCharacter.open(place);}else publicCharacter.clear();
   const links = $('#world-detail-links'); links.replaceChildren();
   for (const link of details.links || []) { const node = el('a', '', `${link.label} ↗`); node.href = link.href; links.append(node); }
   if(place.id==='noticeboard')for(const [category,label]of [['announcements','查看公开公告'],['events','查看事件计划与发生记录']]){const control=el('button','',label);control.type='button';control.addEventListener('click',()=>document.dispatchEvent(new CustomEvent('hud:world-content',{detail:{category}})));links.append(control);}
@@ -118,18 +140,19 @@ async function startScene() {
     const next = await createWorldScene($('#world-scene'), {rendering:loaded,worldSource:'pending',initialTime:statusHud.clock.now(),clock:statusHud.clock,signal:sceneAbort.signal,onSelect: openPlace, onOwnedSelect:(agentId,origin)=>ownedAgents?.select(agentId,origin), onChange: updateControls, onError:()=>{if(generation===sceneGeneration)mapError();}});
     if(generation!==sceneGeneration){next.destroy();return;}
     scene=next;scene.setWorldScene(worldData);if(!mapFailed)ownedAgents?.attach(scene);
-    if(!mapFailed){setMapAvailable(true);updateControls(scene.getState());}
+    if(!mapFailed){setMapAvailable(true);updateControls(scene.getState());void tryPublicFocus();}
     if (currentPlace) scene.select(currentPlace);
   } catch {loaded?.dispose?.();if(generation===sceneGeneration)mapError(); }
 }
 function setMapAvailable(value){mapReady=value;for(const id of ['world-zoom-out','world-zoom-in','world-fit','world-pause','world-explore','world-reset','world-reduce-motion'])$(`#${id}`).disabled=!value;$('#world-gesture-hint').hidden=!value;document.dispatchEvent(new CustomEvent('world:availability',{detail:{available:value}}));}
 function mapError() {
   mapFailed=true;worldProvider.setVisible(false);ownedAgents?.attach(null);setMapAvailable(false);
+  if(publicFocus){publicFocus.waiting=false;focusMessage('地图暂不可用，恢复地图后可重试定位。',true);}
   $('#world-fallback').hidden = false;
   $('#world-place-directory').open = true;
   $('#world-motion-status').textContent = '地图暂不可用 · 场所列表仍可查看';
 }
-document.addEventListener('hud:open',()=>closePlace(false));
+document.addEventListener('hud:open',()=>{cancelPublicFocus();closePlace(false);});
 $('#world-detail-close').addEventListener('click', closePlace);
 $('#world-back').addEventListener('click', closePlace);
 document.addEventListener('keydown', event => {if(event.key!=='Escape'||event.defaultPrevented||document.querySelector('#hud-window:not([hidden]):not([data-panel-state=closing])')||detailTransition.state==='closing'||event.target.closest?.('input,textarea,select,[contenteditable=true]'))return;if(currentPlace){event.preventDefault();closePlace();}else if(scene?.getState().exploring){event.preventDefault();scene.setExploring(false);scene.canvas.focus({preventScroll:true});}});
@@ -148,6 +171,7 @@ refreshWorld.addEventListener('click',()=>void worldProvider.refresh());moreWorl
 worldProvider.subscribe(value=>{
   worldData=value;statusHud.update(value);const applied=scene?.setWorldScene(value);if(applied?.accepted===false)value={...value,phase:'unavailable',avatars:[],complete:false,errorCode:applied.reason};refreshWorld.hidden=false;refreshWorld.disabled=Boolean(value.errorStatus===429&&value.retryAt&&value.retryAt>Date.now());moreWorld.hidden=value.phase!=='partial';
   worldData=value;if(applied?.accepted===false)statusHud.update(value);
+  void tryPublicFocus();
   if(currentPlace?.kind==='world-npc'&&(!value.complete||!value.npcs?.some(npc=>npc.npcId===currentPlace.id)))closePlace(false);
   if(currentPlace?.kind==='world-avatar'){
     const row=value.complete?value.avatars.find(avatar=>avatar.agentId===currentPlace.agentId):null;
@@ -168,9 +192,9 @@ document.addEventListener('visibilitychange',()=>{statusHud.setVisible(pageActiv
 for (const link of document.querySelectorAll('a[href="#connect"]')) link.addEventListener('click', () => { $('#connect').open = true; });
 if (location.hash === '#connect') $('#connect').open = true;
 startScene();worldProvider.start();
-window.addEventListener('pagehide', event => {pageActive=false;stopEntryRead();worldProvider.setVisible(false);statusHud.setVisible(false);if (!event.persisted){entryObserver?.disconnect();sceneGeneration++;sceneAbort?.abort();worldProvider.dispose();statusHud.dispose();stopStatusSession?.();ownedAgents?.dispose();characterCard.dispose();publicCharacter.dispose();window.removeEventListener('resize',positionCharacterCard);characterSize.disconnect();detailTransition.destroy();scene?.destroy();} });
+window.addEventListener('pagehide', event => {pageActive=false;stopEntryRead();worldProvider.setVisible(false);statusHud.setVisible(false);if (!event.persisted){cancelPublicFocus();entryObserver?.disconnect();sceneGeneration++;sceneAbort?.abort();worldProvider.dispose();statusHud.dispose();stopStatusSession?.();ownedAgents?.dispose();characterCard.dispose();publicCharacter.dispose();window.removeEventListener('resize',positionCharacterCard);characterSize.disconnect();detailTransition.destroy();scene?.destroy();} });
 window.addEventListener('pageshow',()=>{pageActive=true;if(scene&&!mapFailed){worldProvider.setVisible(scene.getState().visible);statusHud.setVisible(scene.getState().visible&&!document.hidden);}if(entryVisible)void readEntryCapabilities();});
-return{locateAgent(agentId){return mapReady&&scene?.locateOwnedAgent(agentId)||false;}};
+return{focusPublicResident,locateAgent(agentId){return mapReady&&scene?.locateOwnedAgent(agentId)||false;}};
 }
 export function getWorldState(){return scene?.getState()??null;}
 function entryCapabilityText(caps){
