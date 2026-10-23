@@ -41,6 +41,10 @@ const natural:Record<BehaviorRecord['node'],[string,string,string]>={
  'interaction.activity.closed':['已确认收到反馈','作品交流','已确认收到并结束本次往来'],
  'interaction.activity.left':['文字交流已结束','作品交流','本次往来已退出'],
  'interaction.activity.expired':['文字交流已到期','作品交流','本次往来已到期'],
+ 'town_services.greeted':['已打过招呼','NPC招呼','已与这位镇民打过招呼'],
+ 'town_services.service.started':['服务已开始','NPC服务','本次服务已开始，尚未完成'],
+ 'town_services.service.completed':['服务已完成','NPC服务','本次服务已完成'],
+ 'town_services.service.cancelled':['服务已取消','NPC服务','本次服务已取消'],
 };
 export async function behaviorSourcesEnabled(ctx:RuntimeReadContext){const rows=await ctx.repository(BEHAVIOR_REPOSITORY).getCoverage();return BEHAVIOR_SCOPES.every(scope=>rows.some(row=>row.scope===scope&&row.policyVersion===1));}
 function timeZoneOf(value:unknown){const zone=value===undefined?'UTC':text(value,'timeZone',1,80);try{new Intl.DateTimeFormat('en',{timeZone:zone});return zone;}catch{fail('invalid_request',400,'Choose an IANA time zone');}}
