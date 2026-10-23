@@ -79,11 +79,17 @@ export function registerM1Routes(app: FastifyInstance, service: M1Service): void
         if (!window || stamp - window.start >= 60_000) windows.set(request.ip, { start: stamp, count: 1 });
         else window.count++;
         const query = request.query as Record<string, unknown>;
-        if (definition.action !== "receipt" && Object.keys(query).length > 0) fail("invalid_request", 400, "Query parameters are not supported");
+        if (definition.action !== "receipt" && definition.action !== 'readOwnerFriends' && Object.keys(query).length > 0) fail("invalid_request", 400, "Query parameters are not supported");
         const params = request.params as Record<string, string>;
         const body = request.body === undefined ? {} : request.body;
         if (body === null || typeof body !== "object" || Array.isArray(body)) fail("invalid_request", 400, "Expected a JSON object");
         if (Object.keys(params).some((key) => key in body)) fail("invalid_request", 400, "Resource identifiers belong in the path");
+        if(definition.action==='readOwnerFriends'){
+          if(request.body!==undefined||request.headers['transfer-encoding']!==undefined||(request.headers['content-length']!==undefined&&request.headers['content-length']!=='0')||Object.keys(query).some(key=>!['search','order','cursor','limit'].includes(key)))fail('invalid_request',400,'Use the current selected Agent path and supported friend query parameters');
+          const limit=query.limit;
+          if(limit!==undefined&&(typeof limit!=='string'||!/^[1-9][0-9]{0,2}$/.test(limit)||Number(limit)>100))fail('invalid_request',400,'Choose a friend limit from 1 to 100');
+          return service.invokeHttp('readOwnerFriends',{...query,...params,...(limit===undefined?{}:{limit:Number(limit)})},headerToken(request),{clientIp:request.ip});
+        }
         if (definition.action === "receipt") {
           // GET payloads are not parsed by Fastify, so inspect framing as well.
           const hasBody = request.body !== undefined || request.headers["transfer-encoding"] !== undefined

@@ -36,6 +36,19 @@ async function fixture(){
  return {f,a,b,c,oa,ob,bindings,identity,relationships,interaction,gateway,app,call,query,command,text,textInvitation,feedback,close:async()=>{await app.close();await validator.close();}};
 }
 
+test('exact friend and request HTTP schemas expose whole-source search, effective state, totals and scope-bound cursors',async()=>{
+ const t=await fixture();try{
+  for(const agentId of ['agent-b','agent-c']){const sent=await t.command('owner-a','send',{agentId:'agent-a',toAgentId:agentId});assert.equal(sent.data.outcome,'committed');const accepted=await t.command(agentId==='agent-b'?'owner-b':'owner-a','accept',{agentId,requestId:sent.data.result.request.requestId,expectedVersion:1});assert.equal(accepted.data.outcome,'committed');t.f.now+=10;}
+  const first=await t.query('owner-a','friends',{agentId:'agent-a',limit:1,order:'oldest'});assert.equal(first.status,200);assert.equal(first.data.total,2);assert.equal(first.data.complete,false);assert(first.data.nextCursor);
+  const second=await t.query('owner-a','friends',{agentId:'agent-a',limit:1,order:'oldest',cursor:first.data.nextCursor});assert.equal(second.status,200);assert.equal(second.data.friends.length,1);assert.notEqual(second.data.friends[0].agentId,first.data.friends[0].agentId);
+  const searched=await t.query('owner-a','friends',{agentId:'agent-a',search:second.data.friends[0].agentId,limit:1});assert.equal(searched.status,200);assert.equal(searched.data.total,1);assert.equal(searched.data.friends[0].agentId,second.data.friends[0].agentId);
+  assert.equal((await t.query('owner-a','friends',{agentId:'agent-a',limit:1,order:'newest',cursor:first.data.nextCursor})).status,409);
+  const accepted=await t.query('owner-a','inbox',{agentId:'agent-a',direction:'sent',state:'accepted',search:'AGENT',order:'newest',limit:1});assert.equal(accepted.status,200);assert.equal(accepted.data.total,2);assert.equal(accepted.data.items[0].state,'accepted');
+  const empty=await t.query('owner-a','inbox',{agentId:'agent-a',direction:'sent',state:'pending'});assert.equal(empty.data.total,0);assert.deepEqual(empty.data.items,[]);assert.equal(empty.data.complete,true);
+  const discovery=t.gateway.discovery();for(const id of ['relationships.friends','relationships.inbox'])assert.equal(discovery.operations.find(op=>op.id===id)!.inputSchema.version,2);assert.equal(t.gateway.guide('relationships','3').document.version,3);
+ }finally{await t.close();}
+});
+
 test('independent invitation, direct-source inbox and explicit recipient consent retain the real Owner actor',async()=>{
  const t=await fixture();try{
   const empty=await t.query('owner-a','pair',{agentId:'agent-a',otherAgentId:'agent-b'});assert.deepEqual(empty.data.allowedActions,['relationships.invitation.send']);
@@ -91,7 +104,7 @@ test('only newly initiated and actually confirmed text completion scores once in
 test('current Agent capabilities and canonical exact guides discover all independent friendship reads and commands',async()=>{
  const t=await fixture();try{
   const capabilities=t.gateway.capabilities();assert(capabilities.modules.includes('relationships'));const discovery=t.gateway.discovery();assert.equal(discovery.operations.filter(op=>op.moduleId==='relationships').length,9);
-  for(const [moduleId,version] of [['relationships',2],['interaction',4],['world',7]] as const){const response=await t.app.inject({method:'GET',url:`/v1/gateway/guides/${moduleId}?version=${version}`});assert.equal(response.statusCode,200);const guide=response.json().data;assert.equal(createHash('sha256').update(guide.canonicalDocument).digest('hex'),guide.digest);assert(!guide.canonicalDocument.includes('当前好友列表只有主人只读入口，没有建立好友命令'));}
-  assert.match(JSON.stringify(t.gateway.guide('relationships','2').document),/closed\/received_confirmed/);
+  for(const moduleId of ['relationships','interaction','world']){const version=discovery.modules.find(module=>module.moduleId===moduleId)!.usageGuide.version,response=await t.app.inject({method:'GET',url:`/v1/gateway/guides/${moduleId}?version=${version}`});assert.equal(response.statusCode,200);const guide=response.json().data;assert.equal(createHash('sha256').update(guide.canonicalDocument).digest('hex'),guide.digest);assert(!guide.canonicalDocument.includes('当前好友列表只有主人只读入口，没有建立好友命令'));}
+  assert.match(JSON.stringify(t.gateway.guide('relationships',String(relationshipsGatewayGuide.version)).document),/closed\/received_confirmed/);
  }finally{await t.close();}
 });

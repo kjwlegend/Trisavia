@@ -65,13 +65,8 @@ export async function buildApp(options:BuildAppOptions):Promise<FastifyInstance>
    if(town){operations.push(...townGatewayOperations(town));guides.push(townGatewayGuide);publicReads.push(...townPublicReads(town));}
    let behaviorLogs:ReturnType<typeof createBehaviorLogService>|undefined;
    friendshipOwnerRead=(raw,token)=>runtime!.read(async ctx=>{
-    const input=object(raw,['agentId']),principal=await identity.authenticate(ctx,token,['owner_session']),friends:JsonObject[]=[];let cursor:string|undefined;
-    for(let page=0;page<3;page++){
-     const value=await relationships.friends(ctx,principal,{agentId:typeof input.agentId==='string'?input.agentId:'',limit:100,...(cursor?{cursor}:{})});friends.push(...value.friends);
-     if(value.complete)return {agentId:value.agentId,friends,complete:true,asOf:value.asOf};
-     cursor=value.nextCursor??undefined;
-    }
-    fail('source_unavailable',503,'Use the bounded friendship reader to read this collection');
+    const input=object(raw,['agentId','search','order','cursor','limit']),principal=await identity.authenticate(ctx,token,['owner_session']);
+    return await relationships.friends(ctx,principal,input as JsonObject);
    });
    const handlers:DeterministicTaskHandler[]=[{kind:'world.movement.step',version:1,run:world.handleTask},{kind:'world.idle.step',version:1,run:world.handleIdleTask}];
    if(town)handlers.push({kind:'town_services.inn.rest.complete',version:1,run:town.handleTask});
