@@ -1,3 +1,7 @@
+import type {BehaviorRepository} from '../../apps/platform/domains/behavior/repository.ts';
+import type {BehaviorCoverage,BehaviorRecord} from '../../apps/platform/domains/behavior/types.ts';
+import {IDLE_BEHAVIOR_INTERVAL_MS} from '../../apps/platform/domains/behavior/types.ts';
+import {behaviorRecordId,sameBehavior,validateBehaviorDraft} from '../../apps/platform/domains/behavior/records.ts';
 import { RuntimeError, type CommandKey, type CommandReceipt, type RuntimeEvent, type RuntimeEventDraft, type RuntimeReadContext, type RuntimeStore, type RuntimeTask, type RuntimeTaskDraft, type RuntimeTransaction, type WorkLease, type OutboxEntry, type OutboxDraft, type RuntimeRepositoryPort } from '../../apps/platform/contracts/runtime-store.ts';
 import type { AgentParticipation, IdentityAccess, Principal, PublicAgentView } from '../../apps/platform/domains/access/public.ts';
 import type { WorldAvatar, WorldMovement, WorldRuleset, WorldState } from '../../apps/platform/domains/world/types.ts';
@@ -14,6 +18,7 @@ const copy = <T>(value: T): T => structuredClone(value);
 const keyOf = (key: CommandKey) => JSON.stringify(key);
 const pairKey = (a: string, b: string) => JSON.stringify([a, b]);
 interface State {
+  behaviorRecords:Map<string,BehaviorRecord>;behaviorCoverage:Map<string,BehaviorCoverage>;behaviorVisibility:Map<string,number>;
   publicAgents: Map<string, PublicAgentView>;
   movements: Map<string, WorldMovement>; worlds: Map<string, WorldState>; rules: Map<string, WorldRuleset>; avatars: Map<string, WorldAvatar>;
   configs: Map<number, FeedbackConfiguration>; artifacts: Map<string, ArtifactRevision>; pairs: Map<string, InteractionPairPolicy>;
@@ -24,7 +29,7 @@ interface State {
 }
 /** Pure in-memory public-port fixture. It verifies C business logic, not PostgreSQL locks or A credential authentication. */
 export function coreFixture() {
-  let stamp = 1_000_000, state: State = { publicAgents: new Map(), movements: new Map(), worlds: new Map(), rules: new Map(), avatars: new Map(), configs: new Map(), artifacts: new Map(), pairs: new Map(),
+  let stamp = 1_000_000, state: State = { behaviorRecords:new Map(),behaviorCoverage:new Map(),behaviorVisibility:new Map(),publicAgents: new Map(), movements: new Map(), worlds: new Map(), rules: new Map(), avatars: new Map(), configs: new Map(), artifacts: new Map(), pairs: new Map(),
     invitations: new Map(), activities: new Map(), feedback: new Map(), receipts: new Map(), events: [], outbox: new Map(), tasks: new Map(), generations: new Map(), decisions: new Map(), participants: new Map(), friendships: new Map(), friendshipInvitations: new Map(), intimacyFacts: new Map() };
   let failAt = '';
   let checks: ((context:RuntimeTransaction)=>Promise<void>)[] = [];
@@ -71,10 +76,21 @@ export function coreFixture() {
     async listConfirmed(id,o){return copy([...state.friendships.values()].filter(row=>row.status==='confirmed'&&[row.firstAgentId,row.secondAgentId].includes(id)&&(!o.afterId||row.id>o.afterId)).sort((a,b)=>a.id<b.id?-1:a.id>b.id?1:0).slice(0,o.limit));},
     async recordCompletedFeedback(fact){const current=await relationships.getFriendshipForPair(fact.fromAgentId,fact.toAgentId);if(!current)return{changed:false,friendship:null};if(current.status!=='confirmed'||fact.invitationCreatedAt<=current.confirmedAt)return{changed:false,friendship:current};const key=JSON.stringify([current.id,'interaction',fact.activityId,'text_feedback_completed']),old=state.intimacyFacts.get(key);if(old){if(JSON.stringify(old)!==JSON.stringify(fact))throw new RuntimeError('command_conflict','Completed friendship source changed');return{changed:false,friendship:current};}fault('intimacy-fact');state.intimacyFacts.set(key,copy(fact));if(current.intimacyScore>=100)return{changed:false,friendship:current};const next={...current,version:current.version+1,intimacyScore:current.intimacyScore+1};await relationships.saveFriendship(next,current.version);return{changed:true,friendship:next};},
   };
+  const behavior:BehaviorRepository={
+    async getCoverage(){return copy([...state.behaviorCoverage.values()]);},
+    async cut(){return {maxSequence:Math.max(0,...[...state.behaviorRecords.values()].map(r=>r.sequence)),asOf:stamp};},
+    async get(id){return copy(state.behaviorRecords.get(id));},
+    async visibilityVersion(id){return state.behaviorVisibility.get(id)??0;},
+    async invalidateVisibility(ids){for(const id of new Set(ids))state.behaviorVisibility.set(id,(state.behaviorVisibility.get(id)??0)+1);},
+    async list(i){return copy([...state.behaviorRecords.values()].filter(r=>r.sequence<=i.maxSequence&&(!i.agentId||r.agentId===i.agentId)&&(!i.publicOnly||r.publicProjection!==null)&&(i.fromAt===undefined||r.occurredAt>=i.fromAt)&&(i.toAt===undefined||r.occurredAt<i.toAt)&&(!i.after||r.occurredAt<i.after.occurredAt||r.occurredAt===i.after.occurredAt&&r.id<i.after.id)).sort((a,b)=>b.occurredAt-a.occurredAt||(a.id<b.id?1:a.id>b.id?-1:0)).slice(0,i.limit));},
+    async append(d){fault('behavior');validateBehaviorDraft(d);const enabled=state.behaviorCoverage.get(d.scope);if(!enabled||d.occurredAt<enabled.fromAt)throw new RuntimeError('invalid_usage','Coverage not enabled');const id=behaviorRecordId(d),old=state.behaviorRecords.get(id);if(old){const {id:_,sequence,...draft}=old;if(!sameBehavior(draft,d))throw new RuntimeError('command_conflict','Behavior changed');return copy(old);}const row={...copy(d),id,sequence:state.behaviorRecords.size+1};state.behaviorRecords.set(id,row);return copy(row);},
+    async shouldRecordIdle(id,at){const last=[...state.behaviorRecords.values()].filter(r=>r.agentId===id&&r.scope==='world_idle').sort((a,b)=>b.occurredAt-a.occurredAt)[0];return !last||at-last.occurredAt>=IDLE_BEHAVIOR_INTERVAL_MS;},
+    async activateCoverage(scope,fromAt){const old=state.behaviorCoverage.get(scope);if(old)return copy(old);const row:BehaviorCoverage={scope,fromAt,policyVersion:1,partial:scope==='world_idle'};state.behaviorCoverage.set(scope,row);return copy(row);},
+  };
   const context: RuntimeTransaction & { validateBeforeCommit(check:(context:RuntimeTransaction)=>Promise<void>):void } = {
     validateBeforeCommit(check) { checks.push(check); },
     instanceId:'world-core-c-unit', recoveryEpoch:'epoch-c', now:()=>stamp,
-    repository<R,W extends R>(port: RuntimeRepositoryPort<R,W>): W { if (port.name === 'world') return world as W; if (port.name === 'interaction') return interaction as W; if(port.name==='relationships')return relationships as W; throw new Error('Unknown repository'); },
+    repository<R,W extends R>(port: RuntimeRepositoryPort<R,W>): W { if (port.name === 'world') return world as W; if (port.name === 'interaction') return interaction as W; if(port.name==='relationships')return relationships as W;if(port.name==='behavior')return behavior as W; throw new Error('Unknown repository'); },
     async attempt(work) { const before = copy(state), count = checks.length; try { return await work(context); } catch (error) { state = before; checks.splice(count); throw error; } },
     commands: { async get(key) { return copy(state.receipts.get(keyOf(key))); }, async insert(r) { fault('receipt'); if (state.receipts.has(keyOf(r.key))) throw new RuntimeError('command_conflict','Duplicate receipt'); state.receipts.set(keyOf(r.key),copy(r)); } },
     events: { async append(e: RuntimeEventDraft) { fault('event'); const event = {...copy(e),position:state.events.length+1,committedAt:stamp}; state.events.push(event); return copy(event); }, async get(id) { return copy(state.events.find(e=>e.eventId===id)); }, async list(o) { return copy(state.events.filter(e=>(!o.domain||e.domain===o.domain)&&(!o.subjectId||e.subject.id===o.subjectId)&&(!o.worldId||e.worldId===o.worldId)&&(!o.afterPosition||e.position>o.afterPosition)).slice(0,o.limit)); } },
@@ -96,5 +112,5 @@ export function coreFixture() {
   const decisions: DecisionIntentSink = {async ensure(_ctx,intent){fault('decision');const id=intent.agentId+':'+intent.deduplicationKey;state.decisions.set(id,copy(intent));return {decisionId:id,version:1};},async cancel(_ctx,id,key){state.decisions.delete(id+':'+key);} };
   function addAgent(id:string):Principal {state.publicAgents.set(id,{agentId:id,publishedVersion:1,displayName:'Published '+id,appearance:{template:'basic',color:'cream'}});state.participants.set(id,{agentId:id,actionPolicy:{version:0,mode:'autonomous',updatedAt:null},runtimeActive:true,runtimeVersion:1,membership:{worldId:'default',version:1,state:'joined',ownerPaused:false,ownerPauseVersion:1,platformRestricted:false,platformVersion:1,sharingGeneration:1}});return {kind:'agent',agentId:id,runtimeVersion:1,source:'external_agent',credentialId:'credential-'+id,credentialVersion:1,recoveryEpoch:context.recoveryEpoch,authorizationVersion:'auth-'+id,expiresAt:null};}
   let command=0;
-  return {store,context,world,interaction,relationships,identity,decisions,addAgent, membership(id:string,patch:Partial<AgentParticipation['membership']>){const old=state.participants.get(id)!;state.participants.set(id,{...old,membership:{...old.membership,...patch}});},get state(){return state;},get now(){return stamp;},set now(value:number){stamp=value;},set failAt(value:string){failAt=value;},key(p:Principal,action:string,id='c-'+(++command)):CommandKey{return{domain:action.startsWith('world.')?'world':'interaction',action,commandId:id,principal:{kind:p.kind,id:p.kind==='agent'?p.agentId:p.ownerId},recoveryEpoch:context.recoveryEpoch};}};
+  return {store,context,world,interaction,relationships,behavior,identity,decisions,addAgent, membership(id:string,patch:Partial<AgentParticipation['membership']>){const old=state.participants.get(id)!;state.participants.set(id,{...old,membership:{...old.membership,...patch}});},get state(){return state;},get now(){return stamp;},set now(value:number){stamp=value;},set failAt(value:string){failAt=value;},key(p:Principal,action:string,id='c-'+(++command)):CommandKey{return{domain:action.startsWith('world.')?'world':'interaction',action,commandId:id,principal:{kind:p.kind,id:p.kind==='agent'?p.agentId:p.ownerId},recoveryEpoch:context.recoveryEpoch};}};
 }
