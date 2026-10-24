@@ -1,3 +1,4 @@
+import {publicIdentifierMaintenanceConnection} from './public-identifiers-prepare.ts';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { Pool } from 'pg';
@@ -15,7 +16,7 @@ export async function upgradeWorldCore(config:RuntimeConfig,privateConnections:s
  const manifest=JSON.parse(await requirePrivateFile(join(privateConnections,'created-database.json'))) as {format:string;database:string;oid:number;owner:string;project:string;context:string};checkedWorldDatabase(manifest.database);
  if(manifest.format!=='world-core-isolated-pg-database-v1'||manifest.project!==config.project||manifest.context!==config.context||manifest.owner!=='connet_migrator'||!Number.isSafeInteger(manifest.oid))throw new Error('World upgrade manifest mismatch');
  const identity=JSON.parse(await requirePrivateFile(join(privateConnections,'identity.json'))) as {version:number;instanceId:string;recoveryEpoch:string};if(identity.version!==1)throw new Error('World identity must already exist');
- const connectionString=(await requirePrivateFile(join(privateConnections,'migration-database-url'))).trim(),url=new URL(connectionString);if(url.hostname!=='127.0.0.1'||Number(url.port)!==config.port||url.pathname.slice(1)!==manifest.database)throw new Error('World upgrade connection mismatch');
+ const connectionString=publicIdentifierMaintenanceConnection(await requirePrivateFile(join(privateConnections,'migration-database-url')),manifest.database),url=new URL(connectionString);if(url.hostname!=='127.0.0.1'||Number(url.port)!==config.port||url.pathname.slice(1)!==manifest.database)throw new Error('World upgrade connection mismatch');
  const options={connectionString,instanceId:identity.instanceId,recoveryEpoch:identity.recoveryEpoch};
  const pool=new Pool({connectionString,max:1}),client=await pool.connect();
  try{await client.query('BEGIN');const observed=(await client.query("SELECT oid::bigint,pg_get_userbyid(datdba) AS owner FROM pg_database WHERE datname=current_database()")).rows[0];if(Number(observed?.oid)!==manifest.oid||observed?.owner!==manifest.owner)throw new Error('World upgrade target identity changed');const guard=(await client.query('SELECT instance_id,recovery_epoch FROM platform.instance_state WHERE singleton=1 FOR UPDATE')).rows[0];if(guard?.instance_id!==identity.instanceId||guard?.recovery_epoch!==identity.recoveryEpoch)throw new Error('World upgrade deployment identity mismatch');await client.query('UPDATE platform.instance_state SET writes_enabled=false,write_generation=write_generation+1 WHERE singleton=1');await client.query('COMMIT');}catch(error){await client.query('ROLLBACK').catch(()=>undefined);throw error;}finally{client.release();await pool.end();}
