@@ -1,3 +1,5 @@
+// Explicit production-browser check; run npm run build:web first.
+// Then: node --test tests/e2e/product-pages.node.ts
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {mkdir,readFile} from 'node:fs/promises';
