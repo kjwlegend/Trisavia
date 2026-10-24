@@ -5,10 +5,12 @@ import Fastify from 'fastify';
 import {createM1Service} from '../../apps/platform/application/m1-service.ts';
 import {registerM1Routes} from '../../apps/platform/transport/http/m1-routes.ts';
 import {postgresFixture} from './postgresql-fixture.ts';
+import {PUBLIC_IDENTIFIERS_PERMISSIONS_SQL} from '../../apps/platform/infrastructure/postgresql/public-identifiers-migration.ts';
 
 const token=()=>randomUUID()+'.'+randomBytes(32).toString('base64url'),op=()=>randomUUID();
 await test('Owner invitations bind only one self-authenticated Agent and GET never consumes',async t=>{
  const pg=await postgresFixture();t.after(()=>pg.dispose());
+ await pg.sql(PUBLIC_IDENTIFIERS_PERMISSIONS_SQL);
  let now=1000000;
  const service=createM1Service(pg.store,{now:()=>now,email:{mode:'experience'},inviteTtlMs:1000});
  const app=Fastify({logger:false});registerM1Routes(app,service);t.after(()=>app.close());
@@ -23,7 +25,7 @@ await test('Owner invitations bind only one self-authenticated Agent and GET nev
   await service.invoke('sendRegistrationCode',{operationId:sendOperationId,attemptId},browserToken);
   await service.invoke('verifyRegistrationEmail',{operationId:op(),attemptId,sendOperationId,code:'1234'},browserToken);
   const result=await service.invoke('registerOwner',{operationId:op(),attemptId,password:'synthetic long test password',sessionToken},browserToken);
-  return {sessionToken,ownerId:result.ownerId};
+  return {sessionToken,ownerId:result.ownerId,ownerPublicId:result.ownerPublicId};
  };
  const register=async(inviteToken?:string)=>{
   const input={operationId:op(),attemptId:op(),runtimeToken:token(),continuationToken:token(),...(inviteToken?{inviteToken}:{})};
@@ -95,6 +97,24 @@ await test('Owner invitations bind only one self-authenticated Agent and GET nev
   assert.deepEqual(results.map(x=>x.status).sort(),[200,409]);
   assert.equal(results.find(x=>x.status===409)!.body.error.code,'invite_consumed');
   const rows=await pg.sql('SELECT count(*)::int AS n FROM iam.management_bindings WHERE active AND agent_id=ANY($1::text[])',[[a.agentId,b.agentId]]);assert.equal(rows[0].n,1);
+ });
+ await t.test('short display identifiers are stable and preserve current public/Owner visibility',async()=>{
+  const a=await register();assert.match(a.publicId,/^A[0-9]{3,}$/);assert.equal(a.ownerPublicId,null);assert.equal(a.profileUrl,'/residents/'+a.publicId);
+  assert.match(String(first.ownerPublicId),/^H[0-9]{3,}$/);
+  const account=await service.invoke('readAccount',{},first.sessionToken);assert.equal(account.publicId,first.ownerPublicId);
+  const before=await pg.sql('SELECT last_value FROM public_identifiers.agent_number UNION ALL SELECT last_value FROM public_identifiers.owner_number');
+  const self=await service.invoke('self',{},a.input.runtimeToken);assert.equal(self.publicId,a.publicId);assert.equal(self.ownerPublicId,null);
+  const publicRead=await request('GET','/v1/public/agents/'+a.publicId);assert.equal(publicRead.status,200);assert.equal(publicRead.body.agentId,a.agentId);assert.equal(publicRead.body.publicId,a.publicId);assert.equal('ownerPublicId' in publicRead.body,false);
+  assert.deepEqual((await request('GET','/v1/public/agents/'+a.agentId)).body,publicRead.body);
+  assert.deepEqual(await pg.sql('SELECT last_value FROM public_identifiers.agent_number UNION ALL SELECT last_value FROM public_identifiers.owner_number'),before,'reads cannot allocate new display identifiers');
+  assert.equal((await request('GET','/v1/agent/self',undefined,String(first.ownerPublicId))).status,401,'H display ID is not a credential');
+  const grant=await issue(first.sessionToken),linked=await request('POST','/v1/agent/invitations/consume',{operationId:op(),inviteToken:grant.inviteToken},a.input.runtimeToken);
+  assert.equal(linked.body.publicId,a.publicId);assert.equal(linked.body.ownerPublicId,first.ownerPublicId);
+  const own=await service.invoke('managedAgent',{agentId:a.agentId},first.sessionToken);assert.equal(own.publicId,a.publicId);assert.equal(own.ownerPublicId,first.ownerPublicId);
+  const profile=await service.invoke('readProfile',{agentId:a.agentId},a.input.runtimeToken);
+  await service.invoke('unpublishProfile',{operationId:op(),agentId:a.agentId,expectedVersion:profile.version,expectedPolicyVersion:profile.policyVersion},a.input.runtimeToken);
+  const hidden=await request('GET','/v1/public/agents/'+a.publicId),absent=await request('GET','/v1/public/agents/A9999999');assert.equal(hidden.status,404);assert.deepEqual(hidden.body,absent.body);
+  assert.equal((await service.invoke('self',{},a.input.runtimeToken)).publicId,a.publicId);
  });
 });
 

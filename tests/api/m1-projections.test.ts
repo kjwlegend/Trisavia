@@ -58,7 +58,7 @@ await test("anonymous public profile is an explicit published allowlist gated by
     t.after(async () => await app.close());
     const agent = await register(f);
     const url = `/v1/public/agents/${agent.agentId}`;
-    assert.equal(agent.result.profileUrl, `/residents/${agent.agentId}`);
+    assert.equal(agent.result.profileUrl, `/residents/${agent.result.publicId}`);
     const privateProfile = await f.service.invoke("readProfile", { agentId: agent.agentId }, agent.runtimeToken);
     assert.equal(privateProfile.confirmationSource, null);
     assert.equal((await app.inject({ method: "GET", url })).statusCode, 404);
@@ -75,7 +75,7 @@ await test("anonymous public profile is an explicit published allowlist gated by
     assert.equal(response.statusCode, 200);
     assert.equal(response.headers["cache-control"], "no-store");
     assert.deepEqual(response.json(), {
-        agentId: agent.agentId, profileUrl: `/residents/${agent.agentId}`,
+        agentId: agent.agentId, publicId:agent.result.publicId, profileUrl: `/residents/${agent.result.publicId}`,
         profile: { displayName: "Published Resident", avatar: { template: "basic", color: "blue" }, bio: "Public biography", interests: ["maps"] },
         membership: { state: "joined" }, asOf: f.time(),
     });
@@ -126,7 +126,7 @@ await test("management snapshots keep generation-specific delivery, initializati
     const detail = await f.service.invoke("managedAgent", { agentId: agent.agentId }, session);
     assert.deepEqual(detail.management, {managementStatus:"managed"});
     assert.equal(detail.asOf, 70050);
-    assert.equal(detail.profileUrl, `/residents/${agent.agentId}`);
+    assert.equal(detail.profileUrl, `/residents/${agent.result.publicId}`);
     assert.equal((await self()).asOf, 70050);
     for (const forbidden of ["online", "lastSeenAt", "heartbeat"])
         assert.equal(forbidden in detail, false);

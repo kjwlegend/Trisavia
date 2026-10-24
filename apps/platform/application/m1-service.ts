@@ -25,6 +25,7 @@ import {createOwnerFriendsReader} from "./owner-friends.ts";
 import {HOST_PARTICIPATION_GUIDANCE} from './agent-hourly-participation-guide.ts';
 import {agentIdentityView,knownTimestamp} from './agent-identity-view.ts';
 import {agentInviteState,agentInviteView,inspectAgentInvite,requireActiveAgentInvite} from './agent-invites.ts';
+import {ensurePublicId,readPublicId,findPublicIdentifier} from '../domains/public-identifiers/repository.ts';
 import type { PerceptionAction } from "../domains/perception/protocol.ts";
 export type M1Action = PerceptionAction | "previewInvite" | "consumeInvite" | "readOwnerFriends" | "queryOwnerMailbox" | "capabilities" | "catalog" | "register" | "registrationResult" | "self" | "publicProfile" | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup" | "readRecovery" | "registerOwner" | "readAccount" | "claimAgent" | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites" | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveProfile" | "saveDraft" | "publishProfile" | "unpublishProfile" | "profilePolicy" | "createRecoveryRequest" | "readRecoveryRequest" | "cancelRecoveryRequest" | "recoveryAssistance" | "verifyRecoveryRequest" | "rejectRecoveryRequest" | "startRegistration" | "readRegistrationAttempt" | "sendRegistrationCode" | "verifyRegistrationEmail" | "cancelRegistration" | "startEmailRecovery" | "readEmailRecoveryAttempt" | "sendRecoveryCode" | "verifyRecoveryEmail" | "recoverByEmail" | "enableRecoveryBackup" | "readWorldActionPolicy" | "saveWorldActionPolicy" | "readWorldAccess" | "saveWorldAccess" | "adoptWorldAccess" | "readMembership" | "join" | "leave" | "participation" | "receipt";
 export interface M1Options {
@@ -149,8 +150,13 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
             } });
         return result;
     }
-    function registrationView(row: StoredRow): JsonObject {
-        return { registrationAttemptId: row.id, agentId: row.data.agentId!, ownerId: row.data.ownerId!, managementStatus: row.data.managementStatus!, ...(options.gateway ? { gateway: { capabilities: "/v1/capabilities", discovery: "/v1/gateway/discovery", ownerBindingRequired: false } } : {}), profileUrl: profileUrl(scalarString(row, "agentId")) };
+    async function ownerPublicId(tx:M1ReadSession,ownerId:string):Promise<string|null>{
+        const owner=await humanAccountRepository(tx).get(ownerId);
+        return owner?.data.status==='active'?await readPublicId(tx,'owner',ownerId):null;
+    }
+    async function registrationView(tx:M1ReadSession,row: StoredRow): Promise<JsonObject> {
+        const agentId=scalarString(row,"agentId"),publicId=await readPublicId(tx,'agent',agentId);
+        return { registrationAttemptId: row.id, agentId, publicId, ownerId: row.data.ownerId!, ownerPublicId:await ownerPublicId(tx,scalarString(row,"ownerId")), managementStatus: row.data.managementStatus!, ...(options.gateway ? { gateway: { capabilities: "/v1/capabilities", discovery: "/v1/gateway/discovery", ownerBindingRequired: false } } : {}), profileUrl: profileUrl(publicId) };
     }
     function accountComplete(owner: StoredRow): boolean {
         return typeof owner.data.usernameKey === "string" && typeof owner.data.emailKey === "string";
@@ -335,7 +341,8 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     }
     async function ownerView(tx: M1ReadSession, actor: CredentialRow, agentId: string, asOf: number): Promise<JsonObject> {
         const agent = await target(tx, actor, agentId),member=await required(membershipRepository(tx), agentId);
-        return { agentId, ownerId: actor.data.ownerId!, runtimeVersion: agent.data.runtimeVersion!, runtimeActive: agent.data.runtimeActive!, identity:agentIdentityView(agent,member,asOf), profile: await readProfileView(tx,await required(profileRepository(tx), agentId)), membership: membershipView(member), worldAccess: worldAccessView(agent, asOf), profileUrl: profileUrl(agentId), management: {managementStatus:(await registrationRepository(tx).findByAgentId(agentId))[0]?.data.managementStatus==="managed"?"managed":"pending_setup"}, asOf };
+        const publicId=await readPublicId(tx,'agent',agentId);
+        return { agentId, publicId, ownerId: actor.data.ownerId!, ownerPublicId:await ownerPublicId(tx,actor.data.ownerId!), runtimeVersion: agent.data.runtimeVersion!, runtimeActive: agent.data.runtimeActive!, identity:agentIdentityView(agent,member,asOf), profile: await readProfileView(tx,await required(profileRepository(tx), agentId)), membership: membershipView(member), worldAccess: worldAccessView(agent, asOf), profileUrl: profileUrl(publicId), management: {managementStatus:(await registrationRepository(tx).findByAgentId(agentId))[0]?.data.managementStatus==="managed"?"managed":"pending_setup"}, asOf };
     }
     const readOwnerFriends=createOwnerFriendsReader(store,{now,...(options.legacyAvatarIdentity?{legacyAvatarIdentity:options.legacyAvatarIdentity}:{})});
     const wallet = createWalletService(store, authenticate, now);
@@ -376,7 +383,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                 object(raw, []);
                 const actor = await authenticate(tx, token, ["owner_session"]);
                 const owner = await required(humanAccountRepository(tx), actor.data.ownerId!);
-                return { ownerId: owner.id, version: owner.version, username: typeof owner.data.username === "string" ? owner.data.username : null, email: typeof owner.data.email === "string" ? owner.data.email : null, emailVerified: owner.data.emailVerified === true, emailVerifiedAt: owner.data.emailVerifiedAt ?? null, emailVerificationSource: owner.data.emailVerificationSource ?? null, emailVerificationMode: owner.data.emailVerificationMode ?? null, lastRecoveryVerificationMode: owner.data.lastRecoveryVerificationMode ?? null, lastRecoveryVerificationSource: owner.data.lastRecoveryVerificationSource ?? null, accountComplete: accountComplete(owner), asOf };
+                return { ownerId: owner.id, publicId:await readPublicId(tx,'owner',owner.id), version: owner.version, username: typeof owner.data.username === "string" ? owner.data.username : null, email: typeof owner.data.email === "string" ? owner.data.email : null, emailVerified: owner.data.emailVerified === true, emailVerifiedAt: owner.data.emailVerifiedAt ?? null, emailVerificationSource: owner.data.emailVerificationSource ?? null, emailVerificationMode: owner.data.emailVerificationMode ?? null, lastRecoveryVerificationMode: owner.data.lastRecoveryVerificationMode ?? null, lastRecoveryVerificationSource: owner.data.lastRecoveryVerificationSource ?? null, accountComplete: accountComplete(owner), asOf };
             }
             if (action === "claimAgent") {
                 const input = object(raw, ["operationId", "agentId", "expectedGeneration", "handoffToken", "setupToken"]);
@@ -408,12 +415,15 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     // can no longer mint initial owner capabilities after this claim.
                     await update(credentialRepository(tx), continuation, { kind: "registration_receipt", verifierKind: "bootstrap", ownerId: actor.data.ownerId! });
                     await revokeCredentials(tx, { ownerId: pending.id }, ["bootstrap", "handoff", "setup"]);
-                    return { ownerId: actor.data.ownerId!, agentId, managementStatus: "managed", generation: proof.data.handoffGeneration!, invalidated: ["bootstrap", "handoff", "setup"] };
+                    return { ownerId: actor.data.ownerId!, ownerPublicId:await ownerPublicId(tx,actor.data.ownerId!), agentId, publicId:await readPublicId(tx,'agent',agentId), managementStatus: "managed", generation: proof.data.handoffGeneration!, invalidated: ["bootstrap", "handoff", "setup"] };
                 });
             }
             if (action === "publicProfile") {
                 const input = object(raw, ["agentId"]);
-                const agentId = text(input.agentId, "agentId", 8, 100);
+                const selector=text(input.agentId,"agentId",1,100);
+                const mapped=/^A(?:00[1-9]|0[1-9][0-9]|[1-9][0-9]{2,18})$/.test(selector)?await findPublicIdentifier(tx,selector):undefined;
+                if(/^A[0-9]+$/.test(selector)&&mapped?.kind!=='agent')fail("target_not_accessible",404,"Target is not accessible");
+                const agentId=mapped?.subjectId??text(selector,"agentId",8,100);
                 const agent = await agentRepository(tx).get(agentId);
                 const profile = await profileRepository(tx).get(agentId);
                 const member = await membershipRepository(tx).get(agentId);
@@ -434,7 +444,8 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     publicFields.bio = published.bio;
                 if (Array.isArray(published.interests))
                     publicFields.interests = published.interests.filter((value): value is string => typeof value === "string");
-                return { agentId, profileUrl: profileUrl(agentId), profile: publicFields, appearance:await readAppearance(tx,agentId,avatar,options.legacyAvatarIdentity),publishedVersion:profile.data.publishedVersion!, membership: { state: "joined" }, asOf };
+                const publicId=await readPublicId(tx,'agent',agentId);
+                return { agentId, publicId, profileUrl: profileUrl(publicId), profile: publicFields, appearance:await readAppearance(tx,agentId,avatar,options.legacyAvatarIdentity),publishedVersion:profile.data.publishedVersion!, membership: { state: "joined" }, asOf };
             }
             if (action === "register") {
                 const input = object(raw, ["operationId", "attemptId", "runtimeToken", "continuationToken", "inviteToken"]);
@@ -448,7 +459,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                         fail("authentication_failed", 401, "Authentication failed");
                     if (prior.data.requestHash !== payloadHash(input))
                         fail("idempotency_payload_mismatch", 409, "Registration attempt was already used with different content");
-                    return await command(tx, `registration:${attemptId}`, action, input, () => registrationView(prior));
+                    return await command(tx, `registration:${attemptId}`, action, input, () => registrationView(tx,prior));
                 }
                 const inspected = input.inviteToken === undefined ? undefined : await inspectAgentInvite(tx,input.inviteToken,store.recoveryEpoch,now());
                 if(inspected)requireActiveAgentInvite(inspected.state);
@@ -464,6 +475,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     if (!invite)
                         await humanAccountRepository(tx).insert({ id: ownerId, version: 1, data: { status: "pending_setup", epoch: store.recoveryEpoch, authVersion: 1, handoffGeneration: 0, createdAt: stamp } });
                     await agentRepository(tx).insert({ id: agentId, version: 1, data: { runtimeVersion: 1, runtimeActive: true, createdAt: stamp, managementKind: invite ? "invited" : "initial", managementInitializedAt: invite ? stamp : null, worldAccess: { version: 1, intervalSeconds: null } } });
+                    await ensurePublicId(tx,'agent',agentId);
                     await newCredential(tx, input.runtimeToken, "runtime", { agentId, runtimeVersion: 1 });
                     await newCredential(tx, input.continuationToken, invite ? "registration_receipt" : "bootstrap", { agentId, ownerId, attemptId });
                     if (invite) {
@@ -477,7 +489,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     await membershipRepository(tx).insert({ id: agentId, version: 1, data: { agentId, worldId: "default", state: "joined", firstJoinedAt:stamp, ownerPaused: false, ownerPauseVersion: 1, platformRestricted: false, platformVersion: 1, sharingGeneration: 1 } });
                     await initializeWalletAccount(tx, agentId, stamp);
                     await initializePerceptionAgent(tx, agentId, stamp);
-                    return registrationView(registration);
+                    return registrationView(tx,registration);
                 });
             }
             if (action === "registrationResult") {
@@ -489,15 +501,15 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     await target(tx, actor, scalarString(row, "agentId"));
                 else if (actor.data.agentId !== row.data.agentId || (actor.data.kind !== "runtime" && actor.data.attemptId !== attemptId))
                     fail("target_not_accessible", 404, "Target is not accessible");
-                return registrationView(row);
+                return registrationView(tx,row);
             }
             if (action === "self") {
                 object(raw, []);
                 const actor = await authenticate(tx, token, ["runtime"]);
                 const agentId = actor.data.agentId!;
                 const registration = (await registrationRepository(tx).findByAgentId(agentId))[0]!;
-                const agent=await required(agentRepository(tx),agentId),member=await required(membershipRepository(tx),agentId);
-                return { agentId, ownerId: scalarString(registration, "ownerId"), instanceId: store.instanceId, runtimeVersion: actor.data.runtimeVersion!, identity:agentIdentityView(agent,member,asOf), profile: await readProfileView(tx,await required(profileRepository(tx), agentId)), membership: membershipView(member), profileUrl: profileUrl(agentId), management: await managementView(tx, agent), worldAccess: worldAccessView(agent, asOf), effectiveActions: await effectiveActions(tx, actor, agentId), asOf };
+                const agent=await required(agentRepository(tx),agentId),member=await required(membershipRepository(tx),agentId),publicId=await readPublicId(tx,'agent',agentId);
+                return { agentId, publicId, ownerId: scalarString(registration, "ownerId"), ownerPublicId:await ownerPublicId(tx,scalarString(registration,"ownerId")), instanceId: store.instanceId, runtimeVersion: actor.data.runtimeVersion!, identity:agentIdentityView(agent,member,asOf), profile: await readProfileView(tx,await required(profileRepository(tx), agentId)), membership: membershipView(member), profileUrl: profileUrl(publicId), management: await managementView(tx, agent), worldAccess: worldAccessView(agent, asOf), effectiveActions: await effectiveActions(tx, actor, agentId), asOf };
             }
             if (action === "issueHandoff") {
                 const input = object(raw, ["operationId", "expectedGeneration", "handoffToken"]);
@@ -561,7 +573,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                 const scope = `owner-login:${parseToken(input.sessionToken, true).id}`;
                 return await command(tx, scope, action, input, async () => {
                     const session = await newCredential(tx, input.sessionToken, "owner_session", { ownerId, ownerAuthVersion: owner.data.authVersion!, expiresAt: now() + limits.session });
-                    return { ownerId, sessionId: session.id, expiresAt: session.data.expiresAt! };
+                    return { ownerId, ownerPublicId:await ownerPublicId(tx,ownerId), sessionId: session.id, expiresAt: session.data.expiresAt! };
                 });
             }
             if (action === "readRecovery") {
@@ -652,7 +664,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                 const actor = await authenticate(tx, token, ["owner_session"]);
                 if (action === "managedAgent")
                     return await ownerView(tx, actor, text(input.agentId, "agentId", 8, 100), asOf);
-                return { ownerId: actor.data.ownerId!, agents: await mapAsync((await managementBindingRepository(tx).findByActiveAndOwnerId(true, actor.data.ownerId)), async (binding) => await ownerView(tx, actor, scalarString(binding, "agentId"), asOf)), asOf };
+                return { ownerId: actor.data.ownerId!, ownerPublicId:await ownerPublicId(tx,actor.data.ownerId!), agents: await mapAsync((await managementBindingRepository(tx).findByActiveAndOwnerId(true, actor.data.ownerId)), async (binding) => await ownerView(tx, actor, scalarString(binding, "agentId"), asOf)), asOf };
             }
             if (action === "consumeInvite") {
                 const input=object(raw,["operationId","inviteToken"]);
@@ -680,7 +692,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                         await revokeCredentials(tx,{ownerId:pending.id},["bootstrap","handoff","setup"]);
                     }
                     await update(credentialRepository(tx),invite,{active:false,consumedByAttemptId:registration.id});
-                    return {agentId,ownerId,inviteId:invite.id,managementStatus:"managed",changed:!binding,asOf:now()};
+                    return {agentId,publicId:await readPublicId(tx,'agent',agentId),ownerId,ownerPublicId:await ownerPublicId(tx,ownerId),inviteId:invite.id,managementStatus:"managed",changed:!binding,asOf:now()};
                 });
             }
             if (action === "issueInvite" || action === "revokeInvite" || action === "listInvites") {

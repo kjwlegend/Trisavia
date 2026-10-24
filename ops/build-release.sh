@@ -9,7 +9,7 @@ stage=$(mktemp -d)
 trap 'rm -rf -- "$stage"' EXIT
 # Archive only committed runtime, public protocol docs and operations files.
 # Never copy a worktree, node_modules, local databases or test fixtures.
-git -C "$repo" archive "$revision" apps docs/access/v1 scripts/m1-agent.ts scripts/world-core-prepare.ts scripts/world-core-database.ts scripts/behavior-prepare.ts scripts/friendships-prepare.ts scripts/town-services-prepare.ts scripts/new-resident-guide.ts scripts/publish-world-announcement.ts scripts/ws02-admin-target.ts scripts/postgresql/runtime.ts scripts/postgresql/permissions.ts scripts/postgresql/database.ts package.json package-lock.json ops | tar -x -C "$stage"
+git -C "$repo" archive "$revision" apps docs/access/v1 scripts/m1-agent.ts scripts/world-core-prepare.ts scripts/world-core-database.ts scripts/behavior-prepare.ts scripts/friendships-prepare.ts scripts/town-services-prepare.ts scripts/new-resident-guide.ts scripts/public-identifiers-prepare.ts scripts/publish-world-announcement.ts scripts/ws02-admin-target.ts scripts/postgresql/runtime.ts scripts/postgresql/permissions.ts scripts/postgresql/database.ts package.json package-lock.json ops | tar -x -C "$stage"
 printf '%s\n' "$revision" > "$stage/REVISION"
 mkdir -p "$(dirname "$output")"
 tar -czf "$output" -C "$stage" .

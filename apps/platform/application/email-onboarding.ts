@@ -1,3 +1,4 @@
+import {ensurePublicId,readPublicId} from '../domains/public-identifiers/repository.ts';
 import { requireRow as required, patchRow as update } from '../domains/common/repository.ts';
 import { mailJobRepository } from '../domains/email/repository.ts';
 import { recoveryRequestRepository, humanAccountRepository, credentialRepository, managementBindingRepository, emailAttemptRepository, agentRepository, registrationRepository } from '../domains/access/repository.ts';
@@ -299,6 +300,7 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
                         await humanAccountRepository(tx).insert(owner);
                     }
                     owner = await update(humanAccountRepository(tx), owner, { ...fields, status: 'active', emailVerified: mode === 'resend', emailVerifiedAt: mode === 'resend' ? now() : null, emailVerificationSource: mode === 'resend' ? 'registration_code' : 'experience_code', emailVerificationMode: mode, emailVersion: 1, initializedAt: now(), passwordSalt: password.salt, passwordHash: password.hash });
+                    const ownerPublicId=await ensurePublicId(tx,'owner',ownerId);
                     const session = await hooks.newCredential(tx, input.sessionToken, 'owner_session', { ownerId, ownerAuthVersion: owner.data.authVersion!, expiresAt: now() + settings.sessionTtl });
                     if (input.recoveryToken !== undefined)
                         await hooks.newCredential(tx, input.recoveryToken, 'owner_recovery', { ownerId, ownerAuthVersion: owner.data.authVersion! });
@@ -315,7 +317,7 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
                                 await update(credentialRepository(tx), old, { active: false });
                     }
                     await update(emailAttemptRepository(tx), row, { status: 'completed', completionAction: action, completionOperationId: text(input.operationId, 'operationId', 8, 100), ownerId, completionVerificationMode: mode });
-                    return { attemptId: row.id, ownerId, sessionId: session.id, expiresAt: session.data.expiresAt!, accountComplete: true, emailVerified: mode === 'resend', verificationMode: mode, verificationSource: mode === 'resend' ? 'registration_code' : 'experience_code', ...(row.data.agentId ? { agentId: row.data.agentId!, managementStatus: 'managed' } : {}) };
+                    return { attemptId: row.id, ownerId, ownerPublicId, sessionId: session.id, expiresAt: session.data.expiresAt!, accountComplete: true, emailVerified: mode === 'resend', verificationMode: mode, verificationSource: mode === 'resend' ? 'registration_code' : 'experience_code', ...(row.data.agentId ? { agentId: row.data.agentId!, publicId:await readPublicId(tx,'agent',string(row,'agentId')), managementStatus: 'managed' } : {}) };
                 }
                 if (action === 'recoverByEmail') {
                     const request = await required(recoveryRequestRepository(tx), string(row, 'requestId'));
