@@ -41,6 +41,8 @@ async function command(store: M1Store, options: AdministrativeCommand, payload: 
         return result;
     });
 }
+// Internal maintenance use cases only; never register this transaction helper as an external capability.
+export {command as executePerceptionAdministrativeCommand};
 /** Privileged process operation, never registered as an HTTP or runtime capability. */
 export async function updatePerceptionDemoObject(store: M1Store, options: AdministrativeCommand & {
     ref: ObjectRef;

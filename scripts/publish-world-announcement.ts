@@ -1,15 +1,24 @@
-import {writeFile} from 'node:fs/promises';
+import {readFile,writeFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {administrativeTarget} from './ws02-admin-target.ts';
-import {publishWelcomeAnnouncement} from '../apps/platform/application/world-announcements.ts';
+import {publishWelcomeAnnouncement,reviseWelcomeAnnouncement} from '../apps/platform/application/world-announcements.ts';
+import {object,text} from '../apps/platform/domains/common/errors.ts';
 
 // Explicit private connection + paired identity, expected instance/epoch, operator, new receipt file.
 // Re-running against the same target with a new manifest returns the original publication unchanged.
 export async function runWorldAnnouncement(args:string[]){
- const {values,manifestPath,store}=await administrativeTarget(args,['--expected-instance','--expected-epoch']);
+ const revising=args.includes('--edition');
+ const {values,manifestPath,store}=await administrativeTarget(args,['--expected-instance','--expected-epoch',...(revising?['--edition','--operation-id','--expected-version']:[])]);
  try{
-  const receipt=await publishWelcomeAnnouncement(store,{actorId:values['--operator']!,expectedInstanceId:values['--expected-instance']!,expectedRecoveryEpoch:values['--expected-epoch']!});
+  const target={actorId:values['--operator']!,expectedInstanceId:values['--expected-instance']!,expectedRecoveryEpoch:values['--expected-epoch']!};
+  let receipt;
+  if(revising){
+   if(values['--edition']!=='welcome-story-1'||values['--expected-version']!=='1')throw new Error('The exact first welcome-story revision is required');
+   const story=object(JSON.parse(await readFile(new URL('../apps/platform/application/world-welcome-story.json',import.meta.url),'utf8')),['edition','title','body']);
+   if(story.edition!=='welcome-story-1'||typeof story.body!=='string')throw new Error('The approved welcome-story edition differs');
+   receipt=await reviseWelcomeAnnouncement(store,{...target,operationId:text(values['--operation-id'],'operation-id',8,100),expectedVersion:1,title:text(story.title,'title',1,180),body:story.body});
+  }else receipt=await publishWelcomeAnnouncement(store,target);
   await writeFile(manifestPath,JSON.stringify(receipt,null,2)+'\n',{flag:'wx',mode:0o600});return {receipt,manifestPath};
  }finally{await store.close();}
 }

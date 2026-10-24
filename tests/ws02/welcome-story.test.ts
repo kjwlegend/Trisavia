@@ -1,0 +1,44 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {readFile,realpath,stat} from 'node:fs/promises';
+import {join} from 'node:path';
+import {M1_TABLES,StorageError,type M1Store,type M1ReadSession,type M1Transaction} from '../../apps/platform/contracts/store.ts';
+import {key,plain,refId} from '../../apps/platform/domains/perception/protocol.ts';
+import {createWorldAnnouncements,publishWelcomeAnnouncement,reviseWelcomeAnnouncement,WELCOME_ANNOUNCEMENT} from '../../apps/platform/application/world-announcements.ts';
+import {worldFixture} from '../runtime/postgresql-fixture.ts';
+import {runWorldAnnouncement} from '../../scripts/publish-world-announcement.ts';
+
+const snapshot=async(tx:M1ReadSession)=>{const rows:Record<string,string>={};for(const table of M1_TABLES)rows[table]=key(await tx.find(table));return rows;};
+
+test('one guarded revision retains the real welcome identity/history, recovers the same receipt and leaves all reader/asset/identity facts unchanged',async t=>{
+ const f=await worldFixture();t.after(f.dispose);
+ const actorId='isolated-welcome-story-maintainer',ref={moduleId:'world',type:'world.announcement@1',id:WELCOME_ANNOUNCEMENT.id},id=refId(ref);
+ await publishWelcomeAnnouncement(f.legacy,{actorId,expectedInstanceId:f.identity.instanceId,expectedRecoveryEpoch:f.identity.recoveryEpoch,now:f.now});
+ const original=(await f.legacy.read(tx=>tx.get('perception_objects',id)))!,before=await f.legacy.read(snapshot),reader=createWorldAnnouncements(f.legacy,f.now);
+ const story=JSON.parse(await readFile(new URL('../../apps/platform/application/world-welcome-story.json',import.meta.url),'utf8'));
+ assert.equal(story.edition,'welcome-story-1');assert.equal(story.title,'新邻居，欢迎来到清昼小镇');assert.equal(story.body.split('\n\n').length,6);
+ const options={actorId,operationId:'isolated-welcome-story-revision',expectedInstanceId:f.identity.instanceId,expectedRecoveryEpoch:f.identity.recoveryEpoch,expectedVersion:1,title:story.title as string,body:story.body as string,now:f.now};
+ f.tick(1000);
+ await assert.rejects(()=>reviseWelcomeAnnouncement(f.legacy,{...options,expectedInstanceId:'another-instance'}),{code:'version_conflict'});
+ await assert.rejects(()=>reviseWelcomeAnnouncement(f.legacy,{...options,expectedVersion:2}),{code:'version_conflict'});
+ const failed:M1Store={...f.legacy,read:f.legacy.read.bind(f.legacy),transaction:work=>f.legacy.transaction(tx=>work(new Proxy(tx,{get(target,name){if(name==='update')return async(...args:Parameters<M1Transaction['update']>)=>args[0]==='perception_objects'?false:target.update(...args);return Reflect.get(target,name);}})))};
+ await assert.rejects(()=>reviseWelcomeAnnouncement(failed,options),{code:'version_conflict'});
+ assert.deepEqual(await f.legacy.read(snapshot),before,'CAS conflict rolls back history, receipt and audit together');
+ let lost=true;const unknown:M1Store={...f.legacy,read:f.legacy.read.bind(f.legacy),transaction:async work=>{const result=await f.legacy.transaction(work);if(lost){lost=false;throw new StorageError('unknown_commit','Synthetic lost publication acknowledgement');}return result;}};
+ await assert.rejects(()=>reviseWelcomeAnnouncement(unknown,options),{code:'unknown_commit'});
+ const committed=(await Promise.all([reviseWelcomeAnnouncement(f.legacy,options),reviseWelcomeAnnouncement(f.legacy,options)]))[0]!;
+ assert.equal(committed.version,2);assert.equal(committed.previousVersion,1);assert.equal(committed.publishedAt,original.data.source&&plain(original.data.source).publishedAt);assert.equal(committed.revisedAt,f.now());
+ f.tick(2000);assert.deepEqual(await reviseWelcomeAnnouncement(f.legacy,options),committed,'recovery returns the original time and receipt');
+ const directory=await realpath(f.privateConnections),manifest=join(directory,'welcome-story-recovered.json');
+ const cli=await runWorldAnnouncement(['--connection',join(directory,'application-database-url'),'--identity',join(directory,'identity.json'),'--operator',actorId,'--expected-instance',f.identity.instanceId,'--expected-epoch',f.identity.recoveryEpoch,'--edition','welcome-story-1','--expected-version','1','--operation-id',options.operationId,'--manifest',manifest]);
+ assert.deepEqual(cli.receipt,committed);assert.deepEqual(JSON.parse(await readFile(manifest,'utf8')),committed);assert.equal((await stat(manifest)).mode&0o777,0o600);
+ await assert.rejects(()=>reviseWelcomeAnnouncement(f.legacy,{...options,body:options.body+'changed'}),{code:'operation_id_conflict'});
+ await assert.rejects(()=>reviseWelcomeAnnouncement(f.legacy,{...options,operationId:'another-explicit-operation'}),{code:'version_conflict'});
+ const current=(await f.legacy.read(tx=>tx.get('perception_objects',id)))!,history=(await f.legacy.read(tx=>tx.get('perception_catalog',`object-history:${id}:1`)))!;
+ assert.equal(current.version,2);assert.equal(current.id,original.id);assert.equal(current.data.body,options.body);assert.deepEqual(current.data.source,original.data.source);assert.deepEqual(current.data.actor,original.data.actor);
+ assert.equal(history.data.contentVersion,1);const {type,...oldContent}=plain(history.data.content);assert.equal(type,ref.type);assert.deepEqual(oldContent,original.data);
+ assert.equal(committed.previousContentHash,key(original.data));assert.equal(committed.contentHash,key(current.data));
+ const list=await reader.list({}),detail=await reader.detail({id:ref.id});assert.equal((list.items as {id:string}[]).filter(item=>item.id===ref.id).length,1);assert.equal(plain(detail.item).body,options.body);assert.equal(plain(detail.item).revisedAt,committed.revisedAt);assert.equal(plain(detail.item).publishedAt,committed.publishedAt);
+ const after=await f.legacy.read(snapshot);for(const table of M1_TABLES)if(!['perception_objects','perception_catalog','perception_access'].includes(table))assert.equal(after[table],before[table],table+' unchanged');
+ const catalog=await f.legacy.read(tx=>tx.find('perception_catalog'));assert.equal(catalog.filter(row=>row.data.kind==='object_history'&&row.data.objectId===id).length,1);assert.equal(catalog.filter(row=>row.data.kind==='administrative_receipt'&&plain(row.data.result).operationId===options.operationId).length,1);
+});
