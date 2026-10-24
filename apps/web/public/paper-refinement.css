@@ -140,7 +140,8 @@
 .world-home.paper-hud .hud-root .hud-window .hud-friends-tabs button {box-shadow:inset 0 1px #fffdf8;border-color:var(--paper-rule)}
 .world-home.paper-hud .hud-root .hud-window .hud-friends-tabs button[aria-pressed=true],
 .world-home.paper-hud .hud-root .hud-window .hud-friends-tabs button[aria-pressed=true]:hover {box-shadow:inset 0 1px #d78c6d}
-.world-home.paper-hud .paper-mailbox .paper-mail-box[aria-pressed=true] {box-shadow:inset 0 1px #d78c6d}
+.world-home.paper-hud .paper-mailbox .paper-mail-box[aria-pressed=true],
+.world-home.paper-hud .paper-mailbox .paper-mail-box[aria-pressed=true]:hover:not(:disabled) {background:var(--paper-accent);color:#fffaf3;box-shadow:inset 0 1px #d78c6d}
 .world-home.paper-hud .hud-root .hud-window .account-root :is(.role-tabs,.appearance-attribute-tabs) button {border-radius:0}
 .world-home.paper-hud .hud-root .hud-window .account-root .role-tabs button[aria-pressed=true],
 .world-home.paper-hud .hud-root .hud-window .account-root .appearance-attribute-tabs button[aria-selected=true] {background:#fffdf840;box-shadow:inset 0 -2px var(--paper-accent)}
