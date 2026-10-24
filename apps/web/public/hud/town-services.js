@@ -10,6 +10,14 @@ const named=(value,max)=>text(value,max)&&Boolean(value.trim());
 const townPoint=value=>Number.isSafeInteger(value?.x)&&Number.isSafeInteger(value?.y)&&value.x>=PIXEL_MAP.bounds.minX&&value.x<=PIXEL_MAP.bounds.maxX&&value.y>=PIXEL_MAP.bounds.minY&&value.y<=PIXEL_MAP.bounds.maxY;
 const serviceIds=['welcome.claim','tavern.host','inn.rest','greet'];
 const names={tavern_voucher:'招待券',inn_voucher:'休息券'};
+const nullableId=value=>value===null||named(value,100);
+const itemRefValid=(value,moduleId,type)=>value?.moduleId===moduleId&&value.type===type&&named(value.id,180);
+function inventoryItemValid(row,agentId){
+ if(!row||!named(row.itemInstanceId,100)||!integer(row.version)||row.version<1||!(Object.hasOwn(names,row.itemKind)||row.itemKind==='resident_card')||!named(row.title,180)||!['available','reserved','consumed'].includes(row.state)||row.availableQuantity!==(row.state==='available'?1:0)||row.quantity!==(row.state==='consumed'?0:1)||row.transferable!==false||!integer(row.issuedAt)||!integer(row.updatedAt)||!nullableId(row.sourceOperationId)||(row.sourceGiftId!==undefined&&!nullableId(row.sourceGiftId))||!nullableId(row.reservationId)||!nullableId(row.consumedBy)||!itemRefValid(row.holdingRef,'inventory','inventory.holding@1')||!itemRefValid(row.itemRef,'items','items.item@1'))return false;
+ const card=row.residentCard;
+ if(row.itemKind!=='resident_card')return card===undefined||card===null;
+ return Boolean(card&&named(row.sourceGiftId,100)&&row.state==='available'&&row.reservationId===null&&row.consumedBy===null&&card.agentId===agentId&&named(card.displayName,240)&&(card.firstWorldJoinedAt===null||integer(card.firstWorldJoinedAt))&&integer(card.issuedAt)&&card.issuedAt===row.issuedAt);
+}
 const control=(label,run)=>{const button=el('button','',label);button.type='button';button.addEventListener('click',run);return button;};
 const selected=context=>context?.authenticated&&['ready','refreshing'].includes(context.phase)?context.agents.find(agent=>agent.agentId===context.selectedAgentId):null;
 const operationValid=value=>value===null||value&&text(value.operationId,180)&&value.operationId&&integer(value.version)&&value.version>0&&text(value.npcId,180)&&serviceIds.includes(value.serviceId)&&integer(value.catalogVersion)&&['active','completed','cancelled'].includes(value.state)&&integer(value.startedAt)&&(value.endedAt===null||integer(value.endedAt))&&(value.response===null||text(value.response,4000));
@@ -28,7 +36,7 @@ export async function readTownOwner(session,operation,input={},options={}){
  const agentId=session.snapshot().selectedAgentId,envelope=await session.readTownService(operation,input,options),data=envelope?.data;
  if(envelope?.protocolVersion!==1||data?.agentId!==agentId||!integer(data.asOf))throw invalid();
  if(operation==='relationships'&&(!Array.isArray(data.relationships)||data.relationships.length>50||typeof data.complete!=='boolean'||(data.complete?data.nextAfterNpcId!==null:!text(data.nextAfterNpcId,180)||!data.nextAfterNpcId)||data.relationships.some(row=>!text(row.npcId,180)||!integer(row.familiarity)||row.familiarity>100)))throw invalid();
- if(operation==='inventory'&&(!Array.isArray(data.items)||data.items.length>50||typeof data.complete!=='boolean'||(data.complete?data.nextAfterId!==null:!text(data.nextAfterId,180)||!data.nextAfterId)||data.items.some(row=>!text(row.itemInstanceId,180)||!Object.hasOwn(names,row.itemKind)||!['available','reserved','consumed'].includes(row.state)||row.availableQuantity!==(row.state==='available'?1:0)||row.quantity!==(row.state==='consumed'?0:1)||row.transferable!==false)))throw invalid();
+ if(operation==='inventory'&&(!Array.isArray(data.items)||data.items.length>50||typeof data.complete!=='boolean'||(data.complete?data.nextAfterId!==null:!text(data.nextAfterId,180)||!data.nextAfterId)||data.items.some(row=>!inventoryItemValid(row,agentId))))throw invalid();
  if(operation==='progress'&&(!integer(data.catalogVersion)||!Array.isArray(data.completedServices)||data.completedServices.some(row=>!text(row.npcId,180)||!serviceIds.includes(row.serviceId)||!text(row.operationId,180)||!integer(row.completedAt))||!operationValid(data.claim)||!operationValid(data.activeRest)))throw invalid();
  if(operation==='operation'&&!operationValid(data.operation))throw invalid();
  return data;
