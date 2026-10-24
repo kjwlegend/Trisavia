@@ -13,7 +13,7 @@ import {loadProductionWebAssets} from '../../apps/platform/transport/http/web-as
 import {RELEASES} from '../../apps/web/public/releases-data.js';
 
 const root=fileURLToPath(new URL('../../',import.meta.url));
-const screenshots=resolve(root,'outputs/release-board-20261025');
+const screenshots=resolve(root,'outputs/release-board-20261025/navigation-020');
 
 test('public player pages use the verified build, honest completed releases, map-only columns and a working return link',async()=>{
  const assets=loadProductionWebAssets(root,resolve(root,'dist/web'));
@@ -43,9 +43,12 @@ test('public player pages use the verified build, honest completed releases, map
   const copy=await page.locator('main').innerText();
   assert.match(copy,/v0\.1\.0/);assert.match(copy,/v0\.1\.1/);assert.doesNotMatch(copy,/当前运行|UAT已发布|\bJS\b|\bCSS\b|module|数据库/);
   assert.equal(await page.locator('nav a[aria-current=page]').getAttribute('href'),'/releases');
+  assert.equal(await page.getByRole('navigation').getByRole('link',{name:'世界地图',exact:true}).getAttribute('href'),'/?atlas=1');
   await page.screenshot({path:resolve(screenshots,'releases-1440.png'),fullPage:true});
   await page.getByRole('navigation').getByRole('link',{name:'建设看板'}).click();
   await page.locator('.board-card').first().waitFor();
+  assert.equal(await page.getByRole('navigation').getByRole('link',{name:'世界地图',exact:true}).getAttribute('href'),'/?atlas=1');
+  assert.equal(await page.locator('nav a[aria-current=page]').getAttribute('href'),'/kanban');
   assert.deepEqual(await page.locator('.board-heading h2').allTextContents(),['进行中','已完成','未来计划','投票中']);
   assert.deepEqual(await page.locator('.board-card').evaluateAll(nodes=>nodes.map(node=>(node as HTMLElement).dataset.card)),['map-atlas','map-sunset-bay','map-plain-outpost','map-dawn-lake','map-mist-valley']);
   assert.equal(await page.locator('[data-column=completed] .board-card').count(),0);
