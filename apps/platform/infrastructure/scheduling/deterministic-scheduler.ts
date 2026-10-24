@@ -3,7 +3,7 @@ import { RuntimeError } from '../../contracts/runtime-store.ts';
 import { StorageError } from '../../contracts/store.ts';
 
 export interface DeterministicTaskHandler {
- readonly kind:string;readonly version:number;
+ readonly kind:string;readonly version:number;readonly retryDelaysMs?:readonly number[];
  /** Domain-owned deterministic rules only. No external model, tools, network, or nested transaction. */
  run(context:RuntimeTransaction,task:RuntimeTask):Promise<void|IdleTaskRecurrence>;
 }
@@ -34,7 +34,7 @@ export function createDeterministicScheduler(options:SchedulerOptions){
     if(error instanceof StorageError&&error.code==='unknown_commit')throw error;
     if(error instanceof RuntimeError&&error.code==='lease_lost'){result.leaseLost++;continue;}
     const errorCode=error instanceof RuntimeError?error.code:error instanceof StorageError?error.code:'handler_failed';
-    try{const failed=await options.store.transaction(async ctx=>{const current=await ctx.tasks.assertLease(lease,ctx.now());await ctx.tasks.retry(lease,{now:ctx.now(),dueAt:ctx.now()+Math.min(maximum,base*2**Math.min(current.attempts-1,20)),errorCode});return current.attempts>=current.maxAttempts;});if(failed)result.failed++;else result.retried++;}
+    try{const failed=await options.store.transaction(async ctx=>{const current=await ctx.tasks.assertLease(lease,ctx.now());await ctx.tasks.retry(lease,{now:ctx.now(),dueAt:ctx.now()+(handlers.get(current.kind+':'+current.handlerVersion)?.retryDelaysMs?.[current.attempts-1]??Math.min(maximum,base*2**Math.min(current.attempts-1,20))),errorCode});return current.attempts>=current.maxAttempts;});if(failed)result.failed++;else result.retried++;}
     catch(retryError){if(retryError instanceof RuntimeError&&retryError.code==='lease_lost'){result.leaseLost++;continue;}throw retryError;}
    }
   }

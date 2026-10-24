@@ -14,7 +14,7 @@ import { assertCell, assertRuleset, containingPlace, DEFAULT_WORLD_RULES, valida
 import { MOVEMENT_POLICY_V1, type GridPoint, type WorldAvatar, type WorldMovement, type WorldRuleset, type WorldMapManifest, type WorldNpc } from '../domains/world/types.ts';
 import { IDLE_LIFE_POLICY_V1, idlePath, idleSeed, spawnCandidates } from '../domains/world/idle-life.ts';
 import type {CurrentTownNpc} from '../domains/town-services/types.ts';
-export interface WorldActivityAccess {isOccupied(context:RuntimeTransaction,worldId:string,agentId:string):Promise<boolean>;interrupt(context:RuntimeTransaction,worldId:string,agentId:string,reason:string):Promise<void>}
+export interface WorldActivityAccess {lockActor?(context:RuntimeTransaction,worldId:string,agentId:string):Promise<void>;isOccupied(context:RuntimeTransaction,worldId:string,agentId:string):Promise<boolean>;interrupt(context:RuntimeTransaction,worldId:string,agentId:string,reason:string):Promise<void>}
 
 /** Explicit maintenance initialization. Opening the store or serving HTTP never seeds a world. */
 export async function bootstrapWorld(context: RuntimeTransaction, rules: WorldRuleset = structuredClone(DEFAULT_WORLD_RULES)): Promise<void> {
@@ -30,7 +30,7 @@ export async function verifyWorldReadiness(context: RuntimeReadContext, worldId 
   assertRuleset(rules);
 }
 const actions = ['world.avatar.create', 'world.avatar.move', 'world.avatar.leave', 'world.movement.stop'];
-export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,options:{observation?:BehaviorObservationAccess<RuntimeReadContext>;activities?:WorldActivityAccess;currentNpcs?:(context:RuntimeReadContext,worldId:string)=>Promise<{catalogVersion:number;npcs:CurrentTownNpc[]}>}={}) {
+export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,options:{observation?:BehaviorObservationAccess<RuntimeReadContext>;activities?:WorldActivityAccess;publicActivity?:(context:RuntimeReadContext,agentId:string)=>Promise<unknown>;currentNpcs?:(context:RuntimeReadContext,worldId:string)=>Promise<{catalogVersion:number;npcs:CurrentTownNpc[]}>}={}) {
   const cursors = createWorldCursor();
   async function authorize(context: RuntimeReadContext, principal: Principal): Promise<string> {
     if (principal.kind !== 'agent') fail('agent_identity_required', 403, 'This action requires the Agent identity');
@@ -69,7 +69,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
     }
   }
   async function canObserveBehavior(context:RuntimeReadContext,record:BehaviorRecord,audience:'owner'|'public'):Promise<boolean>{
-    if(record.sourceDomain!=='world'||!['movement','avatar'].includes(record.sourceRef.type))return false;
+    if(record.agentId===null||record.sourceDomain!=='world'||!['movement','avatar'].includes(record.sourceRef.type))return false;
     try{const status=await identity.readParticipation(context,record.agentId);if(status.membership.state!=='joined'||status.membership.platformRestricted)return false;
       const repo=context.repository(WORLD_REPOSITORY),target=record.sourceRef.type==='movement'?await repo.getMovement(record.sourceRef.id):await repo.getAvatar(status.membership.worldId,record.agentId);
       if(!target||('agentId'in target&&target.agentId!==record.agentId)||target.id!==record.sourceRef.id||target.version<record.sourceRef.version)return false;
@@ -123,6 +123,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
     const task = await context.tasks.assertLease(scheduled.lease, context.now());
     if (task.domain !== 'world' || task.kind !== 'world.idle.step' || task.target.type !== 'avatar' || task.handlerVersion !== 1 || task.payloadVersion !== 1) fail('invalid_task', 400, 'Unsupported idle task');
     const payload = task.payload, worldId = identifier(payload.worldId, 'worldId'), agentId = identifier(payload.agentId, 'agentId');
+    await options.activities?.lockActor?.(context,worldId,agentId);
     const repository = context.repository(WORLD_REPOSITORY), world = await repository.lockWorld(worldId), avatar = await repository.getAvatar(worldId, agentId), now = context.now();
     const again = (delay: number, next: JsonObject): IdleTaskRecurrence => ({ idle: { dueAt: now + delay, payload: next } });
     const rest = (explicitStamp = String(payload.explicitStamp ?? ''), delay = avatar ? restMs(avatar) : 30000) => again(delay, { worldId, agentId, path: [], avatarVersion: avatar?.version ?? 1, qualification: '', explicitStamp });
@@ -178,6 +179,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
   }
   function currentPlanRules(movement:WorldMovement,rules:WorldRuleset):boolean {
     if(movement.rulesetVersion===rules.version&&movement.topologyVersion===rules.topologyVersion)return true;
+    if(rules.version===3&&rules.topologyVersion===3&&rules.mapManifest?.mapId==='pixel-town-v2'&&[1,2].includes(movement.rulesetVersion)){try{for(const cell of movement.path.slice(movement.nextStep))assertCell(rules,cell);return true;}catch{return false;}}
     return movement.rulesetVersion===1&&movement.topologyVersion===1&&rules.version===2&&rules.topologyVersion===2&&rules.mapManifest?.mapId==='pixel-town-v2'
       &&movement.path.slice(movement.nextStep).every(cell=>cell.x>=0&&cell.x<=15&&cell.y>=0&&cell.y<=15);
   }
@@ -187,6 +189,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
     if (task.domain !== 'world' || task.kind !== 'world.movement.step' || task.target.type !== 'movement' || task.handlerVersion !== 1 || task.payloadVersion !== 1) fail('invalid_task', 400, 'Unsupported World task');
     const repository = context.repository(WORLD_REPOSITORY), movement = await repository.getMovement(task.target.id);
     if (!movement || movement.version !== task.target.version || !['pending', 'running'].includes(movement.state)) return;
+    await options.activities?.lockActor?.(context,movement.worldId,movement.agentId);
     const world = await repository.lockWorld(movement.worldId); if (!world) fail('world_not_available', 503, 'World is not available');
     const key: CommandKey = { domain: 'world', action: task.kind, commandId: task.taskId, principal: { kind: 'system', id: 'world-rules' }, recoveryEpoch: context.recoveryEpoch };
     let rules: WorldRuleset, avatar: WorldAvatar, destination: GridPoint;
@@ -219,12 +222,13 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
     // Controlled scheduler completes the same lease only after this handler's writes succeed.
   }
   async function projectedAvatar(context:RuntimeReadContext,avatar:WorldAvatar):Promise<WorldAvatar&{publicId?:string}>{
+    const lifeProjection=options.publicActivity?{activity:await options.publicActivity(context,avatar.agentId)}:{};
     const publicRef=identity.readSubjectPublicId?{publicId:await identity.readSubjectPublicId(context,'agent',avatar.agentId)}:{};
     const status=await identity.readParticipation(context,avatar.agentId),motion=avatar.motion;
-    if(!motion||status.membership.ownerPaused||status.membership.platformRestricted||status.actionPolicy.mode!=='autonomous')return {...structuredClone(avatar),...publicRef,motion:null};
+    if(!motion||status.membership.ownerPaused||status.membership.platformRestricted||status.actionPolicy.mode!=='autonomous')return {...structuredClone(avatar),...lifeProjection,...publicRef,motion:null};
     const latest=await context.repository(WORLD_REPOSITORY).getLatestMovement(avatar.worldId,avatar.agentId);
     const cancelled=latest?.state==='stopped'&&latest.updatedAt>=motion.startedAt;
-    return {...structuredClone(avatar),...publicRef,motion:cancelled?null:structuredClone(motion)};
+    return {...structuredClone(avatar),...lifeProjection,...publicRef,motion:cancelled?null:structuredClone(motion)};
   }
   type MapCut={worldId:string;worldRevision:number;rulesetVersion:number;topologyVersion:number;asOf:number};
   async function npcProjection(context:RuntimeReadContext,worldId:string,rules:WorldRuleset):Promise<{npcs:WorldNpc[]|CurrentTownNpc[];npcCatalogVersion:number|null}>{if(options.currentNpcs){const active=await options.currentNpcs(context,worldId);return {npcs:active.npcs,npcCatalogVersion:active.catalogVersion};}return {npcs:structuredClone(rules.mapManifest?.npcs??[]),npcCatalogVersion:null};}
@@ -272,6 +276,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
           if (fresh.runtimeVersion !== qualification.runtimeVersion || fresh.membership.ownerPauseVersion !== qualification.membership.ownerPauseVersion
             || fresh.membership.platformVersion !== qualification.membership.platformVersion || fresh.membership.sharingGeneration !== qualification.membership.sharingGeneration || fresh.actionPolicy.version !== qualification.actionPolicy.version) fail('world_qualification_changed', 409, 'World qualification changed before commit');
         });
+        await options.activities?.lockActor?.(current,worldId,agentId);
         const locked = await repository.lockWorld(worldId); if (!locked?.active) fail('world_not_accessible', 404, 'World is not available');
         const { world, rules } = await rulesFor(current, worldId), old = await repository.getAvatar(worldId, agentId), now = current.now();
         if (key.action === 'world.movement.stop') {

@@ -293,7 +293,7 @@ export function createInteractionService(identity: IdentityAccess<RuntimeReadCon
     if (key.action !== action) fail('invalid_request', 400, 'Decision action differs from target command'); return execute(context, principal, key, input);
   } };
   async function behaviorSource(context:RuntimeReadContext,record:BehaviorRecord){
-    if(record.sourceDomain!=='interaction')return null;
+    if(record.agentId===null||record.sourceDomain!=='interaction')return null;
     let invitationId:string;if(record.sourceRef.type==='interaction_invitation')invitationId=record.sourceRef.id;else if(record.sourceRef.type==='interaction_activity'){const activity=await context.repository(INTERACTION_REPOSITORY).getActivity(record.sourceRef.id);if(!activity||activity.version<record.sourceRef.version)return null;invitationId=activity.invitationId;}else return null;
     const source=await bundle(context,record.agentId,invitationId);if(record.sourceRef.type==='interaction_invitation'&&source.invitation.version<record.sourceRef.version)return null;
     if(record.sourceRef.type==='interaction_activity'&&source.activity?.feedbackId&&!await visibleFeedback(context,source.activity))return null;return source;

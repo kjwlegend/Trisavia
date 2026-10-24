@@ -10,6 +10,7 @@ import {createGatewayContinuation} from './agent-gateway-continuation.ts';
 interface BehaviorSource {
  canObserveBehavior(ctx:RuntimeReadContext,record:BehaviorRecord,audience:'owner'|'public'):Promise<boolean>;
  describeBehavior(ctx:RuntimeReadContext,record:BehaviorRecord,audience:'owner'|'public'):Promise<BehaviorDetails|null>;
+ readNpcIdentity?(ctx:RuntimeReadContext,npcId:string):Promise<{name:string}|null>;
  behaviorDetailRef?(ctx:RuntimeReadContext,record:BehaviorRecord):Promise<{invitationId:string}|null>;
  invitation?(ctx:RuntimeReadContext,p:Principal,input:JsonObject):Promise<unknown>;
 }
@@ -17,8 +18,8 @@ type Sources=Record<'world'|'relationships'|'interaction',BehaviorSource>&Partia
 type Cut={maxSequence:number;asOf:number};
 type Anchor={cut:Cut;after:{occurredAt:number;id:string}};
 const absent=():never=>fail('target_not_accessible',404,'Target is not accessible');
-const phaseLabels:Record<BehaviorDetails['phase'],string>={movement:'移动',wander:'日常漫游',friendship_request:'好友申请',text_invitation:'文字交流邀请',text_feedback:'文字反馈',npc_service:'镇民服务'};
-function actorLabel(kind:'agent'|'owner'|'system',executor=false){return kind==='owner'?'主人明确操作':kind==='system'?(executor?'世界系统推进':'世界系统发起'):(executor?'角色执行':'角色发起');}
+const phaseLabels:Record<BehaviorDetails['phase'],string>={movement:'移动',wander:'日常漫游',friendship_request:'好友申请',text_invitation:'文字交流邀请',text_feedback:'文字反馈',npc_service:'镇民服务',life_work:'工作',life_rest:'休息'};
+function actorLabel(kind:'agent'|'owner'|'system'|'npc',executor=false){return kind==='owner'?'主人明确操作':kind==='system'?(executor?'世界系统推进':'世界系统发起'):(executor?'角色执行':'角色发起');}
 const natural:Record<BehaviorRecord['node'],[string,string,string]>={
  'world.movement.received':['移动请求已收到','提交移动','已收到前往请求'],
  'world.movement.started':['已经出发','移动','已出发'],
@@ -41,12 +42,15 @@ const natural:Record<BehaviorRecord['node'],[string,string,string]>={
  'interaction.activity.closed':['已确认收到反馈','作品交流','已确认收到并结束本次往来'],
  'interaction.activity.left':['文字交流已结束','作品交流','本次往来已退出'],
  'interaction.activity.expired':['文字交流已到期','作品交流','本次往来已到期'],
+ 'life.work.completed':['完成一班工作','工作','已完成本次工作'],
+ 'life.rest.completed':['完成一次休息','休息','已完成本次休息'],
+ 'life.activity.interrupted':['活动已中止','生活活动','本次活动已中止'],
  'town_services.greeted':['已打过招呼','NPC招呼','已与这位镇民打过招呼'],
  'town_services.service.started':['服务已开始','NPC服务','本次服务已开始，尚未完成'],
  'town_services.service.completed':['服务已完成','NPC服务','本次服务已完成'],
  'town_services.service.cancelled':['服务已取消','NPC服务','本次服务已取消'],
 };
-export async function behaviorSourcesEnabled(ctx:RuntimeReadContext){const rows=await ctx.repository(BEHAVIOR_REPOSITORY).getCoverage();return BEHAVIOR_SCOPES.every(scope=>rows.some(row=>row.scope===scope&&row.policyVersion===1));}
+export async function behaviorSourcesEnabled(ctx:RuntimeReadContext){const rows=await ctx.repository(BEHAVIOR_REPOSITORY).getCoverage();return BEHAVIOR_SCOPES.filter(scope=>scope!=='life').every(scope=>rows.some(row=>row.scope===scope&&row.policyVersion===1));}
 function timeZoneOf(value:unknown){const zone=value===undefined?'UTC':text(value,'timeZone',1,80);try{new Intl.DateTimeFormat('en',{timeZone:zone});return zone;}catch{fail('invalid_request',400,'Choose an IANA time zone');}}
 function localDate(at:number,timeZone:string){const parts=new Intl.DateTimeFormat('en-US',{timeZone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(at),get=(type:string)=>parts.find(p=>p.type===type)!.value;return get('year').padStart(4,'0')+'-'+get('month')+'-'+get('day');}
 function validDate(value:unknown){const date=text(value,'date',10,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(date))fail('invalid_request',400,'Use YYYY-MM-DD dates');const stamp=Date.parse(date+'T00:00:00.000Z');if(!Number.isFinite(stamp)||new Date(stamp).toISOString().slice(0,10)!==date)fail('invalid_request',400,'Invalid calendar date');return date;}
@@ -59,20 +63,20 @@ function limitOf(value:unknown){const limit=value??20;if(typeof limit!=='number'
 /** Source projections, read authorization and human wording; it never changes a business or read state. */
 export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadContext>,sources:Sources){
  const cursors=createGatewayContinuation(1024);
- async function coverage(ctx:RuntimeReadContext,asOf:number){const rows=await ctx.repository(BEHAVIOR_REPOSITORY).getCoverage();if(BEHAVIOR_SCOPES.some(scope=>!rows.some(row=>row.scope===scope)))fail('behavior_unavailable',503,'Behavior sources have not been enabled');const starts=rows.map(row=>row.fromAt),gaps=['启用前的记录未补录'];if(new Set(starts).size>1)gaps.push('各来源启用时间不同，更早记录不完整');return {from:Math.min(...starts),to:asOf,complete:rows.every(row=>!row.partial)&&new Set(starts).size===1,gaps};}
+ async function coverage(ctx:RuntimeReadContext,asOf:number){const rows=await ctx.repository(BEHAVIOR_REPOSITORY).getCoverage();if(BEHAVIOR_SCOPES.filter(scope=>scope!=='life'||!!sources.life).some(scope=>!rows.some(row=>row.scope===scope)))fail('behavior_unavailable',503,'Behavior sources have not been enabled');const starts=rows.map(row=>row.fromAt),gaps=['启用前的记录未补录'];if(new Set(starts).size>1)gaps.push('各来源启用时间不同，更早记录不完整');return {from:Math.min(...starts),to:asOf,complete:rows.every(row=>!row.partial)&&new Set(starts).size===1,gaps};}
  async function visible(ctx:RuntimeReadContext,row:BehaviorRecord,audience:'owner'|'public',p?:Principal){
   if(USER_LOG_PROCESS_NODES.includes(row.node))return false;
   const source=sources[row.sourceDomain];if(!source)return false;
   if(audience==='public'&&!row.publicProjection)return false;
   if(audience==='owner'){
-   if(p?.kind!=='owner'||row.ownerAudience?.ownerId!==p.ownerId)return false;
+   if(row.agentId===null||p?.kind!=='owner'||row.ownerAudience?.ownerId!==p.ownerId)return false;
    const current=await identity.captureOwnerObservation?.(ctx,row.agentId,row.sourceDomain);
    if(!current||current.ownerId!==p.ownerId||current.authorizationVersion!==row.ownerAudience.authorizationVersion||current.bindingId!==row.ownerAudience.bindingId||current.bindingVersion!==row.ownerAudience.bindingVersion||current.sharingGeneration!==row.ownerAudience.sharingGeneration)return false;
   }
   return await source.canObserveBehavior(ctx,row,audience);
  }
  async function item(ctx:RuntimeReadContext,row:BehaviorRecord,timeZone:string,owner?:Principal):Promise<JsonObject>{
-  const profile=await identity.readPublicAgent(ctx,row.agentId),[originalTitle,action,originalResult]=natural[row.node];let title=originalTitle,result=originalResult;
+  const profile=row.agentId===null?null:await identity.readPublicAgent(ctx,row.agentId),[originalTitle,action,originalResult]=natural[row.node];let title=originalTitle,result=originalResult;const npcIdentity=row.npcId?await sources[row.sourceDomain]?.readNpcIdentity?.(ctx,row.npcId):null;
   const place=row.publicProjection?.placeName;
   if(place&&row.node==='world.movement.started')result='从'+place+'出发';
   if(place&&row.node==='world.movement.completed')title=result='已抵达'+place;
@@ -88,11 +92,12 @@ export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadCont
   if(described){
    if(row.sourceRef.type==='resident_gift')title=result=described.resultCode==='resident_card_and_credit_issued'?'镇长补发居民身份卡和100星币':described.resultCode==='resident_card_issued'?'镇长补发居民身份卡':'镇长补发100星币';
    const service=described.service;
+   if(described.life){const where=described.location?.to?.name??'小镇';title=result=row.node==='life.work.completed'?'在'+where+'完成一班短工':row.node==='life.rest.completed'?'在'+where+'完成休息':'生活活动已中止';}
    if(service){
     if(row.node==='town_services.greeted')title=result='拜访了'+service.npcName;
     if(row.node==='town_services.service.started'){title='在石岸旅舍开始休息';result='已开始休息，休息券已预留，尚未完成';}
     if(row.node==='town_services.service.completed'&&row.sourceRef.type!=='resident_gift'){
-     title=result=service.serviceId==='welcome.claim'?'从镇长那里领到新人礼包':service.serviceId==='tavern.host'?'在港湾酒馆使用招待券，喝了一杯迎新茶':service.serviceId==='inn.rest'?'在石岸旅舍使用休息券，完成休息':'已完成'+service.serviceName;
+     title=result=service.serviceId==='welcome.claim'?(described.resultCode==='facility_service_completed'?'在市政厅领取新人礼包':'从镇长那里领到新人礼包'):service.serviceId==='tavern.host'?'在港湾酒馆使用招待券，喝了一杯迎新茶':service.serviceId==='inn.rest'?'在石岸旅舍使用休息券，完成休息':'已完成'+service.serviceName;
     }
     if(row.node==='town_services.service.cancelled')title=result=service.serviceName+'已取消';
    }
@@ -102,10 +107,10 @@ export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadCont
    // Only the separately authorized Owner view retains that actor distinction.
    const initiator=owner?{kind:row.initiator.kind,label:actorLabel(row.initiator.kind)}:row.node==='world.idle.completed'?{kind:'system',label:'日常系统漫游'}:null;
    const executor=row.sourceDomain==='town_services'&&row.executor.kind==='system'?{kind:'system',label:'镇民服务规则执行'}:owner?{kind:row.executor.kind,label:actorLabel(row.executor.kind,true)}:row.sourceDomain==='world'?{kind:'system',label:'世界系统推进'}:null;
-   details={version:1,completeness:described.completeness,phase:described.phase,phaseLabel:phaseLabels[described.phase],summary:result,timeRange:{startedAt:described.startedAt,endedAt:described.endedAt,durationMs:described.durationMs},location:described.location?{from:described.location.from?{...described.location.from}:null,to:described.location.to?{...described.location.to}:null,via:described.location.via.map(place=>({...place}))}:null,journey:described.journey?{...described.journey}:null,participants,initiator,executor,service:service?{...service}:null,gaps:[...described.gaps]};
+   details={version:1,completeness:described.completeness,phase:described.phase,phaseLabel:phaseLabels[described.phase],summary:result,timeRange:{startedAt:described.startedAt,endedAt:described.endedAt,durationMs:described.durationMs},location:described.location?{from:described.location.from?{...described.location.from}:null,to:described.location.to?{...described.location.to}:null,via:described.location.via.map(place=>({...place}))}:null,journey:described.journey?{...described.journey}:null,participants,initiator,executor,service:service?{...service}:null,...(described.life?{life:{...described.life}}:{}),gaps:[...described.gaps]};
   }
   const time=new Intl.DateTimeFormat('en-GB',{timeZone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(row.occurredAt);
-  return {id:row.id,agent:{agentId:row.agentId,displayName:profile?.displayName??null},title,action,result,occurredAt:row.occurredAt,date:localDate(row.occurredAt,timeZone),time,details,source:{domain:row.sourceDomain,node:row.node,detail}};
+  return {id:row.id,agent:{agentId:row.agentId,displayName:profile?.displayName??npcIdentity?.name??null,...(row.npcId?{npcId:row.npcId,actorKind:'npc'}:{})},title,action,result,occurredAt:row.occurredAt,date:localDate(row.occurredAt,timeZone),time,details,source:{domain:row.sourceDomain,node:row.node,detail}};
  }
  function base(agentId:string|null,timeZone:string,items:JsonObject[],historyCoverage:JsonObject,partial:boolean,nextPageToken:string|null,asOf:number){return {worldId:'default',agentId,timeZone,items,historyCoverage,partial,nextPageToken,asOf};}
  async function publicRead(ctx:RuntimeReadContext,input:JsonObject,agentId:string|null){
@@ -114,7 +119,7 @@ export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadCont
   const repo=ctx.repository(BEHAVIOR_REPOSITORY),cut=await repo.cut(),historyCoverage=await coverage(ctx,cut.asOf),items:JsonObject[]=[],counts=new Map<string,number>(),cap=agentId===null?30:10;
   let after:{occurredAt:number;id:string}|undefined,scanned=0,complete=false;
   while(scanned<500&&items.length<cap&&!complete){const size=Math.min(50,500-scanned),rows=await repo.list({maxSequence:cut.maxSequence,userLogOnly:true,publicOnly:true,toAt:cut.asOf+1,...(agentId===null?{}:{agentId}),...(after?{after}:{}),limit:size});if(!rows.length){complete=true;break;}
-   for(const row of rows){scanned++;after={occurredAt:row.occurredAt,id:row.id};if((counts.get(row.agentId)??0)>=10)continue;if(!await visible(ctx,row,'public'))continue;counts.set(row.agentId,(counts.get(row.agentId)??0)+1);items.push(await item(ctx,row,timeZone));if(items.length===cap)break;}
+   for(const row of rows){scanned++;after={occurredAt:row.occurredAt,id:row.id};if((counts.get(row.agentId??row.npcId!)??0)>=10)continue;if(!await visible(ctx,row,'public'))continue;counts.set(row.agentId??row.npcId!,(counts.get(row.agentId??row.npcId!)??0)+1);items.push(await item(ctx,row,timeZone));if(items.length===cap)break;}
    if(rows.length<size)complete=true;
   }
   return base(agentId,timeZone,items,historyCoverage,!complete&&items.length<cap,null,cut.asOf);

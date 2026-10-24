@@ -46,6 +46,15 @@ export function createIdentityAccess<Context extends object>(options:{session:(c
    if(!agent||!member)fail('target_not_accessible',404,'Target is not accessible');
    return Object.freeze({agentId,actionPolicy:worldActionPolicy(agent),runtimeActive:agent.data.runtimeActive===true,runtimeVersion:Number(agent.data.runtimeVersion),membership:Object.freeze({worldId:String(member.data.worldId),version:member.version,state:String(member.data.state),ownerPaused:member.data.ownerPaused===true,ownerPauseVersion:Number(member.data.ownerPauseVersion),platformRestricted:member.data.platformRestricted===true,platformVersion:Number(member.data.platformVersion),sharingGeneration:Number(member.data.sharingGeneration??1)})});
   },
+  async captureExecutionAuthority(context,principal){
+   await current(context,principal);if(principal.kind!=='agent')fail('agent_identity_required',403,'Only the Agent may authorize a finite continuation');
+   return {agentId:principal.agentId,credentialId:principal.credentialId,credentialVersion:principal.credentialVersion,runtimeVersion:principal.runtimeVersion,recoveryEpoch:principal.recoveryEpoch,expiresAt:principal.expiresAt,authorizationVersion:principal.authorizationVersion};
+  },
+  async validateExecutionAuthority(context,reference){
+   const tx=options.session(context),credential=await credentialRepository(tx).get(reference.credentialId),agent=await agentRepository(tx).get(reference.agentId);
+   const expected=payloadHash({credentialId:reference.credentialId,version:reference.credentialVersion,epoch:options.recoveryEpoch,runtimeVersion:reference.runtimeVersion,ownerAuthVersion:null});
+   if(reference.recoveryEpoch!==options.recoveryEpoch||reference.authorizationVersion!==expected||!credential||credential.data.kind!=='runtime'||credential.data.agentId!==reference.agentId||credential.data.active!==true||credential.version!==reference.credentialVersion||credential.data.epoch!==options.recoveryEpoch||credential.data.runtimeVersion!==reference.runtimeVersion||(credential.data.expiresAt??null)!==reference.expiresAt||typeof credential.data.expiresAt==='number'&&credential.data.expiresAt<=now()||!agent||agent.data.runtimeActive!==true||agent.data.runtimeVersion!==reference.runtimeVersion)fail('execution_authority_expired',403,'The original finite-action authority is no longer valid');
+  },
   async readSubjectPublicId(context,kind,id){return readPublicId(options.session(context),kind,id);},
   async readPublicAgent(context,agentId){
    const tx=options.session(context),agent=await agentRepository(tx).get(agentId),profile=await profileRepository(tx).get(agentId),member=await membershipRepository(tx).get(agentId);
@@ -60,7 +69,7 @@ export function createIdentityAccess<Context extends object>(options:{session:(c
    return readResidentIssuanceIdentity(tx,principal.agentId);
   },
   async captureOwnerObservation(context,agentId,sourceDomain){
-   if(!['world','relationships','interaction','town_services'].includes(sourceDomain))return null;
+   if(!['world','relationships','interaction','town_services','life'].includes(sourceDomain))return null;
    const tx=options.session(context),agent=await agentRepository(tx).get(agentId),member=await membershipRepository(tx).get(agentId);
    if(!agent||!member)return null;
    const bindings=await managementBindingRepository(tx).pageByActiveAndAgentId(true,agentId,{limit:2});

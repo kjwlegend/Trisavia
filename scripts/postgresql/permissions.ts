@@ -1,3 +1,4 @@
+import {LIFE_WALLET_PERMISSIONS_SQL} from '../../apps/platform/infrastructure/postgresql/life-wallet-migration.ts';
 import {PUBLIC_IDENTIFIERS_PERMISSIONS_SQL} from '../../apps/platform/infrastructure/postgresql/public-identifiers-migration.ts';
 import { pathToFileURL } from 'node:url';
 import { docker, readRuntime, type RuntimeConfig } from './runtime.ts';
@@ -10,7 +11,7 @@ export async function grantApplicationPermissions(config: RuntimeConfig, databas
   const sql = `BEGIN;\nREVOKE ALL ON SCHEMA ${schemas} FROM connet_app;\nGRANT USAGE ON SCHEMA ${schemas} TO connet_app;\nGRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA ${schemas} TO connet_app;
 REVOKE ALL ON platform.module_migrations,platform.legacy_schema_migrations,platform.instance_state FROM connet_app;
 GRANT SELECT ON platform.module_migrations,platform.legacy_schema_migrations,platform.instance_state TO connet_app;
-GRANT UPDATE(write_generation) ON platform.instance_state TO connet_app;\n${PUBLIC_IDENTIFIERS_PERMISSIONS_SQL}\nCOMMIT;\n`;
+GRANT UPDATE(write_generation) ON platform.instance_state TO connet_app;\n${PUBLIC_IDENTIFIERS_PERMISSIONS_SQL}\n${LIFE_WALLET_PERMISSIONS_SQL}\nCOMMIT;\n`;
   await docker(['exec', '-i', `${config.project}-server`, 'psql', '-X', '-v', 'ON_ERROR_STOP=1', '-U', 'postgres', '-d', database], { input: sql });
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

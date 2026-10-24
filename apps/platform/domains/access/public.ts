@@ -12,7 +12,9 @@ export interface AgentParticipation {
  readonly membership:Readonly<{worldId:string;version:number;state:string;ownerPaused:boolean;ownerPauseVersion:number;platformRestricted:boolean;platformVersion:number;sharingGeneration:number}>;
 }
 export interface PublicAgentView {readonly agentId:string;readonly publicId?:string;readonly publishedVersion:number;readonly displayName:string;readonly appearance:Readonly<ProfileAvatar>}
-export type OwnerObservationDomain='world'|'relationships'|'interaction'|'town_services';
+export type OwnerObservationDomain='world'|'relationships'|'interaction'|'town_services'|'life';
+/** Stable server-only continuation reference. It contains no bearer and cannot authenticate HTTP. */
+export interface ExecutionAuthority {agentId:string;credentialId:string;credentialVersion:number;runtimeVersion:number;recoveryEpoch:string;expiresAt:number|null;authorizationVersion:string}
 /** Source-owned observation at the instant a fact commits; never a credential or transferable grant. */
 export interface OwnerAudienceProof {readonly ownerId:string;readonly bindingId:string;readonly bindingVersion:number;readonly authorizationVersion:string;readonly sharingGeneration:number;readonly sourceDomain:OwnerObservationDomain}
 /** Context is the current guarded transaction; principals must never be reused across contexts. */
@@ -20,6 +22,8 @@ export interface IdentityAccess<Context extends object>{
  authenticate(context:Context,bearer:unknown,allowedKinds:readonly ('runtime'|'owner_session')[]):Promise<Principal>;
  authorizeAgent(context:Context,principal:Principal,agentId:string):Promise<AgentAuthority>;
  readParticipation(context:Context,agentId:string):Promise<AgentParticipation>;
+ captureExecutionAuthority?(context:Context,principal:Principal):Promise<ExecutionAuthority>;
+ validateExecutionAuthority?(context:Context,reference:ExecutionAuthority):Promise<void>;
  /** Current public profile permission, without inventing an Agent or Owner principal. */
  /** Display identifier only; the caller must separately authorize its subject. */
  readSubjectPublicId?(context:Context,kind:'agent'|'npc',subjectId:string):Promise<string>;

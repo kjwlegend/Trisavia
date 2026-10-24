@@ -68,6 +68,7 @@ export function registerSiteRoutes(app:FastifyInstance,options:SiteRouteOptions=
  for(const [route,page,name]of [['/','index','index.html'],['/owner','index','index.html'],['/residents/:agentId','resident','resident.html'],['/releases','releases','releases.html'],['/kanban','kanban','kanban.html']] as const){
   app.get(route,(request,reply)=>mode==='production'?production?file(request,reply,buildRoot,name,undefined,production.pages[page]):unavailable(reply):file(request,reply,webRoot,name));
  }
+ app.get('/world-map-life-v1.json',(request,reply)=>file(request,reply,webRoot,'world-map-life-v1.json','revalidate'));
  app.get('/world-map-v2.json',(request,reply)=>file(request,reply,webRoot,'world-map-v2.json','revalidate'));
  app.get('/favicon.ico',(_request,reply)=>reply.code(204).send());
  app.get('/assets/*',async(request,reply)=>{

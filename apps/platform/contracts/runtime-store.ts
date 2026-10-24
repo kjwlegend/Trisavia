@@ -1,7 +1,7 @@
 import type { JsonObject } from './store.ts';
 
 export type RuntimeSource = 'external_agent' | 'rules' | 'owner' | 'system';
-export interface RuntimeActor { kind: 'agent' | 'owner' | 'system'; id: string }
+export interface RuntimeActor { kind: 'agent' | 'owner' | 'system' | 'npc'; id: string }
 export interface CommandKey {
   domain: string; action: string; commandId: string; principal: RuntimeActor; recoveryEpoch: string;
 }
