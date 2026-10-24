@@ -1,3 +1,4 @@
+import {readPublicId} from '../public-identifiers/repository.ts';
 import type {M1ReadSession} from '../../contracts/store.ts';
 import {authenticateCredential} from './authentication.ts';
 import {agentRepository,credentialRepository,humanAccountRepository,managementBindingRepository,membershipRepository} from './repository.ts';
@@ -45,13 +46,14 @@ export function createIdentityAccess<Context extends object>(options:{session:(c
    if(!agent||!member)fail('target_not_accessible',404,'Target is not accessible');
    return Object.freeze({agentId,actionPolicy:worldActionPolicy(agent),runtimeActive:agent.data.runtimeActive===true,runtimeVersion:Number(agent.data.runtimeVersion),membership:Object.freeze({worldId:String(member.data.worldId),version:member.version,state:String(member.data.state),ownerPaused:member.data.ownerPaused===true,ownerPauseVersion:Number(member.data.ownerPauseVersion),platformRestricted:member.data.platformRestricted===true,platformVersion:Number(member.data.platformVersion),sharingGeneration:Number(member.data.sharingGeneration??1)})});
   },
+  async readSubjectPublicId(context,kind,id){return readPublicId(options.session(context),kind,id);},
   async readPublicAgent(context,agentId){
    const tx=options.session(context),agent=await agentRepository(tx).get(agentId),profile=await profileRepository(tx).get(agentId),member=await membershipRepository(tx).get(agentId);
    if(!agent||!profile||!member||profile.data.published===null||member.data.state!=='joined'||member.data.platformRestricted!==false)return null;
    const published=profile.data.published;if(!published||typeof published!=='object'||Array.isArray(published))return null;
    const avatar=projectAvatar(published.avatar);if(typeof published.displayName!=='string'||!published.displayName.trim()||!avatar||!Number.isSafeInteger(profile.data.publishedVersion))return null;
    const appearance=await readAppearance(tx,agentId,avatar,options.legacyAvatarIdentity);if(!appearance)return null;
-   return Object.freeze({agentId,publishedVersion:Number(profile.data.publishedVersion),displayName:published.displayName,appearance:Object.freeze(appearance)});
+   return Object.freeze({agentId,publicId:await readPublicId(tx,'agent',agentId),publishedVersion:Number(profile.data.publishedVersion),displayName:published.displayName,appearance:Object.freeze(appearance)});
   },
   async readResidentIdentity(context,principal){
    const tx=await current(context,principal);if(principal.kind!=='agent')fail('insufficient_scope',403,'Resident issuance requires the actual Agent');

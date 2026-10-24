@@ -1,3 +1,4 @@
+import {PUBLIC_IDENTIFIERS_GUIDE} from './public-identifiers.ts';
 import { mapAsync } from '../domains/common/async-collections.ts';
 import { catalogRepository, contentRepository } from '../domains/perception/repository.ts';
 import type { JsonObject, M1Store, M1Transaction } from '../contracts/store.ts';
@@ -42,7 +43,7 @@ export async function initializePerceptionCatalog(tx: M1Transaction,publication?
     // Keep the original catalog-1 and exact guide1 bytes. Only this explicit fresh
     // bootstrap publishes the next reader contract; readiness/GET never call it.
     await publishImplementedReadersInTransaction(tx, { expectedCatalogRevision: 'catalog-1', revision: `catalog-readers-1-schema-${PERCEPTION_SCHEMA_VERSION}`, guideVersion: 2, actorId: 'platform-bootstrap', stamp: Date.now() });
-    await publishFreshPaperHudCatalogInTransaction(tx,{expectedCatalogRevision:'catalog-readers-1-schema-6',expectedGuideVersion:2});
+    if(Number(PERCEPTION_SCHEMA_VERSION)===6)await publishFreshPaperHudCatalogInTransaction(tx,{expectedCatalogRevision:'catalog-readers-1-schema-6',expectedGuideVersion:2});else await publishFreshPublicIdentifiersCatalogInTransaction(tx);
 }
 async function storeDocuments(tx: M1Transaction, version: number, body: string): Promise<void> {
     const collectionQuery = await ownerNotificationCollectionDeclaration(tx);
@@ -205,7 +206,7 @@ export async function publishNpcServiceReadersInTransaction(tx:M1Transaction,opt
 export async function publishNewResidentGuideInTransaction(tx:M1Transaction,options:{expectedCatalogRevision:string;expectedGuideVersion:number}):Promise<JsonObject>{
     const expectedVersion=options.expectedCatalogRevision==='catalog-paper-hud-1'?12:options.expectedCatalogRevision==='catalog-uat-current-1'?5:null;
     const current=await catalogRepository(tx).get('current'),revision='catalog-new-resident-1',guideVersion=options.expectedGuideVersion+1;
-    if(expectedVersion===null||expectedVersion!==options.expectedGuideVersion||!current||PERCEPTION_SCHEMA_VERSION!==6||current.data.schemaVersion!==6||current.data.catalogRevision!==options.expectedCatalogRevision||current.data.guideVersion!==expectedVersion)fail('version_conflict',409,'The exact current onboarding predecessor is required');
+    if(expectedVersion===null||expectedVersion!==options.expectedGuideVersion||!current||Number(PERCEPTION_SCHEMA_VERSION)!==6||current.data.schemaVersion!==6||current.data.catalogRevision!==options.expectedCatalogRevision||current.data.guideVersion!==expectedVersion)fail('version_conflict',409,'The exact current onboarding predecessor is required');
     if(plain(current.data.sourceStates)[NPC_SERVICE_ITEMS_SOURCE]!=='enabled')fail('version_conflict',409,'The real NPC item reader must already be enabled');
     const modules=['perception','world','profiles','items','inventory','mailbox','wallet'];
     await rememberCatalogRevision(tx,current.data);
@@ -230,7 +231,7 @@ export async function publishFreshPaperHudCatalogInTransaction(tx:M1Transaction,
     const allowed=options.expectedCatalogRevision==='catalog-readers-1-schema-6'&&options.expectedGuideVersion===2||options.expectedCatalogRevision==='catalog-npc-services-1'&&options.expectedGuideVersion===3;
     if(!allowed)fail('version_conflict',409,'An exact fresh schema6 predecessor is required');
     const current=await catalogRepository(tx).get('current'),revision='catalog-fresh-paper-hud-1',guideVersion=options.expectedGuideVersion+1;
-    if(!current||current.data.schemaVersion!==6||PERCEPTION_SCHEMA_VERSION!==6)fail('version_conflict',409,'The fresh schema6 catalog is required');
+    if(!current||current.data.schemaVersion!==6||Number(PERCEPTION_SCHEMA_VERSION)!==6)fail('version_conflict',409,'The fresh schema6 catalog is required');
     const repeated=current.data.catalogRevision===revision&&current.data.guideVersion===guideVersion;
     if(!repeated&&(current.data.catalogRevision!==options.expectedCatalogRevision||current.data.guideVersion!==options.expectedGuideVersion))fail('version_conflict',409,'The expected fresh catalog or guide changed');
     const modules=['perception','world','profiles','items','inventory','mailbox','wallet'];
@@ -254,7 +255,7 @@ export async function publishFreshPaperHudCatalogInTransaction(tx:M1Transaction,
 /** Named read-shape release. Copy current exact text and preserve every old document and source state. */
 export async function publishPaperHudCatalogInTransaction(tx:M1Transaction):Promise<JsonObject>{
     const current=await catalogRepository(tx).get('current');
-    if(!current||current.data.schemaVersion!==5||current.data.guideVersion!==11||current.data.catalogRevision!=='catalog-city-name-1'||PERCEPTION_SCHEMA_VERSION!==6)fail('version_conflict',409,'The expected pre-paper catalog changed');
+    if(!current||current.data.schemaVersion!==5||current.data.guideVersion!==11||current.data.catalogRevision!=='catalog-city-name-1'||Number(PERCEPTION_SCHEMA_VERSION)!==6)fail('version_conflict',409,'The expected pre-paper catalog changed');
     const modules=['perception','world','profiles','items','inventory','mailbox','wallet'];
     const schemaIds=[...OPERATIONS.flatMap(operation=>[`perception.${operation.id}-query`,`perception.${operation.id}-result`]),...TYPE_DEFINITIONS.flatMap(type=>[`${type.prefix}-summary`,`${type.prefix}-detail`]),'perception.error-result'];
     for(const schemaId of schemaIds)if(await catalogRepository(tx).get(`schema:${schemaId}:6`))fail('version_conflict',409,'A target exact schema is already occupied');
@@ -280,4 +281,22 @@ export async function catalogData(tx: M1Transaction): Promise<JsonObject> {
     if(Object.hasOwn(states,NPC_SERVICE_ITEMS_SOURCE))sourceRows.push([NPC_SERVICE_ITEMS_SOURCE,'items',['items.item@1'],['items'],'world']);
     const sources=sourceRows.map(([sourceId, moduleId, sourceTypes, categoryIds, channel]) => ({ sourceId, moduleId, types: sourceTypes, categoryIds, channels: [channel], state: states[sourceId as string] ?? 'not_enabled', schemaRefs: types.filter(t => (sourceTypes as string[]).includes(t.type)).flatMap(t => [t.summarySchema, t.detailSchema]) }));
     return { catalogRevision: current.data.catalogRevision!, skillCatalogRevision: current.data.skillCatalogRevision!, worlds: [{ worldId: 'default', name: 'connet.ai 世界', description: '当前真实存储的获准内容；演示来源逐项标识', rulesRef: RULES_REF, rulesVersion: 1 }], modules: ['world', 'profiles', 'items', 'inventory', 'mailbox', 'wallet'].map(moduleId => ({ moduleId, state: sources.some(s => s.moduleId === moduleId && s.state === 'enabled') ? 'enabled' : 'not_enabled', contractVersion: '1.0.0', usageGuide: { moduleId, version: guideVersion } })), types, sources: sources as unknown as JsonObject[], categories: perceptionCategories(states) as unknown as JsonObject[], operations: OPERATIONS.map(o => ({ id: o.id, method: o.method, path: o.path, inputSchema: { id: `perception.${o.id}-query`, version: PERCEPTION_SCHEMA_VERSION }, outputSchema: { id: `perception.${o.id}-result`, version: PERCEPTION_SCHEMA_VERSION }, errorSchema: { id: 'perception.error-result', version: PERCEPTION_SCHEMA_VERSION } })), skills: [{ skillId: 'world.inspect', moduleId: 'world', version: guideVersion, description: '手动有界感知与显式消息版本确认', capabilityRefs: ['overview', 'list', 'detail', 'agent-read-state-query', 'agent-read-state-confirm', 'wallet-query'], guideRef: { moduleId: 'world', version: guideVersion }, protocolMajor: 1, requiredScopes: ['world:read'], execution: 'host', state: 'enabled' }], schemaReader: { method: 'GET', pathTemplate: '/v1/perception/schemas/{schemaId}', versionQuery: 'version' }, guideReader: { method: 'GET', pathTemplate: '/v1/perception/guides/{moduleId}', versionQuery: 'version' }, notEnabled: ['snapshot', 'changes', 'current-items', 'reader-state', 'economy', 'scheduler', 'plugins'] };
+}
+
+/** Fresh schema7 rendering/identifier guide only; no previous schema6 document is overwritten. */
+async function publishFreshPublicIdentifiersCatalogInTransaction(tx:M1Transaction){
+ const current=(await catalogRepository(tx).get('current'))!;if(current.data.schemaVersion!==7||current.data.catalogRevision!=='catalog-readers-1-schema-7'||current.data.guideVersion!==2)fail('version_conflict',409,'Exact fresh schema7 predecessor required');
+ const before=plain((await catalogRepository(tx).get('guide:world:2'))?.data.document);if(typeof before.text!=='string')fail('version_conflict',409,'Exact fresh guide missing');await storeDocuments(tx,3,before.text+'\n'+PAPER_HUD_APPEARANCE_GUIDE+'\n'+PAPER_HUD_OWNER_MAILBOX_GUIDE+'\n'+PUBLIC_IDENTIFIERS_GUIDE);const data={...current.data,catalogRevision:'catalog-public-identifiers-fresh-1',skillCatalogRevision:'skills-catalog-public-identifiers-fresh-1',guideVersion:3};await rememberCatalogRevision(tx,data);await catalogRepository(tx).replace({...current,version:current.version+1,data},current.version);
+}
+/** Closed-gate maintenance participant. Copies each exact guide and every source state; never migrates business facts. */
+export async function publishPublicIdentifiersCatalogInTransaction(tx:M1Transaction,options:{instanceId:string;recoveryEpoch:string;operator:string;operationId:string;expectedCatalogRevision:string;expectedGuideVersion:number}):Promise<JsonObject>{
+ if(!/^[A-Za-z0-9_.:@-]{1,100}$/.test(options.operator)||!/^.{8,100}$/u.test(options.operationId)||options.expectedCatalogRevision!=='catalog-new-resident-1'||![6,13].includes(options.expectedGuideVersion))throw new Error('Explicit supported public-identifier predecessor and operation required');
+ const payload:JsonObject={...options,release:'public-identifiers@1',schemaVersion:7,revision:'catalog-public-identifiers-1',guideVersion:options.expectedGuideVersion+1},id='admin-public-identifiers:'+key({operator:options.operator,operationId:options.operationId}),digest=key(payload),prior=await catalogRepository(tx).get(id);if(prior){if(prior.data.payloadHash!==digest)fail('operation_id_conflict',409,'Original publication payload changed');return plain(prior.data.result);}
+ const current=await catalogRepository(tx).get('current');if(!current||current.data.schemaVersion!==6||current.data.catalogRevision!==options.expectedCatalogRevision||current.data.guideVersion!==options.expectedGuideVersion||Number(PERCEPTION_SCHEMA_VERSION)!==7)fail('version_conflict',409,'Exact schema6 onboarding predecessor required');
+ const modules=['perception','world','profiles','items','inventory','mailbox','wallet'],version=options.expectedGuideVersion+1;
+ if(!await catalogRepository(tx).get('catalog-revision:'+key(String(current.data.catalogRevision))))fail('version_conflict',409,'Frozen previous catalog declaration is missing');
+ for(const moduleId of modules){const previous=await catalogRepository(tx).get(`guide:${moduleId}:${options.expectedGuideVersion}`),document=plain(previous?.data.document);if(typeof document.text!=='string'||await catalogRepository(tx).get(`guide:${moduleId}:${version}`))fail('version_conflict',409,'Exact source or destination guide unavailable');const next={...document,version,http:HTTP_GUIDE,text:document.text+'\n'+PUBLIC_IDENTIFIERS_GUIDE};await catalogRepository(tx).insert({id:`guide:${moduleId}:${version}`,version:1,data:{document:next,digest:key(next)}});}
+ const schemaIds=[...OPERATIONS.flatMap(o=>[`perception.${o.id}-query`,`perception.${o.id}-result`]),...TYPE_DEFINITIONS.flatMap(t=>[`${t.prefix}-summary`,`${t.prefix}-detail`]),'perception.error-result'];for(const sid of schemaIds)if(await catalogRepository(tx).get(`schema:${sid}:7`))fail('version_conflict',409,'Exact schema7 destination already occupied');await storeSchemaDocuments(tx);
+ const data={...current.data,schemaVersion:7,guideVersion:version,catalogRevision:'catalog-public-identifiers-1',skillCatalogRevision:'skills-catalog-public-identifiers-1'};await rememberCatalogRevision(tx,data);await catalogRepository(tx).replace({...current,version:current.version+1,data},current.version);
+ const result:JsonObject={changed:true,catalogRevision:data.catalogRevision,guideVersion:version,schemaVersion:7,newGuideDocuments:7,newSchemaDocuments:schemaIds.length,sourceStatesPreserved:true,businessFactsChanged:false,operationId:options.operationId};await catalogRepository(tx).insert({id,version:1,data:{kind:'administrative_receipt',payloadHash:digest,result}});return result;
 }

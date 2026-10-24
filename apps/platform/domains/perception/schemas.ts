@@ -1,7 +1,7 @@
 import type { JsonObject } from '../../contracts/store.ts';
 import {PROFILE_AVATAR_SCHEMA} from '../profile/appearance.ts';
 const str=(max=180,min=1):JsonObject=>({type:'string',minLength:min,maxLength:max});
-export const PERCEPTION_SCHEMA_VERSION=6;
+export const PERCEPTION_SCHEMA_VERSION=7;
 const num=(min=1,max=Number.MAX_SAFE_INTEGER):JsonObject=>({type:'integer',minimum:min,maximum:max});
 const nullable=(schema:JsonObject):JsonObject=>({anyOf:[schema,{type:'null'}]});
 const obj=(properties:JsonObject,required=Object.keys(properties)):JsonObject=>({type:'object',properties,required,additionalProperties:false});
@@ -16,7 +16,7 @@ const context:JsonObject={protocolVersion:{const:1},consumerId:str(100),purpose:
 const state=obj({ref,currentContentVersion:num(),confirmedContentVersion:nullable(num()),stateVersion:num(0),confirmedAt:nullable(num(0))});
 const schemaRef=obj({id:str(100),version:num()});
 const source=obj({kind:str(100),reference:str(180),administrator:str(100),publishedAt:num(0)},['kind']);
-const profileFields=obj({displayName:str(60),avatar:PROFILE_AVATAR_SCHEMA,appearance:PROFILE_AVATAR_SCHEMA,publishedVersion:num(),bio:str(500,0),interests:array(str(40),10)},['displayName','avatar','appearance','publishedVersion']);
+const profileFields=obj({publicId:{type:'string',pattern:'^A[0-9]{3,}$'},displayName:str(60),avatar:PROFILE_AVATAR_SCHEMA,appearance:PROFILE_AVATAR_SCHEMA,publishedVersion:num(),bio:str(500,0),interests:array(str(40),10)},['publicId','displayName','avatar','appearance','publishedVersion']);
 const sender=obj({kind:{enum:['human','agent']},ref:nullable(ref),displayName:nullable(str())});
 const summaryBase={title:str(),dataMode:{enum:['demo','platform','real']},source};
 const summaryFields={...summaryBase,itemKind:{enum:['work','prop']},author:str(),area:str(180,0),quantity:num(0),itemRef:ref,eventKind:{enum:['plan','occurrence']},status:str(100),fields:profileFields,sender,receivedAt:num(0)};

@@ -11,7 +11,7 @@ export interface AgentParticipation {
  readonly actionPolicy:WorldActionPolicy;
  readonly membership:Readonly<{worldId:string;version:number;state:string;ownerPaused:boolean;ownerPauseVersion:number;platformRestricted:boolean;platformVersion:number;sharingGeneration:number}>;
 }
-export interface PublicAgentView {readonly agentId:string;readonly publishedVersion:number;readonly displayName:string;readonly appearance:Readonly<ProfileAvatar>}
+export interface PublicAgentView {readonly agentId:string;readonly publicId?:string;readonly publishedVersion:number;readonly displayName:string;readonly appearance:Readonly<ProfileAvatar>}
 export type OwnerObservationDomain='world'|'relationships'|'interaction'|'town_services';
 /** Source-owned observation at the instant a fact commits; never a credential or transferable grant. */
 export interface OwnerAudienceProof {readonly ownerId:string;readonly bindingId:string;readonly bindingVersion:number;readonly authorizationVersion:string;readonly sharingGeneration:number;readonly sourceDomain:OwnerObservationDomain}
@@ -21,6 +21,8 @@ export interface IdentityAccess<Context extends object>{
  authorizeAgent(context:Context,principal:Principal,agentId:string):Promise<AgentAuthority>;
  readParticipation(context:Context,agentId:string):Promise<AgentParticipation>;
  /** Current public profile permission, without inventing an Agent or Owner principal. */
+ /** Display identifier only; the caller must separately authorize its subject. */
+ readSubjectPublicId?(context:Context,kind:'agent'|'npc',subjectId:string):Promise<string>;
  readPublicAgent(context:Context,agentId:string):Promise<PublicAgentView|null>;
  /** Current runtime's own issuance fields; requires neither public profile nor Owner binding. */
  readResidentIdentity?(context:Context,principal:Principal):Promise<{agentId:string;displayName:string;firstWorldJoinedAt:number|null}>;

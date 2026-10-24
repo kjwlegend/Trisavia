@@ -218,12 +218,13 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
     const revision = await repository.advanceRevision(movement.worldId, world.revision); await fact(context, key, nextAvatar, 'world.avatar.moved', revision); await movementFact(context, key, next, revision);
     // Controlled scheduler completes the same lease only after this handler's writes succeed.
   }
-  async function projectedAvatar(context:RuntimeReadContext,avatar:WorldAvatar):Promise<WorldAvatar>{
+  async function projectedAvatar(context:RuntimeReadContext,avatar:WorldAvatar):Promise<WorldAvatar&{publicId?:string}>{
+    const publicRef=identity.readSubjectPublicId?{publicId:await identity.readSubjectPublicId(context,'agent',avatar.agentId)}:{};
     const status=await identity.readParticipation(context,avatar.agentId),motion=avatar.motion;
-    if(!motion||status.membership.ownerPaused||status.membership.platformRestricted||status.actionPolicy.mode!=='autonomous')return {...structuredClone(avatar),motion:null};
+    if(!motion||status.membership.ownerPaused||status.membership.platformRestricted||status.actionPolicy.mode!=='autonomous')return {...structuredClone(avatar),...publicRef,motion:null};
     const latest=await context.repository(WORLD_REPOSITORY).getLatestMovement(avatar.worldId,avatar.agentId);
     const cancelled=latest?.state==='stopped'&&latest.updatedAt>=motion.startedAt;
-    return {...structuredClone(avatar),motion:cancelled?null:structuredClone(motion)};
+    return {...structuredClone(avatar),...publicRef,motion:cancelled?null:structuredClone(motion)};
   }
   type MapCut={worldId:string;worldRevision:number;rulesetVersion:number;topologyVersion:number;asOf:number};
   async function npcProjection(context:RuntimeReadContext,worldId:string,rules:WorldRuleset):Promise<{npcs:WorldNpc[]|CurrentTownNpc[];npcCatalogVersion:number|null}>{if(options.currentNpcs){const active=await options.currentNpcs(context,worldId);return {npcs:active.npcs,npcCatalogVersion:active.catalogVersion};}return {npcs:structuredClone(rules.mapManifest?.npcs??[]),npcCatalogVersion:null};}
@@ -241,7 +242,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
         if (!candidates.length) { complete = true; break; }
         for (let index = 0; index < candidates.length; index++) {
           const avatar = candidates[index]!; after = avatar.agentId; scanned++;
-          try { await participation(context, avatar.agentId, worldId, false); const profile = await identity.readPublicAgent(context, avatar.agentId); if (avatar.status !== 'left' && profile) avatars.push({ ...await projectedAvatar(context,avatar), profile: {...structuredClone(profile),appearance:resolveAppearance(profile.appearance,{avatarId:avatar.id})!} }); }
+          try { await participation(context, avatar.agentId, worldId, false); const profile = await identity.readPublicAgent(context, avatar.agentId); if (avatar.status !== 'left' && profile) avatars.push({ ...await projectedAvatar(context,avatar),...(profile.publicId?{publicId:profile.publicId}:{}), profile: {...structuredClone(profile),appearance:resolveAppearance(profile.appearance,{avatarId:avatar.id})!} }); }
           catch (error) { if (!(error instanceof M1Error) || error.statusCode >= 500) throw error; }
           if (avatars.length === limit) { complete = index === candidates.length - 1 && candidates.length < batchSize; break; }
         }

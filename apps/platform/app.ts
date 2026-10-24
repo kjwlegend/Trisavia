@@ -1,3 +1,6 @@
+import {createPublicIdentifierService} from './application/public-identifiers.ts';
+import {publicIdentifierGatewayOperations,publicIdentifierPublicReads,publicIdentifierGatewayGuide} from './application/agent-gateway-public-identifiers.ts';
+import {registerPublicIdentifierRoutes} from './transport/http/public-identifier-routes.ts';
 import type { EmailConfig } from './infrastructure/email/resend.ts';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { createM1Service } from './application/m1-service.ts';
@@ -70,6 +73,7 @@ export async function buildApp(options:BuildAppOptions):Promise<FastifyInstance>
    const town=townEnabled?createTownService(identity,{...(observation?{observation}:{})}):undefined;
    const world=createWorldService(identity,{...(observation?{observation}:{}),...(town?{activities:town.worldActivity,currentNpcs:town.currentNpcs}:{})}),relationships=createRelationshipsService(identity,{...(observation?{observation}:{})}),operations=[...worldGatewayOperations(world),...relationshipsGatewayOperations(relationships)],guides=[worldGatewayGuide,relationshipsGatewayGuide],publicReads=worldPublicReads(world);
    if(town){operations.push(...townGatewayOperations(town));guides.push(townGatewayGuide);publicReads.push(...townPublicReads(town));}
+   const publicIdentifiers=createPublicIdentifierService(identity,town?(ctx)=>town.currentNpcs(ctx,'default'):undefined);operations.push(...publicIdentifierGatewayOperations(publicIdentifiers));guides.push(publicIdentifierGatewayGuide);publicReads.push(...publicIdentifierPublicReads(publicIdentifiers));
    let behaviorLogs:ReturnType<typeof createBehaviorLogService>|undefined;
    friendshipOwnerRead=(raw,token)=>runtime!.read(async ctx=>{
     const input=object(raw,['agentId','search','order','cursor','limit']),principal=await identity.authenticate(ctx,token,['owner_session']);
@@ -92,7 +96,7 @@ export async function buildApp(options:BuildAppOptions):Promise<FastifyInstance>
    const gateway=createAgentGateway({store:runtime,identity,operations,publicReads,guides});
    gatewayCapabilities=()=>({...gateway.capabilities(),worldSimulation:{enabled:true,actionAdvancement:'deterministic-rule-tasks',movementPolicyVersion:1,stepIntervalMs:1000,pollIntervalMs:1000,idleLife:{enabled:true,policyVersion:IDLE_LIFE_POLICY_V1.version,stepIntervalMs:IDLE_LIFE_POLICY_V1.stepIntervalMs,maxPathLength:IDLE_LIFE_POLICY_V1.maxPathLength,minRestMs:IDLE_LIFE_POLICY_V1.minRestMs,restJitterMs:IDLE_LIFE_POLICY_V1.restJitterMs},externalAgentExecution:false}});
    const gatewayHttp=registerAgentGatewayRoutes(app,gateway,{instanceId:store.instanceId,now:options.clock??Date.now});registerWorldObservationRoutes(gateway,gatewayHttp);if(behaviorLogs)registerBehaviorLogRoutes(gateway,gatewayHttp);
-   if(town)registerTownObservationRoutes(gateway,gatewayHttp);
+   if(town)registerTownObservationRoutes(gateway,gatewayHttp);registerPublicIdentifierRoutes(gateway,gatewayHttp);
    const scheduler=createDeterministicScheduler({store:runtime,workerId:`world-rules-${process.pid}`,handlers,batchLimit:10,leaseMs:30000});
    let nextIdleDiscovery=0,idleAfter:string|undefined;
    ruleDriver=createWorldRuleDriver({async runDue(){const now=(options.clock??Date.now)();if(now>=nextIdleDiscovery){idleAfter=await runtime!.transaction(ctx=>world.ensureIdleLife(ctx,'default',idleAfter));nextIdleDiscovery=now+IDLE_LIFE_POLICY_V1.scanIntervalMs;}return scheduler.runDue();},close:()=>scheduler.close()});app.addHook('onReady',async()=>{ruleDriver!.start();});
