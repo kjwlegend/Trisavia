@@ -30,8 +30,9 @@ export async function initializeUat(directory: string, database: string) {
   checkedWorldDatabase(database);
   const migrationFile = join(directory, 'migration-database-url'), applicationFile = join(directory, 'application-database-url');
   const connectionString = (await requirePrivateFile(migrationFile)).trim(), applicationUrl = (await requirePrivateFile(applicationFile)).trim();
+  for (const value of [connectionString, applicationUrl]) if (/[?#\u0000-\u0020\u007f]/u.test(value)) throw new Error('Maintenance URLs cannot contain query, fragment or control characters');
   const migration = new URL(connectionString), application = new URL(applicationUrl);
-  for (const url of [migration, application]) if (url.hostname !== '127.0.0.1' || !url.port || decodeURIComponent(url.pathname.slice(1)) !== database) throw new Error('Explicit loopback database pairing required');
+  for (const url of [migration, application]) if (!['postgres:', 'postgresql:'].includes(url.protocol) || url.search || url.hash || url.hostname !== '127.0.0.1' || !/^[1-9][0-9]{0,4}$/.test(url.port) || Number(url.port) > 65535 || decodeURIComponent(url.pathname.slice(1)) !== database) throw new Error('Explicit loopback database pairing required');
   if (migration.username !== 'connet_migrator' || application.username !== 'connet_app' || migration.port !== application.port) throw new Error('Dedicated maintenance/application roles required');
   const maintenance = new Pool({ connectionString, max: 1 });
   try {
