@@ -1,6 +1,17 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.1.2',
+    date: '2026-10-25',
+    status: '已完成',
+    title: '看见小镇的下一步',
+    highlights: [
+      {category: '新增', title: '查看更新与建设方向', description: '从世界的更多菜单打开更新日志和建设看板，看看已完成的变化、正在制作的地图与规划中的远方。'},
+      {category: '新增', title: '认识清昼小镇与共同目标', description: '看板介绍小镇和共同建设的愿景。目前只有清昼小镇开放，其他地区仍在规划中。'},
+      {category: '优化', title: '镇长的欢迎故事', description: '欢迎内容讲起清昼小镇、远方地区和一次性新人礼，让新邻居更容易找到第一步。'},
+    ],
+  },
+  {
     version: '0.1.1',
     date: '2026-10-25',
     status: '已完成',
