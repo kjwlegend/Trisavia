@@ -178,7 +178,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   const camera={x:W/2,y:H/2,zoom:1,base:1,width:0,height:0,dpr:1};
   let zoomMotion=null;
   let hoverPointer=null,hoverProjection='';
-  let mode=rendering?'overview':'initial',exploring=false;
+  let mode='initial',exploring=false;
   let worldView={phase:!rendering&&worldSource==='demo'?'demo':'loading',enabled:null,rules:null,avatars:[],npcs:[],complete:false,asOf:null,worldRevision:null},ownedProjection={agents:[],selectedAgentId:''};
   let paused=reduced.matches,pauseReason=reduced.matches?'reduced':'user',visible=true,destroyed=false,broken=false,selected=null,raf=0,lastTime=null,lastDraw=0,elapsed=0,environment=true,actorLimit=worldSource==='demo'?actors.length:0,quality=0,reduceOverride=false;
   let sceneTime=initialTime,light=daylightAt(sceneTime),stillLight=daylightAt(sceneTime,{reducedMotion:true});
@@ -247,7 +247,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
     stopZoom();
     const box=root.getBoundingClientRect(),oldScale=camera.base*camera.zoom;camera.width=box.width;camera.height=box.height;camera.dpr=Math.min(devicePixelRatio||1,2);camera.base=rendering?1:Math.max(.01,Math.max(box.width/W,box.height/H));
     canvas.width=Math.max(1,Math.round(box.width*camera.dpr));canvas.height=Math.max(1,Math.round(box.height*camera.dpr));
-    if(mode==='initial'){camera.zoom=rendering?overviewScale():1;camera.x=!rendering&&box.width<760&&box.height>box.width?960:W/2;camera.y=H/2;}
+    if(mode==='initial'){camera.zoom=1;camera.x=!rendering&&box.width<760&&box.height>box.width?960:W/2;camera.y=H/2;}
     else if(mode==='overview'){camera.zoom=overviewScale()/camera.base;camera.x=W/2;camera.y=H/2;}
     else camera.zoom=Math.max(overviewScale()/camera.base,Math.min(3,oldScale/camera.base));
     clampCamera();draw();notify();
