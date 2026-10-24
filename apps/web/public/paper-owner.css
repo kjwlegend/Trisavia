@@ -162,6 +162,15 @@
 .hud-root .hud-window .account-root #agent-list small{font-size:12px;line-height:18px;margin-top:4px;color:var(--owner-muted);overflow-wrap:anywhere}
 .hud-root .hud-window .account-root #policy-panel .lock-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .hud-root .hud-window .account-root #policy-panel .lock-list label{display:flex;align-items:center;gap:8px;min-height:40px;padding:8px 12px;background:#dfe5d466;border:1px solid var(--owner-border);border-radius:8px;color:var(--owner-ink)}
+.hud-root .hud-window .account-root #policy-form .lock-list input[type=checkbox]{appearance:none;display:inline-grid;place-content:center;flex:0 0 18px;width:18px;height:18px;min-height:18px;margin:0;padding:0;border:1px solid #899488;border-radius:3px;background:var(--owner-paper);color:#fffaf3;box-shadow:none;opacity:1}
+.hud-root .hud-window .account-root #policy-form .lock-list input[type=checkbox]:checked{background:#365c47;border-color:#365c47}
+.hud-root .hud-window .account-root #policy-form .lock-list input[type=checkbox]::after{content:'';width:9px;height:5px;border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-1px) rotate(-45deg);opacity:0}
+.hud-root .hud-window .account-root #policy-form .lock-list input[type=checkbox]:checked::after{opacity:1}
+.hud-root .hud-window .account-root #policy-form .lock-list label:has(input:checked){background:var(--owner-sage);border-color:#a5b39a}
+.hud-root .hud-window .account-root #policy-form .lock-list label:has(input:focus-visible){outline:2px solid var(--owner-accent);outline-offset:3px}
+.hud-root .hud-window .account-root #policy-form .lock-list input[type=checkbox]:disabled{opacity:.48;cursor:not-allowed}
+.hud-root .hud-window .account-root #policy-form .lock-list label:has(input:disabled){background:#dfe5d466;border-color:var(--owner-border);color:var(--owner-muted);cursor:not-allowed}
+.hud-root .hud-window .account-root .world-autonomy-settings legend{font-size:14px;line-height:22px;font-weight:600;color:var(--owner-ink);margin-bottom:8px}
 .hud-root .hud-window .account-root .world-autonomy-option{display:flex;align-items:start;gap:10px;padding:12px;border:1px solid var(--owner-border);border-radius:8px;color:var(--owner-ink);background:transparent}
 .hud-root .hud-window .account-root .world-autonomy-option:has(input:checked){border-color:var(--owner-accent);background:#dfe5d466}
 .hud-root .hud-window .account-root .world-autonomy-option strong{font-size:14px;line-height:22px;color:var(--owner-ink)}
@@ -190,10 +199,21 @@
 .hud-root .hud-window .account-root .manager-hero h2{font-size:24px;line-height:32px;margin:0 0 12px}
 .hud-root .hud-window .account-root .manager-hero p{white-space:pre-wrap;overflow-wrap:anywhere}
 .hud-root .hud-window .account-root .manager-public-link{display:inline-flex;align-items:center;min-height:36px;color:var(--owner-ink)}
-.hud-root .hud-window .account-root #manage-view[data-manager-page=logs] .manager-scroll{display:block;overflow:auto}
-.hud-root .hud-window .account-root #manage-view[data-manager-page=logs] .manager-pages,.hud-root .hud-window .account-root #manage-view[data-manager-page=logs] .account-page[data-account-page=logs]{display:block;min-height:0;height:auto}
-.hud-root .hud-window .account-root #owner-behavior-logs{height:440px;min-height:320px;display:flex;flex-direction:column}
-.hud-root .hud-window .account-root #manage-view[data-manager-page=logs] .manager-actions{min-height:48px;height:auto;padding:8px 20px;border-top:1px solid var(--owner-border)}
+.hud-root .hud-window .account-root #manage-view[data-manager-page=logs] .manager-scroll{display:flex;flex-direction:column;overflow:hidden;padding:8px 24px}
+.hud-root .hud-window .account-root #manage-view[data-manager-page=logs] .manager-pages,.hud-root .hud-window .account-root #manage-view[data-manager-page=logs] .account-page[data-account-page=logs]{display:flex;flex:1;flex-direction:column;min-height:0;height:100%}
+.hud-root .hud-window .account-root #owner-behavior-logs{height:auto;min-height:0;flex:1;display:flex;flex-direction:column}
+.hud-root .hud-window .account-root #manage-view[data-manager-page=logs] .manager-actions:has(>.manager-action-note:empty):not(:has(button)){display:none}
+.hud-root .hud-window .account-root #owner-behavior-logs .behavior-logs{gap:6px}
+.hud-root .hud-window .account-root #owner-behavior-logs .behavior-logs>:not(.behavior-log-list){flex:none}
+.hud-root .hud-window .account-root #owner-behavior-logs .behavior-logs>p.hud-muted{display:none}
+.hud-root .hud-window .account-root #owner-behavior-logs .behavior-logs>h3{margin:0;font-size:16px;line-height:24px}
+.hud-root .hud-window .account-root #owner-behavior-logs .behavior-log-row{min-height:60px;padding:6px 0}
+.hud-root .hud-window .account-root #owner-behavior-logs .behavior-log-copy>span{margin:0;line-height:22px}
+.hud-root .hud-window .account-root #owner-behavior-logs .behavior-log-date{padding:6px 0;line-height:18px}
+.hud-root .hud-window .account-root #owner-behavior-logs .behavior-log-footer{padding-top:0}
+.hud-root .hud-window .account-root #manage-view[data-manager-page=logs] .owner-past-interactions{flex:none;margin-top:6px;padding-top:6px}
+.hud-root .hud-window .account-root #manage-view[data-manager-page=logs] .owner-past-interactions>summary{min-height:28px}
+.hud-root .hud-window .account-root #manage-view[data-manager-page=logs] .owner-past-interactions[open]{max-height:45%;overflow:auto}
 .hud-root .hud-window .account-root .behavior-logs{color:var(--owner-ink);gap:12px}
 .hud-root .hud-window .account-root .behavior-log-tools label{font-size:12px;line-height:18px}
 .hud-root .hud-window .account-root .behavior-log-tools :is(input,select){font-size:12px;line-height:18px;min-height:36px;background:#ffffff65;color:var(--owner-ink);border-color:var(--owner-border)}
