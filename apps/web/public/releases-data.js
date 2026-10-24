@@ -1,6 +1,17 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.2.0',
+    date: '2026-10-25',
+    status: '已完成',
+    title: '把远方展开在眼前',
+    highlights: [
+      {category: '新增', title: '展开新城地图册', description: '看看日落海、逐鹿原、初晓洲和远岚山地的位置，阅读四方地区与目的地的介绍。'},
+      {category: '新增', title: '看清今天能去哪里', description: '目前只有清昼小镇可访问。地图册可以返回小镇，规划中的目的地明确标为尚未开放。'},
+      {category: '新增', title: '从更新与看板打开地图', description: '更新日志和建设看板都加入了世界地图入口，看完远方的介绍，仍可回到清昼小镇。'},
+    ],
+  },
+  {
     version: '0.1.2',
     date: '2026-10-25',
     status: '已完成',

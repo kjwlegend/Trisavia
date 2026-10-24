@@ -14,7 +14,7 @@ export const BOARD_COLUMNS = [
 ];
 
 export const MAP_CARDS = [
-  {id: 'map-atlas', column: 'in-progress', title: '展开新城地图册', summary: '浏览四方地区与故事，再回到已经开放的清昼小镇。', scope: '世界地图 · 正在制作'},
+  {id: 'map-atlas', column: 'completed', title: '展开新城地图册', summary: '浏览四方地区与故事，再回到已经开放的清昼小镇。', scope: '世界地图 · 已完成', completedVersion: '0.2.0', experienceHref: '/?atlas=1'},
   {id: 'map-sunset-bay', column: 'planned', title: '日落海 · 暮帆湾', summary: '构想一处看落日的海湾，让远方海岸有落脚的地方。', scope: '海岸场景 · 尚未开放'},
   {id: 'map-plain-outpost', column: 'planned', title: '逐鹿原 · 风禾驿', summary: '从一段路和几处地标开始，构想中央草原的落脚点。', scope: '草原场景 · 尚未开放'},
   {id: 'map-dawn-lake', column: 'planned', title: '初晓洲 · 晨露湖畔', summary: '在小镇之外构想湖岸与步道，留下下一处可探索的风景。', scope: '湖岸场景 · 尚未开放'},

@@ -13,7 +13,7 @@ import {loadProductionWebAssets} from '../../apps/platform/transport/http/web-as
 import {RELEASES} from '../../apps/web/public/releases-data.js';
 
 const root=fileURLToPath(new URL('../../',import.meta.url));
-const screenshots=resolve(root,'outputs/release-board-20261025/navigation-020');
+const screenshots=resolve(root,'outputs/release-board-20261025/completed-020');
 
 test('public player pages use the verified build, honest completed releases, map-only columns and a working return link',async()=>{
  const assets=loadProductionWebAssets(root,resolve(root,'dist/web'));
@@ -51,7 +51,15 @@ test('public player pages use the verified build, honest completed releases, map
   assert.equal(await page.locator('nav a[aria-current=page]').getAttribute('href'),'/kanban');
   assert.deepEqual(await page.locator('.board-heading h2').allTextContents(),['进行中','已完成','未来计划','投票中']);
   assert.deepEqual(await page.locator('.board-card').evaluateAll(nodes=>nodes.map(node=>(node as HTMLElement).dataset.card)),['map-atlas','map-sunset-bay','map-plain-outpost','map-dawn-lake','map-mist-valley']);
-  assert.equal(await page.locator('[data-column=completed] .board-card').count(),0);
+  assert.equal(await page.locator('[data-column=in-progress] .board-card').count(),0);
+  assert.deepEqual(await page.locator('[data-column=completed] .board-card').evaluateAll(nodes=>nodes.map(node=>(node as HTMLElement).dataset.card)),['map-atlas']);
+  assert.deepEqual(await page.locator('[data-column=planned] .board-card').evaluateAll(nodes=>nodes.map(node=>(node as HTMLElement).dataset.card)),['map-sunset-bay','map-plain-outpost','map-dawn-lake','map-mist-valley']);
+  const completedCard=page.locator('[data-column=completed] .board-card');
+  assert.match(await completedCard.innerText(),/v0\.2\.0/);
+  assert.equal(await completedCard.getByRole('link',{name:'打开新城地图册',exact:true}).getAttribute('href'),'/?atlas=1');
+  assert.equal(await completedCard.getByRole('link').evaluate((link:HTMLAnchorElement)=>link.origin),origin);
+  assert.equal(await page.locator('[data-column=planned] a').count(),0);
+  for(const scope of await page.locator('[data-column=planned] .board-card-scope').allTextContents())assert.match(scope,/尚未开放/);
   assert.equal(await page.locator('[data-column=voting] .board-card').count(),0);
   assert.equal(await page.locator('[data-column=voting] :is(button,input,a)').count(),0);
   assert.match(await page.locator('[data-column=voting]').innerText(),/暂未开放投票/);

@@ -33,7 +33,14 @@ for (const column of BOARD_COLUMNS) {
   for (const card of cards) {
     const item = element('article', 'paper-sheet board-card');
     item.dataset.card = card.id;
-    item.append(element('h3', '', card.title), element('p', '', card.summary), element('span', 'board-card-scope', card.scope));
+    const completed = card.column === 'completed' && /^\d+\.\d+\.\d+$/.test(card.completedVersion ?? '');
+    const scope = completed ? `${card.scope} · v${card.completedVersion}` : card.scope;
+    item.append(element('h3', '', card.title), element('p', '', card.summary), element('span', 'board-card-scope', scope));
+    if (completed && card.id === 'map-atlas' && card.experienceHref === '/?atlas=1') {
+      const link = element('a', '', '打开新城地图册');
+      link.setAttribute('href', card.experienceHref);
+      item.append(link);
+    }
     section.append(item);
   }
   if (!cards.length) section.append(element('p', 'board-empty', column.empty));
