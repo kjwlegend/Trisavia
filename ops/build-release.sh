@@ -11,8 +11,7 @@ stage=$(mktemp -d)
 trap 'rm -rf -- "$stage"' EXIT
 # Build only an immutable Git archive. Never consume a worktree dist or dependency directory.
 git -C "$repo" archive "$revision" apps docs/access/v1 scripts/build-web.mjs scripts/web-build scripts/m1-agent.ts scripts/world-core-prepare.ts scripts/world-core-database.ts scripts/behavior-prepare.ts scripts/friendships-prepare.ts scripts/town-services-prepare.ts scripts/new-resident-guide.ts scripts/public-identifiers-prepare.ts scripts/publish-world-announcement.ts scripts/ws02-admin-target.ts scripts/postgresql/runtime.ts scripts/postgresql/permissions.ts scripts/postgresql/database.ts package.json package-lock.json ops | tar -x -C "$stage"
-npm --prefix "$stage" ci --include=dev --no-audit --no-fund
-(cd "$stage" && npm run build:web)
+(cd "$stage" && npm ci --include=dev --no-audit --no-fund && npm run build:web)
 node --input-type=module - "$stage" <<'JS'
 import {pathToFileURL} from 'node:url';
 const root=process.argv[2];
