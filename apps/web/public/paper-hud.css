@@ -219,3 +219,11 @@
 .paper-hud .world-audio-panel :is(.world-audio-status,.world-audio-note){color:var(--paper-muted);font-size:12px;line-height:18px}
 
 @media(min-width:760px) and (max-width:960px){.paper-hud .hud-agent-card{left:16px;bottom:88px}}
+/* The town tab shares the friends window's inner gutter and owns one scroll. */
+.world-home.paper-hud .hud-friends .town-relationships{box-sizing:border-box;padding:16px 24px 20px;min-height:0;min-width:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#b9bbae transparent}
+.world-home.paper-hud .hud-friends .town-relationships>h3{font-size:16px;line-height:24px;margin:0 0 8px}
+.world-home.paper-hud .hud-friends .town-relationships>.hud-muted{font-size:12px;line-height:18px;margin:0 0 16px}
+.world-home.paper-hud .hud-friends .town-relationship{min-height:72px;padding:12px 0;gap:12px}
+.world-home.paper-hud .hud-friends .town-relationship>button{min-height:36px;padding:6px 12px;margin-left:4px}
+.world-home.paper-hud .hud-friends .town-relationships>button{min-height:36px;margin:16px 8px 0 0}
+@media(min-width:760px) and (max-width:960px){.world-home.paper-hud .hud-friends .town-relationships{padding-left:20px;padding-right:20px}}
