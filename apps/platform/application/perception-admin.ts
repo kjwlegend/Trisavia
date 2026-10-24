@@ -3,8 +3,9 @@ import { randomUUID } from 'node:crypto';
 import type { JsonObject, M1Store, M1Transaction } from '../contracts/store.ts';
 import { fail } from '../domains/common/errors.ts';
 import { key, plain, refId,OPERATIONS,TYPE_DEFINITIONS, type ObjectRef } from '../domains/perception/protocol.ts';
-import { publishPaperHudCatalogInTransaction,publishCatalogInTransaction, publishImplementedReadersInTransaction, publishNpcServiceReadersInTransaction, IMPLEMENTED_READER_SOURCES,initializePerceptionCatalog } from './perception-catalog.ts';
-import {CURRENT_WORLD_MAP_TOWN_GUIDE,TOWN_SERVICES_GUIDE} from './agent-town-services-guide.ts';
+import { publishPaperHudCatalogInTransaction,publishCatalogInTransaction, publishImplementedReadersInTransaction, publishNpcServiceReadersInTransaction,publishNewResidentGuideInTransaction, IMPLEMENTED_READER_SOURCES,initializePerceptionCatalog } from './perception-catalog.ts';
+import {CURRENT_WORLD_MAP_TOWN_GUIDE,TOWN_SERVICES_GUIDE,CURRENT_RESIDENT_GIFT_TOWN_GUIDE} from './agent-town-services-guide.ts';
+import {NEW_RESIDENT_GUIDE} from './agent-new-resident-guide.ts';
 import {CURRENT_HOURLY_AUTONOMY_GUIDE,FROZEN_HOURLY_HUMAN_GUIDE,FROZEN_HOURLY_HOST_GUIDE} from './agent-hourly-participation-guide.ts';
 import {PERCEPTION_SCHEMA_VERSION} from '../domains/perception/schemas.ts';
 import {APPEARANCE_COLORS_DIGEST,APPEARANCE_CATALOG_VERSION,APPEARANCE_CATALOG_DIGEST,APPEARANCE_ASSET_VERSION} from '../domains/profile/appearance-catalog.ts';
@@ -236,6 +237,14 @@ export async function publishAgentCityNameGuide(store:M1Store,options:Administra
         const after=(await catalogRepository(tx).get('current'))!;
         return {changed:true,catalogRevision:after.data.catalogRevision!,skillCatalogRevision:after.data.skillCatalogRevision!,guideVersion:11,schemaVersion:PERCEPTION_SCHEMA_VERSION,newGuideDocuments:7};
     });
+}
+/** Forward-only onboarding text; preserves the existing schema, source states and exact history. */
+export async function publishNewResidentGuide(store:M1Store,options:AdministrativeCommand&{expectedInstanceId:string;expectedRecoveryEpoch:string;expectedCatalogRevision:string;revision:string;expectedGuideVersion:number;guideVersion:number}):Promise<JsonObject>{
+    if(options.expectedInstanceId!==store.instanceId||options.expectedRecoveryEpoch!==store.recoveryEpoch)fail('version_conflict',409,'The explicit target instance or recovery epoch differs');
+    const expectedVersion=options.expectedCatalogRevision==='catalog-paper-hud-1'?12:options.expectedCatalogRevision==='catalog-uat-current-1'?5:null;
+    if(expectedVersion===null||options.expectedGuideVersion!==expectedVersion||options.guideVersion!==expectedVersion+1||options.revision!=='catalog-new-resident-1')throw new Error('The exact next new-resident release is required');
+    const payload:JsonObject={action:'publishNewResidentGuide',release:'new-resident-onboarding@1',instanceId:store.instanceId,recoveryEpoch:store.recoveryEpoch,expectedCatalogRevision:options.expectedCatalogRevision,revision:options.revision,expectedGuideVersion:options.expectedGuideVersion,guideVersion:options.guideVersion,guide:NEW_RESIDENT_GUIDE,townGuide:CURRENT_RESIDENT_GIFT_TOWN_GUIDE};
+    return command(store,options,payload,async tx=>await publishNewResidentGuideInTransaction(tx,options));
 }
 /** Reviewed maintenance release. No arbitrary source, guide text, audience or object grant can be supplied. */
 export async function publishImplementedPerceptionReaders(store: M1Store, options: AdministrativeCommand & {

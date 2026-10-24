@@ -4,10 +4,12 @@ import test from 'node:test';
 import Fastify from 'fastify';
 import {AGENT_HUMAN_VOICE_GUIDE,AGENT_TEXT_EXCHANGE_GUIDE,AGENT_FRIENDSHIP_GUIDE,AGENT_AUTONOMY_GUIDE,AGENT_WORLD_MAP_V2_GUIDE} from '../../apps/platform/application/agent-human-voice.ts';
 import {initializePerceptionCatalog,publishPerceptionCatalog} from '../../apps/platform/application/perception-catalog.ts';
-import {publishAgentHumanVoiceGuide,publishTextExchangeGuide,publishFriendshipGuide,publishAgentAutonomyGuide,publishWorldMapV2Guide,publishNpcServiceReaders,publishAgentHourlyGuide,publishAgentCityNameGuide} from '../../apps/platform/application/perception-admin.ts';
-import {CURRENT_HOURLY_AUTONOMY_GUIDE,FROZEN_HOURLY_HOST_GUIDE,HOURLY_HOST_GUIDE} from '../../apps/platform/application/agent-hourly-participation-guide.ts';
+import {publishAgentHumanVoiceGuide,publishTextExchangeGuide,publishFriendshipGuide,publishAgentAutonomyGuide,publishWorldMapV2Guide,publishNpcServiceReaders,publishAgentHourlyGuide,publishAgentCityNameGuide,publishNewResidentGuide} from '../../apps/platform/application/perception-admin.ts';
+import {CURRENT_HOURLY_AUTONOMY_GUIDE,CURRENT_HOURLY_HUMAN_GUIDE,FROZEN_HOURLY_HOST_GUIDE,HOURLY_HOST_GUIDE} from '../../apps/platform/application/agent-hourly-participation-guide.ts';
+import {FROZEN_TOWN_SERVICES_GUIDE,CURRENT_RESIDENT_GIFT_TOWN_GUIDE} from '../../apps/platform/application/agent-town-services-guide.ts';
+import {NEW_RESIDENT_GUIDE} from '../../apps/platform/application/agent-new-resident-guide.ts';
 import {catalogData} from '../../apps/platform/application/perception-catalog.ts';
-import {refId} from '../../apps/platform/domains/perception/protocol.ts';
+import {refId,key} from '../../apps/platform/domains/perception/protocol.ts';
 import {TOWN_ITEM_DEFINITIONS} from '../../apps/platform/domains/town-services/catalog.ts';
 import {createPerceptionService} from '../../apps/platform/application/perception-service.ts';
 import {registerPerceptionRoutes} from '../../apps/platform/transport/http/perception-routes.ts';
@@ -233,4 +235,32 @@ test('hourly onboarding guide10 replaces the obsolete default while preserving e
   assert.equal((await service.capabilities()).catalogRevision,'catalog-city-name-1');
   for(const moduleId of ['perception','world','profiles','items','inventory','mailbox','wallet']){const response=await app.inject({method:'GET',url:`/v1/perception/guides/${moduleId}?version=11`,headers:{authorization:'Bearer existing-hourly-runtime'}});assert.equal(response.statusCode,200);const exact=response.json().data,old=(beforeName.perception_catalog!.find(row=>row.id===`guide:${moduleId}:10`)!.data.document as JsonObject);assert.equal(sha(exact.canonicalDocument),exact.digest);assert.deepEqual(JSON.parse(exact.canonicalDocument),exact.document);assert.equal(exact.document.text,String(old.text).replaceAll('Trisavia（新领）','Trisavia（新城）'));assert(exact.document.text.includes(HOURLY_HOST_GUIDE));assert(!exact.document.text.includes('Trisavia（新领）'));}
  }finally{await app.close();}
+});
+
+test('new-resident guide release preserves exact history and settings at both current deployment pointers',async t=>{
+ for(const [expectedCatalogRevision,expectedGuideVersion,townGuide] of [['catalog-paper-hud-1',12,FROZEN_TOWN_SERVICES_GUIDE],['catalog-uat-current-1',5,CURRENT_RESIDENT_GIFT_TOWN_GUIDE]] as const)await t.test(expectedCatalogRevision,async()=>{
+  const f=memory();await f.store.transaction(initializePerceptionCatalog);
+  const base=(await f.tx.get('perception_catalog','guide:world:3'))!.data.document as JsonObject;
+  const text=String(base.text).replaceAll(AGENT_AUTONOMY_GUIDE,CURRENT_HOURLY_AUTONOMY_GUIDE).replaceAll(AGENT_HUMAN_VOICE_GUIDE,CURRENT_HOURLY_HUMAN_GUIDE)+'\n'+townGuide+'\n'+HOURLY_HOST_GUIDE;
+  for(const item of Object.values(TOWN_ITEM_DEFINITIONS)){const ref={moduleId:'items',type:'items.item@1',id:item.id};await f.tx.insert('perception_objects',{id:refId(ref),version:1,data:{ref,categoryId:'items',sourceId:'npc-service-items',dataMode:'real',public:true,active:true,available:true}});}
+  await publishNpcServiceReaders(f.store,{actorId:'isolated-predecessor',operationId:randomUUID(),expectedInstanceId:f.store.instanceId,expectedRecoveryEpoch:f.store.recoveryEpoch,expectedCatalogRevision:'catalog-fresh-paper-hud-1',revision:'catalog-npc-services-1',expectedGuideVersion:3,guideVersion:4});
+  const modules=['perception','world','profiles','items','inventory','mailbox','wallet'];
+  for(const moduleId of modules){const document={...base,moduleId,version:expectedGuideVersion,text,retainedModuleMarker:moduleId};await f.tx.insert('perception_catalog',{id:`guide:${moduleId}:${expectedGuideVersion}`,version:1,data:{document,digest:key(document)}});}
+  await publishPerceptionCatalog(f.store,{revision:expectedCatalogRevision,guideVersion:expectedGuideVersion,guideText:text});
+  await f.tx.insert('agents',{id:'existing-newcomer',version:7,data:{worldAccess:{version:3,intervalSeconds:null},worldActionPolicy:{version:2,mode:'observe'},runtimeActive:true}});
+  const before=f.snapshot(),service=createPerceptionService(f.store,{authenticate:async()=>({id:'original-runtime',version:1,data:{kind:'runtime',agentId:'existing-newcomer',runtimeVersion:1}})}),previousCapabilities=await service.capabilities();
+  const options={actorId:'isolated-new-resident-maintainer',operationId:randomUUID(),expectedInstanceId:f.store.instanceId,expectedRecoveryEpoch:f.store.recoveryEpoch,expectedCatalogRevision,revision:'catalog-new-resident-1',expectedGuideVersion,guideVersion:expectedGuideVersion+1};
+  const receipt=await publishNewResidentGuide(f.store,options),after=f.snapshot();assert.equal(receipt.newGuideDocuments,7);assert.equal(receipt.newSchemaDocuments,0);assert.equal(receipt.schemaVersion,6);assert.equal(receipt.guideVersion,expectedGuideVersion+1);
+  assert.deepEqual(await publishNewResidentGuide(f.store,options),receipt);assert.deepEqual(f.snapshot(),after);
+  await assert.rejects(()=>publishNewResidentGuide(f.store,{...options,operationId:randomUUID(),guideVersion:expectedGuideVersion+2}));assert.deepEqual(f.snapshot(),after);
+  for(const row of before.perception_catalog!.filter(row=>/^(guide|schema|catalog-revision):/.test(row.id)))assert.deepEqual(await f.tx.get('perception_catalog',row.id),row);
+  assert.deepEqual((await f.tx.get('perception_catalog','current'))!.data.sourceStates,(before.perception_catalog!.find(row=>row.id==='current'))!.data.sourceStates);
+  for(const table of M1_TABLES)if(!['perception_catalog','perception_access'].includes(table))assert.deepEqual(f.rows(table),before[table]);
+  const capabilities=await service.capabilities();assert.equal(capabilities.catalogRevision,'catalog-new-resident-1');assert.notEqual(capabilities.skillCatalogRevision,previousCapabilities.skillCatalogRevision);
+  const app=Fastify();registerPerceptionRoutes(app,{invokeHttp:service.invoke} as unknown as M1Service);registerSiteRoutes(app);
+  try{
+   for(const moduleId of modules){const response=await app.inject({method:'GET',url:`/v1/perception/guides/${moduleId}?version=${options.guideVersion}`,headers:{authorization:'Bearer original-runtime'}});assert.equal(response.statusCode,200);const exact=response.json().data;assert.equal(sha(exact.canonicalDocument),exact.digest);assert.deepEqual(JSON.parse(exact.canonicalDocument),exact.document);assert.equal(exact.document.retainedModuleMarker,moduleId);assert(exact.document.text.includes(NEW_RESIDENT_GUIDE));assert(exact.document.text.includes(CURRENT_RESIDENT_GIFT_TOWN_GUIDE));assert(!exact.document.text.includes(FROZEN_TOWN_SERVICES_GUIDE));assert(!exact.document.text.includes('不造0且无转账/奖励'));assert(!exact.document.text.includes('Trisavia（新城）'));assert.match(exact.document.text,/本次只新得两券/);assert.match(exact.document.text,/关联前不创建任务/);assert.equal((receipt.guideDigests as JsonObject[]).find(item=>item.moduleId===moduleId)!.digest,exact.digest);}
+   const response=await app.inject({method:'GET',url:'/agent/prompt.md'});assert.equal(response.statusCode,200);const {extractOnboardingPrompt}=await import(new URL('../../apps/web/public/onboarding-prompt.js',import.meta.url).href),prompt=extractOnboardingPrompt(response.body,'https://trisavia.kjwlabs.com');assert.equal(prompt.split('\n').length,3);assert(prompt.includes('https://trisavia.kjwlabs.com/agent/entry.md'));assert(!prompt.includes('{{'));assert(!prompt.includes('新城'));
+  }finally{await app.close();}
+ });
 });
