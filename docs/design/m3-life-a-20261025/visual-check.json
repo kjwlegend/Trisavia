@@ -1,0 +1,198 @@
+{
+  "scope": "Design prototype only; no product interactions or live records",
+  "viewport": "1440x900 / 811x854",
+  "checks": [
+    {
+      "place": "harbor_work",
+      "state": "available",
+      "title": "港湾码头",
+      "status": "有空位",
+      "overflow": false,
+      "buttonVisible": true,
+      "activity": "码头短工可参加完成整班后结算收益；动画循环不会重复发薪。每位居民同时进行一项活动。"
+    },
+    {
+      "place": "harbor_work",
+      "state": "running",
+      "title": "港湾码头",
+      "status": "进行中",
+      "overflow": false,
+      "buttonVisible": true,
+      "activity": "码头短工剩余约 07:20正在进行 · 工作报酬尚未结算。以下进度为样例。"
+    },
+    {
+      "place": "harbor_work",
+      "state": "full",
+      "title": "港湾码头",
+      "status": "暂时满员",
+      "overflow": false,
+      "buttonVisible": true,
+      "activity": "暂时没有空位可等候候位最多 2 位、等候上限 2 分钟。可以稍后再来，或让 Agent 选择其他活动。"
+    },
+    {
+      "place": "harbor_work",
+      "state": "offline",
+      "title": "港湾码头",
+      "status": "待同步",
+      "overflow": false,
+      "buttonVisible": true,
+      "activity": "连接中断，等待同步进度已冻结保留上次确认的状态。重新连接后核对结果；不推断活动已完成。"
+    },
+    {
+      "place": "harbor_work",
+      "state": "cancelled",
+      "title": "港湾码头",
+      "status": "已取消",
+      "overflow": false,
+      "buttonVisible": true,
+      "activity": "本次活动已取消位置已释放未完成本班，不发工资；体力按实际进行比例结算，剩余预留释放。已完成的其他步骤保留。"
+    },
+    {
+      "place": "harbor_work",
+      "state": "completed",
+      "title": "港湾码头",
+      "status": "已完成",
+      "overflow": false,
+      "buttonVisible": true,
+      "activity": "码头短工已完成已确认获得 36 星币，体力消耗 24。本条为结果布局样例。"
+    },
+    {
+      "place": "harbor_tavern",
+      "state": "available",
+      "title": "港湾酒馆",
+      "status": "有空位",
+      "overflow": false,
+      "buttonVisible": true,
+      "activity": "酒馆帮工可参加完成整班后结算收益；动画循环不会重复发薪。每位居民同时进行一项活动。"
+    },
+    {
+      "place": "harbor_tavern",
+      "state": "running",
+      "title": "港湾酒馆",
+      "status": "进行中",
+      "overflow": false,
+      "buttonVisible": true,
+      "activity": "酒馆帮工剩余约 05:52正在进行 · 工作报酬尚未结算。以下进度为样例。"
+    },
+    {
+      "place": "harbor_tavern",
+      "state": "full",
+      "title": "港湾酒馆",
+      "status": "暂时满员",
+      "overflow": false,
+      "buttonVisible": true,
+      "activity": "暂时没有空位可等候候位最多 2 位、等候上限 2 分钟。可以稍后再来，或让 Agent 选择其他活动。"
+    },
+    {
+      "place": "harbor_tavern",
+      "state": "offline",
+      "title": "港湾酒馆",
+      "status": "待同步",
+      "overflow": false,
+      "buttonVisible": true,
+      "activity": "连接中断，等待同步进度已冻结保留上次确认的状态。重新连接后核对结果；不推断活动已完成。"
+    },
+    {
+      "place": "harbor_tavern",
+      "state": "cancelled",
+      "title": "港湾酒馆",
+      "status": "已取消",
+      "overflow": false,
+      "buttonVisible": true,
+      "activity": "本次活动已取消位置已释放未完成本班，不发工资；体力按实际进行比例结算，剩余预留释放。已完成的其他步骤保留。"
+    },
+    {
+      "place": "harbor_tavern",
+      "state": "completed",
+      "title": "港湾酒馆",
+      "status": "已完成",
+      "overflow": false,
+      "buttonVisible": true,
+      "activity": "酒馆帮工已完成已确认获得 24 星币，体力消耗 16。本条为结果布局样例。"
+    },
+    {
+      "place": "garden_bench",
+      "state": "available",
+      "title": "花园凉亭",
+      "status": "有空位",
+      "overflow": false,
+      "buttonVisible": true,
+      "activity": "长椅休息可参加体力不足时可以来这里恢复。每位居民同时进行一项活动。"
+    },
+    {
+      "place": "garden_bench",
+      "state": "running",
+      "title": "花园凉亭",
+      "status": "进行中",
+      "overflow": false,
+      "buttonVisible": true,
+      "activity": "长椅休息剩余约 03:40正在进行 · 体力恢复尚未结算。以下进度为样例。"
+    },
+    {
+      "place": "garden_bench",
+      "state": "full",
+      "title": "花园凉亭",
+      "status": "暂时满员",
+      "overflow": false,
+      "buttonVisible": true,
+      "activity": "暂时没有空位可等候候位最多 2 位、等候上限 2 分钟。可以稍后再来，或让 Agent 选择其他活动。"
+    },
+    {
+      "place": "garden_bench",
+      "state": "offline",
+      "title": "花园凉亭",
+      "status": "待同步",
+      "overflow": false,
+      "buttonVisible": true,
+      "activity": "连接中断，等待同步进度已冻结保留上次确认的状态。重新连接后核对结果；不推断活动已完成。"
+    },
+    {
+      "place": "garden_bench",
+      "state": "cancelled",
+      "title": "花园凉亭",
+      "status": "已取消",
+      "overflow": false,
+      "buttonVisible": true,
+      "activity": "本次活动已取消位置已释放未完成本次休息，没有增加体力。已完成的其他步骤保留。"
+    },
+    {
+      "place": "garden_bench",
+      "state": "completed",
+      "title": "花园凉亭",
+      "status": "已完成",
+      "overflow": false,
+      "buttonVisible": true,
+      "activity": "长椅休息已完成已确认体力恢复 +30（示例，未触及上限）。本条为结果布局样例。"
+    }
+  ],
+  "freeze": {
+    "animationUnchecked": true,
+    "canvasUnchanged": true,
+    "text": "连接中断，等待同步进度已冻结保留上次确认的状态。重新连接后核对结果；不推断活动已完成。"
+  },
+  "dialogFocus": {
+    "open": true,
+    "focus": "close-details"
+  },
+  "returnFocus": {
+    "closed": true,
+    "focus": "explain"
+  },
+  "reduced": {
+    "reduced": true,
+    "animationUnchecked": true
+  },
+  "narrow": {
+    "width": 811,
+    "overflow": false,
+    "cardWidth": 310,
+    "text": "本次活动已取消位置已释放未完成本次休息，没有增加体力。已完成的其他步骤保留。"
+  },
+  "mobileReflow": {
+    "width": 390,
+    "horizontalOverflow": false,
+    "cardWidth": 339,
+    "title": "港湾酒馆",
+    "scope": "single narrow-width reflow sample, not mobile gameplay acceptance"
+  }
+}
