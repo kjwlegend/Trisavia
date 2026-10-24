@@ -307,9 +307,10 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   const pointers=new Map();let drag=null,pinch=null;
   const local=e=>{const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};};
   const isMapPointerTarget=node=>node===canvas||node?.closest?.('.world-town-hit')?.parentNode===townTargets.node;
+  function pointerTarget(point,node,cycle=false){const direct=townTargets.target(node),spatial=hit(point.x,point.y,cycle);return direct?.kind==='life-place'&&spatial?.kind==='owned-agent'?spatial:direct||spatial;}
   function refreshOwnedHover(){
     if(!hoverPointer||(pointers.size&&drag?.moved)||!isMapPointerTarget(document.elementFromPoint(hoverPointer.clientX,hoverPointer.clientY))){ownedLayer.hover('');townTargets.hover(null);return null;}
-    const p=local(hoverPointer),target=townTargets.target(document.elementFromPoint(hoverPointer.clientX,hoverPointer.clientY))||hit(p.x,p.y);ownedLayer.hover(target?.kind==='owned-agent'?target.agentId:'');townTargets.hover(target?.kind==='world-npc'||target?.kind==='town-notice'||target?.serviceNpc?target:null);canvas.style.cursor=target?'pointer':'grab';return target;
+    const p=local(hoverPointer),target=pointerTarget(p,document.elementFromPoint(hoverPointer.clientX,hoverPointer.clientY));ownedLayer.hover(target?.kind==='owned-agent'?target.agentId:'');townTargets.hover(target?.kind==='world-npc'||target?.kind==='town-notice'||target?.serviceNpc?target:null);canvas.style.cursor=target?'pointer':'grab';return target;
   }
   root.addEventListener('pointerdown',e=>{
     if(!isMapPointerTarget(e.target))return;
@@ -331,7 +332,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   function finishPointer(e,cancelled=false){
     if(!pointers.has(e.pointerId))return;const p=local(e),clicked=!cancelled&&drag&&!drag.moved&&pointers.size===1;
     pointers.delete(e.pointerId);if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);
-    if(clicked){const place=townTargets.target(drag.origin)||hit(p.x,p.y,true),origin=drag.origin?.isConnected?drag.origin:canvas;canvas.focus({preventScroll:true});if(place?.kind==='owned-agent')selectAgent(place.agentId,origin);else if(place)onSelect(place,origin);}
+    if(clicked){const place=pointerTarget(p,drag.origin,true),origin=drag.origin?.isConnected?drag.origin:canvas;canvas.focus({preventScroll:true});if(place?.kind==='owned-agent')selectAgent(place.agentId,origin);else if(place)onSelect(place,origin);}
     if(!pointers.size){drag=null;pinch=null;canvas.classList.remove('is-dragging');}else{pinch=null;if(drag){drag.moved=true;drag.last=[...pointers.values()][0];}}
   }
   root.addEventListener('pointerup',e=>finishPointer(e),eventOptions);root.addEventListener('pointercancel',e=>finishPointer(e,true),eventOptions);

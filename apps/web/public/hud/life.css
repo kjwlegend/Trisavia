@@ -33,3 +33,7 @@
 .life-history{padding-top:8px;border-top:1px solid #cbd0bf}
 @media(max-width:960px){.world-home.paper-hud .world-detail.is-life-place{right:18px;width:310px}.world-home.paper-hud .world-detail.is-life-place .world-detail-body{padding:18px}}
 @media(max-width:599px){.world-home.paper-hud .world-detail.is-life-place{right:12px;top:124px;width:min(340px,calc(100vw - 24px));max-height:calc(100dvh - 212px)}}
+/* Paper surfaces must override the older dark pixel-panel paragraph ink. */
+.world-home.paper-hud .world-detail :is(.life-current-options p,.character-life-activity){color:var(--paper-ink,#263f36)}
+.world-home.paper-hud .world-detail .life-current-options .hud-muted{color:var(--paper-muted,#68746e)}
+.world-home.paper-hud .world-detail .life-current-options .life-condition{color:#614b39}
