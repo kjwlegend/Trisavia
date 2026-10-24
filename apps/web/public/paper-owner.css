@@ -9,7 +9,8 @@
 .hud-root .hud-window .account-root[data-layout=manager] #manage-view,.hud-root .hud-window .account-root[data-layout=manager] #manage-view:is([data-manager-page=appearance],[data-manager-page=profile]){display:grid!important;grid-template-columns:216px minmax(0,1fr);min-height:0;min-width:0;overflow:hidden;flex:1;margin:0;gap:0}
 .hud-root .hud-window .account-root .manager-sidebar{display:flex;padding:16px 12px;background:transparent;border-right:1px solid var(--owner-border);overflow-y:auto;overflow-x:hidden;min-height:0;gap:0;scrollbar-width:thin}
 .hud-root .hud-window .account-root .manager-sidebar .manager-switch{display:flex;align-items:center;min-height:52px;width:100%;padding:4px 8px;margin:0 0 12px;gap:10px;border:1px solid var(--owner-border);border-radius:8px;background:#ffffff26;color:var(--owner-ink)}
-.hud-root .hud-window .account-root .manager-switch-picture,.hud-root .hud-window .account-root .manager-switch-picture .avatar{width:36px;height:40px;flex:none;object-fit:contain;image-rendering:pixelated}
+.hud-root .hud-window .account-root .manager-switch-picture{display:grid;place-items:center;position:relative;width:36px;height:44px;flex:none}
+.hud-root .hud-window .account-root .manager-switch-picture .avatar{position:static;width:36px;height:36px;max-width:100%;transform:none;object-fit:contain;image-rendering:pixelated}
 .hud-root .hud-window .account-root .manager-switch small{font-size:12px;line-height:18px;color:var(--owner-muted)}
 .hud-root .hud-window .account-root .manager-switch strong{font-size:14px;line-height:22px;font-weight:600}
 .hud-root .hud-window .account-root .manager-switch>.hud-icon{width:16px;height:16px}
@@ -22,7 +23,8 @@
 .hud-root .hud-window .account-root .manager-main{display:flex;flex-direction:column;overflow:hidden;min-width:0;min-height:0;background:#ffffff30}
 .hud-root .hud-window .account-root .manager-object{display:flex;min-height:40px;gap:8px;padding:4px 24px;border-bottom:1px solid var(--owner-border);background:transparent;color:var(--owner-muted);font-size:12px;line-height:18px;flex:none}
 .hud-root .hud-window .account-root .manager-object strong{color:var(--owner-ink);font-size:12px;line-height:18px}
-.hud-root .hud-window .account-root .manager-object-picture,.hud-root .hud-window .account-root .manager-object-picture .avatar{width:24px;height:28px;flex:none;object-fit:contain}
+.hud-root .hud-window .account-root .manager-object-picture{display:grid;place-items:center;position:relative;width:24px;height:28px;flex:none}
+.hud-root .hud-window .account-root .manager-object-picture .avatar{position:static;width:24px;height:24px;max-width:100%;transform:none;object-fit:contain;image-rendering:pixelated}
 .hud-root .hud-window .account-root .manager-object button{min-height:32px;padding:4px 8px;font-size:12px;line-height:18px;background:transparent;border:0;box-shadow:none}
 .hud-root .hud-window .account-root .manager-scroll{flex:1;min-height:0;min-width:0;overflow:auto;overscroll-behavior:contain;padding:20px 24px;scrollbar-width:thin;scrollbar-color:var(--owner-border) transparent}
 .hud-root .hud-window .account-root .manager-pages,.hud-root .hud-window .account-root .account-page{min-width:0;height:auto;min-height:0}
@@ -68,7 +70,8 @@
 .hud-root .hud-window .account-root .resident-identity-content{display:grid;grid-template-columns:180px minmax(0,1fr);gap:32px;align-items:start}
 .hud-root .hud-window .account-root .manager-portrait{display:grid;place-items:center;position:relative;width:180px;height:216px;flex:none;overflow:hidden;border-radius:8px;background:linear-gradient(145deg,#e8d5ba,#efe5cf);box-shadow:none}
 .hud-root .hud-window .account-root .manager-portrait:after{width:88px;height:14px;bottom:29px;background:#8a81652b;border:0}
-.hud-root .hud-window .account-root .manager-portrait .avatar{position:relative;width:144px;height:180px;object-fit:contain;image-rendering:pixelated;z-index:1;border-radius:0}
+/* Shared portraits already fit the complete sprite into a padded square. */
+.hud-root .hud-window .account-root .manager-portrait .avatar{position:static;width:min(176px,100%);height:auto;max-width:100%;aspect-ratio:1;transform:none;object-fit:contain;image-rendering:pixelated;z-index:1;border-radius:0}
 .hud-root .hud-window .account-root .resident-identity-copy h1{font-size:24px;line-height:32px;margin:0 0 8px;font-weight:650;overflow-wrap:anywhere;color:var(--owner-ink)}
 .hud-root .hud-window .account-root .resident-identity-copy>p{margin:0 0 16px;max-height:66px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
 .hud-root .hud-window .account-root .resident-identity-facts{display:grid;grid-template-columns:112px minmax(0,1fr);gap:8px 16px;border-top:1px solid var(--owner-border);padding-top:12px;margin:0;font-size:14px;line-height:22px}
@@ -179,7 +182,8 @@
 .hud-root .hud-window .account-root .invite-row>div{flex:1;min-width:0}
 .hud-root .hud-window .account-root .invite-row p{margin:0}
 .hud-root .hud-window .account-root .invite-row summary{font-size:12px;line-height:18px;min-height:28px}
-.hud-root .hud-window .account-root .manager-confirm-target{padding:16px;border:1px solid var(--owner-border);border-radius:8px;background:var(--owner-sage)}
+.hud-root .hud-window .account-root .manager-confirm-target{padding:16px;border:1px solid var(--owner-border);border-radius:8px;background:var(--owner-sage);color:var(--owner-ink)}
+.hud-root .hud-window .account-root .manager-confirm-target :is(small,strong){color:var(--owner-ink)}
 .hud-root .hud-window .account-root[data-layout=manager] .account-confirm{display:flex;flex-direction:column;gap:16px;padding:8px 0;border:0;background:none}
 .hud-root .hud-window .account-root .account-confirm p{color:var(--owner-ink)}
 .hud-root .hud-window .account-root .manager-hero{display:flex;align-items:center;gap:24px;margin:24px 0}
@@ -254,7 +258,6 @@
 .hud-root .hud-window .account-root .look-option .look-portrait{background:transparent;box-shadow:none}
 .hud-root .hud-window .account-root .look-option .look-label,.hud-root .hud-window .account-root .look-option[aria-pressed=true] .look-label{background:transparent;color:var(--owner-ink);letter-spacing:0}
 .hud-root .hud-window .account-root .look-option[aria-pressed=true]{outline:0;outline-offset:0;box-shadow:inset 0 0 0 1px var(--owner-accent)}
-.hud-root .hud-window .account-root .manager-portrait .avatar{position:absolute;width:384px;height:384px;max-width:none;left:50%;bottom:0;transform:translateX(-50%)}
 .hud-root .hud-window .account-root .profile-layout .stage-scene canvas{width:512px;height:342px}
 .hud-root .hud-window .account-root .stage-status:before{display:none}
 .hud-root .hud-window .account-root .appearance-color-group{grid-template-columns:64px minmax(0,1fr)}
@@ -264,17 +267,12 @@
 .hud-root .hud-window .account-root .manager-nav-button{margin:0;min-height:36px;padding:6px 10px}
 .hud-root .hud-window .account-root .manager-nav-group+.manager-nav-group{margin-top:10px;padding-top:10px}
 .hud-root .hud-window .account-root .manager-switch{margin-bottom:12px}
-.hud-root .hud-window .account-root .manager-portrait .avatar{width:288px;height:288px;bottom:8px}
 .hud-root .hud-window .account-root .role-tabs{background:transparent;box-shadow:none}
 .hud-root .hud-window .account-root .role-tabs button{background:transparent;box-shadow:none;color:var(--owner-muted)}
 .hud-root .hud-window .account-root .role-tabs button[aria-pressed=true]{background:#ffffff40;box-shadow:inset 0 -3px var(--owner-accent);color:var(--owner-ink)}
 .hud-root .hud-window .account-root .profile-layout #profile-form .form-grid{display:grid;grid-template-columns:1fr;gap:12px}
 .hud-root .hud-window .account-root :is(input,textarea,select){font-weight:400}
 @media(max-height:850px){.hud-root .hud-window .account-root .manager-nav-group+.manager-nav-group{margin-top:8px;padding-top:8px}.hud-root .hud-window .account-root .manager-sidebar{padding-top:12px;padding-bottom:12px}}
-.hud-root .hud-window .account-root .manager-switch-picture{position:relative;width:36px;height:44px;overflow:hidden;display:block}
-.hud-root .hud-window .account-root .manager-switch-picture .avatar{position:absolute;max-width:none;width:96px;height:96px;left:50%;bottom:-6px;transform:translateX(-50%)}
-.hud-root .hud-window .account-root .manager-object-picture{position:relative;width:24px;height:28px;overflow:hidden;display:block}
-.hud-root .hud-window .account-root .manager-object-picture .avatar{position:absolute;max-width:none;width:64px;height:64px;left:50%;bottom:-4px;transform:translateX(-50%)}
 .hud-root .hud-window .account-root .identity-copy-feedback:empty{display:none}
 .hud-root .hud-window .account-root .identity-copy-feedback:not(:empty){display:block;margin-top:8px;font-size:12px;line-height:18px;color:var(--owner-accent)}
 .hud-root .hud-window .account-root .appearance-base-preview{display:grid;place-items:center;min-height:176px;background:#dfe5d44d;border:1px solid var(--owner-border);border-radius:8px;overflow:hidden}
@@ -302,7 +300,6 @@
 /* Design owner review O01–O04: one form axis, one object label, restrained portrait. */
 .hud-root .hud-window .account-root .profile-layout #profile-form .form-grid>label{display:flex;flex-direction:column;align-items:stretch;gap:6px;margin:0;min-width:0}
 .hud-root .hud-window .account-root .profile-layout #profile-form .form-grid{gap:14px}
-.hud-root .hud-window .account-root #manager-portrait .avatar{width:264px;height:264px;bottom:14px}
 .hud-root .hud-window .account-root .manager-object{gap:4px}
 .hud-root .hud-window .account-root .manager-object-picture{margin-right:4px}
 .hud-root .hud-window .account-root .manager-object strong{margin-right:auto}
