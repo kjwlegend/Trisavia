@@ -12,8 +12,7 @@ WorkingDirectory=/opt/agents-era/current
 ExecStart=/opt/agents-era/tools/node-v24.22.0-linux-x64/bin/node --max-old-space-size=384 apps/platform/server.ts
 Environment=M1_HOST=127.0.0.1
 Environment=M1_PORT=8790
-Environment=M1_DATABASE_PATH=/var/lib/agents-era/m1.sqlite
-Environment=M1_IDENTITY_PATH=/var/lib/agents-era/m1.sqlite.identity.json
+EnvironmentFile=/var/lib/agents-era/backend.env
 Environment=M1_TRUST_PROXY_LOOPBACK=1
 UMask=0077
 StateDirectory=agents-era
