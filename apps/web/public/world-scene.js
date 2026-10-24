@@ -306,18 +306,20 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   }
   const pointers=new Map();let drag=null,pinch=null;
   const local=e=>{const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};};
+  const isMapPointerTarget=node=>node===canvas||node?.closest?.('.world-town-hit')?.parentNode===townTargets.node;
   function refreshOwnedHover(){
-    if(!hoverPointer||(pointers.size&&drag?.moved)||document.elementFromPoint(hoverPointer.clientX,hoverPointer.clientY)!==canvas){ownedLayer.hover('');townTargets.hover(null);return null;}
-    const p=local(hoverPointer),target=hit(p.x,p.y);ownedLayer.hover(target?.kind==='owned-agent'?target.agentId:'');townTargets.hover(target?.kind==='world-npc'||target?.kind==='town-notice'||target?.serviceNpc?target:null);canvas.style.cursor=target?'pointer':'grab';return target;
+    if(!hoverPointer||(pointers.size&&drag?.moved)||!isMapPointerTarget(document.elementFromPoint(hoverPointer.clientX,hoverPointer.clientY))){ownedLayer.hover('');townTargets.hover(null);return null;}
+    const p=local(hoverPointer),target=townTargets.target(document.elementFromPoint(hoverPointer.clientX,hoverPointer.clientY))||hit(p.x,p.y);ownedLayer.hover(target?.kind==='owned-agent'?target.agentId:'');townTargets.hover(target?.kind==='world-npc'||target?.kind==='town-notice'||target?.serviceNpc?target:null);canvas.style.cursor=target?'pointer':'grab';return target;
   }
-  canvas.addEventListener('pointerdown',e=>{
+  root.addEventListener('pointerdown',e=>{
+    if(!isMapPointerTarget(e.target))return;
     if(e.pointerType==='touch'){hoverPointer=null;ownedLayer.hover('');townTargets.hover(null);}
     else hoverPointer={clientX:e.clientX,clientY:e.clientY};
     if(e.button!==0)return;stopZoom();const p=local(e);pointers.set(e.pointerId,p);canvas.setPointerCapture(e.pointerId);
-    if(pointers.size===1)drag={start:p,last:p,moved:false,type:e.pointerType};
+    if(pointers.size===1)drag={start:p,last:p,moved:false,type:e.pointerType,origin:e.target};
     if(pointers.size===2&&exploring){const [a,b]=[...pointers.values()];pinch={distance:Math.hypot(a.x-b.x,a.y-b.y),zoom:camera.zoom};if(drag)drag.moved=true;}
   },eventOptions);
-  canvas.addEventListener('pointermove',e=>{
+  root.addEventListener('pointermove',e=>{
     if(e.pointerType!=='touch')hoverPointer={clientX:e.clientX,clientY:e.clientY};
     const p=local(e);if(!pointers.has(e.pointerId)){refreshOwnedHover();return;}pointers.set(e.pointerId,p);
     if(pinch&&pointers.size===2){const[a,b]=[...pointers.values()];setZoom(pinch.zoom*Math.hypot(a.x-b.x,a.y-b.y)/Math.max(1,pinch.distance),{anchor:{x:(a.x+b.x)/2,y:(a.y+b.y)/2},immediate:true});return;}
@@ -329,13 +331,13 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   function finishPointer(e,cancelled=false){
     if(!pointers.has(e.pointerId))return;const p=local(e),clicked=!cancelled&&drag&&!drag.moved&&pointers.size===1;
     pointers.delete(e.pointerId);if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);
-    if(clicked){const place=hit(p.x,p.y,true);canvas.focus({preventScroll:true});if(place?.kind==='owned-agent')selectAgent(place.agentId,canvas);else if(place)onSelect(place,canvas);}
+    if(clicked){const place=townTargets.target(drag.origin)||hit(p.x,p.y,true),origin=drag.origin?.isConnected?drag.origin:canvas;canvas.focus({preventScroll:true});if(place?.kind==='owned-agent')selectAgent(place.agentId,origin);else if(place)onSelect(place,origin);}
     if(!pointers.size){drag=null;pinch=null;canvas.classList.remove('is-dragging');}else{pinch=null;if(drag){drag.moved=true;drag.last=[...pointers.values()][0];}}
   }
-  canvas.addEventListener('pointerup',e=>finishPointer(e),eventOptions);canvas.addEventListener('pointercancel',e=>finishPointer(e,true),eventOptions);
-  canvas.addEventListener('pointerleave',()=>{hoverPointer=null;ownedLayer.hover('');townTargets.hover(null);},eventOptions);
+  root.addEventListener('pointerup',e=>finishPointer(e),eventOptions);root.addEventListener('pointercancel',e=>finishPointer(e,true),eventOptions);
+  root.addEventListener('pointerleave',()=>{hoverPointer=null;ownedLayer.hover('');townTargets.hover(null);},eventOptions);
   window.addEventListener('blur',()=>{hoverPointer=null;ownedLayer.hover('');townTargets.hover(null);},eventOptions);
-  canvas.addEventListener('wheel',e=>{if(!(e.ctrlKey||e.metaKey)||!e.deltaY)return;hoverPointer={clientX:e.clientX,clientY:e.clientY};e.preventDefault();const delta=Math.max(-240,Math.min(240,e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?camera.height:1)));setZoom((zoomMotion?.to??camera.zoom)*Math.exp(-delta*.0015),{anchor:local(e)});},{...eventOptions,passive:false});
+  root.addEventListener('wheel',e=>{if(!(e.ctrlKey||e.metaKey)||!e.deltaY)return;hoverPointer={clientX:e.clientX,clientY:e.clientY};e.preventDefault();const delta=Math.max(-240,Math.min(240,e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?camera.height:1)));setZoom((zoomMotion?.to??camera.zoom)*Math.exp(-delta*.0015),{anchor:local(e)});},{...eventOptions,passive:false});
   canvas.addEventListener('keydown',e=>{
     if(e.target!==canvas)return;
     if(['+','=','-','_','Home','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key))e.preventDefault();else return;

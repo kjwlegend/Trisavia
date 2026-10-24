@@ -45,9 +45,17 @@ async function tryPublicFocus(){
 function focusPublicResident(agentId){cancelPublicFocus();if(!/^[A-Za-z0-9_-]{8,100}$/.test(agentId)){focusMessage('这个居民档案链接暂时无法定位。');return;}publicFocus={agentId,waiting:true,reading:false};focusMessage('正在寻找这位居民的公开位置…');void tryPublicFocus();}
 focusRetry.addEventListener('click',()=>{if(!publicFocus)return;publicFocus.waiting=true;focusMessage('正在重新确认公开位置…');void worldProvider.refresh();});
 const detail=$('#world-detail'),detailTransition=createPanelTransition(detail),environment=getPanelEnvironment();detail.prepend(nativeFrame('lightWood'));
-const publicCharacter=createPublicCharacterReader(),characterCard=createPublicCharacterCard(publicCharacter,{session});const townCard=createTownServiceCard(session,{chooseAgent:()=>document.dispatchEvent(new CustomEvent('hud:choose-agent')),getWorldState:()=>scene?{...scene.getState(),rules:worldData.rules}:null});townCard.node.hidden=true;$('.world-detail-body',detail).prepend(characterCard.node,townCard.node);
+const publicCharacter=createPublicCharacterReader(),characterCard=createPublicCharacterCard(publicCharacter,{session});const townCard=createTownServiceCard(session,{chooseAgent:()=>document.dispatchEvent(new CustomEvent('hud:choose-agent')),getWorldState:()=>scene?{...scene.getState(),rules:worldData.rules}:null,onContextChange:townContextChanged});townCard.node.hidden=true;$('.world-detail-body',detail).prepend(characterCard.node,townCard.node);
 let noticeVersion=null,noticeAbort=null;
 async function syncTownNotice(){const version=worldData.npcCatalogVersion;if(!mapReady||!worldData.complete||!version||noticeVersion===version)return;noticeVersion=version;noticeAbort?.abort();const controller=new AbortController();noticeAbort=controller;try{const data=await readTownNotice({signal:controller.signal});if(!controller.signal.aborted&&worldData.npcCatalogVersion===data.catalogVersion)scene?.setTownNotice(data);}catch{/* The map never invents a missing object's location. */}}
+function townContextChanged(value){
+  if(!currentPlace||!detail.classList.contains('is-town-service'))return;
+  const notice=value.kind==='notice',source=notice?value.notice:value.npc;
+  currentTownVersion=value.catalogVersion;
+  currentPlace={...currentPlace,...(worldData.rules?pixelPoint(source.position,worldData.rules):{}),id:notice?'notice':source.npcId,name:source.name,kind:notice?'town-notice':'world-npc',...(notice?{notice:source,serviceNpc:null,npc:null}:{npc:source,serviceNpc:null})};
+  $('#world-detail-area').textContent=notice?'小镇公告':'镇民服务';$('#world-detail-title').textContent=source.name;
+  $('#world-detail-close').setAttribute('aria-label',notice?'关闭公告牌':'关闭镇民服务');scene?.select(currentPlace);
+}
 function renderDetails(place){
   const character=place.kind==='world-avatar',town=place.kind==='town-notice'||Boolean(place.serviceNpc)||place.kind==='world-npc'&&place.npc?.readOnly===false;detail.classList.toggle('is-town-service',town);townCard.node.hidden=!town;detail.classList.toggle('is-character-card',character);characterCard.node.hidden=!character;
   $('#world-detail-close').setAttribute('aria-label',character?'关闭角色详情':'关闭场所说明');detail.dataset.agentId=character?place.agentId:'';
@@ -90,6 +98,7 @@ const characterSize=new ResizeObserver(positionCharacterCard);characterSize.obse
 window.addEventListener('resize',positionCharacterCard);
 function openPlace(place, origin,{reuseProfile=false,fromPublicFocus=false}={}) {
   if(!fromPublicFocus)cancelPublicFocus();
+  $('#world-place-directory').open=false;
   if(place.kind==='world-avatar')emitWorldAudio('world-focus');
   document.dispatchEvent(new CustomEvent('world:place-open'));
   currentPlace = place;
@@ -113,7 +122,7 @@ function closePlace(restoreFocus=true) {
   for (const button of list.querySelectorAll('button')) button.setAttribute('aria-pressed', 'false');
   scene?.select(null);
   if(!restoreFocus)return;
-  const target = returnFocus?.isConnected ? returnFocus : scene?.canvas || $('#world-place-directory > summary');
+  const target = returnFocus?.isConnected&&returnFocus.getClientRects().length ? returnFocus : scene?.canvas || $('#world-place-directory > summary');
   target?.focus({preventScroll: true});
 
 }
@@ -162,13 +171,14 @@ document.addEventListener('hud:open',()=>{cancelPublicFocus();closePlace(false);
 document.addEventListener('world:town-service',event=>{const row=worldData.complete&&worldData.npcs.find(row=>row.npcId===event.detail?.npcId);if(!row||row.readOnly||!scene)return;const point=pixelPoint(row.position,worldData.rules);openPlace({kind:'world-npc',id:row.npcId,name:row.name,npc:row,...point},scene.canvas);});
 $('#world-detail-close').addEventListener('click', closePlace);
 $('#world-back').addEventListener('click', closePlace);
-document.addEventListener('keydown', event => {if(event.key!=='Escape'||event.defaultPrevented||document.querySelector('#hud-window:not([hidden]):not([data-panel-state=closing])')||detailTransition.state==='closing'||event.target.closest?.('input,textarea,select,[contenteditable=true]'))return;if(currentPlace){event.preventDefault();closePlace();}else if(scene?.getState().exploring){event.preventDefault();scene.setExploring(false);scene.canvas.focus({preventScroll:true});}});
+document.addEventListener('keydown', event => {if(event.key==='Escape'&&!event.defaultPrevented&&$('#world-place-directory').open){$('#world-place-directory').open=false;$('#world-open-list').focus({preventScroll:true});event.preventDefault();return;}if(event.key!=='Escape'||event.defaultPrevented||document.querySelector('#hud-window:not([hidden]):not([data-panel-state=closing])')||detailTransition.state==='closing'||event.target.closest?.('input,textarea,select,[contenteditable=true]'))return;if(currentPlace){event.preventDefault();closePlace();}else if(scene?.getState().exploring){event.preventDefault();scene.setExploring(false);scene.canvas.focus({preventScroll:true});}});
 $('#world-zoom-out').addEventListener('click', () => scene?.zoomBy(-1));
 $('#world-zoom-in').addEventListener('click', () => scene?.zoomBy(1));
 $('#world-fit').addEventListener('click', () => scene?.fit());
 $('#world-explore').addEventListener('click',()=>scene?.setExploring(!scene.getState().exploring));
 $('#world-reset').addEventListener('click',()=>scene?.reset());
-$('#world-open-list').addEventListener('click',()=>{$('#world-place-directory').open=true;$('#world-place-directory').scrollIntoView({block:'start',behavior:'instant'});$('#world-place-directory > summary').focus({preventScroll:true});});
+document.addEventListener('pointerdown',event=>{const directory=$('#world-place-directory');if(directory.open&&!directory.contains(event.target)&&!$('#world-open-list').contains(event.target))directory.open=false;});
+$('#world-open-list').addEventListener('click',()=>{$('#world-place-directory').open=true;if(!document.body.classList.contains('paper-app-ready'))$('#world-place-directory').scrollIntoView({block:'start',behavior:'instant'});$('#world-place-directory > summary').focus({preventScroll:true});});
 $('#world-pause').addEventListener('click', () => { if (scene) scene.setPaused(!scene.getState().paused); });
 $('#world-retry').addEventListener('click', startScene);
 const reduceMotion=el('button','','减少动态');reduceMotion.id='world-reduce-motion';reduceMotion.type='button';reduceMotion.setAttribute('aria-pressed','false');reduceMotion.addEventListener('click',()=>{if(scene)scene.setReducedMotion(!scene.getState().reducedMotion);});($('#hud-map-menu')||$('.world-controls')).append(reduceMotion);

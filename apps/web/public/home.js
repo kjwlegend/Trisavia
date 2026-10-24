@@ -21,11 +21,13 @@ const audio=mountWorldAudio();let audioIdentity=session.snapshot().observationRe
 const hadPrivateEntry=entryStore.pending;
 let entryRevision=0;
 window.addEventListener('hashchange',()=>{entryRevision++;try{const next=entryStore.capture();if(next.mode)hud.openAccount(next.mode,next.agentId);}catch{const alert=document.createElement('p');alert.className='notice error world-startup-error';alert.setAttribute('role','alert');alert.textContent='无法安全保存这次入口，请允许会话存储后重新打开。原任务保持不变。';$('#main').prepend(alert);}});
-document.addEventListener('click',event=>{if(event.defaultPrevented)return;const link=event.target.closest('a[href]');if(!link)return;const url=new URL(link.href,location.origin);if(url.origin!==location.origin||url.pathname!=='/owner')return;const privateParams=new URLSearchParams(url.hash.slice(1));if(privateParams.has('handoff')||privateParams.has('assistance'))return;event.preventDefault();const params=new URLSearchParams(url.hash.slice(1));hud.openAccount(url.hash==='#register'?'register':url.hash==='#login'?'login':params.get('agent')?'profile':'account',params.get('agent')||'',link);});
+document.addEventListener('click',event=>{if(event.defaultPrevented)return;const link=event.target.closest('a[href]');if(!link)return;const url=new URL(link.href,location.origin);if(url.origin!==location.origin)return;if(url.pathname===location.pathname&&['#world-entry','#connect'].includes(url.hash)){event.preventDefault();hud.openAccount('entry','',link);return;}if(url.pathname!=='/owner')return;const privateParams=new URLSearchParams(url.hash.slice(1));if(privateParams.has('handoff')||privateParams.has('assistance'))return;event.preventDefault();const params=new URLSearchParams(url.hash.slice(1));hud.openAccount(url.hash==='#register'?'register':url.hash==='#login'?'login':params.get('agent')?'profile':'account',params.get('agent')||'',link);});
 $('.brand').addEventListener('click',event=>{if(event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;event.preventDefault();hud.close(false);$('#world-canvas')?.focus({preventScroll:true});});
 if(publicTarget===null&&(intent.mode||controller.snapshot().continuation))hud.openAccount('resume');
 await controller.start(intent);
 if(publicTarget===null&&!entryRevision&&intent.mode&&intent.mode!=='profile'&&!hadPrivateEntry&&!controller.snapshot().continuation)hud.openAccount(intent.mode,intent.agentId);
 hud.setAccountTitle(controller.getTitle());
+document.body.classList.add('paper-app-ready');
+if(publicTarget===null&&!intent.mode&&['#world-entry','#connect'].includes(location.hash))hud.openAccount('entry');
 }
 export {getWorldState};

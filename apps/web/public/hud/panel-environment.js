@@ -9,7 +9,7 @@ export function getPanelEnvironment(){
     for(const [node,value]of blocked)node.inert=value;blocked.clear();
     const top=hosts.get('detail')||[...hosts.values()].at(-1);
     if(!top){backdrop.hidden=true;if(styles){document.documentElement.style.overflow=styles.html;document.body.style.overflow=styles.body;document.documentElement.style.scrollbarGutter=styles.gutter;styles=null;}return;}
-    if(!styles){styles={html:document.documentElement.style.overflow,body:document.body.style.overflow,gutter:document.documentElement.style.scrollbarGutter};document.documentElement.style.scrollbarGutter='stable';document.documentElement.style.overflow='hidden';document.body.style.overflow='hidden';}
+    if(!styles){styles={html:document.documentElement.style.overflow,body:document.body.style.overflow,gutter:document.documentElement.style.scrollbarGutter};if(document.documentElement.scrollHeight>innerHeight)document.documentElement.style.scrollbarGutter='stable';document.documentElement.style.overflow='hidden';document.body.style.overflow='hidden';}
     backdrop.hidden=false;
     const selectors=['.world-map-column','#world-place-directory','.world-intro','#world-entry','body>footer','body>header','.hud-agent','.hud-locate-agent','.hud-explore-exit','.hud-map-tools'];
     const nodes=[...document.querySelectorAll(selectors.join(','))];if(hosts.has('detail'))nodes.push(document.querySelector('#hud-window'),document.querySelector('#hud-dock'));

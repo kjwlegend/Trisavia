@@ -161,3 +161,17 @@
 .paper-hud .hud-root .hud-window>.hud-window-header #hud-close .hud-icon,.paper-hud .world-detail .world-detail-top button .hud-icon{width:20px;height:20px}
 @media(max-width:1100px){.paper-hud .hud-agent-card{width:260px}.paper-hud .hud-dock{width:380px}.paper-hud .hud-map-tools{gap:8px}.paper-hud .hud-map-tools :is(button,a){padding:6px 10px}}
 @media(max-width:759px){.paper-hud .nav-wrap{padding:0 12px}.paper-hud .brand{font-size:20px;gap:6px}.paper-hud .brand .brand-mark{width:32px}.paper-hud header nav{gap:4px}.paper-hud .world-audio{padding-left:4px}.paper-hud .hud-agent-card{left:12px;bottom:100px;width:250px}.paper-hud .hud-dock{bottom:12px;width:min(440px,calc(100vw - 24px))}.paper-hud .hud-map-tools{right:12px;top:76px}.paper-hud .hud-map-tools :is(button,a){padding:6px}.paper-hud .hud-map-tools .hud-icon{display:none}.paper-hud .world-status-hud{left:12px;top:132px}.paper-hud .hud-root .hud-window{height:min(700px,calc(100dvh - 120px));max-height:calc(100dvh - 120px)}}
+
+/* The booted world reuses its actual HUD entry window. Keep the document-flow
+   introduction available as the no-JS / failed-start fallback. */
+.paper-hud.paper-app-ready :is(.world-intro,.world-entry),.paper-hud.paper-app-ready>footer{display:none}
+.paper-hud.paper-app-ready .world-place-directory{position:fixed;z-index:7;top:132px;right:24px;width:min(440px,calc(100vw - 48px));max-height:calc(100dvh - 156px);overflow:auto;overscroll-behavior:contain;margin:0;padding:16px 20px;background:var(--paper-surface);border:1px solid var(--paper-border);border-radius:8px;box-shadow:var(--paper-shadow)}
+.paper-hud.paper-app-ready .world-place-directory:not([open]){display:none}
+.paper-hud .world-place-directory>summary{min-height:32px;font-size:16px;line-height:24px;color:var(--paper-ink)}
+.paper-hud .world-place-directory>summary span{font-size:12px;line-height:18px;color:var(--paper-muted)}
+.paper-hud .world-place-groups{display:block;padding:8px 0 0}.paper-hud .world-place-group h3{font-size:14px;color:var(--paper-muted)}
+.paper-hud .world-place-button{min-height:36px;background:var(--paper-surface);border:1px solid var(--paper-border);border-radius:6px;color:var(--paper-ink)}
+/* Both pointer and keyboard targets identify the actual current catalogue. */
+.paper-hud .world-town-hit{pointer-events:auto;cursor:pointer;touch-action:inherit}
+.paper-hud .world-town-hit:focus-visible{outline-color:#577960}
+.paper-hud .world-town-tooltip{z-index:3;border:1px solid var(--paper-border);border-radius:6px;background:var(--paper-surface);color:var(--paper-ink);box-shadow:var(--paper-shadow)}
