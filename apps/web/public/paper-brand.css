@@ -1,0 +1,31 @@
+/* Approved 02 neighbour-bridge lockup. The full square illustration stays in
+   the design pack; compact product surfaces use the supplied 210 x 36 asset. */
+.paper-hud .brand.trisavia-brand-link {
+  display:flex;
+  align-items:center;
+  flex:0 0 auto;
+  height:36px;
+  min-height:36px;
+  gap:0;
+  line-height:1;
+  letter-spacing:0;
+}
+.paper-hud .brand .trisavia-nav-logo {
+  display:block;
+  width:210px;
+  height:36px;
+  max-width:none;
+  object-fit:contain;
+}
+.paper-hud .hud-root .hud-window .account-root .trisavia-login-brand {
+  display:flex;
+  align-items:center;
+  margin:0 0 16px;
+}
+.paper-hud .hud-root .hud-window .account-root .trisavia-login-logo {
+  display:block;
+  width:210px;
+  height:36px;
+  max-width:100%;
+  object-fit:contain;
+}
