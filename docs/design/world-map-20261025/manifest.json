@@ -1,0 +1,83 @@
+{
+  "name": "Trisavia world atlas design",
+  "date": "2026-10-25",
+  "scope": "Design prototype and reusable SVG only; no production implementation",
+  "contentSource": {
+    "commit": "9d4bd2e8df4359cb30c31bad489d488c90ae1c80",
+    "path": "docs/workstreams/ws02-perception/product/world-story-20261025.md"
+  },
+  "runtimeBytes": 40843,
+  "worldSvg": {
+    "width": 1000,
+    "height": 640,
+    "bytes": 9787,
+    "format": "Original vector SVG; no bitmap or external dependencies"
+  },
+  "assets": [
+    {
+      "path": "index.html",
+      "bytes": 3789,
+      "sha256": "3625c544b1db7aa43e1aa371461a3f9010e57ee3241dfc125a13c264305031fb",
+      "source": "Original design prototype"
+    },
+    {
+      "path": "map.css",
+      "bytes": 12517,
+      "sha256": "1121b33c1165fd45de08d27a5ad8d24fd030509d131abb06f67e14eca9d8f944",
+      "source": "Original design prototype"
+    },
+    {
+      "path": "map.js",
+      "bytes": 10543,
+      "sha256": "088581a312aa75817bb2bf84ac5921b46e3bf03ec2bb6a490c5780ed5700b5a5",
+      "source": "Original design prototype"
+    },
+    {
+      "path": "map-data.js",
+      "bytes": 3643,
+      "sha256": "2b0600779c400d45b1d5c7ba017db25e1324eb65328a0daf66e4ac83ae9a9180",
+      "source": "Original design prototype"
+    },
+    {
+      "path": "assets/world-map.svg",
+      "bytes": 9787,
+      "sha256": "5403f890c4390a90eeaf538be706ce9b778807b9ec92cd1e59164e93958daea1",
+      "source": "Original program-drawn world atlas"
+    },
+    {
+      "path": "assets/window.svg",
+      "bytes": 282,
+      "sha256": "871da06769506490fee639131c6c186128d543540afd7341737c0fb292e30c0f",
+      "source": "Existing approved paper HUD refinement-kit frame, copied unchanged"
+    },
+    {
+      "path": "assets/control.svg",
+      "bytes": 282,
+      "sha256": "15ecddf245549b54dcfba59da57d5b499cd5d5f4c55b48806cc09742c8204606",
+      "source": "Existing approved paper HUD refinement-kit frame, copied unchanged"
+    }
+  ],
+  "checks": {
+    "viewportSamples": [
+      "1440x900",
+      "1024x768",
+      "811x854"
+    ],
+    "mainFlow": "Region → destination; only qingzhou-town enabled; future destination disabled; locate current → back to town view",
+    "keyboard": "Tab/Shift+Tab wraps within active dialog; Escape closes and restores trigger focus",
+    "data": "4 regions, 11 destinations, exactly 1 open destination mapped to worldId default",
+    "scroll": "No document horizontal overflow or details scroll in inspected desktop samples",
+    "notClaimed": [
+      "Production World integration",
+      "UAT release",
+      "Full mobile acceptance"
+    ]
+  },
+  "preview": "index.html",
+  "localPreview": "http://127.0.0.1:63844/",
+  "screenshots": [
+    "preview-1440.png",
+    "preview-811.png",
+    "preview-unopened.png"
+  ]
+}
