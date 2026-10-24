@@ -1,0 +1,50 @@
+/* Inventory-only paper layout. Shared shell, mailbox and account surfaces remain independent. */
+.world-home.paper-hud .hud-root .hud-window[data-feature=inventory]>.hud-window-body{display:flex;flex-direction:column;overflow:hidden}
+.world-home.paper-hud .hud-inventory{display:flex;flex-direction:column;flex:1;min-height:0;gap:16px;overflow:hidden;color:var(--paper-ink);font-size:14px;line-height:22px}
+.world-home.paper-hud .hud-inventory-context{height:48px;min-height:48px;flex:none;display:flex;align-items:center;gap:12px;padding:0;margin:0;border:0;background:transparent;color:var(--paper-ink)}
+.world-home.paper-hud .hud-inventory-context .hud-platform-agent-picture{width:44px;height:44px;flex:none;overflow:hidden;border-radius:6px;background:#e4ddce}
+.world-home.paper-hud .hud-inventory-context .avatar{width:44px;height:44px;object-fit:contain;background:transparent;border:0;border-radius:0}
+.world-home.paper-hud .hud-inventory-context>strong{flex:none;font-size:14px;line-height:22px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.world-home.paper-hud .hud-inventory-context>button{margin-left:0;min-height:36px;padding:5px 12px;font-size:12px;line-height:22px}
+.world-home.paper-hud .hud-inventory .hud-wallet-status{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:14px;line-height:22px;color:var(--paper-ink);flex:none}
+.world-home.paper-hud .hud-inventory .hud-wallet-status>span{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--paper-border);border-radius:8px;background:#fbf8f0}
+.world-home.paper-hud .hud-inventory .hud-wallet-status[data-phase=ready]>span:before{content:'';width:20px;height:20px;border:2px solid #c29446;box-shadow:inset 0 0 0 2px #ffe0a2;background:#f0bd57;border-radius:50%;flex:none}
+.world-home.paper-hud .hud-inventory .hud-wallet-retry{min-height:32px;padding:4px 8px;font-size:12px;line-height:22px}
+.world-home.paper-hud .hud-inventory-layout{display:grid;grid-template-columns:minmax(0,1fr) 280px;flex:1;min-height:0;gap:0;padding:0;border:1px solid var(--paper-border);border-radius:8px;background:transparent;overflow:hidden}
+.world-home.paper-hud .hud-inventory-browser{display:flex;flex-direction:column;min-height:0;padding:16px;border:0;border-right:1px solid var(--paper-border);box-shadow:none;background:transparent;overflow:hidden}
+.world-home.paper-hud .hud-inventory .hud-search{position:relative;display:flex;align-items:center;flex:none;height:40px;margin:0 0 16px;padding:0;font-size:14px}
+.world-home.paper-hud .hud-inventory .hud-search:before{content:'';position:absolute;left:13px;top:12px;width:10px;height:10px;border:2px solid var(--paper-ink);border-radius:50%;pointer-events:none}
+.world-home.paper-hud .hud-inventory .hud-search:after{content:'';position:absolute;left:24px;top:24px;width:7px;height:2px;background:var(--paper-ink);transform:rotate(45deg);transform-origin:left center;pointer-events:none}
+.world-home.paper-hud .hud-inventory .hud-search input{width:100%;height:40px;min-height:40px;padding:8px 12px 8px 38px;font-size:14px;line-height:22px}
+.world-home.paper-hud .hud-inventory-grid-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#b9bbae transparent;padding:0 2px 2px 0}
+.world-home.paper-hud .hud-inventory .hud-items{display:grid;grid-template-columns:repeat(auto-fill,80px);align-content:start;justify-content:start;gap:12px}
+.world-home.paper-hud .hud-inventory .hud-items>button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:6px;width:80px;height:100px;min-height:100px;padding:8px 6px;border:1px solid var(--paper-border);border-radius:8px;box-shadow:none;background:transparent;color:var(--paper-ink)}
+.world-home.paper-hud .hud-inventory .hud-items>button:hover{background:#eeeade}
+.world-home.paper-hud .hud-inventory .hud-items>button[aria-pressed=true]{background:#edf0e4;border-color:var(--paper-accent);box-shadow:inset 0 0 0 1px var(--paper-accent)}
+.world-home.paper-hud .hud-inventory .hud-item-slot{display:grid;place-items:center;width:40px;height:40px;flex:none;border:0;border-radius:0;background:transparent;box-shadow:none}
+.world-home.paper-hud .hud-inventory .hud-item-slot>.hud-icon,.world-home.paper-hud .hud-inventory .hud-item-slot>.paper-voucher-icon{width:36px;height:36px;color:var(--paper-ink)}
+.world-home.paper-hud .hud-inventory .hud-item-name{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;width:100%;font-size:12px;line-height:18px;white-space:normal;overflow-wrap:anywhere;text-align:center}
+.world-home.paper-hud .paper-item-quantity{position:absolute;top:4px;right:4px;display:grid;place-items:center;min-width:18px;height:18px;padding:0 3px;border:1px solid var(--paper-border);border-radius:5px;background:#fffdf7;color:var(--paper-ink);font-size:12px;line-height:16px;font-variant-numeric:tabular-nums}
+.world-home.paper-hud .hud-inventory .hud-item-detail{display:block;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#b9bbae transparent;padding:18px;border:0;background:transparent;box-shadow:none;color:var(--paper-ink)}
+.world-home.paper-hud .hud-inventory .hud-item-detail h3{font-size:16px;line-height:24px;margin:0 0 12px;overflow-wrap:anywhere;color:var(--paper-ink)}
+.world-home.paper-hud .paper-item-heading{display:flex;align-items:center;gap:12px;margin-bottom:16px;min-width:0}
+.world-home.paper-hud .paper-item-heading h3{min-width:0;flex:1;margin:0!important}
+.world-home.paper-hud .paper-item-picture{display:grid;place-items:center;flex:none;width:64px;height:64px;border:1px solid var(--paper-border);border-radius:8px;background:#fbf8f0}
+.world-home.paper-hud .paper-item-picture :is(.hud-icon,.paper-voucher-icon){width:44px;height:44px;color:var(--paper-ink)}
+.world-home.paper-hud .hud-inventory .paper-item-description{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;margin:0;font-size:14px;line-height:22px;color:var(--paper-ink);white-space:pre-wrap}
+.world-home.paper-hud .paper-item-facts{display:grid;grid-template-columns:46px minmax(0,1fr);align-items:start;gap:12px 8px;margin:20px 0 0;padding-top:16px;border-top:1px solid var(--paper-border);font-size:14px;line-height:22px}
+.world-home.paper-hud .paper-item-facts dt{margin:0;color:var(--paper-muted)}
+.world-home.paper-hud .paper-item-facts dd{margin:0;color:var(--paper-ink);overflow-wrap:anywhere}
+.world-home.paper-hud .paper-item-facts .paper-item-status{justify-self:start;padding:1px 6px;border-radius:4px;background:var(--paper-sage)}
+.world-home.paper-hud .hud-inventory .paper-item-holding-note{margin:16px 0 0;font-size:12px;line-height:18px;color:var(--paper-muted);white-space:pre-wrap}
+.world-home.paper-hud .hud-inventory .paper-item-content{display:flex;align-items:center;gap:8px;width:100%;margin-top:20px;padding:8px 10px;min-height:40px;text-align:left;font-size:14px;line-height:22px;background:transparent}
+.world-home.paper-hud .paper-item-content .hud-icon{width:20px;height:20px}
+.world-home.paper-hud .hud-inventory .hud-feedback{font-size:14px;line-height:22px;padding:8px 0}
+.world-home.paper-hud .hud-inventory .hud-feedback p{margin:0 0 12px}
+.world-home.paper-hud .paper-inventory-more{margin-top:12px;min-height:36px;font-size:12px}
+.world-home.paper-hud .hud-detail-window[data-inventory-content] .hud-platform-body{font-size:14px;line-height:22px}
+.world-home.paper-hud .hud-detail-window[data-inventory-content] .hud-message-body{font-size:14px;line-height:22px;white-space:pre-wrap}
+@media(max-width:759px){.world-home.paper-hud .hud-inventory-layout{grid-template-columns:minmax(0,1fr) 240px}.world-home.paper-hud .hud-inventory-browser{padding:12px}.world-home.paper-hud .hud-inventory-context>strong{max-width:140px}.world-home.paper-hud .hud-inventory{gap:12px}}
+
+.world-home.paper-hud .hud-inventory .hud-items>button[aria-pressed=true] .hud-item-slot{background:transparent;box-shadow:none;border:0}
+.world-home.paper-hud .hud-detail-window[data-inventory-content]>.hud-reader-footer{background:var(--paper-surface);border-top:1px solid var(--paper-border);color:var(--paper-ink)}

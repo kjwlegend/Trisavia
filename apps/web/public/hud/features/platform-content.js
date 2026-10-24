@@ -1,6 +1,6 @@
 import {icon} from '../icons.js';
 import {avatar} from '../../scene.js';
-import {createOwnerArtifacts,createOwnerExchanges} from './owner-interactions.js';
+import {createOwnerExchanges} from './owner-interactions.js';
 import {readPhase} from '../world-read-provider.js';
 import {el,button,focusNode,selectedAgent} from './shared.js';
 
@@ -61,15 +61,15 @@ function feedback(state,key,retry,chooseAgent){
   return box;
 }
 function pageFoot(state,key,provider){const node=el('div','hud-page-state');node.setAttribute('role','status');if(state.phase==='loading')node.append(el('p','hud-muted','正在继续载入……'));else if(state.phase==='partial')node.append(feedback(state,key,()=>provider.load(key,{more:Boolean(state.nextPageToken)}),()=>{}));else if(state.phase==='ready'){node.append(el('p','hud-muted',state.complete?`当前可查看范围已完整载入 · ${state.records.length} 条`:`已载入 ${state.records.length} 条，尚未全部载入。`));if(!state.complete)node.append(button('继续载入',()=>provider.load(key,{more:true})));}return node;}
-function contentBody(record,detail){
-  const body=el('section','hud-platform-body');body.append(badge(detail,record?.ref?.type==='inventory.holding@1'),el('p','hud-muted',sourceText(detail)));
+export function contentBody(record,detail,{badges=true}={}){
+  const body=el('section','hud-platform-body');if(badges)body.append(badge(detail,record?.ref?.type==='inventory.holding@1'));body.append(el('p','hud-muted',sourceText(detail)));
   const published=time(detail?.content?.source?.publishedAt);if(published)body.append(el('p','hud-muted',`发布时间：${published}`));
   if(record?.summary?.eventKind){body.append(el('p','hud-muted',eventLabel(record)),el('p','hud-muted',eventTime(record,detail)));const status=statusText(record);if(status)body.append(el('p','hud-muted',status));}
   body.append(el('p','hud-message-body',detail.content.text));
   if(Array.isArray(detail.attachments)&&detail.attachments.length){const note=el('section');note.append(el('h3','','附件说明'));for(const attachment of detail.attachments){if(typeof attachment?.name==='string'||typeof attachment?.description==='string')note.append(el('p','',`${attachment.name||'附件'}${attachment.description?' · '+attachment.description:''}`));}body.append(note);}
   return body;
 }
-function detailFeedback(error,retry){const box=el('section');const phase=readPhase(error);box.append(el('p','hud-feedback',phase==='session'?'登录状态已失效，请重新登录。':['denied','not_enabled'].includes(phase)?'这条内容目前不可查看。':'暂时无法载入完整内容。'));if(!['session','denied','not_enabled'].includes(phase))box.append(button('重试',retry));return box;}
+export function detailFeedback(error,retry){const box=el('section');const phase=readPhase(error);box.append(el('p','hud-feedback',phase==='session'?'登录状态已失效，请重新登录。':['denied','not_enabled'].includes(phase)?'这条内容目前不可查看。':'暂时无法载入完整内容。'));if(!['session','denied','not_enabled'].includes(phase))box.append(button('重试',retry));return box;}
 
 // Example features retain their original isolated local storage and interactions.
 export function createContentSwitcher(example,platform,{session,onEnterDemo=()=>{},id}={}){
@@ -82,75 +82,91 @@ export function createContentSwitcher(example,platform,{session,onEnterDemo=()=>
   return{node,feedbackNode,feedbackSlot:example.feedbackSlot,flush:()=>example.flush?.(),activate(){active=true;(demo?example:platform).activate?.();},deactivate(){(demo?example:platform).deactivate?.();active=false;},setCompact(value){example.setCompact?.(value);platform.setCompact?.(value);},setContext(state){if(identity!==state.observationRevision){identity=state.observationRevision;if(demo)example.deactivate?.();demo=false;render();}example.setContext?.(state);platform.setContext?.(state);},back:()=>demo?example.back():platform.back(),showWorld(category){if(demo)example.deactivate?.();demo=false;render();platform.showWorld?.(category);},dispose(){example.dispose();platform.dispose();}};
 }
 
+function inventoryIcon(record){
+  const id=record?.summary?.itemRef?.id;
+  if(!['town-tavern-voucher','town-inn-voucher'].includes(id))return icon(record?.summary?.itemKind==='work'?'document':'inventory');
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 40 40');svg.setAttribute('aria-hidden','true');svg.classList.add('paper-voucher-icon');
+  const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d','M5 11h30v6a3 3 0 0 0 0 6v6H5v-6a3 3 0 0 0 0-6z');path.setAttribute('fill',id==='town-tavern-voucher'?'#f2c69c':'#c2d9e8');path.setAttribute('stroke','#536451');path.setAttribute('stroke-width','1.5');
+  const marks=document.createElementNS(svg.namespaceURI,'path');marks.setAttribute('d','M12 12v3m0 3v4m0 3v3m9-12h7v8h-7z');marks.setAttribute('fill','none');marks.setAttribute('stroke','#536451');marks.setAttribute('stroke-width','1.5');svg.append(path,marks);return svg;
+}
 export function createPlatformInventory(provider,{session,context,walletProvider,detailHost,chooseAgent=()=>{}}={}){
-  const node=el('section','hud-inventory hud-platform-content'),results=el('div','hud-inventory-grid-scroll'),details=el('section','hud-item-detail');results.id='hud-platform-item-results';details.id='hud-platform-item-detail';
-  const authored=createOwnerArtifacts(session,{chooseAgent,detailHost});
-  const key='holdings';let state=session.snapshot(),active=false,disposed=false,selected=null,detail=null,detailError=null,detailRequest=null,detailRevision=0,preview=false,pendingRestore=false;
-  const views={holdings:{selected:'',top:0,detailTop:0,query:'',category:'all'}};
-  let inventoryScope='';
+  const node=el('section','hud-inventory hud-platform-content'),results=el('div','hud-inventory-grid-scroll'),details=el('section','hud-item-detail');results.id='hud-platform-item-results';details.id='hud-platform-item-detail';details.setAttribute('aria-label','物品详情');
+  const key='holdings';let state=session.snapshot(),active=false,disposed=false,selected=null,detail=null,detailError=null,detailRequest=null,detailRevision=0,preview=false,pendingRestore=false,fillFrame=0;
+  const views={holdings:{selected:'',top:0,detailTop:0,query:'',category:'all'}};let inventoryScope='';
   function inventoryStorageKey(){const scope=context?.snapshot().scope,identity=session.hudContext?.();return scope?.kind==='owner'&&identity?.kind==='owner'&&scope.ownerId===identity.ownerId&&scope.agentId===identity.agentId?`connet.hud.platform.inventory-view.v1:${JSON.stringify([scope.origin,scope.instanceId,scope.ownerId,scope.agentId])}`:'';}
-  function saveInventory(){const scope=inventoryStorageKey();if(!scope)return;inventoryScope=scope;try{sessionStorage.setItem(scope,JSON.stringify(inventoryNavigationFields(views.holdings)));}catch{/* Navigation can stay in memory without storing source content. */}}
-  function restoreInventory(force=false){const scope=inventoryStorageKey();if(!scope){inventoryScope='';return;}if(!force&&scope===inventoryScope)return;inventoryScope=scope;const view=views.holdings;Object.assign(view,{query:'',...inventoryNavigationFields()});try{Object.assign(view,readSavedInventoryNavigation(sessionStorage.getItem(scope)));}catch{/* Search text is never restored from navigation. */}}
-  results.addEventListener('scroll',()=>{if(!pendingRestore&&node.getClientRects().length){views[key].top=results.scrollTop;saveInventory();}},{passive:true});
-  details.addEventListener('scroll',()=>{if(detail&&node.getClientRects().length){views[key].detailTop=details.scrollTop;saveInventory();}},{passive:true});
-  function remember(){if(!pendingRestore){views[key].top=results.scrollTop;views[key].detailTop=details.scrollTop;}saveInventory();}
+  function saveInventory(){const scope=inventoryStorageKey();if(!scope)return;inventoryScope=scope;try{sessionStorage.setItem(scope,JSON.stringify(inventoryNavigationFields(views.holdings)));}catch{/* Navigation can remain in memory; never persist source content. */}}
+  function restoreInventory(force=false){const scope=inventoryStorageKey();if(!scope){inventoryScope='';return;}if(!force&&scope===inventoryScope)return;inventoryScope=scope;Object.assign(views.holdings,{query:'',...inventoryNavigationFields()});try{Object.assign(views.holdings,readSavedInventoryNavigation(sessionStorage.getItem(scope)),{category:'all'});}catch{/* Search text is not restored from navigation. */}}
+  function remember(){if(!pendingRestore){views.holdings.top=results.scrollTop;views.holdings.detailTop=details.scrollTop;}saveInventory();}
+  results.addEventListener('scroll',()=>{if(!pendingRestore&&node.getClientRects().length){views.holdings.top=results.scrollTop;saveInventory();}fillViewport();},{passive:true});
+  details.addEventListener('scroll',()=>{if(detail&&node.getClientRects().length){views.holdings.detailTop=details.scrollTop;saveInventory();}},{passive:true});
   function cancel(){detailRevision++;detailRequest?.abort();detailRequest=null;}
-  function clear(){cancel();selected=null;detail=null;detailError=null;preview=false;details.replaceChildren();}
+  function closePreview(){if(preview){preview=false;detailHost?.close(false);if(detailHost?.node)delete detailHost.node.dataset.inventoryContent;}}
+  function clear(){cancel();closePreview();selected=null;detail=null;detailError=null;details.replaceChildren();}
   async function read(record){
     clear();selected=record;const generation=detailRevision,request=new AbortController();detailRequest=request;renderDetail();
-    try{const own=record.detailAvailable===false?null:await provider.detail(key,record,{signal:request.signal});if(generation!==detailRevision||disposed)return;
+    try{
+      const own=record.detailAvailable===false?null:await provider.detail(key,record,{signal:request.signal});if(generation!==detailRevision||disposed)return;
       if(!own){detail={summaryOnly:true};renderDetail();return;}
-      detail={own};
-      if(key==='holdings'&&own.content.itemRef){
-        try{detail.item=await provider.detail('items',{ref:own.content.itemRef},{signal:request.signal});}catch(error){if(error.name==='AbortError')throw error;detail.itemError=error;}
-      }
+      const loaded={own};detail=loaded;
+      if(own.content.itemRef){try{const item=await provider.detail('items',{ref:own.content.itemRef},{signal:request.signal});if(generation!==detailRevision||disposed)return;loaded.item=item;}catch(error){if(generation!==detailRevision||disposed||error.name==='AbortError')return;loaded.itemError=error;}}
       if(generation===detailRevision&&!disposed)renderDetail();
     }catch(error){if(generation!==detailRevision||disposed||error.name==='AbortError')return;detailError=error;detail=null;renderDetail();}
   }
+  async function openContent(){
+    if(!selected||!detail?.own||!detailHost)return;
+    const record=selected,generation=detailRevision,itemRef=detail.item?(detail.item.ref||detail.own.content.itemRef):null,readKey=itemRef?'items':key,target=itemRef?{ref:itemRef}:record;
+    preview=true;detailHost.node.dataset.inventoryContent='';detailHost.open(titleOf(record),el('p','hud-feedback','正在读取完整内容…'),restore=>{preview=false;delete detailHost.node.dataset.inventoryContent;if(restore&&active)focusNode(details.querySelector('.paper-item-content'));});detailHost.setBack?.('返回物品详情');
+    try{const value=await provider.detail(readKey,target,{signal:detailRequest?.signal});if(generation!==detailRevision||disposed||!preview||selected!==record)return;detailHost.update(contentTitle(value)||titleOf(record),contentBody(record,value,{badges:false}));}
+    catch(error){if(generation!==detailRevision||disposed||!preview||error.name==='AbortError')return;detailHost.update(titleOf(record),detailFeedback(error,()=>void openContent()));}
+  }
   function renderDetail(){
-    const top=details.scrollTop;details.replaceChildren();details.append(el('h3','','物品详情'));if(!selected){details.append(el('p','hud-muted','这里会显示所选物品的详情。'));return;}
-    details.append(icon(selected.summary.itemKind==='work'?'document':'inventory'),el('h3','',titleOf(selected)),el('p','hud-muted',selected.summary.itemKind==='work'?'作品':selected.summary.itemKind==='prop'?'虚拟道具':'物品类型暂不可用'));
-    if(detailError){details.append(detailFeedback(detailError,()=>read(selected)));return;}
-    if(!detail){details.append(el('p','hud-feedback','正在读取完整内容……'));return;}
+    const top=details.scrollTop;details.replaceChildren();if(!selected){details.append(el('h3','','物品详情'),el('p','hud-muted','选择一件物品，查看它的详情。'));return;}
+    const heading=el('div','paper-item-heading'),picture=el('span','paper-item-picture');picture.append(inventoryIcon(selected));heading.append(picture,el('h3','',titleOf(selected)));details.append(heading);
+    if(detailError){details.append(detailFeedback(detailError,()=>void read(selected)));return;}
+    if(!detail){details.append(el('p','hud-feedback','正在读取完整内容…'));return;}
     if(detail.summaryOnly){details.append(el('p','hud-muted','当前仅可查看摘要。'));return;}
-    if(key==='holdings'){
-      if(detail.item)details.append(contentBody({summary:{title:titleOf(selected)}},detail.item));else details.append(el('p','hud-muted',detail.itemError?'引用物品目前不可查看。':'物品正文未向当前账号开放。'));
-      details.append(el('h3','','持有说明'),badge(selected,true));
-      const quantity=detail.own.content.quantity??selected.summary.quantity;if(Number.isSafeInteger(quantity))details.append(el('p','',`记录数量：${quantity}`));
-      if(selected.summary.status==='active')details.append(el('p','hud-muted','持有状态：有效'));else if(selected.summary.source?.kind==='npc_service_item')details.append(el('p','hud-muted',selected.summary.status==='reserved'?'持有状态：已保留，尚未消耗':selected.summary.status==='available'?'持有状态：可用':''));
-      details.append(contentBody(selected,detail.own));
-    }else details.append(contentBody(selected,detail.own));
-    if(preview){details.prepend(button('返回物品详情',()=>{preview=false;renderDetail();},'hud-back'));}
-    else if(detail.item)details.append(button('查看内容',()=>{views[key].detailTop=details.scrollTop;preview=true;renderDetail();details.scrollTop=0;}));
-    details.scrollTop=top||views[key].detailTop;
+    const content=detail.item?.content||detail.own.content,body=typeof content.text==='string'?content.text:'';
+    if(body){const snippet=Array.from(body);details.append(el('p','paper-item-description',snippet.length>220?snippet.slice(0,220).join('')+'…':body));}
+    if(detail.itemError)details.append(el('p','hud-muted','引用物品目前不可查看。'));
+    const quantity=detail.own.content.quantity??selected.summary.quantity,status=detail.own.content.status??selected.summary.status;
+    const labels={available:'可用',reserved:'已保留，尚未消耗',consumed:'已消耗',active:'有效'};
+    const facts=el('dl','paper-item-facts');for(const [label,value]of [['数量',Number.isSafeInteger(quantity)&&quantity>=0?String(quantity):'暂未提供'],['状态',labels[status]||'暂未提供'],['来源',sourceText(detail.item||detail.own).replace(/^来源：/,'')]]){facts.append(el('dt','',label),el('dd',label==='状态'?'paper-item-status':'',value));}details.append(facts);
+    if(typeof detail.own.content.text==='string'&&detail.own.content.text&&detail.item)details.append(el('p','paper-item-holding-note',detail.own.content.text));
+    if(detailHost){const link=button(detail.item?'查看内容':'查看持有说明',()=>void openContent(),'paper-item-content');link.prepend(icon('document'));details.append(link);}
+    details.scrollTop=top||views.holdings.detailTop;
+  }
+  function fillViewport(){
+    if(fillFrame)return;fillFrame=requestAnimationFrame(()=>{fillFrame=0;if(!active||disposed||!node.getClientRects().length||views.holdings.query)return;const value=provider.snapshot(key);if(value.phase==='ready'&&!value.complete&&value.nextPageToken&&results.scrollTop+results.clientHeight>=results.scrollHeight-120)void provider.load(key,{more:true});});
   }
   function renderResults(){
-    const source=provider.snapshot(key),view=views[key];results.replaceChildren();if(!state.authenticated||!selectedAgent(state)){clear();results.append(feedback({...source,phase:state.authenticated?'no_agent':'session'},key,()=>provider.load(key),chooseAgent));return;}
-    const records=source.records.filter(record=>titleOf(record).includes(view.query)&&(view.category==='all'||record.summary.itemKind===view.category));
-    const previousSelection=view.selected,{chosen,pending}=projectSavedInventorySelection(view,source,records);pendingRestore=pending;if(previousSelection!==view.selected)saveInventory();
+    const source=provider.snapshot(key),view=views.holdings;results.replaceChildren();
+    if(!state.authenticated||!selectedAgent(state)){clear();results.append(feedback({...source,phase:state.authenticated?'no_agent':'session'},key,()=>provider.load(key),chooseAgent));return;}
+    const records=source.records.filter(record=>titleOf(record).toLocaleLowerCase().includes(view.query.trim().toLocaleLowerCase()));
+    const previous=view.selected,{chosen,pending}=projectSavedInventorySelection(view,source,records);pendingRestore=pending;if(previous!==view.selected)saveInventory();
     if(!source.records.length){clear();renderDetail();results.append(feedback(source,key,()=>provider.load(key),chooseAgent));return;}
-    if(!records.length){clear();renderDetail();results.append(el('p','hud-feedback',source.complete?'没有符合条件的内容。':'当前已载入内容中没有符合条件的物品。'),button('清除筛选',()=>{view.query='';view.category='all';view.selected='';saveInventory();render();}),pageFoot(source,key,provider));return;}
-    const grid=el('div','hud-items');grid.setAttribute('aria-label','获准持有记录');
-    for(const record of records){const control=button('',()=>{remember();pendingRestore=false;view.top=results.scrollTop;view.selected=keyOf(record);view.detailTop=0;saveInventory();renderResults();focusNode([...results.querySelectorAll('button')].find(value=>value.dataset.platformItem===record.ref.id));});control.dataset.platformItem=record.ref.id;control.setAttribute('aria-label',titleOf(record));control.setAttribute('aria-pressed',String(same(record,chosen)));const slot=el('span','hud-item-slot');slot.append(icon(record.summary.itemKind==='work'?'document':'inventory'));control.append(slot,el('span','hud-item-name',titleOf(record)),badge(record,key==='holdings'),el('span','hud-item-full-name',titleOf(record)));grid.append(control);}
-    results.append(grid,pageFoot(source,key,provider));results.scrollTop=view.top;
-    if(pending){clear();details.append(el('p','hud-muted','先前选择的物品尚未载入。可继续载入以恢复。'));return;}
-    if(!same(selected,chosen)){if(active&&chosen)void read(chosen);else details.replaceChildren();}else renderDetail();
-  }
-  function render(){
-    if(disposed)return;node.replaceChildren();const view=views[key],agent=selectedAgent(state),access=accessState(state,'背包',chooseAgent);if(access){clear();node.append(access);return;}
-    const info=agentBar(state,chooseAgent);info.classList.add('hud-inventory-context');info.append(walletStatus());node.append(info);
-    const chooseCategory=next=>{remember();view.category=next;view.top=0;view.selected='';view.detailTop=0;saveInventory();if(active){if(next==='work'){provider.cancel(key);authored.activate();}else{authored.deactivate();void provider.load(key);}}render();};
-    if(view.category==='work'){node.append(tabs([['all','持有物品'],['work','我的作品'],['prop','虚拟道具']],view.category,chooseCategory),authored.node);return;}
-    const columns=el('div','hud-inventory-layout'),browser=el('div','hud-inventory-browser'),filters=tabs([['all','持有物品'],['work','我的作品'],['prop','虚拟道具']],view.category,chooseCategory),label=el('label','hud-search','搜索当前已载入物品'),search=el('input');search.type='search';search.value=view.query;search.maxLength=100;search.id='hud-platform-item-search';search.addEventListener('input',()=>{remember();view.query=search.value;view.top=0;view.selected='';view.detailTop=0;saveInventory();renderResults();});label.append(search);browser.append(filters,label,results);columns.append(browser,details);node.append(columns);renderResults();const source=provider.snapshot(key),merged=!state.authenticated||!agent||['session','no_agent'].includes(source.phase);columns.classList.toggle('is-single-state',merged);filters.hidden=label.hidden=details.hidden=merged;if(['pending','loading','idle'].includes(source.phase)&&!source.records.length&&!merged){details.replaceChildren(el('h3','','物品详情'),el('p','hud-muted','正在读取物品信息…'));}
+    if(!records.length){clear();renderDetail();results.append(el('p','hud-feedback',source.complete?'没有符合条件的物品。':'当前读取范围中没有匹配物品。'),button('清除搜索',()=>{view.query='';view.selected='';saveInventory();render();}));}
+    else{
+      const grid=el('div','hud-items');grid.setAttribute('aria-label','背包物品');
+      for(const record of records){const control=button('',()=>{remember();pendingRestore=false;view.top=results.scrollTop;view.selected=keyOf(record);view.detailTop=0;saveInventory();renderResults();focusNode([...results.querySelectorAll('button')].find(value=>value.dataset.platformItem===record.ref.id));});control.dataset.platformItem=record.ref.id;control.title=titleOf(record);control.setAttribute('aria-label',titleOf(record));control.setAttribute('aria-pressed',String(same(record,chosen)));const slot=el('span','hud-item-slot');slot.append(inventoryIcon(record));control.append(slot,el('span','hud-item-name',titleOf(record)));if(Number.isSafeInteger(record.summary.quantity)&&record.summary.quantity>=0)control.append(el('span','paper-item-quantity',String(record.summary.quantity)));grid.append(control);}results.append(grid);results.scrollTop=view.top;
+      if(pending){clear();details.append(el('p','hud-muted','先前选择的物品尚未读取到。'));}else if(!same(selected,chosen)){if(active&&chosen)void read(chosen);else details.replaceChildren();}else renderDetail();
+    }
+    if(source.phase==='partial')results.append(feedback(source,key,()=>provider.load(key,{more:Boolean(source.nextPageToken)}),chooseAgent));
+    else if(view.query&&!source.complete)results.append(button('继续查找',()=>provider.load(key,{more:true}),'paper-inventory-more'));
+    fillViewport();
   }
   function walletStatus(){
     const value=walletProvider.snapshot(),status=el('div','hud-wallet-status');status.id='hud-wallet-status';status.dataset.phase=value.phase;status.setAttribute('role','status');
     const label=value.phase==='ready'?`${value.data.currency.displayName} ${value.data.balance}`:value.phase==='loading'?'星币 · 正在读取…':value.phase==='denied'?'当前账号无权查看余额。':value.phase==='not_enabled'?'余额查看暂未开放。':value.phase==='no_agent'?'星币 · 请选择 Agent':value.phase==='session'?'星币 · 请登录后查看':value.phase==='not_initialized'||value.phase==='idle'?'星币 · 暂未取得余额':'星币 · 暂时无法读取';status.append(el('span','',label));
     if(['error','unavailable','not_initialized','idle','resync'].includes(value.phase))status.append(button('重试',()=>walletProvider.load(),'hud-wallet-retry'));return status;
   }
-  const stop=provider.subscribe(changed=>{const source=provider.snapshot(changed);if(views[changed]&&['denied','session','resync'].includes(source.phase)){Object.assign(views[changed],{selected:'',top:0,detailTop:0,query:'',category:'all'});saveInventory();}if(changed!==key)return;if(!source.records.length)clear();render();});
+  function render(){
+    if(disposed)return;node.replaceChildren();const access=accessState(state,'背包',chooseAgent);if(access){clear();node.append(access);return;}
+    const info=agentBar(state,chooseAgent);info.classList.add('hud-inventory-context');info.append(walletStatus());node.append(info);
+    const columns=el('div','hud-inventory-layout'),browser=el('div','hud-inventory-browser'),label=el('label','hud-search'),search=el('input');search.type='search';search.value=views.holdings.query;search.maxLength=100;search.id='hud-platform-item-search';search.placeholder='搜索物品';search.setAttribute('aria-label','搜索当前已载入物品');search.addEventListener('input',()=>{remember();Object.assign(views.holdings,{query:search.value,top:0,selected:'',detailTop:0});saveInventory();renderResults();});label.append(search);browser.append(label,results);columns.append(browser,details);node.append(columns);renderResults();
+  }
+  const stop=provider.subscribe(changed=>{if(changed!==key)return;const source=provider.snapshot(key);if(['denied','session','resync'].includes(source.phase)){Object.assign(views.holdings,{selected:'',top:0,detailTop:0,query:'',category:'all'});saveInventory();}if(!source.records.length)clear();render();});
   const stopWallet=walletProvider.subscribe(()=>render()),stopNavigation=context?.subscribe(()=>{restoreInventory();render();});restoreInventory();render();
-  return{node,activate(){active=true;restoreInventory();if(views[key].category==='work')authored.activate();else void provider.load(key);void walletProvider.load();},deactivate(){remember();active=false;authored.deactivate();provider.cancel(key);walletProvider.cancel();cancel();if(!detail)selected=null;},setContext(next){if(state.observationRevision!==next.observationRevision){clear();for(const view of Object.values(views))Object.assign(view,{selected:'',top:0,detailTop:0,query:'',category:'all'});restoreInventory(true);}state=next;render();},back(){if(!preview)return false;preview=false;renderDetail();return true;},dispose(){disposed=true;authored.dispose();cancel();stop();stopWallet();stopNavigation?.();}};
+  return{node,activate(){active=true;restoreInventory();void provider.load(key);void walletProvider.load();fillViewport();},deactivate(){remember();active=false;provider.cancel(key);walletProvider.cancel();cancel();closePreview();cancelAnimationFrame(fillFrame);fillFrame=0;if(!detail)selected=null;},setContext(next){if(state.observationRevision!==next.observationRevision){clear();Object.assign(views.holdings,{selected:'',top:0,detailTop:0,query:'',category:'all'});state=next;restoreInventory(true);}else state=next;render();},back(){if(!preview)return false;closePreview();return true;},dispose(){disposed=true;closePreview();cancel();cancelAnimationFrame(fillFrame);stop();stopWallet();stopNavigation?.();}};
 }
 
 export function createPlatformMail(provider,{session,context,detailHost,chooseAgent=()=>{}}={}){
