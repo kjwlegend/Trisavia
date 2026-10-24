@@ -1,3 +1,4 @@
+import {registerHealthRoute} from './transport/http/health-routes.ts';
 import {createPublicIdentifierService} from './application/public-identifiers.ts';
 import {publicIdentifierGatewayOperations,publicIdentifierPublicReads,publicIdentifierGatewayGuide} from './application/agent-gateway-public-identifiers.ts';
 import {registerPublicIdentifierRoutes} from './transport/http/public-identifier-routes.ts';
@@ -101,7 +102,7 @@ export async function buildApp(options:BuildAppOptions):Promise<FastifyInstance>
    let nextIdleDiscovery=0,idleAfter:string|undefined;
    ruleDriver=createWorldRuleDriver({async runDue(){const now=(options.clock??Date.now)();if(now>=nextIdleDiscovery){idleAfter=await runtime!.transaction(ctx=>world.ensureIdleLife(ctx,'default',idleAfter));nextIdleDiscovery=now+IDLE_LIFE_POLICY_V1.scanIntervalMs;}return scheduler.runDue();},close:()=>scheduler.close()});app.addHook('onReady',async()=>{ruleDriver!.start();});
   }
-  app.get('/health',async(_request,reply)=>{try{if(runtime)await runtime.read(ctx=>verifyWorldReadiness(ctx));return await store.read(async()=>({status:'ok',phase:'M1',apiVersion:'1',instanceId:store.instanceId,...(runtime?{worldCore:'ready'}:{})}));}catch{return reply.code(503).send({status:'unavailable',error:{code:'storage_unavailable'}});}});
+  registerHealthRoute(app,async()=>{if(runtime)await runtime.read(ctx=>verifyWorldReadiness(ctx));return await store.read(async()=>({instanceId:store.instanceId,...(runtime?{worldCore:'ready' as const}:{})}));});
   const service=createM1Service(store,{legacyAvatarIdentity:readLegacyAvatarIdentity,...(options.clock?{now:options.clock}:{}),...(options.email?{email:options.email}:{}),...(options.perception?{perception:options.perception}:{}),...(gatewayCapabilities?{gateway:gatewayCapabilities}:{}),...(friendshipOwnerRead?{friendshipOwnerRead}:{}),...(ownerMailboxRead?{ownerMailboxRead}:{})});
   registerM1Routes(app,service);registerPerceptionRoutes(app,service);registerWorldAnnouncementRoutes(app,createWorldAnnouncements(store,options.clock??Date.now));registerSiteRoutes(app);return app;
  }catch(error){try{await ruleDriver?.close();await runtime?.close();}finally{await store.close();}throw error;}
