@@ -58,9 +58,9 @@ export function createOwnedAgentLayer(root,graph,{blockedRects=[],onSelect=()=>{
       let entry=entries.get(agent.agentId);if(!authoritative&&!motion.read(agent.agentId))continue;
       if(!entry){
         const button=el('button','world-owned-hit');button.type='button';labels.append(button);entry={agentId:agent.agentId,kind:'owned-agent',button,sprites:new Map()};entries.set(agent.agentId,entry);
-        // Pointer hits stay on the canvas, where nearest live footpoint wins.
-        // The stable transparent button supplies the equivalent keyboard entry.
-        button.addEventListener('click',()=>onSelect(entry.agentId,button));
+        // Pointer entry shares the map's click/drag handling; native keyboard
+        // activation selects this stable semantic target directly.
+        button.addEventListener('click',event=>{if(event.detail===0)onSelect(entry.agentId,button);});
         button.addEventListener('focus',()=>{focusedId=agent.agentId;layout();});button.addEventListener('blur',()=>{focusedId='';layout();});
       }
       const spriteKey=JSON.stringify(agent.avatar);if(entry.spriteKey!==spriteKey){entry.sprites.clear();entry.spriteKey=spriteKey;}entry.avatar=agent.avatar;entry.nameValue=agent.name;
@@ -73,7 +73,7 @@ export function createOwnedAgentLayer(root,graph,{blockedRects=[],onSelect=()=>{
     if(!authoritative)copyPositions();labels.hidden=!entries.size;const note=document.querySelector('#world-owned-note');if(note){note.hidden=!entries.size;note.textContent=authoritative?renderer?'角色位置来自服务器 · 小镇道路已开放，建筑内部尚未开放':'角色位置来自服务器 · 背景为演示，不表示在线':'自有角色动画仅供展示，不代表在线';}layout();
   }
   return{
-    set,actors:()=>[...entries.values()],
+    node:labels,set,actors:()=>[...entries.values()],
     step(dt,options={}){if(authoritative){if(renderer&&!frozen)for(const entry of entries.values())advancePosition(entry,options.now??performance.now(),options);return;}motion.step(dt,{...options,heldIds:[focusedId,hoveredId]});copyPositions();},
     draw(ctx,entry,scale,frame={}){
       if(entry.agentId===selectedId){if(renderer)renderer.drawSelection(ctx,entry,scale,frame);else{const rx=Math.max(24,12/scale),ry=Math.max(9,5/scale);ctx.fillStyle='#C7E8DC';ctx.globalAlpha=.24;ctx.beginPath();ctx.ellipse(entry.x,entry.y+2,rx,ry,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;ctx.lineWidth=2;ctx.strokeStyle='#397E80';ctx.stroke();}}

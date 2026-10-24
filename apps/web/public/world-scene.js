@@ -306,7 +306,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   }
   const pointers=new Map();let drag=null,pinch=null;
   const local=e=>{const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};};
-  const isMapPointerTarget=node=>node===canvas||node?.closest?.('.world-town-hit')?.parentNode===townTargets.node;
+  const isMapPointerTarget=node=>node===canvas||node?.closest?.('.world-owned-hit')?.parentNode===ownedLayer.node||node?.closest?.('.world-town-hit')?.parentNode===townTargets.node;
   function pointerTarget(point,node,cycle=false){const direct=townTargets.target(node),spatial=hit(point.x,point.y,cycle);return direct?.kind==='life-place'&&spatial?.kind==='owned-agent'?spatial:direct||spatial;}
   function refreshOwnedHover(){
     if(!hoverPointer||(pointers.size&&drag?.moved)||!isMapPointerTarget(document.elementFromPoint(hoverPointer.clientX,hoverPointer.clientY))){ownedLayer.hover('');townTargets.hover(null);return null;}
