@@ -16,6 +16,7 @@ import {getPanelEnvironment} from './panel-environment.js';
 import {createWorldReadProvider} from './world-read-provider.js';
 import {createWalletReadProvider} from './wallet-read-provider.js';
 import {createWorldLogFeature} from './behavior-logs.js';
+import {createWorldAnnouncementsFeature} from './features/world-announcements.js';
 export function createHud({session,accountNode,onOpenAccount=()=>{},onLocateAgent=()=>false,getAccountTitle=()=> '账户',onAccountClose=()=>{},canLeaveAccount=async()=>true}){
   const root=$('#hud-root'),dock=el('nav','hud-dock');dock.id='hud-dock';dock.setAttribute('aria-label','世界功能');
   const windowNode=el('section','hud-window');windowNode.id='hud-window';windowNode.hidden=true;windowNode.setAttribute('role','dialog');windowNode.setAttribute('aria-modal','false');windowNode.setAttribute('aria-labelledby','hud-title');
@@ -30,9 +31,9 @@ export function createHud({session,accountNode,onOpenAccount=()=>{},onLocateAgen
   const stopContext=context.subscribe(value=>{flushViews();store.setContext(value.scope,{persistent:value.persistent});reconcile();});provider.subscribe(value=>{providerState=value;reconcile();});void context.load();
   const enterDemo=key=>()=>{if(current===key&&!windowNode.hidden)title.focus({preventScroll:true});};
   const chooseAgent=()=>openAccount(session.snapshot().authenticated?'agents':'login');
-  const features={profile:createProfileFeature(provider,enterDemo('profile')),inventory:createInventoryFeature(provider,enterDemo('inventory'),{store,context,detailHost,worldProvider,walletProvider,session,chooseAgent}),mail:createMailFeature(provider,enterDemo('mail'),{store,context,detailHost,worldProvider,session,chooseAgent}),friends:createFriendsFeature(session,{chooseAgent,detailHost}),logs:createWorldLogFeature(session)};
+  const features={profile:createProfileFeature(provider,enterDemo('profile')),inventory:createInventoryFeature(provider,enterDemo('inventory'),{store,context,detailHost,worldProvider,walletProvider,session,chooseAgent}),mail:createMailFeature(provider,enterDemo('mail'),{store,context,detailHost,worldProvider,session,chooseAgent}),friends:createFriendsFeature(session,{chooseAgent,detailHost}),announcements:createWorldAnnouncementsFeature({detailHost}),logs:createWorldLogFeature(session)};
   flushViews=()=>{for(const feature of Object.values(features))feature.flush?.();};
-  const dockNames={profile:'个人',inventory:'背包',mail:'信箱',friends:'好友'},names={...dockNames,logs:'世界日志'},buttons={};let current='',trigger=null,hoverTimer=0,navigationRevision=0;
+  const dockNames={profile:'个人',inventory:'背包',mail:'信箱',friends:'好友',announcements:'公告'},names={...dockNames,logs:'世界日志'},buttons={};let current='',trigger=null,hoverTimer=0,navigationRevision=0;
   const worldControls=createWorldControls(root),floatingFeedback=el('div','hud-floating-feedback');root.append(floatingFeedback);
   function moveFeedback(){(current==='mail'?features.mail.feedbackSlot:floatingFeedback).append(features.mail.feedbackNode);}
   function worldState(){const visible=!current&&!$('#world-layout').classList.contains('has-detail');worldControls.setVisible(visible);}
@@ -47,7 +48,7 @@ export function createHud({session,accountNode,onOpenAccount=()=>{},onLocateAgen
   body.append(accountNode);accountNode.hidden=true;
   function openAccount(mode='account',agentId='',origin=document.activeElement){navigationRevision++;document.dispatchEvent(new CustomEvent('hud:open'));detailHost.close(false);features[current]?.deactivate?.();hideTip();if(current!=='account')trigger=origin?.isConnected&&origin.matches('button,a,input,select,textarea,[tabindex]')?origin:accountButton;current='account';worldState();moveFeedback();accountButton.setAttribute('aria-expanded','true');windowNode.dataset.feature='account';windowNode.classList.remove('is-wide');windowNode.classList.add('is-account');titleIcon.replaceChildren(icon('profile'));for(const [key,feature]of Object.entries(features)){feature.node.hidden=true;buttons[key]?.setAttribute('aria-pressed','false');buttons[key]?.setAttribute('aria-expanded','false');}accountNode.hidden=false;environment.set('main',windowNode);panelLayout.update();transition.show();root.classList.add('is-open');size();title.textContent=getAccountTitle();title.focus({preventScroll:true});void onOpenAccount(mode,agentId);}
   close.addEventListener('click',()=>shut());document.addEventListener('world:place-open',()=>{shut(false);worldControls.setVisible(false);});
-  document.addEventListener('hud:world-content',async event=>{if(current!=='mail')await open('mail');if(current==='mail')features.mail.showWorld(event.detail?.category);});
+  document.addEventListener('hud:world-content',async event=>{if(event.detail?.category!=='events'){if(current!=='announcements')await open('announcements');return;}if(current!=='mail')await open('mail');if(current==='mail')features.mail.showWorld('events');});
   const selector=el('button','hud-agent'),picture=el('div','hud-agent-picture'),identity=el('span','hud-agent-identity'),select=el('strong');selector.id='hud-agent';selector.type='button';select.id='hud-agent-select';selector.setAttribute('aria-label','当前 Agent，打开我的 Agent');identity.append(el('span','hud-muted','当前 Agent'),select);selector.append(picture,identity);selector.addEventListener('click',()=>openAccount('agents','',selector));
   const locate=el('button','hud-locate-agent','定位');locate.id='hud-locate-agent';locate.type='button';locate.hidden=true;locate.disabled=true;locate.setAttribute('aria-label','定位当前 Agent');locate.title='只平移地图，不改变缩放';let mapAvailable=false;
   locate.addEventListener('click',()=>{const state=session.snapshot();if(state.authenticated&&state.selectedAgentId)onLocateAgent(state.selectedAgentId);});

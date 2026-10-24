@@ -129,7 +129,7 @@ export function createTownServiceCard(session,{chooseAgent=()=>{},getWorldState=
   }
   if(phase==='notice'){
    const n=publicData.notice,notice=el('article','town-notice');notice.append(el('p','town-notice-source','小镇公告牌 · 小镇物件'),el('h3','',n.title),el('p','town-notice-text',n.text));
-   const links=el('nav','town-notice-services');links.setAttribute('aria-label','公告中的服务说明');for(const id of n.serviceIds)links.append(control(({'welcome.claim':'新邻居礼包','tavern.host':'酒馆招待','inn.rest':'旅社休息'})[id]||'服务说明',()=>open({serviceId:id,catalogVersion:publicData.catalogVersion})));notice.append(links);node.append(notice);return;
+   const links=el('nav','town-notice-services');links.setAttribute('aria-label','公告与服务说明');links.append(control('查看公开公告',()=>document.dispatchEvent(new CustomEvent('hud:world-content',{detail:{category:'announcements'}}))));for(const id of n.serviceIds)links.append(control(({'welcome.claim':'新邻居礼包','tavern.host':'酒馆招待','inn.rest':'旅社休息'})[id]||'服务说明',()=>open({serviceId:id,catalogVersion:publicData.catalogVersion})));notice.append(links);node.append(notice);return;
   }
   if(!publicData)return;
   const {npc,service}=publicData,intro=el('section','town-section town-introduction'),heading=el('div','town-service-heading'),identity=el('div','town-npc-identity');intro.append(sectionTitle('1','NPC 介绍'));

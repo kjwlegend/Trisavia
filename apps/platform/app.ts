@@ -6,6 +6,8 @@ import { openPostgresStore,readLegacyAvatarIdentity, type OpenPostgresStoreOptio
 import { registerM1Routes } from './transport/http/m1-routes.ts';
 import { registerSiteRoutes } from './transport/http/site-routes.ts';
 import { registerPerceptionRoutes } from './transport/http/perception-routes.ts';
+import {createWorldAnnouncements} from './application/world-announcements.ts';
+import {registerWorldAnnouncementRoutes} from './transport/http/world-announcement-routes.ts';
 import {createPerceptionService} from './application/perception-service.ts';
 import {createOwnerMailboxService} from './application/owner-mailbox-service.ts';
 import {authenticateCredential} from './domains/access/authentication.ts';
@@ -97,6 +99,6 @@ export async function buildApp(options:BuildAppOptions):Promise<FastifyInstance>
   }
   app.get('/health',async(_request,reply)=>{try{if(runtime)await runtime.read(ctx=>verifyWorldReadiness(ctx));return await store.read(async()=>({status:'ok',phase:'M1',apiVersion:'1',instanceId:store.instanceId,...(runtime?{worldCore:'ready'}:{})}));}catch{return reply.code(503).send({status:'unavailable',error:{code:'storage_unavailable'}});}});
   const service=createM1Service(store,{legacyAvatarIdentity:readLegacyAvatarIdentity,...(options.clock?{now:options.clock}:{}),...(options.email?{email:options.email}:{}),...(options.perception?{perception:options.perception}:{}),...(gatewayCapabilities?{gateway:gatewayCapabilities}:{}),...(friendshipOwnerRead?{friendshipOwnerRead}:{}),...(ownerMailboxRead?{ownerMailboxRead}:{})});
-  registerM1Routes(app,service);registerPerceptionRoutes(app,service);registerSiteRoutes(app);return app;
+  registerM1Routes(app,service);registerPerceptionRoutes(app,service);registerWorldAnnouncementRoutes(app,createWorldAnnouncements(store,options.clock??Date.now));registerSiteRoutes(app);return app;
  }catch(error){try{await ruleDriver?.close();await runtime?.close();}finally{await store.close();}throw error;}
 }

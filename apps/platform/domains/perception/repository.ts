@@ -7,6 +7,7 @@ export function contentRepository(session: M1ReadSession) {
         replace: async (row: StoredRow, expectedVersion: number) => await writeRows(session).update('perception_objects', row, expectedVersion),
         insert: async (row: StoredRow) => await writeRows(session).insert('perception_objects', row),
         pageByCategoryId: async <T extends JsonObject = JsonObject>(categoryId: Scalar, options: Page) => await session.scan<T>('perception_objects', { categoryId }, options),
+        publicAnnouncements: async (sourceId: string, options: Page) => await session.scan('perception_objects', { categoryId: 'announcements', channel: 'world', sourceId, public: true, active: true, available: true }, options),
     };
 }
 /** perception owns perception_grants; callers choose named queries, never table names or free filters. */
