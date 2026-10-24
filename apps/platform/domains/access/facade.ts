@@ -53,6 +53,10 @@ export function createIdentityAccess<Context extends object>(options:{session:(c
    const appearance=await readAppearance(tx,agentId,avatar,options.legacyAvatarIdentity);if(!appearance)return null;
    return Object.freeze({agentId,publishedVersion:Number(profile.data.publishedVersion),displayName:published.displayName,appearance:Object.freeze(appearance)});
   },
+  async readResidentIdentity(context,principal){
+   const tx=await current(context,principal);if(principal.kind!=='agent')fail('insufficient_scope',403,'Resident issuance requires the actual Agent');
+   return readResidentIssuanceIdentity(tx,principal.agentId);
+  },
   async captureOwnerObservation(context,agentId,sourceDomain){
    if(!['world','relationships','interaction','town_services'].includes(sourceDomain))return null;
    const tx=options.session(context),agent=await agentRepository(tx).get(agentId),member=await membershipRepository(tx).get(agentId);
@@ -67,4 +71,13 @@ export function createIdentityAccess<Context extends object>(options:{session:(c
    return Object.freeze({...basis,authorizationVersion:payloadHash(basis)});
   },
  };
+}
+
+/** Private composition participant. The caller supplies its already guarded same-client identity session. */
+export async function readResidentIssuanceIdentity(tx:M1ReadSession,agentId:string){
+ if(!await agentRepository(tx).get(agentId))fail('target_not_accessible',404,'Registered Agent is unavailable');
+ const profile=await profileRepository(tx).get(agentId),member=await membershipRepository(tx).get(agentId),published=profile?.data.published,draft=profile?.data.draft;
+ const fields=published&&typeof published==='object'&&!Array.isArray(published)?published:draft&&typeof draft==='object'&&!Array.isArray(draft)?draft:null,name=fields?.displayName;
+ if(typeof name!=='string'||!name.trim()||name.length>240)fail('resident_identity_unavailable',503,'Resident issuance name is unavailable');
+ const joined=member?.data.firstJoinedAt;return {agentId,displayName:name,firstWorldJoinedAt:typeof joined==='number'&&Number.isSafeInteger(joined)&&joined>=0?joined:null};
 }

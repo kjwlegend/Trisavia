@@ -22,6 +22,8 @@ export interface IdentityAccess<Context extends object>{
  readParticipation(context:Context,agentId:string):Promise<AgentParticipation>;
  /** Current public profile permission, without inventing an Agent or Owner principal. */
  readPublicAgent(context:Context,agentId:string):Promise<PublicAgentView|null>;
+ /** Current runtime's own issuance fields; requires neither public profile nor Owner binding. */
+ readResidentIdentity?(context:Context,principal:Principal):Promise<{agentId:string;displayName:string;firstWorldJoinedAt:number|null}>;
  /** Internal source capture. Missing implementations fail closed instead of inventing an audience. */
  captureOwnerObservation?(context:Context,agentId:string,sourceDomain:OwnerObservationDomain):Promise<OwnerAudienceProof|null>;
 }

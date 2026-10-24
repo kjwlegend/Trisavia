@@ -1,3 +1,4 @@
+import {NEW_RESIDENT_GIFT_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/new-resident-gift-migration.ts';
 import {BEHAVIOR_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/behavior-migration.ts';
 import {TOWN_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/town-services-migration.ts';
 import { join } from 'node:path';
@@ -22,6 +23,7 @@ export async function grantWorldCorePermissions(config:RuntimeConfig,database:st
  REVOKE ALL ON runtime.event_clock FROM connet_app;GRANT SELECT,UPDATE(position) ON runtime.event_clock TO connet_app;
  ${BEHAVIOR_PERMISSIONS_SQL}
  ${TOWN_PERMISSIONS_SQL}
+ ${NEW_RESIDENT_GIFT_PERMISSIONS_SQL}
  COMMIT;`;
  await docker(['exec','-i',`${config.project}-server`,'psql','-X','-v','ON_ERROR_STOP=1','-U','postgres','-d',database],{input:sql});
 }

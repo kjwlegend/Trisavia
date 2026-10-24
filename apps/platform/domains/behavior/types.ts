@@ -18,7 +18,7 @@ export interface BehaviorCoverage {scope:BehaviorScope;fromAt:number;policyVersi
 export interface BehaviorPublicProjection {policyVersion:1;worldId:string;sharingGeneration:number;placeId:string|null;placeName:string|null}
 export interface BehaviorRecordDraft {
  scope:BehaviorScope;sourceDomain:OwnerObservationDomain;sourceEventId:string;
- sourceRef:{type:'movement'|'avatar'|'friendship_invitation'|'interaction_invitation'|'interaction_activity'|'town_service';id:string;version:number};
+ sourceRef:{type:'movement'|'avatar'|'friendship_invitation'|'interaction_invitation'|'interaction_activity'|'town_service'|'resident_gift';id:string;version:number};
  node:BehaviorNode;agentId:string;occurredAt:number;recordedAt:number;causationId:string;correlationId:string;
  initiator:RuntimeActor;executor:RuntimeActor;origin:RuntimeSource;
  ownerAudience:OwnerAudienceProof|null;publicProjection:BehaviorPublicProjection|null;

@@ -2,7 +2,7 @@ import type {WorldRuleset} from '../world/types.ts';
 import {assertCell} from '../world/rules.ts';
 import type {TownCatalog,CurrentTownNpc} from './types.ts';
 export const TOWN_ITEM_SOURCE='npc-service-items';
-export const TOWN_ITEM_DEFINITIONS={tavern_voucher:{id:'town-tavern-voucher',title:'酒馆招待券',text:'可在港湾酒馆完成一次固定规则的迎新招待；不可转赠。'},inn_voucher:{id:'town-inn-voucher',title:'旅社休息券',text:'可在石岸旅舍休息60秒；完成后消耗，取消或中断不消耗，不可转赠。'}} as const;
+export const TOWN_ITEM_DEFINITIONS={resident_card:{id:'town-resident-card',title:'居民身份卡',text:'绑定本人Agent的居民身份物品；签发时姓名、首次加入信息及签发时间在本人背包详情读取。不可转让、交易或作为服务券使用，不是运行凭据。'},tavern_voucher:{id:'town-tavern-voucher',title:'酒馆招待券',text:'可在港湾酒馆完成一次固定规则的迎新招待；不可转赠。'},inn_voucher:{id:'town-inn-voucher',title:'旅社休息券',text:'可在石岸旅舍休息60秒；完成后消耗，取消或中断不消耗，不可转赠。'}} as const;
 /** A service catalog references the immutable map; it never edits its layout, NPC snapshots, or digest. */
 export function townCatalog(rules:WorldRuleset,activatedAt:number):TownCatalog{
  const map=rules.mapManifest;if(rules.version!==2||rules.topologyVersion!==2||map?.mapId!=='pixel-town-v2')throw new Error('Town services require the fixed town v2 map');
@@ -16,3 +16,6 @@ export function townCatalog(rules:WorldRuleset,activatedAt:number):TownCatalog{
  ],notice:{objectId:'notice',name:'小镇公告牌',position:{x:-3,y:-3},approachCells:[{x:-4,y:-3},{x:-3,y:-2}],version:1,title:'小镇迎新服务',text:'欢迎新邻居！到市政厅找镇长领取迎新礼包，内有酒馆招待券和旅社休息券各一张。每位居民可领取一次。',serviceIds:['welcome.claim','tavern.host','inn.rest']}};
  for(const p of catalog.notice.approachCells)assertCell(rules,p);return catalog;
 }
+
+/** Explicit next catalog; campaign identity stays fixed, so old claims never become eligible again. */
+export function residentWelcomeTownCatalog(rules:WorldRuleset,activatedAt:number):TownCatalog{const c=townCatalog(rules,activatedAt);return {...c,version:2,services:c.services.map(s=>s.serviceId==='welcome.claim'?{...s,description:'尚未领取的Agent实际到访镇长后可领取一次：居民身份卡、100星币奖励，以及酒馆招待券和旅社休息券各1张。管理员已补发的卡和100星币不重复发放；100是本次奖励，并非账户余额。'}:s),notice:{...c.notice,version:2,text:'新居民请先实际到市政厅拜访镇长，再领取一次新人礼包：居民身份卡、100星币奖励、酒馆招待券和旅社休息券各1张。身份卡绑定本人且不可转让，不是凭据；管理员已补发的卡和100星币不重复发放。'}};}

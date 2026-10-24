@@ -1,3 +1,5 @@
+import {createResidentGiftRepository} from './resident-gift-repository.ts';
+import {createWelcomeCreditRepository} from './welcome-credit-repository.ts';
 import {createBehaviorRepository} from './behavior-repository.ts';
 import {createTownRepository} from './town-services-repository.ts';
 import {createServiceInventoryRepository} from './service-inventory-repository.ts';
@@ -20,10 +22,11 @@ export function runtimeIdentitySession(context:RuntimeReadContext):M1ReadSession
  const found=identities.get(context);if(!found)throw new StorageError('invalid_usage','Unknown runtime context');
  if(!found.scope.alive())throw new StorageError('closed','Runtime scope has ended');return found.session;
 }
-function createContext(scope:PostgresScope,options:OpenRuntimeStoreOptions):RuntimeTransaction{
+/** Composition only: caller owns the guarded client/transaction and write-gate validation. */
+export function createPostgresRuntimeContext(scope:PostgresScope,options:OpenRuntimeStoreOptions):RuntimeTransaction{
  const sql=runtimeSql(scope,options.now??Date.now),legacy=createPostgresSession(scope.client,false,scope.alive);
  const core=createRuntimeRepositories(sql,options.recoveryEpoch);
- const adapters=[createWorldRepository(sql),createInteractionRepository(sql),createDecisionRepository(sql,options.recoveryEpoch),createRelationshipsRepository(sql),createBehaviorRepository(sql),createTownRepository(sql),createServiceInventoryRepository(sql),createOwnerMailboxRepository(sql)];
+ const adapters=[createWorldRepository(sql),createInteractionRepository(sql),createDecisionRepository(sql,options.recoveryEpoch),createRelationshipsRepository(sql),createBehaviorRepository(sql),createTownRepository(sql),createServiceInventoryRepository(sql),createOwnerMailboxRepository(sql),createWelcomeCreditRepository(sql),createResidentGiftRepository(sql)];
  const repositories=new Map<object,{reader:unknown;writer:unknown}>();
  for(const adapter of adapters)repositories.set(adapter.port,{reader:Object.freeze(adapter.reader),writer:Object.freeze(adapter.writer)});
  const base={instanceId:options.instanceId,recoveryEpoch:options.recoveryEpoch,now:sql.now,
@@ -41,7 +44,7 @@ function createContext(scope:PostgresScope,options:OpenRuntimeStoreOptions):Runt
 export async function openRuntimeStore(options:OpenRuntimeStoreOptions):Promise<RuntimeStore>{
  if(options.now!==undefined&&typeof options.now!=='function')throw new StorageError('invalid_usage','A clock must be a function');
  const host=await openPostgresTransactionHost(options);
- function invoke<T>(scope:PostgresScope,work:(context:RuntimeTransaction)=>Promise<T>):Promise<T>{if(typeof work!=='function')throw new StorageError('invalid_usage','A runtime callback is required');const value=work(createContext(scope,options));if(!value||typeof value.then!=='function')throw new StorageError('invalid_usage','Runtime callbacks must be asynchronous');return value;}
+ function invoke<T>(scope:PostgresScope,work:(context:RuntimeTransaction)=>Promise<T>):Promise<T>{if(typeof work!=='function')throw new StorageError('invalid_usage','A runtime callback is required');const value=work(createPostgresRuntimeContext(scope,options));if(!value||typeof value.then!=='function')throw new StorageError('invalid_usage','Runtime callbacks must be asynchronous');return value;}
  return Object.freeze({instanceId:host.instanceId,recoveryEpoch:host.recoveryEpoch,
   read:<T>(work:(context:RuntimeReadContext)=>Promise<T>)=>host.read(scope=>invoke(scope,work)),
   transaction:<T>(work:(context:RuntimeTransaction)=>Promise<T>)=>host.transaction(scope=>invoke(scope,work)),close:()=>host.close()});
