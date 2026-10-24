@@ -86,11 +86,12 @@ export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadCont
   if(owner&&row.sourceRef.type==='interaction_activity'){const ref=await sources.interaction.behaviorDetailRef?.(ctx,row);if(ref)detail={operation:'interaction.owner_exchange',input:{agentId:row.agentId,invitationId:ref.invitationId}};}
   const described=await sources[row.sourceDomain]!.describeBehavior(ctx,row,owner?'owner':'public');let details:JsonObject|null=null;
   if(described){
+   if(row.sourceRef.type==='resident_gift')title=result=described.resultCode==='resident_card_and_credit_issued'?'镇长补发居民身份卡和100星币':described.resultCode==='resident_card_issued'?'镇长补发居民身份卡':'镇长补发100星币';
    const service=described.service;
    if(service){
     if(row.node==='town_services.greeted')title=result='拜访了'+service.npcName;
     if(row.node==='town_services.service.started'){title='在石岸旅舍开始休息';result='已开始休息，休息券已预留，尚未完成';}
-    if(row.node==='town_services.service.completed'){
+    if(row.node==='town_services.service.completed'&&row.sourceRef.type!=='resident_gift'){
      title=result=service.serviceId==='welcome.claim'?'从镇长那里领到新人礼包':service.serviceId==='tavern.host'?'在港湾酒馆使用招待券，喝了一杯迎新茶':service.serviceId==='inn.rest'?'在石岸旅舍使用休息券，完成休息':'已完成'+service.serviceName;
     }
     if(row.node==='town_services.service.cancelled')title=result=service.serviceName+'已取消';
