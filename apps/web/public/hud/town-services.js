@@ -1,4 +1,5 @@
 import {api,el} from '../common.js';
+import {iconBodies} from '../paper-ui/icons.js';
 import {avatar} from '../scene.js';
 import {PIXEL_LAYOUT_SHA256,PIXEL_GEOMETRY_DIGEST,PIXEL_MAP} from '../world-pixel/map.js';
 import {readWorldNpcs} from './world-scene-projection.js';
@@ -43,7 +44,7 @@ const townPaths={
  cancel:'m5 5 14 14M19 5 5 19',
  check:'m4 12 5 5L20 6',
 };
-function townIcon(name){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','1.7');svg.setAttribute('stroke-linecap','round');svg.setAttribute('stroke-linejoin','round');svg.setAttribute('aria-hidden','true');svg.classList.add('town-icon');const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',townPaths[name]||townPaths.info);svg.append(path);return svg;}
+function townIcon(name){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','2');svg.setAttribute('stroke-linecap','round');svg.setAttribute('stroke-linejoin','round');svg.setAttribute('aria-hidden','true');svg.classList.add('town-icon');const body=iconBodies[({greet:'speech',cancel:'close'})[name]||name];if(body){svg.setAttribute('stroke','none');svg.innerHTML=body;return svg;}const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',townPaths[name]||townPaths.info);svg.append(path);return svg;}
 function sectionTitle(number,label){const title=el('h3','town-section-title'),badge=el('span','town-section-number',number);badge.setAttribute('aria-hidden','true');title.append(badge,document.createTextNode(label));return title;}
 function familiarity(value){const box=el('div','town-familiarity'),meter=el('progress');meter.max=100;meter.value=value;meter.setAttribute('aria-label',`熟悉度 ${value} / 100`);box.append(el('span','',`熟悉度 ${value} / 100`),meter);return box;}
 function factLine(label,kind='info'){const line=el('p','town-fact');line.append(townIcon(kind),document.createTextNode(label));return line;}
