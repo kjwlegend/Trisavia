@@ -1,6 +1,6 @@
 {
   "name": "agents-era-m1-backend",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "engines": {
@@ -12,7 +12,9 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test --test-concurrency=1 tests/*/*.test.ts",
     "check": "npm run typecheck && npm test",
-    "test:e2e": "node scripts/run-e2e.ts"
+    "test:e2e": "node scripts/run-e2e.ts",
+    "build:web": "node scripts/build-web.mjs",
+    "test:web-build": "node --test tests/build/web-build.test.mjs"
   },
   "dependencies": {
     "fastify": "5.12.7",
@@ -22,6 +24,7 @@
     "@playwright/test": "1.64.1",
     "@types/node": "24.19.2",
     "@types/pg": "^8.23.1",
+    "esbuild": "0.28.2",
     "typescript": "7.0.2"
   }
 }

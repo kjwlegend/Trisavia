@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "method": "ImageMagick Lanczos downsample to sRGB PNG, strip metadata; original SVG geometry/text unchanged",
+  "exports": [
+    {
+      "source": "trisavia-nav-lockup.svg",
+      "sourceSha256": "c07549c789ce7fa8ed427e0729e2324ca41e1cbe77c9d2005a2fb1ab2b6dea5a",
+      "file": "trisavia-nav-lockup.performance.svg",
+      "sha256": "b73494d4e61ee4de3330497a747dcee41f0a36732169de36bc768df7fade3983",
+      "bytes": 27640,
+      "embeddedRaster": {
+        "width": 128,
+        "height": 128
+      },
+      "preserves": "Original SVG viewBox, framing, dimensions, text, colors and element geometry; only embedded raster downsampling and metadata removal."
+    },
+    {
+      "source": "trisavia-small-mark-framed.svg",
+      "sourceSha256": "3f8a7b14477bbe42e2aa585bba0accd9664eb1c8cae7c8b63eeb664f3dbfe70e",
+      "file": "trisavia-small-mark-framed.performance.svg",
+      "sha256": "05d4a5e0ce7052abe20c13486507bc1a4450003788f760998dd78f2433a36884",
+      "bytes": 16015,
+      "embeddedRaster": {
+        "width": 128,
+        "height": 128
+      },
+      "preserves": "Original SVG viewBox, framing, dimensions, text, colors and element geometry; only embedded raster downsampling and metadata removal."
+    }
+  ]
+}
