@@ -2,7 +2,8 @@ import {randomUUID} from 'node:crypto';
 import type {RuntimeTransaction,RuntimeReadContext} from '../contracts/runtime-store.ts';
 import type {IdentityAccess} from '../domains/access/public.ts';
 import {RESIDENT_GIFT_REPOSITORY} from '../domains/town-services/resident-gift.ts';
-import {SERVICE_INVENTORY_REPOSITORY} from '../domains/town-services/repository.ts';
+import {RuntimeError} from '../contracts/runtime-store.ts';
+import {TOWN_REPOSITORY,SERVICE_INVENTORY_REPOSITORY} from '../domains/town-services/repository.ts';
 import {WELCOME_CREDIT_REPOSITORY} from '../domains/wallet/welcome-credit.ts';
 import type {ResidentCard} from '../domains/town-services/types.ts';
 import {recordBehaviorSource} from '../domains/behavior/sources.ts';
@@ -10,7 +11,9 @@ import {detailPayload} from '../domains/behavior/details.ts';
 import type {BehaviorDetails} from '../domains/behavior/types.ts';
 /** Same transaction as the actual claim or explicitly guarded administrator command. Never creates a visit or claim. */
 export async function issueResidentGift(ctx:RuntimeTransaction,input:{resident:Omit<ResidentCard,'issuedAt'>;initiatorKind:'agent'|'administrator';initiatorId:string;sourceOperationId:string|null;operationId:string},identity:IdentityAccess<RuntimeReadContext>){
- const agentId=input.resident.agentId,now=ctx.now(),gift=await ctx.repository(RESIDENT_GIFT_REPOSITORY).ensure({id:randomUUID(),agentId,createdAt:now,sourceOperationId:input.sourceOperationId,initiatorKind:input.initiatorKind,initiatorId:input.initiatorId}),inventory=ctx.repository(SERVICE_INVENTORY_REPOSITORY),credits=ctx.repository(WELCOME_CREDIT_REPOSITORY);
+ const agentId=input.resident.agentId;let now:number;
+ if(input.initiatorKind==='agent'){const claim=input.sourceOperationId&&await ctx.repository(TOWN_REPOSITORY).getOperation(input.sourceOperationId);if(!claim||claim.agentId!==agentId||input.initiatorId!==agentId||claim.serviceId!=='welcome.claim'||claim.state!=='completed'||claim.catalogVersion<2||claim.endedAt===null)throw new RuntimeError('invalid_usage','Resident issuance requires its real completed welcome claim');now=claim.endedAt;}else now=ctx.now();
+ const gift=await ctx.repository(RESIDENT_GIFT_REPOSITORY).ensure({id:randomUUID(),agentId,createdAt:now,sourceOperationId:input.sourceOperationId,initiatorKind:input.initiatorKind,initiatorId:input.initiatorId}),inventory=ctx.repository(SERVICE_INVENTORY_REPOSITORY),credits=ctx.repository(WELCOME_CREDIT_REPOSITORY);
  let card=await inventory.findResidentCard(agentId),credit=await credits.get(agentId);const cardIssued=!card,creditGranted=!credit;
  if(!card){const id=randomUUID();card={id,version:1,agentId,kind:'resident_card',state:'available',sourceGiftId:gift.id,sourceOperationId:input.sourceOperationId,issuedAt:now,updatedAt:now,reservationId:null,consumedBy:null,holdingId:'town-holding:'+id,residentCard:{...input.resident,issuedAt:now}};await inventory.issue(card);}
  if(!credit)credit=await credits.grant({agentId,sourceGiftId:gift.id,sourceOperationId:input.sourceOperationId,grantedAt:now});
