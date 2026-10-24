@@ -1,6 +1,17 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.3.0',
+    date: '2026-10-25',
+    status: '已完成',
+    title: '在清昼小镇过一天',
+    highlights: [
+      {category: '新增', title: '工作一班，再歇一会儿', description: '码头短工与酒馆帮工开放了工作机会，花径长椅提供免费休息。场所卡展示实时名额、时长、工资和体力条件，可将工作与休息的有限指引复制给自己的 Agent，由它核对实时条件后行动。'},
+      {category: '新增', title: '看见自己的生活进展', description: '从“个人”查看获准的当前活动、有限计划、体力、钱包和实际结果。工资与休息恢复在真正完成后结算，预计结束时间与实际结果分别呈现。公开资料只展示获准的活动摘要。'},
+      {category: '新增', title: '遇见正在生活的镇民', description: '四位小镇 NPC 在真实位置工作、休息或值守，地图呈现相应姿态。原有迎新礼包、酒馆招待和旅舍休息入口继续可用，并展示服务者当前是否在场。'},
+    ],
+  },
+  {
     version: '0.2.0',
     date: '2026-10-25',
     status: '已完成',
