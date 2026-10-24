@@ -95,6 +95,69 @@
 .paper-hud .hud-window.is-account:not(.is-manager){height:auto;max-height:calc(100dvh - 112px)}
 .paper-hud .hud-root .hud-detail-window{width:min(840px,var(--world-panel-width));height:min(820px,calc(100dvh - 160px))}
 .paper-hud .hud-window .native-frame,.paper-hud .world-detail>.native-frame{display:none}
+.paper-hud .hud-root .hud-window[data-feature=friends]>.hud-window-body{padding:0;overflow:hidden;display:flex}
+.paper-hud .hud-friends,.paper-hud .paper-friends-content{display:flex;flex-direction:column;flex:1;min-height:0;min-width:0;width:100%;gap:0}
+.paper-hud .hud-friends-heading{display:flex;align-items:center;gap:12px;padding:6px 24px;flex:none;min-height:60px;height:60px}
+.paper-hud .hud-friends-heading>div{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+.paper-hud .hud-friends-heading strong{font-size:16px;line-height:24px}
+.paper-hud .hud-friends-heading .avatar{width:40px;height:44px;flex-basis:40px;object-fit:contain;background:#e7dfcd}
+.paper-hud .hud-friends-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:0 24px;flex:none}
+.paper-hud .hud-friends-tabs button{height:40px;border-radius:0;background:transparent;box-shadow:none;border:1px solid var(--paper-border);border-right:0;font-size:14px;min-width:0;padding:6px}
+.paper-hud .hud-friends-tabs button:first-child{border-radius:6px 0 0 6px}.paper-hud .hud-friends-tabs button:last-child{border-right:1px solid var(--paper-border);border-radius:0 6px 6px 0}
+.paper-hud .hud-root .hud-window .hud-friends-tabs button[aria-pressed=true],.paper-hud .hud-root .hud-window .hud-friends-tabs button[aria-pressed=true]:hover{background:var(--paper-accent);border-color:var(--paper-accent);color:#fff;box-shadow:none}
+.paper-hud :is(.paper-friends-browser,.hud-friendship-inbox){display:flex;flex:1;flex-direction:column;min-height:0;min-width:0;padding:12px 24px}
+.paper-hud .paper-list-toolbar{display:flex;align-items:center;gap:12px;flex:none;margin:0 0 8px}
+.paper-hud .paper-list-toolbar input{flex:1;width:0;min-width:0;height:36px}
+.paper-hud .paper-list-toolbar select{width:148px;flex:0 0 148px;height:36px}
+.paper-hud .paper-list-status{font-size:12px!important;line-height:18px!important;min-height:18px;flex:none;margin:0 0 6px!important;color:var(--paper-muted)}
+.paper-hud .paper-list-scroll{overflow-y:auto;overflow-x:hidden;min-height:0;min-width:0;flex:1;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#b9bbae transparent}
+.paper-hud .hud-friends-list{margin:0;padding:0;list-style:none;display:block}
+.paper-hud .hud-friend{display:grid;grid-template-columns:44px minmax(120px,1fr) minmax(120px,1fr) 96px;align-items:center;gap:12px;padding:6px 8px;min-height:62px;height:62px;border:0;border-bottom:1px solid var(--paper-border);background:transparent;box-shadow:none;border-radius:0}
+.paper-hud .hud-friend:hover{background:#eeeee4}
+.paper-hud .hud-friend-picture .avatar{width:40px;height:48px;object-fit:contain;border-radius:6px;background:#e7dfcd}
+.paper-hud .paper-friend-identity{min-width:0;display:flex;flex-direction:column;gap:0}
+.paper-hud .paper-friend-identity strong{font-size:14px;line-height:22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.paper-hud .paper-stable-id{font-size:12px;color:var(--paper-muted);line-height:18px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.paper-hud .paper-friend-score{display:flex;flex-direction:column;gap:4px;font-size:12px;line-height:18px}
+.paper-hud .paper-friend-score meter{height:8px;width:100%;appearance:none;display:block;border:0;background:#e2dfd6;border-radius:5px}
+.paper-hud meter::-webkit-meter-bar{height:8px;border:0;background:#e2dfd6;border-radius:5px}.paper-hud meter::-webkit-meter-optimum-value{background:#7d9977;border-radius:5px}
+.paper-hud .hud-friend .paper-friend-profile{min-height:32px;padding:4px 8px;font-size:12px}
+.paper-hud .paper-list-help{flex:none;padding-top:4px;font-size:12px;color:var(--paper-muted)}
+.paper-hud .paper-list-help summary{min-height:20px;font-size:12px;line-height:18px;font-weight:400}
+.paper-hud .paper-list-help[open]>summary{margin-bottom:4px}
+.paper-hud .paper-list-help p{font-size:12px;line-height:18px;margin:0}
+.paper-hud .paper-list-tail:empty{display:none}.paper-hud .paper-list-tail{font-size:12px;padding:8px}
+.paper-hud .paper-list-identity{flex:none;margin:8px 0 0!important;font-size:12px!important;color:var(--paper-muted)}
+.paper-hud .hud-friendship-invitation-list{display:block;min-width:0;padding:0;border:0;background:transparent}
+.paper-hud .hud-friendship-request-card{display:grid;grid-template-columns:44px minmax(92px,.7fr) minmax(120px,1.3fr) 82px auto;align-items:center;gap:10px;min-height:70px;height:70px;padding:7px 4px;border:0;border-bottom:1px solid var(--paper-border);border-radius:0;background:transparent;box-shadow:none;margin:0}
+.paper-hud .paper-request-picture .avatar{width:40px;height:48px;object-fit:contain;background:#e7dfcd}
+.paper-hud .paper-request-person,.paper-hud .paper-request-copy{min-width:0}
+.paper-hud .hud-friendship-request-card .hud-friendship-request{display:block;text-align:left;max-width:100%;min-height:22px;height:22px;line-height:22px;padding:0;border:0;background:transparent;box-shadow:none;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#476e54}
+.paper-hud .paper-request-message{font-size:12px!important;line-height:18px!important;margin:0!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.paper-hud .paper-request-copy time{font-size:12px;line-height:18px;color:var(--paper-muted)}
+.paper-hud .paper-request-state{font-size:12px;line-height:18px;color:#786441;background:#f3ead3;padding:2px 6px;border-radius:5px;text-align:center}
+.paper-hud .paper-request-actions{display:flex;gap:6px}.paper-hud .paper-request-actions button{min-height:32px;height:32px;padding:4px 10px;font-size:12px;white-space:nowrap}
+.paper-hud .paper-request-actions button[data-friendship-action=accept]{background:#64805b;border-color:#64805b;color:#fff}
+.paper-hud .hud-root .hud-detail-window .hud-window-header{height:48px;min-height:48px;padding:0 16px 0 24px;justify-content:space-between}
+.paper-hud .hud-root .hud-detail-window .hud-window-header .paper-reader-back{width:auto;flex-basis:auto;min-width:120px;padding:6px 0;text-align:left;justify-content:flex-start;font-size:14px}
+.paper-hud .hud-detail-window #hud-detail-title{font-size:20px;line-height:28px;font-weight:650;display:block;overflow:visible;flex:none;margin:0 0 12px;color:var(--paper-ink)}
+.paper-hud .hud-detail-window .hud-reader-footer{flex:none;height:auto;min-height:52px;border-top:1px solid var(--paper-border);background:transparent;padding:8px 24px}
+.paper-hud .hud-detail-window .hud-reader-footer .button-row{display:flex;gap:8px;justify-content:flex-end}
+.paper-hud .hud-friendship-reader .hud-friendship-person{display:flex;align-items:center;gap:16px;margin-bottom:12px}
+.paper-hud .hud-friendship-reader .avatar{width:64px;height:72px;object-fit:contain;background:#e7dfcd}
+.paper-hud .hud-friendship-reader .hud-message-body{white-space:pre-wrap;overflow-wrap:anywhere}
+.paper-hud .paper-command-status{flex:none;font-size:12px;line-height:18px;background:#eeeade;border-radius:6px;padding:8px;margin-top:8px}.paper-hud .paper-command-status:empty{display:none}.paper-hud .paper-command-status p{font-size:12px;line-height:18px;margin:0 0 4px}
+.paper-hud .public-character-card{min-height:0;display:flex;flex-direction:column}
+.paper-hud .character-card-hero{display:flex;align-items:center;gap:20px;margin-bottom:16px}
+.paper-hud .character-card-portrait{position:relative;flex:0 0 88px;width:88px;height:104px;background:#e7dfcd;border:1px solid var(--paper-border);border-radius:8px;overflow:hidden}
+.paper-hud .character-card-sprite{position:absolute;inset:4px;display:grid;place-items:center}
+.paper-hud .character-card-sprite .avatar{width:80px;height:96px;object-fit:contain}
+.paper-hud .character-card-identity{min-width:0;flex:1}.paper-hud .character-card-name{font-size:20px;line-height:28px;margin:0 0 8px;color:var(--paper-ink)}
+.paper-hud .character-card-place,.paper-hud .character-card-tag{display:inline-block;background:var(--paper-sage);border:1px solid var(--paper-border);color:var(--paper-ink);border-radius:5px;padding:2px 8px;font-size:12px;line-height:18px}
+.paper-hud .character-card-tags{display:flex;flex-wrap:wrap;gap:6px}.paper-hud .character-card-interests{border-top:1px solid var(--paper-border);padding-top:16px}
+.paper-hud .character-card-bio{white-space:pre-wrap;color:var(--paper-ink);font-size:14px;line-height:22px}.paper-hud .character-card-empty,.paper-hud .character-card-status{color:var(--paper-muted)}
+.paper-hud .character-card-friendship{border-top:1px solid var(--paper-border);padding-top:12px}.paper-hud .character-card-friendship :is(label,small){color:var(--paper-muted)}
+.paper-hud .character-recent-records{margin-top:16px;border-top:1px solid var(--paper-border);padding-top:8px}.paper-hud .character-recent-records>summary{min-height:32px;font-size:14px;color:var(--paper-ink)}
 .paper-hud .hud-root .hud-window>.hud-window-header #hud-close .hud-icon,.paper-hud .world-detail .world-detail-top button .hud-icon{width:20px;height:20px}
 @media(max-width:1100px){.paper-hud .hud-agent-card{width:260px}.paper-hud .hud-dock{width:380px}.paper-hud .hud-map-tools{gap:8px}.paper-hud .hud-map-tools :is(button,a){padding:6px 10px}}
 @media(max-width:759px){.paper-hud .nav-wrap{padding:0 12px}.paper-hud .brand{font-size:20px;gap:6px}.paper-hud .brand .brand-mark{width:32px}.paper-hud header nav{gap:4px}.paper-hud .world-audio{padding-left:4px}.paper-hud .hud-agent-card{left:12px;bottom:100px;width:250px}.paper-hud .hud-dock{bottom:12px;width:min(440px,calc(100vw - 24px))}.paper-hud .hud-map-tools{right:12px;top:76px}.paper-hud .hud-map-tools :is(button,a){padding:6px}.paper-hud .hud-map-tools .hud-icon{display:none}.paper-hud .world-status-hud{left:12px;top:132px}.paper-hud .hud-root .hud-window{height:min(700px,calc(100dvh - 120px));max-height:calc(100dvh - 120px)}}

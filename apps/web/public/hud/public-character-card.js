@@ -1,13 +1,12 @@
 import {el} from '../common.js';
 import {avatar} from '../scene.js';
 import {createCharacterFriendship} from './friendship-ui.js';
-import {nativeFrame} from '../world-pixel/native-ui.js';
 import {createBehaviorLogReader} from './behavior-log-reader.js';
 import {createBehaviorLogView} from './behavior-log-view.js';
 const put=(node,text)=>{if(node.textContent!==text)node.textContent=text;};
 export function createPublicCharacterCard(reader,{session}={}){
   const node=el('section','public-character-card'),content=el('div','character-card-content'),hero=el('div','character-card-hero'),portrait=el('div','character-card-portrait'),identity=el('div','character-card-identity'),name=el('h3','character-card-name'),place=el('span','character-card-place'),bio=el('p','character-card-bio'),interestGroup=el('section','character-card-interests'),interestTitle=el('h3','','兴趣爱好'),tags=el('div','character-card-tags'),empty=el('p','character-card-empty','尚未填写兴趣。'),status=el('p','character-card-status'),retry=el('button','','重新读取');
-  node.hidden=true;portrait.append(nativeFrame('lightWood'));identity.append(name,place);hero.append(portrait,identity);interestGroup.append(interestTitle,tags,empty);retry.type='button';retry.addEventListener('click',()=>void reader.retry());status.setAttribute('role','status');content.append(hero,status,bio,interestGroup,retry);node.append(content);
+  node.hidden=true;identity.append(name,place);hero.append(portrait,identity);interestGroup.append(interestTitle,tags,empty);retry.type='button';retry.addEventListener('click',()=>void reader.retry());status.setAttribute('role','status');content.append(hero,status,bio,interestGroup,retry);node.append(content);
   const friendship=session?createCharacterFriendship(session):null;if(friendship)node.append(friendship.node);
   const recent=el('details','character-recent-records'),logReader=createBehaviorLogReader({mode:'recent'}),logs=createBehaviorLogView(logReader,{mode:'recent'});let logTarget='',logAvailable=false;recent.append(el('summary','','最近记录'),logs.node);content.append(recent);recent.addEventListener('toggle',()=>logReader.setActive(recent.open&&logAvailable));
   let portraitKey='',tagKey='';const picture=el('div','character-card-sprite');portrait.append(picture);
