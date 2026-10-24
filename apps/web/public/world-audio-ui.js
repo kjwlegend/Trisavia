@@ -3,8 +3,9 @@ import {createWorldAudio} from './world-audio.js';
 import {icon} from './hud/icons.js';
 
 export function mountWorldAudio(){
-  const audio=createWorldAudio(),root=el('div','world-audio'),button=el('button','world-audio-button','声音：关'),panel=el('section','world-audio-panel'),heading=el('h2','','小镇声音'),close=el('button','','关闭声音设置'),toggle=el('button'),status=el('p'),preview=el('button','','试听文字声');
+  const audio=createWorldAudio(),root=el('div','world-audio'),button=el('button','world-audio-button','声音：关'),panel=el('section','world-audio-panel'),heading=el('h2','','小镇声音'),close=el('button','world-audio-close'),toggle=el('button'),status=el('p','world-audio-status'),preview=el('button','','试听文字声');
   button.type=close.type=toggle.type=preview.type='button';button.setAttribute('aria-expanded','false');button.setAttribute('aria-controls','world-audio-settings');panel.id='world-audio-settings';panel.hidden=true;panel.setAttribute('role','dialog');panel.setAttribute('aria-label','声音设置');status.setAttribute('role','status');
+  close.setAttribute('aria-label','关闭声音设置');close.append(icon('close'));toggle.className='world-audio-toggle';
   const top=el('div','world-audio-heading');top.append(heading,close);panel.append(top,toggle);
   for(const [channel,label]of [['bgm','背景乐音量'],['sfx','音效音量']]){const field=el('label'),text=el('span','',label),range=el('input'),output=el('output');range.type='range';range.min='0';range.max='100';range.step='1';range.value=String(Math.round(audio.snapshot()[channel]*100));range.setAttribute('aria-label',label);output.textContent=range.value+'%';range.addEventListener('input',()=>{output.textContent=range.value+'%';audio.volume(channel,Number(range.value)/100);});field.append(text,range,output);panel.append(field);}
   panel.append(status,preview,el('p','world-audio-note','音量保存在这台设备。切到后台时暂停播放。'));root.append(button,panel);(document.querySelector('header nav')||document.body).append(root);

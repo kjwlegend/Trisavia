@@ -2,6 +2,8 @@ const paths={
  profile:'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2',
  friends:'M14 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM2 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2M18 3a4 4 0 0 1 0 8M22 21v-2a6 6 0 0 0-3-5.2',
  inventory:'M9 5V3h6v2M7 5h10a3 3 0 0 1 3 3v13H4V8a3 3 0 0 1 3-3ZM8 12h8v5H8ZM4 9h16',
+ search:'M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0ZM15 15l6 6',
+ send:'m3 11 18-8-8 18-3-8-7-2ZM10 13 21 3',
  mail:'M3 5h18v14H3ZM3 6l9 7 9-7',
  document:'M14 3H5v18h14V8ZM14 3v5h5M8 12h8M8 16h8',
  world:'M3 5l6-2 6 2 6-2v16l-6 2-6-2-6 2ZM9 3v16M15 5v16',

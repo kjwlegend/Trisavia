@@ -13,6 +13,7 @@ import {freeAreas} from '../world-safe-area.js';
 import {emitWorldAudio} from '../world-audio.js';
 import {createTownServiceCard,readTownNotice} from './town-services.js';
 import {pixelPoint} from '../world-pixel/map.js';
+import {icon} from './icons.js';
 let scene=null;
 export function initSceneRenderer({session,onSelectAgent=()=>{},rendering=null}={}){
 let mapReady=false,mapFailed=false,pageActive=true;
@@ -44,7 +45,7 @@ async function tryPublicFocus(){
 }
 function focusPublicResident(agentId){cancelPublicFocus();if(!/^[A-Za-z0-9_-]{8,100}$/.test(agentId)){focusMessage('这个居民档案链接暂时无法定位。');return;}publicFocus={agentId,waiting:true,reading:false};focusMessage('正在寻找这位居民的公开位置…');void tryPublicFocus();}
 focusRetry.addEventListener('click',()=>{if(!publicFocus)return;publicFocus.waiting=true;focusMessage('正在重新确认公开位置…');void worldProvider.refresh();});
-const detail=$('#world-detail'),detailTransition=createPanelTransition(detail),environment=getPanelEnvironment();detail.prepend(nativeFrame('lightWood'));
+const detail=$('#world-detail'),detailTransition=createPanelTransition(detail),environment=getPanelEnvironment();detail.prepend(nativeFrame('lightWood'));$('#world-detail-close').replaceChildren(icon('close'));
 const publicCharacter=createPublicCharacterReader(),characterCard=createPublicCharacterCard(publicCharacter,{session});const townCard=createTownServiceCard(session,{chooseAgent:()=>document.dispatchEvent(new CustomEvent('hud:choose-agent')),getWorldState:()=>scene?{...scene.getState(),rules:worldData.rules}:null,onContextChange:townContextChanged});townCard.node.hidden=true;$('.world-detail-body',detail).prepend(characterCard.node,townCard.node);
 let noticeVersion=null,noticeAbort=null;
 async function syncTownNotice(){const version=worldData.npcCatalogVersion;if(!mapReady||!worldData.complete||!version||noticeVersion===version)return;noticeVersion=version;noticeAbort?.abort();const controller=new AbortController();noticeAbort=controller;try{const data=await readTownNotice({signal:controller.signal});if(!controller.signal.aborted&&worldData.npcCatalogVersion===data.catalogVersion)scene?.setTownNotice(data);}catch{/* The map never invents a missing object's location. */}}
@@ -84,7 +85,7 @@ function positionCharacterCard(){
   if(currentPlace?.kind!=='world-avatar'||detail.hidden||!scene)return;
   const state=scene.getState(),camera=state.camera,box=scene.canvas.getBoundingClientRect(),phone=camera.width<760;
   const anchor={x:box.left+camera.width/2+(currentPlace.x-camera.x)*camera.scale,y:box.top+(state.mode==='overview'?(camera.height+(phone?112:88)-(phone?116:126))/2:camera.height/2)+(currentPlace.y-camera.y)*camera.scale};
-  const bounds={left:phone?12:24,right:innerWidth-(phone?12:24),top:phone?Math.max(12,document.querySelector('header')?.getBoundingClientRect().bottom+12||12):24,bottom:phone?Math.min(innerHeight-12,$('#hud-dock')?.getBoundingClientRect().top-12||innerHeight-12):innerHeight-24};
+  const bounds={left:phone?12:24,right:innerWidth-(phone?12:24),top:Math.max(phone?12:24,(document.querySelector('header')?.getBoundingClientRect().bottom||0)+12),bottom:phone?Math.min(innerHeight-12,$('#hud-dock')?.getBoundingClientRect().top-12||innerHeight-12):innerHeight-24};
   const maxHeight=Math.min(phone?360:600,bounds.bottom-bounds.top),width=Math.min(phone?320:440,bounds.right-bounds.left);detail.style.setProperty('--character-card-max-height',`${maxHeight}px`);
   const height=Math.min(maxHeight,detail.offsetHeight||maxHeight);
   const blocked=['#world-status-hud','#hud-agent','#hud-locate-agent','.hud-map-tools'].flatMap(selector=>{const node=$(selector);if(!node||node.hidden||!node.getClientRects().length)return[];const rect=node.getBoundingClientRect();return[{left:rect.left-12,right:rect.right+12,top:rect.top-12,bottom:rect.bottom+12}];});
