@@ -327,3 +327,8 @@
 .hud-root .hud-window .account-root .manager-page-heading>.text-button .hud-icon,.hud-root .hud-window .account-root #manager-copy-id .hud-icon{width:16px;height:16px}
 .hud-root .hud-window .account-root #manager-copy-id{width:32px;min-width:32px;height:32px;min-height:32px;padding:8px;margin-top:-5px}
 .hud-root .hud-window .account-root .choice-summary[data-dirty=false] strong:last-child{color:var(--owner-ink)}
+/* The current-object strip and log heading already repeat a switch success.
+   Keep neutral live feedback accessible without spending a log row on short screens. */
+@media(max-height:850px){
+ .hud-root .hud-window .account-root #manage-view[data-manager-page=logs] .manager-feedback>#global-notice:not(.error):not(.pending){position:absolute;width:1px;height:1px;padding:0;margin:0;border:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+}
