@@ -1,0 +1,9 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><title>Native pose inspection</title><style>body{background:#e6dfca;font:16px monospace;color:#263f36}canvas{image-rendering:pixelated;border:1px solid #bbb}</style><h1>Original native frames · read-only composition</h1><canvas width="1440" height="650"></canvas><script type="module">
+const c=document.querySelector('canvas'),ctx=c.getContext('2d');ctx.imageSmoothingEnabled=false;
+const im=async u=>{let i=new Image;i.src=u;await i.decode();return i};
+const b=await im('../assets/human-base-doing.png'),h=await im('../assets/human-bowlhair-doing.png');
+const bi=await im('/frozen/world-pixel/assets/human-base-idle.png'),hi=await im('/frozen/world-pixel/assets/human-bowlhair-idle.png');
+for(let f=0;f<8;f++){let x=f*174;ctx.fillText(`DOING ${f}`,x,25);for(let img of[b,h])ctx.drawImage(img,f*96+30,15,36,30,x,45,144,120);}
+for(let f=0;f<8;f++){let x=f*174;ctx.fillText(`IDLE ${f}`,x,235);for(let img of[bi,hi])ctx.drawImage(img,f*96+30,15,36,30,x,255,144,120);}
+window.ready=true;
+</script></html>
