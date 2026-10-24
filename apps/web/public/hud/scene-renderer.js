@@ -214,7 +214,7 @@ if (location.hash === '#connect') $('#connect').open = true;
 startScene();worldProvider.start();
 window.addEventListener('pagehide', event => {pageActive=false;stopEntryRead();worldProvider.setVisible(false);statusHud.setVisible(false);if (!event.persisted){cancelPublicFocus();noticeAbort?.abort();townCard.dispose();entryObserver?.disconnect();sceneGeneration++;sceneAbort?.abort();worldProvider.dispose();statusHud.dispose();stopStatusSession?.();ownedAgents?.dispose();characterCard.dispose();publicCharacter.dispose();window.removeEventListener('resize',positionCharacterCard);characterSize.disconnect();detailTransition.destroy();scene?.destroy();} });
 window.addEventListener('pageshow',()=>{pageActive=true;if(scene&&!mapFailed){worldProvider.setVisible(scene.getState().visible);statusHud.setVisible(scene.getState().visible&&!document.hidden);}if(entryVisible)void readEntryCapabilities();});
-return{focusPublicResident,locateAgent(agentId){return mapReady&&scene?.locateOwnedAgent(agentId)||false;}};
+return{focusPublicResident,returnToTown(){if(!mapReady||!scene)return false;closePlace(false);scene.fit();$('#world-canvas')?.focus({preventScroll:true});return true;},locateAgent(agentId){return mapReady&&scene?.locateOwnedAgent(agentId)||false;}};
 }
 export function getWorldState(){return scene?.getState()??null;}
 function entryCapabilityText(caps){

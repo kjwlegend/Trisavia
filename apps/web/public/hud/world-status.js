@@ -4,7 +4,7 @@ const put=(node,text)=>{if(node.textContent!==text)node.textContent=text;};
 const compactTime=new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
 export function sceneStatus(value,selectedAgentId=''){
   const rows=value.complete?value.avatars:[],selected=rows.find(row=>row.agentId===selectedAgentId),places=new Set(rows.map(row=>row.placeId).filter(Boolean)),open=value.rules?.places?.filter(place=>place.access==='members')||[];
-  const placeId=selected?.placeId||(places.size===1?[...places][0]:open.length===1?open[0].id:null),place=selected?selected.placeId==='commons'?'公共庭':value.rules?.mapManifest?.mapId==='pixel-town-v2'?'小镇街区':null:value.rules?.mapManifest?.mapId==='pixel-town-v2'?'连续小镇':placeId==='commons'?'公共庭':null;
+  const placeId=selected?.placeId||(places.size===1?[...places][0]:open.length===1?open[0].id:null),place=selected?selected.placeId==='commons'?'公共庭':value.rules?.mapManifest?.mapId==='pixel-town-v2'?'小镇街区':null:value.rules?.mapManifest?.mapId==='pixel-town-v2'?'清昼小镇':placeId==='commons'?'公共庭':null;
   const retained=value.stale===true||value.phase==='recovering'||value.phase==='paused',last=Number.isSafeInteger(value.lastSuccessAt)?new Date(value.lastSuccessAt).toLocaleTimeString('zh-CN',{hour12:false}):'未提供';
   return{location:place?`${selected?'角色所在':'当前场景'}：${place}`:'场景待确认',count:value.complete?`${retained?'上次画面（已过期）':'公开角色'}：${rows.length}`:'公开角色：—',status:retained&&value.complete?`${value.phase==='paused'?'场景读取已暂停':'连接正在恢复'}，上次画面已过期，位置停止更新。最后成功读取：${last}。`:value.phase==='partial'?'角色集合尚未完整读取。':['error','unavailable'].includes(value.phase)?'场景暂不可读取。':value.phase==='paused'?'场景读取已暂停。':''};
 }

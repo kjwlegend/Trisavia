@@ -6,6 +6,7 @@ import {createSessionApi} from './hud/session-api.js';
 import {createHud} from './hud/shell.js';
 import {initSceneRenderer,getWorldState} from './hud/scene-renderer.js';
 import {mountWorldAudio} from './world-audio-ui.js';
+import {mountWorldAtlas} from './hud/world-atlas.js';
 export async function boot({entryStore,intent}){
 bindOnboardingPrompt({text:$('#agent-prompt'),copy:$('#copy-prompt'),retry:$('#retry-prompt'),status:$('#copy-status')});
 
@@ -15,7 +16,10 @@ controller=createOwnerController(accountNode,{entryStore,isVisible:()=>hud?.isAc
 const session=createSessionApi(controller);
 hud=createHud({session,accountNode,canLeaveAccount:()=>controller.leaveEditing(),onLocateAgent:agentId=>renderer?.locateAgent(agentId),onOpenAccount:(mode,agentId)=>controller.open(mode,agentId),getAccountTitle:()=>controller.getTitle()});
 renderer=initSceneRenderer({session,onSelectAgent:(agentId,origin)=>hud.openAccount('profile',agentId,origin)});
+const atlas=mountWorldAtlas({beforeOpen:async()=>{if(controller.snapshot().interactionLocked||!await controller.leaveEditing())return false;hud.close(false);document.dispatchEvent(new CustomEvent('hud:open'));return true;},onReturnToTown:()=>renderer.returnToTown()});
 const publicUrl=new URL(location.href),publicTargets=publicUrl.searchParams.getAll('resident');let publicTarget=null;
+const atlasTargets=publicUrl.searchParams.getAll('atlas'),atlasRequested=publicUrl.pathname==='/'&&atlasTargets.length===1&&atlasTargets[0]==='1';
+if(publicUrl.pathname==='/'&&atlasTargets.length){publicUrl.searchParams.delete('atlas');history.replaceState(history.state,'',publicUrl.pathname+publicUrl.search+publicUrl.hash);}
 if(publicUrl.pathname==='/'&&publicTargets.length){publicUrl.searchParams.delete('resident');history.replaceState(history.state,'',publicUrl.pathname+publicUrl.search+publicUrl.hash);publicTarget=publicTargets.length===1&&/^[A-Za-z0-9_-]{8,100}$/.test(publicTargets[0])?publicTargets[0]:'';renderer.focusPublicResident(publicTarget);}
 const audio=mountWorldAudio();let audioIdentity=session.snapshot().observationRevision;session.subscribe(state=>{if(audioIdentity!==state.observationRevision){audioIdentity=state.observationRevision;audio.clearEffects();}});
 const hadPrivateEntry=entryStore.pending;
@@ -29,5 +33,6 @@ if(publicTarget===null&&!entryRevision&&intent.mode&&intent.mode!=='profile'&&!h
 hud.setAccountTitle(controller.getTitle());
 document.body.classList.add('paper-app-ready');
 if(publicTarget===null&&!intent.mode&&['#world-entry','#connect'].includes(location.hash))hud.openAccount('entry');
+if(atlasRequested&&publicTarget===null&&!intent.mode&&!hadPrivateEntry&&!controller.snapshot().continuation&&!entryRevision&&!['#world-entry','#connect'].includes(location.hash))void atlas.open();
 }
 export {getWorldState};
