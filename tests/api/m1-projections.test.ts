@@ -124,7 +124,7 @@ await test("management snapshots keep generation-specific delivery, initializati
     assert.deepEqual((await self()).management, management);
     f.tick(60000);
     const detail = await f.service.invoke("managedAgent", { agentId: agent.agentId }, session);
-    assert.deepEqual(detail.management, management);
+    assert.deepEqual(detail.management, {managementStatus:"managed"});
     assert.equal(detail.asOf, 70050);
     assert.equal(detail.profileUrl, `/residents/${agent.agentId}`);
     assert.equal((await self()).asOf, 70050);
@@ -133,7 +133,7 @@ await test("management snapshots keep generation-specific delivery, initializati
     const list = await f.service.invoke("listAgents", {}, session);
     assert.equal(list.asOf, 70050);
     assert.equal((list.agents as JsonObject[])[0]!.asOf, list.asOf);
-    assert.deepEqual((list.agents as JsonObject[])[0]!.management, management);
+    assert.deepEqual((list.agents as JsonObject[])[0]!.management, {managementStatus:"managed"});
     assert.equal(first.result.generation, 1);
 });
 await test("invited Agents have their own binding time and cannot inherit another Agent's handoff or private management view", async (t) => {

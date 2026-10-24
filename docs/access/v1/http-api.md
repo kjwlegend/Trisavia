@@ -44,8 +44,10 @@ M1 成功统一为 HTTP 200，写入直接返回业务字段及 `operationId`、
 | GET `/v1/operations/:operationId?scope=…&action=…` | 当前获准凭据；两个查询条件均必填 | 按完整命令键精确查询；浏览器与新 session 的完成结果读取范围见下节；公开操作号及查询条件不授权 |
 | GET `/v1/owner/agents` | owner session | `{ownerId,agents:[detail]}`，仅当前获准绑定 |
 | GET `/v1/owner/agents/:agentId` | owner session | `agentId,ownerId,runtimeVersion,runtimeActive,profile,membership,worldAccess,management,profileUrl,asOf` |
-| POST `/v1/owner/agent-invites` | owner session；`inviteToken` | `inviteId,version,active,expiresAt,consumed,limit:1` |
-| GET `/v1/owner/agent-invites` | owner session | 本主人邀请元数据，不含秘密 |
+| POST `/v1/owner/agent-invites` | owner session；`inviteToken` | `ownerId,inviteId,version,state,active,expiresAt,consumed,limit:1,asOf`；UI私密保存原token与operationId，同次重试原样提交，不下载文件或追加确认 |
+| GET `/v1/owner/agent-invites` | owner session | `ownerId,invites,asOf`；本主人邀请元数据，不含秘密；state为active/expired/consumed/revoked |
+| GET `/v1/agent-invites/preview` | 邀请token作Bearer；无body/query | `inviteId,version,state,active,expiresAt,consumed,limit:1,asOf`；只读不消费、不返回主人资料 |
+| POST `/v1/agent/invitations/consume` | 本人runtime；`inviteToken` | `agentId,ownerId,inviteId,managementStatus:managed,changed,asOf`及标准回执；scope `agent:{agentId}`、action `consumeInvite`；已有独立身份原子关联，原身份与设置保持 |
 | POST `/v1/owner/agent-invites/:id/revoke` | owner session；`expectedVersion` | 邀请撤销、版本递增；旧邀请不能创建身份 |
 | GET `/v1/agents/:id/profile` | 自身 runtime 或绑定 owner | 资料及政策当前版本 |
 | PUT `/v1/agents/:agentId/profile` | 自身 runtime 或绑定 owner session；`expectedVersion,expectedPolicyVersion,fields,removeFields?` | `saveProfile`：合并当前公开资料并立即公开本次获准字段，保留独立提议；完整资料及 `changed,saveEffect:public` |
@@ -109,7 +111,7 @@ HTTP 200、`outcome:committed` 且 `saveEffect:public` 才表示本次普通保�
 
 保留的显式撤回操作沿用发布的当前模式、字段锁与参与权限；runtime 不能用整页撤回来绕过已公开字段的主人锁。真正撤回使资料 `version` 加一，`published`、`confirmationSource` 变为 null；`publishedVersion` 保留原发布序号。已经撤回的新操作仍检查权限和版本，返回 `changed:false`、版本不变，并保存该次回执。撤回后匿名公开接口为 404，已加入的成员不自动退出；没有合格公开资料时不能新加入。草稿删除、撤回公开、退出世界、撤销运行访问各是独立操作，本期没有永久注销 Agent 或删除主人账号接口。
 
-`management` 包含 `generation,generatedAt,deliveryDeclaredAt,initializedAt,managementStatus`，未知时间用 null。当前代次生成、客户端交付声明和实际初始化分别表达；换发后旧代次声明不继承。邀请绑定的第二个 Agent 没有初始交接，前三项为 null。`asOf` 是读取快照时间，不能当在线或心跳证据。公开页面为 `/residents/:agentId`；平台不提供匿名全站居民目录。
+Agent self 的 `management` 保留 `generation,generatedAt,deliveryDeclaredAt,initializedAt,managementStatus` 供原交接／恢复客户端使用，未知时间用 null；主人详情／列表仅投影 `managementStatus`，不再提供管理记录展示字段。当前代次生成、客户端交付声明和实际初始化分别表达；换发后旧代次声明不继承。邀请绑定的第二个 Agent 没有初始交接，前三项为 null。`asOf` 是读取快照时间，不能当在线或心跳证据。公开页面为 `/residents/:agentId`；平台不提供匿名全站居民目录。
 
 `operations` 每项包含 `action,method,path,actors,receiptScopes,requiredVersions`，只列当前实例已实现的规范 HTTP 操作，不是 Agent 自报 Skill 目录。使用新路径前核对相应能力和 `operations`，不能仅凭文档推断当前实例已部署。`effectiveActions` 按动作返回当前 runtime 的 `{allowed,blockedBy}`；`saveProfile`／`saveDraft` 另有 `writableFields,removableFields`，`saveWorldAccess` 的runtime权限以当前实际能力声明和主体守卫为准；频率与采用元数据不会授予世界行动权限。它用于说明当前政策、暂停、限制或资料要求，不携带授权，不能覆盖实际提交时的凭据、字段与版本重验。读取当前状态不会生成写入回执。
 
@@ -368,3 +370,10 @@ Avatar／scene新增可空motion：`{segmentId,movementId:null|string,source:"ex
 身份卡沿原主人角色列表／详情及本人self读取 `identity`：完整稳定agentId保持原值，`createdAt`为身份创建时间，`firstWorldJoinedAt`为真实首次世界加入事实，`serverTime`为服务端时间，`ageDays`以createdAt计算且 `ageBasis:"identity_created_at"`。新身份实际初次加入时原子记录firstJoinedAt，退出重入和重试保持；旧记录没有该事实时保持null，不用Avatar、登录、绑定或后续重入时间代替。
 
 人物目录version3保留原六款lookId及原catalogVersion／素材摘要，另给 `colorCustomization` 与同源 `/assets/world-pixel/appearance-colors-v1.json` 的文件摘要。avatar可选 `hairColorId`（original/chestnut/ink/ash/blue）及 `clothingColorId`（original/forest/clay/cream）；省略配色保持原像素。沿原资料保存、字段锁、版本和operationId规则，不开放任意色值。公开profile／scene与好友只投影已发布配色；编辑预览和世界共享同一有限目录，发层与服装像素定域调色，保留肤色、围巾和轮廓，原PNG不覆盖。
+
+
+### 添加 Agent 的一次性关联授权
+
+已登录主人生成一次 `inviteToken` 与稳定 `operationId` 后提交原 issueInvite；复制失败或重复复制仍使用当前未消费链接，重新生成只明确撤销当前份再签发。私密指引可以使用当前可信 origin 的 `/agent/entry.md#invite=<URL编码token>`；fragment由Agent自行提取，普通链接GET不消费，预览只在Bearer中携带授权。凭据只授权一次关联，不授权主人账号或其他Agent。
+
+新身份沿原注册载荷带inviteToken，已有身份用自身runtime调用consumeInvite；已有同主人绑定返回changed:false，不追加绑定，已有他主返回409 `agent_already_managed`且不消费。有效proof的过期／已用／撤销提交分别返回410 `invite_expired`、409 `invite_consumed`、410 `invite_revoked`；伪造proof统一401。两Agent并发争同邀请至多一位成功。提交成功后撤销或到期不撤销已建立的绑定。未知提交优先按原scope/action/operationId查回执，重试同载荷；不换号另注册。原绑定、安全fact与回执保留，旧初始交接能力不能迟到改绑。

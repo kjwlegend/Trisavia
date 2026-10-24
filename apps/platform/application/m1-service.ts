@@ -24,8 +24,9 @@ import { initializePerceptionAgent } from "./perception-seed.ts";
 import {createOwnerFriendsReader} from "./owner-friends.ts";
 import {HOST_PARTICIPATION_GUIDANCE} from './agent-hourly-participation-guide.ts';
 import {agentIdentityView,knownTimestamp} from './agent-identity-view.ts';
+import {agentInviteState,agentInviteView,inspectAgentInvite,requireActiveAgentInvite} from './agent-invites.ts';
 import type { PerceptionAction } from "../domains/perception/protocol.ts";
-export type M1Action = PerceptionAction | "readOwnerFriends" | "queryOwnerMailbox" | "capabilities" | "catalog" | "register" | "registrationResult" | "self" | "publicProfile" | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup" | "readRecovery" | "registerOwner" | "readAccount" | "claimAgent" | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites" | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveProfile" | "saveDraft" | "publishProfile" | "unpublishProfile" | "profilePolicy" | "createRecoveryRequest" | "readRecoveryRequest" | "cancelRecoveryRequest" | "recoveryAssistance" | "verifyRecoveryRequest" | "rejectRecoveryRequest" | "startRegistration" | "readRegistrationAttempt" | "sendRegistrationCode" | "verifyRegistrationEmail" | "cancelRegistration" | "startEmailRecovery" | "readEmailRecoveryAttempt" | "sendRecoveryCode" | "verifyRecoveryEmail" | "recoverByEmail" | "enableRecoveryBackup" | "readWorldActionPolicy" | "saveWorldActionPolicy" | "readWorldAccess" | "saveWorldAccess" | "adoptWorldAccess" | "readMembership" | "join" | "leave" | "participation" | "receipt";
+export type M1Action = PerceptionAction | "previewInvite" | "consumeInvite" | "readOwnerFriends" | "queryOwnerMailbox" | "capabilities" | "catalog" | "register" | "registrationResult" | "self" | "publicProfile" | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup" | "readRecovery" | "registerOwner" | "readAccount" | "claimAgent" | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites" | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveProfile" | "saveDraft" | "publishProfile" | "unpublishProfile" | "profilePolicy" | "createRecoveryRequest" | "readRecoveryRequest" | "cancelRecoveryRequest" | "recoveryAssistance" | "verifyRecoveryRequest" | "rejectRecoveryRequest" | "startRegistration" | "readRegistrationAttempt" | "sendRegistrationCode" | "verifyRegistrationEmail" | "cancelRegistration" | "startEmailRecovery" | "readEmailRecoveryAttempt" | "sendRecoveryCode" | "verifyRecoveryEmail" | "recoverByEmail" | "enableRecoveryBackup" | "readWorldActionPolicy" | "saveWorldActionPolicy" | "readWorldAccess" | "saveWorldAccess" | "adoptWorldAccess" | "readMembership" | "join" | "leave" | "participation" | "receipt";
 export interface M1Options {
     legacyAvatarIdentity?:LegacyAvatarIdentityReader<M1ReadSession>;
     perception?: PerceptionOptions;
@@ -334,7 +335,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     }
     async function ownerView(tx: M1ReadSession, actor: CredentialRow, agentId: string, asOf: number): Promise<JsonObject> {
         const agent = await target(tx, actor, agentId),member=await required(membershipRepository(tx), agentId);
-        return { agentId, ownerId: actor.data.ownerId!, runtimeVersion: agent.data.runtimeVersion!, runtimeActive: agent.data.runtimeActive!, identity:agentIdentityView(agent,member,asOf), profile: await readProfileView(tx,await required(profileRepository(tx), agentId)), membership: membershipView(member), worldAccess: worldAccessView(agent, asOf), profileUrl: profileUrl(agentId), management: await managementView(tx, agent), asOf };
+        return { agentId, ownerId: actor.data.ownerId!, runtimeVersion: agent.data.runtimeVersion!, runtimeActive: agent.data.runtimeActive!, identity:agentIdentityView(agent,member,asOf), profile: await readProfileView(tx,await required(profileRepository(tx), agentId)), membership: membershipView(member), worldAccess: worldAccessView(agent, asOf), profileUrl: profileUrl(agentId), management: {managementStatus:(await registrationRepository(tx).findByAgentId(agentId))[0]?.data.managementStatus==="managed"?"managed":"pending_setup"}, asOf };
     }
     const readOwnerFriends=createOwnerFriendsReader(store,{now,...(options.legacyAvatarIdentity?{legacyAvatarIdentity:options.legacyAvatarIdentity}:{})});
     const wallet = createWalletService(store, authenticate, now);
@@ -348,10 +349,14 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     } = {}): Promise<JsonObject> {
         if (action === "capabilities") {
             const gateway = options.gateway?.();
-            return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, ownerRecoveryAssistance: true, ownerEmailVerification: email.configured, ownerEmailRecovery: email.configured, emailMode: email.mode, runtimeReplacement: true, defaultPublicRole: true, profileSave: "immediate-public", worldAccessPreference: true, scheduling: false, hostParticipation: HOST_PARTICIPATION_GUIDANCE, perception: true, perceptionApi: await perception.capabilities(), walletApi: wallet.capabilities(), ...(options.ownerMailboxRead?{ownerMailboxApi:{version:1,method:"POST",path:"/v1/owner/agents/:agentId/mailbox/query",boxes:["received","sent"],search:"currently-authorized-list-metadata",defaultLimit:20,maxLimit:50,readOnly:true,confirmation:false}}:{}), interaction: Array.isArray(gateway?.modules) && gateway.modules.includes("interaction"), ...(gateway ? { gateway } : {}), operations: FOUNDATION_HTTP_OPERATIONS.filter(operation=>operation.action!=="queryOwnerMailbox"||!!options.ownerMailboxRead).map((operation) => ({ ...operation, actors: [...operation.actors], receiptScopes: { ...operation.receiptScopes }, requiredVersions: [...operation.requiredVersions] })) };
+            return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, ownerRecoveryAssistance: true, ownerEmailVerification: email.configured, ownerEmailRecovery: email.configured, emailMode: email.mode, runtimeReplacement: true, ownerAgentInvites: {version:1,oneUse:true,preview:{method:"GET",path:"/v1/agent-invites/preview",authentication:"invite-bearer",consumes:false},consume:{method:"POST",path:"/v1/agent/invitations/consume",authentication:"own-runtime",action:"consumeInvite",receiptScope:"agent:{agentId}"},handoffFragment:"invite",newRegistration:"/v1/registrations"}, defaultPublicRole: true, profileSave: "immediate-public", worldAccessPreference: true, scheduling: false, hostParticipation: HOST_PARTICIPATION_GUIDANCE, perception: true, perceptionApi: await perception.capabilities(), walletApi: wallet.capabilities(), ...(options.ownerMailboxRead?{ownerMailboxApi:{version:1,method:"POST",path:"/v1/owner/agents/:agentId/mailbox/query",boxes:["received","sent"],search:"currently-authorized-list-metadata",defaultLimit:20,maxLimit:50,readOnly:true,confirmation:false}}:{}), interaction: Array.isArray(gateway?.modules) && gateway.modules.includes("interaction"), ...(gateway ? { gateway } : {}), operations: FOUNDATION_HTTP_OPERATIONS.filter(operation=>operation.action!=="queryOwnerMailbox"||!!options.ownerMailboxRead).map((operation) => ({ ...operation, actors: [...operation.actors], receiptScopes: { ...operation.receiptScopes }, requiredVersions: [...operation.requiredVersions] })) };
         }
         if (action === "catalog")
             return avatarCatalog();
+        if (action === "previewInvite") {
+            object(raw, []);
+            return await store.read(async tx => {const at=now(),invite=await inspectAgentInvite(tx,token,store.recoveryEpoch,at);return agentInviteView(invite.row,invite.state,at);});
+        }
         if (email.handles(action))
             return await email.invoke(action, raw, token, context.clientIp);
         if (action === "queryOwnerMailbox") {
@@ -445,7 +450,9 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                         fail("idempotency_payload_mismatch", 409, "Registration attempt was already used with different content");
                     return await command(tx, `registration:${attemptId}`, action, input, () => registrationView(prior));
                 }
-                const invite = input.inviteToken === undefined ? undefined : await authenticate(tx, input.inviteToken, ["invite"]);
+                const inspected = input.inviteToken === undefined ? undefined : await inspectAgentInvite(tx,input.inviteToken,store.recoveryEpoch,now());
+                if(inspected)requireActiveAgentInvite(inspected.state);
+                const invite = inspected?.row;
                 if (await agentRepository(tx).countAll(limits.registrations) >= limits.registrations)
                     fail("quota_exceeded", 429, "Registration limit reached");
                 if (invite && await managementBindingRepository(tx).countActiveByOwnerId(invite.data.ownerId!, limits.agentsPerOwner) >= limits.agentsPerOwner)
@@ -647,13 +654,42 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     return await ownerView(tx, actor, text(input.agentId, "agentId", 8, 100), asOf);
                 return { ownerId: actor.data.ownerId!, agents: await mapAsync((await managementBindingRepository(tx).findByActiveAndOwnerId(true, actor.data.ownerId)), async (binding) => await ownerView(tx, actor, scalarString(binding, "agentId"), asOf)), asOf };
             }
+            if (action === "consumeInvite") {
+                const input=object(raw,["operationId","inviteToken"]);
+                const actor=await authenticate(tx,token,["runtime"]),agentId=actor.data.agentId!;
+                return await command(tx,`agent:${agentId}`,action,input,async()=>{
+                    const inspected=await inspectAgentInvite(tx,input.inviteToken,store.recoveryEpoch,now());
+                    requireActiveAgentInvite(inspected.state);
+                    const invite=inspected.row,ownerId=scalarString(invite,"ownerId");
+                    const agent=await required(agentRepository(tx),agentId);
+                    if(agent.data.runtimeActive!==true)fail("authentication_failed",401,"Authentication failed");
+                    const registration=(await registrationRepository(tx).findByAgentId(agentId))[0];
+                    if(!registration)fail("target_not_accessible",404,"Target is not accessible");
+                    const binding=(await managementBindingRepository(tx).findByActiveAndAgentId(true,agentId))[0];
+                    if(binding&&binding.data.ownerId!==ownerId)fail("agent_already_managed",409,"This Agent already belongs to another Owner");
+                    if(!binding){
+                        const pending=await required(humanAccountRepository(tx),scalarString(registration,"ownerId"));
+                        const continuation=await required(credentialRepository(tx),scalarString(registration,"continuationCredentialId"));
+                        if(registration.data.managementStatus!=="pending_setup"||pending.data.status!=="pending_setup"||continuation.data.kind!=="bootstrap")fail("agent_already_managed",409,"This Agent is not independently awaiting association");
+                        if(await managementBindingRepository(tx).countActiveByOwnerId(ownerId,limits.agentsPerOwner)>=limits.agentsPerOwner)fail("quota_exceeded",429,"Owner Agent limit reached");
+                        await managementBindingRepository(tx).insert({id:randomUUID(),version:1,data:{agentId,ownerId,active:true}});
+                        await update(humanAccountRepository(tx),pending,{status:"claimed",claimedByOwnerId:ownerId,claimedAt:now()});
+                        await update(registrationRepository(tx),registration,{ownerId,initialOwnerId:pending.id,managementStatus:"managed"});
+                        await update(agentRepository(tx),agent,{managementInitializedAt:now()});
+                        await update(credentialRepository(tx),continuation,{kind:"registration_receipt",verifierKind:"bootstrap",ownerId});
+                        await revokeCredentials(tx,{ownerId:pending.id},["bootstrap","handoff","setup"]);
+                    }
+                    await update(credentialRepository(tx),invite,{active:false,consumedByAttemptId:registration.id});
+                    return {agentId,ownerId,inviteId:invite.id,managementStatus:"managed",changed:!binding,asOf:now()};
+                });
+            }
             if (action === "issueInvite" || action === "revokeInvite" || action === "listInvites") {
                 const input = object(raw, action === "issueInvite" ? ["operationId", "inviteToken"] : action === "revokeInvite" ? ["operationId", "inviteId", "expectedVersion"] : []);
                 const actor = await authenticate(tx, token, ["owner_session"]);
                 const ownerId = actor.data.ownerId!;
-                const inviteView = (row: StoredRow): JsonObject => ({ inviteId: row.id, version: row.version, active: row.data.active!, expiresAt: row.data.expiresAt!, consumed: Boolean(row.data.consumedByAttemptId) });
+                const inviteView = (row: StoredRow): JsonObject => agentInviteView(row,agentInviteState(row,row.data.epoch===store.recoveryEpoch&&row.data.ownerAuthVersion===actor.data.ownerAuthVersion,asOf),asOf);
                 if (action === "listInvites")
-                    return { invites: (await credentialRepository(tx).findByKindAndOwnerId("invite", ownerId)).map(inviteView) };
+                    return { ownerId, invites: (await credentialRepository(tx).findByKindAndOwnerId<Credential>("invite", ownerId)).map(inviteView), asOf };
                 return await command(tx, `owner:${ownerId}`, action, input, async () => {
                     if (action === "issueInvite") {
                         if (await credentialRepository(tx).countActiveInvites(ownerId, now(), limits.invitesPerOwner) >= limits.invitesPerOwner)
@@ -661,7 +697,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                         const invite = await newCredential(tx, input.inviteToken, "invite", { ownerId, ownerAuthVersion: actor.data.ownerAuthVersion!, expiresAt: now() + limits.invite });
                         return { ownerId, ...inviteView(invite), limit: 1 };
                     }
-                    const invite = await credentialRepository(tx).get(text(input.inviteId, "inviteId", 8, 100));
+                    const invite = await credentialRepository(tx).get<Credential>(text(input.inviteId, "inviteId", 8, 100));
                     if (!invite || invite.data.kind !== "invite" || invite.data.ownerId !== ownerId)
                         fail("target_not_accessible", 404, "Target is not accessible");
                     expected(invite, input);

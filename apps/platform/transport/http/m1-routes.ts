@@ -82,6 +82,7 @@ export function registerM1Routes(app: FastifyInstance, service: M1Service): void
         if (definition.action !== "receipt" && definition.action !== 'readOwnerFriends' && Object.keys(query).length > 0) fail("invalid_request", 400, "Query parameters are not supported");
         const params = request.params as Record<string, string>;
         const body = request.body === undefined ? {} : request.body;
+        if(definition.action==='previewInvite'&&(request.body!==undefined||request.headers['transfer-encoding']!==undefined||(request.headers['content-length']!==undefined&&request.headers['content-length']!=='0')))fail('invalid_request',400,'Preview accepts only the invitation Bearer and never a request body');
         if (body === null || typeof body !== "object" || Array.isArray(body)) fail("invalid_request", 400, "Expected a JSON object");
         if (Object.keys(params).some((key) => key in body)) fail("invalid_request", 400, "Resource identifiers belong in the path");
         if(definition.action==='readOwnerFriends'){

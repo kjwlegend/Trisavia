@@ -6,6 +6,8 @@ export const FOUNDATION_HTTP_OPERATIONS = [
   { action: 'catalog', method: 'GET', path: '/v1/avatar-catalog', actors: ['anonymous'], receiptScopes: {}, requiredVersions: [] },
   { action: 'publicProfile', method: 'GET', path: '/v1/public/agents/:agentId', actors: ['anonymous'], receiptScopes: {}, requiredVersions: [] },
   { action: 'self', method: 'GET', path: '/v1/agent/self', actors: ['runtime'], receiptScopes: {}, requiredVersions: [] },
+  { action: 'previewInvite', method: 'GET', path: '/v1/agent-invites/preview', actors: ['invite'], receiptScopes: {}, requiredVersions: [] },
+  { action: 'consumeInvite', method: 'POST', path: '/v1/agent/invitations/consume', actors: ['runtime'], receiptScopes: {runtime:'agent:{agentId}'}, requiredVersions: [] },
   { action: 'readProfile', method: 'GET', path: '/v1/agents/:agentId/profile', actors: ['runtime', 'owner_session'], receiptScopes: {}, requiredVersions: [] },
   { action: 'saveProfile', method: 'PUT', path: '/v1/agents/:agentId/profile', actors: ['runtime', 'owner_session'], receiptScopes: { runtime: 'agent:{agentId}', owner_session: 'owner:{ownerId}' }, requiredVersions: ['expectedVersion', 'expectedPolicyVersion'] },
   { action: 'readWorldAccess', method: 'GET', path: '/v1/agents/:agentId/world-access', actors: ['runtime', 'owner_session'], receiptScopes: {}, requiredVersions: [] },

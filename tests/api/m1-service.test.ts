@@ -125,7 +125,7 @@ await test("one-use invite creates A2 under O1, response loss resumes A2 and ano
     assert.notEqual(a2.agentId, a1.agentId);
     assert.deepEqual(await f.service.invoke("register", a2.input), a2.result);
     assert.equal((await f.service.invoke("registrationResult", { attemptId: a2.input.attemptId }, a2.input.continuationToken)).agentId, a2.agentId);
-    await error("authentication_failed", async () => await registration(f, inviteToken));
+    await error("invite_consumed", async () => await registration(f, inviteToken));
     assert.equal(((await f.service.invoke("listAgents", {}, owner.sessionToken)).agents as JsonObject[]).length, 2);
     await error("target_not_accessible", async () => await f.service.invoke("managedAgent", { agentId: a2.agentId }, foreignOwner.sessionToken));
     await error("target_not_accessible", async () => await f.service.invoke("readProfile", { agentId: a1.agentId }, a2.input.runtimeToken));
@@ -231,7 +231,7 @@ await test("recovery activates pre-saved successors, closes old management and i
     assert.deepEqual(await f.service.invoke("receipt", { operationId: recoveryOperation, scope: `owner:${agent.ownerId}`, action: "recover" }, nextSession), result);
     await error("authentication_failed", async () => await f.service.invoke("listAgents", {}, owner.sessionToken));
     await error("authentication_failed", async () => await f.service.invoke("recover", { operationId: operationId() }, owner.recoveryToken));
-    await error("authentication_failed", async () => await registration(f, inviteToken));
+    await error("invite_revoked", async () => await registration(f, inviteToken));
     await error("authentication_failed", async () => await f.service.invoke("login", { operationId: operationId(), identifier: owner.username, password: owner.password, sessionToken: token() }));
     await f.service.invoke("login", { operationId: operationId(), identifier: owner.username, password: "next-password-for-owner", sessionToken: token() });
     assert.equal((await f.service.invoke("self", {}, agent.input.runtimeToken)).agentId, agent.agentId);
