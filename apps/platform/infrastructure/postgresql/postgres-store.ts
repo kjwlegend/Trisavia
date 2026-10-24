@@ -1,3 +1,5 @@
+import {bindPublicIdentifierRepository,publicIdentifierRepository} from '../../domains/public-identifiers/repository.ts';
+import {createPublicIdentifierRepository} from './public-identifiers-repository.ts';
 import { Pool, type PoolClient } from 'pg';
 import { StorageError, M1_TABLES, type M1Store, type M1ReadSession, type M1Transaction, type M1Table, type StoredRow, type JsonObject, type ExactFilters } from '../../contracts/store.ts';
 import { checkedJson, decode, encode, safeInteger, writeChildren } from './codec.ts';
@@ -50,7 +52,7 @@ export function createPostgresReadSession(session:M1ReadSession):M1ReadSession{
   if(!capability)throw new StorageError('invalid_usage','Unknown PostgreSQL session');
   if(!capability.alive())throw new StorageError('closed','Storage scope has ended');
   const reader=Object.freeze({get:session.get,find:session.find,scan:session.scan,count:session.count,quotaCount:session.quotaCount});
-  sessionCapabilities.set(reader,capability);return reader;
+  sessionCapabilities.set(reader,capability);bindPublicIdentifierRepository(reader,publicIdentifierRepository(session));return reader;
 }
 
 /** Composition-root bridge only; authorization and metering belong to its caller. */
@@ -100,7 +102,7 @@ export function createPostgresSession(client:PoolClient,write:boolean,alive:()=>
     remove:async(table,identifier,expectedVersion)=>execute(async()=>{writable();tableName(table);id(identifier);if(safeInteger(expectedVersion)<1)throw new StorageError('invalid_usage','Invalid expected version');
       invalidate();let changed=false;for(const model of modelsFor(table)){if(model.logical==='perception_objects')await client.query('DELETE FROM perception.reference_aliases WHERE external_id=$1 AND EXISTS(SELECT 1 FROM '+model.table+' WHERE id=$1 AND version=$2)',[identifier,expectedVersion]);const result=await client.query(`DELETE FROM ${model.table} WHERE id=$1 AND version=$2`,[identifier,expectedVersion]);changed=changed||result.rowCount===1;}return changed;
     }),
-  };invalidators.set(session,invalidate);sessionCapabilities.set(session,{client,alive});return session;
+  };invalidators.set(session,invalidate);sessionCapabilities.set(session,{client,alive});bindPublicIdentifierRepository(session,write?createPublicIdentifierRepository(client,true,alive).writer:createPublicIdentifierRepository(client,false,alive).reader);return session;
 }
 
 async function auxiliary(client:PoolClient,model:Model,row:StoredRow):Promise<void>{

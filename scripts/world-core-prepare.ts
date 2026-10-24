@@ -1,3 +1,4 @@
+import {PUBLIC_IDENTIFIERS_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/public-identifiers-migration.ts';
 import {NEW_RESIDENT_GIFT_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/new-resident-gift-migration.ts';
 import {BEHAVIOR_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/behavior-migration.ts';
 import {TOWN_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/town-services-migration.ts';
@@ -8,7 +9,7 @@ import { applicationSchemas } from './postgresql/permissions.ts';
 import { checkedWorldDatabase } from './world-core-database.ts';
 import { migratePostgres, POSTGRES_SCHEMA_SIGNATURE } from '../apps/platform/infrastructure/postgresql/migrations.ts';
 
-export const worldCoreSchemas=[...applicationSchemas,'runtime','world','interaction','decision','behavior','town_services'] as const;
+export const worldCoreSchemas=[...applicationSchemas,'runtime','world','interaction','decision','behavior','town_services','public_identifiers'] as const;
 /** Maintenance entry only. The application role cannot migrate or alter identity/write gates. */
 export async function grantWorldCorePermissions(config:RuntimeConfig,database:string):Promise<void>{
  checkedWorldDatabase(database);const old=applicationSchemas.join(','),added='runtime,world,interaction,decision,behavior';
@@ -24,6 +25,7 @@ export async function grantWorldCorePermissions(config:RuntimeConfig,database:st
  ${BEHAVIOR_PERMISSIONS_SQL}
  ${TOWN_PERMISSIONS_SQL}
  ${NEW_RESIDENT_GIFT_PERMISSIONS_SQL}
+ ${PUBLIC_IDENTIFIERS_PERMISSIONS_SQL}
  COMMIT;`;
  await docker(['exec','-i',`${config.project}-server`,'psql','-X','-v','ON_ERROR_STOP=1','-U','postgres','-d',database],{input:sql});
 }

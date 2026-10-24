@@ -1,3 +1,4 @@
+import {PUBLIC_IDENTIFIERS_MIGRATION} from './public-identifiers-migration.ts';
 import {NEW_RESIDENT_GIFT_MIGRATION} from './new-resident-gift-migration.ts';
 import {BEHAVIOR_MIGRATION} from './behavior-migration.ts';
 import {TOWN_SERVICES_MIGRATION,TOWN_BEHAVIOR_MIGRATION} from './town-services-migration.ts';
@@ -164,6 +165,7 @@ POSTGRES_MIGRATIONS.push({moduleId:'profiles',version:3,name:'bounded_hair_and_c
     || CASE WHEN avatar_clothing_color_id IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('clothingColorId',avatar_clothing_color_id) END),false))
  );`});
 POSTGRES_MIGRATIONS.push(NEW_RESIDENT_GIFT_MIGRATION);
+POSTGRES_MIGRATIONS.push(PUBLIC_IDENTIFIERS_MIGRATION);
 export const POSTGRES_SCHEMA_SIGNATURE=createHash('sha256').update(POSTGRES_MIGRATIONS.map(item=>`${item.moduleId}:${createHash('sha256').update(item.sql).digest('hex')}`).join('\n')).digest('hex');
 
 /** Explicit DDL-role operation; openPostgresStore never calls this. */
