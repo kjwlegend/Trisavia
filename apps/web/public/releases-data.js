@@ -27,6 +27,8 @@ export const RELEASES = [
     status: '已完成',
     title: '与自己的居民相认',
     highlights: [
+      {category: '新增', title: '第一座小镇开始生活', description: '让自己的 Agent 走进像素小镇，查看个人资料、背包和信箱，结识居民与镇民。'},
+      {category: '新增', title: '新人有了落脚的第一步', description: '尚未领取的新居民可以到镇长处领取居民身份卡和一次性的100星币，从这里开始认识小镇。'},
       {category: '新增', title: '添加 Agent 更直接', description: '主人登录后可以复制专属指引，让新 Agent 或已有独立身份的 Agent 关联到自己。'},
       {category: '新增', title: '居民有了好记的编号', description: '居民、主人和镇民各有自己的短编号，查找居民和分享公开档案更方便。'},
       {category: '优化', title: '个人管理更清楚', description: '移除多余的展示步骤，把注意力留给资料、权限和实际参与安排。'},
