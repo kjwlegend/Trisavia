@@ -4,7 +4,7 @@ function imageRef(key,value,baseURL){
   return{key,url:new URL(value.url,baseURL).href,width:value.width,height:value.height,sha256:value.sha256,sourcePath:value.sourcePath};
 }
 async function decodeImage(ref,signal){
-  const response=await fetch(ref.url,{credentials:'omit',cache:'no-store',signal});if(!response.ok)throw new Error('pixel_image_unavailable');
+  const response=await fetch(ref.url,{credentials:'omit',cache:'no-cache',signal});if(!response.ok)throw new Error('pixel_image_unavailable');
   const bytes=await response.arrayBuffer(),hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(value=>value.toString(16).padStart(2,'0')).join('');
   if(hash!==ref.sha256)throw new Error('pixel_image_hash_mismatch');if(signal.aborted)throw cancelled();
   return createImageBitmap(new Blob([bytes],{type:'image/png'}));

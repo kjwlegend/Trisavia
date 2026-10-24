@@ -19,3 +19,11 @@ test('movement polls keep the accepted profile stable; publication changes rerea
  await reader.open(row('public-a'));for(let x=1;x<=5;x++)await reader.observe({...row('public-a'),version:x,position:{x,y:0}});assert.equal(calls,1);assert.equal(reader.snapshot().data.bio,'公开简介 public-a');
  version=8;await reader.observe(row('public-a',8));assert.equal(calls,2);denied=true;await reader.observe(row('public-a',9));assert.equal(reader.snapshot().phase,'error');assert.equal(reader.snapshot().data,null);assert.equal(reader.snapshot().errorStatus,404);await reader.observe(row('public-a',9));assert.equal(calls,3);reader.dispose();
 });
+test('only temporary failures preserve the same previously public text, with explicit staleness until a successful reread',async()=>{
+ let error:any=null,version=7;const reader=createPublicCharacterReader({request:async()=>{if(error)throw error;return profile('public-a',version);}});
+ await reader.open(row('public-a'));error={code:'request_timeout',status:200};version=8;await reader.observe(row('public-a',version));assert.equal(reader.snapshot().phase,'recovering');assert.equal(reader.snapshot().stale,true);assert.equal(reader.snapshot().data.bio,'公开简介 public-a');
+ error=null;await reader.retry();assert.equal(reader.snapshot().stale,false);assert.equal(reader.snapshot().phase,'ready');
+ error={code:'insufficient_scope',status:403};await reader.retry();assert.equal(reader.snapshot().data,null);assert.equal(reader.snapshot().stale,false);
+ error=null;await reader.open(row('public-a'));error={code:'public_profile_invalid',status:200};await reader.retry();assert.equal(reader.snapshot().data,null);
+ error={code:'request_timeout',status:200};await reader.open(row('public-b'));assert.equal(reader.snapshot().data,null,'One identity cannot retain another identity’s public text');reader.dispose();
+});

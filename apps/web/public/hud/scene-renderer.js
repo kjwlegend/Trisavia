@@ -141,7 +141,7 @@ function updateControls(state) {
   $('#world-pause').textContent = state.paused ? '播放动态' : '暂停动态';
   $('#world-pause').setAttribute('aria-pressed', String(state.paused));
   reduceMotion.setAttribute('aria-pressed',String(state.reducedMotion));
-  const text = state.worldScene?.phase==='recovering'?'连接正在恢复 · 角色保留最近读取的位置':state.worldScene?.phase!=='demo'?'服务器角色位置按读取结果显示 · 画布动画不代表在线':state.paused ? state.pauseReason === 'reduced' ? '静止展示 · 已遵循系统的减少动态设置' : state.pauseReason === 'performance' ? '静止展示 · 可手动播放演示' : '静止展示 · 演示动态已暂停' : !state.visible ? '演示动态在地图可见时继续' : '人物与环境为演示动态';
+  const text = state.worldScene?.stale?'上次画面已过期 · 位置停止更新，正在恢复连接':state.worldScene?.phase!=='demo'?'服务器角色位置按读取结果显示 · 画布动画不代表在线':state.paused ? state.pauseReason === 'reduced' ? '静止展示 · 已遵循系统的减少动态设置' : state.pauseReason === 'performance' ? '静止展示 · 可手动播放演示' : '静止展示 · 演示动态已暂停' : !state.visible ? '演示动态在地图可见时继续' : '人物与环境为演示动态';
   if ($('#world-motion-status').textContent !== text) $('#world-motion-status').textContent = text;
   positionCharacterCard();
 }

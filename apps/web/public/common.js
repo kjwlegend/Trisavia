@@ -19,21 +19,22 @@ export class ApiError extends Error {
   constructor(code, status, details) { super(code); this.code = code; this.status = status; this.details = details; }
 }
 export async function api(path, { method = 'GET', body, token, signal, headers: extraHeaders } = {}) {
-  let response;
+  let response,source;
+  const timeout = AbortSignal.timeout(15000),active=signal?AbortSignal.any([signal,timeout]):timeout;
   try {
-    const timeout = AbortSignal.timeout(15000);
     const headers = new Headers(extraHeaders);
     if (body) headers.set('Content-Type', 'application/json');
     if (token) headers.set('Authorization', `Bearer ${token}`);
-    response = await fetch(`/v1${path}`, {method, credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer', signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
+    response = await fetch(`/v1${path}`, {method, credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer', signal: active,
       headers,
       ...(body ? {body: JSON.stringify(body)} : {})});
+    source=await response.text();
   } catch (error) {
-    if (error.name === 'AbortError') throw error;
-    throw new ApiError('network_unknown', 0);
+    if (signal?.aborted) throw new DOMException('Request cancelled','AbortError');
+    throw new ApiError(timeout.aborted?'request_timeout':'network_unknown',response?.status||0);
   }
   let result;
-  try { result = await response.json(); } catch { throw new ApiError('response_unknown', response.status); }
+  try { result = JSON.parse(source); } catch { throw new ApiError('response_unknown', response.status); }
   if (!response.ok) {
     const error=new ApiError(result?.error?.code||'request_failed',response.status,result?.error?.details),retry=response.headers.get('Retry-After');
     const delay=retry&&/^\d+$/.test(retry)?Number(retry)*1000:retry?.endsWith(' GMT')?Date.parse(retry)-Date.now():NaN;
@@ -69,7 +70,7 @@ export function errorText(error) {
   if (isUnknown(error)) return '暂时无法确认是否完成。当前进度已保留，请继续上次操作。';
   return messages[error.code] || '操作未完成。请保留当前输入，稍后重试或重新读取状态。';
 }
-export function isUnknown(error) { return !error.status || error.status >= 500 || ['commit_result_unknown','retry_same_operation','response_unknown'].includes(error.code); }
+export function isUnknown(error) { return !error.status || error.status >= 500 || ['commit_result_unknown','retry_same_operation','response_unknown','network_unknown','request_timeout'].includes(error.code); }
 export function notice(node, message, tone = '') { node.textContent = message; node.className = `notice ${tone}`; node.hidden = !message; }
 export function downloadPrivate(name, data) {
   const url = URL.createObjectURL(new Blob([`${JSON.stringify(data, null, 2)}\n`], {type: 'application/json'}));

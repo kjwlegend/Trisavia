@@ -2,24 +2,24 @@ import {api} from '../common.js';
 import {readWorldRules,readWorldPage} from './world-scene-projection.js';
 const abortError=()=>new DOMException('World read cancelled','AbortError');
 const failure=code=>Object.assign(new Error(code),{code});
-const temporary=error=>!['world_not_available','world_not_accessible'].includes(error.code)&&(error.status===429||error.status>=500||['network_unknown','request_timeout','busy','unavailable'].includes(error.code)||error.name==='AbortError');
+const temporary=error=>![401,403,404,410].includes(error.status)&&!['world_not_available','world_not_accessible'].includes(error.code)&&(error.status===429||error.status>=500||['network_unknown','request_timeout','busy','unavailable'].includes(error.code));
 const READ_BUILD='world-provider-20261022-v1';
 
 // Public GETs only. Metadata is bounded, never an authority substitute for a
 // current scene response; reconnect/manual/visible boundaries rediscover it.
 export function createWorldSceneProvider({request=api,worldId='default',intervalMs=1000,maxPages=10,metadataTtlMs=30000,now=Date.now,setTimer=setTimeout,clearTimer=clearTimeout}={}){
   const listeners=new Set();let revision=0,controller=null,timer=null,visible=false,started=false,disposed=false,failures=0,metadata=null,notBefore=0,retryError=null,readStarted=false;
-  let state={phase:'loading',enabled:null,worldId,rules:null,avatars:[],npcs:[],npcCatalogVersion:null,worldRevision:null,asOf:null,serverTime:null,timeSource:null,instanceId:null,complete:false,nextCursor:null,errorCode:null,errorStatus:null,lastSuccessAt:null,retryAt:null};
+  let state={phase:'loading',stale:false,enabled:null,worldId,rules:null,avatars:[],npcs:[],npcCatalogVersion:null,worldRevision:null,asOf:null,serverTime:null,timeSource:null,instanceId:null,complete:false,nextCursor:null,errorCode:null,errorStatus:null,lastSuccessAt:null,retryAt:null};
   const snapshot=()=>structuredClone(state);
   function emit(next){state={...state,...next};for(const listener of listeners)listener(snapshot());}
   function stop(){revision++;controller?.abort();controller=null;if(timer!==null)clearTimer(timer);timer=null;}
-  function cleared(){return{rules:null,avatars:[],npcs:[],npcCatalogVersion:null,worldRevision:null,asOf:null,serverTime:null,timeSource:null,complete:false,nextCursor:null,lastSuccessAt:null};}
+  function cleared(){return{stale:false,rules:null,avatars:[],npcs:[],npcCatalogVersion:null,worldRevision:null,asOf:null,serverTime:null,timeSource:null,complete:false,nextCursor:null,lastSuccessAt:null};}
   const backoff=()=>Math.max(1000,intervalMs)*Math.min(30,2**Math.min(failures,5));
   const delay=()=>notBefore>now()?notBefore-now():failures?backoff():Math.max(1000,intervalMs);
   function schedule(){if(disposed||!visible||!started||state.phase==='partial')return;if(timer!==null)clearTimer(timer);timer=setTimer(()=>{timer=null;void refresh({reason:failures>0&&notBefore>0?'recovery':'timer'});},delay());}
   async function refresh({more=false,force=false,reason='timer'}={}){
     if(disposed||!visible||!started||controller)return;
-    if(now()<notBefore){if(state.phase==='paused')emit({phase:'error',...retryError,retryAt:notBefore});schedule();return;}
+    if(now()<notBefore){if(state.phase==='paused')emit({phase:state.complete?'recovering':'error',stale:state.complete,...retryError,retryAt:notBefore});schedule();return;}
     // Initial asset loading may defer visibility; consume start only on dispatch.
     const readReason=!readStarted&&reason!=='manual'?'start':reason;
     const previous=state;let preserveAuthority=true;stop();const generation=revision,active=new AbortController();controller=active;
@@ -54,7 +54,7 @@ export function createWorldSceneProvider({request=api,worldId='default',interval
         if(seenCursors.has(cursor))throw failure('world_response_invalid');seenCursors.add(cursor);
       }
       if(!current())throw abortError();
-      failures=0;notBefore=0;retryError=null;emit({phase:complete?'ready':'partial',enabled:true,rules,avatars,npcs,npcCatalogVersion,worldRevision,asOf,serverTime:serverTime??asOf,timeSource:serverTime===null?'asOf':'serverTime',instanceId:caps.instanceId,complete,nextCursor:cursor,errorCode:null,errorStatus:null,lastSuccessAt:complete?now():null,retryAt:null});
+      failures=0;notBefore=0;retryError=null;emit({phase:complete?'ready':'partial',stale:false,enabled:true,rules,avatars,npcs,npcCatalogVersion,worldRevision,asOf,serverTime:serverTime??asOf,timeSource:serverTime===null?'asOf':'serverTime',instanceId:caps.instanceId,complete,nextCursor:cursor,errorCode:null,errorStatus:null,lastSuccessAt:complete?now():null,retryAt:null});
     }catch(error){
       if(!current())return;
       failures++;metadata=null;
@@ -65,12 +65,12 @@ export function createWorldSceneProvider({request=api,worldId='default',interval
       notBefore=recoverable?Math.max(notBefore,now()+Math.max(backoff(),serverWait)):0;
       const code=error.code||(error.name==='AbortError'?'network_unknown':'world_response_invalid');
       retryError={errorCode:code,errorStatus:error.status??null};
-      emit({phase:keep?'recovering':['world_not_accessible','world_not_available'].includes(code)?'unavailable':'error',enabled:state.enabled,...(keep?{rules:previous.rules,avatars:previous.avatars,npcs:previous.npcs,npcCatalogVersion:previous.npcCatalogVersion,worldRevision:previous.worldRevision,asOf:previous.asOf,instanceId:previous.instanceId,complete:true,nextCursor:null,lastSuccessAt:previous.lastSuccessAt}:cleared()),errorCode:code,errorStatus:error.status??null,retryAt:now()+delay()});
+      emit({phase:keep?'recovering':['world_not_accessible','world_not_available'].includes(code)?'unavailable':'error',enabled:state.enabled,...(keep?{stale:true,rules:previous.rules,avatars:previous.avatars,npcs:previous.npcs,npcCatalogVersion:previous.npcCatalogVersion,worldRevision:previous.worldRevision,asOf:previous.asOf,instanceId:previous.instanceId,complete:true,nextCursor:null,lastSuccessAt:previous.lastSuccessAt}:cleared()),errorCode:code,errorStatus:error.status??null,retryAt:now()+delay()});
     }finally{if(current()){controller=null;schedule();}}
   }
   return{snapshot,subscribe(listener){listeners.add(listener);listener(snapshot());return()=>listeners.delete(listener);},
     start(){if(disposed||started)return;started=true;if(visible)void refresh({force:true,reason:'start'});},
-    setVisible(value){value=Boolean(value);if(disposed||value===visible)return;visible=value;if(!visible){stop();metadata=null;emit({phase:'paused',...cleared(),errorCode:null,errorStatus:null});}else if(started)void refresh({force:true,reason:'visible'});},
+    setVisible(value){value=Boolean(value);if(disposed||value===visible)return;visible=value;if(!visible){stop();metadata=null;emit({phase:'paused',...(state.complete&&state.rules?{stale:true}:cleared()),errorCode:null,errorStatus:null});}else if(started)void refresh({force:true,reason:'visible'});},
     refresh:()=>refresh({force:true,reason:'manual'}),loadMore:()=>state.phase==='partial'?refresh({more:true,reason:'manual'}):Promise.resolve(),
     dispose(){if(disposed)return;disposed=true;stop();metadata=null;state={...state,phase:'paused',...cleared()};listeners.clear();},
   };
