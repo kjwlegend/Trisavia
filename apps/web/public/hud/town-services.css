@@ -1,3 +1,80 @@
 .world-town-targets{position:absolute;inset:0;z-index:1;pointer-events:none}.world-town-hit{position:absolute;min-height:0;min-width:0;padding:0;border:0;background:transparent!important;box-shadow:none!important;pointer-events:none;border-radius:0;outline:0}.world-town-hit:focus-visible{outline:2px solid #eee1a1;outline-offset:2px}.world-town-tooltip{position:absolute;width:220px;max-width:calc(100% - 24px);padding:6px 8px;border:2px solid #bb8c61;background:#22392f;color:#eee8cd;font-size:12px;line-height:1.5;box-shadow:0 2px #172b22;pointer-events:none}
-.town-service-card{font-size:14px;line-height:1.65;overflow-wrap:anywhere}.town-service-card h3{font-size:18px;margin:0 0 12px}.town-service-card h4{font-size:15px;margin:12px 0 8px}.town-service-card p{margin:0 0 12px;white-space:pre-wrap}.town-service-card>button,.town-service-card section>button{margin:0 8px 10px 0}.town-service-heading{display:flex;align-items:center;gap:16px;margin-bottom:20px}.town-service-heading>span{width:72px;height:80px;flex:0 0 72px;background:#172c23;border:1px solid #657d54}.town-service-heading .avatar{width:72px;height:80px;border-radius:0}.town-service-heading h3{margin-bottom:4px}.town-service-heading p{margin:0}.town-personal-state{margin-top:12px;padding-top:8px;border-top:1px solid #536c46}.town-card-message:empty{display:none}.town-card-message{color:#d7dca3}.town-response{padding:12px;background:#172c23;border-left:2px solid #a9bd70}.town-notice-text{line-height:1.75}.world-detail.is-town-service{width:min(680px,var(--world-panel-width));max-height:min(820px,var(--world-panel-height))}.world-detail.is-town-service :is(#world-detail-icon,#world-detail-description,#world-detail-note,#world-detail-links,#world-back){display:none}
-.town-relationships{border-top:1px solid #536c46;padding-top:16px;margin-top:16px}.town-relationships>h3{font-size:16px;margin:0 0 8px}.town-relationship{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #536c46}.town-relationship>span{width:48px;height:54px;flex:0 0 48px;background:#172c23}.town-relationship .avatar{width:48px;height:54px;border-radius:0}.town-relationship>div{flex:1;min-width:0}.town-relationship p{margin:2px 0 0}.town-relationship>button{flex:0 0 auto}.town-relationships>button{margin-top:12px}.hud-friends .town-relationships{flex:none}
+/* NPC panels own their geometry; the shared shell still owns title and close controls. */
+.world-home.paper-hud .world-detail.is-town-service{position:fixed;left:auto;right:24px;top:136px;bottom:auto;translate:0 0;transform:none;width:min(500px,calc(100vw - 48px));height:min(810px,calc(100dvh - 160px));max-height:calc(100dvh - 160px);padding:0;overflow:hidden}
+.world-home.paper-hud .world-detail.is-town-service .world-detail-body{flex:1;min-height:0;padding:24px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#b9bbae transparent}
+.world-detail.is-town-service :is(#world-detail-icon,#world-detail-description,#world-detail-note,#world-detail-links,#world-back,#world-detail-area){display:none}
+.world-home.paper-hud .town-service-card{display:flex;flex-direction:column;min-height:100%;font-size:14px;line-height:22px;overflow-wrap:anywhere;color:var(--paper-ink)}
+.world-home.paper-hud .town-service-card :is(h3,h4,p){margin:0;color:inherit}
+.world-home.paper-hud .town-service-card .hud-muted{color:var(--paper-muted);font-size:12px;line-height:18px}
+.world-home.paper-hud .town-section{flex:none;min-width:0}
+.world-home.paper-hud .town-section+.town-section{border-top:1px solid var(--paper-border);margin-top:20px;padding-top:16px}
+.world-home.paper-hud .town-service-card .town-section-title{display:flex;align-items:center;gap:8px;font-size:16px;line-height:24px;font-weight:650;margin:0 0 12px}
+.town-section-number{display:grid;place-items:center;flex:none;width:24px;height:24px;border-radius:50%;background:#3e5a4d;color:var(--paper-surface);font-size:14px;font-weight:600}
+.town-icon{display:block;flex:none;width:20px;height:20px;color:currentColor}
+.world-home.paper-hud .town-service-heading{display:flex;align-items:flex-start;gap:16px;margin:0}
+.town-npc-picture{display:grid;place-items:center;flex:0 0 108px;width:108px;height:108px;overflow:hidden;background:#e4ddce;border-radius:8px}
+.world-home.paper-hud .town-npc-picture .avatar{width:108px;height:108px;border:0;border-radius:0;background:transparent;object-fit:contain}
+.town-npc-identity{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px;padding-top:2px}
+.world-home.paper-hud .town-service-card .town-npc-name{font-size:16px;line-height:24px;font-weight:650}
+.world-home.paper-hud .town-service-card .town-npc-description{font-size:14px;line-height:22px;margin-top:2px}
+.world-home.paper-hud .town-service-card .town-fact{display:flex;align-items:flex-start;gap:6px;font-size:12px;line-height:18px}
+.town-fact .town-icon{width:16px;height:18px}
+.town-agent-relation{display:flex;align-items:flex-start;gap:16px;min-width:0}
+.town-current-agent{display:flex;align-items:flex-start;gap:8px;flex:0 0 160px;min-width:0}
+.town-agent-picture{display:grid;place-items:center;flex:0 0 56px;width:56px;height:64px;background:#e4ddce;border-radius:6px;overflow:hidden}
+.world-home.paper-hud .town-agent-picture .avatar{width:56px;height:56px;border-radius:0;border:0;background:transparent;object-fit:contain}
+.town-agent-identity{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1}
+.town-agent-identity strong{display:block;font-size:14px;line-height:22px}
+.world-home.paper-hud .town-service-card .town-agent-identity button{font-size:12px;line-height:18px;min-height:32px;padding:4px 8px;white-space:nowrap;align-self:flex-start}
+.town-relation-facts{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1;padding-top:2px}
+.town-participation-facts{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap}
+.town-relationship-fact{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap}
+.town-familiarity{display:flex;flex-direction:column;gap:6px;flex:1;min-width:124px;font-size:12px;line-height:18px;font-variant-numeric:tabular-nums}
+.town-familiarity progress{display:block;width:100%;height:8px;appearance:none;border:0;border-radius:5px;background:#deddd5;color:var(--paper-accent);overflow:hidden}
+.town-familiarity progress::-webkit-progress-bar{background:#deddd5;border-radius:5px}
+.town-familiarity progress::-webkit-progress-value{background:var(--paper-accent);border-radius:5px}
+.town-familiarity progress::-moz-progress-bar{background:var(--paper-accent);border-radius:5px}
+.town-service-plan{padding:8px;border:1px solid var(--paper-border);border-radius:8px}
+.town-service-offer{display:flex;align-items:flex-start;gap:12px;padding:2px 2px 10px;min-width:0}
+.town-service-offer>.town-icon{width:40px;height:44px;padding:8px;background:#e9e4d8;border-radius:6px}
+.town-service-offer>div{min-width:0;flex:1}
+.world-home.paper-hud .town-service-card .town-service-offer h4{font-size:16px;line-height:24px;font-weight:650;margin:0 0 4px}
+.world-home.paper-hud .town-service-card .town-gift-contents{font-size:12px;line-height:18px;margin-top:4px}
+.town-action-row{display:flex;align-items:center;gap:8px;min-height:46px;padding:4px 6px 4px 10px;border:1px solid var(--paper-border);border-radius:6px;margin-top:4px}
+.town-action-label{display:flex;align-items:center;gap:10px;flex:1;min-width:0;font-size:14px;line-height:22px;font-weight:600}
+.world-home.paper-hud .town-service-card .town-action-row>button{flex:0 0 104px;width:104px;min-height:36px;padding:5px 10px;font-size:12px;line-height:22px;white-space:nowrap;background:transparent}
+.world-home.paper-hud .town-action-row.is-disabled{background:#eae7de;color:#8a9087}
+.world-home.paper-hud .town-service-card .town-action-row>button:disabled{background:#eae7de;color:#8a9087}
+.town-service-status{display:flex;align-items:flex-start;gap:8px;margin-top:8px;padding:10px;background:#e9ece4;border-radius:6px}
+.town-service-status>.town-icon{margin-top:1px}
+.town-status-copy{min-width:0;flex:1;font-size:12px;line-height:18px}
+.world-home.paper-hud .town-service-card .town-status-copy p{font-size:12px;line-height:18px;white-space:pre-wrap}
+.world-home.paper-hud .town-service-card .town-status-copy p+p{margin-top:4px}
+.world-home.paper-hud .town-service-card .town-status-copy .town-response{font-size:14px;line-height:22px}
+.world-home.paper-hud .town-service-card .town-status-refresh{flex:none;width:28px;height:28px;min-height:28px;padding:4px;border:0;background:transparent;box-shadow:none}
+.world-home.paper-hud .town-card-footer{display:flex;align-items:flex-start;gap:8px;min-height:40px;width:100%;max-width:none;justify-content:flex-start;margin:24px 0 0;padding:10px;text-align:left;border-radius:6px;background:#e9ece4;flex:none}
+.world-home.paper-hud .town-service-card .town-card-message{flex:1;text-align:left;font-size:12px;line-height:18px;white-space:normal}
+.town-card-footer>.town-icon{margin-top:0}
+.world-home.paper-hud .town-action-guide+.town-card-footer{margin-top:auto}
+.town-card-state{flex:1;padding:16px 0}.town-card-state>button{margin-top:12px}
+/* The notice remains a compact letter rather than a fourth NPC relationship. */
+.world-home.paper-hud .world-detail.is-town-service:has(.town-service-card[data-town-kind=notice]){height:auto;max-height:min(620px,calc(100dvh - 160px));width:min(500px,calc(100vw - 48px))}
+.world-home.paper-hud .town-service-card[data-town-kind=notice]{min-height:0}
+.town-notice-source{font-size:12px;line-height:18px;color:var(--paper-muted)!important;margin-bottom:8px!important}
+.world-home.paper-hud .town-notice>h3{font-size:20px;line-height:28px;margin-bottom:16px}
+.town-notice-text{white-space:pre-wrap;line-height:22px}
+.town-notice-services{display:flex;flex-wrap:wrap;gap:8px;border-top:1px solid var(--paper-border);margin-top:20px;padding-top:16px}
+/* This public export is mounted by the friends window, whose frame remains D-owned. */
+.world-home.paper-hud .town-relationships{border:0;padding:0;margin:0;min-height:0;color:var(--paper-ink);font-size:14px;line-height:22px}
+.world-home.paper-hud .town-relationships>h3{font-size:16px;line-height:24px;margin:0 0 8px}
+.world-home.paper-hud .town-relationships>.hud-muted{font-size:12px;line-height:18px;margin:0 0 12px}
+.town-relationship{display:flex;align-items:center;gap:12px;min-height:64px;padding:8px 0;border-bottom:1px solid var(--paper-border)}
+.town-relationship-picture{display:grid;place-items:center;flex:0 0 44px;width:44px;height:48px;background:#e4ddce;border-radius:6px;overflow:hidden}
+.world-home.paper-hud .town-relationship-picture .avatar{width:44px;height:44px;border:0;border-radius:0;background:transparent;object-fit:contain}
+.town-relationship>div{flex:1;min-width:0}.town-relationship strong{display:block;font-size:14px;line-height:22px}
+.town-relationship .town-familiarity{flex-direction:row;align-items:center;gap:12px;margin-top:4px;min-width:0}
+.town-relationship .town-familiarity progress{max-width:144px;flex:1}
+.world-home.paper-hud .town-relationship>button{flex:none;min-height:32px;padding:4px 10px;font-size:12px;line-height:22px}
+.world-home.paper-hud .town-relationships>button{margin:12px 8px 0 0}
+.hud-friends .town-relationships{flex:1;overflow:auto;overscroll-behavior:contain;min-height:0}
+@media(max-width:759px){.world-home.paper-hud .world-detail.is-town-service{right:12px;top:136px;width:calc(100vw - 24px);height:calc(100dvh - 160px)}.town-agent-relation{gap:12px}.town-current-agent{flex-basis:144px}.town-npc-picture{width:88px;height:96px;flex-basis:88px}.world-home.paper-hud .town-npc-picture .avatar{width:88px;height:88px}}
