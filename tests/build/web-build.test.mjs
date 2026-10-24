@@ -7,7 +7,7 @@ import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {buildWeb} from '../../scripts/web-build/build.mjs';
 const checkout=resolve(fileURLToPath(new URL('../../',import.meta.url))),sha=b=>createHash('sha256').update(b).digest('hex');
-async function fixture(){const root=await mkdtemp(join(tmpdir(),'trisavia-web-build-')),pub=resolve(root,'apps/web/public');await mkdir(resolve(pub,'nested'),{recursive:true});await mkdir(resolve(root,'scripts'),{recursive:true});for(const file of ['package.json','package-lock.json','scripts/build-web.mjs'])await cp(resolve(checkout,file),resolve(root,file));await cp(resolve(checkout,'scripts/web-build'),resolve(root,'scripts/web-build'),{recursive:true});await cp(resolve(checkout,'apps/web/public/brand'),resolve(pub,'brand'),{recursive:true});
+async function fixture(parent=tmpdir()){const root=await mkdtemp(join(parent,'trisavia-web-build-')),pub=resolve(root,'apps/web/public');await mkdir(resolve(pub,'nested'),{recursive:true});await mkdir(resolve(root,'scripts'),{recursive:true});for(const file of ['package.json','package-lock.json','scripts/build-web.mjs'])await cp(resolve(checkout,file),resolve(root,file));await cp(resolve(checkout,'scripts/web-build'),resolve(root,'scripts/web-build'),{recursive:true});await cp(resolve(checkout,'apps/web/public/brand'),resolve(pub,'brand'),{recursive:true});
  const html='<link rel="icon" href="/assets/brand/trisavia-02/trisavia-small-mark-framed.performance.svg"><link rel="stylesheet" href="/assets/first.css"><link rel="stylesheet" href="/assets/nested/second.css"><script type="module" src="/assets/entry.js"></script><a href="/owner">Owner</a><a href="/residents/A001">Resident</a><img src="/assets/brand/trisavia-02/trisavia-nav-lockup.performance.svg">';for(const name of ['index','resident'])await writeFile(resolve(pub,name+'.html'),html);await writeFile(resolve(pub,'first.css'),'.fixture {--first:1;color:red}');await writeFile(resolve(pub,'nested/second.css'),'.fixture {--second:2;color:blue;background:url("./sprite.png?variant=1#part")}');await writeFile(resolve(pub,'nested/sprite.png'),'fixture static asset');await writeFile(resolve(pub,'entry.js'),'import {value} from "./nested/dependency.js";globalThis.fixture=value;globalThis.loginMarkup=`<img src="/assets/brand/trisavia-02/trisavia-nav-lockup.svg">`;');await writeFile(resolve(pub,'nested/dependency.js'),'export const value=new URL("./sprite.png",import.meta.url).href+"first-input";');return {root,pub};}
 
 test('build is reproducible, preserves source-relative URLs/CSS order and exact brand aliases, and hashes actual content',async()=>{const f=await fixture();try{const first=await buildWeb({root:f.root}),repeat=await buildWeb({root:f.root});assert.deepEqual(repeat,first);assert.equal(first.appVersion,'0.1.1');assert.equal(first.assets.length,6);const html=await readFile(resolve(f.root,'dist/web/index.html'),'utf8');assert.equal((html.match(/rel="stylesheet"/g)||[]).length,1);assert.equal((html.match(/type="module"/g)||[]).length,1);assert(html.includes('/owner'));assert(html.includes('/residents/A001'));for(const asset of first.assets){const bytes=await readFile(resolve(f.root,'dist/web',asset.file));assert.equal(sha(bytes),asset.sha256);assert.equal(bytes.length,asset.bytes);assert(asset.url.includes(asset.sha256.slice(0,16)));}
@@ -15,3 +15,22 @@ test('build is reproducible, preserves source-relative URLs/CSS order and exact 
  await writeFile(resolve(f.pub,'nested/dependency.js'),'export const value="new-input";');const changed=await buildWeb({root:f.root});assert.notEqual(changed.assets.find(a=>a.file.startsWith('build/index-')&&a.file.endsWith('.js')).url,first.assets.find(a=>a.file.startsWith('build/index-')&&a.file.endsWith('.js')).url);assert.deepEqual(changed.assets.filter(a=>a.file.endsWith('.svg')),first.assets.filter(a=>a.file.endsWith('.svg')));
  await rm(resolve(f.pub,'nested/dependency.js'));await assert.rejects(()=>buildWeb({root:f.root}));await assert.rejects(()=>readFile(resolve(f.root,'dist/web/manifest.json')));
  }finally{await rm(f.root,{recursive:true,force:true});}});
+
+test('different checkout roots and absent or conflicting parent tsconfigs produce identical complete manifests',async()=>{
+ const parents=await Promise.all(['checkout','archive'].map(name=>mkdtemp(join(tmpdir(),'trisavia-'+name+'-'))));
+ try{
+  await writeFile(resolve(parents[0],'tsconfig.json'),JSON.stringify({compilerOptions:{strict:true,alwaysStrict:true}}));
+  await writeFile(resolve(parents[1],'tsconfig.json'),JSON.stringify({compilerOptions:{strict:false,alwaysStrict:false}}));
+  const [checkoutFixture,archiveFixture]=await Promise.all(parents.map(parent=>fixture(parent)));
+  for(const f of [checkoutFixture,archiveFixture]){
+   await writeFile(resolve(f.pub,'entry.js'),'globalThis.loadFixture=()=>import("./nested/dynamic.js");');
+   await writeFile(resolve(f.pub,'nested/dynamic.js'),'export const value=new URL("./sprite.png",import.meta.url).href;');
+  }
+  const expected=await buildWeb({root:checkoutFixture.root});
+  assert.deepEqual(await buildWeb({root:archiveFixture.root}),expected,'conflicting parent tsconfig must not change any page, asset or source digest');
+  await rm(resolve(parents[1],'tsconfig.json'));
+  assert.deepEqual(await buildWeb({root:archiveFixture.root}),expected,'archive without tsconfig must equal checkout');
+  await writeFile(resolve(archiveFixture.root,'tsconfig.json'),JSON.stringify({compilerOptions:{strict:false,alwaysStrict:false}}));
+  assert.deepEqual(await buildWeb({root:archiveFixture.root}),expected,'conflicting checkout tsconfig must be ignored');
+ }finally{for(const parent of parents)await rm(parent,{recursive:true,force:true});}
+});

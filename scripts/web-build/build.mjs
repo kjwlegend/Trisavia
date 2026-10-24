@@ -28,7 +28,8 @@ export async function buildWeb({root=defaultRoot}={}){
    api.onLoad({filter:/\.css$/},async args=>({contents:(await source(args.path)).toString('utf8'),loader:'css',resolveDir:dirname(args.path)}));
    api.onResolve({filter:/.*/},async args=>{if(args.kind!=='url-token')return;if(/^(?:[a-z][a-z0-9+.-]*:|\/|#)/i.test(args.path))return {path:args.path,external:true};const match=args.path.match(/^([^?#]*)([\s\S]*)$/),path=match[1],suffix=match[2],full=resolve(args.resolveDir,path);if(!full.startsWith(publicRoot+sep))throw new Error('CSS resource escapes public root');await lstat(full);return {path:'/assets/'+posix(relative(publicRoot,full))+suffix,external:true};});
   }}];
-  const options={absWorkingDir:root,bundle:true,write:false,minify:true,metafile:true,legalComments:'none',target:['chrome110','firefox115','safari16'],logLevel:'silent',plugins};
+  // Pin browser semantics here: esbuild must not discover checkout or parent tsconfig files.
+  const options={absWorkingDir:root,tsconfigRaw:{compilerOptions:{alwaysStrict:true}},bundle:true,write:false,minify:true,metafile:true,legalComments:'none',target:['chrome110','firefox115','safari16'],logLevel:'silent',plugins};
   for(const name of ['index','resident']){
    let html=(await source(resolve(publicRoot,name+'.html'))).toString('utf8');const tags=[...html.matchAll(/<link\b[^>]*>/gi)].map(m=>m[0]).filter(tag=>attributes(tag).rel==='stylesheet');if(!tags.length)throw new Error('Page has no ordered stylesheets: '+name);
    const css=tags.map(tag=>{const a=attributes(tag);return '@import '+JSON.stringify('./'+posix(relative(publicRoot,publicFile(a.href))))+(a.media?' '+a.media:'')+';';}).join('\n');
