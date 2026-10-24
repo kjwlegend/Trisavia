@@ -30,7 +30,7 @@ export async function buildWeb({root=defaultRoot}={}){
   }}];
   // Pin browser semantics here: esbuild must not discover checkout or parent tsconfig files.
   const options={absWorkingDir:root,tsconfigRaw:{compilerOptions:{alwaysStrict:true}},bundle:true,write:false,minify:true,metafile:true,legalComments:'none',target:['chrome110','firefox115','safari16'],logLevel:'silent',plugins};
-  for(const name of ['index','resident']){
+  for(const name of ['index','resident','releases','kanban']){
    let html=(await source(resolve(publicRoot,name+'.html'))).toString('utf8');const tags=[...html.matchAll(/<link\b[^>]*>/gi)].map(m=>m[0]).filter(tag=>attributes(tag).rel==='stylesheet');if(!tags.length)throw new Error('Page has no ordered stylesheets: '+name);
    const css=tags.map(tag=>{const a=attributes(tag);return '@import '+JSON.stringify('./'+posix(relative(publicRoot,publicFile(a.href))))+(a.media?' '+a.media:'')+';';}).join('\n');
    const cssBuild=await build({...options,stdin:{contents:css,loader:'css',resolveDir:publicRoot,sourcefile:name+'-ordered.css'},outfile:resolve(temporary,name+'.css')}),cssUrl=await emit(name,'css',cssBuild.outputFiles[0].contents,'text/css; charset=utf-8');let first=true;for(const tag of tags){html=html.replace(tag,first?`<link rel="stylesheet" href="${cssUrl}">`:'');first=false;}

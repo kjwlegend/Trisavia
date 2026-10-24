@@ -19,6 +19,8 @@ async function fixture(t:{after:(work:()=>Promise<void>)=>void}){
   write('scripts/build-web.mjs','// isolated build input'),
   write('apps/web/public/index.html','<html>source index</html>'),
   write('apps/web/public/resident.html','<html>source resident</html>'),
+  write('apps/web/public/releases.html','<html>source releases</html>'),
+  write('apps/web/public/kanban.html','<html>source kanban</html>'),
  ]);
  await write('docs/access/v1/entry.md','# Private protocol instructions');
  await write('scripts/m1-agent.ts','// optional reference client');
@@ -33,7 +35,7 @@ async function fixture(t:{after:(work:()=>Promise<void>)=>void}){
  const assets=await Promise.all([asset('index','.js','export const text="'+('ready'.repeat(1000))+'";'),asset('index','.css','body {color: black;}')]);
  const html='<html><head><link rel="stylesheet" href="'+assets[1]!.url+'"></head><body>built<script type="module" src="'+assets[0]!.url+'"></script></body></html>';
  const page=async(file:string)=>{await writeFile(join(buildRoot,file),html);return {file,sha256:webSha256(Buffer.from(html)),bytes:Buffer.byteLength(html)};};
- const manifest={version:1,appVersion:'0.1.1',pages:{index:await page('index.html'),resident:await page('resident.html')},assets,sources};
+ const manifest={version:1,appVersion:'0.1.1',pages:{index:await page('index.html'),resident:await page('resident.html'),releases:await page('releases.html'),kanban:await page('kanban.html')},assets,sources};
  await writeFile(join(buildRoot,'manifest.json'),JSON.stringify(manifest));
  const app=Fastify({logger:false});t.after(()=>app.close());
  app.get('/v1/fixture',()=>({body:'public'.repeat(1000)}));
@@ -44,7 +46,7 @@ test('only validated hash assets are immutable; HTML, authenticated responses an
  const f=await fixture(t),url=f.assets[0]!.url;
  const asset=await f.app.inject(url);assert.equal(asset.statusCode,200);assert.equal(asset.headers['cache-control'],'public, max-age=31536000, immutable');assert.match(asset.headers.etag!,/^W\/"sha256-/);
  const again=await f.app.inject({url,headers:{'if-none-match':asset.headers.etag!}});assert.equal(again.statusCode,304);assert.equal(again.body,'');
- for(const path of ['/','/owner','/residents/A001','/agent/entry.md','/v1/fixture']){
+ for(const path of ['/','/owner','/residents/A001','/releases','/kanban','/agent/entry.md','/v1/fixture']){
   const r=await f.app.inject({url:path,headers:{'if-none-match':'*'}});assert.equal(r.statusCode,200,path);assert.equal(r.headers['cache-control'],'no-store',path);assert.equal(r.headers.etag,undefined,path);
  }
  assert.match((await f.app.inject('/')).body,/built/);
@@ -65,6 +67,7 @@ test('production rejects missing/stale manifests, invalid paths and changed file
  const f=await fixture(t),manifestPath=join(f.buildRoot,'manifest.json');
  await rm(manifestPath);assert.throws(()=>loadProductionWebAssets(f.repoRoot,f.buildRoot),/Production web assets/);
  await writeFile(manifestPath,JSON.stringify(f.manifest));
+ const oldPages=structuredClone(f.manifest) as {pages:Record<string,unknown>};delete oldPages.pages.releases;await writeFile(manifestPath,JSON.stringify(oldPages));assert.throws(()=>loadProductionWebAssets(f.repoRoot,f.buildRoot),/Production web assets/);
  const stale={...f.manifest,appVersion:'0.1.0'};await writeFile(manifestPath,JSON.stringify(stale));assert.throws(()=>loadProductionWebAssets(f.repoRoot,f.buildRoot),/Production web assets/);
  await writeFile(manifestPath,JSON.stringify(f.manifest));await writeFile(join(f.repoRoot,'scripts/build-web.mjs'),'// changed build input');assert.throws(()=>loadProductionWebAssets(f.repoRoot,f.buildRoot),/Production web assets/);
  await writeFile(join(f.repoRoot,'scripts/build-web.mjs'),'// isolated build input');

@@ -10,7 +10,7 @@ export const WEB_MIME:Readonly<Record<string,string>>={
  '.wav':'audio/wav','.ogg':'audio/ogg','.mp3':'audio/mpeg',
 };
 export interface VerifiedWebFile {root:string;file:string;sha256:string;bytes:number;contentType:string}
-export interface ProductionWebAssets {pages:{index:VerifiedWebFile;resident:VerifiedWebFile};assets:ReadonlyMap<string,VerifiedWebFile>}
+export interface ProductionWebAssets {pages:{index:VerifiedWebFile;resident:VerifiedWebFile;releases:VerifiedWebFile;kanban:VerifiedWebFile};assets:ReadonlyMap<string,VerifiedWebFile>}
 export const webSha256=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
 const record=(value:unknown):Record<string,unknown>=>{
  if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Invalid web manifest object');
@@ -52,7 +52,7 @@ export function loadProductionWebAssets(repoRoot:string,buildRoot:string):Produc
   const manifest=record(JSON.parse(raw.toString('utf8'))),pkg=record(JSON.parse(readFileSync(resolve(repoRoot,'package.json'),'utf8')));
   if(manifest.version!==1||manifest.appVersion!==pkg.version||typeof manifest.appVersion!=='string')throw new Error('Web build version differs');
   const pageEntries=record(manifest.pages);
-  const pages={index:checkedFile(buildRoot,pageEntries.index,'index.html'),resident:checkedFile(buildRoot,pageEntries.resident,'resident.html')};
+  const pages={index:checkedFile(buildRoot,pageEntries.index,'index.html'),resident:checkedFile(buildRoot,pageEntries.resident,'resident.html'),releases:checkedFile(buildRoot,pageEntries.releases,'releases.html'),kanban:checkedFile(buildRoot,pageEntries.kanban,'kanban.html')};
   if(!Array.isArray(manifest.assets)||!manifest.assets.length||manifest.assets.length>2000||!Array.isArray(manifest.sources)||!manifest.sources.length||manifest.sources.length>5000)throw new Error('Web build declarations are absent');
   const assets=new Map<string,VerifiedWebFile>(),files=new Set<string>();
   for(const value of manifest.assets){
@@ -74,7 +74,7 @@ export function loadProductionWebAssets(repoRoot:string,buildRoot:string):Produc
    if(webSha256(readFileSync(productionPath(repoRoot,file)))!==digest(input.sha256))throw new Error('Web build input differs');
    sources.add(file);
   }
-  for(const required of ['package.json','package-lock.json','scripts/build-web.mjs','apps/web/public/index.html','apps/web/public/resident.html'])if(!sources.has(required))throw new Error('Required web build input is absent');
+  for(const required of ['package.json','package-lock.json','scripts/build-web.mjs','apps/web/public/index.html','apps/web/public/resident.html','apps/web/public/releases.html','apps/web/public/kanban.html'])if(!sources.has(required))throw new Error('Required web build input is absent');
   return {pages,assets};
  }catch{throw new Error('Production web assets are missing or invalid; build dist/web from this exact source before startup');}
 }
