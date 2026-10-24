@@ -1,0 +1,4 @@
+interface:
+  display_name: "居民生活规则设计"
+  short_description: "从居民行为展开世界规则，补齐场所、物品、NPC、异步执行、日志与交付细节"
+  default_prompt: "使用 $world-life-rules 为这个居民生活行为完成可交总指挥调度的开发设计。"

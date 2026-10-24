@@ -1,0 +1,79 @@
+{
+  "specId": "life-actions-v1", "revision": 1, "designOnly": true,
+  "timeBasis": "real_utc", "currency": "star_coin", "currencyScale": 0,
+  "limits": {"energyMax":100,"initialEnergy":100,"planSteps":12,"planWallSeconds":7200,"activeForegroundPlansPerActor":1,"queuedForegroundPlansPerActor":1,"remoteWaitingPlansPerActor":4,"fishingCastsPerSession":5,"fishingCastsPerUtcDay":30,"workStartsPerUtcDay":4,"shopQuantityPerCommand":20,"quoteTtlSeconds":7200,"giftUnits":5,"pendingGiftOffersPerSender":3,"giftExpirySeconds":86400,"sceneWaitMaxSeconds":120,"arrivalHandoffSeconds":5,"moveSegmentCells":64,"moveSegments":4,"pathSearchNodes":16384,"ruleRetryLimit":3,"retryDelaysSeconds":[1,5,15],"npcDecisionIntervalSeconds":60,"npcMinDwellSeconds":120,"npcConcurrentAtPlaceMax":1,"reservedPlayerSeatsPerPlace":1},
+  "npcPolicy": {"initialCoins":80,"initialEnergy":100,"dutySeconds":180,"dutyWindowSeconds":1800,"dutyTargetSeconds":360,"recentWindow":6,"lowEnergyBelow":30,"mediumEnergyBelow":60,"restUrgencyLow":80,"restUrgencyMedium":35,"dutyUrgentScore":45,"dutyBaseScore":10,"preferenceMin":0,"preferenceMax":30,"novelActivityScore":15,"novelPlaceScore":10,"travelPenaltyCap":20,"travelSecondsPerPenaltyPoint":10,"repeatLookback":2,"repeatPenaltyPerMatch":20,"avoidConsecutiveSameAction":3,"fishingGoalCasts":2,"saleGoalMaxFish":3},
+  "npcProfiles":[
+    {"id":"npc-mayor","stage":"A","dutyPlace":"town_hall","preferences":{"duty":30,"rest":10,"read":25,"visit":20}},
+    {"id":"npc-tavern","stage":"A","dutyPlace":"harbor_tavern","preferences":{"duty":25,"rest":10,"eat":25,"fish_shore":20,"sell":10}},
+    {"id":"npc-innkeeper","stage":"A","dutyPlace":"stone_inn","preferences":{"duty":25,"rest":20,"read":25,"visit":15}},
+    {"id":"npc-harbor-hand","stage":"A","dutyPlace":null,"preferences":{"work_harbor":30,"rest":10,"eat":20,"fish_pier":25,"sell":10}},
+    {"id":"npc-fishing-clerk","stage":"B","dutyPlace":"fisher_shop","preferences":{"duty":20,"rest":10,"fish_shore":25,"fish_pier":30,"sell":25}},
+    {"id":"npc-librarian","stage":"C","dutyPlace":"blue_library","preferences":{"duty":25,"rest":10,"read":30,"visit":20,"tea":20}},
+    {"id":"npc-neighbor","stage":"C","dutyPlace":null,"preferences":{"work_harbor":20,"work_tavern":20,"rest":10,"eat":20,"read":20,"visit":20,"fish_shore":20,"fish_pier":20,"sell":15}}
+  ],
+  "jobs": [
+    {"id":"harbor_shift","placeId":"harbor_work","durationSeconds":600,"coinReward":36,"energyCost":24,"workRecord":"harbor"},
+    {"id":"tavern_shift","placeId":"harbor_tavern","durationSeconds":480,"coinReward":24,"energyCost":16,"workRecord":"hospitality"}
+  ],
+  "items": [
+    {"id":"basic_rod","name":"木柄鱼竿","kind":"tool","buyPrice":30,"sellPrice":null,"transferable":true,"stackable":false,"uses":["fish.session"]},
+    {"id":"bait","name":"通用鱼饵","kind":"consumable","buyPrice":2,"sellPrice":null,"transferable":true,"stackable":true,"uses":["fish.session"]},
+    {"id":"sardine","name":"银纹沙丁鱼","kind":"fish","buyPrice":null,"sellPrice":4,"transferable":true,"stackable":false,"weightGrams":[100,300],"uses":["shop.sell","meal.prepare","gift.offer"]},
+    {"id":"mackerel","name":"青背鲭鱼","kind":"fish","buyPrice":null,"sellPrice":8,"transferable":true,"stackable":false,"weightGrams":[400,900],"uses":["shop.sell","meal.prepare","gift.offer"]},
+    {"id":"sea_bass","name":"花斑海鲈","kind":"fish","buyPrice":null,"sellPrice":14,"transferable":true,"stackable":false,"weightGrams":[800,1800],"uses":["shop.sell","meal.prepare","gift.offer"]},
+    {"id":"bread_meal","name":"麦香便餐","kind":"food","buyPrice":6,"sellPrice":null,"transferable":true,"stackable":true,"energyGain":20,"durationSeconds":60,"uses":["meal.eat","gift.offer"]},
+    {"id":"herbal_tea","name":"草本茶","kind":"food","buyPrice":3,"sellPrice":null,"transferable":true,"stackable":true,"energyGain":8,"durationSeconds":30,"uses":["meal.eat","gift.offer"]},
+    {"id":"grilled_fish","name":"香煎鱼餐","kind":"food","buyPrice":null,"sellPrice":null,"transferable":true,"stackable":true,"energyGain":28,"durationSeconds":60,"uses":["meal.eat","gift.offer"]},
+    {"id":"harbor_handbook","name":"港湾生活手册","kind":"book","buyPrice":10,"sellPrice":null,"transferable":true,"stackable":false,"uses":["book.read","gift.offer"]}
+  ],
+  "legacyItems": ["resident_card","tavern_voucher","inn_voucher"],
+  "fishing": {
+    "castSeconds":60,"baitPerCast":1,"energyPerCast":2,
+    "spots":[
+      {"id":"shore_spot","placeId":"harbor_shore","outcomes":[{"itemId":null,"probability":0.20},{"itemId":"sardine","probability":0.50},{"itemId":"mackerel","probability":0.25},{"itemId":"sea_bass","probability":0.05}]},
+      {"id":"pier_spot","placeId":"harbor_pier","outcomes":[{"itemId":null,"probability":0.35},{"itemId":"sardine","probability":0.25},{"itemId":"mackerel","probability":0.25},{"itemId":"sea_bass","probability":0.15}]}
+    ]
+  },
+  "services": {
+    "mealPreparation":{"placeId":"harbor_tavern","fishUnits":1,"fee":3,"durationSeconds":60,"outputItemId":"grilled_fish"},
+    "benchRest":{"placeId":"garden_bench","durationSeconds":300,"price":0,"energyGain":30},
+    "innRest":{"placeId":"stone_inn","durationSeconds":180,"price":12,"energyGain":70},
+    "legacyVoucherRest":{"durationSeconds":60,"energyGainWhenLifeEnabled":70},
+    "reading":{"placeId":"blue_library","durationSeconds":180,"energyCost":0,"coinReward":0},
+    "visit":{"staySeconds":30,"revisitRecordCooldownSeconds":86400,"coinReward":0,"energyCost":0}
+  },
+  "places":[
+    {"id":"town_hall","anchor":"p-hall","capacity":null,"actions":["legacy.npc"]},
+    {"id":"harbor_work","anchor":"h-warehouse","capacity":4,"actions":["work.shift"]},
+    {"id":"harbor_tavern","anchor":"h-tavern","capacityByStation":{"work":3,"dining":4,"kitchen":2},"actions":["work.shift","shop.buy","meal.eat","meal.prepare","legacy.npc"]},
+    {"id":"stone_inn","anchor":"e-inn","capacity":4,"actions":["rest.inn","legacy.npc"]},
+    {"id":"fisher_shop","anchor":"e-stall","capacity":null,"actions":["shop.buy","shop.sell"]},
+    {"id":"blue_library","anchor":"n-blue","capacity":4,"actions":["shop.buy","book.read"]},
+    {"id":"garden_bench","anchor":"g-pavilion","capacity":6,"actions":["rest.bench","visit.place","meal.eat"]},
+    {"id":"harbor_shore","anchor":"harbor_coast_new","capacity":4,"actions":["fish.session","visit.place"]},
+    {"id":"harbor_pier","anchor":"harbor_dock_new","capacity":3,"actions":["fish.session","visit.place"]},
+    {"id":"lookout","anchor":"p-observatory","capacity":null,"actions":["visit.place"]}
+  ],
+  "actions":[
+    {"id":"work.shift","stage":"A","outputs":["coins","work_record"]},
+    {"id":"rest.bench","stage":"A","outputs":["energy"]},
+    {"id":"shop.buy","stage":"B","outputs":["inventory_item"]},
+    {"id":"shop.sell","stage":"B","outputs":["coins"]},
+    {"id":"fish.session","stage":"B","outputs":["fish","fishing_record"]},
+    {"id":"meal.prepare","stage":"C","outputs":["grilled_fish"]},
+    {"id":"meal.eat","stage":"C","outputs":["energy","meal_record"]},
+    {"id":"rest.inn","stage":"C","outputs":["energy"]},
+    {"id":"book.read","stage":"C","outputs":["reading_record"]},
+    {"id":"visit.place","stage":"C","outputs":["visit_record"]},
+    {"id":"gift.offer","stage":"C","outputs":["pending_gift"]},
+    {"id":"gift.respond","stage":"C","outputs":["gift_result"]},
+    {"id":"legacy.npc","stage":"reuse","outputs":["existing_service_result"]},
+    {"id":"legacy.social","stage":"reuse","outputs":["existing_social_result"]}
+  ],
+  "shopOffers":[
+    {"placeId":"fisher_shop","sells":["basic_rod","bait"],"buys":["sardine","mackerel","sea_bass"]},
+    {"placeId":"harbor_tavern","sells":["bread_meal","herbal_tea"],"buys":[]},
+    {"placeId":"blue_library","sells":["harbor_handbook"],"buys":[]}
+  ]
+}
