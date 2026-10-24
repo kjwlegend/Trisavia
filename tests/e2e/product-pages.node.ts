@@ -9,6 +9,8 @@ import Fastify from 'fastify';
 import {chromium} from '@playwright/test';
 import {registerSiteRoutes} from '../../apps/platform/transport/http/site-routes.ts';
 import {loadProductionWebAssets} from '../../apps/platform/transport/http/web-assets.ts';
+// @ts-expect-error Player-facing browser data module.
+import {RELEASES} from '../../apps/web/public/releases-data.js';
 
 const root=fileURLToPath(new URL('../../',import.meta.url));
 const screenshots=resolve(root,'outputs/release-board-20261025');
@@ -30,9 +32,16 @@ test('public player pages use the verified build, honest completed releases, map
    for(const url of urls){const resource=await app.inject(url);assert.equal(resource.statusCode,200);assert.equal(resource.headers['cache-control'],'public, max-age=31536000, immutable');}
   }
   await page.goto(origin+'/releases');await page.getByRole('heading',{name:'更新日志',exact:true}).waitFor();
-  assert.equal(await page.locator('.release-card').count(),2);
+  assert.equal(await page.locator('.release-card').count(),RELEASES.length);
+  assert.deepEqual(await page.locator('.release-heading h2').allTextContents(),RELEASES.map((release:any)=>`v${release.version} · ${release.title}`));
+  for(const release of RELEASES){
+   const card=page.getByRole('article').filter({has:page.getByRole('heading',{name:`v${release.version} · ${release.title}`,exact:true})});
+   assert.equal(await card.isVisible(),true);
+   assert.equal(await card.locator('time').getAttribute('datetime'),release.date);
+   assert.equal(await card.locator('.release-status').innerText(),'已完成');
+  }
   const copy=await page.locator('main').innerText();
-  assert.match(copy,/v0\.1\.0/);assert.match(copy,/v0\.1\.1/);assert.doesNotMatch(copy,/v0\.1\.2|当前运行|UAT已发布|\bJS\b|\bCSS\b|module|数据库/);
+  assert.match(copy,/v0\.1\.0/);assert.match(copy,/v0\.1\.1/);assert.doesNotMatch(copy,/当前运行|UAT已发布|\bJS\b|\bCSS\b|module|数据库/);
   assert.equal(await page.locator('nav a[aria-current=page]').getAttribute('href'),'/releases');
   await page.screenshot({path:resolve(screenshots,'releases-1440.png'),fullPage:true});
   await page.getByRole('navigation').getByRole('link',{name:'建设看板'}).click();
