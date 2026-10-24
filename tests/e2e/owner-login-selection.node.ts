@@ -24,7 +24,7 @@ test('login selects the first managed Agent, retains manual selection on refresh
    return route.fulfill({json:{ownerId,operationId:body.operationId,sessionId:body.sessionToken.split('.')[0]}});
   }
   if(request.method()!=='GET'){unexpectedWrites.push(url.pathname);return route.abort();}
-  if(url.pathname==='/v1/owner/agents')return route.fulfill({json:{ownerId,agents:lists[ownerId].map(id=>agent(id,ownerId))}});
+  if(url.pathname==='/v1/owner/agents'){const owned=lists[ownerId];assert.ok(owned,'The synthetic Owner must have a declared Agent list');return route.fulfill({json:{ownerId,agents:owned.map(id=>agent(id,ownerId))}});}
   if(url.pathname==='/v1/owner/account')return route.fulfill({json:{ownerId,username:ownerId,emailVerified:true}});
   if(url.pathname==='/v1/owner/agent-invites')return route.fulfill({json:{invites:[]}});
   if(url.pathname==='/v1/capabilities')return route.fulfill({json:{emailMode:'experience',gateway:{protocolVersion:1,modules:[]}}});
@@ -44,6 +44,8 @@ test('login selects the first managed Agent, retains manual selection on refresh
  await page.locator('#agent-list button[data-agent-id="agent-b-second"]').click();assert.equal(await selected(),'agent-b-second');
  await page.evaluate(()=>(window as any).ownerController.refresh());assert.equal(await selected(),'agent-b-second');
  await page.reload();await page.waitForFunction(()=>(window as any).fixtureReady);assert.equal(await selected(),'agent-b-second');
+  await page.evaluate(()=>(window as any).ownerController.open('login'));await login('owner_a');assert.equal(await selected(),'agent-z-first');
+  await page.locator('#agent-list button[data-agent-id="agent-b-second"]').click();assert.equal(await selected(),'agent-b-second');
  // A subsequent successful login must not reuse the previous account's selection,
  // even if the new authorized list happens to contain the same Agent id.
  await page.evaluate(()=>(window as any).ownerController.open('login'));await login('owner_b');assert.equal(await selected(),'agent-c-first');
