@@ -7,6 +7,7 @@
  * Reuse exactly these arguments after interruption. Private credentials/original command inputs remain
  * in outputs/m3-a-http/<run-id>/private-state.json (0600); evidence.json excludes credentials.
  * Missed timed checkpoints fail this run; recovery never creates a replacement plan or identity.
+ * A failed run retains immutable failure snapshots and can recover original facts, but never becomes passed.
  * The initial plan response is deliberately discarded, then recovered from the original receipt.
  * This is client-response-loss simulation, not a claim of server unknown_commit fault injection.
  */
@@ -48,6 +49,20 @@ function planInput(now:number){return {expectedCatalogRevision:1,deadlineAt:now+
 ]};}
 function receiptBody(state:PrivateState,c:Command){return {protocolVersion:1,consumerId:state.consumerId,purpose:'agent-manual',operation:c.operation,commandId:c.commandId};}
 function commandBody(state:PrivateState,c:Command){return {...receiptBody(state,c),input:c.input};}
+function validatedWork(checkpoint:ObjectValue){
+ requireValue(checkpoint.workStartQuota?.starts===1,'work_start_quota_not_one');
+ requireValue(checkpoint.activity?.actionId==='work.shift'&&checkpoint.activity.state==='active'&&checkpoint.activity.scheduledEndAt-checkpoint.activity.startedAt===600_000,'work_duration_not_600s');return checkpoint;
+}
+function validatedRest(checkpoint:ObjectValue,places:ObjectValue[]){
+ requireValue(checkpoint.activity?.actionId==='rest.bench'&&checkpoint.activity.state==='active'&&checkpoint.activity.scheduledEndAt-checkpoint.activity.startedAt===300_000&&checkpoint.life?.energy?.current===76,'work_result_or_rest_duration_invalid');
+ const position=checkpoint.avatar?.avatar?.position,place=places.find(p=>p.placeId==='garden_bench');
+ requireValue(position&&place&&place.stations.some((s:ObjectValue)=>s.actionIds.includes('rest.bench')&&s.cells.some((p:ObjectValue)=>p.x===position.x&&p.y===position.y)),'rest_not_at_actual_map3_station');return checkpoint;
+}
+function recordFailure(evidence:ObjectValue,code:string,at:number){const failure={code,at};evidence.status='failed';evidence.failure??=failure;evidence.failures??=[];evidence.failures.push(failure);evidence.finishedAt=at;return failure;}
+function recordCompletion(evidence:ObjectValue,at:number){
+ if(evidence.status==='failed'||evidence.failure||evidence.failures?.length){evidence.status='failed';evidence.recovery={conditionsPassed:true,finishedAt:at,originalFailureRetained:true};return false;}
+ evidence.status='passed';evidence.finishedAt=at;return true;
+}
 async function jsonFile(path:string,value:unknown){const tmp=path+'.tmp';await writeFile(tmp,JSON.stringify(value,null,2)+'\n',{mode:0o600});await rename(tmp,path);}
 async function existingJson(path:string){try{const s=await lstat(path);requireValue(s.isFile()&&!s.isSymbolicLink()&&(s.mode&0o077)===0&&s.size<=1_000_000,'private_evidence_file_mode_invalid');return JSON.parse(await readFile(path,'utf8'));}catch(e){if((e as NodeJS.ErrnoException).code==='ENOENT')return;throw e;}}
 class HttpFailure extends Error{readonly status:number;readonly code:string;constructor(status:number,code:string){super('http_'+status+'_'+code);this.status=status;this.code=code;}}
@@ -61,6 +76,7 @@ async function run(target:Target){
  if(!state){const runtimeToken=randomUUID()+'.'+randomBytes(32).toString('base64url'),continuationToken=randomUUID()+'.'+randomBytes(32).toString('base64url');state={version:1,target,consumerId:'m3-http-'+randomUUID(),startedAt:Date.now(),registration:{operationId:randomUUID(),attemptId:randomUUID(),runtimeToken,continuationToken},runtimeToken};await jsonFile(privateFile,state);}
  assert.deepEqual(state.target,target,'resume_target_must_match');
  const evidence:ObjectValue=await existingJson(evidenceFile)??{version:1,target,mode:'isolated-synthetic-http-real-clock',startedAt:state.startedAt,status:'running',requests:[],observations:{},boundaries:{clockInjection:false,serverFaultInjection:false,clientResponseLossSimulation:true,ownerBinding:false,welcomeClaim:false,databaseWritesByScript:false,ordinaryUiAcceptance:false}};
+ if(evidence.status==='failed'){const original='failure-before-recovery-'+randomUUID()+'.json';await writeFile(join(directory,original),JSON.stringify(evidence,null,2)+'\n',{mode:0o600,flag:'wx'});evidence.failureSnapshots??=[];evidence.failureSnapshots.push(original);}
  const save=async()=>{await jsonFile(privateFile,state);await jsonFile(evidenceFile,evidence);};
  let lastRequestAt=0;
  function safePath(path:string){requireValue(path.startsWith('/v1/')||path==='/health','unexpected_http_path');const url=new URL(path,target.baseUrl);requireValue(url.origin===target.baseUrl&&!url.username&&!url.password&&!url.hash,'cross_origin_http_path');return url;}
@@ -106,6 +122,8 @@ async function run(target:Target){
   requireValue(rules.rules?.version===3&&rules.rules?.topologyVersion===3&&map.manifest?.version===3&&actions.map?.rulesetVersion===3&&actions.map?.topologyVersion===3&&actions.map?.geometryDigest===map.manifest?.geometryDigest,'life_map3_not_active');
   requireValue(actions.actions.some((a:ObjectValue)=>a.actionId==='work.shift'&&a.jobId==='harbor_shift'&&a.durationSeconds===600&&a.reward.star_coin===36)&&actions.actions.some((a:ObjectValue)=>a.actionId==='rest.bench'&&a.durationSeconds===300&&a.costs.star_coin===0),'approved_life_actions_not_discovered');
   const quota=()=>query('life.options',{actionId:'work.shift',jobId:'harbor_shift',placeId:'harbor_work'});
+  // Revalidate persisted acceptance proofs before using checkpoints to skip a timed phase.
+  if(state.work)validatedWork(state.work);if(state.rest)validatedRest(state.rest,actions.places);
   if(!state.plan){const initial={wallet:await wallet(),life:await query('life.state'),quota:await quota()};requireValue(initial.wallet.balance===0&&initial.life.energy.current===100&&initial.life.recentResults.length===0&&!initial.life.body.activity&&!initial.life.body.plan&&initial.quota.workQuota.starts===0,'not_a_fresh_zero_coin_synthetic_agent');evidence.observations.initial=initial;
    state.avatar??={operation:'world.avatar.create',commandId:randomUUID(),input:{worldId:'default',expectedRulesetVersion:rules.rules.version}};await save();await command(state.avatar);
    state.plan={operation:'life.plans.submit',commandId:randomUUID(),input:planInput(Date.now())};await save();}
@@ -113,11 +131,9 @@ async function run(target:Target){
   const planId=state.receipt.result?.plan?.planId;requireValue(typeof planId==='string','persisted_plan_id_missing');evidence.planId=planId;
   async function phaseActivity(actionId:string){for(let i=0;i<18;i++){const life=await query('life.state');if(life.body.activity?.actionId===actionId&&life.body.activity.state==='active')return {activity:life.body.activity,life,observedAt:Date.now()};
     const plan=await query('life.plans.get',{planId});requireValue(['queued','running','waiting_condition'].includes(plan.plan?.state),'plan_finished_before_expected_phase_'+actionId);await delay(10_000);}throw new Error('phase_not_reached_'+actionId);}
-  if(!state.work){state.work=await phaseActivity('work.shift');const q=await quota();requireValue(q.workQuota.starts===1,'work_start_quota_not_one');evidence.observations.workStartQuota=q.workQuota;requireValue(state.work.activity.scheduledEndAt-state.work.activity.startedAt===600_000,'work_duration_not_600s');evidence.observations.work=state.work;await save();}
-  if(!state.rest){const quietFrom=lastRequestAt;await waitUntil(state.work.activity.scheduledEndAt+2000,'work_no_external_http_wait');evidence.observations.workQuietWindow={from:quietFrom,to:Date.now(),durationMs:Date.now()-quietFrom};state.rest=await phaseActivity('rest.bench');
-   requireValue(state.rest.activity.scheduledEndAt-state.rest.activity.startedAt===300_000&&state.rest.life.energy.current===76,'work_result_or_rest_duration_invalid');
-   const avatar=await query('world.avatar',{worldId:'default'}),place=actions.places.find((p:ObjectValue)=>p.placeId==='garden_bench');requireValue(place&&place.stations.some((s:ObjectValue)=>s.actionIds.includes('rest.bench')&&s.cells.some((p:ObjectValue)=>p.x===avatar.avatar.position.x&&p.y===avatar.avatar.position.y)),'rest_not_at_actual_map3_station');
-   evidence.observations.rest={...state.rest,avatar};await save();}
+  if(!state.work){const candidate=await phaseActivity('work.shift'),q=await quota();const checkpoint=validatedWork({...candidate,workStartQuota:q.workQuota});state.work=checkpoint;evidence.observations.workStartQuota=checkpoint.workStartQuota;evidence.observations.work=checkpoint;await save();}
+  if(!state.rest){const quietFrom=lastRequestAt;await waitUntil(state.work.activity.scheduledEndAt+2000,'work_no_external_http_wait');evidence.observations.workQuietWindow={from:quietFrom,to:Date.now(),durationMs:Date.now()-quietFrom};const candidate=await phaseActivity('rest.bench'),avatar=await query('world.avatar',{worldId:'default'});
+   const checkpoint=validatedRest({...candidate,avatar},actions.places);state.rest=checkpoint;evidence.observations.rest=checkpoint;await save();}
   const quietFrom=lastRequestAt;await waitUntil(state.rest.activity.scheduledEndAt+3000,'rest_no_external_http_wait');evidence.observations.restQuietWindow={from:quietFrom,to:Date.now(),durationMs:Date.now()-quietFrom};
   let finalPlan:ObjectValue|undefined;for(let i=0;i<5;i++){const p=await query('life.plans.get',{planId});if(p.plan?.state==='completed'){finalPlan=p.plan;break;}requireValue(['running','waiting_condition'].includes(p.plan?.state),'plan_terminal_failure');await delay(5000);}
   requireValue(finalPlan&&finalPlan.stepCount===4&&finalPlan.nextStep===4&&finalPlan.results.length===4,'four_step_plan_not_complete');
@@ -135,8 +151,10 @@ async function run(target:Target){
   const afterWallet=await wallet(),afterPlan=await query('life.plans.get',{planId});await delay(2000);const afterLogs=await logs();
   assert.deepEqual(afterPlan.plan,finalPlan,'completion_replay_changed_plan');assert.equal(afterWallet.balance,36);assert.equal(afterWallet.accountVersion,finalWallet.accountVersion);assert.deepEqual(afterLogs.items.filter((r:ObjectValue)=>r.source.domain==='life').map((r:ObjectValue)=>r.id).sort(),beforeIds,'completion_replay_duplicated_logs');
   evidence.observations.final={plan:finalPlan,work:work.activity,rest:rest.activity,wallet:afterWallet,life:finalLife,avatar:await query('world.avatar',{worldId:'default'}),quota:await quota(),lifeLogIds:beforeIds};
-  evidence.status='passed';evidence.finishedAt=Date.now();evidence.elapsedMs=evidence.finishedAt-state.startedAt;await save();progress('passed');
- }catch(error){evidence.status='failed';evidence.finishedAt=Date.now();evidence.failure={code:error instanceof HttpFailure?error.code:error instanceof Error&&/^[a-z0-9_]+$/.test(error.message)?error.message:'acceptance_assertion_failed'};await save();console.error(JSON.stringify({runId:target.runId,status:'failed',code:evidence.failure.code}));process.exitCode=1;}
+  const finishedAt=Date.now(),passed=recordCompletion(evidence,finishedAt);evidence.elapsedMs=finishedAt-state.startedAt;await save();progress(passed?'passed':'original_results_recovered_prior_failure_retained');if(!passed)process.exitCode=1;
+ }catch(error){const failure=recordFailure(evidence,error instanceof HttpFailure?error.code:error instanceof Error&&/^[a-z0-9_]+$/.test(error.message)?error.message:'acceptance_assertion_failed',Date.now());
+  // Immutable per-failure evidence precedes the mutable current summary; it contains no private state.
+  const failureFile='failure-'+failure.at+'-'+randomUUID()+'.json';await writeFile(join(directory,failureFile),JSON.stringify(evidence,null,2)+'\n',{mode:0o600,flag:'wx'});evidence.failureSnapshots??=[];evidence.failureSnapshots.push(failureFile);await save();console.error(JSON.stringify({runId:target.runId,status:'failed',code:failure.code}));process.exitCode=1;}
 }
 
 async function main(){
@@ -149,6 +167,16 @@ async function main(){
   const state={consumerId:'synthetic-client'} as PrivateState,c:Command={operation:'life.plans.submit',commandId:'stable-command',input:planInput(0)};
   assert.equal('input'in receiptBody(state,c),false);assert.deepEqual(commandBody(state,c).input,c.input);
   assert.equal(canonical({b:1,a:[2]}),'{"a":[2],"b":1}');
+  const work={activity:{actionId:'work.shift',state:'active',startedAt:0,scheduledEndAt:600_000},workStartQuota:{starts:1}},places=[{placeId:'garden_bench',stations:[{actionIds:['rest.bench'],cells:[{x:4,y:5}]}]}],rest={activity:{actionId:'rest.bench',state:'active',startedAt:600_000,scheduledEndAt:900_000},life:{energy:{current:76}},avatar:{avatar:{position:{x:99,y:99}}}};
+  const persisted:ObjectValue={runtimeToken:'offline-synthetic-token',plan:c,receipt:{key:{commandId:c.commandId}}};
+  assert.throws(()=>{persisted.work=validatedWork({...work,workStartQuota:{starts:0}});},/work_start_quota_not_one/);assert.equal(persisted.work,undefined);
+  assert.throws(()=>{persisted.work=validatedWork({...work,activity:{...work.activity,scheduledEndAt:1}});},/work_duration_not_600s/);assert.equal(persisted.work,undefined);
+  persisted.work=validatedWork(work);
+  for(let retry=0;retry<2;retry++){const resumed=JSON.parse(JSON.stringify(persisted));validatedWork(resumed.work);assert.throws(()=>{resumed.rest=validatedRest(rest,places);},/rest_not_at_actual_map3_station/);assert.equal(resumed.rest,undefined);assert.equal(resumed.runtimeToken,persisted.runtimeToken);assert.deepEqual(resumed.plan,c);assert.deepEqual(resumed.receipt,persisted.receipt);}
+  assert.throws(()=>validatedWork({activity:work.activity}),/work_start_quota_not_one/);assert.throws(()=>validatedRest({...rest,avatar:undefined},places),/rest_not_at_actual_map3_station/);
+  const verified=validatedRest({...rest,avatar:{avatar:{position:{x:4,y:5}}}},places);assert.deepEqual(validatedRest(JSON.parse(JSON.stringify(verified)),places),verified);
+  const failed:ObjectValue={};recordFailure(failed,'rest_not_at_actual_map3_station',10);const firstFailure=JSON.stringify(failed.failure),firstSnapshot=JSON.stringify(failed);recordFailure(failed,'work_start_quota_not_one',20);assert.equal(recordCompletion(failed,30),false);assert.equal(failed.status,'failed');assert.equal(JSON.stringify(failed.failure),firstFailure);assert.equal(failed.failures.length,2);assert.equal(JSON.parse(firstSnapshot).failure.code,'rest_not_at_actual_map3_station');assert.equal(failed.recovery.originalFailureRetained,true);
+  assert.equal(recordCompletion({status:'failed'},30),false);assert.equal(recordCompletion({status:'running'},30),true);
   console.info(JSON.stringify({offlineChecks:'passed',networkRequests:0,filesWritten:0,realClockRun:'not_started'}));return;
  }
  if(args.length===1&&args[0]==='--help'){console.info('See the script header for --self-check, exact isolated --execute arguments and original-run recovery.');return;}
