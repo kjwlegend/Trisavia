@@ -117,4 +117,3 @@ await test('Owner invitations bind only one self-authenticated Agent and GET nev
   assert.equal((await service.invoke('self',{},a.input.runtimeToken)).publicId,a.publicId);
  });
 });
-
