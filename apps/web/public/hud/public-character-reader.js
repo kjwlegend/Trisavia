@@ -1,10 +1,11 @@
+import {readPublicId} from '../public-id.js';
 import {api} from '../common.js';
 import {readAppearance} from './world-scene-projection.js';
 const invalid=()=>Object.assign(new Error('public_profile_invalid'),{code:'public_profile_invalid'});
 export function readPublicCharacter(value,agentId,expectedVersion){
   const profile=value?.profile;
-  if(value?.agentId!==agentId||value.membership?.state!=='joined'||!Number.isSafeInteger(value.publishedVersion)||value.publishedVersion<expectedVersion||typeof profile?.displayName!=='string'||!profile.displayName.trim()||profile.displayName.length>60||profile.bio!==undefined&&(typeof profile.bio!=='string'||profile.bio.length>500)||profile.interests!==undefined&&(!Array.isArray(profile.interests)||profile.interests.length>10||profile.interests.some(text=>typeof text!=='string'||text.length>40)))throw invalid();
-  return{agentId,publishedVersion:value.publishedVersion,displayName:profile.displayName,bio:profile.bio||'',interests:[...(profile.interests||[])],appearance:readAppearance(value.appearance??profile.avatar)};
+  if(typeof value?.agentId!=='string'||!value.agentId||(readPublicId(agentId)?value?.publicId!==agentId:value?.agentId!==agentId)||value.membership?.state!=='joined'||!Number.isSafeInteger(value.publishedVersion)||value.publishedVersion<expectedVersion||typeof profile?.displayName!=='string'||!profile.displayName.trim()||profile.displayName.length>60||profile.bio!==undefined&&(typeof profile.bio!=='string'||profile.bio.length>500)||profile.interests!==undefined&&(!Array.isArray(profile.interests)||profile.interests.length>10||profile.interests.some(text=>typeof text!=='string'||text.length>40)))throw invalid();
+  return{agentId:value.agentId,publicId:readPublicId(value.publicId),publishedVersion:value.publishedVersion,displayName:profile.displayName,bio:profile.bio||'',interests:[...(profile.interests||[])],appearance:readAppearance(value.appearance??profile.avatar)};
 }
 // One selected public identity only. Movement polls update scene facts without
 // re-reading or rebuilding a profile whose publication version has not changed.

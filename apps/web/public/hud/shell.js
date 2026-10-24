@@ -1,3 +1,4 @@
+import {publicIdLabel} from '../public-id.js';
 import {$,el} from '../common.js';
 import {avatar} from '../scene.js';
 import {icon} from './icons.js';
@@ -62,7 +63,7 @@ export function createHud({session,accountNode,onOpenAccount=()=>{},onLocateAgen
   accountButton.setAttribute('aria-expanded','false');entry.setAttribute('aria-controls','hud-window');selector.setAttribute('aria-controls','hud-window');
   accountButton.addEventListener('click',()=>openAccount(session.snapshot().accountIntent==='resume'?'resume':'account','',accountButton));entry.addEventListener('click',()=>openAccount('entry','',entry));
   session.subscribe(state=>{const ready=['ready','refreshing'].includes(state.phase),agent=state.agents.find(item=>item.agentId===state.selectedAgentId);for(const feature of Object.values(features))feature.setContext(state);
-    select.textContent=agent?.name||(ready?(state.agents.length?'请选择 Agent':'尚无关联 Agent'):'尚未选择 Agent');picture.replaceChildren();if(agent)avatar(picture,{avatar:agent.avatar},agent.agentId);else picture.append(icon('profile'));locate.hidden=!state.authenticated||!ready||!agent;locate.disabled=!mapAvailable||!state.authenticated||!ready||!agent;
+    select.textContent=(agent?`${agent.name} · ${publicIdLabel(agent.publicId)}`:'')||(ready?(state.agents.length?'请选择 Agent':'尚无关联 Agent'):'尚未选择 Agent');picture.replaceChildren();if(agent)avatar(picture,{avatar:agent.avatar},agent.agentId);else picture.append(icon('profile'));locate.hidden=!state.authenticated||!ready||!agent;locate.disabled=!mapAvailable||!state.authenticated||!ready||!agent;
     accountButton.replaceChildren(icon('profile'),el('span','',state.continuation?`${ready?state.username+' · ':''}${state.continuation}`:ready?state.username:'登录／注册'));accountButton.title=ready?`账户：${state.username}`:'登录／注册';selector.dataset.phase=state.phase;
   });
   body.addEventListener('click',event=>{const link=event.target.closest('a[href]');if(!link||accountNode.contains(link))return;const url=new URL(link.href,location.origin);if(url.origin!==location.origin||url.pathname!=='/owner')return;const privateParams=new URLSearchParams(url.hash.slice(1));if(privateParams.has('handoff')||privateParams.has('assistance'))return;event.preventDefault();openAccount('profile',new URLSearchParams(url.hash.slice(1)).get('agent')||'',link);});

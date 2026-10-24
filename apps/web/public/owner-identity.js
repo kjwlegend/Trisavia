@@ -1,3 +1,4 @@
+import {readPublicId} from './public-id.js';
 // Identity dates are server facts. Never derive them from login, binding or avatar dates.
 const validTime=value=>Number.isSafeInteger(value)&&value>=0&&value<=8640000000000000;
 export function ownerIdentityFacts(agent){
@@ -8,6 +9,7 @@ export function ownerIdentityFacts(agent){
   const knownIdentity=identity?.version===1&&identity.ageBasis==='identity_created_at';
   return {
     agentId:typeof agent?.agentId==='string'?agent.agentId:'',
+    publicId:readPublicId(agent?.publicId),
     joinedAt:knownIdentity&&validTime(joinedAt)&&validTime(asOf)&&joinedAt<=asOf?joinedAt:null,
     ageDays:knownIdentity&&validTime(createdAt)&&validTime(asOf)&&asOf>=createdAt&&Number.isSafeInteger(identity.ageDays)&&identity.ageDays===Math.floor((asOf-createdAt)/86400000)?identity.ageDays:null,
     worldName:agent?.membership?.worldId==='default'?'清昼小镇':null,

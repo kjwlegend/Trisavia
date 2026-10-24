@@ -1,3 +1,4 @@
+import {publicIdLabel,readPublicId} from '../public-id.js';
 import {api,el} from '../common.js';
 import {iconBodies} from '../paper-ui/icons.js';
 import {avatar} from '../scene.js';
@@ -15,6 +16,7 @@ const itemRefValid=(value,moduleId,type)=>value?.moduleId===moduleId&&value.type
 function inventoryItemValid(row,agentId){
  if(!row||!named(row.itemInstanceId,100)||!integer(row.version)||row.version<1||!(Object.hasOwn(names,row.itemKind)||row.itemKind==='resident_card')||!named(row.title,180)||!['available','reserved','consumed'].includes(row.state)||row.availableQuantity!==(row.state==='available'?1:0)||row.quantity!==(row.state==='consumed'?0:1)||row.transferable!==false||!integer(row.issuedAt)||!integer(row.updatedAt)||!nullableId(row.sourceOperationId)||(row.sourceGiftId!==undefined&&!nullableId(row.sourceGiftId))||!nullableId(row.reservationId)||!nullableId(row.consumedBy)||!itemRefValid(row.holdingRef,'inventory','inventory.holding@1')||!itemRefValid(row.itemRef,'items','items.item@1'))return false;
  const card=row.residentCard;
+ if(card?.publicId!==undefined&&card.publicId!==null&&!readPublicId(card.publicId))return false;
  if(row.itemKind!=='resident_card')return card===undefined||card===null;
  return Boolean(card&&named(row.sourceGiftId,100)&&row.state==='available'&&row.reservationId===null&&row.consumedBy===null&&card.agentId===agentId&&named(card.displayName,240)&&(card.firstWorldJoinedAt===null||integer(card.firstWorldJoinedAt))&&integer(card.issuedAt)&&card.issuedAt===row.issuedAt);
 }
@@ -83,7 +85,7 @@ export function createTownServiceCard(session,{chooseAgent=()=>{},getWorldState=
   const box=el('section','town-section town-personal-state'),agent=selected(context);box.append(sectionTitle('2',agent?`与${agent.name}的关系`:'与当前 Agent 的关系'));
   if(!agent){box.append(el('p','hud-muted',context.authenticated?'选择一位自己的 Agent，可查看它的券和服务进度。':context.phase==='expired'?'登录已失效，请重新登录后查看。':'登录后，可观察自己 Agent 的券和服务进度。'),control(context.authenticated?'选择 Agent':'登录／注册',chooseAgent));return box;}
   const row=el('div','town-agent-relation'),identity=el('div','town-current-agent'),identityText=el('div','town-agent-identity');
-  identityText.append(el('strong','',agent.name),control('切换 Agent',chooseAgent));identity.append(portrait({appearance:agent.appearance??agent.avatar,displayName:agent.name},'town-agent-picture'),identityText);row.append(identity);
+  identityText.append(el('strong','',agent.name),el('span','paper-stable-id',publicIdLabel(agent.publicId)),control('切换 Agent',chooseAgent));identity.append(portrait({appearance:agent.appearance??agent.avatar,displayName:agent.name},'town-agent-picture'),identityText);row.append(identity);
   const facts=el('div','town-relation-facts');
   if(privatePhase==='ready'){
    const relation=privateData.relationships.relationships.find(row=>row.npcId===publicData.npc.npcId);
@@ -142,7 +144,7 @@ export function createTownServiceCard(session,{chooseAgent=()=>{},getWorldState=
   }
   if(!publicData)return;
   const {npc,service}=publicData,intro=el('section','town-section town-introduction'),heading=el('div','town-service-heading'),identity=el('div','town-npc-identity');intro.append(sectionTitle('1','NPC 介绍'));
-  identity.append(el('h4','town-npc-name',npc.name),el('p','hud-muted',npc.role),el('p','town-npc-description',service.description));
+  identity.append(el('h4','town-npc-name',npc.name),el('p','paper-stable-id',publicIdLabel(npc.publicId,'N')),el('p','hud-muted',npc.role),el('p','town-npc-description',service.description));
   const building=getWorldState()?.rules?.mapManifest?.buildings.find(row=>row.id===npc.buildingId);identity.append(factLine(building?`地点：${building.name}附近。`:'地点说明暂未取得。','location'));
   heading.append(portrait({appearance:npc.appearance,displayName:npc.name},'town-npc-picture'),identity);intro.append(heading);
   node.append(intro,currentAgentSection(),guideSection(service,npc),footer());
@@ -181,7 +183,7 @@ export function createTownRelationships(session,{openNpc=()=>{}}={}){
   if(phase==='loading'&&!rows.length){node.append(el('p','hud-muted','正在读取已结识的镇民…'));return;}
   if(phase==='error'){node.append(el('p','hud-muted','镇民关系暂时无法读取。'),control('重试镇民关系',()=>void load()));return;}
   if(phase!=='ready')return;if(!rows.length)node.append(el('p','hud-muted','还没有结识镇民。可以让 Agent 先去打个招呼。'));
-  for(const relation of rows){const row=el('div','town-relationship'),npc=relation.npc,copy=el('div');if(npc)row.append(portrait({appearance:npc.appearance,displayName:npc.name},'town-relationship-picture'));copy.append(el('strong','',npc?.name||'一位已结识的镇民'),familiarity(relation.familiarity));row.append(copy);if(npc)row.append(control('服务说明',()=>openNpc(npc)));node.append(row);}
+  for(const relation of rows){const row=el('div','town-relationship'),npc=relation.npc,copy=el('div');if(npc)row.append(portrait({appearance:npc.appearance,displayName:npc.name},'town-relationship-picture'));copy.append(el('strong','',npc?.name||'一位已结识的镇民'),el('span','paper-stable-id',publicIdLabel(npc?.publicId,'N')),familiarity(relation.familiarity));row.append(copy);if(npc)row.append(control('服务说明',()=>openNpc(npc)));node.append(row);}
   if(!complete)node.append(control('继续载入镇民',()=>void load(true)));node.append(control('刷新镇民关系',()=>void load()));
  }
  async function load(more=false){

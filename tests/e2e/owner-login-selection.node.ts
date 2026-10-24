@@ -26,7 +26,7 @@ test('login selects the first managed Agent, retains manual selection on refresh
   if(request.method()!=='GET'){unexpectedWrites.push(url.pathname);return route.abort();}
   if(url.pathname==='/v1/owner/agents'){const owned=lists[ownerId];assert.ok(owned,'The synthetic Owner must have a declared Agent list');return route.fulfill({json:{ownerId,agents:owned.map(id=>agent(id,ownerId))}});}
   if(url.pathname==='/v1/owner/account')return route.fulfill({json:{ownerId,username:ownerId,emailVerified:true}});
-  if(url.pathname==='/v1/owner/agent-invites')return route.fulfill({json:{invites:[]}});
+  if(url.pathname==='/v1/owner/agent-invites')return route.fulfill({json:{ownerId,invites:[],asOf:1}});
   if(url.pathname==='/v1/capabilities')return route.fulfill({json:{emailMode:'experience',gateway:{protocolVersion:1,modules:[]}}});
   if(url.pathname.endsWith('/world-action-policy'))return route.fulfill({json:{source:'current',agentId:url.pathname.split('/')[3],version:1,mode:'autonomous',updatedAt:null,asOf:1}});
   if(url.pathname.startsWith('/assets/')){const file=resolve(root,url.pathname.slice(8));if(file.startsWith(root+'/'))try{return route.fulfill({body:await readFile(file),contentType:({'.js':'text/javascript','.json':'application/json','.css':'text/css','.png':'image/png'} as Record<string,string>)[extname(file)]||'application/octet-stream'});}catch{}}

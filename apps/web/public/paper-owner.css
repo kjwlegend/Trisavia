@@ -178,12 +178,6 @@
 .hud-root .hud-window .account-root .world-autonomy-option input{margin-top:3px}
 .hud-root .hud-window .account-root .settings-help{margin-top:12px;border-top:1px solid var(--owner-border);padding-top:8px}
 .hud-root .hud-window .account-root .settings-help p{font-size:12px;line-height:18px}
-.hud-root .hud-window .account-root .management-stage{display:grid;gap:0;border:1px solid var(--owner-border);border-radius:8px;overflow:hidden;margin-bottom:16px}
-.hud-root .hud-window .account-root .management-stage>div{display:grid;grid-template-columns:132px minmax(0,1fr);gap:16px;padding:14px 16px;border-bottom:1px solid var(--owner-border);font-size:14px;line-height:22px;background:#ffffff30}
-.hud-root .hud-window .account-root .management-stage>div:last-child{border:0}
-.hud-root .hud-window .account-root .management-stage strong{font-weight:600;color:var(--owner-ink)}
-.hud-root .hud-window .account-root .management-stage span{color:var(--owner-muted)}
-.hud-root .hud-window .account-root #owner-diagnostics>summary{display:none}
 .hud-root .hud-window .account-root .access-confirm,.hud-root .hud-window .account-root #backup-confirm{margin-top:16px;padding:16px;border:1px solid #c99b8c;border-radius:8px;background:#f4e7da}
 .hud-root .hud-window .account-root .check{display:flex;align-items:start;gap:8px;font-size:14px;line-height:22px;color:var(--owner-ink)}
 .hud-root .hud-window .account-root .check input{margin-top:3px}

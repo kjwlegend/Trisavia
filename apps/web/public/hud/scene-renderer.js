@@ -1,3 +1,4 @@
+import {readPublicId} from '../public-id.js';
 import {$,el,api} from '../common.js';
 import {createWorldScene,placeDetails} from '../world-scene.js';
 import {loadPixelTown,COMMONS_PLACE} from '../world-pixel/town.js';
@@ -33,17 +34,17 @@ async function tryPublicFocus(){
   if(['error','unavailable','recovering'].includes(worldData.phase)){pending.waiting=false;focusMessage('当前无法取得这位居民的最新公开位置，请稍后重试。',true);return;}
   if(worldData.phase!=='ready')return;
   if(!worldData.complete||!worldData.lastSuccessAt||Date.now()-worldData.lastSuccessAt>5000){pending.waiting=false;focusMessage('公开位置尚未更新，暂时无法定位，请重试。',true);return;}
-  const row=worldData.avatars.find(avatar=>avatar.agentId===pending.agentId);if(!row){pending.waiting=false;focusMessage('当前公开场景中没有这位居民的可定位位置。',true);return;}
+  const row=worldData.avatars.find(avatar=>(avatar.agentId===pending.agentId||avatar.publicId===pending.agentId));if(!row){pending.waiting=false;focusMessage('当前公开场景中没有这位居民的可定位位置。',true);return;}
   const initialPlace=publicPlace(row);if(!initialPlace){pending.waiting=false;focusMessage('地图暂时无法定位这位居民，请重试。',true);return;}
   pending.reading=true;const turn=publicFocusGeneration;await publicCharacter.open(initialPlace);
   if(turn!==publicFocusGeneration||publicFocus!==pending)return;pending.reading=false;pending.waiting=false;
-  const profile=publicCharacter.snapshot(),latest=worldData.phase==='ready'&&worldData.complete&&Date.now()-worldData.lastSuccessAt<=5000?worldData.avatars.find(avatar=>avatar.agentId===pending.agentId):null;
+  const profile=publicCharacter.snapshot(),latest=worldData.phase==='ready'&&worldData.complete&&Date.now()-worldData.lastSuccessAt<=5000?worldData.avatars.find(avatar=>(avatar.agentId===pending.agentId||avatar.publicId===pending.agentId)):null;
   if(profile.phase!=='ready'){focusMessage([403,404].includes(profile.errorStatus)?'这位居民的公开档案暂不可查看。':'暂时无法确认公开资料，请重试定位。',true);return;}
   if(!latest||profile.data.publishedVersion<latest.profile.publishedVersion){focusMessage('公开位置或资料已更新，暂时无法定位，请重试。',true);return;}
   const place=publicPlace(latest);if(!place||!scene.locateOwnedAgent(latest.agentId)){focusMessage('地图暂时无法定位这位居民，请重试。',true);return;}
   publicCharacter.observe(place);publicFocus=null;focusMessage('');openPlace(place,scene.canvas,{reuseProfile:true,fromPublicFocus:true});
 }
-function focusPublicResident(agentId){cancelPublicFocus();if(!/^[A-Za-z0-9_-]{8,100}$/.test(agentId)){focusMessage('这个居民档案链接暂时无法定位。');return;}publicFocus={agentId,waiting:true,reading:false};focusMessage('正在寻找这位居民的公开位置…');void tryPublicFocus();}
+function focusPublicResident(agentId){cancelPublicFocus();if(!readPublicId(agentId)&&!/^[A-Za-z0-9_-]{8,100}$/.test(agentId)){focusMessage('这个居民档案链接暂时无法定位。');return;}publicFocus={agentId,waiting:true,reading:false};focusMessage('正在寻找这位居民的公开位置…');void tryPublicFocus();}
 focusRetry.addEventListener('click',()=>{if(!publicFocus)return;publicFocus.waiting=true;focusMessage('正在重新确认公开位置…');void worldProvider.refresh();});
 const detail=$('#world-detail'),detailTransition=createPanelTransition(detail),environment=getPanelEnvironment();detail.prepend(nativeFrame('lightWood'));$('#world-detail-close').replaceChildren(icon('close'));
 const publicCharacter=createPublicCharacterReader(),characterCard=createPublicCharacterCard(publicCharacter,{session});const townCard=createTownServiceCard(session,{chooseAgent:()=>document.dispatchEvent(new CustomEvent('hud:choose-agent')),getWorldState:()=>scene?{...scene.getState(),rules:worldData.rules}:null,onContextChange:townContextChanged});townCard.node.hidden=true;$('.world-detail-body',detail).prepend(characterCard.node,townCard.node);

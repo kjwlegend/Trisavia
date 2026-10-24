@@ -1,10 +1,11 @@
+import {readPublicId} from '../public-id.js';
 import {readAppearance} from './world-scene-projection.js';
 const invalid=()=>Object.assign(new Error('friendship_response_invalid'),{code:'friendship_response_invalid'});
 const id=value=>typeof value==='string'&&value.length>0&&value.length<=180;
 const integer=value=>Number.isSafeInteger(value)&&value>=0;
 export const friendshipOperations={send:'relationships.invitation.send',accept:'relationships.invitation.accept',decline:'relationships.invitation.decline',cancel:'relationships.invitation.cancel'};
 const actions=Object.values(friendshipOperations),states=['pending','accepted','declined','cancelled','expired'];
-function profile(value){if(typeof value?.displayName!=='string'||!value.displayName||!integer(value.publishedVersion)||value.publishedVersion<1)throw invalid();return{displayName:value.displayName,appearance:readAppearance(value.appearance),publishedVersion:value.publishedVersion};}
+function profile(value){if(typeof value?.displayName!=='string'||!value.displayName||!integer(value.publishedVersion)||value.publishedVersion<1)throw invalid();return{publicId:readPublicId(value.publicId),displayName:value.displayName,appearance:readAppearance(value.appearance),publishedVersion:value.publishedVersion};}
 function allowed(value,permitted=actions){if(!Array.isArray(value)||new Set(value).size!==value.length||value.some(item=>!permitted.includes(item)))throw invalid();return[...value];}
 export function readFriend(value,agentId){if(!id(value?.agentId)||value.agentId===agentId||!id(value.relationshipId)||!integer(value.version)||value.version<1||value.status!=='confirmed'||!integer(value.confirmedAt)||!integer(value.intimacyScore)||value.intimacyScore>100)throw invalid();return{agentId:value.agentId,relationshipId:value.relationshipId,version:value.version,status:'confirmed',confirmedAt:value.confirmedAt,intimacyScore:value.intimacyScore,profile:profile(value.profile)};}
 export function readFriendshipRequest(value,agentId){
