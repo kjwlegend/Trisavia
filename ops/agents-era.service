@@ -14,6 +14,7 @@ Environment=M1_HOST=127.0.0.1
 Environment=M1_PORT=8790
 EnvironmentFile=/var/lib/agents-era/backend.env
 Environment=M1_TRUST_PROXY_LOOPBACK=1
+Environment=WEB_ASSET_MODE=production
 UMask=0077
 StateDirectory=agents-era
 StateDirectoryMode=0700
