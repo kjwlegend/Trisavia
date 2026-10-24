@@ -91,7 +91,7 @@ function inventoryIcon(record){
 }
 export function createPlatformInventory(provider,{session,context,walletProvider,detailHost,chooseAgent=()=>{}}={}){
   const node=el('section','hud-inventory hud-platform-content'),results=el('div','hud-inventory-grid-scroll'),details=el('section','hud-item-detail');results.id='hud-platform-item-results';details.id='hud-platform-item-detail';details.setAttribute('aria-label','物品详情');
-  const key='holdings';let state=session.snapshot(),active=false,disposed=false,selected=null,detail=null,detailError=null,detailRequest=null,detailRevision=0,preview=false,pendingRestore=false,fillFrame=0;
+  const key='holdings';let state=session.snapshot(),active=false,disposed=false,selected=null,detail=null,detailError=null,detailRequest=null,detailRevision=0,preview=false,refreshInventory=false,pendingRestore=false,fillFrame=0;
   const views={holdings:{selected:'',top:0,detailTop:0,query:'',category:'all'}};let inventoryScope='';
   function inventoryStorageKey(){const scope=context?.snapshot().scope,identity=session.hudContext?.();return scope?.kind==='owner'&&identity?.kind==='owner'&&scope.ownerId===identity.ownerId&&scope.agentId===identity.agentId?`connet.hud.platform.inventory-view.v1:${JSON.stringify([scope.origin,scope.instanceId,scope.ownerId,scope.agentId])}`:'';}
   function saveInventory(){const scope=inventoryStorageKey();if(!scope)return;inventoryScope=scope;try{sessionStorage.setItem(scope,JSON.stringify(inventoryNavigationFields(views.holdings)));}catch{/* Navigation can remain in memory; never persist source content. */}}
@@ -101,7 +101,7 @@ export function createPlatformInventory(provider,{session,context,walletProvider
   details.addEventListener('scroll',()=>{if(detail&&node.getClientRects().length){views.holdings.detailTop=details.scrollTop;saveInventory();}},{passive:true});
   function cancel(){detailRevision++;detailRequest?.abort();detailRequest=null;}
   function closePreview(){if(preview){preview=false;detailHost?.close(false);if(detailHost?.node)delete detailHost.node.dataset.inventoryContent;}}
-  function clear(){cancel();closePreview();selected=null;detail=null;detailError=null;details.replaceChildren();}
+  function clear(){cancel();closePreview();refreshInventory=false;selected=null;detail=null;detailError=null;details.replaceChildren();}
   async function read(record){
     clear();selected=record;const generation=detailRevision,request=new AbortController();detailRequest=request;renderDetail();
     try{
@@ -115,13 +115,14 @@ export function createPlatformInventory(provider,{session,context,walletProvider
   async function openContent(){
     if(!selected||!detail?.own||!detailHost)return;
     const record=selected,generation=detailRevision,itemRef=detail.item?(detail.item.ref||detail.own.content.itemRef):null,readKey=itemRef?'items':key,target=itemRef?{ref:itemRef}:record;
-    preview=true;detailHost.node.dataset.inventoryContent='';detailHost.open(titleOf(record),el('p','hud-feedback','正在读取完整内容…'),restore=>{preview=false;delete detailHost.node.dataset.inventoryContent;if(restore&&active)focusNode(details.querySelector('.paper-item-content'));});detailHost.setBack?.('返回物品详情');
+    preview=true;detailHost.node.dataset.inventoryContent='';detailHost.open(titleOf(record),el('p','hud-feedback','正在读取完整内容…'),restore=>{preview=false;delete detailHost.node.dataset.inventoryContent;if(refreshInventory){refreshInventory=false;if(restore&&active&&generation===detailRevision)void provider.load(key);}else if(restore&&active)focusNode(details.querySelector('.paper-item-content'));});detailHost.setBack?.('返回物品详情');
     try{const value=await provider.detail(readKey,target,{signal:detailRequest?.signal});if(generation!==detailRevision||disposed||!preview||selected!==record)return;detailHost.update(contentTitle(value)||titleOf(record),contentBody(record,value,{badges:false}));}
-    catch(error){if(generation!==detailRevision||disposed||!preview||error.name==='AbortError')return;detailHost.update(titleOf(record),detailFeedback(error,()=>void openContent()));}
+    // Item revocation also invalidates the cached holding projection; re-read the collection on return.
+    catch(error){if(generation!==detailRevision||disposed||!preview||error.name==='AbortError')return;if(error.status===404||readPhase(error)==='denied'){refreshInventory=true;detail=null;detailError={code:'target_not_accessible'};renderResults();}detailHost.update(refreshInventory?'内容目前不可查看':titleOf(record),detailFeedback(detailError||error,()=>void openContent()));}
   }
   function renderDetail(){
     const top=details.scrollTop;details.replaceChildren();if(!selected){details.append(el('h3','','物品详情'),el('p','hud-muted','选择一件物品，查看它的详情。'));return;}
-    const heading=el('div','paper-item-heading'),picture=el('span','paper-item-picture');picture.append(inventoryIcon(selected));heading.append(picture,el('h3','',titleOf(selected)));details.append(heading);
+    const heading=el('div','paper-item-heading'),picture=el('span','paper-item-picture');picture.append(refreshInventory?icon('inventory'):inventoryIcon(selected));heading.append(picture,el('h3','',refreshInventory?'持有记录':titleOf(selected)));details.append(heading);
     if(detailError){details.append(detailFeedback(detailError,()=>void read(selected)));return;}
     if(!detail){details.append(el('p','hud-feedback','正在读取完整内容…'));return;}
     if(detail.summaryOnly){details.append(el('p','hud-muted','当前仅可查看摘要。'));return;}
@@ -141,6 +142,7 @@ export function createPlatformInventory(provider,{session,context,walletProvider
   function renderResults(){
     const source=provider.snapshot(key),view=views.holdings;results.replaceChildren();
     if(!state.authenticated||!selectedAgent(state)){clear();results.append(feedback({...source,phase:state.authenticated?'no_agent':'session'},key,()=>provider.load(key),chooseAgent));return;}
+    if(refreshInventory){results.append(el('p','hud-feedback','内容已变化，返回后重新确认持有记录。'));renderDetail();return;}
     const records=source.records.filter(record=>titleOf(record).toLocaleLowerCase().includes(view.query.trim().toLocaleLowerCase()));
     const previous=view.selected,{chosen,pending}=projectSavedInventorySelection(view,source,records);pendingRestore=pending;if(previous!==view.selected)saveInventory();
     if(!source.records.length){clear();renderDetail();results.append(feedback(source,key,()=>provider.load(key),chooseAgent));return;}
