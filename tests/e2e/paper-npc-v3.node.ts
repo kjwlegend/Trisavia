@@ -94,5 +94,11 @@ test('notice service links emit verified NPC context for the host title and acce
  const count=await page.evaluate(()=>(window as any).harness.state.contexts.length);
  await page.route('**/v1/town/service?serviceId=welcome.claim',route=>route.fulfill({status:503,json:{error:{code:'synthetic_source_unavailable'}}}));
  await page.getByRole('button',{name:'新邻居礼包',exact:true}).click();await expect(page.locator('.town-service-card')).toContainText('小镇服务暂时无法读取');assert.equal(await page.evaluate(()=>(window as any).harness.state.contexts.length),count);await expect(page.getByRole('complementary',{name:'小镇公告牌',exact:true})).toBeVisible();
+ await page.unroute('**/v1/town/service?serviceId=welcome.claim');
+ for(const mutate of [(npc:any)=>{delete npc.actions;},(npc:any)=>{npc.name=null;},(npc:any)=>{npc.appearance=null;},(npc:any)=>{npc.position={x:null,y:0};},(npc:any)=>{npc.approachCells=[null];},(npc:any)=>{delete npc.serviceIds;},(npc:any)=>{npc.role=42;},(npc:any)=>{npc.buildingId=null;}]){
+  await page.evaluate(()=>(window as any).harness.notice());await expect(page.locator('.town-notice')).toBeVisible();const before=await page.evaluate(()=>(window as any).harness.state.contexts.length);
+  const broken=structuredClone(npcs[0]) as any;mutate(broken);await page.route('**/v1/town/service?serviceId=welcome.claim',route=>route.fulfill({json:{protocolVersion:1,data:{catalogVersion:1,map,npc:broken,service:services[0],asOf:Date.now()}}}));
+  await page.getByRole('button',{name:'新邻居礼包',exact:true}).click();await expect(page.locator('.town-service-card')).toContainText('小镇服务暂时无法读取');assert.equal(await page.evaluate(()=>(window as any).harness.state.contexts.length),before);await expect(page.getByRole('complementary',{name:'小镇公告牌',exact:true})).toBeVisible();await page.unroute('**/v1/town/service?serviceId=welcome.claim');
+ }
  assert.deepEqual(writes,[]);assert.deepEqual(errors,[]);
 });

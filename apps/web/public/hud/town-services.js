@@ -1,9 +1,12 @@
 import {api,el} from '../common.js';
 import {avatar} from '../scene.js';
-import {PIXEL_LAYOUT_SHA256,PIXEL_GEOMETRY_DIGEST} from '../world-pixel/map.js';
+import {PIXEL_LAYOUT_SHA256,PIXEL_GEOMETRY_DIGEST,PIXEL_MAP} from '../world-pixel/map.js';
+import {readWorldNpcs} from './world-scene-projection.js';
 const invalid=()=>Object.assign(new Error('town_response_invalid'),{code:'town_response_invalid'});
 const integer=value=>Number.isSafeInteger(value)&&value>=0;
 const text=(value,max=1000)=>typeof value==='string'&&value.length<=max;
+const named=(value,max)=>text(value,max)&&Boolean(value.trim());
+const townPoint=value=>Number.isSafeInteger(value?.x)&&Number.isSafeInteger(value?.y)&&value.x>=PIXEL_MAP.bounds.minX&&value.x<=PIXEL_MAP.bounds.maxX&&value.y>=PIXEL_MAP.bounds.minY&&value.y<=PIXEL_MAP.bounds.maxY;
 const serviceIds=['welcome.claim','tavern.host','inn.rest','greet'];
 const names={tavern_voucher:'招待券',inn_voucher:'休息券'};
 const control=(label,run)=>{const button=el('button','',label);button.type='button';button.addEventListener('click',run);return button;};
@@ -12,10 +15,13 @@ const operationValid=value=>value===null||value&&text(value.operationId,180)&&va
 export function readTownPublic(envelope){
  const data=envelope?.data,map=data?.map;if(envelope?.protocolVersion!==1||!integer(data?.catalogVersion)||data.catalogVersion<1||!integer(data.asOf)||map?.mapId!=='pixel-town-v2'||map.layoutSha256!==PIXEL_LAYOUT_SHA256||map.geometryDigest!==PIXEL_GEOMETRY_DIGEST||map.rulesetVersion!==2||map.topologyVersion!==2)throw invalid();return data;
 }
-export async function readTownNotice({signal}={}){const data=readTownPublic(await api('/town/notice',{signal})),n=data.notice;if(n?.objectId!=='notice'||!text(n.name,100)||!text(n.title,200)||!text(n.text,8000)||!integer(n.version)||!Array.isArray(n.serviceIds)||n.serviceIds.some(id=>!serviceIds.includes(id))||!n.position||!Number.isSafeInteger(n.position.x)||!Number.isSafeInteger(n.position.y)||!Array.isArray(n.approachCells))throw invalid();return data;}
+export async function readTownNotice({signal}={}){const data=readTownPublic(await api('/town/notice',{signal})),n=data.notice;if(n?.objectId!=='notice'||!named(n.name,100)||!named(n.title,200)||!text(n.text,8000)||!integer(n.version)||n.version<1||!Array.isArray(n.serviceIds)||n.serviceIds.length>4||n.serviceIds.some(id=>!serviceIds.includes(id))||!townPoint(n.position)||!Array.isArray(n.approachCells)||!n.approachCells.length||n.approachCells.length>8||n.approachCells.some(point=>!townPoint(point)))throw invalid();return {...data,notice:{objectId:n.objectId,name:n.name,title:n.title,text:n.text,version:n.version,position:{...n.position},approachCells:n.approachCells.map(point=>({...point})),serviceIds:[...n.serviceIds]}};}
 async function readService(serviceId,signal){
  const data=readTownPublic(await api(`/town/service?${new URLSearchParams({serviceId})}`,{signal})),s=data.service;
- if(s?.serviceId!==serviceId||!text(s.name,100)||!text(s.description,4000)||!text(s.action,180)||!integer(s.durationMs)||!(s.itemCost===null||Object.hasOwn(names,s.itemCost))||!Array.isArray(s.topics)||s.topics.length>10||s.topics.some(topic=>!text(topic.id,100)||!text(topic.label,100))||data.npc?.npcId!==s.npcId||data.npc.serverManaged!==true||data.npc.countsAsAgent!==false)throw invalid();return data;
+ if(s?.serviceId!==serviceId||!named(s.name,100)||!text(s.description,4000)||!named(s.action,180)||!integer(s.durationMs)||!(s.itemCost===null||Object.hasOwn(names,s.itemCost))||!Array.isArray(s.topics)||s.topics.length>10||s.topics.some(topic=>!named(topic?.id,100)||!named(topic?.label,100)))throw invalid();
+ const npc=readWorldNpcs([data.npc],{bounds:PIXEL_MAP.bounds})[0];
+ if(npc.npcId!==s.npcId||!named(npc.npcId,180)||!named(npc.name,100)||!named(npc.role,100)||!named(npc.buildingId,100)||npc.readOnly!==false||npc.status!=='available'||!npc.approachCells.length||npc.approachCells.length>8||npc.actions.length>20||npc.actions.some(action=>!named(action,180))||!npc.serviceIds.includes(serviceId)||npc.serviceIds.length>4||!named(npc.appearance.lookId,100)||!named(npc.appearance.catalogVersion,100))throw invalid();
+ return {...data,npc};
 }
 export async function readTownOwner(session,operation,input={},options={}){
  const agentId=session.snapshot().selectedAgentId,envelope=await session.readTownService(operation,input,options),data=envelope?.data;
