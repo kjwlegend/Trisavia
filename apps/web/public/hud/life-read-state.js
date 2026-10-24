@@ -21,9 +21,9 @@ export function createLifeReadState({read,validate,session=null,privateScope=fal
    instanceId=accepted.instanceId;failures=0;emit({phase:'ready',data:structuredClone(accepted.data),stale:false,lastSuccessAt:now(),errorStatus:null,errorCode:''});schedule(refreshMs);
   }catch(error){
    if(!visible()||turn!==revision||controller.signal.aborted)return;
-   const retain=Boolean(previous)&&temporary(error),denied=[401,403,404].includes(error.status);failures++;
-   emit({phase:retain?'recovering':denied?'forbidden':'error',data:retain?previous:null,stale:retain,lastSuccessAt:retain?state.lastSuccessAt:null,errorStatus:error.status??null,errorCode:error.code||'life_read_failed'});
-   if(temporary(error)&&failures<=3)schedule([2000,5000,15000][failures-1]);
+   const denied=[401,403,404].includes(error.status),retryable=!denied&&temporary(error),retain=Boolean(previous)&&retryable;failures++;
+   emit({phase:denied?'forbidden':retain?'recovering':'error',data:retain?previous:null,stale:retain,lastSuccessAt:retain?state.lastSuccessAt:null,errorStatus:error.status??null,errorCode:error.code||'life_read_failed'});
+   if(retryable&&failures<=3)schedule([2000,5000,15000][failures-1]);
   }finally{if(request===controller)request=null;}
  }
  const stopSession=session?.subscribe(value=>{context=value;const next=identity();if(currentIdentity===next)return;currentIdentity=next;clear(allowed()?'idle':value.authenticated?'no_agent':'session');if(visible())void load();});

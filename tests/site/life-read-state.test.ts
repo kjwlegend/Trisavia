@@ -21,3 +21,14 @@ test('temporary life read retries are bounded while the last authoritative body 
  for(const delay of [2000,5000,15000]){assert.equal(timers.size,1);const [id,timer]=[...timers][0]!;assert.equal(timer.delay,delay);timers.delete(id);timer.run();await flush();}
  assert.equal(timers.size,0);assert.equal(reader.snapshot().stale,true);assert.equal(reader.snapshot().data.energy,82);reader.dispose();
 });
+test('known 403 clears private data even when the real HTTP body times out; no automatic retry follows',async t=>{
+ const {createServer}=await import('node:http');
+ const server=createServer((_request,response)=>{response.writeHead(403,{'content-type':'application/json'});response.write('{"error":');});
+ await new Promise<void>(done=>server.listen(0,'127.0.0.1',done));t.after(()=>{server.closeAllConnections();return new Promise<void>((done,reject)=>server.close(error=>error?reject(error):done()));});const address=server.address();assert.ok(address&&typeof address!=='string');const origin=`http://127.0.0.1:${address.port}`;
+ const nativeFetch=globalThis.fetch,nativeTimeout=AbortSignal.timeout;let reads=0,lastError:any=null;
+ t.mock.method(globalThis,'fetch',(url:string,options:RequestInit)=>nativeFetch(new URL(url,origin),options));t.mock.method(AbortSignal,'timeout',()=>nativeTimeout(30));
+ // @ts-expect-error Browser transport is plain JavaScript.
+ const {api}=await import('../../apps/web/public/common.js');
+ const timers=new Map<number,()=>void>();let timerId=0;const f=fixture(),reader=createLifeReadState({session:f.session,privateScope:true,read:async()=>{if(++reads===1)return view('own-a');try{return await api('/own-life-fixture');}catch(error){lastError=error;throw error;}},validate,setTimer:(run:()=>void)=>{timers.set(++timerId,run);return timerId;},clearTimer:(id:number)=>timers.delete(id)});t.after(()=>reader.dispose());reader.setActive(true);await flush();assert.equal(reader.snapshot().data.energy,82);await reader.refresh();
+ assert.equal(lastError.status,403);assert.equal(lastError.code,'request_timeout');assert.equal(reader.snapshot().phase,'forbidden');assert.equal(reader.snapshot().data,null);assert.equal(reader.snapshot().stale,false);assert.equal(reader.snapshot().lastSuccessAt,null);assert.equal(timers.size,0);assert.equal(reads,2);
+});

@@ -17,7 +17,7 @@ export function createPublicCharacterCard(reader,{session}={}){
     friendship?.update({agentId:scene?.agentId||'',visible:value.phase==='ready'&&!value.stale});
     const target=scene?.agentId||'';logAvailable=value.phase==='ready';if(logTarget!==target){recent.open=false;logReader.setActive(false);logTarget=target;logReader.target(target);}if(!logAvailable)logReader.setActive(false);else logReader.setActive(recent.open);recent.hidden=!logAvailable;
     hero.hidden=!identityData;bio.hidden=interestGroup.hidden=!readable;retry.hidden=!['error','recovering'].includes(value.phase)||[403,404].includes(value.errorStatus);
-    activity.hidden=!scene?.activity;put(activity,scene?.activity?`${scene.sceneStale?'上次确认（已过期）：':''}${publicLifeLabel(scene.activity)}`:'');
+    const activityReadable=readable&&visible&&Boolean(scene?.activity);activity.hidden=!activityReadable;put(activity,activityReadable?`${scene.sceneStale||value.stale?'上次确认（已过期）：':''}${publicLifeLabel(scene.activity)}`:'');
     put(name,identityData?.displayName||'');put(number,publicIdLabel(data?.publicId||scene?.publicId||scene?.profile?.publicId));put(place,visible&&scene?.placeId==='commons'?'公共庭':'');place.hidden=!place.textContent;
     const key=identityData?JSON.stringify([scene.agentId,identityData.appearance]):'';if(key!==portraitKey){portraitKey=key;picture.replaceChildren();if(identityData)avatar(picture,{displayName:identityData.displayName,appearance:identityData.appearance},scene.agentId);}
     put(bio,data?.bio?.trim()?data.bio:'尚未填写简介。');
