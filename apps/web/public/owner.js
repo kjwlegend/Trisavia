@@ -340,7 +340,8 @@ async function committed(result,pending){
     $('#email-password').value='';$('#email-password-confirm').value='';$('#setup-password').value='';$('#login-password').value='';$('#recovery-password').value='';$('#recovery-password-confirm').value='';recoverySourceProof='';
   }
   if(pending.action==='completeSetup'){delete vault.setupExchange;delete vault.exchangeOperationId;delete vault.claimContext;delete vault.setupAccount;delete vault.completeOperationId;}
-  if(pending.action==='login'){const intention=entryStore?.target();unavailableAgentId='';if(intention?.agentId&&(!intention.ownerId||intention.ownerId===result.ownerId))requestedAgentId=intention.agentId;else{requestedAgentId='';entryStore?.clearTarget();}}
+  // Only a completed login resets the selection; routine list refreshes retain it.
+  if(pending.action==='login'){const intention=entryStore?.target();clearAgentSelection();selectedId='';selectionGeneration++;unavailableAgentId='';if(intention?.agentId&&(!intention.ownerId||intention.ownerId===result.ownerId))requestedAgentId=intention.agentId;else{requestedAgentId='';entryStore?.clearTarget();}}
   if(pending.action==='claimAgent'){unavailableAgentId='';selectedId=pending.targetId;selectionGeneration++;delete vault.claimContext;setupInfo=null;existingClaimIntent=false;}
   clearPending();
   if(pending.action==='replaceRuntime'){runtimePrepared=null;$('#runtime-confirm').hidden=true;$('#runtime-saved').checked=false;}
@@ -547,7 +548,7 @@ async function loadAgents({resetProfile=true}={}){
       requestedAgentId='';
     }
     if(unavailableAgentId)selectedId='';
-    else if(!agents.some(a=>a.agentId===selectedId)){selectedId=readAgentSelection(result.ownerId,agents)||'';selectionGeneration++;resetProfile=true;}
+    else if(!agents.some(a=>a.agentId===selectedId)){selectedId=readAgentSelection(result.ownerId,agents)||agents[0]?.agentId||'';selectionGeneration++;resetProfile=true;}
     if(selectedId)rememberAgentSelection(result.ownerId,agents,selectedId);
     renderList();renderAgent(resetProfile);await loadInvites(session,generation);
     if(!currentRead())return false;presentation?.managed();controls();if(unavailableAgentId)presentation?.unavailable(unavailableAgentId);else if(explicitTarget)presentation?.navigate('overview');if(vault.claimContext)showClaim();return true;
