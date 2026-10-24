@@ -204,13 +204,13 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
     try{
       ctx.setTransform(camera.dpr,0,0,camera.dpr,0,0);rect(ctx,0,0,camera.width,camera.height,'#e4ecdc');ctx.save();
       const scale=camera.base*camera.zoom;const center=screenCenter();ctx.translate(Math.round(center.x-camera.x*scale),Math.round(center.y-camera.y*scale));ctx.scale(scale,scale);if(rendering)ctx.imageSmoothingEnabled=false;else ctx.drawImage(ground.canvas,0,0);
-      const lighting=currentLight(),renderFrame={elapsed:elapsed*1000,paused,reducedMotion:reduced.matches||reduceOverride,quality,scale,theme:lighting.period,lighting,avatars:ownedLayer.actors(),viewport:{left:camera.x-center.x/scale,right:camera.x+(camera.width-center.x)/scale,top:camera.y-center.y/scale,bottom:camera.y+(camera.height-center.y)/scale}};if(rendering)rendering.drawGround(ctx,renderFrame);
+      const lighting=currentLight(),renderFrame={elapsed:elapsed*1000,serverTime:clock.now(),stale:worldView.stale===true||worldView.phase==='paused',selectedBuildingId:selected?.buildingId||selected?.npc?.buildingId||selected?.serviceNpc?.buildingId||selected?.id,paused,reducedMotion:reduced.matches||reduceOverride,quality,scale,theme:lighting.period,lighting,avatars:ownedLayer.actors(),viewport:{left:camera.x-center.x/scale,right:camera.x+(camera.width-center.x)/scale,top:camera.y-center.y/scale,bottom:camera.y+(camera.height-center.y)/scale}};if(rendering){rendering.stepNpcs?.(renderFrame);rendering.drawGround(ctx,renderFrame);}
       // Every camera entry renders here. Re-hit the last real pointer after a
       // projection change; never carry a mouse hold onto a different screen spot.
       const canvasBox=canvas.getBoundingClientRect(),projection=[camera.x,camera.y,scale,center.x,center.y,camera.width,camera.height,canvasBox.left,canvasBox.top].join(':');
       if(projection!==hoverProjection){hoverProjection=projection;refreshOwnedHover();}
       if(!rendering&&environment){for(let i=0;i<25;i++){const x=(i*137+elapsed*3)%W,y=115+(i*29)%61;line(ctx,x,y,x+18+(i%3)*6,y,'#cce1d8',2);}}
-      const sorted=[...objects,...(rendering?.npcs||[]),...actors.slice(0,actorLimit),...(rendering||worldView.phase==='demo'?ownedLayer.actors():[])].sort((a,b)=>a.y-b.y||Number(a.kind==='actor')-Number(b.kind==='actor')||String(a.id||a.kind).localeCompare(String(b.id||b.kind)));
+      const sorted=[...objects,...(rendering?.npcs||[]),...actors.slice(0,actorLimit),...(rendering||worldView.phase==='demo'?ownedLayer.actors():[])].sort((a,b)=>(a.y+(rendering?.lifeSortOffset?.(a)||0))-(b.y+(rendering?.lifeSortOffset?.(b)||0))||Number(a.kind==='actor')-Number(b.kind==='actor')||String(a.id||a.kind).localeCompare(String(b.id||b.kind)));
       for(const o of sorted){if(o.kind==='actor')drawActor(ctx,o,images);else if(o.kind==='owned-agent')ownedLayer.draw(ctx,o,scale,renderFrame);else if(rendering)o.draw(ctx,renderFrame);else ctx.drawImage(o.sprite.canvas,o.x-o.sprite.ax,o.y-o.sprite.ay);}
       // Real logical positions are drawn above decorative scenery; scenery does
       // not grant a path, hide an Avatar or determine its authoritative place.
@@ -263,9 +263,9 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   function setTime(value){if(!Number.isFinite(value)||value<0||value>8.64e15)return;sceneTime=value;light=daylightAt(value);stillLight=daylightAt(value,{reducedMotion:true});draw();}
   function setReducedMotion(value){reduceOverride=Boolean(value);if(reduceOverride&&zoomMotion)advanceZoom(Infinity);reconcile();notify();}
   function applyAgents(){
-    rendering?.setNpcs?.(worldView.complete?worldView.npcs||[]:[],worldView.rules);
+    rendering?.setNpcs?.(worldView.complete?worldView.npcs||[]:[],worldView.rules,{stale:worldView.stale===true||worldView.phase==='paused',serverTime:worldView.serverTime??clock.now()});
     rendering?.setNotice?.(worldView.complete&&townNotice?.catalogVersion===worldView.npcCatalogVersion?townNotice:null,worldView.rules);
-    townTargets.set([...(rendering?.npcs||[]),...(rendering?.serviceTargets||[]),...stagePlaces.filter(place=>place.serviceNpc)]);
+    townTargets.set([...(rendering?.npcs||[]),...(rendering?.serviceTargets||[]),...(rendering?.lifeTargets||[]),...stagePlaces.filter(place=>place.serviceNpc)]);
     if(!rendering&&worldView.phase==='demo')ownedLayer.set(ownedProjection);
     else{const ids=new Set(ownedProjection.agents.map(row=>row.agentId)),project=rendering?rendering.projectAvatars:projectWorldAvatars;ownedLayer.set({source:'server',stale:worldView.stale===true,serverTime:clock.now(),selectedAgentId:ownedProjection.selectedAgentId,agents:worldView.rules?project(worldView.avatars,worldView.rules,WORLD_SIZE).map(row=>({...row,owned:ids.has(row.agentId)})):[]});}
   }
@@ -297,12 +297,12 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   function worldPoint(x,y){const s=camera.base*camera.zoom;const c=screenCenter();return{x:(x-c.x)/s+camera.x,y:(y-c.y)/s+camera.y};}
   function hit(x,y,cycle=false){
     const p=worldPoint(x,y);
-    const town=[...(rendering?.npcs||[]),...(rendering?.serviceTargets||[])].sort((a,b)=>b.y-a.y).find(o=>p.x>o.x-o.w/2-5&&p.x<o.x+o.w/2+5&&p.y>o.y-o.anchor.y-5&&p.y<o.y+o.h-o.anchor.y+5);
+    const town=[...(rendering?.npcs||[]),...(rendering?.serviceTargets||[]),...(rendering?.lifeTargets||[])].sort((a,b)=>b.y-a.y).find(o=>p.x>o.x-o.w/2-5&&p.x<o.x+o.w/2+5&&p.y>o.y-o.anchor.y-5&&p.y<o.y+o.h-o.anchor.y+5);
     const owned=ownedLayer.hit(p,camera.base*camera.zoom,cycle);if(owned){const b=ownedLayer.geometry(owned.agentId).hitBox,overBody=p.x>=owned.x+b.left&&p.x<=owned.x+b.right&&p.y>=owned.y+b.top&&p.y<=owned.y+b.bottom;if(!town||overBody)return owned;}
     // An Agent's enlarged pointer target must not cover a visible NPC or notice.
     if(town)return town;
     for(const actor of [...actors.slice(0,actorLimit)].reverse())if(Math.abs(p.x-actor.x)<12&&p.y>actor.y-34&&p.y<actor.y+7)return actor;
-    return [...stagePlaces,...(rendering?.npcs||[]),...(rendering?.serviceTargets||[])].sort((a,b)=>b.y-a.y).find(o=>!(rendering&&o.id==='commons')&&p.x>o.x-o.w/2-5&&p.x<o.x+o.w/2+5&&p.y>o.y-o.anchor.y-5&&p.y<o.y+o.h-o.anchor.y+5);
+    return [...stagePlaces,...(rendering?.npcs||[]),...(rendering?.serviceTargets||[]),...(rendering?.lifeTargets||[])].sort((a,b)=>b.y-a.y).find(o=>!(rendering&&o.id==='commons')&&p.x>o.x-o.w/2-5&&p.x<o.x+o.w/2+5&&p.y>o.y-o.anchor.y-5&&p.y<o.y+o.h-o.anchor.y+5);
   }
   const pointers=new Map();let drag=null,pinch=null;
   const local=e=>{const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};};

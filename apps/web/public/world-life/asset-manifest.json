@@ -1,0 +1,500 @@
+{
+  "id": "m3-life-a-visual-v1",
+  "revision": 1,
+  "status": "actual assets and design preview; not production integration",
+  "spatialCommit": "25ae6b923aae7a472d2637b3849551bbeb85c707",
+  "layoutSha256": "740961688871187a4d058a00822073283bc19642508ff128229c4420cb60b4b0",
+  "newAssetBytes": 11056,
+  "assets": [
+    {
+      "id": "bench-back",
+      "path": "assets/bench-back.svg",
+      "bytes": 325,
+      "sha256": "9292ca4832f6adb7fbe15fdad87869b56207596f53be89937078f892b8b2f4dc",
+      "origin": "Original project vector art",
+      "dimensions": [
+        28,
+        14
+      ]
+    },
+    {
+      "id": "bench-front",
+      "path": "assets/bench-front.svg",
+      "bytes": 282,
+      "sha256": "b557426426afcd90cc7112026b619319de2f94f7a3e5cc5f6764faf9bc9fcf56",
+      "origin": "Original project vector art",
+      "dimensions": [
+        28,
+        8
+      ]
+    },
+    {
+      "id": "control",
+      "path": "assets/control.svg",
+      "bytes": 282,
+      "sha256": "15ecddf245549b54dcfba59da57d5b499cd5d5f4c55b48806cc09742c8204606",
+      "origin": "Approved paper HUD frame copied unchanged",
+      "dimensions": [
+        48,
+        48
+      ]
+    },
+    {
+      "id": "crate",
+      "path": "assets/crate.svg",
+      "bytes": 402,
+      "sha256": "773b7ec389b79a5f1c43e26b6c6030a550e5b0faeadf39f537e06beab5be6721",
+      "origin": "Original project vector art",
+      "dimensions": [
+        14,
+        12
+      ]
+    },
+    {
+      "id": "human-base-doing",
+      "path": "assets/human-base-doing.png",
+      "bytes": 1263,
+      "sha256": "967249220921dd3b9e227894393760aae8a03d5a3635672d95b4e91707d0739a",
+      "origin": "Sunnyside World V2.1; byte-identical original DOING strip",
+      "dimensions": [
+        768,
+        64
+      ],
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 8,
+      "pivot": [
+        48,
+        39
+      ],
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/Characters/Human/DOING/base_doing_strip8.png"
+    },
+    {
+      "id": "human-bowlhair-doing",
+      "path": "assets/human-bowlhair-doing.png",
+      "bytes": 1149,
+      "sha256": "50da495fffe29aed272d2c8fb895c3b1ed0f8f2529e87781d828a1b592a10b76",
+      "origin": "Sunnyside World V2.1; byte-identical original DOING strip",
+      "dimensions": [
+        768,
+        64
+      ],
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 8,
+      "pivot": [
+        48,
+        39
+      ],
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/Characters/Human/DOING/bowlhair_doing_strip8.png"
+    },
+    {
+      "id": "human-curlyhair-doing",
+      "path": "assets/human-curlyhair-doing.png",
+      "bytes": 1259,
+      "sha256": "75728008c49720e95c746ccbdc3f1403e8a42934b7700b0c42510fb06e9f7b9d",
+      "origin": "Sunnyside World V2.1; byte-identical original DOING strip",
+      "dimensions": [
+        768,
+        64
+      ],
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 8,
+      "pivot": [
+        48,
+        39
+      ],
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/Characters/Human/DOING/curlyhair_doing_strip8.png"
+    },
+    {
+      "id": "human-longhair-doing",
+      "path": "assets/human-longhair-doing.png",
+      "bytes": 1365,
+      "sha256": "dab36a4a89df6030aacf1b01804e42315d6ce4c3246363bf2af806335e0da623",
+      "origin": "Sunnyside World V2.1; byte-identical original DOING strip",
+      "dimensions": [
+        768,
+        64
+      ],
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 8,
+      "pivot": [
+        48,
+        39
+      ],
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/Characters/Human/DOING/longhair_doing_strip8.png"
+    },
+    {
+      "id": "human-mophair-doing",
+      "path": "assets/human-mophair-doing.png",
+      "bytes": 1139,
+      "sha256": "b39c8da105592a160d00dc4529d55f424f2d06d95533a895f4ddbabe041265a7",
+      "origin": "Sunnyside World V2.1; byte-identical original DOING strip",
+      "dimensions": [
+        768,
+        64
+      ],
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 8,
+      "pivot": [
+        48,
+        39
+      ],
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/Characters/Human/DOING/mophair_doing_strip8.png"
+    },
+    {
+      "id": "human-shorthair-doing",
+      "path": "assets/human-shorthair-doing.png",
+      "bytes": 573,
+      "sha256": "3c25bc507850eab64b3c03aedcf2cd706f0031d3cc0653e81b91516432f803af",
+      "origin": "Sunnyside World V2.1; byte-identical original DOING strip",
+      "dimensions": [
+        768,
+        64
+      ],
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 8,
+      "pivot": [
+        48,
+        39
+      ],
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/Characters/Human/DOING/shorthair_doing_strip8.png"
+    },
+    {
+      "id": "human-spikeyhair-doing",
+      "path": "assets/human-spikeyhair-doing.png",
+      "bytes": 936,
+      "sha256": "ed2db1e1ba67ef04f7ff0d33b0a29bcc3debb16e587efe5ddc64bfc3c8cf0913",
+      "origin": "Sunnyside World V2.1; byte-identical original DOING strip",
+      "dimensions": [
+        768,
+        64
+      ],
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 8,
+      "pivot": [
+        48,
+        39
+      ],
+      "sourcePath": "Sunnyside_World_ASSET_PACK_V2.1/Sunnyside_World_Assets/Characters/Human/DOING/spikeyhair_doing_strip8.png"
+    },
+    {
+      "id": "place-garden_bench",
+      "path": "assets/place-garden_bench.svg",
+      "bytes": 299,
+      "sha256": "796ba4192bc1cba99b13111bc084fb2738de5e3c16dcd6615c83baaf87bf9668",
+      "origin": "Original project vector art",
+      "dimensions": [
+        32,
+        32
+      ]
+    },
+    {
+      "id": "place-harbor_tavern",
+      "path": "assets/place-harbor_tavern.svg",
+      "bytes": 334,
+      "sha256": "6ba29d09ee3b28e51c111c8ddfb4e9a2e1322762b8d1ee4adce135082c4569d8",
+      "origin": "Original project vector art",
+      "dimensions": [
+        32,
+        32
+      ]
+    },
+    {
+      "id": "place-harbor_work",
+      "path": "assets/place-harbor_work.svg",
+      "bytes": 309,
+      "sha256": "4e96cb97ba98b7304d72166e5659c5c00057f57336227a171480cc5d9c673b37",
+      "origin": "Original project vector art",
+      "dimensions": [
+        32,
+        32
+      ]
+    },
+    {
+      "id": "seated-legs",
+      "path": "assets/seated-legs.svg",
+      "bytes": 281,
+      "sha256": "4128304ccb953699fea473ff0dd568eeeb15a61192494b650008ebed60d910df",
+      "origin": "Original project vector art",
+      "dimensions": [
+        14,
+        8
+      ]
+    },
+    {
+      "id": "state-badge",
+      "path": "assets/state-badge.svg",
+      "bytes": 231,
+      "sha256": "fd6c73413f79b5510697fbb8ce04e2f69f16d88234d1a130177be1399aa1fd85",
+      "origin": "Original project vector art",
+      "dimensions": [
+        16,
+        16
+      ]
+    },
+    {
+      "id": "tray",
+      "path": "assets/tray.svg",
+      "bytes": 345,
+      "sha256": "47614136cba7187db422f11d78e08710417dbb6c087ce77bd53d4659a83531e4",
+      "origin": "Original project vector art",
+      "dimensions": [
+        16,
+        10
+      ]
+    },
+    {
+      "id": "window",
+      "path": "assets/window.svg",
+      "bytes": 282,
+      "sha256": "871da06769506490fee639131c6c186128d543540afd7341737c0fb292e30c0f",
+      "origin": "Approved paper HUD frame copied unchanged",
+      "dimensions": [
+        96,
+        96
+      ]
+    }
+  ],
+  "unchangedDependencies": [
+    {
+      "path": "apps/web/public/world-pixel/assets/human-base-idle.png",
+      "publicUrl": "/world-pixel/assets/human-base-idle.png",
+      "sha256": "fc4656a6355abc69d618ce31e0f3f2a66ac6d9b23b626640b556f0e8d5d29ac0",
+      "bytes": 1117,
+      "dimensions": [
+        864,
+        64
+      ],
+      "unchanged": true
+    },
+    {
+      "path": "apps/web/public/world-pixel/assets/human-shorthair-idle.png",
+      "publicUrl": "/world-pixel/assets/human-shorthair-idle.png",
+      "sha256": "d85fc5899bb6bd1f067a0c3c65e3d8e03753de666097feccb9c559a7c0c4c940",
+      "bytes": 613,
+      "dimensions": [
+        864,
+        64
+      ],
+      "unchanged": true
+    },
+    {
+      "path": "apps/web/public/world-pixel/assets/human-longhair-idle.png",
+      "publicUrl": "/world-pixel/assets/human-longhair-idle.png",
+      "sha256": "915aca61cb44b23c1d249cc8ab49999ff5472f1348174b73efbe719ce2ae7e91",
+      "bytes": 1417,
+      "dimensions": [
+        864,
+        64
+      ],
+      "unchanged": true
+    },
+    {
+      "path": "apps/web/public/world-pixel/assets/human-curlyhair-idle.png",
+      "publicUrl": "/world-pixel/assets/human-curlyhair-idle.png",
+      "sha256": "6cfa97fe69741c9d46ba8565b3fc4ed135dd18f5b2481a21f4fb263e12ada674",
+      "bytes": 1306,
+      "dimensions": [
+        864,
+        64
+      ],
+      "unchanged": true
+    },
+    {
+      "path": "apps/web/public/world-pixel/assets/human-bowlhair-idle.png",
+      "publicUrl": "/world-pixel/assets/human-bowlhair-idle.png",
+      "sha256": "84c47c8b115a1e721b4c74da01504f98d90bc7684cc9151f803a27350ea7d450",
+      "bytes": 1244,
+      "dimensions": [
+        864,
+        64
+      ],
+      "unchanged": true
+    },
+    {
+      "path": "apps/web/public/world-pixel/assets/human-mophair-idle.png",
+      "publicUrl": "/world-pixel/assets/human-mophair-idle.png",
+      "sha256": "4c94241451d3d0ba5964cba5124fc48045c68972bbdd31d557b08bb6b20ebdf4",
+      "bytes": 1139,
+      "dimensions": [
+        864,
+        64
+      ],
+      "unchanged": true
+    },
+    {
+      "path": "apps/web/public/world-pixel/assets/human-spikeyhair-idle.png",
+      "publicUrl": "/world-pixel/assets/human-spikeyhair-idle.png",
+      "sha256": "21ce30395e8e3ceedccbd039e3a744a6c1e34b4734f7826126edde98ffdefb7f",
+      "bytes": 980,
+      "dimensions": [
+        864,
+        64
+      ],
+      "unchanged": true
+    }
+  ],
+  "poses": {
+    "work-crate": {
+      "source": "human-*-doing",
+      "frames": [
+        0,
+        1,
+        2,
+        4,
+        5,
+        7
+      ],
+      "frameMs": 180,
+      "frameSize": [
+        96,
+        64
+      ],
+      "pivot": [
+        48,
+        39
+      ],
+      "prop": "crate",
+      "propOffset": [
+        5,
+        -11
+      ],
+      "propYOffsets": [
+        0,
+        0,
+        1,
+        1,
+        0,
+        -1
+      ]
+    },
+    "work-tray": {
+      "source": "human-*-doing",
+      "frames": [
+        0,
+        1,
+        2,
+        4,
+        5,
+        7
+      ],
+      "frameMs": 180,
+      "frameSize": [
+        96,
+        64
+      ],
+      "pivot": [
+        48,
+        39
+      ],
+      "prop": "tray",
+      "propOffset": [
+        5,
+        -11
+      ],
+      "propYOffsets": [
+        0,
+        0,
+        1,
+        1,
+        0,
+        -1
+      ]
+    },
+    "rest-bench": {
+      "source": "unchanged human-*-idle upper body",
+      "frames": [
+        0,
+        4
+      ],
+      "frameMs": 1600,
+      "composition": "not a native SIT sheet; original upper body + new bent legs and bench",
+      "upperBodySourceRectWithinFrame": [
+        0,
+        0,
+        96,
+        36
+      ],
+      "upperBodyDestOffset": [
+        -48,
+        -38
+      ],
+      "layers": [
+        {
+          "asset": "bench-back",
+          "offset": [
+            -14,
+            -13
+          ]
+        },
+        {
+          "asset": "bench-front",
+          "offset": [
+            -14,
+            -2
+          ]
+        },
+        {
+          "source": "upper body and hair"
+        },
+        {
+          "asset": "seated-legs",
+          "offset": [
+            -4,
+            -3
+          ]
+        }
+      ],
+      "sortOffsetY": 5
+    },
+    "duty": {
+      "source": "unchanged human-*-idle",
+      "frames": [
+        0
+      ],
+      "frameMs": 0,
+      "pivot": [
+        48,
+        39
+      ]
+    }
+  },
+  "occlusionSupplement": {
+    "buildingId": "g-lodge",
+    "trigger": "garden selected OR station garden_bench-03/06 active",
+    "alpha": 0.28,
+    "otherwiseAlpha": 1,
+    "changesCollision": false
+  },
+  "displayPolicy": {
+    "offline": "freeze last confirmed frame and progress; do not infer completion",
+    "reducedMotion": "representative static frame",
+    "authoritativeSource": "API activity and current NPC position",
+    "previewOnly": "index.html, preview.js, preview.css, reference/*, serve.py",
+    "noNewGameLoop": true
+  },
+  "deferred": [
+    "fishing spots and nine item art",
+    "seven NPC complete lifestyle"
+  ]
+}

@@ -1063,6 +1063,22 @@ async function readTownService(operation,input={}, {signal}={}){
   try{const result=await api('/gateway/query',{method:'POST',body,token:ctx.session,signal});if(!ctx.current()||signal?.aborted)throw new DOMException('Context changed','AbortError');return result;}
   catch(error){if(ctx.current()&&error.status===401)expireAuthenticatedSession(ctx.source,ctx.session,ctx.generation);throw error;}
 }
+// Life actions stay Agent-only. This facade exposes current-owner inspection of
+// the selected Agent; it cannot submit activities, plans or cancellations.
+async function readLife(operation,input={}, {signal}={}){
+  if(!['state','options'].includes(operation))throw new ApiError('insufficient_scope',403);
+  const ctx=friendshipContext(),fields={agentId:ctx.target};
+  const validId=value=>typeof value==='string'&&/^[A-Za-z0-9_.-]{1,100}$/.test(value);
+  if(Object.keys(input).some(key=>!(operation==='options'&&['actionId','placeId','jobId'].includes(key))))throw new ApiError('invalid_request',422);
+  if(operation==='options'){
+    if(!['work.shift','rest.bench'].includes(input.actionId))throw new ApiError('invalid_request',422);
+    fields.actionId=input.actionId;
+    for(const key of ['placeId','jobId'])if(input[key]!==undefined){if(!validId(input[key]))throw new ApiError('invalid_request',422);fields[key]=input[key];}
+  }
+  const body={protocolVersion:1,consumerId:'connet.owner.hud.v1',purpose:'human-inspect',operation:`life.${operation}`,input:fields};
+  try{const result=await api('/gateway/query',{method:'POST',body,token:ctx.session,signal});if(!ctx.current()||signal?.aborted)throw new DOMException('Context changed','AbortError');return result;}
+  catch(error){if(ctx.current()&&error.status===401)expireAuthenticatedSession(ctx.source,ctx.session,ctx.generation);throw error;}
+}
 async function commandFriendship(operation,input={}){
   if(!['send','accept','decline','cancel'].includes(operation))throw new ApiError('insufficient_scope',403);const ctx=friendshipContext(),fields=friendshipInput(operation,input,ctx.target),action=`relationships.invitation.${operation}`,scope=JSON.stringify([ctx.ownerId,ctx.target,action,fields.toAgentId||fields.requestId]),storageKey=`connet.owner.friendship.pending.v1:${scope}`;
   if(friendshipWrites.has(scope))return friendshipWrites.get(scope);
@@ -1154,7 +1170,7 @@ const worldActionSettings=mountWorldActionPolicy($('#world-autonomy-form'),{sess
 const behaviorLogs=mountOwnerBehaviorLogs($('#owner-behavior-logs'),{snapshot:()=>structuredClone(summary()),readBehaviorHistory,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}});
 const worldSummary=mountOwnerWorldSummary($('#owner-world-summary'),{read:readOwnerWorldSummary,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}});
 window.addEventListener('pagehide',event=>{if(!event.persisted){behaviorLogs.dispose();worldSummary.dispose();worldActionSettings.dispose();}});
-return{start,open,select:selectAgent,refresh:refreshSummary,readPerception,readWallet,readFriends,readInteraction,readFriendship,readMailbox,readTownService,commandFriendship,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
+return{start,open,select:selectAgent,refresh:refreshSummary,readPerception,readWallet,readFriends,readInteraction,readFriendship,readMailbox,readTownService,readLife,readBehaviorHistory,commandFriendship,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
   hudContext(){if(authenticatedOwner()&&['ready','refreshing'].includes(summary().phase))return{kind:'owner',ownerId:account.ownerId,agentId:agents.some(agent=>agent.agentId===selectedId)?selectedId:''};return sessionPhase==='anonymous'&&!vault.sessionToken?{kind:'guest',ownerId:'',agentId:''}:null;},
   attachPresentation(value){presentation=value;value.setNavigator(navigateManager);},
   notifyPresentation:controls,

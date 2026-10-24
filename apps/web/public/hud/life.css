@@ -1,0 +1,35 @@
+/* M3 A: source-backed place and private life readings in the existing paper HUD. */
+.world-home.paper-hud .world-detail.is-life-place{position:fixed;left:auto;right:24px;top:136px;bottom:auto;translate:0 0;transform:none;width:340px;height:auto;max-height:calc(100dvh - 224px);padding:0;overflow:hidden}
+.world-home.paper-hud .world-detail.is-life-place .world-detail-body{flex:1;min-height:0;padding:24px;overflow:auto;overscroll-behavior:contain;scrollbar-color:#b8bbaa transparent;scrollbar-width:thin}
+.world-detail.is-life-place :is(#world-detail-icon,#world-detail-description,#world-detail-note,#world-detail-links,#world-back,#world-detail-area){display:none}
+.world-detail.is-life-place .town-service-card{min-height:0}
+.world-detail.is-life-place .town-service-card:empty{display:none}
+.life-place-card,.life-profile{color:#263f36;font-size:14px;line-height:23px;overflow-wrap:anywhere}
+.life-place-card h3,.life-profile h3{margin:0;font-size:20px;line-height:28px;font-weight:750}
+.life-place-card h4,.life-profile h4{margin:0 0 8px;font-size:16px;line-height:24px}
+.life-place-card h5{margin:0 0 6px;font:inherit;font-weight:700;font-size:14px;line-height:23px}
+.life-place-card p,.life-profile p{margin:8px 0}
+.life-place-card .hud-muted,.life-profile .hud-muted{color:#68746e;font-size:12px;line-height:20px}
+.life-place-heading{display:flex;align-items:center;gap:10px;margin-top:4px}
+.life-place-heading img{flex:none;image-rendering:pixelated}
+.life-card{margin:16px 0;padding:16px;background:#f7f3e8;border:1px solid #cbd0bf;border-radius:12px}
+.life-profile>.life-card{margin-top:0}
+.life-facts{display:grid;grid-template-columns:90px minmax(0,1fr);gap:7px 10px;margin:12px 0}
+.life-facts dt{color:#68746e;font-size:12px;line-height:20px}
+.life-facts dd{margin:0;font-variant-numeric:tabular-nums}
+.life-current-options{margin:14px 0;padding:12px;border-radius:8px;background:#dfe5d4}
+.life-status,.life-condition{padding:10px 12px;border-left:3px solid #be6346;background:#f0e7d7;color:#614b39;font-size:12px;line-height:20px}
+.life-status[hidden]{display:none}
+.life-copy-status{padding:10px;border:1px solid #9aa98b;background:#e6ecd9;border-radius:8px}
+.life-place-card button,.life-profile button{min-height:36px;padding:7px 12px;border:1px solid #89977d;border-radius:8px;background:#f7f3e8;color:#263f36;font:inherit;font-weight:700;font-size:12px;line-height:20px;cursor:pointer}
+.life-place-card button:disabled,.life-profile button:disabled{cursor:default;opacity:.62}
+.life-place-card button:focus-visible,.life-profile button:focus-visible,.life-place-card summary:focus-visible,.life-profile summary:focus-visible{outline:2px solid #be6346;outline-offset:3px}
+.life-place-card details,.life-profile details{margin:12px 0}
+.life-place-card summary,.life-profile summary{min-height:36px;padding:7px 0;cursor:pointer;font-size:12px;line-height:20px;font-weight:700}
+.life-copy-guide pre{max-width:100%;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-size:12px;line-height:20px;background:#ecebdf;border-radius:8px;user-select:text}
+.life-npc-summary{margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #cbd0bf}
+.life-result{margin:12px 0;padding-top:12px;border-top:1px solid #cbd0bf}
+.life-wallet-balance{font-size:20px;line-height:28px;font-weight:750;font-variant-numeric:tabular-nums}
+.life-history{padding-top:8px;border-top:1px solid #cbd0bf}
+@media(max-width:960px){.world-home.paper-hud .world-detail.is-life-place{right:18px;width:310px}.world-home.paper-hud .world-detail.is-life-place .world-detail-body{padding:18px}}
+@media(max-width:599px){.world-home.paper-hud .world-detail.is-life-place{right:12px;top:124px;width:min(340px,calc(100vw - 24px));max-height:calc(100dvh - 212px)}}
