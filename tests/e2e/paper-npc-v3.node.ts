@@ -17,7 +17,7 @@ import {icon} from '/assets/hud/icons.js';document.querySelector('#world-detail-
 const npcs=${JSON.stringify(npcs)},services=${JSON.stringify(services)},appearance=${JSON.stringify(appearance)};
 const now=Date.now(),op=(npcId,serviceId,state='completed',id='op-'+serviceId)=>({operationId:id,version:1,npcId,serviceId,catalogVersion:1,state,startedAt:now-60000,endedAt:state==='active'?null:now,itemInstanceId:null,topic:null,response:serviceId==='tavern.host'?'欢迎来到小镇，愿你今天有新的发现。':null,cancelCode:null});
 const context={authenticated:true,phase:'ready',selectedAgentId:'agent-a',observationRevision:1,agents:[{agentId:'agent-a',name:'合成角色甲',avatar:appearance},{agentId:'agent-b',name:'合成角色乙',avatar:{...appearance,lookId:'sunnyside-human-bowlhair'}}]};
-const state={claimed:false,rest:true,completed:true,error:0,hold:false,reads:[],released:null,chooseCount:0};let listener=()=>{};
+const state={claimed:false,rest:true,completed:true,error:0,hold:false,reads:[],released:null,chooseCount:0,contexts:[]};let listener=()=>{};
 const envelope=data=>({protocolVersion:1,data});
 const session={snapshot:()=>({...context}),subscribe:fn=>(listener=fn,()=>{}),async readTownService(operation,input={},options={}){
  const agentId=context.selectedAgentId;state.reads.push({operation,agentId,input});
@@ -31,7 +31,7 @@ const session={snapshot:()=>({...context}),subscribe:fn=>(listener=fn,()=>{}),as
  throw new Error('Unexpected read');
 }};
 const world={worldScene:{complete:true,phase:'ready',lastSuccessAt:now,avatars:[{fact:{agentId:'agent-a',position:{x:27,y:8}}}]},rules:{mapManifest:{buildings:[{id:'p-hall',name:'市政厅'},{id:'h-tavern',name:'港湾酒馆'},{id:'e-inn',name:'石岸旅舍'}]}}};
-const card=createTownServiceCard(session,{chooseAgent:()=>state.chooseCount++,getWorldState:()=>world});document.querySelector('.world-detail-body').append(card.node);document.querySelector('#world-detail-close').onclick=()=>{card.close();document.querySelector('#world-detail').hidden=true;};
+const card=createTownServiceCard(session,{chooseAgent:()=>state.chooseCount++,getWorldState:()=>world,onContextChange:value=>{state.contexts.push(value);document.querySelector('#world-detail-title').textContent=value.kind==='notice'?value.notice.name:value.npc.name;}});document.querySelector('.world-detail-body').append(card.node);document.querySelector('#world-detail-close').onclick=()=>{card.close();document.querySelector('#world-detail').hidden=true;};
 const relations=createTownRelationships(session);window.harness={state,context,world,card,open(index){window.currentNpc=npcs[index];if(!card.node.isConnected)document.querySelector('.world-detail-body').replaceChildren(card.node);world.worldScene.lastSuccessAt=Date.now();document.querySelector('#world-detail-title').textContent='镇民 · '+npcs[index].role;document.querySelector('#world-detail').hidden=false;card.open({npc:npcs[index],catalogVersion:1});},notice(){document.querySelector('#world-detail-title').textContent='小镇公告';card.open({notice:true,catalogVersion:1});},switchAgent(id){context.selectedAgentId=id;context.observationRevision++;listener({...context});},anonymous(){context.authenticated=false;context.observationRevision++;listener({...context});},relations(){card.close();document.querySelector('.world-detail-body').replaceChildren(relations.node);relations.setContext({...context});relations.activate();}};window.harness.open(0);`;
 async function browserFixture(t:any){
  await mkdir(output,{recursive:true});const browser=await chromium.launch({headless:true,executablePath:process.env.M1_TEST_CHROMIUM_PATH||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});t.after(()=>browser.close());const context=await browser.newContext({viewport:{width:1600,height:1000},permissions:['clipboard-read','clipboard-write'],reducedMotion:'reduce'});context.setDefaultTimeout(5000);
@@ -79,5 +79,20 @@ test('private failures, current rest and changed Agent never display stale progr
  await page.evaluate(()=>{const h=(window as any).harness;h.state.hold=true;h.open(2);});await expect.poll(()=>page.evaluate(()=>Boolean((window as any).harness.state.released))).toBe(true);await expect(page.getByRole('button',{name:'复制开始休息指令',exact:true})).toBeDisabled();await page.evaluate(()=>{const h=(window as any).harness;h.state.hold=false;h.state.released();});await expect(page.getByRole('button',{name:'复制开始休息指令',exact:true})).toBeEnabled();
  await page.evaluate(()=>(window as any).harness.relations());await expect(page.locator('.town-relationship')).toHaveCount(1);await expect(page.locator('.town-relationships')).toContainText('石岸旅舍');await page.screenshot({path:resolve(output,'relationships-1600x1000.png')});
  const before=await page.evaluate(()=>(window as any).harness.state.reads.length);await page.evaluate(()=>{const h=(window as any).harness;h.anonymous();h.open(0);});await expect(page.locator('.town-personal-state')).toContainText('登录后');assert.equal(await page.evaluate(()=>(window as any).harness.state.reads.length),before);
+ assert.deepEqual(writes,[]);assert.deepEqual(errors,[]);
+});
+
+
+test('notice service links emit verified NPC context for the host title and accessible name',async t=>{
+ const {page,errors,writes}=await browserFixture(t);await expect(page.locator('.town-personal-state')).toContainText('已结识');
+ for(const [label,npcId,name,serviceId] of [['新邻居礼包','npc-mayor','镇长','welcome.claim'],['酒馆招待','npc-tavern','港湾酒馆·酒保','tavern.host'],['旅社休息','npc-innkeeper','石岸旅舍·老板','inn.rest']] as const){
+  await page.evaluate(()=>(window as any).harness.notice());await expect(page.getByRole('complementary',{name:'小镇公告牌',exact:true})).toBeVisible();await expect(page.locator('.town-notice')).toBeVisible();
+  await page.getByRole('button',{name:label,exact:true}).click();await expect(page.getByRole('complementary',{name,exact:true})).toBeVisible();await expect(page.locator('.town-npc-name')).toHaveText(name);
+  const context=await page.evaluate(()=>(window as any).harness.state.contexts.at(-1));assert.equal(context.kind,'npc');assert.equal(context.catalogVersion,1);assert.equal(context.npc.npcId,npcId);assert.equal(context.serviceId,serviceId);assert.deepEqual(Object.keys(context).sort(),['catalogVersion','kind','npc','serviceId']);
+ }
+ await page.evaluate(()=>(window as any).harness.notice());await expect(page.locator('.town-notice')).toBeVisible();
+ const count=await page.evaluate(()=>(window as any).harness.state.contexts.length);
+ await page.route('**/v1/town/service?serviceId=welcome.claim',route=>route.fulfill({status:503,json:{error:{code:'synthetic_source_unavailable'}}}));
+ await page.getByRole('button',{name:'新邻居礼包',exact:true}).click();await expect(page.locator('.town-service-card')).toContainText('小镇服务暂时无法读取');assert.equal(await page.evaluate(()=>(window as any).harness.state.contexts.length),count);await expect(page.getByRole('complementary',{name:'小镇公告牌',exact:true})).toBeVisible();
  assert.deepEqual(writes,[]);assert.deepEqual(errors,[]);
 });

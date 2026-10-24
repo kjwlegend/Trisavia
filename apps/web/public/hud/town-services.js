@@ -44,7 +44,7 @@ function factLine(label,kind='info'){const line=el('p','town-fact');line.append(
 function portrait(fields,className){const picture=el('span',className);avatar(picture,fields);return picture;}
 
 // One read-only source card. Opening it never greets, claims, consumes or rests.
-export function createTownServiceCard(session,{chooseAgent=()=>{},getWorldState=()=>null}={}){
+export function createTownServiceCard(session,{chooseAgent=()=>{},getWorldState=()=>null,onContextChange=()=>{}}={}){
  const node=el('section','town-service-card');
  let target=null,context=session.snapshot(),active=false,generation=0,abort=null,publicData=null,privateData=null,phase='idle',privatePhase='idle',message='',messageNode=null;
  function cancel(){generation++;abort?.abort();abort=null;}
@@ -136,7 +136,11 @@ export function createTownServiceCard(session,{chooseAgent=()=>{},getWorldState=
   if(!active||!target)return;cancel();const turn=generation,controller=new AbortController();abort=controller;phase='loading';privatePhase='idle';publicData=null;privateData=null;message='';render();
   try{
    const response=target.notice?await readTownNotice({signal:controller.signal}):await readService(target.serviceId||target.npc.serviceIds[0],controller.signal);if(turn!==generation||!active)return;
-   if(response.catalogVersion!==target.catalogVersion||target.npc&&response.npc.npcId!==target.npc.npcId)throw invalid();publicData=response;phase=target.notice?'notice':'ready';render();if(target.notice||!selected(context))return;
+   if(response.catalogVersion!==target.catalogVersion||target.npc&&response.npc.npcId!==target.npc.npcId)throw invalid();publicData=response;phase=target.notice?'notice':'ready';
+   // The host owns its title, accessible label and map selection. Only a current,
+   // validated public source may change that context; private reads never do.
+   onContextChange(target.notice?{kind:'notice',catalogVersion:response.catalogVersion,notice:response.notice}:{kind:'npc',catalogVersion:response.catalogVersion,npc:response.npc,serviceId:response.service.serviceId});
+   if(turn!==generation||!active)return;render();if(target.notice||!selected(context))return;
    const agentId=context.selectedAgentId;privatePhase='loading';render();
    try{
     const [progress,inventory,relationships]=await Promise.all(['progress','inventory','relationships'].map(operation=>readTownOwner(session,operation,{}, {signal:controller.signal})));if(turn!==generation||agentId!==context.selectedAgentId||!active)return;
