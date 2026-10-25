@@ -1,3 +1,5 @@
+import {createClipPlayer} from './clip-player.js';
+import {customAppearanceState,drawCustomAppearance,drawCustomUnavailable} from './custom-appearance.js';
 import {resolveLook,drawLook} from './look.js';
 // Presentation only. The server appearance and world position remain unchanged.
 export const HUMAN_GEOMETRY=Object.freeze({width:96,height:64,anchor:{x:48,y:39},hitBox:{left:-9,right:9,top:-19,bottom:0},minHit:{width:38,height:52},hitPadding:{width:8,height:10}});
@@ -5,6 +7,11 @@ export function humanHitSize(geometry,scale){const b=geometry.hitBox;return{widt
 export function presentationHair(_kit,entry){return resolveLook(entry.fact?.profile.appearance,{avatarId:entry.fact?.id})?.nativeHairKey||null;}
 export function humanFrame(kit,entry,frame){const action=entry.walking?'walk':'idle',clip=kit.human.clips[action];let remaining=frame.reducedMotion||frame.paused?0:frame.elapsed%clip.durationMs;for(const current of clip.frames){if(remaining<current.duration)return{action,rect:current.rect};remaining-=current.duration;}return{action,rect:clip.frames[0].rect};}
 export function drawHuman(ctx,entry,frame,assets){
+  if(entry.fact?.profile.appearance?.kind==='custom'){
+    const state=customAppearanceState(entry.fact.profile.appearance),activity=entry.fact.activity,observedAction=entry.walking?'walk':activity?.state==='active'?(activity.actionId==='work.shift'?'work':['rest.bench','rest.voucher'].includes(activity.actionId)?'rest':'idle'):'idle',action=frame.stale?(entry.lastCustomAction||observedAction):observedAction;if(!frame.stale)entry.lastCustomAction=observedAction;entry.customPlayer??=createClipPlayer();
+    if(state.resource){const shown=drawCustomAppearance(ctx,state.resource,entry.customPlayer,{x:entry.x,y:entry.y,action,facing:entry.facing,time:frame.elapsed,paused:frame.paused||frame.stale,reducedMotion:frame.reducedMotion,alpha:entry.fact.status==='suspended'?.62:1});entry.customFallback=shown.fallback;entry.customAssetState='ready';if(entry.button){entry.button.dataset.appearanceResource=state.key;entry.button.dataset.appearanceClip=shown.action;entry.button.dataset.appearanceFrame=String(shown.frameIndex);}if(entry.button)entry.button.title=shown.fallback?`未提供${action==='work'?'工作':'休息'}专用动作，使用本角色待机；活动状态来自服务器。`:'';}
+    else{drawCustomUnavailable(ctx,{x:entry.x,y:entry.y});entry.customAssetState=state.phase;if(entry.button)entry.button.title=state.phase==='error'?'已应用，形象暂未显示；可从角色资料重试。':'正在读取已应用形象…';}return true;
+  }
   return drawLook(ctx,resolveLook(entry.fact?.profile.appearance,{avatarId:entry.fact?.id}),assets.images,{x:entry.x,y:entry.y,action:entry.walking?'walk':'idle',facing:entry.facing,elapsed:frame.elapsed,still:frame.reducedMotion||frame.paused,alpha:entry.fact?.status==='suspended'?.62:1});
 }
 export function drawHumanFoot(ctx,entry,selected=false,theme='day'){

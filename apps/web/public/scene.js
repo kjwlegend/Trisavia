@@ -4,7 +4,7 @@ import {mountPortrait} from './world-pixel/portrait.js';
 import {el} from './common.js';
 function rect(ctx,x,y,w,h,color) { ctx.fillStyle=color;ctx.fillRect(x,y,w,h); }
 export function avatar(node, fields={},_agentId='') {
-  return mountPortrait(node,fields.appearance??fields.publishedAppearance??fields.avatar,{label:fields.displayName?`${fields.displayName}的角色形象`:'角色形象'});
+  return mountPortrait(node,fields.appearance??fields.publishedAppearance??fields.avatar,{label:fields.displayName?`${fields.displayName}的角色形象`:'角色形象',activity:fields.activity,stale:fields.stale===true});
 }
 // Isolated local demonstration sprites also use the shared art definition.
 export function avatarSprite(fields={},_agentId='',pose={}){

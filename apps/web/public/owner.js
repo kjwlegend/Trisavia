@@ -118,7 +118,7 @@ function controls(){
     const validProfile=Boolean(fields.displayName)&&fields.displayName.length<=60&&fields.bio.length<=500&&fields.interests.length<=10&&fields.interests.every(value=>value.length<=40);
     $('#join-agent').disabled||=agent.membership.state==='joined'||!agent.profile.published||restricted||Boolean(presentation?.dirty());$('#legacy-unsaved-note').hidden=!presentation?.dirty()||!agent.profile.published;$('#revoke-runtime').disabled||=!agent.runtimeActive;
     $('#save-profile').disabled||=agent.membership.state!=='joined'||restricted||!validProfile||!(presentation?.dirty('profile-form')||(!agent.profile.published&&presentation?.dirty('appearance-form')));
-    $('#save-appearance').disabled||=agent.membership.state!=='joined'||restricted||!presentation?.dirty('appearance-form')||!presentation?.selectedAppearance?.()||(!agent.profile.published&&!validProfile);$('#save-appearance').textContent=agent.profile.published?'保存形象':'保存资料与形象';
+    $('#save-appearance').disabled||=agent.membership.state!=='joined'||restricted||!presentation?.dirty('appearance-form')||!presentation?.selectedAppearance?.()||(!agent.profile.published&&!validProfile);$('#save-appearance').textContent=agent.profile.published?.avatar?.kind==='custom'?'恢复内置形象':agent.profile.published?'保存形象':'保存资料与形象';
     $('#save-policy').disabled||=restricted||!presentation?.dirty('policy-form');$('#pause-agent').disabled||=restricted||Boolean(presentation?.dirty());
     $('#publish-profile').disabled||=restricted||!agent.profile.draft?.displayName||!agent.profile.draft?.avatar||Boolean(presentation?.dirty());$('#proposal-unsaved-note').hidden=!presentation?.dirty('policy-form');
     $('#prepare-legacy-profile').disabled||=restricted||!validProfile;
@@ -922,7 +922,7 @@ async function leaveEditing(){
   return sameConfirmation(confirmation);
 }
 async function requestLogout(){if(busy||emailFlow.pending){message('请先确认这次操作，再退出账号。关闭面板不会取消操作。','pending');return;}if(vault.pendingOperation){prepareAuthenticationExit();return;}const confirmation=confirmationSnapshot();if((presentation?.dirty()||runtimePrepared||backupPrepared)&&!await confirmAction('退出账号','当前有未保存的修改或尚未完成的文件准备。放弃本次准备并退出登录？','退出登录'))return;if(!sameConfirmation(confirmation))return;logout();}
-$('#appearance-form').addEventListener('submit',event=>{event.preventDefault();const agent=current();if(!agent||hasPending()||!presentation?.selectedAppearance?.())return;void command({action:'saveProfile',path:`/agents/${encodeURIComponent(agent.agentId)}/profile`,method:'PUT',targetId:agent.agentId,fields:{expectedVersion:agent.profile.version,expectedPolicyVersion:agent.profile.policyVersion,...(agent.profile.published?{fields:{avatar:presentation.selectedAppearance()}}:{fields:explicitlyEnteredProfile(agent)})}});});
+$('#appearance-form').addEventListener('submit',event=>{event.preventDefault();const agent=current();if(!agent||hasPending()||!presentation?.selectedAppearance?.())return;if(agent.profile.published?.avatar?.kind==='custom'){void presentation.restoreBuiltin();return;}void command({action:'saveProfile',path:`/agents/${encodeURIComponent(agent.agentId)}/profile`,method:'PUT',targetId:agent.agentId,fields:{expectedVersion:agent.profile.version,expectedPolicyVersion:agent.profile.policyVersion,...(agent.profile.published?{fields:{avatar:presentation.selectedAppearance()}}:{fields:explicitlyEnteredProfile(agent)})}});});
 async function handleEntry(){
   const entry=entryStore?.peek();if(!entry)return false;
   const protectedTask=vault.stage==='recovered'||emailFlow.unfinished||assistance.token||recoveryPrepared||(recoveryIntent&&!$('#recovery-form').hidden)||runtimePrepared||backupPrepared;
@@ -1031,6 +1031,17 @@ function friendshipContext(){
   if(!target||!agents.some(agent=>agent.agentId===target))throw new ApiError('agent_required',409);
   return{source,session,generation,target,ownerId,current};
 }
+
+async function avatarAssetRequest(path,{binary=false,signal,...options}={}){
+ const ctx=friendshipContext(),base=`/v1/agents/${encodeURIComponent(ctx.target)}/avatar-assets`,url=new URL(path.startsWith('/v1/')?path:'/v1'+path,location.origin);
+ if(url.origin!==location.origin||url.hash||!url.pathname.startsWith(base+'/'))throw new ApiError('insufficient_scope',403);
+ try{
+  let result;if(binary){const active=signal?AbortSignal.any([signal,AbortSignal.timeout(15000)]):AbortSignal.timeout(15000),response=await fetch(url.pathname+url.search,{headers:{Authorization:'Bearer '+ctx.session},credentials:'omit',cache:'no-store',redirect:'error',referrerPolicy:'no-referrer',signal:active});if(!response.ok)throw new ApiError('avatar_asset_unavailable',response.status);result=await response.arrayBuffer();}
+  else result=await api(url.pathname.slice(3)+url.search,{...options,token:ctx.session,signal});
+  if(!ctx.current()||signal?.aborted)throw new DOMException('Avatar context changed','AbortError');return result;
+ }catch(error){if(ctx.current()&&error.status===401)expireAuthenticatedSession(ctx.source,ctx.session,ctx.generation);throw error;}
+}
+
 function friendshipInput(operation,input,target){
   const fields={agentId:target},validId=value=>typeof value==='string'&&value.length>0&&value.length<=180;
   if(['friends','inbox'].includes(operation)){
@@ -1172,7 +1183,7 @@ const worldSummary=mountOwnerWorldSummary($('#owner-world-summary'),{read:readOw
 window.addEventListener('pagehide',event=>{if(!event.persisted){behaviorLogs.dispose();worldSummary.dispose();worldActionSettings.dispose();}});
 return{start,open,select:selectAgent,refresh:refreshSummary,readPerception,readWallet,readFriends,readInteraction,readFriendship,readMailbox,readTownService,readLife,readBehaviorHistory,commandFriendship,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
   hudContext(){if(authenticatedOwner()&&['ready','refreshing'].includes(summary().phase))return{kind:'owner',ownerId:account.ownerId,agentId:agents.some(agent=>agent.agentId===selectedId)?selectedId:''};return sessionPhase==='anonymous'&&!vault.sessionToken?{kind:'guest',ownerId:'',agentId:''}:null;},
-  attachPresentation(value){presentation=value;value.setNavigator(navigateManager);},
+  attachPresentation(value){presentation=value;value.setNavigator(navigateManager);value.connectAvatarStudio({request:avatarAssetRequest,context:()=>{const ctx=friendshipContext(),agent=current();return{ownerId:ctx.ownerId,agentId:ctx.target,profileVersion:agent.profile.version,policyVersion:agent.profile.policyVersion};},refresh:async()=>{await loadAgents({resetProfile:false});presentation?.resetAppearance();}});},
   notifyPresentation:controls,
   requestLogout,leaveEditing,
   isPending:hasPending,getTitle(){if(presentation?.confirming||!$('#manage-view').hidden)return presentation?.title()||'我的 Agent';if(!$('#backup-recovered-view').hidden)return '密码已更新';if(!$('#email-view').hidden)return $('#email-title').textContent;if(!$('#setup-view').hidden)return '关联 Agent';if(!$('#claim-view').hidden)return '关联 Agent';if(!$('#forgot-view').hidden)return $('#recovery-title').textContent;return '登录账号';},

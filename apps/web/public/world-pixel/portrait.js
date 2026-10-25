@@ -1,8 +1,10 @@
+import {mountCustomPortrait,clearCustomPortrait} from './custom-portrait.js';
 import {resolveLook,drawLook,drawLookPlaceholder} from './look.js';
 import {loadLookAssets} from './look-assets.js';
 // Static thumbnails use the same sprite composition as the world. The caller
 // supplies the current authorized projection; Agent ids never choose a look.
-export function mountPortrait(node,appearance,{label='角色形象',avatarId}={}){
+export function mountPortrait(node,appearance,{label='角色形象',avatarId,activity=null,stale=false}={}){
+  if(appearance?.kind==='custom')return mountCustomPortrait(node,appearance,{label,activity,stale});clearCustomPortrait(node);
   const canvas=document.createElement('canvas');canvas.width=64;canvas.height=64;canvas.className='avatar';canvas.style.objectFit='contain';canvas.style.imageRendering='pixelated';canvas.setAttribute('role','img');canvas.setAttribute('aria-label',label);node.replaceChildren(canvas);
   const ctx=canvas.getContext('2d'),look=resolveLook(appearance,{avatarId});canvas.dataset.lookId=look?.key||'';node.dataset.appearanceState=canvas.dataset.appearanceState=look?'loading':'unresolved';
   drawLookPlaceholder(ctx,{x:32,y:60,scale:2});

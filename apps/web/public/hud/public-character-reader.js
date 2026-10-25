@@ -1,3 +1,4 @@
+import {forgetCustomAppearance} from '../world-pixel/custom-appearance.js';
 import {readPublicId} from '../public-id.js';
 import {api} from '../common.js';
 import {readAppearance} from './world-scene-projection.js';
@@ -20,7 +21,7 @@ export function createPublicCharacterReader({request=api}={}){
     if(same&&!force&&version<=Math.max(requestedVersion,state.data?.publishedVersion||0)){emit({scene:current});return;}
     const accepted=same?state.data:null;cancel();requestedVersion=version;const generation=revision,active=new AbortController();controller=active;emit({phase:accepted?'refreshing':'loading',stale:Boolean(accepted),scene:current,data:accepted,errorStatus:null});
     try{const data=readPublicCharacter(await request(`/public/agents/${encodeURIComponent(scene.agentId)}`,{signal:active.signal}),scene.agentId,version);if(disposed||active.signal.aborted||generation!==revision)return;emit({phase:'ready',stale:false,data,errorStatus:null});}
-    catch(error){if(disposed||active.signal.aborted||generation!==revision)return;const keep=accepted&&temporary(error);emit({phase:keep?'recovering':'error',stale:Boolean(keep),data:keep?accepted:null,errorStatus:error.status??null});}
+    catch(error){if(disposed||active.signal.aborted||generation!==revision)return;const keep=accepted&&temporary(error);if([401,403,404,410].includes(error.status))forgetCustomAppearance(accepted?.appearance||current?.profile?.appearance);emit({phase:keep?'recovering':'error',stale:Boolean(keep),data:keep?accepted:null,errorStatus:error.status??null});}
     finally{if(controller===active)controller=null;}
   }
   return{snapshot,open:scene=>select(scene,true),observe:scene=>select(scene),retry:()=>current?select(current,true):Promise.resolve(),clear(){cancel();current=null;requestedVersion=0;emit({phase:'idle',stale:false,scene:null,data:null,errorStatus:null});},subscribe(listener){listeners.add(listener);listener(snapshot());return()=>listeners.delete(listener);},dispose(){disposed=true;cancel();current=null;listeners.clear();}};

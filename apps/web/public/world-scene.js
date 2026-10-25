@@ -337,6 +337,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   }
   root.addEventListener('pointerup',e=>finishPointer(e),eventOptions);root.addEventListener('pointercancel',e=>finishPointer(e,true),eventOptions);
   root.addEventListener('pointerleave',()=>{hoverPointer=null;ownedLayer.hover('');townTargets.hover(null);},eventOptions);
+  window.addEventListener('avatar:resource',()=>{if(!destroyed)draw();},eventOptions);
   window.addEventListener('blur',()=>{hoverPointer=null;ownedLayer.hover('');townTargets.hover(null);},eventOptions);
   root.addEventListener('wheel',e=>{if(!(e.ctrlKey||e.metaKey)||!e.deltaY)return;hoverPointer={clientX:e.clientX,clientY:e.clientY};e.preventDefault();const delta=Math.max(-240,Math.min(240,e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?camera.height:1)));setZoom((zoomMotion?.to??camera.zoom)*Math.exp(-delta*.0015),{anchor:local(e)});},{...eventOptions,passive:false});
   canvas.addEventListener('keydown',e=>{

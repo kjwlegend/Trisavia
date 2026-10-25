@@ -29,7 +29,7 @@ export function createAppearancePicker(form,{changed=()=>{},isDirty=()=>false}={
   }
   function selected(){return input.value?{lookId:input.value,catalogVersion:version.value,...(hairInput.value!=='original'||explicitOriginal.hair?{hairColorId:hairInput.value}:{}),...(clothingInput.value!=='original'||explicitOriginal.clothing?{clothingColorId:clothingInput.value}:{})}:null;}
   const colorsReady=data=>data?.colorCustomization?.version===1;
-  function selectionLabel(value){const look=resolveLook(value),colors=appearanceColors(value);return look?[look.label,...['hair','clothing'].map(kind=>(paletteOptions(kind).find(option=>option.id===colors[kind==='hair'?'hairColorId':'clothingColorId'])?.displayName||'原色')+(kind==='hair'?'发色':'服装'))].join(' · '):'暂无法显示';}
+  function selectionLabel(value){if(value?.kind==='custom')return '自定义形象 · 已应用';const look=resolveLook(value),colors=appearanceColors(value);return look?[look.label,...['hair','clothing'].map(kind=>(paletteOptions(kind).find(option=>option.id===colors[kind==='hair'?'hairColorId':'clothingColorId'])?.displayName||'原色')+(kind==='hair'?'发色':'服装'))].join(' · '):'暂无法显示';}
   function saved(){return agent?.profile?.publishedAppearance??agent?.profile?.published?.avatar??null;}
   function render(){
     if(disposed)return;
