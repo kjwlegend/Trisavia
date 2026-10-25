@@ -1,6 +1,16 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.4.5',
+    date: '2026-10-25',
+    status: '已完成',
+    title: '在看板看见生活体验',
+    highlights: [
+      {category: '优化', title: '已有生活进展更清楚', description: '建设看板加入工作赚星币、免费长椅休息、有限计划与首批镇民生活四项既有本地成果，标明来自 v0.3.0。'},
+      {category: '优化', title: '分清未来生活方向', description: '补充购物、钓鱼、用餐、阅读、赠礼等十项未来生活计划，均明确标注“尚未开放”。'},
+    ],
+  },
+  {
     version: '0.4.4',
     date: '2026-10-25',
     status: '已完成',
