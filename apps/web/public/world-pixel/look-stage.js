@@ -25,7 +25,7 @@ export function createLookStage(){
  }
  function labels(){
   const look=resolveLook(appearance),state=appearance?.kind==='custom'?customAppearanceState(appearance):null;for(const [key,button]of buttons){if(['idle','walk','work','rest'].includes(key))button.setAttribute('aria-pressed',String(action===key));if(['work','rest','play','previous','next'].includes(key))button.hidden=!custom();if(['previous','next'].includes(key))button.disabled=!resource();}buttons.get('play').textContent=playing?'暂停':'播放';canvas.dataset.lookId=custom()?'custom':look?.key||'';
-  status.textContent=custom()?(state?.phase==='error'?'已应用，形象暂未显示':!resource()?'正在读取形象…':dirty?'检查通过 · 待确认':'已保存'):!appearance?'尚未取得':failed?(dirty?'选择已保留':'已保存 · 图像暂不可用'):dirty?'预览中':'已保存';status.classList.toggle('previewing',dirty);if(!custom())description.textContent=failed?'形象素材暂时无法显示':look?`${look.label} · ${dirty?'尚未保存':'当前角色'}`:'暂无法显示';retry.hidden=custom()?state?.phase!=='error':!failed;
+  status.textContent=custom()?(state?.phase==='error'?'已应用，形象暂未显示':!resource()?'正在读取形象…':dirty?'检查通过 · 素材预览':'已保存'):!appearance?'尚未取得':failed?(dirty?'选择已保留':'已保存 · 图像暂不可用'):dirty?'预览中':'已保存';status.classList.toggle('previewing',dirty);if(!custom())description.textContent=failed?'形象素材暂时无法显示':look?`${look.label} · ${dirty?'尚未保存':'当前角色'}`:'暂无法显示';retry.hidden=custom()?state?.phase!=='error':!failed;
  }
  const animate=()=>active&&visible&&!document.hidden&&!reduced()&&!disposed&&playing&&(custom()?Boolean(resource()):assets&&!failed&&resolveLook(appearance));
  function frame(time){paint(time);if(animate())raf=requestAnimationFrame(frame);}
