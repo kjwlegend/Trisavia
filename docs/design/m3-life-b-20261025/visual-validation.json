@@ -13,7 +13,7 @@
       "id": "bait",
       "width": 32,
       "height": 32,
-      "opaqueOrPartial": 454,
+      "opaqueOrPartial": 417,
       "nontransparentInThreePixelMargin": 0
     },
     {
@@ -54,5 +54,6 @@
     "concurrent seat reservation",
     "runtime custom-avatar integration",
     "production frame-time performance"
-  ]
+  ],
+  "baitRevision": "paper packet pellets 1.0.1"
 }

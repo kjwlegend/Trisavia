@@ -4,7 +4,7 @@ B 使用 WS03 catalog revision 1：只售木柄鱼竿 30 星币、鱼饵 2 星�
 
 ## 实际交付
 
-- `assets/items/` 五个 **32×32 透明 PNG** 与 160×32 atlas；assetId 固定 `life-item-basic_rod`、`life-item-bait`、`life-item-sardine`、`life-item-mackerel`、`life-item-sea_bass`。细长无纹银鱼、青背条纹鲭鱼、宽身斑点棘鳍海鲈具有不同轮廓。3px 最小留白，32/64/96/128 显示均 nearest，同一图在商店／背包／结果中复用。
+- `assets/items/` 五个 **32×32 透明 PNG** 与 160×32 atlas；assetId 固定 `life-item-basic_rod`、`life-item-bait`、`life-item-sardine`、`life-item-mackerel`、`life-item-sea_bass`。鱼饵采用纸包颗粒（1.0.1修正原杯装蚯蚓草稿），细长无纹银鱼、青背条纹鲭鱼、宽身斑点棘鳍海鲈具有不同轮廓。3px 最小留白，32/64/96/128 显示均 nearest，同一图在商店／背包／结果中复用。
 - `assets/generated/` 是本轮内置 `image_gen` 实际生成的原始透明母图；`prompts/` 保存各最终提示。`image-export.json` 记录仅透明边界裁切、保持比例与 nearest 缩小，不借 HTML／SVG 假造物品画。客户端只加载小尺寸 PNG / atlas，不加载母图。
 - `assets/fishing/` 32 条真实原生 base／tools／六发型的 CASTING / WAITING / REELING / CAUGHT 图层，以及店员 IDLE/WALK 的 base+spikeyhair。共 36 张，来源与逐张 SHA 在 `native-sources.json`，没有用文字规格代替动作素材。
 - `animation-manifest.json` 固定 96×64 分帧、脚底 `[48,39]`、帧序／时长／镜像；原生素材右朝向，钓位全用整组左镜像。`npc-fishing-clerk` 用第五种原生 spikeyhair，职业区别通过店铺／鱼竿，默认不挂永久短号。
