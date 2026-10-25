@@ -1,4 +1,4 @@
-import {BOARD_COLUMNS, MAP_CARDS, WORLD_INTRODUCTION} from './kanban-data.js';
+import {BOARD_COLUMNS, MAP_CARDS, LIFE_CARDS, WORLD_INTRODUCTION} from './kanban-data.js';
 
 const element = (tag, className, text) => {
   const node = document.createElement(tag);
@@ -20,7 +20,7 @@ for (const section of [
 introduction.after(element('p', 'product-note board-scope', WORLD_INTRODUCTION.scope));
 const board = document.querySelector('#map-board');
 for (const column of BOARD_COLUMNS) {
-  const cards = MAP_CARDS.filter(card => card.column === column.id);
+  const cards = [...MAP_CARDS, ...LIFE_CARDS].filter(card => card.column === column.id);
   const section = element('section', 'board-column');
   section.dataset.column = column.id;
   const head = element('div', 'board-heading');

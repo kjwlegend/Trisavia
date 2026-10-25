@@ -11,11 +11,13 @@ import {registerSiteRoutes} from '../../apps/platform/transport/http/site-routes
 import {loadProductionWebAssets} from '../../apps/platform/transport/http/web-assets.ts';
 // @ts-expect-error Player-facing browser data module.
 import {RELEASES} from '../../apps/web/public/releases-data.js';
+// @ts-expect-error Player-facing browser data module.
+import {BOARD_COLUMNS, MAP_CARDS, LIFE_CARDS} from '../../apps/web/public/kanban-data.js';
 
 const root=fileURLToPath(new URL('../../',import.meta.url));
 const screenshots=resolve(root,'outputs/release-board-20261025/completed-020');
 
-test('public player pages use the verified build, honest completed releases, map-only columns and a working return link',async()=>{
+test('public player pages use the verified build, honest releases, life and map columns and a working return link',async()=>{
  const assets=loadProductionWebAssets(root,resolve(root,'dist/web'));
  const app=Fastify({logger:false});registerSiteRoutes(app,{assetMode:'production',repoRoot:root});
  const origin=await app.listen({host:'127.0.0.1',port:0});
@@ -50,11 +52,12 @@ test('public player pages use the verified build, honest completed releases, map
   assert.equal(await page.getByRole('navigation').getByRole('link',{name:'地图',exact:true}).getAttribute('href'),'/?atlas=1');
   assert.equal(await page.locator('nav a[aria-current=page]').getAttribute('href'),'/kanban');
   assert.deepEqual(await page.locator('.board-heading h2').allTextContents(),['投票','未来','进行中','已完成']);
-  assert.deepEqual(await page.locator('.board-card').evaluateAll(nodes=>nodes.map(node=>(node as HTMLElement).dataset.card)),['map-sunset-bay','map-plain-outpost','map-dawn-lake','map-mist-valley','map-atlas']);
+  const cards=[...MAP_CARDS,...LIFE_CARDS];
+  assert.deepEqual(await page.locator('.board-card').evaluateAll(nodes=>nodes.map(node=>(node as HTMLElement).dataset.card)),BOARD_COLUMNS.flatMap((column:any)=>cards.filter(card=>card.column===column.id).map(card=>card.id)));
   assert.equal(await page.locator('[data-column=in-progress] .board-card').count(),0);
-  assert.deepEqual(await page.locator('[data-column=completed] .board-card').evaluateAll(nodes=>nodes.map(node=>(node as HTMLElement).dataset.card)),['map-atlas']);
-  assert.deepEqual(await page.locator('[data-column=planned] .board-card').evaluateAll(nodes=>nodes.map(node=>(node as HTMLElement).dataset.card)),['map-sunset-bay','map-plain-outpost','map-dawn-lake','map-mist-valley']);
-  const completedCard=page.locator('[data-column=completed] .board-card');
+  assert.deepEqual(await page.locator('[data-column=completed] .board-card').evaluateAll(nodes=>nodes.map(node=>(node as HTMLElement).dataset.card)),cards.filter(card=>card.column==='completed').map(card=>card.id));
+  assert.deepEqual(await page.locator('[data-column=planned] .board-card').evaluateAll(nodes=>nodes.map(node=>(node as HTMLElement).dataset.card)),cards.filter(card=>card.column==='planned').map(card=>card.id));
+  const completedCard=page.locator('[data-card=map-atlas]');
   assert.match(await completedCard.innerText(),/v0\.2\.0/);
   assert.equal(await completedCard.getByRole('link',{name:'打开新城地图册',exact:true}).getAttribute('href'),'/?atlas=1');
   assert.equal(await completedCard.getByRole('link').evaluate((link:HTMLAnchorElement)=>link.origin),origin);
