@@ -1,0 +1,16 @@
+import {RELATIONSHIP_GIFT_REPOSITORY,type RelationshipGiftRepository} from '../../domains/relationships/gifts-repository.ts';
+import type {RelationshipGift} from '../../domains/relationships/gifts-types.ts';
+import {checkVersion,document,integer,text,type RuntimeSql} from './runtime-sql.ts';
+/** Same client as current pair locks, item transfer, result, receipt and outbox. */
+export function createRelationshipGiftRepository(sql:RuntimeSql){
+ const read=(rows:Record<string,any>[])=>rows.map(r=>r.data as RelationshipGift);
+ const repo:RelationshipGiftRepository={
+ async get(id){return read(await sql.query('SELECT data FROM relationships.gifts WHERE id=$1',[text(id)]))[0];},
+ async list(agentId,o){integer(o.limit,1,100);if(!['sent','received'].includes(o.direction))throw new Error('Explicit gift direction required');return read(await sql.query('SELECT data FROM relationships.gifts WHERE '+(o.direction==='sent'?'from_agent_id':'to_agent_id')+'=$1 AND ($2::text IS NULL OR id>$2 COLLATE "C") ORDER BY id COLLATE "C" LIMIT $3',[text(agentId),o.afterId??null,o.limit]));},
+ async pendingForSender(id,limit){return read(await sql.query("SELECT data FROM relationships.gifts WHERE from_agent_id=$1 AND state='pending' ORDER BY id COLLATE \"C\" LIMIT $2",[text(id),integer(limit,1,4)]));},
+ async pending(o){return read(await sql.query("SELECT data FROM relationships.gifts WHERE state='pending' AND ($1::text IS NULL OR id>$1 COLLATE \"C\") ORDER BY id COLLATE \"C\" LIMIT $2",[o.afterId??null,integer(o.limit,1,100)]));},
+ async lock(id){await sql.mutate('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',['relationship-gift:'+text(id)]);},async lockSender(id){await sql.mutate('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',['relationship-gift-sender:'+text(id)]);},
+ async save(v,e){checkVersion(v.version,e);document(v);if(e===null)await sql.mutate('INSERT INTO relationships.gifts(id,version,from_agent_id,to_agent_id,state,catalog_revision,rule_version,created_at,deadline_at,resolved_at,result_id,source_event_id,accepted_by_agent_id,data) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)',[v.id,v.version,v.fromAgentId,v.toAgentId,v.state,v.catalogRevision,v.ruleVersion,v.createdAt,v.deadlineAt,v.resolvedAt,v.resultId,v.sourceEventId,v.acceptedByAgentId,v]);else await sql.cas('UPDATE relationships.gifts SET version=$2,state=$3,resolved_at=$4,result_id=$5,source_event_id=$6,accepted_by_agent_id=$7,data=$8 WHERE id=$1 AND version=$9 RETURNING id',[v.id,v.version,v.state,v.resolvedAt,v.resultId,v.sourceEventId,v.acceptedByAgentId,v,e]);},
+ };return {port:RELATIONSHIP_GIFT_REPOSITORY,writer:repo,reader:{get:repo.get,list:repo.list,pendingForSender:repo.pendingForSender,pending:repo.pending}};
+}
+export async function readRelationshipGiftSource(sql:RuntimeSql,id:string){const g=(await sql.query('SELECT data FROM relationships.gifts WHERE id=$1',[text(id)]))[0]?.data as RelationshipGift|undefined;if(!g)return;return {id:g.id,fromAgentId:g.fromAgentId,toAgentId:g.toAgentId,itemInstanceIds:g.itemInstanceIds,state:g.state,catalogRevision:g.catalogRevision,ruleVersion:g.ruleVersion,createdAt:g.createdAt,deadlineAt:g.deadlineAt,resolvedAt:g.resolvedAt,sourceEventId:g.sourceEventId,acceptedByAgentId:g.acceptedByAgentId};}
