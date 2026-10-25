@@ -21,3 +21,5 @@
 `build-spatial.py` 是仅写本设计目录的可复现生成／检查；`geometry-delta.json` 记录增量，`spatial-validation.json` 保存实际路线。A 的 13 席、6 等待位及 B 的 7 席与店员同时占用时，31 建筑入口和新钓位接近点仍可达；相对于相同 A 满占条件，新增断开的公共格为 0。原 A 满占时本就隔离的 `[49,14]`、`[51,14]` 单列，没有将其误报为 B 新断路或全部格通过。未做运行时人群／调度／经济验收。
 
 工程落位建议：`apps/web/public/world-map-life-b-v1.json` 为新独立文件；A 的旧图继续保留。`apps/web/public/world-life/spatial-manifest.json` 由本包 revision 2 替换并同步服务端精确 SHA。runtime `geometryDigest` 必须由 A 的规范转换器对新图实际计算，不能拿文件 SHA 替代。前后端 map.js、life readers、town validation 与 catalog／规则转换必须在同批对齐；不要为了沿用旧 1175 计数而静默放宽校验。现行活跃路线／活动跨地图版本的处置归 A / TD，不由设计包改写事实。
+
+业务动作 ID 按 WS03 固定为 `fish.session`。原设计里的 `fishing.cast` 是已修正的命名错误，不能发布为 API／能力；底层逐竿实现使用 A 的实际内部动作，不由设计另起操作名。7个站位与几何均不变。
