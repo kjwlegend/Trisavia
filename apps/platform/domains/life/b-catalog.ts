@@ -13,3 +13,6 @@ export const LIFE_B_RULES=Object.freeze({catalogRevision:2 as const,ruleVersion:
   {id:'pier_spot',placeId:'harbor_pier',name:'外侧栈桥',capacity:3,outcomes:[{itemId:null,tickets:3500},{itemId:'sardine',tickets:2500},{itemId:'mackerel',tickets:2500},{itemId:'sea_bass',tickets:1500}]}] satisfies {id:LifeSpotId;placeId:string;name:string;capacity:number;outcomes:{itemId:'sardine'|'mackerel'|'sea_bass'|null;tickets:number}[]}[],
  npc:{id:'npc-fishing-clerk',stage:'B' as const,dutyPlaceId:'fisher_shop',initialCoins:80,initialEnergy:100,preferences:{duty:20,rest:10,fish_shore:25,fish_pier:30,sell:25}},
 });
+
+/** The economic participant consumes this projection of the very same frozen rules. */
+export const LIFE_ASSET_RULES={revision:2,ruleVersion:LIFE_B_RULES.ruleVersion,currency:'star_coin' as const,currencyScale:0 as const,items:LIFE_B_RULES.shop.items.map(i=>({...i,...('minWeightGrams'in i?{weightGrams:[i.minWeightGrams!,i.maxWeightGrams!]}:{})})),fishing:{castSeconds:LIFE_B_RULES.castDurationMs/1000,baitPerCast:LIFE_B_RULES.baitPerCast,spots:LIFE_B_RULES.spots.map(s=>({id:s.id,outcomes:s.outcomes.map(o=>({itemId:o.itemId,probability:o.tickets/10000}))}))}};

@@ -18,7 +18,7 @@ type Sources=Record<'world'|'relationships'|'interaction',BehaviorSource>&Partia
 type Cut={maxSequence:number;asOf:number};
 type Anchor={cut:Cut;after:{occurredAt:number;id:string}};
 const absent=():never=>fail('target_not_accessible',404,'Target is not accessible');
-const phaseLabels:Record<BehaviorDetails['phase'],string>={movement:'移动',wander:'日常漫游',friendship_request:'好友申请',text_invitation:'文字交流邀请',text_feedback:'文字反馈',npc_service:'镇民服务',life_work:'工作',life_rest:'休息'};
+const phaseLabels:Record<BehaviorDetails['phase'],string>={movement:'移动',wander:'日常漫游',friendship_request:'好友申请',text_invitation:'文字交流邀请',text_feedback:'文字反馈',npc_service:'镇民服务',life_work:'工作',life_rest:'休息',life_fishing:'钓鱼',life_trade:'商店交易'};
 function actorLabel(kind:'agent'|'owner'|'system'|'npc',executor=false){return kind==='owner'?'主人明确操作':kind==='system'?(executor?'世界系统推进':'世界系统发起'):(executor?'角色执行':'角色发起');}
 const natural:Record<BehaviorRecord['node'],[string,string,string]>={
  'world.movement.received':['移动请求已收到','提交移动','已收到前往请求'],
@@ -42,6 +42,9 @@ const natural:Record<BehaviorRecord['node'],[string,string,string]>={
  'interaction.activity.closed':['已确认收到反馈','作品交流','已确认收到并结束本次往来'],
  'interaction.activity.left':['文字交流已结束','作品交流','本次往来已退出'],
  'interaction.activity.expired':['文字交流已到期','作品交流','本次往来已到期'],
+ 'life.fishing.finished':['完成一次钓鱼','钓鱼','本次钓鱼已结束'],
+ 'life.purchase.completed':['买到生活物品','购买','本次购买已完成'],
+ 'life.sale.completed':['出售自己的鱼','售鱼','本次售鱼已完成'],
  'life.work.completed':['完成一班工作','工作','已完成本次工作'],
  'life.rest.completed':['完成一次休息','休息','已完成本次休息'],
  'life.activity.interrupted':['活动已中止','生活活动','本次活动已中止'],
@@ -92,7 +95,7 @@ export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadCont
   if(described){
    if(row.sourceRef.type==='resident_gift')title=result=described.resultCode==='resident_card_and_credit_issued'?'镇长补发居民身份卡和100星币':described.resultCode==='resident_card_issued'?'镇长补发居民身份卡':'镇长补发100星币';
    const service=described.service;
-   if(described.life){const where=described.location?.to?.name??'小镇';title=result=row.node==='life.work.completed'?'在'+where+'完成一班短工':row.node==='life.rest.completed'?'在'+where+'完成休息':'生活活动已中止';}
+   if(described.life){const where=described.location?.to?.name??'小镇';title=result=row.node==='life.work.completed'?'在'+where+'完成一班短工':row.node==='life.rest.completed'?'在'+where+'完成休息':row.node==='life.fishing.finished'?'在'+where+'完成一次钓鱼':row.node==='life.purchase.completed'?'在'+where+'买到生活物品':row.node==='life.sale.completed'?'在'+where+'出售自己的鱼':'生活活动已中止';const f=described.life.fishing;if(f){if(f.completedCasts<f.requestedCasts)title='钓鱼已停止';result='完成'+f.completedCasts+'／'+f.requestedCasts+(f.completedCasts<f.requestedCasts?'竿后停止，钓到':'竿，钓到')+f.catches.length+'条鱼，'+f.noCatchCount+'次空竿；实际消耗'+f.actualCosts.bait+'份鱼饵和'+f.actualCosts.energy+'点体力';}const trade=described.life.trade;if(trade)result=(trade.moneyDelta<0?'购买'+trade.quantity+'件物品，花费'+(-trade.moneyDelta):'出售'+trade.quantity+'条鱼，得到'+trade.moneyDelta)+'星币';}
    if(service){
     if(row.node==='town_services.greeted')title=result='拜访了'+service.npcName;
     if(row.node==='town_services.service.started'){title='在石岸旅舍开始休息';result='已开始休息，休息券已预留，尚未完成';}
@@ -107,7 +110,7 @@ export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadCont
    // Only the separately authorized Owner view retains that actor distinction.
    const initiator=owner?{kind:row.initiator.kind,label:actorLabel(row.initiator.kind)}:row.node==='world.idle.completed'?{kind:'system',label:'日常系统漫游'}:null;
    const executor=row.sourceDomain==='town_services'&&row.executor.kind==='system'?{kind:'system',label:'镇民服务规则执行'}:owner?{kind:row.executor.kind,label:actorLabel(row.executor.kind,true)}:row.sourceDomain==='world'?{kind:'system',label:'世界系统推进'}:null;
-   details={version:1,completeness:described.completeness,phase:described.phase,phaseLabel:phaseLabels[described.phase],summary:result,timeRange:{startedAt:described.startedAt,endedAt:described.endedAt,durationMs:described.durationMs},location:described.location?{from:described.location.from?{...described.location.from}:null,to:described.location.to?{...described.location.to}:null,via:described.location.via.map(place=>({...place}))}:null,journey:described.journey?{...described.journey}:null,participants,initiator,executor,service:service?{...service}:null,...(described.life?{life:{...described.life}}:{}),gaps:[...described.gaps]};
+   details={version:1,completeness:described.completeness,phase:described.phase,phaseLabel:phaseLabels[described.phase],summary:result,timeRange:{startedAt:described.startedAt,endedAt:described.endedAt,durationMs:described.durationMs},location:described.location?{from:described.location.from?{...described.location.from}:null,to:described.location.to?{...described.location.to}:null,via:described.location.via.map(place=>({...place}))}:null,journey:described.journey?{...described.journey}:null,participants,initiator,executor,service:service?{...service}:null,...(described.life?{life:JSON.parse(JSON.stringify(described.life)) as JsonObject}:{}),gaps:[...described.gaps]};
   }
   const time=new Intl.DateTimeFormat('en-GB',{timeZone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(row.occurredAt);
   return {id:row.id,agent:{agentId:row.agentId,displayName:profile?.displayName??npcIdentity?.name??null,...(row.npcId?{npcId:row.npcId,actorKind:'npc'}:{})},title,action,result,occurredAt:row.occurredAt,date:localDate(row.occurredAt,timeZone),time,details,source:{domain:row.sourceDomain,node:row.node,detail}};

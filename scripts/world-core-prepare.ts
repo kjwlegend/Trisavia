@@ -1,3 +1,5 @@
+import {LIFE_B_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/life-b-migration.ts';
+import {LIFE_COMMERCE_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/life-commerce-migration.ts';
 import {AVATAR_ASSETS_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/avatar-assets-migration.ts';
 import {LIFE_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/life-migration.ts';
 import {LIFE_WALLET_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/life-wallet-migration.ts';
@@ -32,6 +34,8 @@ export async function grantWorldCorePermissions(config:RuntimeConfig,database:st
  ${AVATAR_ASSETS_PERMISSIONS_SQL}
  ${LIFE_PERMISSIONS_SQL}
  ${LIFE_WALLET_PERMISSIONS_SQL}
+${LIFE_B_PERMISSIONS_SQL}
+${LIFE_COMMERCE_PERMISSIONS_SQL}
  COMMIT;`;
  await docker(['exec','-i',`${config.project}-server`,'psql','-X','-v','ON_ERROR_STOP=1','-U','postgres','-d',database],{input:sql});
 }

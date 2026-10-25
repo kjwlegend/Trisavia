@@ -4,7 +4,7 @@ import {beginLifeFishingCast,endLifeFishingCast,fishingResult} from '../../apps/
 import type {LifeFishingSession} from '../../apps/platform/domains/life/b-types.ts';
 import type {LifeCommerceEffect} from '../../apps/platform/domains/life-assets/types.ts';
 const now=Date.parse('2026-10-25T10:00:00Z'),ref={kind:'agent' as const,id:'synthetic-fisher'};
-const session=():LifeFishingSession=>({id:'session-original-001',version:1,actorKind:'agent',actorId:ref.id,catalogRevision:2,ruleVersion:1,actionId:'fish.session',activityId:'session-original-001',spotId:'shore_spot',rodInstanceId:'owned-rod',requestedCasts:3,nextCastIndex:0,state:'active',startedAt:now,endedAt:null,currentCastId:null,castIds:[],qualification:null,ownerAudience:null,resultId:null,sourceEventId:null});
+const session=():LifeFishingSession=>({id:'session-original-001',version:1,actorKind:'agent',actorId:ref.id,catalogRevision:2,ruleVersion:1,actionId:'fish.session',energyBefore:100,activityId:'session-original-001',spotId:'shore_spot',rodInstanceId:'owned-rod',requestedCasts:3,nextCastIndex:0,state:'active',startedAt:now,endedAt:null,currentCastId:null,castIds:[],qualification:null,ownerAudience:null,resultId:null,sourceEventId:null});
 const actor=()=>({...freshActor(ref,now),reservedEnergy:6,body:{kind:'activity' as const,id:session().id,until:now+180000}});
 test('cast costs and quota commit at actual start, and a later cast starts now after downtime',()=>{
  const first=beginLifeFishingCast(session(),actor(),now,()=>0);assert.equal(first.actor.energy,98);assert.equal(first.actor.reservedEnergy,4);assert.equal(first.actor.fishingQuota[0]!.casts,1);assert.equal(first.cast.outcome.itemId,null);
