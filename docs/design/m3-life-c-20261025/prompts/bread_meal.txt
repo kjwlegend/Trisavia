@@ -1,0 +1,4 @@
+Use case: stylized-concept. Asset type: single production inventory pixel sprite in a coherent cozy coastal RPG set.
+Subject: A single serving of warm bread meal: one rustic golden brown bread roll and a half slice on a small cream ceramic plate, with a tiny green garnish. Compact and clearly edible, not a bag or ingredient.
+True low resolution 32x32 logical pixels enlarged with perfectly square uniform pixel blocks, muted warm 16-bit game style, 8-12 flat colors, one logical-pixel dark brown outline, simple two-tone shading. Match warm wooden fishing tackle and teal/silver fish inventory art. No antialiasing, no soft gradients, no photorealism, no3D.
+Square transparent canvas; only one compact item centered, maximum26x26 logical pixel silhouette and clear3pixel margin on every side. Recognizable when shrunk to32px. No badge, grid, UI, floor, background, text, numbers, watermark. Real transparent alpha.

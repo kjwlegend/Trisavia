@@ -1,0 +1,319 @@
+{
+  "version": 1,
+  "count": 7,
+  "preserveFirstFive": true,
+  "sourceCatalog": "2026-10-21.appearance-v1.1",
+  "npcs": [
+    {
+      "npcId": "npc-mayor",
+      "name": "镇长",
+      "role": "镇长",
+      "anchorBuildingId": "p-hall",
+      "dutyPlaceId": "town_hall",
+      "initialCell": [
+        2,
+        -17
+      ],
+      "dutyCell": [
+        2,
+        -17
+      ],
+      "approachCells": [
+        [
+          2,
+          -16
+        ]
+      ],
+      "appearance": {
+        "lookId": "sunnyside-human-shorthair",
+        "catalogVersion": "2026-10-21.appearance-v1.1",
+        "hair": "shorthair"
+      },
+      "shortIdPolicy": "preserve_existing",
+      "movementSource": "authoritative snapshot; duty anchor is not permanent current position",
+      "stateAssets": [
+        "work-tray",
+        "rest-bench",
+        "duty"
+      ]
+    },
+    {
+      "npcId": "npc-tavern",
+      "name": "港湾酒馆·酒保",
+      "role": "酒保",
+      "anchorBuildingId": "h-tavern",
+      "dutyPlaceId": "harbor_tavern",
+      "initialCell": [
+        53,
+        12
+      ],
+      "dutyCell": [
+        53,
+        12
+      ],
+      "approachCells": [
+        [
+          52,
+          12
+        ]
+      ],
+      "appearance": {
+        "lookId": "sunnyside-human-curlyhair",
+        "catalogVersion": "2026-10-21.appearance-v1.1",
+        "hair": "curlyhair"
+      },
+      "shortIdPolicy": "preserve_existing",
+      "movementSource": "authoritative snapshot; duty anchor is not permanent current position",
+      "stateAssets": [
+        "work-tray",
+        "rest-bench",
+        "duty"
+      ]
+    },
+    {
+      "npcId": "npc-innkeeper",
+      "name": "石岸旅舍·老板",
+      "role": "旅社老板",
+      "anchorBuildingId": "e-inn",
+      "dutyPlaceId": "stone_inn",
+      "initialCell": [
+        28,
+        8
+      ],
+      "dutyCell": [
+        28,
+        8
+      ],
+      "approachCells": [
+        [
+          27,
+          8
+        ]
+      ],
+      "appearance": {
+        "lookId": "sunnyside-human-longhair",
+        "catalogVersion": "2026-10-21.appearance-v1.1",
+        "hair": "longhair"
+      },
+      "shortIdPolicy": "preserve_existing",
+      "movementSource": "authoritative snapshot; duty anchor is not permanent current position",
+      "stateAssets": [
+        "work-tray",
+        "rest-bench",
+        "duty"
+      ]
+    },
+    {
+      "npcId": "npc-harbor-hand",
+      "name": "码头熟手",
+      "role": "码头工作",
+      "anchorBuildingId": "h-warehouse",
+      "dutyPlaceId": "harbor_work",
+      "initialCell": [
+        47,
+        3
+      ],
+      "dutyCell": [
+        47,
+        3
+      ],
+      "approachCells": [
+        [
+          46,
+          3
+        ]
+      ],
+      "appearance": {
+        "lookId": "sunnyside-human-bowlhair",
+        "catalogVersion": "2026-10-21.appearance-v1.1",
+        "hair": "bowlhair"
+      },
+      "shortIdPolicy": "allocator_assigns; no hardcoded short ID",
+      "movementSource": "authoritative snapshot; duty anchor is not permanent current position",
+      "stateAssets": [
+        "work-crate",
+        "rest-bench",
+        "duty"
+      ]
+    },
+    {
+      "npcId": "npc-fishing-clerk",
+      "name": "渔具店员",
+      "role": "渔具店员",
+      "anchorBuildingId": "e-stall",
+      "dutyPlaceId": "fisher_shop",
+      "initialCell": [
+        28,
+        17
+      ],
+      "dutyCell": [
+        28,
+        17
+      ],
+      "approachCells": [
+        [
+          27,
+          17
+        ]
+      ],
+      "appearance": {
+        "lookId": "sunnyside-human-spikeyhair",
+        "catalogVersion": "2026-10-21.appearance-v1.1",
+        "hair": "spikeyhair"
+      },
+      "shortIdPolicy": "allocator_assigns; never hardcode N005",
+      "movementSource": "authoritative; duty cell is not a perpetual position",
+      "stateAssets": [
+        "fishing-cast",
+        "fishing-wait",
+        "fishing-reel",
+        "duty"
+      ],
+      "servicePolicy": "fisher_shop remains self-service while clerk is away"
+    },
+    {
+      "npcId": "npc-librarian",
+      "name": "书屋管理员",
+      "role": "书屋管理员",
+      "anchorBuildingId": "n-blue",
+      "dutyPlaceId": "blue_library",
+      "initialCell": [
+        21,
+        -3
+      ],
+      "dutyCell": [
+        21,
+        -3
+      ],
+      "approachCells": [
+        [
+          21,
+          -2
+        ]
+      ],
+      "appearance": {
+        "lookId": "sunnyside-human-mophair",
+        "catalogVersion": "2026-10-21.appearance-v1.1",
+        "hair": "mophair",
+        "hairColorId": "ash",
+        "clothingColorId": "cream"
+      },
+      "shortIdPolicy": "allocator assigns; no fixed N006",
+      "movementSource": "authoritative state; duty is not a fixed current position"
+    },
+    {
+      "npcId": "npc-neighbor",
+      "name": "自由镇民",
+      "role": "自由镇民",
+      "anchorBuildingId": null,
+      "dutyPlaceId": null,
+      "initialCell": [
+        14,
+        2
+      ],
+      "dutyCell": null,
+      "approachCells": [
+        [
+          14,
+          3
+        ]
+      ],
+      "appearance": {
+        "lookId": "sunnyside-human-longhair",
+        "catalogVersion": "2026-10-21.appearance-v1.1",
+        "hair": "longhair",
+        "hairColorId": "ink",
+        "clothingColorId": "forest"
+      },
+      "shortIdPolicy": "allocator assigns; no fixed N007",
+      "movementSource": "authoritative state; no duty candidate for a resident without dutyPlace"
+    }
+  ],
+  "newNativeExports": [
+    {
+      "path": "assets/actors/npc-librarian-idle.png",
+      "width": 864,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 9,
+      "source": "existing native appearance palette renderer, no source pixels overwritten",
+      "bytes": 3121,
+      "sha256": "8742835963ae8f0ac58c7ea57f3cf3c0cb4a5fc1390898e2c00e7dbbf21e5fd9",
+      "size": [
+        864,
+        64
+      ]
+    },
+    {
+      "path": "assets/actors/npc-librarian-walk.png",
+      "width": 768,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 8,
+      "source": "existing native appearance palette renderer, no source pixels overwritten",
+      "bytes": 3055,
+      "sha256": "fca02eaffd79e398c20b1ea4a63195edfdd48aa458bb1164a7934950f9e0e592",
+      "size": [
+        768,
+        64
+      ]
+    },
+    {
+      "path": "assets/actors/npc-neighbor-idle.png",
+      "width": 864,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 9,
+      "source": "existing native appearance palette renderer, no source pixels overwritten",
+      "bytes": 3179,
+      "sha256": "2c281fb819285d6725060b91be4613957cba2b7af77f37627855b682f042b5b8",
+      "size": [
+        864,
+        64
+      ]
+    },
+    {
+      "path": "assets/actors/npc-neighbor-walk.png",
+      "width": 768,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 8,
+      "source": "existing native appearance palette renderer, no source pixels overwritten",
+      "bytes": 3160,
+      "sha256": "3ce18c1dea080546c6e23744c009b10a38d39f00d1ced575b3d5d0fc31517891",
+      "size": [
+        768,
+        64
+      ]
+    }
+  ],
+  "display": "No permanent Nxxx tags. Hover/focus/click name + role. Runtime coordinates from authoritative state, not initialCell. Neighbor has no dutyPlace."
+}

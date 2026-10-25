@@ -1,0 +1,87 @@
+{
+  "status": "PASS",
+  "scope": "design preview only",
+  "allNineItems": [
+    {
+      "id": "basic_rod",
+      "width": 32,
+      "height": 32,
+      "nontransparentThreePixelBorder": 0
+    },
+    {
+      "id": "bait",
+      "width": 32,
+      "height": 32,
+      "nontransparentThreePixelBorder": 0
+    },
+    {
+      "id": "sardine",
+      "width": 32,
+      "height": 32,
+      "nontransparentThreePixelBorder": 0
+    },
+    {
+      "id": "mackerel",
+      "width": 32,
+      "height": 32,
+      "nontransparentThreePixelBorder": 0
+    },
+    {
+      "id": "sea_bass",
+      "width": 32,
+      "height": 32,
+      "nontransparentThreePixelBorder": 0
+    },
+    {
+      "id": "bread_meal",
+      "width": 32,
+      "height": 32,
+      "nontransparentThreePixelBorder": 0
+    },
+    {
+      "id": "herbal_tea",
+      "width": 32,
+      "height": 32,
+      "nontransparentThreePixelBorder": 0
+    },
+    {
+      "id": "grilled_fish",
+      "width": 32,
+      "height": 32,
+      "nontransparentThreePixelBorder": 0
+    },
+    {
+      "id": "harbor_handbook",
+      "width": 32,
+      "height": 32,
+      "nontransparentThreePixelBorder": 0
+    }
+  ],
+  "stateChecks": {
+    "full": "当前名额已满换一个可用地点，或稍后再来。未开始活动，不预扣本次费用或物品。",
+    "partial": "计划部分完成已完成步骤保留真实结果；剩余步骤未完成。先查询原计划和回执，再决定下一步，不能把整单重做当作恢复。",
+    "offline": "正在确认最新状态连接暂时中断，停留在上一次确认的画面。恢复后读取原活动结果，不另发一次购买、扣费或赠送。"
+  },
+  "mobile": {
+    "width": 390,
+    "scrollWidth": 390,
+    "bodyText": "13px"
+  },
+  "notClaimed": [
+    "production actions",
+    "gift actual transfer",
+    "legacy voucher integration",
+    "production performance"
+  ],
+  "finalMobileWithNight": {
+    "width": 390,
+    "scrollWidth": 390,
+    "nightEnabled": true,
+    "ready": true
+  },
+  "night": {
+    "lightCount": 29,
+    "cacheRGBABytes": 3538944,
+    "scope": "preview cache configuration only, not production benchmark"
+  }
+}
