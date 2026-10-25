@@ -4,6 +4,9 @@ ALTER TABLE life.catalogs DROP CONSTRAINT catalogs_revision_check;
 ALTER TABLE life.catalogs ADD CONSTRAINT catalogs_revision_check CHECK(revision IN (1,2,3));
 ALTER TABLE life.activities DROP CONSTRAINT activities_action_id_check;
 ALTER TABLE life.activities ADD CONSTRAINT activities_action_id_check CHECK(action_id IN ('work.shift','rest.bench','npc.duty','rest.voucher','shop.buy','shop.sell','fish.session','meal.prepare','meal.eat','rest.inn','book.read','visit.place'));
+DROP INDEX life.life_one_foreground_plan;
+CREATE UNIQUE INDEX life_one_foreground_plan ON life.plans(actor_kind,actor_id) WHERE state='running' OR (state='waiting_condition' AND (data->'remoteWait' IS NULL OR data->'remoteWait'='null'::jsonb));
+CREATE INDEX life_remote_wait_actor ON life.plans(actor_kind,actor_id,created_at,id COLLATE "C") WHERE state='waiting_condition' AND data->'remoteWait'<>'null'::jsonb;
 CREATE TABLE life.reading_records(
  actor_kind text NOT NULL CHECK(actor_kind IN ('agent','npc')),actor_id text COLLATE "C" NOT NULL,book_id text NOT NULL,book_version integer NOT NULL CHECK(book_version>0),
  activity_id text NOT NULL UNIQUE REFERENCES life.activities(id),source_event_id text NOT NULL REFERENCES runtime.events(event_id) DEFERRABLE INITIALLY DEFERRED,

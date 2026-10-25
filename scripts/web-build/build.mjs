@@ -19,6 +19,8 @@ export async function buildWeb({root=defaultRoot}={}){
   // Runtime-fetched life geometry is an explicit build input, not a bundled import.
   await source(resolve(publicRoot,'world-map-life-v1.json'));
   await source(resolve(publicRoot,'world-life/world-map-life-b-v1.json'));
+  await source(resolve(publicRoot,'world-life/world-map-life-c-v1.json'));
+  await source(resolve(publicRoot,'world-life/spatial-manifest-c-v1.json'));
   const pkg=JSON.parse(await source(resolve(root,'package.json')));await source(resolve(root,'package-lock.json'));await source(resolve(root,'scripts/build-web.mjs'));for(const path of await filesIn(resolve(root,'scripts/web-build')))await source(path);
   const brandDir=resolve(publicRoot,'brand/trisavia-02'),exports=JSON.parse(await source(resolve(brandDir,'performance-exports.json')));if(exports.version!==1||exports.exports.length!==2)throw new Error('Exact approved brand performance exports required');let brandBytes=0;
   for(const entry of exports.exports){if(!/^trisavia-(nav-lockup|small-mark-framed)\.svg$/.test(entry.source)||entry.file!==entry.source.replace('.svg','.performance.svg'))throw new Error('Unexpected brand export');const original=await source(resolve(brandDir,entry.source)),bytes=await source(resolve(brandDir,entry.file));if(sha(original)!==entry.sourceSha256||sha(bytes)!==entry.sha256||bytes.length!==entry.bytes)throw new Error('Brand performance export is stale');brandBytes+=bytes.length;const url=await emit(entry.file.replace('.performance.svg',''), 'svg',bytes,'image/svg+xml');for(const name of [entry.source,entry.file])aliases.set('/assets/brand/trisavia-02/'+name,url);}

@@ -3,6 +3,7 @@ import type {LifeActor,LifeActorRef,LifeActivity,LifeCatalog,LifeNpc,LifePlan,Li
 export interface LifeReader {
  getCatalog():Promise<LifeCatalog|undefined>;getActor(actor:LifeActorRef):Promise<LifeActor|undefined>;
  getActivity(id:string):Promise<LifeActivity|undefined>;getPlan(id:string):Promise<LifePlan|undefined>;
+ listRemotePlans(actor:LifeActorRef,limit:number):Promise<LifePlan[]>;
  listResults(actor:LifeActorRef,limit:number):Promise<LifeActivity[]>;seats(placeId:string):Promise<LifeSeat[]>;
  getNpc(id:string):Promise<LifeNpc|undefined>;listNpcs():Promise<LifeNpc[]>;
  listBusyActors(options:{afterKey?:string;limit:number}):Promise<LifeActor[]>;

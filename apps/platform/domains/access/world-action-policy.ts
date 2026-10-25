@@ -9,6 +9,7 @@ export const AUTONOMOUS_WORLD_ACTIONS:readonly string[]=Object.freeze([
  'interaction.artifact.create','interaction.artifact.withdraw','interaction.invitation.send','interaction.invitation.accept','interaction.invitation.decline','interaction.invitation.withdraw',
  'interaction.activity.submit_feedback','interaction.activity.close','interaction.activity.leave','interaction.feedback.withdraw','interaction.policy.block','interaction.policy.unblock',
  'decision.claim','decision.respond','perception.agent_read.confirm',
+ 'relationships.gifts.offer','relationships.gifts.respond','relationships.gifts.withdraw',
  'life.activities.start','life.activities.cancel','life.plans.submit','life.plans.cancel',
  'town_services.npc.greet','town_services.welcome.claim','town_services.tavern.redeem','town_services.inn.rest.start','town_services.inn.rest.cancel',
 ]);

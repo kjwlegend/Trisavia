@@ -1,10 +1,13 @@
+import {createLifeCObservationRepository,readLifeCActivitySource,readLifeCTradeSource} from './life-c-repository.ts';
+import {createRelationshipGiftRepository,readRelationshipGiftSource} from './relationships-gifts-repository.ts';
+import {createLifeCCommerceRepository} from './life-c-commerce-repository.ts';
+import {LIFE_C_RULES,LIFE_C_RUNTIME_RULES} from '../../domains/life/c-catalog.ts';
 import {createLifeFishingRepository,readLifeTradeSource,readLifeFishingSessionSource,readLifeFishingCastSource} from './life-b-repository.ts';
 import {createLifeCommerceRepository} from './life-commerce-repository.ts';
 import {LIFE_ASSET_RULES} from '../../domains/life/b-catalog.ts';
 import {createAvatarAssetRepository} from './avatar-assets-repository.ts';
 import {createLifeRepository,readCompletedWorkRewardSource} from './life-repository.ts';
 import {createLifeWalletRepository} from './life-wallet-repository.ts';
-import {LIFE_B_RUNTIME_RULES} from '../../domains/life/catalog.ts';
 import {createPublicIdentifierRepository} from './public-identifiers-repository.ts';
 import {createResidentGiftRepository} from './resident-gift-repository.ts';
 import {createWelcomeCreditRepository} from './welcome-credit-repository.ts';
@@ -34,7 +37,7 @@ export function runtimeIdentitySession(context:RuntimeReadContext):M1ReadSession
 export function createPostgresRuntimeContext(scope:PostgresScope,options:OpenRuntimeStoreOptions):RuntimeTransaction{
  const sql=runtimeSql(scope,options.now??Date.now),legacy=createPostgresSession(scope.client,false,scope.alive);
  const core=createRuntimeRepositories(sql,options.recoveryEpoch);
- const adapters=[createAvatarAssetRepository(sql),createLifeRepository(sql),createLifeFishingRepository(sql),createLifeCommerceRepository(sql,{catalog:LIFE_ASSET_RULES,readTradeSource:id=>readLifeTradeSource(sql,id),readFishingSessionSource:id=>readLifeFishingSessionSource(sql,id),readFishingCastSource:id=>readLifeFishingCastSource(sql,id)}),createLifeWalletRepository(sql,{catalog:LIFE_B_RUNTIME_RULES,readCompletedWorkRewardSource:id=>readCompletedWorkRewardSource(sql,id)}),createPublicIdentifierRepository(scope.client,scope.write,scope.alive),createWorldRepository(sql),createInteractionRepository(sql),createDecisionRepository(sql,options.recoveryEpoch),createRelationshipsRepository(sql),createBehaviorRepository(sql),createTownRepository(sql),createServiceInventoryRepository(sql),createOwnerMailboxRepository(sql),createWelcomeCreditRepository(sql),createResidentGiftRepository(sql)];
+ const adapters=[createAvatarAssetRepository(sql),createLifeRepository(sql),createLifeCObservationRepository(sql),createRelationshipGiftRepository(sql),createLifeCCommerceRepository(sql,{catalog:LIFE_C_RULES,readTradeSource:id=>readLifeCTradeSource(sql,id),readCActivitySource:id=>readLifeCActivitySource(sql,id),readGiftSource:id=>readRelationshipGiftSource(sql,id)}),createLifeFishingRepository(sql),createLifeCommerceRepository(sql,{catalog:LIFE_ASSET_RULES,readTradeSource:id=>readLifeTradeSource(sql,id),readFishingSessionSource:id=>readLifeFishingSessionSource(sql,id),readFishingCastSource:id=>readLifeFishingCastSource(sql,id)}),createLifeWalletRepository(sql,{catalog:LIFE_C_RUNTIME_RULES,readCompletedWorkRewardSource:id=>readCompletedWorkRewardSource(sql,id)}),createPublicIdentifierRepository(scope.client,scope.write,scope.alive),createWorldRepository(sql),createInteractionRepository(sql),createDecisionRepository(sql,options.recoveryEpoch),createRelationshipsRepository(sql),createBehaviorRepository(sql),createTownRepository(sql),createServiceInventoryRepository(sql),createOwnerMailboxRepository(sql),createWelcomeCreditRepository(sql),createResidentGiftRepository(sql)];
  const repositories=new Map<object,{reader:unknown;writer:unknown}>();
  for(const adapter of adapters)repositories.set(adapter.port,{reader:Object.freeze(adapter.reader),writer:Object.freeze(adapter.writer)});
  const base={instanceId:options.instanceId,recoveryEpoch:options.recoveryEpoch,now:sql.now,

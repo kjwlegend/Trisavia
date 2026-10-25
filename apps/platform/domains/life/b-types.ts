@@ -40,5 +40,5 @@ export type LifeBActionParams={actionId:'shop.buy';params:{itemId:'basic_rod'|'b
  |{actionId:'shop.sell';params:{itemInstanceIds:string[];minTotalProceeds:number;quoteRef?:string}}
  |{actionId:'fish.session';params:{spotId:LifeSpotId;castCount:number;rodInstanceId:string}};
 export interface LifeOutputReference {stepId:string;output:'caughtFish'}
-export interface LifeBudget {maxSpendByCurrency:{star_coin:number};maxConsumeByItem:{bait?:number}}
+export interface LifeBudget {maxSpendByCurrency:{star_coin:number};maxConsumeByItem:Partial<Record<'bait'|'sardine'|'mackerel'|'sea_bass'|'bread_meal'|'herbal_tea'|'grilled_fish',number>>}
 export interface LifeBudgetProgress {committedSpend:number;reservedSpend:number;committedBait:number;reservedBait:number}

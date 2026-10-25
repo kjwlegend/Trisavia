@@ -1,0 +1,11 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {coreFixture} from '../world/runtime-fixture.ts';import {createRelationshipsService} from '../../apps/platform/application/relationships-service.ts';
+test('gift access needs a real current confirmed pair, rejects pause/block and binds the original shared generations without freezing intimacy updates',async()=>{
+ const f=coreFixture();f.addAgent('a');f.addAgent('b');const service=createRelationshipsService(f.identity);await assert.rejects(f.store.read(ctx=>service.assertGiftAccess(ctx,'a','b')),{code:'target_not_accessible'});
+ f.state.friendships.set('confirmed-source',{id:'confirmed-source',version:1,firstAgentId:'a',secondAgentId:'b',status:'confirmed',confirmedAt:f.now,firstConfirmationId:'explicit-sender',secondConfirmationId:'explicit-recipient',intimacyScore:0});
+ const proof=await f.store.transaction(ctx=>service.assertGiftAccess(ctx,'a','b',{lock:true}));assert.equal(proof.friendshipId,'confirmed-source');const friendship=f.state.friendships.get('confirmed-source')!;f.state.friendships.set(friendship.id,{...friendship,version:2,intimacyScore:1});assert.equal((await f.store.read(ctx=>service.assertGiftAccess(ctx,'a','b',{expected:proof}))).friendshipVersion,2,'a later real intimacy fact does not revoke a gift by itself');
+ f.membership('b',{ownerPaused:true});await assert.rejects(f.store.read(ctx=>service.assertGiftAccess(ctx,'a','b',{expected:proof})),{code:'target_not_accessible'});f.membership('b',{ownerPaused:false});
+ await f.store.transaction(async ctx=>{const p=await f.interaction.lockPair('a','b');await f.interaction.savePair({...p,version:p.version+1,sharedGeneration:p.sharedGeneration+1,blockedByAgentIds:['b']},p.version);});await assert.rejects(f.store.read(ctx=>service.assertGiftAccess(ctx,'a','b',{expected:proof})),{code:'target_not_accessible'});
+ await f.store.transaction(async ctx=>{const p=await f.interaction.lockPair('a','b');await f.interaction.savePair({...p,version:p.version+1,sharedGeneration:p.sharedGeneration+1,blockedByAgentIds:[]},p.version);});await assert.rejects(f.store.read(ctx=>service.assertGiftAccess(ctx,'a','b',{expected:proof})),{code:'target_not_accessible'},'unblocking cannot revive an old offer generation');
+ assert.equal((await f.store.read(ctx=>service.assertGiftAccess(ctx,'a','b'))).pairGeneration,2);
+});
