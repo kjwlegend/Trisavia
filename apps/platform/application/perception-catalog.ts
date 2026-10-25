@@ -1,3 +1,4 @@
+import {AVATAR_AUTHORING_GUIDE} from './agent-avatar-guide.ts';
 import {PUBLIC_IDENTIFIERS_GUIDE} from './public-identifiers.ts';
 import { mapAsync } from '../domains/common/async-collections.ts';
 import { catalogRepository, contentRepository } from '../domains/perception/repository.ts';
@@ -45,7 +46,7 @@ export async function initializePerceptionCatalog(tx: M1Transaction,publication?
     // Keep the original catalog-1 and exact guide1 bytes. Only this explicit fresh
     // bootstrap publishes the next reader contract; readiness/GET never call it.
     await publishImplementedReadersInTransaction(tx, { expectedCatalogRevision: 'catalog-1', revision: `catalog-readers-1-schema-${PERCEPTION_SCHEMA_VERSION}`, guideVersion: 2, actorId: 'platform-bootstrap', stamp: Date.now() });
-    if(Number(PERCEPTION_SCHEMA_VERSION)===6)await publishFreshPaperHudCatalogInTransaction(tx,{expectedCatalogRevision:'catalog-readers-1-schema-6',expectedGuideVersion:2});else await publishFreshPublicIdentifiersCatalogInTransaction(tx);
+    if(Number(PERCEPTION_SCHEMA_VERSION)===6)await publishFreshPaperHudCatalogInTransaction(tx,{expectedCatalogRevision:'catalog-readers-1-schema-6',expectedGuideVersion:2});else if(Number(PERCEPTION_SCHEMA_VERSION)===7)await publishFreshPublicIdentifiersCatalogInTransaction(tx);else await publishFreshAvatarCatalogInTransaction(tx);
 }
 async function storeDocuments(tx: M1Transaction, version: number, body: string): Promise<void> {
     const collectionQuery = await ownerNotificationCollectionDeclaration(tx);
@@ -304,14 +305,44 @@ export async function publishPublicIdentifiersCatalogInTransaction(tx:M1Transact
 }
 /** Explicit closed-gate life activation publication; old exact documents and source declarations remain intact. */
 export async function publishLifeGuideInTransaction(tx:M1Transaction,options:{instanceId:string;recoveryEpoch:string;operator:string;operationId:string;expectedGuideVersion:number}):Promise<JsonObject>{
- const fresh=options.expectedGuideVersion===3,expected=fresh?'catalog-public-identifiers-fresh-1':'catalog-public-identifiers-1';
+ const fresh=options.expectedGuideVersion===3,expected=fresh&&Number(PERCEPTION_SCHEMA_VERSION)===8?'catalog-avatar-assets-fresh-1':fresh?'catalog-public-identifiers-fresh-1':'catalog-public-identifiers-1';
  if(!/^[A-Za-z0-9_.:@-]{1,100}$/.test(options.operator)||!/^.{8,100}$/u.test(options.operationId)||![3,7,14].includes(options.expectedGuideVersion))throw new Error('Explicit supported life predecessor and operation required');
  const payload:JsonObject={...options,release:'life-a@1',expectedCatalogRevision:expected,revision:'catalog-life-a-1',schemaVersion:7},id='admin-life-a:'+key({operator:options.operator,operationId:options.operationId}),digest=key(payload),prior=await catalogRepository(tx).get(id);if(prior){if(prior.data.payloadHash!==digest)fail('operation_id_conflict',409,'Original life publication payload changed');return plain(prior.data.result);}
- const current=await catalogRepository(tx).get('current');if(!current||current.data.schemaVersion!==7||Number(PERCEPTION_SCHEMA_VERSION)!==7||current.data.catalogRevision!==expected||current.data.guideVersion!==options.expectedGuideVersion)fail('version_conflict',409,'Exact life guide predecessor required');
+ const current=await catalogRepository(tx).get('current');if(!current||current.data.schemaVersion!==(fresh?Number(PERCEPTION_SCHEMA_VERSION):7)||(!fresh&&![7,8].includes(Number(PERCEPTION_SCHEMA_VERSION)))||current.data.catalogRevision!==expected||current.data.guideVersion!==options.expectedGuideVersion)fail('version_conflict',409,'Exact life guide predecessor required');
  const states=plain(current.data.sourceStates);if(!fresh&&states[NPC_SERVICE_ITEMS_SOURCE]!=='enabled')fail('version_conflict',409,'The existing real NPC item source must remain enabled');
  if(fresh)for(const definition of Object.values(TOWN_ITEM_DEFINITIONS)){const row=await contentRepository(tx).get(refId({moduleId:'items',type:'items.item@1',id:definition.id}));if(!row||row.data.sourceId!==NPC_SERVICE_ITEMS_SOURCE||row.data.dataMode!=='real'||row.data.public!==true||row.data.active!==true||row.data.available!==true)fail('version_conflict',409,'Prepare the real town definitions before fresh life publication');}
  const modules=['perception','world','profiles','items','inventory','mailbox','wallet'],version=options.expectedGuideVersion+1;await rememberCatalogRevision(tx,current.data);
  for(const moduleId of modules){const old=await catalogRepository(tx).get(`guide:${moduleId}:${options.expectedGuideVersion}`),document=plain(old?.data.document);if(typeof document.text!=='string'||old?.data.digest!==key(document)||await catalogRepository(tx).get(`guide:${moduleId}:${version}`))fail('version_conflict',409,'Exact life guide source or destination is unavailable');const count=document.text.split(CURRENT_RESIDENT_GIFT_TOWN_GUIDE).length-1;if(!fresh&&count!==1||fresh&&count>1||document.text.includes(LIFE_GUIDE_TEXT))fail('version_conflict',409,'The original current Town guide is ambiguous');let text=document.text.replace(CURRENT_RESIDENT_GIFT_TOWN_GUIDE,LIFE_TOWN_GUIDE).replace(CURRENT_WORLD_MAP_TOWN_GUIDE,LIFE_MAP_GUIDE).replace(AGENT_WORLD_MAP_V2_GUIDE,LIFE_MAP_GUIDE).replaceAll('未初始化报错，不造0且无转账/奖励。','未初始化报错，不造0；仅已启用迎新权益与真实完成工作按具名来源入账，不提供转账或通用奖励命令。').replaceAll('仅已启用的迎新权益按真实来源发放固定奖励，不提供转账或通用奖励命令。','仅已启用迎新权益与真实完成工作按具名来源入账，不提供转账或通用奖励命令。');if(fresh&&count===0)text+='\n'+LIFE_TOWN_GUIDE;const next={...document,version,text:text+'\n'+LIFE_GUIDE_TEXT};await catalogRepository(tx).insert({id:`guide:${moduleId}:${version}`,version:1,data:{document:next,digest:key(next)}});}
  const data={...current.data,guideVersion:version,catalogRevision:'catalog-life-a-1',skillCatalogRevision:'skills-catalog-life-a-1',sourceStates:fresh?{...states,[NPC_SERVICE_ITEMS_SOURCE]:'enabled'}:states};await rememberCatalogRevision(tx,data);await catalogRepository(tx).replace({...current,version:current.version+1,data},current.version);
- const result:JsonObject={changed:true,catalogRevision:data.catalogRevision,guideVersion:version,schemaVersion:7,newGuideDocuments:7,newSchemaDocuments:0,sourceStatesPreserved:!fresh,businessFactsChanged:false,operationId:options.operationId,guideDigests:await mapAsync(modules,async moduleId=>({moduleId,digest:(await catalogRepository(tx).get(`guide:${moduleId}:${version}`))!.data.digest!}))};await catalogRepository(tx).insert({id,version:1,data:{kind:'administrative_receipt',payloadHash:digest,result}});return result;
+ const result:JsonObject={changed:true,catalogRevision:data.catalogRevision,guideVersion:version,schemaVersion:current.data.schemaVersion!,newGuideDocuments:7,newSchemaDocuments:0,sourceStatesPreserved:!fresh,businessFactsChanged:false,operationId:options.operationId,guideDigests:await mapAsync(modules,async moduleId=>({moduleId,digest:(await catalogRepository(tx).get(`guide:${moduleId}:${version}`))!.data.digest!}))};await catalogRepository(tx).insert({id,version:1,data:{kind:'administrative_receipt',payloadHash:digest,result}});return result;
+}
+
+/** New empty instances keep only their real schema8 history, without inventing production releases. */
+async function publishFreshAvatarCatalogInTransaction(tx:M1Transaction){
+ const current=(await catalogRepository(tx).get('current'))!;
+ if(current.data.schemaVersion!==8||current.data.catalogRevision!=='catalog-readers-1-schema-8'||current.data.guideVersion!==2)fail('version_conflict',409,'Exact fresh schema8 predecessor required');
+ const prior=plain((await catalogRepository(tx).get('guide:world:2'))?.data.document);
+ if(typeof prior.text!=='string')fail('version_conflict',409,'Exact fresh source guide is missing');
+ const text=prior.text.replaceAll(appearanceGuide,PAPER_HUD_APPEARANCE_GUIDE)+'\n'+PAPER_HUD_OWNER_MAILBOX_GUIDE+'\n'+PUBLIC_IDENTIFIERS_GUIDE+'\n'+AVATAR_AUTHORING_GUIDE;
+ await storeDocuments(tx,3,text);
+ const data={...current.data,catalogRevision:'catalog-avatar-assets-fresh-1',skillCatalogRevision:'skills-catalog-avatar-assets-fresh-1',guideVersion:3};
+ await rememberCatalogRevision(tx,data);await catalogRepository(tx).replace({...current,version:current.version+1,data},current.version);
+}
+/** Closed-gate, exact schema7 life predecessor only. No source permission or business fact is rewritten. */
+export async function publishAvatarAssetsInTransaction(tx:M1Transaction,options:{instanceId:string;recoveryEpoch:string;operator:string;operationId:string;expectedGuideVersion:number}):Promise<JsonObject>{
+ if(!/^[A-Za-z0-9_.:@-]{1,100}$/.test(options.operator)||!/^.{8,100}$/u.test(options.operationId)||![4,8,15].includes(options.expectedGuideVersion))throw new Error('Explicit supported Avatar predecessor and stable operation required');
+ const payload:JsonObject={...options,release:'avatar-assets@1',expectedCatalogRevision:'catalog-life-a-1',revision:'catalog-avatar-assets-1',schemaVersion:8},id='admin-avatar-assets:'+key({operator:options.operator,operationId:options.operationId}),digest=key(payload),prior=await catalogRepository(tx).get(id);
+ if(prior){if(prior.data.payloadHash!==digest)fail('operation_id_conflict',409,'Original Avatar publication payload changed');return plain(prior.data.result);}
+ const current=await catalogRepository(tx).get('current');
+ if(!current||current.data.schemaVersion!==7||Number(PERCEPTION_SCHEMA_VERSION)!==8||current.data.catalogRevision!=='catalog-life-a-1'||current.data.guideVersion!==options.expectedGuideVersion)fail('version_conflict',409,'Exact schema7 life predecessor required');
+ const modules=['perception','world','profiles','items','inventory','mailbox','wallet'],version=options.expectedGuideVersion+1;
+ await rememberCatalogRevision(tx,current.data);
+ for(const moduleId of modules){const old=await catalogRepository(tx).get(`guide:${moduleId}:${options.expectedGuideVersion}`),doc=plain(old?.data.document);if(typeof doc.text!=='string'||old?.data.digest!==key(doc)||doc.text.includes(AVATAR_AUTHORING_GUIDE)||await catalogRepository(tx).get(`guide:${moduleId}:${version}`))fail('version_conflict',409,'Exact Avatar source or destination guide unavailable');const next={...doc,version,text:doc.text+'\n'+AVATAR_AUTHORING_GUIDE};await catalogRepository(tx).insert({id:`guide:${moduleId}:${version}`,version:1,data:{document:next,digest:key(next)}});}
+ const schemaIds=[...OPERATIONS.flatMap(o=>[`perception.${o.id}-query`,`perception.${o.id}-result`]),...TYPE_DEFINITIONS.flatMap(t=>[`${t.prefix}-summary`,`${t.prefix}-detail`]),'perception.error-result'];
+ for(const sid of schemaIds)if(await catalogRepository(tx).get(`schema:${sid}:8`))fail('version_conflict',409,'Exact schema8 destination already occupied');
+ await storeSchemaDocuments(tx);
+ const data={...current.data,schemaVersion:8,guideVersion:version,catalogRevision:'catalog-avatar-assets-1',skillCatalogRevision:'skills-catalog-avatar-assets-1'};
+ await rememberCatalogRevision(tx,data);await catalogRepository(tx).replace({...current,version:current.version+1,data},current.version);
+ const result:JsonObject={changed:true,catalogRevision:data.catalogRevision,guideVersion:version,schemaVersion:8,newGuideDocuments:7,newSchemaDocuments:schemaIds.length,sourceStatesPreserved:true,businessFactsChanged:false,operationId:options.operationId};
+ await catalogRepository(tx).insert({id,version:1,data:{kind:'administrative_receipt',payloadHash:digest,result}});return result;
 }

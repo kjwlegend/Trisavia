@@ -1,9 +1,10 @@
 import { loadEmailConfig, type EmailConfig } from '../infrastructure/email/resend.ts';
 import { lstatSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import {avatarStorageRoot} from './avatar-storage.ts';
 
 export interface BackendConfig {
-  email?:EmailConfig;
+  email?:EmailConfig;avatarAssetRoot:string;
   host:string;port:number;trustProxyLoopback:boolean;worldCoreEnabled:boolean;worldCoreInteractionEnabled:boolean;
   connectionString:string;identityPath:string;instanceId:string;recoveryEpoch:string;
 }
@@ -26,5 +27,5 @@ export function loadBackendConfig(env:NodeJS.ProcessEnv=process.env,cwd=process.
  try{saved=JSON.parse(privateText(identityPath)) as Record<string,unknown>;}catch{throw new Error('Identity metadata is unreadable or invalid; refusing to regenerate it');}
  if(!saved||saved.version!==1||!identifier(saved.instanceId)||!identifier(saved.recoveryEpoch))throw new Error('Identity metadata has unsupported identifiers');
  for(const [key,value]of [['M1_INSTANCE_ID',saved.instanceId],['M1_RECOVERY_EPOCH',saved.recoveryEpoch]] as const)if(env[key]!==undefined&&env[key]!==value)throw new Error('Environment identity conflicts with saved metadata');
- return {host,port,trustProxyLoopback:proxy==='1',worldCoreEnabled:worldCore==='1',worldCoreInteractionEnabled:interaction==='1',connectionString,identityPath,instanceId:saved.instanceId,recoveryEpoch:saved.recoveryEpoch,...(email?{email}:{})};
+ return {avatarAssetRoot:avatarStorageRoot(saved.instanceId,env),host,port,trustProxyLoopback:proxy==='1',worldCoreEnabled:worldCore==='1',worldCoreInteractionEnabled:interaction==='1',connectionString,identityPath,instanceId:saved.instanceId,recoveryEpoch:saved.recoveryEpoch,...(email?{email}:{})};
 }

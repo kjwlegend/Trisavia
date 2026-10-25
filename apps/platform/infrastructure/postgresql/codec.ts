@@ -1,3 +1,4 @@
+import {isCustomAvatar} from '../../domains/profile/appearance.ts';
 import type { PoolClient } from 'pg';
 import {HAIR_COLOR_IDS,CLOTHING_COLOR_IDS} from '../../domains/profile/appearance-catalog.ts';
 import { StorageError, type JsonObject, type JsonValue, type StoredRow } from '../../contracts/store.ts';
@@ -134,14 +135,15 @@ export async function writeChildren(client:PoolClient,model:Model,row:StoredRow)
       if(content.interests!=null&&(!Array.isArray(content.interests)||!content.interests.every(item=>typeof item==='string')))throw new StorageError('invalid_usage','Invalid profile interests');
       const avatar=content.avatar as JsonObject|null|undefined;
       if(avatar!=null&&(typeof avatar!=='object'||Array.isArray(avatar)))throw new StorageError('invalid_usage','Invalid profile avatar');
+      const custom=isCustomAvatar(avatar);
       const selectedLook=avatar!=null&&(Object.hasOwn(avatar,'lookId')||Object.hasOwn(avatar,'catalogVersion'));
       if(selectedLook){
         if(Object.keys(avatar!).some(key=>!['lookId','catalogVersion','hairColorId','clothingColorId'].includes(key))||typeof avatar!.lookId!=='string'||!profileLookIds.has(avatar!.lookId)||avatar!.catalogVersion!==profileCatalogVersion||avatar!.hairColorId!==undefined&&!HAIR_COLOR_IDS.includes(avatar!.hairColorId as string)||avatar!.clothingColorId!==undefined&&!CLOTHING_COLOR_IDS.includes(avatar!.clothingColorId as string))throw new StorageError('invalid_usage','Invalid profile appearance selection');
-      }else if(avatar&&Object.keys(avatar).some(key=>!['template','color'].includes(key)))throw new StorageError('invalid_usage','Unmapped avatar parameter');
+      }else if(avatar&&!custom&&Object.keys(avatar).some(key=>!['template','color'].includes(key)))throw new StorageError('invalid_usage','Unmapped avatar parameter');
       // Keep the original content, including optional/null legacy fields. The
       // mirrors describe its union branch; they never replace old avatar facts.
       await client.query(`INSERT INTO profiles.profile_contents(parent_id,stage,ordinal,display_name,bio,interests,avatar_template,avatar_color,avatar_look_id,avatar_catalog_version,content_schema_version,content_text,avatar_hair_color_id,avatar_clothing_color_id)
-        VALUES($1,$2,0,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,[row.id,split.path,content.displayName??null,content.bio??null,content.interests??null,avatar?.template??null,avatar?.color??null,selectedLook?avatar!.lookId:null,selectedLook?avatar!.catalogVersion:null,selectedLook?(avatar!.hairColorId!==undefined||avatar!.clothingColorId!==undefined?3:2):1,JSON.stringify(content),avatar?.hairColorId??null,avatar?.clothingColorId??null]);continue;
+        VALUES($1,$2,0,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,[row.id,split.path,content.displayName??null,content.bio??null,content.interests??null,avatar?.template??null,avatar?.color??null,selectedLook?avatar!.lookId:null,selectedLook?avatar!.catalogVersion:null,custom?4:selectedLook?(avatar!.hairColorId!==undefined||avatar!.clothingColorId!==undefined?3:2):1,JSON.stringify(content),avatar?.hairColorId??null,avatar?.clothingColorId??null]);continue;
     }
     if(split.mode==='snapshot'){
       let ordinal=0;for(const[key,entry]of Object.entries(value as JsonObject)){

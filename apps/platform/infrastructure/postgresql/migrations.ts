@@ -1,3 +1,4 @@
+import {AVATAR_ASSETS_MIGRATION,AVATAR_PROFILE_REFERENCE_MIGRATION} from './avatar-assets-migration.ts';
 import {LIFE_MIGRATION,LIFE_RUNTIME_MIGRATION,LIFE_BEHAVIOR_MIGRATION} from './life-migration.ts';
 import {LIFE_WALLET_MIGRATION} from './life-wallet-migration.ts';
 import {PUBLIC_IDENTIFIERS_MIGRATION} from './public-identifiers-migration.ts';
@@ -169,6 +170,7 @@ POSTGRES_MIGRATIONS.push({moduleId:'profiles',version:3,name:'bounded_hair_and_c
 POSTGRES_MIGRATIONS.push(NEW_RESIDENT_GIFT_MIGRATION);
 POSTGRES_MIGRATIONS.push(PUBLIC_IDENTIFIERS_MIGRATION);
 POSTGRES_MIGRATIONS.push(LIFE_MIGRATION,LIFE_WALLET_MIGRATION,LIFE_RUNTIME_MIGRATION,LIFE_BEHAVIOR_MIGRATION);
+POSTGRES_MIGRATIONS.push(AVATAR_ASSETS_MIGRATION,AVATAR_PROFILE_REFERENCE_MIGRATION);
 export const POSTGRES_SCHEMA_SIGNATURE=createHash('sha256').update(POSTGRES_MIGRATIONS.map(item=>`${item.moduleId}:${createHash('sha256').update(item.sql).digest('hex')}`).join('\n')).digest('hex');
 
 /** Explicit DDL-role operation; openPostgresStore never calls this. */

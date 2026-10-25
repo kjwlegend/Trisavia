@@ -1,3 +1,4 @@
+import {isCustomAvatar} from '../domains/profile/appearance.ts';
 import {assertWorldActionAllowed,worldActionPolicy,worldActionPolicyView} from '../domains/access/world-action-policy.ts';
 import {authenticateCredential} from '../domains/access/authentication.ts';
 import { mapAsync } from '../domains/common/async-collections.ts';
@@ -36,6 +37,7 @@ export interface M1Options {
     ownerMailboxRead?:(raw:unknown,token:unknown)=>Promise<JsonObject>;
     /** Composition-owned module discovery. M1 does not implement those modules. */
     gateway?: () => JsonObject;
+    avatarAssetsApi?:()=>JsonObject;
     now?: () => number;
     email?: EmailConfig;
     handoffTtlMs?: number;
@@ -230,6 +232,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
             return;
         }
         const draft = dataObject(profile.data.draft);
+        if((isCustomAvatar(published.avatar)||isCustomAvatar(draft.avatar))&&payloadHash(dataObject(draft.avatar))!==payloadHash(dataObject(published.avatar)))fail('owner_confirmation_required',403,'从自定义形象更换或恢复必须在形象工作室明确确认。');
         validatePublication(draft);
         if (actor.data.kind === "runtime") {
             for (const field of profile.data.lockedFields as string[]) {
@@ -356,7 +359,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
     } = {}): Promise<JsonObject> {
         if (action === "capabilities") {
             const gateway = options.gateway?.();
-            return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, ownerRecoveryAssistance: true, ownerEmailVerification: email.configured, ownerEmailRecovery: email.configured, emailMode: email.mode, runtimeReplacement: true, ownerAgentInvites: {version:1,oneUse:true,preview:{method:"GET",path:"/v1/agent-invites/preview",authentication:"invite-bearer",consumes:false},consume:{method:"POST",path:"/v1/agent/invitations/consume",authentication:"own-runtime",action:"consumeInvite",receiptScope:"agent:{agentId}"},handoffFragment:"invite",newRegistration:"/v1/registrations"}, defaultPublicRole: true, profileSave: "immediate-public", worldAccessPreference: true, scheduling: false, hostParticipation: HOST_PARTICIPATION_GUIDANCE, perception: true, perceptionApi: await perception.capabilities(), walletApi: wallet.capabilities(), ...(options.ownerMailboxRead?{ownerMailboxApi:{version:1,method:"POST",path:"/v1/owner/agents/:agentId/mailbox/query",boxes:["received","sent"],search:"currently-authorized-list-metadata",defaultLimit:20,maxLimit:50,readOnly:true,confirmation:false}}:{}), interaction: Array.isArray(gateway?.modules) && gateway.modules.includes("interaction"), ...(gateway ? { gateway } : {}), operations: FOUNDATION_HTTP_OPERATIONS.filter(operation=>operation.action!=="queryOwnerMailbox"||!!options.ownerMailboxRead).map((operation) => ({ ...operation, actors: [...operation.actors], receiptScopes: { ...operation.receiptScopes }, requiredVersions: [...operation.requiredVersions] })) };
+            return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, ownerRecoveryAssistance: true, ownerEmailVerification: email.configured, ownerEmailRecovery: email.configured, emailMode: email.mode, runtimeReplacement: true, ownerAgentInvites: {version:1,oneUse:true,preview:{method:"GET",path:"/v1/agent-invites/preview",authentication:"invite-bearer",consumes:false},consume:{method:"POST",path:"/v1/agent/invitations/consume",authentication:"own-runtime",action:"consumeInvite",receiptScope:"agent:{agentId}"},handoffFragment:"invite",newRegistration:"/v1/registrations"}, defaultPublicRole: true, profileSave: "immediate-public", worldAccessPreference: true, scheduling: false, hostParticipation: HOST_PARTICIPATION_GUIDANCE, perception: true, perceptionApi: await perception.capabilities(), walletApi: wallet.capabilities(), ...(options.ownerMailboxRead?{ownerMailboxApi:{version:1,method:"POST",path:"/v1/owner/agents/:agentId/mailbox/query",boxes:["received","sent"],search:"currently-authorized-list-metadata",defaultLimit:20,maxLimit:50,readOnly:true,confirmation:false}}:{}), interaction: Array.isArray(gateway?.modules) && gateway.modules.includes("interaction"), ...(gateway ? { gateway } : {}), ...(options.avatarAssetsApi?{avatarAssetsApi:options.avatarAssetsApi()}:{}), operations: FOUNDATION_HTTP_OPERATIONS.filter(operation=>operation.action!=="queryOwnerMailbox"||!!options.ownerMailboxRead).map((operation) => ({ ...operation, actors: [...operation.actors], receiptScopes: { ...operation.receiptScopes }, requiredVersions: [...operation.requiredVersions] })) };
         }
         if (action === "catalog")
             return avatarCatalog();
@@ -800,6 +803,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     else
                         await businessWrite(tx, actor, agentId);
                     if (action === "saveDraft" || action === "saveProfile") {
+                        if(isCustomAvatar(dataObject(profile.data.published).avatar)&&input.fields&&typeof input.fields==='object'&&!Array.isArray(input.fields)&&Object.hasOwn(input.fields,'avatar'))fail('owner_confirmation_required',403,'从自定义形象恢复内置必须在形象工作室确认。');
                         const fields = validateFields(input.fields) as JsonObject;
                         const removeFields = validateRemoveFields(input.removeFields);
                         if (removeFields.some((field) => Object.hasOwn(fields, field)))

@@ -1,3 +1,4 @@
+import {createAvatarAssetRepository} from './avatar-assets-repository.ts';
 import {createLifeRepository,readCompletedWorkRewardSource} from './life-repository.ts';
 import {createLifeWalletRepository} from './life-wallet-repository.ts';
 import {LIFE_RULES} from '../../domains/life/catalog.ts';
@@ -30,7 +31,7 @@ export function runtimeIdentitySession(context:RuntimeReadContext):M1ReadSession
 export function createPostgresRuntimeContext(scope:PostgresScope,options:OpenRuntimeStoreOptions):RuntimeTransaction{
  const sql=runtimeSql(scope,options.now??Date.now),legacy=createPostgresSession(scope.client,false,scope.alive);
  const core=createRuntimeRepositories(sql,options.recoveryEpoch);
- const adapters=[createLifeRepository(sql),createLifeWalletRepository(sql,{catalog:LIFE_RULES,readCompletedWorkRewardSource:id=>readCompletedWorkRewardSource(sql,id)}),createPublicIdentifierRepository(scope.client,scope.write,scope.alive),createWorldRepository(sql),createInteractionRepository(sql),createDecisionRepository(sql,options.recoveryEpoch),createRelationshipsRepository(sql),createBehaviorRepository(sql),createTownRepository(sql),createServiceInventoryRepository(sql),createOwnerMailboxRepository(sql),createWelcomeCreditRepository(sql),createResidentGiftRepository(sql)];
+ const adapters=[createAvatarAssetRepository(sql),createLifeRepository(sql),createLifeWalletRepository(sql,{catalog:LIFE_RULES,readCompletedWorkRewardSource:id=>readCompletedWorkRewardSource(sql,id)}),createPublicIdentifierRepository(scope.client,scope.write,scope.alive),createWorldRepository(sql),createInteractionRepository(sql),createDecisionRepository(sql,options.recoveryEpoch),createRelationshipsRepository(sql),createBehaviorRepository(sql),createTownRepository(sql),createServiceInventoryRepository(sql),createOwnerMailboxRepository(sql),createWelcomeCreditRepository(sql),createResidentGiftRepository(sql)];
  const repositories=new Map<object,{reader:unknown;writer:unknown}>();
  for(const adapter of adapters)repositories.set(adapter.port,{reader:Object.freeze(adapter.reader),writer:Object.freeze(adapter.writer)});
  const base={instanceId:options.instanceId,recoveryEpoch:options.recoveryEpoch,now:sql.now,

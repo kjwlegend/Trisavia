@@ -1,3 +1,4 @@
+import {AVATAR_ASSETS_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/avatar-assets-migration.ts';
 import {LIFE_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/life-migration.ts';
 import {LIFE_WALLET_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/life-wallet-migration.ts';
 import {PUBLIC_IDENTIFIERS_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/public-identifiers-migration.ts';
@@ -11,7 +12,7 @@ import { applicationSchemas } from './postgresql/permissions.ts';
 import { checkedWorldDatabase } from './world-core-database.ts';
 import { migratePostgres, POSTGRES_SCHEMA_SIGNATURE } from '../apps/platform/infrastructure/postgresql/migrations.ts';
 
-export const worldCoreSchemas=[...applicationSchemas,'runtime','world','interaction','decision','behavior','town_services','public_identifiers','life'] as const;
+export const worldCoreSchemas=[...applicationSchemas,'runtime','world','interaction','decision','behavior','town_services','public_identifiers','life','avatar_assets'] as const;
 /** Maintenance entry only. The application role cannot migrate or alter identity/write gates. */
 export async function grantWorldCorePermissions(config:RuntimeConfig,database:string):Promise<void>{
  checkedWorldDatabase(database);const old=applicationSchemas.join(','),added='runtime,world,interaction,decision,behavior';
@@ -28,6 +29,7 @@ export async function grantWorldCorePermissions(config:RuntimeConfig,database:st
  ${TOWN_PERMISSIONS_SQL}
  ${NEW_RESIDENT_GIFT_PERMISSIONS_SQL}
  ${PUBLIC_IDENTIFIERS_PERMISSIONS_SQL}
+ ${AVATAR_ASSETS_PERMISSIONS_SQL}
  ${LIFE_PERMISSIONS_SQL}
  ${LIFE_WALLET_PERMISSIONS_SQL}
  COMMIT;`;

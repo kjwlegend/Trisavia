@@ -1,3 +1,5 @@
+import type {CustomAvatar} from '../avatar-assets/types.ts';
+import {publicAvatarFilePath} from '../avatar-assets/types.ts';
 import type {JsonObject} from '../../contracts/store.ts';
 import {fail,object} from '../common/errors.ts';
 import {APPEARANCE_CATALOG_VERSION,APPEARANCE_LOOKS,DEFAULT_LOOK_ID,LEGACY_HAIR_ORDER,HAIR_COLOR_IDS,CLOTHING_COLOR_IDS} from './appearance-catalog.ts';
@@ -5,8 +7,11 @@ import {APPEARANCE_CATALOG_VERSION,APPEARANCE_LOOKS,DEFAULT_LOOK_ID,LEGACY_HAIR_
 export const LEGACY_AVATAR_COLORS=['olive','cream','blue','coral'] as const;
 export type SelectedAvatar=JsonObject&{lookId:string;catalogVersion:string;hairColorId?:string;clothingColorId?:string};
 export interface LegacyAvatar extends JsonObject {template:'basic';color:string}
-export type ProfileAvatar=SelectedAvatar|LegacyAvatar;
-export const PROFILE_AVATAR_SCHEMA:JsonObject={oneOf:[{type:'object',additionalProperties:false,required:['lookId','catalogVersion'],properties:{lookId:{type:'string',minLength:1,maxLength:100},catalogVersion:{type:'string',minLength:1,maxLength:100},hairColorId:{enum:HAIR_COLOR_IDS},clothingColorId:{enum:CLOTHING_COLOR_IDS}}},{type:'object',additionalProperties:false,required:['template','color'],properties:{template:{const:'basic'},color:{enum:[...LEGACY_AVATAR_COLORS,'amber']}}}]};
+export type ProfileAvatar=SelectedAvatar|LegacyAvatar|CustomAvatar;
+export const BUILTIN_PROFILE_AVATAR_SCHEMA:JsonObject={oneOf:[{type:'object',additionalProperties:false,required:['lookId','catalogVersion'],properties:{lookId:{type:'string',minLength:1,maxLength:100},catalogVersion:{type:'string',minLength:1,maxLength:100},hairColorId:{enum:HAIR_COLOR_IDS},clothingColorId:{enum:CLOTHING_COLOR_IDS}}},{type:'object',additionalProperties:false,required:['template','color'],properties:{template:{const:'basic'},color:{enum:[...LEGACY_AVATAR_COLORS,'amber']}}}]};
+export const CUSTOM_AVATAR_SCHEMA:JsonObject={type:'object',additionalProperties:false,required:['kind','assetId','version','digest','manifestUrl'],properties:{kind:{const:'custom'},assetId:{type:'string',pattern:'^[a-f0-9-]{36}$'},version:{const:1},digest:{type:'string',pattern:'^[a-f0-9]{64}$'},manifestUrl:{type:'string',maxLength:250,pattern:'^/v1/avatar-assets/public/[a-f0-9-]{36}/1/[a-f0-9]{64}/manifest\\.json$'}}};
+export const PROFILE_AVATAR_SCHEMA:JsonObject={oneOf:[...(BUILTIN_PROFILE_AVATAR_SCHEMA.oneOf as JsonObject[]),CUSTOM_AVATAR_SCHEMA]};
+export function isCustomAvatar(value:unknown):value is CustomAvatar{if(!value||typeof value!=='object'||Array.isArray(value))return false;const v=value as Record<string,unknown>;return v.kind==='custom'&&typeof v.assetId==='string'&&/^[a-f0-9-]{36}$/.test(v.assetId)&&v.version===1&&typeof v.digest==='string'&&/^[a-f0-9]{64}$/.test(v.digest)&&v.manifestUrl===publicAvatarFilePath(v.assetId,v.digest,'manifest.json')&&Object.keys(v).every(k=>['kind','assetId','version','digest','manifestUrl'].includes(k));}
 export interface LegacyAvatarIdentity {readonly avatarId:string}
 /** Implemented by composition on the same guarded session; never an authority supplied by HTTP input. */
 export type LegacyAvatarIdentityReader<Context>=(context:Context,input:{agentId:string;worldId:'default'})=>Promise<LegacyAvatarIdentity|null>;
@@ -28,6 +33,7 @@ export function validateAvatarInput(value:unknown):ProfileAvatar {
 export function projectAvatar(value:unknown):ProfileAvatar|null {
  if(!value||typeof value!=='object'||Array.isArray(value))return null;
  const input=value as Record<string,unknown>;
+ if(isCustomAvatar(input))return {...input};
  if(typeof input.lookId==='string'&&input.lookId.length>0&&input.lookId.length<=100&&typeof input.catalogVersion==='string'&&input.catalogVersion.length>0&&input.catalogVersion.length<=100)return {lookId:input.lookId,catalogVersion:input.catalogVersion,...(typeof input.hairColorId==='string'?{hairColorId:input.hairColorId}:{}),...(typeof input.clothingColorId==='string'?{clothingColorId:input.clothingColorId}:{})};
  if(input.template==='basic'&&typeof input.color==='string'&&[...LEGACY_AVATAR_COLORS,'amber'].includes(input.color))return {template:'basic',color:input.color};
  return null;
@@ -37,7 +43,7 @@ export function needsLegacyAvatarIdentity(value:unknown):boolean {
 }
 /** Resolves historical presentation without changing the saved profile, Agent or World Avatar. */
 export function resolveAppearance(value:unknown,identity:LegacyAvatarIdentity|null=null):ProfileAvatar|null {
- const avatar=projectAvatar(value);if(!avatar||typeof avatar.lookId==='string')return avatar;
+ const avatar=projectAvatar(value);if(!avatar||isCustomAvatar(avatar)||typeof avatar.lookId==='string')return avatar;
  let hair:string|undefined=avatar.color==='blue'?'curlyhair':avatar.color==='amber'?'longhair':undefined;
  if(!hair&&identity&&typeof identity.avatarId==='string'&&identity.avatarId.length){let index=0;for(const char of identity.avatarId)index=(index*31+char.charCodeAt(0))>>>0;hair=LEGACY_HAIR_ORDER[index%LEGACY_HAIR_ORDER.length];}
  return hair?{lookId:`sunnyside-human-${hair}`,catalogVersion:APPEARANCE_CATALOG_VERSION}:avatar;

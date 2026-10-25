@@ -3,7 +3,7 @@ import type {GatewayGuide,GatewayOperation,GatewayPublicRead} from './agent-gate
 import type {createWorldService} from './world-service.ts';
 import {currentTownNpcSchema} from './agent-gateway-town-frozen-v3.ts';
 import {CURRENT_WORLD_MAP_TOWN_GUIDE} from './agent-town-services-guide.ts';
-import {PROFILE_AVATAR_SCHEMA} from '../domains/profile/appearance.ts';
+import {BUILTIN_PROFILE_AVATAR_SCHEMA as PROFILE_AVATAR_SCHEMA} from '../domains/profile/appearance.ts';
 import {CURRENT_TEXT_EXCHANGE_GUIDE} from './agent-human-voice.ts';
 import {CURRENT_HOURLY_HUMAN_GUIDE,CURRENT_HOURLY_AUTONOMY_GUIDE,HOURLY_HOST_GUIDE} from './agent-hourly-participation-guide.ts';
 const string:JsonObject={type:'string',minLength:1,maxLength:100},integer:JsonObject={type:'integer',minimum:1},timestamp:JsonObject={type:'integer'},nullableString:JsonObject={anyOf:[string,{type:'null'}]};

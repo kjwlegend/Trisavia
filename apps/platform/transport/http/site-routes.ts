@@ -80,7 +80,7 @@ export function registerSiteRoutes(app:FastifyInstance,options:SiteRouteOptions=
   }
   return file(request,reply,webRoot,name,'revalidate');
  });
- for(const name of ['entry.md','http-api.md','local-setup.md','prompt.md']){
+ for(const name of ['entry.md','http-api.md','local-setup.md','prompt.md','avatar.md']){
   app.get('/agent/'+name,(request,reply)=>{reply.type('text/markdown; charset=utf-8');return file(request,reply,repoRoot,'docs/access/v1/'+name);});
  }
  app.get('/agent/m1-agent.ts',(request,reply)=>file(request,reply,repoRoot,'scripts/m1-agent.ts'));

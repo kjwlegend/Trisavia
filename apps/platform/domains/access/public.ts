@@ -22,6 +22,7 @@ export interface IdentityAccess<Context extends object>{
  authenticate(context:Context,bearer:unknown,allowedKinds:readonly ('runtime'|'owner_session')[]):Promise<Principal>;
  authorizeAgent(context:Context,principal:Principal,agentId:string):Promise<AgentAuthority>;
  readParticipation(context:Context,agentId:string):Promise<AgentParticipation>;
+ readCurrentManagementBinding?(context:Context,agentId:string):Promise<{ownerId:string;bindingId:string;bindingVersion:number}|null>;
  captureExecutionAuthority?(context:Context,principal:Principal):Promise<ExecutionAuthority>;
  validateExecutionAuthority?(context:Context,reference:ExecutionAuthority):Promise<void>;
  /** Current public profile permission, without inventing an Agent or Owner principal. */

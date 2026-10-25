@@ -41,6 +41,7 @@ export function createIdentityAccess<Context extends object>(options:{session:(c
    const reference=binding?{id:binding.id,version:binding.version}:null;
    return Object.freeze({agentId,binding:reference,authorizationVersion:payloadHash({principal:principal.authorizationVersion,agentId,binding:reference})});
   },
+  async readCurrentManagementBinding(context,agentId){const tx=options.session(context),rows=await managementBindingRepository(tx).pageByActiveAndAgentId(true,agentId,{limit:2});if(rows.length!==1)return null;const b=rows[0]!,owner=await humanAccountRepository(tx).get(String(b.data.ownerId));return owner?.data.status==='active'&&owner.data.epoch===options.recoveryEpoch?{ownerId:String(b.data.ownerId),bindingId:b.id,bindingVersion:b.version}:null;},
   async readParticipation(context,agentId){
    const tx=options.session(context),agent=await agentRepository(tx).get(agentId),member=await membershipRepository(tx).get(agentId);
    if(!agent||!member)fail('target_not_accessible',404,'Target is not accessible');

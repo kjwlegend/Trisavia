@@ -1,7 +1,7 @@
 import type { JsonObject } from '../../contracts/store.ts';
 import {PROFILE_AVATAR_SCHEMA} from '../profile/appearance.ts';
 const str=(max=180,min=1):JsonObject=>({type:'string',minLength:min,maxLength:max});
-export const PERCEPTION_SCHEMA_VERSION=7;
+export const PERCEPTION_SCHEMA_VERSION=8;
 const num=(min=1,max=Number.MAX_SAFE_INTEGER):JsonObject=>({type:'integer',minimum:min,maximum:max});
 const nullable=(schema:JsonObject):JsonObject=>({anyOf:[schema,{type:'null'}]});
 const obj=(properties:JsonObject,required=Object.keys(properties)):JsonObject=>({type:'object',properties,required,additionalProperties:false});
