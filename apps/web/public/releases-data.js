@@ -1,6 +1,15 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.4.4',
+    date: '2026-10-25',
+    status: '已完成',
+    title: '修复更新指引后的启动检查',
+    highlights: [
+      {category: '修复', title: '新指引发布后继续启动小镇', description: '修正新参与指引目录发布后，生活模块的启动检查仍只识别旧目录、导致小镇服务无法启动的问题；保留原角色、生活进度与已发布指南。'},
+    ],
+  },
+  {
     version: '0.4.3',
     date: '2026-10-25',
     status: '已完成',
