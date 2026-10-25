@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "type": "trisavia-avatar-strips",
+  "frame": {
+    "width": 96,
+    "height": 64,
+    "foot": {
+      "x": 48,
+      "y": 39
+    }
+  },
+  "facing": {
+    "default": "right",
+    "left": "mirror-about-foot",
+    "vertical": "keep-last-horizontal"
+  },
+  "clips": {
+    "idle": {
+      "file": "idle.png",
+      "frames": 9,
+      "frameMs": 125
+    },
+    "walk": {
+      "file": "walk.png",
+      "frames": 8,
+      "frameMs": 100
+    }
+  },
+  "fallback": {
+    "work": "idle",
+    "rest": "idle"
+  }
+}
