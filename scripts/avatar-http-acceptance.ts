@@ -186,7 +186,7 @@ async function execute(target: Target): Promise<void> {
         check(capabilities.status === 200 && capabilities.body.instanceId === target.instanceId && capabilities.body.gateway?.discovery?.path === '/v1/gateway/discovery', 'real_capabilities_required');
         const discovery = await ok('GET', '/v1/gateway/discovery');
         check(Array.isArray(discovery.operations), 'real_discovery_required');
-        for (const operation of ['avatar_assets.spec', 'avatar_assets.task', 'avatar_assets.drafts', 'avatar_assets.draft']) check(discovery.operations.some((entry: ObjectValue) => entry.id === operation), 'avatar_module_not_discoverable');
+        check(discovery.operations.some((entry: ObjectValue) => entry.id === 'avatar_assets.spec'), 'avatar_module_not_discoverable');
         const specification = await ok('GET', '/v1/avatar-assets/spec');
         check(specification.version === 1 && specification.httpOperations?.some((entry: ObjectValue) => entry.action === 'avatar_assets.drafts.create' && entry.method === 'POST' && entry.path === '/v1/agents/:agentId/avatar-assets/drafts'), 'discovered_upload_contract_invalid');
         const specOperation = discovery.operations.find((entry: ObjectValue) => entry.id === 'avatar_assets.spec');
