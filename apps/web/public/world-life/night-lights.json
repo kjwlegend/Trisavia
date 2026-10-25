@@ -1,0 +1,499 @@
+{
+  "id": "m3-b-night-lighting-v1",
+  "coordinateSpace": "Town3 source pixels; not grid cells",
+  "sourceSize": [
+    1536,
+    1152
+  ],
+  "layoutSource": "apps/web/public/world-map-life-v1.json",
+  "layoutSha256": "740961688871187a4d058a00822073283bc19642508ff128229c4420cb60b4b0",
+  "worldMapping": {
+    "origin": [
+      520,
+      520
+    ],
+    "cellSize": 16
+  },
+  "palette": {
+    "night": {
+      "color": [
+        12,
+        20,
+        38
+      ],
+      "opacity": 0.7,
+      "people": 1.12
+    },
+    "day": "unchanged",
+    "dusk": "unchanged"
+  },
+  "lightModel": {
+    "warmColor": "#ffd18a",
+    "coreColor": "#ffe6b3",
+    "darknessFloor": 0.2,
+    "coreSize": [
+      4,
+      3
+    ],
+    "falloffStops": [
+      [
+        0,
+        1
+      ],
+      [
+        0.28,
+        0.72
+      ],
+      [
+        0.65,
+        0.22
+      ],
+      [
+        1,
+        0
+      ]
+    ],
+    "flicker": false
+  },
+  "cache": {
+    "resolution": [
+      768,
+      576
+    ],
+    "layers": [
+      "darkness-mask",
+      "warm-tint"
+    ],
+    "rgbaBytesTotal": 3538944,
+    "buildWhen": "layout/light manifest or theme changes only",
+    "perFrame": "at most 2 cached drawImage calls + small emitter cores; no gradients/blur/readback",
+    "dispose": "clear both caches on town teardown; no time-based reallocation",
+    "hud": "not affected"
+  },
+  "lights": [
+    {
+      "id": "existing-lamp-01",
+      "sourcePropId": "north-lamp",
+      "kind": "existing-street",
+      "groundAnchor": [
+        616,
+        472
+      ],
+      "emitterOffset": [
+        0,
+        -20
+      ],
+      "radius": 56,
+      "clearance": 0.64,
+      "warmAlpha": 0.1,
+      "purpose": "保留原有街灯，重复旧ID以坐标识别"
+    },
+    {
+      "id": "existing-lamp-02",
+      "sourcePropId": "garden-lamp",
+      "kind": "existing-street",
+      "groundAnchor": [
+        472,
+        840
+      ],
+      "emitterOffset": [
+        0,
+        -20
+      ],
+      "radius": 56,
+      "clearance": 0.64,
+      "warmAlpha": 0.1,
+      "purpose": "保留原有街灯，重复旧ID以坐标识别"
+    },
+    {
+      "id": "existing-lamp-03",
+      "sourcePropId": "west-lamp",
+      "kind": "existing-street",
+      "groundAnchor": [
+        472,
+        760
+      ],
+      "emitterOffset": [
+        0,
+        -20
+      ],
+      "radius": 56,
+      "clearance": 0.64,
+      "warmAlpha": 0.1,
+      "purpose": "保留原有街灯，重复旧ID以坐标识别"
+    },
+    {
+      "id": "existing-lamp-04",
+      "sourcePropId": "port-lamp",
+      "kind": "existing-street",
+      "groundAnchor": [
+        1224,
+        536
+      ],
+      "emitterOffset": [
+        0,
+        -20
+      ],
+      "radius": 56,
+      "clearance": 0.64,
+      "warmAlpha": 0.1,
+      "purpose": "保留原有街灯，重复旧ID以坐标识别"
+    },
+    {
+      "id": "existing-lamp-05",
+      "sourcePropId": "port-lamp-2",
+      "kind": "existing-street",
+      "groundAnchor": [
+        1224,
+        904
+      ],
+      "emitterOffset": [
+        0,
+        -20
+      ],
+      "radius": 56,
+      "clearance": 0.64,
+      "warmAlpha": 0.1,
+      "purpose": "保留原有街灯，重复旧ID以坐标识别"
+    },
+    {
+      "id": "existing-lamp-06",
+      "sourcePropId": "plateau-lamp",
+      "kind": "existing-street",
+      "groundAnchor": [
+        744,
+        248
+      ],
+      "emitterOffset": [
+        0,
+        -20
+      ],
+      "radius": 56,
+      "clearance": 0.64,
+      "warmAlpha": 0.1,
+      "purpose": "保留原有街灯，重复旧ID以坐标识别"
+    },
+    {
+      "id": "existing-lamp-07",
+      "sourcePropId": "garden-lamp",
+      "kind": "existing-street",
+      "groundAnchor": [
+        264,
+        856
+      ],
+      "emitterOffset": [
+        0,
+        -20
+      ],
+      "radius": 56,
+      "clearance": 0.64,
+      "warmAlpha": 0.1,
+      "purpose": "保留原有街灯，重复旧ID以坐标识别"
+    },
+    {
+      "id": "commons-nw",
+      "kind": "verge",
+      "groundAnchor": [
+        496,
+        496
+      ],
+      "emitterOffset": [
+        0,
+        -20
+      ],
+      "radius": 60,
+      "clearance": 0.62,
+      "warmAlpha": 0.1,
+      "purpose": "公共庭西北交叉口"
+    },
+    {
+      "id": "commons-ne",
+      "kind": "verge",
+      "groundAnchor": [
+        784,
+        496
+      ],
+      "emitterOffset": [
+        0,
+        -20
+      ],
+      "radius": 60,
+      "clearance": 0.62,
+      "warmAlpha": 0.1,
+      "purpose": "公共庭东北交叉口"
+    },
+    {
+      "id": "commons-se",
+      "kind": "verge",
+      "groundAnchor": [
+        784,
+        784
+      ],
+      "emitterOffset": [
+        0,
+        -20
+      ],
+      "radius": 60,
+      "clearance": 0.62,
+      "warmAlpha": 0.1,
+      "purpose": "公共庭东南交叉口"
+    },
+    {
+      "id": "west-workshop",
+      "kind": "wall",
+      "groundAnchor": [
+        330,
+        582
+      ],
+      "emitterOffset": [
+        0,
+        0
+      ],
+      "radius": 42,
+      "clearance": 0.62,
+      "warmAlpha": 0.14,
+      "purpose": "木作工坊门侧"
+    },
+    {
+      "id": "west-bakery",
+      "kind": "wall",
+      "groundAnchor": [
+        330,
+        710
+      ],
+      "emitterOffset": [
+        0,
+        0
+      ],
+      "radius": 42,
+      "clearance": 0.62,
+      "warmAlpha": 0.14,
+      "purpose": "麦香炉屋门侧"
+    },
+    {
+      "id": "market",
+      "kind": "wall",
+      "groundAnchor": [
+        862,
+        566
+      ],
+      "emitterOffset": [
+        0,
+        0
+      ],
+      "radius": 42,
+      "clearance": 0.62,
+      "warmAlpha": 0.14,
+      "purpose": "杂货铺门侧"
+    },
+    {
+      "id": "bridge-north-west",
+      "kind": "verge",
+      "groundAnchor": [
+        974,
+        514
+      ],
+      "emitterOffset": [
+        0,
+        -20
+      ],
+      "radius": 62,
+      "clearance": 0.68,
+      "warmAlpha": 0.1,
+      "purpose": "北汊木桥西桥头；东桥头由原港区灯覆盖"
+    },
+    {
+      "id": "bridge-south-west",
+      "kind": "verge",
+      "groundAnchor": [
+        974,
+        950
+      ],
+      "emitterOffset": [
+        0,
+        -20
+      ],
+      "radius": 62,
+      "clearance": 0.68,
+      "warmAlpha": 0.1,
+      "purpose": "南汊石桥西桥头"
+    },
+    {
+      "id": "bridge-south-east",
+      "kind": "verge",
+      "groundAnchor": [
+        1238,
+        950
+      ],
+      "emitterOffset": [
+        0,
+        -20
+      ],
+      "radius": 62,
+      "clearance": 0.68,
+      "warmAlpha": 0.1,
+      "purpose": "南汊石桥东桥头"
+    },
+    {
+      "id": "pier-approach",
+      "kind": "verge",
+      "groundAnchor": [
+        1268,
+        672
+      ],
+      "emitterOffset": [
+        0,
+        -20
+      ],
+      "radius": 58,
+      "clearance": 0.62,
+      "warmAlpha": 0.1,
+      "purpose": "木栈台岸侧入口，不站在栈桥通行中线"
+    },
+    {
+      "id": "warehouse-door",
+      "kind": "wall",
+      "groundAnchor": [
+        1294,
+        532
+      ],
+      "emitterOffset": [
+        0,
+        0
+      ],
+      "radius": 42,
+      "clearance": 0.62,
+      "warmAlpha": 0.14,
+      "purpose": "仓棚门侧"
+    },
+    {
+      "id": "tavern-door",
+      "kind": "wall",
+      "groundAnchor": [
+        1376,
+        694
+      ],
+      "emitterOffset": [
+        0,
+        0
+      ],
+      "radius": 44,
+      "clearance": 0.62,
+      "warmAlpha": 0.14,
+      "purpose": "港湾酒馆门侧"
+    },
+    {
+      "id": "inn-door",
+      "kind": "wall",
+      "groundAnchor": [
+        948,
+        628
+      ],
+      "emitterOffset": [
+        0,
+        0
+      ],
+      "radius": 44,
+      "clearance": 0.62,
+      "warmAlpha": 0.14,
+      "purpose": "石岸旅舍门侧"
+    },
+    {
+      "id": "fisher-door",
+      "kind": "wall",
+      "groundAnchor": [
+        970,
+        774
+      ],
+      "emitterOffset": [
+        0,
+        0
+      ],
+      "radius": 44,
+      "clearance": 0.62,
+      "warmAlpha": 0.14,
+      "purpose": "渔人小铺门侧"
+    },
+    {
+      "id": "hall-door",
+      "kind": "wall",
+      "groundAnchor": [
+        574,
+        230
+      ],
+      "emitterOffset": [
+        0,
+        0
+      ],
+      "radius": 46,
+      "clearance": 0.62,
+      "warmAlpha": 0.14,
+      "purpose": "山台会馆门侧"
+    },
+    {
+      "id": "library-door",
+      "kind": "wall",
+      "groundAnchor": [
+        860,
+        454
+      ],
+      "emitterOffset": [
+        0,
+        0
+      ],
+      "radius": 42,
+      "clearance": 0.62,
+      "warmAlpha": 0.14,
+      "purpose": "蓝檐书屋门侧"
+    },
+    {
+      "id": "garden-pavilion",
+      "kind": "wall",
+      "groundAnchor": [
+        176,
+        934
+      ],
+      "emitterOffset": [
+        0,
+        0
+      ],
+      "radius": 44,
+      "clearance": 0.62,
+      "warmAlpha": 0.14,
+      "purpose": "花径凉亭檐下"
+    },
+    {
+      "id": "plateau-stairs-east",
+      "kind": "verge",
+      "groundAnchor": [
+        814,
+        352
+      ],
+      "emitterOffset": [
+        0,
+        -20
+      ],
+      "radius": 60,
+      "clearance": 0.62,
+      "warmAlpha": 0.1,
+      "purpose": "双幅石阶东侧"
+    },
+    {
+      "id": "plateau-stairs-west",
+      "kind": "verge",
+      "groundAnchor": [
+        392,
+        360
+      ],
+      "emitterOffset": [
+        0,
+        -20
+      ],
+      "radius": 60,
+      "clearance": 0.62,
+      "warmAlpha": 0.1,
+      "purpose": "林边缓阶西侧"
+    }
+  ],
+  "placementPolicy": "decorative light fixtures only; do not edit world masks, collisions, walkable version or station capacity; wall lights do not create posts in paths"
+}

@@ -5,6 +5,7 @@ import {createPixelRenderLayer} from './render-layer.js';
 import {HUMAN_GEOMETRY,drawHuman,drawHumanFoot,receivePosition,advancePosition} from './human.js';
 import {PIXEL_MAP,pixelPoint,PIXEL_LAYOUT_SHA256} from './map.js';
 import {createTownV2Art} from './town-v2-art.js';
+import {createNightLighting} from './night-lighting.js';
 export {PIXEL_LAYOUT_SHA256};
 export const COMMONS_PLACE=Object.freeze({kind:'world-place',id:'commons',name:'公共庭',area:'小镇',icon:'○',x:640,y:768,w:256,h:256,anchor:{x:128,y:256},description:'小镇中央的公共庭。角色的实际地点以当前服务器位置与场所记录为准。',note:'建筑室内尚未开放。'});
 const cancelled=()=>new DOMException('Pixel town cancelled','AbortError');
@@ -13,8 +14,8 @@ export function validatePixelLayout(layout,kit){
  return layout;
 }
 export function createPixelTown(assets,layout,{makeCanvas=()=>document.createElement('canvas'),lifeAssets=null}={}){
- validatePixelLayout(layout,assets.kit);const art=createTownV2Art(assets,layout,{makeCanvas}),npcs=[],serviceTargets=[],npcEntries=new Map(),lifeTargets=lifePlaceTargets();
- const objects=art.objects.map(object=>object.id==='g-lodge'?{...object,draw(ctx,frame){ctx.save();if(fadeGardenBuilding(frame,npcs))ctx.globalAlpha=.28;object.draw(ctx,frame);ctx.restore();}}:object);if(lifeAssets)objects.push(...lifeStationObjects(lifeAssets,npcs));
+ validatePixelLayout(layout,assets.kit);const art=createTownV2Art(assets,layout,{makeCanvas}),night=createNightLighting({makeCanvas}),npcs=[],serviceTargets=[],npcEntries=new Map(),lifeTargets=lifePlaceTargets();
+ const objects=art.objects.map(object=>object.id==='g-lodge'?{...object,draw(ctx,frame){ctx.save();if(fadeGardenBuilding(frame,npcs))ctx.globalAlpha=.28;object.draw(ctx,frame);ctx.restore();}}:object);objects.push(...night.objects);if(lifeAssets)objects.push(...lifeStationObjects(lifeAssets,npcs));
  const places=[COMMONS_PLACE,...layout.buildings.map(b=>({kind:'world-place',id:b.id,name:b.name,area:layout.districts.find(d=>d.id===b.district)?.name?.replace(/^[ABC] · /u,'')||'小镇',icon:'⌂',x:b.topLeft[0]+b.size[0]/2,y:b.groundAnchor[1],w:b.size[0],h:b.size[1],anchor:{x:b.size[0]/2,y:b.groundAnchor[1]-b.topLeft[1]},description:'可到达建筑门前。室内和相关服务尚未开放。',note:'建筑外观不表示角色已到达或拥有该建筑。'}))];
  const layer=createPixelRenderLayer({assets,avatarGeometry:HUMAN_GEOMETRY,objects,places,drawAvatar(ctx,entry,frame){ctx.save();ctx.filter=`brightness(${frame.lighting?.people??1})`;if(!drawLifeHuman(ctx,entry,frame,assets,lifeAssets))drawHuman(ctx,entry,frame,assets);ctx.restore();},drawSelection:(ctx,entry,_scale,frame)=>drawHumanFoot(ctx,entry,true,frame?.theme),drawGround(ctx,frame){ctx.fillStyle='#839e65';ctx.fillRect(frame.viewport.left-16,frame.viewport.top-16,frame.viewport.right-frame.viewport.left+32,frame.viewport.bottom-frame.viewport.top+32);ctx.drawImage(art.ground,0,0);for(const entry of frame.avatars)drawHumanFoot(ctx,entry);}});
  return{...layer,projectAvatars(rows,rules){const legal=p=>layout.walkableMask[p.y-layout.bounds.minY]?.[p.x-layout.bounds.minX]==='1';for(const row of rows)if(!legal(row.position)||row.motion&&(!legal(row.motion.from)||!legal(row.motion.to)))throw new Error('pixel_position_unopened');return layer.projectAvatars(rows,rules);},buildingCount:31,sourceVersion:assets.kit.version,imageCount:assets.images.size,npcs,serviceTargets,
@@ -34,8 +35,9 @@ export function createPixelTown(assets,layout,{makeCanvas=()=>document.createEle
    }));
   },
   setNotice(data,rules){serviceTargets.length=0;if(data){const notice=data.notice,point=pixelPoint(notice.position,rules);serviceTargets.push({kind:'town-notice',id:notice.objectId,name:notice.name,area:'小镇公告',icon:'▤',...point,w:20,h:32,anchor:{x:10,y:31},townNotice:data});}},
-  drawEffects(ctx,frame){const light=frame.lighting;if(light.opacity>0){ctx.fillStyle=`rgba(${light.color.join(',')},${light.opacity})`;ctx.fillRect(frame.viewport.left-16,frame.viewport.top-16,frame.viewport.right-frame.viewport.left+32,frame.viewport.bottom-frame.viewport.top+32);}art.drawLamps(ctx,light.lamps);},
-  dispose(){art.dispose();assets.dispose();lifeAssets?.dispose();npcEntries.clear();npcs.length=0;serviceTargets.length=0;},
+  drawUpper:ctx=>night.drawUpper(ctx),
+  drawEffects(ctx,frame){const light=frame.lighting;if(light.ambientOpacity>0){ctx.fillStyle=`rgba(${light.ambientColor.join(',')},${light.ambientOpacity})`;ctx.fillRect(frame.viewport.left-16,frame.viewport.top-16,frame.viewport.right-frame.viewport.left+32,frame.viewport.bottom-frame.viewport.top+32);}art.drawLamps(ctx,light.lamps*(1-light.nightAmount));night.draw(ctx,light.nightAmount,frame.viewport);},
+  dispose(){night.dispose();art.dispose();assets.dispose();lifeAssets?.dispose();npcEntries.clear();npcs.length=0;serviceTargets.length=0;},
  };
 }
 export async function loadPixelTown({signal,baseURL=new URL('./',import.meta.url).href}={}){

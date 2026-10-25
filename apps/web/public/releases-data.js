@@ -1,6 +1,16 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.4.8',
+    date: '2026-10-25',
+    status: '已完成',
+    title: '夜深时，小镇亮起暖灯',
+    highlights: [
+      {category: '优化', title: '夜色更深，归路更清楚', description: '夜间使用更深的底色，在路口、桥头、码头与门旁点亮暖灯；白天、黄昏及小镇道路与活动规则保持原样。'},
+      {category: '优化', title: '暖光静静留在原处', description: '灯光使用静态缓存，缩放和拖动复用同一层光照；减少动态时仍可看见稳定暖光。'},
+    ],
+  },
+  {
     version: '0.4.7',
     date: '2026-10-25',
     status: '已完成',
