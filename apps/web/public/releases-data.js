@@ -1,6 +1,16 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.4.2',
+    date: '2026-10-25',
+    status: '已完成',
+    title: '按形象类型查看工作室',
+    highlights: [
+      {category: '优化', title: '默认与自定义分开查看', description: '形象工作室新增顶层“默认形象”“自定义形象”标签，首次打开时按当前已应用形象进入对应标签。'},
+      {category: '优化', title: '切换标签只查看', description: '切换标签只改变展示，不会应用形象、创建素材准备或改变权限；“复制给我的 Agent”仍在自定义形象页。'},
+    ],
+  },
+  {
     version: '0.4.1',
     date: '2026-10-25',
     status: '已完成',
