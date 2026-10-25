@@ -8,6 +8,7 @@ import type {WalletActorRef,WorkRewardSource} from '../../apps/platform/domains/
 import type {LifeAssetCatalog,LifeFishingCastSource,LifeFishingSessionSource,LifeTradeSource} from '../../apps/platform/domains/life-assets/types.ts';
 import {createLifeCommerceRepository,prepareLifeItemDefinitions} from '../../apps/platform/infrastructure/postgresql/life-commerce-repository.ts';
 import {LIFE_COMMERCE_MIGRATION,LIFE_COMMERCE_PERMISSIONS_SQL} from '../../apps/platform/infrastructure/postgresql/life-commerce-migration.ts';
+import {LIFE_COMMERCE_READ_MIGRATION} from '../../apps/platform/infrastructure/postgresql/life-commerce-read-migration.ts';
 import {createLifeWalletRepository} from '../../apps/platform/infrastructure/postgresql/life-wallet-repository.ts';
 import {createRuntimeRepositories} from '../../apps/platform/infrastructure/postgresql/runtime-repositories.ts';
 import {openPostgresTransactionHost,type PostgresScope} from '../../apps/platform/infrastructure/postgresql/transaction-host.ts';
@@ -27,6 +28,7 @@ test('source-bound commerce uses one real PG transaction, unique items and the o
    const m=await import(pathToFileURL(file).href);await f.query(m.LIFE_B_MIGRATION.sql);await f.query(m.LIFE_B_PERMISSIONS_SQL);
   }
   if(!(await f.query("SELECT to_regclass('life_assets.effects') AS name"))[0]!.name)await f.query(LIFE_COMMERCE_MIGRATION.sql);
+  if(!(await f.query("SELECT to_regclass('life_assets.life_asset_available_order') AS name"))[0]!.name)await f.query(LIFE_COMMERCE_READ_MIGRATION.sql);
   await f.query(LIFE_COMMERCE_PERMISSIONS_SQL);
   const registered=await f.register(),second=await f.register(),agent:WalletActorRef={kind:'agent',id:registered.agentId},other:WalletActorRef={kind:'agent',id:second.agentId};
   await f.query('UPDATE wallet.accounts SET version=version+1,balance=CASE WHEN agent_id=$1 THEN 36 ELSE 2 END',[agent.id]);
@@ -84,6 +86,7 @@ test('source-bound commerce uses one real PG transaction, unique items and the o
    for(const [index,id]of (['sardine','mackerel',null] as const).entries()){const v=await cast(s,index,id);const starts=await Promise.all([run(ctx=>ctx.assets.startFishingCast({actorRef:agent,castId:v.id})),run(ctx=>ctx.assets.startFishingCast({actorRef:agent,castId:v.id}))]);assert.deepEqual(starts[0],starts[1]);assert.equal(starts[0]!.baitConsumed,1);await assert.rejects(run(ctx=>ctx.assets.settleFishingCast({actorRef:agent,castId:v.id})),code('invalid_usage'));f.tick(60000);const e=await settle(v);assert.equal(e.itemIds.length,id?1:0);catches.push(...e.itemIds);assert.deepEqual(await run(ctx=>ctx.assets.settleFishingCast({actorRef:agent,castId:v.id})),e);}
    await release(s);assert.equal(total(await read(),'bait'),0);assert.equal(total(await read(),'basic_rod'),1);assert.equal(catches.length,2);
    const held=(await read()).items.filter(x=>x.fish);assert.equal(held[0]!.fish!.caughtAt>0,true);assert.equal(held.every(x=>x.fish!.castId.startsWith(s.id)),true);
+   const ordered=await h.read(scope=>bind(scope).assets.availableItems(agent,{itemIds:['sardine','mackerel','sea_bass'],limit:3}));assert.deepEqual(ordered.map(x=>x.id),catches);assert.deepEqual(await h.read(scope=>bind(scope).assets.availableItems(other,{itemIds:['sardine','mackerel','sea_bass'],limit:3})),[]);assert.equal((await h.read(scope=>bind(scope).assets.availableItems(agent,{itemIds:['basic_rod'],limit:1}))).length,1);await assert.rejects(h.read(scope=>bind(scope).assets.availableItems(agent,{itemIds:['bait'],limit:21})),code('invalid_usage'));
    const sale:LifeTradeSource={id:'sell-two-fish',actorKind:'agent',actorId:agent.id,actionId:'shop.sell',state:'completed',placeId:'fisher_shop',catalogRevision:2,ruleVersion:1,startedAt:f.now(),endedAt:f.now(),resultId:'sell-two-fish',sourceEventId:'event:sell-two-fish',quote:{catalogRevision:2,ruleVersion:1,createdAt:f.now()-1,expiresAt:f.now()+1000,items:[{itemId:'sardine',unitPrice:4},{itemId:'mackerel',unitPrice:8}]},sale:{instanceIds:catches,minIncome:12},moneyAmount:12};
    await saveTrade(sale);const first=await invoke(sale);assert.equal(first.moneyDelta,12);assert.deepEqual(await invoke(sale),first);assert.equal((await read()).wallet.balance,12);assert.equal((await read()).items.filter(x=>x.fish).length,0);
    const again={...sale,id:'sell-again',resultId:'sell-again',sourceEventId:'event:sell-again'};await saveTrade(again);await assert.rejects(invoke(again),code('item_not_available'));assert.equal((await read()).wallet.balance,12);
