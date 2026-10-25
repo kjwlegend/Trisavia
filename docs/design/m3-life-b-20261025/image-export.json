@@ -22,24 +22,25 @@
       "transparentPixels": 1390569
     },
     {
+      "dir": "m3-life-b-20261025",
       "id": "bait",
+      "master": "bait-v2",
       "originalSize": [
         1254,
         1254
       ],
       "alphaBBox": [
-        218,
-        214,
-        837,
-        868
+        299,
+        234,
+        695,
+        783
       ],
       "targetBBox": [
+        4,
         3,
-        3,
-        25,
+        23,
         26
-      ],
-      "transparentPixels": 1063243
+      ]
     },
     {
       "id": "sardine",

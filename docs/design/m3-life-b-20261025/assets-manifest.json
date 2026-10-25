@@ -1,6 +1,6 @@
 {
   "id": "m3-life-b-assets-v1",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "catalogRevision": 1,
   "designOnly": true,
   "itemAssetIdPattern": "life-item-<itemId>",
@@ -64,11 +64,11 @@
       "assetId": "life-item-bait",
       "itemId": "bait",
       "name": "通用鱼饵",
-      "alt": "wooden bait cup with coral worm curls",
+      "alt": "open kraft paper packet with bait pellets",
       "sprite": {
         "path": "assets/items/bait.png",
-        "bytes": 2016,
-        "sha256": "913b10cfd567cb5706ed9158484583c6cb4e68ed2268db25c85b689ba92951ad",
+        "bytes": 1857,
+        "sha256": "da1bbc2b4c273724f8043dc35c840b740b170bcf3d7cc9c1a4c0680f40cd9831",
         "size": [
           32,
           32
@@ -85,15 +85,15 @@
         16
       ],
       "master": {
-        "path": "assets/generated/bait.png",
-        "bytes": 614595,
-        "sha256": "b20f33dc9aa4a43b5465cda8ab638180499660ca4f7136d0539ab3a71fd0ae27",
+        "path": "assets/generated/bait-v2.png",
+        "bytes": 490289,
+        "sha256": "f6504bf10fcbd2c845f27659ae54ab825e73ea0bd299e53a43e66b3946ddb3a8",
         "size": [
           1254,
           1254
         ]
       },
-      "prompt": "prompts/bait.txt",
+      "prompt": "prompts/bait-v2.txt",
       "source": "Generated with built-in image_gen for this project; not copied from another game",
       "availability": "actual image delivered"
     },
@@ -211,8 +211,8 @@
   ],
   "atlas": {
     "path": "assets/items/items-atlas.png",
-    "bytes": 5113,
-    "sha256": "edaeff432f2c3f048391f01f5e92e1573f1565b38eaaa199cef86b11413a5502",
+    "bytes": 4969,
+    "sha256": "90096f95dca3fe6f9027ffbc57a6ab191757b7042a5ac9ca5c7623d5f1caf745",
     "size": [
       160,
       32
