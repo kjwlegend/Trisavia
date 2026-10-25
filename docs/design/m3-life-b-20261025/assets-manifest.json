@@ -1,0 +1,229 @@
+{
+  "id": "m3-life-b-assets-v1",
+  "version": "1.0.0",
+  "catalogRevision": 1,
+  "designOnly": true,
+  "itemAssetIdPattern": "life-item-<itemId>",
+  "export": {
+    "format": "RGBA PNG",
+    "logicalSize": [
+      32,
+      32
+    ],
+    "transparentMarginMin": 3,
+    "displaySizes": [
+      32,
+      64,
+      96,
+      128
+    ],
+    "sampling": "nearest",
+    "sourceTool": "built-in image_gen",
+    "promptDirectory": "prompts/",
+    "technicalExport": "image-export.json"
+  },
+  "items": [
+    {
+      "assetId": "life-item-basic_rod",
+      "itemId": "basic_rod",
+      "name": "木柄鱼竿",
+      "alt": "wooden rod, teal reel and cream line",
+      "sprite": {
+        "path": "assets/items/basic_rod.png",
+        "bytes": 989,
+        "sha256": "5553bd7dfe6ef3592f4f5282c19392e57045669c6b3e0a4d90c633e9a3e106f1",
+        "size": [
+          32,
+          32
+        ]
+      },
+      "frame": [
+        0,
+        0,
+        32,
+        32
+      ],
+      "pivot": [
+        16,
+        16
+      ],
+      "master": {
+        "path": "assets/generated/basic_rod.png",
+        "bytes": 317492,
+        "sha256": "46e04dd04a8ff3c9457e8de77e4c50a4f1c5702bd407c9d3f9317050ab84c0d6",
+        "size": [
+          1254,
+          1254
+        ]
+      },
+      "prompt": "prompts/basic_rod.txt",
+      "source": "Generated with built-in image_gen for this project; not copied from another game",
+      "availability": "actual image delivered"
+    },
+    {
+      "assetId": "life-item-bait",
+      "itemId": "bait",
+      "name": "通用鱼饵",
+      "alt": "wooden bait cup with coral worm curls",
+      "sprite": {
+        "path": "assets/items/bait.png",
+        "bytes": 2016,
+        "sha256": "913b10cfd567cb5706ed9158484583c6cb4e68ed2268db25c85b689ba92951ad",
+        "size": [
+          32,
+          32
+        ]
+      },
+      "frame": [
+        32,
+        0,
+        32,
+        32
+      ],
+      "pivot": [
+        16,
+        16
+      ],
+      "master": {
+        "path": "assets/generated/bait.png",
+        "bytes": 614595,
+        "sha256": "b20f33dc9aa4a43b5465cda8ab638180499660ca4f7136d0539ab3a71fd0ae27",
+        "size": [
+          1254,
+          1254
+        ]
+      },
+      "prompt": "prompts/bait.txt",
+      "source": "Generated with built-in image_gen for this project; not copied from another game",
+      "availability": "actual image delivered"
+    },
+    {
+      "assetId": "life-item-sardine",
+      "itemId": "sardine",
+      "name": "银纹沙丁鱼",
+      "alt": "slender silver sardine, dark plain back",
+      "sprite": {
+        "path": "assets/items/sardine.png",
+        "bytes": 753,
+        "sha256": "466a9959689d078446383469e343b4418b350578f955f44a812bb0d007d95396",
+        "size": [
+          32,
+          32
+        ]
+      },
+      "frame": [
+        64,
+        0,
+        32,
+        32
+      ],
+      "pivot": [
+        16,
+        16
+      ],
+      "master": {
+        "path": "assets/generated/sardine.png",
+        "bytes": 306421,
+        "sha256": "5e2e01f34f96b583447c708f8756de09a2a315c66650104567c6fbbeeb6738a9",
+        "size": [
+          1254,
+          1254
+        ]
+      },
+      "prompt": "prompts/sardine.txt",
+      "source": "Generated with built-in image_gen for this project; not copied from another game",
+      "availability": "actual image delivered"
+    },
+    {
+      "assetId": "life-item-mackerel",
+      "itemId": "mackerel",
+      "name": "青背鲭鱼",
+      "alt": "teal mackerel with dark stripes",
+      "sprite": {
+        "path": "assets/items/mackerel.png",
+        "bytes": 916,
+        "sha256": "12346af07a14d9700a4a2472dfbc78d8a5b8885a640dc64336bdc7c3b8b64bef",
+        "size": [
+          32,
+          32
+        ]
+      },
+      "frame": [
+        96,
+        0,
+        32,
+        32
+      ],
+      "pivot": [
+        16,
+        16
+      ],
+      "master": {
+        "path": "assets/generated/mackerel.png",
+        "bytes": 563827,
+        "sha256": "7850de42a76ece6a4dda860ab069c28d31e6275047e9dcc6760681ac56a161e9",
+        "size": [
+          1774,
+          887
+        ]
+      },
+      "prompt": "prompts/mackerel.txt",
+      "source": "Generated with built-in image_gen for this project; not copied from another game",
+      "availability": "actual image delivered"
+    },
+    {
+      "assetId": "life-item-sea_bass",
+      "itemId": "sea_bass",
+      "name": "花斑海鲈",
+      "alt": "broad spotted olive bass with spiny dorsal fin",
+      "sprite": {
+        "path": "assets/items/sea_bass.png",
+        "bytes": 1130,
+        "sha256": "2d778b5bf18eaf8e4112324ace697f62350e0cae5d5e4a4d6312e8c780ceab11",
+        "size": [
+          32,
+          32
+        ]
+      },
+      "frame": [
+        128,
+        0,
+        32,
+        32
+      ],
+      "pivot": [
+        16,
+        16
+      ],
+      "master": {
+        "path": "assets/generated/sea_bass.png",
+        "bytes": 888582,
+        "sha256": "2c0df5131f17536818ccbd094c12a8392e2778f5483f2c4fca67722db82bb20d",
+        "size": [
+          1619,
+          971
+        ]
+      },
+      "prompt": "prompts/sea_bass.txt",
+      "source": "Generated with built-in image_gen for this project; not copied from another game",
+      "availability": "actual image delivered"
+    }
+  ],
+  "atlas": {
+    "path": "assets/items/items-atlas.png",
+    "bytes": 5113,
+    "sha256": "edaeff432f2c3f048391f01f5e92e1573f1565b38eaaa199cef86b11413a5502",
+    "size": [
+      160,
+      32
+    ]
+  },
+  "nativeSources": "native-sources.json",
+  "animationManifest": "animation-manifest.json",
+  "productionDestination": {
+    "items": "apps/web/public/world-life/b/items/",
+    "fishing": "apps/web/public/world-life/b/fishing/",
+    "runtimeUrlPrefix": "/assets/world-life/b/",
+    "generatedMasters": "design repository only; do not serve full-resolution masters on inventory open"
+  }
+}

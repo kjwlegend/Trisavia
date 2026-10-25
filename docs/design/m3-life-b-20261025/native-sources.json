@@ -1,0 +1,582 @@
+{
+  "sourcePack": "Sunnyside World Asset Pack V2.1 (existing project-provided asset pack)",
+  "licenseNote": "沿项目既有授权使用；未另行核验购买凭据，禁止将原包作为独立素材再分发。",
+  "files": [
+    {
+      "path": "assets/fishing/base_casting_strip15.png",
+      "source": "Characters/Human/CASTING/base_casting_strip15.png",
+      "sha256": "f63499760c656cb89ba9fdda8cfaf39103bf736dd3a77bbf041112f3dc213d30",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 15,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "casting",
+      "layer": "base"
+    },
+    {
+      "path": "assets/fishing/tools_casting_strip15.png",
+      "source": "Characters/Human/CASTING/tools_casting_strip15.png",
+      "sha256": "d66da64156a48bcb905ae7b5df3a01c55517ff8a488bb51e9f5c9aae13ad7ea7",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 15,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "casting",
+      "layer": "tools"
+    },
+    {
+      "path": "assets/fishing/shorthair_casting_strip15.png",
+      "source": "Characters/Human/CASTING/shorthair_casting_strip15.png",
+      "sha256": "7c4769ab89f01f7a3cef613a7f620d8baaf5cc1ead81c6286ade79bcddfa4899",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 15,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "casting",
+      "layer": "shorthair"
+    },
+    {
+      "path": "assets/fishing/longhair_casting_strip15.png",
+      "source": "Characters/Human/CASTING/longhair_casting_strip15.png",
+      "sha256": "7d0decee711a7761708294c66e11b2fd841eaae8b24d385722be5d23d97075c8",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 15,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "casting",
+      "layer": "longhair"
+    },
+    {
+      "path": "assets/fishing/curlyhair_casting_strip15.png",
+      "source": "Characters/Human/CASTING/curlyhair_casting_strip15.png",
+      "sha256": "4419462afaef1e5c36bda8e634df68ff5b994791372248c2ae41a7062a199553",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 15,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "casting",
+      "layer": "curlyhair"
+    },
+    {
+      "path": "assets/fishing/bowlhair_casting_strip15.png",
+      "source": "Characters/Human/CASTING/bowlhair_casting_strip15.png",
+      "sha256": "be4d2d7b4537464ab91166de4c1dba63eaa4a4ffb469dd99cad724511af0b1be",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 15,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "casting",
+      "layer": "bowlhair"
+    },
+    {
+      "path": "assets/fishing/mophair_casting_strip15.png",
+      "source": "Characters/Human/CASTING/mophair_casting_strip15.png",
+      "sha256": "19310538cacada41a12b3cc6ec7668f139e784947341d9baa2d08c69ba76bc6b",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 15,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "casting",
+      "layer": "mophair"
+    },
+    {
+      "path": "assets/fishing/spikeyhair_casting_strip15.png",
+      "source": "Characters/Human/CASTING/spikeyhair_casting_strip15.png",
+      "sha256": "a6de5ddd65e5620c553228eac6c47cbadfd6f565620dc5b6e72a29c7c0b3ae80",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 15,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "casting",
+      "layer": "spikeyhair"
+    },
+    {
+      "path": "assets/fishing/base_waiting_strip9.png",
+      "source": "Characters/Human/WAITING/base_waiting_strip9.png",
+      "sha256": "dfa07fe3204acf2b74d5e7b1741977b2b0b018892d9f4b62d4466583617be7e9",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 9,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "waiting",
+      "layer": "base"
+    },
+    {
+      "path": "assets/fishing/tools_waiting_strip9.png",
+      "source": "Characters/Human/WAITING/tools_waiting_strip9.png",
+      "sha256": "e4c2960f3e3d41cc381326fa7f685ba1f5dd87b89fc0fc145783c0232d62bed2",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 9,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "waiting",
+      "layer": "tools"
+    },
+    {
+      "path": "assets/fishing/shorthair_waiting_strip9.png",
+      "source": "Characters/Human/WAITING/shorthair_waiting_strip9.png",
+      "sha256": "2e71abe9d17a827646ecca00b865816ff65f99dd9a9f0d279ca8fb2e6118e627",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 9,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "waiting",
+      "layer": "shorthair"
+    },
+    {
+      "path": "assets/fishing/longhair_waiting_strip9.png",
+      "source": "Characters/Human/WAITING/longhair_waiting_strip9.png",
+      "sha256": "eab2b1cd1571ad559d6258b22e106b66a1a0db1ff15f449988f02fb5f185ff4c",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 9,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "waiting",
+      "layer": "longhair"
+    },
+    {
+      "path": "assets/fishing/curlyhair_waiting_strip9.png",
+      "source": "Characters/Human/WAITING/curlyhair_waiting_strip9.png",
+      "sha256": "bce7248f82cb6dc2c13ef5ce3966f901a9690c9d112543f0052e47f9f2b23a59",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 9,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "waiting",
+      "layer": "curlyhair"
+    },
+    {
+      "path": "assets/fishing/bowlhair_waiting_strip9.png",
+      "source": "Characters/Human/WAITING/bowlhair_waiting_strip9.png",
+      "sha256": "ba247dd5736f09f25a1bfbf52950f220a89090d55a46d7975fe912d0e31b3c06",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 9,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "waiting",
+      "layer": "bowlhair"
+    },
+    {
+      "path": "assets/fishing/mophair_waiting_strip9.png",
+      "source": "Characters/Human/WAITING/mophair_waiting_strip9.png",
+      "sha256": "0b2cb14c218764769d0d682da20a102adc191ae8e7febd65740b6e8a85afe1dd",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 9,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "waiting",
+      "layer": "mophair"
+    },
+    {
+      "path": "assets/fishing/spikeyhair_waiting_strip9.png",
+      "source": "Characters/Human/WAITING/spikeyhair_waiting_strip9.png",
+      "sha256": "e84d9e540a50d599873afab7eed4d483b6a8b40de2e9a798cb340888f379cb4a",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 9,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "waiting",
+      "layer": "spikeyhair"
+    },
+    {
+      "path": "assets/fishing/base_reeling_strip13.png",
+      "source": "Characters/Human/REELING/base_reeling_strip13.png",
+      "sha256": "bee3e5378a0dc28234bc25b700daa2a44cc08e85c8f502283080e116a0e49bda",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 13,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "reeling",
+      "layer": "base"
+    },
+    {
+      "path": "assets/fishing/tools_reeling_strip13.png",
+      "source": "Characters/Human/REELING/tools_reeling_strip13.png",
+      "sha256": "c1265def75c90cf4fbdd50a4a2184715493cd61c259cf23cba74df2578d4a8b3",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 13,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "reeling",
+      "layer": "tools"
+    },
+    {
+      "path": "assets/fishing/shorthair_reeling_strip13.png",
+      "source": "Characters/Human/REELING/shorthair_reeling_strip13.png",
+      "sha256": "9c086fcba797f8e3398f84ece7e9978d5576af9a33dfb78df75f133335856b75",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 13,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "reeling",
+      "layer": "shorthair"
+    },
+    {
+      "path": "assets/fishing/longhair_reeling_strip13.png",
+      "source": "Characters/Human/REELING/longhair_reeling_strip13.png",
+      "sha256": "c8f33b04fe61ac830366653fdda58ebde466a308a4323101e9d81e32b4b30d09",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 13,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "reeling",
+      "layer": "longhair"
+    },
+    {
+      "path": "assets/fishing/curlyhair_reeling_strip13.png",
+      "source": "Characters/Human/REELING/curlyhair_reeling_strip13.png",
+      "sha256": "37d4cc4d995ad0e1c001803e35b4d8ee0ce861495227d1bf6468bc1856c179aa",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 13,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "reeling",
+      "layer": "curlyhair"
+    },
+    {
+      "path": "assets/fishing/bowlhair_reeling_strip13.png",
+      "source": "Characters/Human/REELING/bowlhair_reeling_strip13.png",
+      "sha256": "3664f7cba487f85e5a47dd3632b03074c30fa4eacafb110b1266d2c08d6a0ae3",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 13,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "reeling",
+      "layer": "bowlhair"
+    },
+    {
+      "path": "assets/fishing/mophair_reeling_strip13.png",
+      "source": "Characters/Human/REELING/mophair_reeling_strip13.png",
+      "sha256": "f784440d5b2437939e9dd92c52efd1ce5b5e88fc5a4f863bae1dc4ea729923b9",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 13,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "reeling",
+      "layer": "mophair"
+    },
+    {
+      "path": "assets/fishing/spikeyhair_reeling_strip13.png",
+      "source": "Characters/Human/REELING/spikeyhair_reeling_strip13.png",
+      "sha256": "c1df05bda4e151e59cec8444ad275df446d47c0feba35b90c39341b5a367f95b",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 13,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "reeling",
+      "layer": "spikeyhair"
+    },
+    {
+      "path": "assets/fishing/base_caught_strip10.png",
+      "source": "Characters/Human/CAUGHT/base_caught_strip10.png",
+      "sha256": "a1e4dc0529129ff9342e2b0fa2e87935a7ca144a7c09a8a21be2feedc2dbdbc7",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 10,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "caught",
+      "layer": "base"
+    },
+    {
+      "path": "assets/fishing/tools_caught_strip10.png",
+      "source": "Characters/Human/CAUGHT/tools_caught_strip10.png",
+      "sha256": "4f1e075514559272f75be4a94bccfbc1e432b02d09585d7cda76fa0b1adaf9a8",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 10,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "caught",
+      "layer": "tools"
+    },
+    {
+      "path": "assets/fishing/shorthair_caught_strip10.png",
+      "source": "Characters/Human/CAUGHT/shorthair_caught_strip10.png",
+      "sha256": "4363f6bbba70458f6ae6aea060a9c74a5d477a736217b70abc5d7872d1e85208",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 10,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "caught",
+      "layer": "shorthair"
+    },
+    {
+      "path": "assets/fishing/longhair_caught_strip10.png",
+      "source": "Characters/Human/CAUGHT/longhair_caught_strip10.png",
+      "sha256": "e37abba3634bd9e779e88ec980c179a6970497ff83a66c58f1fd4863a3baad6f",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 10,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "caught",
+      "layer": "longhair"
+    },
+    {
+      "path": "assets/fishing/curlyhair_caught_strip10.png",
+      "source": "Characters/Human/CAUGHT/curlyhair_caught_strip10.png",
+      "sha256": "76011e50a78082748cf65c8ff538cfef5a6f826aaee5ec897a487554f1ab9bd0",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 10,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "caught",
+      "layer": "curlyhair"
+    },
+    {
+      "path": "assets/fishing/bowlhair_caught_strip10.png",
+      "source": "Characters/Human/CAUGHT/bowlhair_caught_strip10.png",
+      "sha256": "47d6b56c1b66518cb4cdac802728dd067bf69f23c0e928c0c540d4d96d56e63d",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 10,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "caught",
+      "layer": "bowlhair"
+    },
+    {
+      "path": "assets/fishing/mophair_caught_strip10.png",
+      "source": "Characters/Human/CAUGHT/mophair_caught_strip10.png",
+      "sha256": "0ec3a1af6bd02e141bcb7a859803f54728ec9b070f4cc90420771956a11ee72d",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 10,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "caught",
+      "layer": "mophair"
+    },
+    {
+      "path": "assets/fishing/spikeyhair_caught_strip10.png",
+      "source": "Characters/Human/CAUGHT/spikeyhair_caught_strip10.png",
+      "sha256": "6f083a3f42e29843cc3af3392d3ef1f060694ba52043a13f2703bebcf1f70e96",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 10,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "caught",
+      "layer": "spikeyhair"
+    },
+    {
+      "path": "assets/fishing/base_idle_strip9.png",
+      "source": "Characters/Human/IDLE/base_idle_strip9.png",
+      "sha256": "fc4656a6355abc69d618ce31e0f3f2a66ac6d9b23b626640b556f0e8d5d29ac0",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 9,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "idle",
+      "layer": "base"
+    },
+    {
+      "path": "assets/fishing/spikeyhair_idle_strip9.png",
+      "source": "Characters/Human/IDLE/spikeyhair_idle_strip9.png",
+      "sha256": "21ce30395e8e3ceedccbd039e3a744a6c1e34b4734f7826126edde98ffdefb7f",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 9,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "idle",
+      "layer": "spikeyhair"
+    },
+    {
+      "path": "assets/fishing/base_walk_strip8.png",
+      "source": "Characters/Human/WALKING/base_walk_strip8.png",
+      "sha256": "454c1172cebb5417acc7a59c9b711b42ff5e91d315bb1ab3ec11526c7a977110",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 8,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "walk",
+      "layer": "base"
+    },
+    {
+      "path": "assets/fishing/spikeyhair_walk_strip8.png",
+      "source": "Characters/Human/WALKING/spikeyhair_walk_strip8.png",
+      "sha256": "21a6aa20b8f160a21c75f29f485a9a948beb678ac6e2029462a066e509f66ca1",
+      "frameSize": [
+        96,
+        64
+      ],
+      "frames": 8,
+      "feet": [
+        48,
+        39
+      ],
+      "action": "walk",
+      "layer": "spikeyhair"
+    }
+  ]
+}
