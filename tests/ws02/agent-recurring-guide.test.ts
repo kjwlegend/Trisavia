@@ -1,0 +1,66 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {createHash} from 'node:crypto';
+import {readFile} from 'node:fs/promises';
+import Fastify from 'fastify';
+import {FROZEN_HOURLY_HOST_GUIDE,FROZEN_HOURLY_HUMAN_GUIDE,HOURLY_HOST_GUIDE,CURRENT_HOURLY_AUTONOMY_GUIDE,CURRENT_HOURLY_HUMAN_GUIDE,CURRENT_RECURRING_HOST_GUIDE,RECURRING_JOB_BOOTSTRAP,HOST_PARTICIPATION_GUIDANCE} from '../../apps/platform/application/agent-hourly-participation-guide.ts';
+import {worldGatewayGuide} from '../../apps/platform/application/agent-gateway-world.ts';
+import {worldGatewayGuide as worldGuide11} from '../../apps/platform/application/agent-gateway-world-frozen-v11.ts';
+import {initializePerceptionCatalog,publishPerceptionCatalog,publishRecurringBootstrapInTransaction,readRecurringBootstrapReceipt} from '../../apps/platform/application/perception-catalog.ts';
+import {createPerceptionService} from '../../apps/platform/application/perception-service.ts';
+import {registerPerceptionRoutes} from '../../apps/platform/transport/http/perception-routes.ts';
+import {hashRuntimeRequest} from '../../apps/platform/domains/runtime/command.ts';
+import {M1_TABLES,type M1Table,type StoredRow,type M1Store,type M1Transaction,type RetentionCutoff} from '../../apps/platform/contracts/store.ts';
+import type {M1Service} from '../../apps/platform/application/m1-service.ts';
+const sha=(v:string)=>createHash('sha256').update(v).digest('hex');
+/** In-memory metadata transaction only: no PG, listener, credentials or host scheduling tool. */
+function memory(){
+ let tables=new Map<M1Table,Map<string,StoredRow>>(M1_TABLES.map(t=>[t,new Map()]));
+ const rows=(t:M1Table,filters:Record<string,unknown>={})=>[...tables.get(t)!.values()].filter(r=>Object.entries(filters).every(([k,v])=>r.data[k]===v)).sort((a,b)=>a.id.localeCompare(b.id)).map(r=>structuredClone(r));
+ const tx={get:async(t:M1Table,id:string)=>structuredClone(tables.get(t)!.get(id)),find:async(t:M1Table,f:Record<string,unknown>)=>rows(t,f),scan:async(t:M1Table,f:Record<string,unknown>,o:{limit:number;afterId?:string;cutoff?:RetentionCutoff})=>rows(t,f).filter(r=>(!o.afterId||r.id>o.afterId)&&(!o.cutoff||Number(r.data[o.cutoff.field])<o.cutoff.at+(o.cutoff.inclusive?1:0))).slice(0,o.limit),count:async(t:M1Table,f:Record<string,unknown>,limit:number)=>Math.min(limit,rows(t,f).length),quotaCount:async()=>0,
+  insert:async(t:M1Table,r:StoredRow)=>{assert(!tables.get(t)!.has(r.id));tables.get(t)!.set(r.id,structuredClone(r));},update:async(t:M1Table,r:StoredRow,v:number)=>{assert.equal(tables.get(t)!.get(r.id)?.version,v);tables.get(t)!.set(r.id,structuredClone(r));return true;},remove:async(t:M1Table,id:string,v:number)=>{assert.equal(tables.get(t)!.get(id)?.version,v);return tables.get(t)!.delete(id);}} as unknown as M1Transaction;
+ const store={instanceId:'instance_recurring_test',recoveryEpoch:'epoch_recurring_test',read:async(work:(r:M1Transaction)=>Promise<unknown>)=>work(tx),transaction:async(work:(r:M1Transaction)=>Promise<unknown>)=>{const before=structuredClone(tables);try{return await work(tx);}catch(e){tables=before;throw e;}},close:async()=>{}} as unknown as M1Store;
+ return{store,tx,rows,snapshot:()=>Object.fromEntries(M1_TABLES.map(t=>[t,rows(t)]))};
+}
+async function fixture(version:number){
+ const f=memory();await f.store.transaction(initializePerceptionCatalog);const original=(await f.tx.get('perception_catalog','guide:world:3'))!.data.document as {text:string};
+ await publishPerceptionCatalog(f.store,{revision:'catalog-avatar-assets-1',guideVersion:version,guideText:original.text+'\n'+HOURLY_HOST_GUIDE});
+ await f.tx.insert('agents',{id:'synthetic-existing-agent',version:1,data:{createdAt:1,runtimeVersion:1,runtimeActive:true}});
+ const options={instanceId:f.store.instanceId,recoveryEpoch:f.store.recoveryEpoch,operator:'isolated:recurring-guide',operationId:'recurring-bootstrap-test-'+version,expectedGuideVersion:version};
+ return{...f,options};
+}
+
+test('current bootstrap follows discovery, authority, local experience, action and memory while all old frozen bytes stay fixed',async()=>{
+ // Retained export/document hashes captured from the approved 016e83eb baseline.
+ const frozen={FROZEN_HOURLY_HOST_GUIDE,FROZEN_HOURLY_HUMAN_GUIDE,HOURLY_HOST_GUIDE,CURRENT_HOURLY_AUTONOMY_GUIDE,CURRENT_HOURLY_HUMAN_GUIDE};
+ assert.deepEqual(Object.fromEntries(Object.entries(frozen).map(([k,v])=>[k,sha(v)])),{
+  FROZEN_HOURLY_HOST_GUIDE:'e0354cbc566f093d1999b79ccac3efaacb1041df4d21cb14af7b7ba2cea61990',FROZEN_HOURLY_HUMAN_GUIDE:'292254ca27ddfd7b94bcd977ccacf7f19173d0b0d83b1d8e88cdaedbbf7d4d39',HOURLY_HOST_GUIDE:'20214885b2dd60abf659c2bcab504a2a8bbbcea635ea689fbe0e96355d67325b',CURRENT_HOURLY_AUTONOMY_GUIDE:'2e08ab75f8e0170a3dcf3a1d78d27298d7bfa4af3f61fedfb1878d4f7b1fcbdb',CURRENT_HOURLY_HUMAN_GUIDE:'068ee1e47f84e3b6f3e4ebb507c4e891362307afca75d02949686cc37d1b0bd8',
+ });
+ assert.equal(hashRuntimeRequest(worldGuide11.document),'a3417be7b237083306109c04afc318664c4d531dc9a125f04e4c1c553d0bf91e');assert.equal(worldGuide11.document.hostParticipation,HOURLY_HOST_GUIDE);
+ assert.equal(worldGatewayGuide.version,14);assert.equal(worldGatewayGuide.document.hostParticipation,CURRENT_RECURRING_HOST_GUIDE);assert.equal(HOST_PARTICIPATION_GUIDANCE.version,2);assert.equal(HOST_PARTICIPATION_GUIDANCE.serverCreatesJobs,false);
+ const order=['原可信origin','实时capabilities和Gateway目录','精确版本指南/schema','当前授权','本地已保存的经历','有意义的行动','可靠保存到本地记忆','无变化且无需主人决定时静默'].map(s=>RECURRING_JOB_BOOTSTRAP.indexOf(s));assert(order.every((v,i)=>v>=0&&(i===0||v>order[i-1]!)));
+ assert.match(RECURRING_JOB_BOOTSTRAP,/仅取得部分所需说明.*停止依赖这些说明的写入/);assert.match(RECURRING_JOB_BOOTSTRAP,/期望频率版本变化时才/);assert.match(CURRENT_RECURRING_HOST_GUIDE,/旧job只需原位更新一次/);assert.match(CURRENT_RECURRING_HOST_GUIDE,/停用job不因更新说明重新开启/);assert.match(CURRENT_RECURRING_HOST_GUIDE,/宿主原生持久任务工具的真实结果/);
+ const entry=await readFile(new URL('../../docs/access/v1/entry.md',import.meta.url),'utf8'),prompt=await readFile(new URL('../../docs/access/v1/prompt.md',import.meta.url),'utf8'),setup=await readFile(new URL('../../docs/access/v1/local-setup.md',import.meta.url),'utf8');
+ assert.equal(entry.split('### 周期任务的每轮bootstrap\n')[1]!.split('```text\n')[1]!.split('\n```')[0],RECURRING_JOB_BOOTSTRAP);assert.match(prompt,/仅首次入镇且该步骤尚未完成/);assert.match(prompt,/只有本次新注册且尚未配置周期安排/);assert.match(prompt,/周期job使用entry里的“周期任务的每轮bootstrap”/);assert(!setup.includes('已加入 connet.ai'));assert.match(setup,/Trisavia.*可信origin/);
+});
+
+test('named text publication preserves exact HTTP guides and digests, source states, schemas, facts and same-operation receipts',async()=>{
+ for(const version of [9,16]){
+  const f=await fixture(version),before=f.snapshot(),old=(await f.tx.get('perception_catalog',`guide:world:${version}`))!,current=(await f.tx.get('perception_catalog','current'))!;
+  assert.equal(await readRecurringBootstrapReceipt(f.tx,f.options),undefined);assert.deepEqual(f.snapshot(),before);
+  const result=await f.store.transaction(tx=>publishRecurringBootstrapInTransaction(tx,f.options)),published=f.snapshot();assert.equal(result.newGuideDocuments,7);assert.equal(result.newSchemaDocuments,0);assert.equal(result.guideVersion,version+1);assert.equal(result.catalogRevision,'catalog-recurring-bootstrap-1');assert.equal(result.schemaVersion,8);assert.equal(published.perception_catalog!.length,before.perception_catalog!.length+9);
+  assert.deepEqual(await f.store.transaction(tx=>publishRecurringBootstrapInTransaction(tx,f.options)),result);assert.deepEqual(await readRecurringBootstrapReceipt(f.tx,f.options),result);assert.deepEqual(f.snapshot(),published);
+  for(const row of before.perception_catalog!.filter(r=>/^(guide|schema):/.test(r.id)))assert.deepEqual(await f.tx.get('perception_catalog',row.id),row);
+  assert.deepEqual((await f.tx.get('perception_catalog','current'))!.data.sourceStates,current.data.sourceStates);for(const table of M1_TABLES)if(table!=='perception_catalog')assert.deepEqual(f.rows(table),before[table]);
+  const service=createPerceptionService(f.store,{authenticate:async(_tx,token)=>({id:'synthetic-'+token,version:1,data:token==='owner'?{kind:'owner_session',ownerId:'synthetic-owner',ownerAuthVersion:1}:{kind:'runtime',agentId:'synthetic-agent',runtimeVersion:1}})}),app=Fastify();registerPerceptionRoutes(app,{invokeHttp:service.invoke} as unknown as M1Service);
+  try{for(const token of ['owner','runtime'])for(const v of [version,version+1]){
+   const response=await app.inject({method:'GET',url:`/v1/perception/guides/world?version=${v}`,headers:{authorization:'Bearer '+token}});assert.equal(response.statusCode,200,response.body);const data=response.json().data;assert.equal(sha(data.canonicalDocument),data.digest);assert.deepEqual(JSON.parse(data.canonicalDocument),data.document);
+   if(v===version){assert.deepEqual(data.document,old.data.document);assert.equal(data.digest,old.data.digest);}else{assert(data.document.text.includes(RECURRING_JOB_BOOTSTRAP));assert.equal(data.version,version+1);}
+  }const capabilities=await service.capabilities();assert.equal(capabilities.catalogRevision,'catalog-recurring-bootstrap-1');assert.equal(capabilities.skillCatalogRevision,'skills-catalog-recurring-bootstrap-1');const discovery=(await app.inject({method:'GET',url:'/v1/perception/discovery?limit=50',headers:{authorization:'Bearer runtime'}})).json().data;assert(discovery.skills.every((s:any)=>s.version===version+1&&s.guideRef.version===version+1));}finally{await app.close();}
+  const stable=f.snapshot();await assert.rejects(f.store.transaction(tx=>publishRecurringBootstrapInTransaction(tx,{...f.options,expectedGuideVersion:version-1})),/payload changed/);assert.deepEqual(f.snapshot(),stable);
+ }
+});
+
+test('occupied next exact guide rolls back the complete publication and retains the original operation for recovery',async()=>{
+ const f=await fixture(16);await f.tx.insert('perception_catalog',{id:'guide:wallet:17',version:1,data:{document:{moduleId:'wallet',version:17,text:'occupied'},digest:'not-the-requested-publication'}});const before=f.snapshot();await assert.rejects(f.store.transaction(tx=>publishRecurringBootstrapInTransaction(tx,f.options)),/source or destination/);assert.deepEqual(f.snapshot(),before);assert.equal(await readRecurringBootstrapReceipt(f.tx,f.options),undefined);
+});

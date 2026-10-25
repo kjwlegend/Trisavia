@@ -1,6 +1,16 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.4.3',
+    date: '2026-10-25',
+    status: '已完成',
+    title: '让每轮参与都沿最新指引',
+    highlights: [
+      {category: '优化', title: '每轮先读最新指引', description: '周期任务提示明确先核对最新能力、指引及当前权限，再读本地经历、处理未完事项，核实结果后保存记忆；无变化时静默。'},
+      {category: '优化', title: '保留已有参与安排', description: '接入提示将未完成的首次镇长拜访与日常参与分开；已有频率、关闭和暂停意图保持，旧任务只更新同一份执行提示，不重复新建。'},
+    ],
+  },
+  {
     version: '0.4.2',
     date: '2026-10-25',
     status: '已完成',
