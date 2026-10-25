@@ -35,7 +35,7 @@ test('a short network failure keeps a labelled last-success snapshot, backs off,
 test('Retry-After gates automatic and manual retries without turning intentional cancellation into a fault',async()=>{
  let limited=false,requests=0;const request=async(path:string)=>{requests++;if(path==='/capabilities')return caps;if(path.startsWith('/world/rules'))return envelope(rules);if(limited)throw problem('rate_limited',429,{retryAfterMs:60000});return page();};
  const {provider,timers}=reader(request);await flush();limited=true;await timers.advance(1000);assert.equal(provider.snapshot().phase,'recovering');assert.equal(provider.snapshot().retryAt,61000);
- const before=requests;await provider.refresh();assert.equal(requests,before,'Manual retry cannot bypass a server cooling window');provider.setVisible(false);provider.setVisible(true);assert.equal(provider.snapshot().phase,'error');assert.deepEqual(provider.snapshot().avatars,[]);await timers.advance(60000);assert.equal(requests,before);
+ const before=requests;await provider.refresh();assert.equal(requests,before,'Manual retry cannot bypass a server cooling window');provider.setVisible(false);provider.setVisible(true);assert.equal(provider.snapshot().phase,'recovering');assert.equal(provider.snapshot().stale,true);assert.equal(provider.snapshot().avatars[0].agentId,'old');await timers.advance(60000);assert.equal(requests,before);
  limited=false;await timers.advance(61000);assert.equal(provider.snapshot().phase,'ready');provider.setVisible(false);assert.equal(provider.snapshot().phase,'paused');assert.equal(timers.pending.size,0);provider.dispose();
 });
 

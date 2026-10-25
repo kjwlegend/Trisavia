@@ -1,6 +1,7 @@
 import {createLifePlaceCard,lifeBuilding} from './life-place-card.js';
 import {readPublicId} from '../public-id.js';
 import {$,el,api} from '../common.js';
+import {readPublicCapabilities} from '../public-capabilities.js';
 import {createWorldScene,placeDetails} from '../world-scene.js';
 import {loadPixelTown,COMMONS_PLACE} from '../world-pixel/town.js';
 import {createOwnedAgentBinding} from './owned-agents.js';
@@ -18,7 +19,7 @@ import {pixelPoint} from '../world-pixel/map.js';
 import {icon} from './icons.js';
 let scene=null;
 export function initSceneRenderer({session,onSelectAgent=()=>{},rendering=null}={}){
-let mapReady=false,mapFailed=false,pageActive=true;
+let mapReady=false,mapFailed=false,pageActive=true,firstSceneMarked=false;
 let sceneGeneration=0,sceneAbort=null;
 const ownedAgents=session?createOwnedAgentBinding(session,onSelectAgent):null;
 const worldProvider=createWorldSceneProvider();let worldData=worldProvider.snapshot();
@@ -135,7 +136,7 @@ function closePlace(restoreFocus=true) {
 
 }
 function updateControls(state) {
-  worldProvider.setVisible(pageActive&&!mapFailed&&state.visible);statusHud.setVisible(pageActive&&!document.hidden);
+  worldProvider.setVisible(pageActive&&!document.hidden&&!mapFailed&&state.visible);statusHud.setVisible(pageActive&&!document.hidden);
   document.dispatchEvent(new CustomEvent('world:state',{detail:{exploring:state.exploring,reducedMotion:state.reducedMotion}}));
   $('#world-explore').textContent=state.exploring?'退出探索':'探索地图';
   $('#world-explore').setAttribute('aria-pressed',String(state.exploring));
@@ -163,12 +164,13 @@ async function startScene() {
     if(generation!==sceneGeneration||sceneAbort.signal.aborted){loaded.dispose?.();return;}
     const next = await createWorldScene($('#world-scene'), {rendering:loaded,worldSource:'pending',initialTime:statusHud.clock.now(),clock:statusHud.clock,signal:sceneAbort.signal,onSelect: openPlace, onOwnedSelect:(agentId,origin)=>ownedAgents?.select(agentId,origin), onChange: updateControls, onError:()=>{if(generation===sceneGeneration)mapError();}});
     if(generation!==sceneGeneration){next.destroy();return;}
-    scene=next;scene.setWorldScene(worldData);if(!mapFailed)ownedAgents?.attach(scene);
-    if(!mapFailed){setMapAvailable(true);updateControls(scene.getState());void tryPublicFocus();void syncTownNotice();}
+    scene=next;const applied=scene.setWorldScene(worldData);if(applied?.accepted===false){worldData={...worldData,phase:'unavailable',complete:false,avatars:[],npcs:[],errorCode:applied.reason};statusHud.update(worldData);}if(!mapFailed)ownedAgents?.attach(scene);
+    if(!mapFailed){setMapAvailable(true);updateControls(scene.getState());markFirstScene();void tryPublicFocus();void syncTownNotice();}
     if (currentPlace) scene.select(currentPlace);
   } catch {loaded?.dispose?.();if(generation===sceneGeneration)mapError(); }
 }
 function setMapAvailable(value){mapReady=value;for(const id of ['world-zoom-out','world-zoom-in','world-fit','world-pause','world-explore','world-reset','world-reduce-motion'])$(`#${id}`).disabled=!value;$('#world-gesture-hint').hidden=!value;document.dispatchEvent(new CustomEvent('world:availability',{detail:{available:value}}));}
+function markFirstScene(){if(firstSceneMarked||!mapReady||mapFailed||worldData.phase!=='ready'||worldData.stale||!worldData.complete||!scene||Date.now()-worldData.lastSuccessAt>5000)return;const shown=scene.getState().worldScene;if(shown.phase!=='ready'||!shown.complete||shown.stale||shown.worldRevision!==worldData.worldRevision)return;firstSceneMarked=true;performance.mark('trisavia:first-scene-ready',{detail:{instanceId:worldData.instanceId,worldRevision:worldData.worldRevision,rulesVersion:worldData.rules.version}});}
 function mapError() {
   mapFailed=true;worldProvider.setVisible(false);ownedAgents?.attach(null);setMapAvailable(false);
   if(publicFocus){publicFocus.waiting=false;focusMessage('地图暂不可用，恢复地图后可重试定位。',true);}
@@ -196,7 +198,7 @@ const refreshWorld=el('button','','刷新世界'),moreWorld=el('button','','继�
 refreshWorld.addEventListener('click',()=>{noticeVersion=null;noticeAbort?.abort();void worldProvider.refresh();});moreWorld.addEventListener('click',()=>void worldProvider.loadMore());
 worldProvider.subscribe(value=>{
   worldData=value;statusHud.update(value);const applied=scene?.setWorldScene(value);if(applied?.accepted===false)value={...value,phase:'unavailable',avatars:[],complete:false,errorCode:applied.reason};refreshWorld.hidden=false;refreshWorld.disabled=Boolean(value.errorStatus===429&&value.retryAt&&value.retryAt>Date.now());moreWorld.hidden=value.phase!=='partial';
-  worldData=value;if(applied?.accepted===false)statusHud.update(value);
+  worldData=value;if(applied?.accepted===false)statusHud.update(value);markFirstScene();
   void tryPublicFocus();void syncTownNotice();
   if(currentPlace&&detail.classList.contains('is-town-service')&&(!value.complete||value.npcCatalogVersion!==currentTownVersion))closePlace(false);
   if(currentPlace&&detail.classList.contains('is-life-place')){if(!value.complete)closePlace(false);else lifeCard.observeWorld(value);}
@@ -214,14 +216,14 @@ function stopEntryRead(){entryGeneration++;entryAbort?.abort();entryAbort=null;}
 async function readEntryCapabilities(){
   stopEntryRead();if(!entryCopy||!entryVisible||!pageActive||document.hidden)return;
   const generation=entryGeneration,controller=new AbortController();entryAbort=controller;entryCopy.textContent=entryCapabilityText(null);
-  try{const caps=await api('/capabilities',{signal:controller.signal});if(generation===entryGeneration&&!controller.signal.aborted&&pageActive&&!document.hidden)entryCopy.textContent=entryCapabilityText(caps);}
+  try{const caps=await readPublicCapabilities({signal:controller.signal});if(generation===entryGeneration&&!controller.signal.aborted&&pageActive&&!document.hidden)entryCopy.textContent=entryCapabilityText(caps);}
   catch(error){if(generation===entryGeneration&&!controller.signal.aborted&&error.name!=='AbortError')entryCopy.textContent=entryCapabilityText(null);}
 }
 const entryObserver=entryCopy?new IntersectionObserver(entries=>{const next=entries[0].isIntersecting;if(next===entryVisible)return;entryVisible=next;if(next)void readEntryCapabilities();else stopEntryRead();},{threshold:.01}):null;if(entryCopy)entryObserver.observe(entryCopy);
-document.addEventListener('visibilitychange',()=>{statusHud.setVisible(pageActive&&!document.hidden);if(document.hidden)stopEntryRead();else if(entryVisible)void readEntryCapabilities();});
+document.addEventListener('visibilitychange',()=>{worldProvider.setVisible(pageActive&&!document.hidden&&!mapFailed&&(!scene||scene.getState().visible));statusHud.setVisible(pageActive&&!document.hidden);if(document.hidden)stopEntryRead();else if(entryVisible)void readEntryCapabilities();});
 for (const link of document.querySelectorAll('a[href="#connect"]')) link.addEventListener('click', () => { $('#connect').open = true; });
 if (location.hash === '#connect') $('#connect').open = true;
-startScene();worldProvider.start();
+worldProvider.setVisible(!document.hidden);worldProvider.start();startScene();
 window.addEventListener('pagehide', event => {pageActive=false;stopEntryRead();worldProvider.setVisible(false);statusHud.setVisible(false);if (!event.persisted){cancelPublicFocus();noticeAbort?.abort();townCard.dispose();lifeCard.dispose();entryObserver?.disconnect();sceneGeneration++;sceneAbort?.abort();worldProvider.dispose();statusHud.dispose();stopStatusSession?.();ownedAgents?.dispose();characterCard.dispose();publicCharacter.dispose();window.removeEventListener('resize',positionCharacterCard);characterSize.disconnect();detailTransition.destroy();scene?.destroy();} });
 window.addEventListener('pageshow',()=>{pageActive=true;if(scene&&!mapFailed){worldProvider.setVisible(scene.getState().visible);statusHud.setVisible(scene.getState().visible&&!document.hidden);}if(entryVisible)void readEntryCapabilities();});
 return{focusPublicResident,returnToTown(){if(!mapReady||!scene)return false;closePlace(false);scene.fit();$('#world-canvas')?.focus({preventScroll:true});return true;},locateAgent(agentId){return mapReady&&scene?.locateOwnedAgent(agentId)||false;}};

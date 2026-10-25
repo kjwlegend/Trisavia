@@ -1,6 +1,16 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.4.7',
+    date: '2026-10-25',
+    status: '已完成',
+    title: '让小镇更早开始载入',
+    highlights: [
+      {category: '优化', title: '同时准备地图与真实场景', description: '地图素材与公开场景更早并行读取，仍在核对实例、地图与规则后才显示真实居民。'},
+      {category: '优化', title: '减少重复等待', description: '合并同时发出的匿名能力查询，保留定期发现新能力、错误恢复与过期画面提示。'},
+    ],
+  },
+  {
     version: '0.4.6',
     date: '2026-10-25',
     status: '已完成',
