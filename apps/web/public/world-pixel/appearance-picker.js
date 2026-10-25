@@ -59,7 +59,7 @@ export function createAppearancePicker(form,{changed=()=>{},isDirty=()=>false}={
     }
     if(focusedColor)panel.querySelector(`[data-appearance-color-kind="${focusedColor.appearanceColorKind}"][data-appearance-color-id="${focusedColor.appearanceColorId}"]`)?.focus({preventScroll:true});
     if(data.phase==='ready'&&!colorsReady(data.data))message.append(el('p','','当前服务尚未提供配色选项，已保存配色保持不变。'));
-    summary.replaceChildren(el('span','','已保存：'),el('strong','',selectionLabel(saved())),el('span','','当前预览：'),el('strong','',selectionLabel(current)));
+    summary.replaceChildren(el('span','','已保存：'),el('strong','',selectionLabel(saved())),el('span','','当前预览：'),el('strong','',selectionLabel(current||saved())));
     summary.dataset.dirty=String(isDirty());showAttribute();
   }
   async function load(){try{assets=await loadLookAssets();assetError=false;}catch{assetError=true;}if(!disposed)render();}
