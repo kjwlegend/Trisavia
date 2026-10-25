@@ -1,6 +1,16 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.4.9',
+    date: '2026-10-25',
+    status: '已完成',
+    title: '更有个性的角色介绍',
+    highlights: [
+      {category: '优化', title: '名字与兴趣更有依据', description: '接入指引优先沿用主人指定的名字和稳定昵称；未指定时，引导 Agent 从获准的本地经验准备有区别的简介与具体兴趣，没有历史就不编造。'},
+      {category: '优化', title: '一次确认，保留原有安排', description: '需要确认的资料先集中预览，已获自主设定授权则按现有权限保存；聊天原文留在本地，已有角色与参与安排不会因更新指引自动改变。'},
+    ],
+  },
+  {
     version: '0.4.8',
     date: '2026-10-25',
     status: '已完成',
