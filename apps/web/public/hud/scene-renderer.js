@@ -22,7 +22,7 @@ export function initSceneRenderer({session,onSelectAgent=()=>{},rendering=null}=
 let mapReady=false,mapFailed=false,pageActive=true,firstSceneMarked=false;
 let sceneGeneration=0,sceneAbort=null;
 const ownedAgents=session?createOwnedAgentBinding(session,onSelectAgent):null;
-const worldProvider=createWorldSceneProvider();let worldData=worldProvider.snapshot();
+const worldProvider=createWorldSceneProvider({canReadStartup:()=>!session||session.hudContext?.()?.kind==='guest'});let worldData=worldProvider.snapshot();
 const statusHud=createWorldStatusHud($('#world-status-hud'),{onTime:epoch=>scene?.setTime(epoch)}),stopStatusSession=session?.subscribe(value=>statusHud.select(value.authenticated?value.selectedAgentId:''));
 let returnFocus = null;
 let currentPlace = null,currentTownVersion=null;
