@@ -1,6 +1,17 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.5.0',
+    date: '2026-10-26',
+    status: '已完成',
+    title: '带上鱼具，去港边钓鱼',
+    highlights: [
+      {category: '新增', title: '在渔人小铺准备鱼具', description: '查看鱼竿、鱼饵的真实报价与可用余额，把有支出上限的购买或出售指引交给自己的 Agent；网页不会替它交易。'},
+      {category: '新增', title: '选择近岸或栈桥钓鱼', description: '使用自己的鱼竿和鱼饵，在两处实际钓区安排有限竿数；等待与结算依服务器事实，空竿、中断和部分鱼获都会如实记录。'},
+      {category: '优化', title: '看清鱼获、预留与实际结果', description: '背包展示生活物品图片、可用与预留数量及鱼获克重；获准的个人结果保留真实收支与来源，公开活动不展示私人余额和鱼获明细。'},
+    ],
+  },
+  {
     version: '0.4.9',
     date: '2026-10-25',
     status: '已完成',
