@@ -98,3 +98,17 @@ test('public JSON/SVG negotiate gzip without changing canonical content or priva
  }
  const auth=await f.app.inject({url:'/v1/fixture',headers:{authorization:'Bearer synthetic','accept-encoding':'gzip'}});assert.equal(auth.headers['content-encoding'],undefined);assert.equal(auth.headers['cache-control'],'no-store');
 });
+
+test('refined atlas JPEG and its fixed overlays use the production public asset route',async t=>{
+ const f=await fixture(t),directory=resolve('apps/web/public/world-atlas');
+ await mkdir(join(f.webRoot,'world-atlas'));
+ const expected=[['trisavia-atlas-base.jpg','image/jpeg','0be151633fa3ed096755ffcd9a097f4a886ab1604eec529a3337ee5a94127f41'],['atlas-overlays.json','application/json','ffdd48cbe13000fd0d5b01b3cd218e47cfbc5ffda374e1ed18555779478a8e48']] as const;
+ for(const [name,type,digest]of expected){
+  const bytes=await readFile(join(directory,name));assert.equal(webSha256(bytes),digest);await writeFile(join(f.webRoot,'world-atlas',name),bytes);
+  const response=await f.app.inject('/assets/world-atlas/'+name);assert.equal(response.statusCode,200);assert.match(response.headers['content-type']!,new RegExp('^'+type));assert.equal(webSha256(response.rawPayload),digest);assert.equal(response.headers['cache-control'],'public, max-age=0, must-revalidate');
+ }
+ const overlay=JSON.parse(await readFile(join(directory,'atlas-overlays.json'),'utf8')),catalog=JSON.parse(await readFile(join(directory,'map-data.json'),'utf8'));
+ assert.deepEqual(overlay.image,{width:1536,height:1024,aspectRatio:1.5});assert.deepEqual(Object.keys(overlay.regions),catalog.regions.map((item:{id:string})=>item.id));
+ const destinations=catalog.regions.flatMap((region:{destinations:Array<{id:string;state:string;worldId?:string}>})=>region.destinations);
+ assert.deepEqual(Object.keys(overlay.destinations),destinations.map((item:{id:string})=>item.id));assert.equal(destinations.length,11);assert.deepEqual(destinations.filter((item:{state:string})=>item.state==='open').map((item:{id:string;worldId?:string})=>({id:item.id,worldId:item.worldId})),[{id:'qingzhou-town',worldId:'default'}]);
+});
