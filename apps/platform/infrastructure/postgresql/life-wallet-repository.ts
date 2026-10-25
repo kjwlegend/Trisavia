@@ -19,12 +19,12 @@ function credit(row:Row):LifeWalletCredit{return {
 /** Same caller-owned RuntimeSql/client as lifecycle, receipts and events. This factory opens no transaction or connection. */
 export function createLifeWalletRepository(sql:RuntimeSql,sources:LifeWalletSources):{port:typeof LIFE_WALLET_REPOSITORY;reader:LifeWalletReader;writer:LifeWalletRepository}{
  const catalog=copy(sources.catalog);
- if(![1,2].includes(catalog.revision)||catalog.ruleVersion!==1||catalog.currency!=='star_coin'||catalog.currencyScale!==0||typeof sources.readCompletedWorkRewardSource!=='function')throw new RuntimeError('invalid_usage','The approved life wallet catalog and source reader are required');
+ if(![1,2,3].includes(catalog.revision)||catalog.ruleVersion!==1||catalog.currency!=='star_coin'||catalog.currencyScale!==0||typeof sources.readCompletedWorkRewardSource!=='function')throw new RuntimeError('invalid_usage','The approved life wallet catalog and source reader are required');
  const jobs=new Map(catalog.jobs.map(job=>{text(job.id);integer(job.coinReward,1);integer(job.durationSeconds,1,7200);return [job.id,job] as const;}));
  if(jobs.size!==catalog.jobs.length||jobs.size!==2||!jobs.has('harbor_shift')||!jobs.has('tavern_shift'))throw new RuntimeError('invalid_usage','The two approved work rules are required');
  integer(catalog.npcPolicy.initialCoins,1);
- const npcs=new Set(catalog.npcProfiles.filter(profile=>profile.stage==='A'||catalog.revision===2&&profile.stage==='B').map(profile=>text(profile.id)));
- const expectedNpcs=['npc-mayor','npc-tavern','npc-innkeeper','npc-harbor-hand',...(catalog.revision===2?['npc-fishing-clerk']:[])];
+ const npcs=new Set(catalog.npcProfiles.filter(profile=>profile.stage==='A'||catalog.revision>=2&&profile.stage==='B'||catalog.revision===3&&profile.stage==='C').map(profile=>text(profile.id)));
+ const expectedNpcs=['npc-mayor','npc-tavern','npc-innkeeper','npc-harbor-hand',...(catalog.revision>=2?['npc-fishing-clerk']:[]),...(catalog.revision===3?['npc-librarian','npc-neighbor']:[])];
  if(npcs.size!==expectedNpcs.length||expectedNpcs.some(id=>!npcs.has(id)))throw new RuntimeError('invalid_usage','The approved A/B NPC identities are required');
  async function readCredit(reason:LifeCreditReason,sourceId:string){
   const row=(await sql.query('SELECT * FROM wallet.life_credits WHERE reason=$1 AND source_id=$2',[reason,text(sourceId)]))[0];
@@ -60,7 +60,7 @@ export function createLifeWalletRepository(sql:RuntimeSql,sources:LifeWalletSour
   if(!source||source.id!==id||source.state!=='completed'||source.actionId!=='work.shift')throw new RuntimeError('invalid_usage','Only a persisted completed work activity is a currency source');
   if(source.actorKind!==a.kind||source.actorId!==a.id)throw new RuntimeError('command_conflict','The completed activity belongs to another actor');
   const job=jobs.get(source.jobId??'');
-  if(!job||!([1,2].includes(source.catalogRevision)&&source.catalogRevision<=catalog.revision)||source.ruleVersion!==catalog.ruleVersion||source.rewardAmount!==job.coinReward||source.resultId!==id||!source.sourceEventId)throw new RuntimeError('invalid_usage','The frozen completed work terms differ from the approved rule');
+  if(!job||!([1,2,3].includes(source.catalogRevision)&&source.catalogRevision<=catalog.revision)||source.ruleVersion!==catalog.ruleVersion||source.rewardAmount!==job.coinReward||source.resultId!==id||!source.sourceEventId)throw new RuntimeError('invalid_usage','The frozen completed work terms differ from the approved rule');
   integer(source.startedAt);integer(source.scheduledEndAt,source.startedAt);integer(source.endedAt,source.scheduledEndAt);
   if(source.scheduledEndAt-source.startedAt!==job.durationSeconds*1000)throw new RuntimeError('invalid_usage','The activity did not retain its full work duration');
   text(source.sourceEventId);return {source,job};
@@ -73,7 +73,7 @@ export function createLifeWalletRepository(sql:RuntimeSql,sources:LifeWalletSour
    sql.writable();const a=actor(input.actorRef);if(a.kind!=='npc'||!npcs.has(a.id))throw new RuntimeError('invalid_usage','Only an approved real A/B NPC may receive initialization');
    // Initialization is a lifetime entitlement, independent of later catalog activation or the current balance.
    const existing=await readCredit('life.npc.initialization',a.id);
-   if(existing){const v=existing.value;if(v.actorRef.kind!=='npc'||v.actorRef.id!==a.id||v.amount!==catalog.npcPolicy.initialCoins||v.ruleVersion!==1||![1,2].includes(v.catalogRevision)||v.catalogRevision>catalog.revision)throw new RuntimeError('command_conflict','The original NPC initialization differs');return v;}
+   if(existing){const v=existing.value;if(v.actorRef.kind!=='npc'||v.actorRef.id!==a.id||v.amount!==catalog.npcPolicy.initialCoins||v.ruleVersion!==1||![1,2,3].includes(v.catalogRevision)||v.catalogRevision>catalog.revision)throw new RuntimeError('command_conflict','The original NPC initialization differs');return v;}
    const payloadHash=hashRuntimeRequest({reason:'life.npc.initialization',actorKind:a.kind,actorId:a.id,catalogRevision:catalog.revision,ruleVersion:catalog.ruleVersion,amount:catalog.npcPolicy.initialCoins});
    const prior=samePrior(await readCredit('life.npc.initialization',a.id),payloadHash);if(prior)return prior;
    if(!(await sql.query('SELECT npc_id FROM town_services.npcs WHERE npc_id=$1',[a.id])).length)throw new RuntimeError('invalid_usage','A real NPC identity must exist before its wallet');
