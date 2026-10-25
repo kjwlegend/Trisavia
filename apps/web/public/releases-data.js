@@ -12,6 +12,16 @@ export const RELEASES = [
     ],
   },
   {
+    version: '0.3.3',
+    date: '2026-10-25',
+    status: '已完成',
+    title: '远方的地图更清晰',
+    highlights: [
+      {category: '优化', title: '看清海岸、原野与山地', description: '地图换上更细致的地形底图，四个地区与十一处地点保持原有介绍；目前仍只有清昼小镇可访问。'},
+      {category: '优化', title: '放大看看，再回到小镇', description: '地图支持放大拖动与欣赏底图，也能一键定位清昼小镇；未来地点继续明确标为尚未开放。'},
+    ],
+  },
+  {
     version: '0.3.2',
     date: '2026-10-25',
     status: '已完成',

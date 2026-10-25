@@ -6,7 +6,7 @@ import {extname,resolve,sep} from 'node:path';
 export const WEB_MIME:Readonly<Record<string,string>>={
  '.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8',
  '.json':'application/json; charset=utf-8','.css':'text/css; charset=utf-8',
- '.svg':'image/svg+xml','.png':'image/png','.webp':'image/webp',
+ '.svg':'image/svg+xml','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.jpeg':'image/jpeg',
  '.wav':'audio/wav','.ogg':'audio/ogg','.mp3':'audio/mpeg',
 };
 export interface VerifiedWebFile {root:string;file:string;sha256:string;bytes:number;contentType:string}
