@@ -1015,7 +1015,7 @@
           "id": "harbor_shore-01",
           "spotId": "shore_spot",
           "actionIds": [
-            "fishing.cast"
+            "fish.session"
           ],
           "capacity": 1,
           "cells": [
@@ -1060,7 +1060,7 @@
           "id": "harbor_shore-02",
           "spotId": "shore_spot",
           "actionIds": [
-            "fishing.cast"
+            "fish.session"
           ],
           "capacity": 1,
           "cells": [
@@ -1105,7 +1105,7 @@
           "id": "harbor_shore-03",
           "spotId": "shore_spot",
           "actionIds": [
-            "fishing.cast"
+            "fish.session"
           ],
           "capacity": 1,
           "cells": [
@@ -1150,7 +1150,7 @@
           "id": "harbor_shore-04",
           "spotId": "shore_spot",
           "actionIds": [
-            "fishing.cast"
+            "fish.session"
           ],
           "capacity": 1,
           "cells": [
@@ -1314,7 +1314,7 @@
           "id": "harbor_pier-01",
           "spotId": "pier_spot",
           "actionIds": [
-            "fishing.cast"
+            "fish.session"
           ],
           "capacity": 1,
           "cells": [
@@ -1359,7 +1359,7 @@
           "id": "harbor_pier-02",
           "spotId": "pier_spot",
           "actionIds": [
-            "fishing.cast"
+            "fish.session"
           ],
           "capacity": 1,
           "cells": [
@@ -1404,7 +1404,7 @@
           "id": "harbor_pier-03",
           "spotId": "pier_spot",
           "actionIds": [
-            "fishing.cast"
+            "fish.session"
           ],
           "capacity": 1,
           "cells": [
