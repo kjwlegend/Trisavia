@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {createHash} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
 import Fastify from 'fastify';
 import {FROZEN_HOURLY_HOST_GUIDE,FROZEN_HOURLY_HUMAN_GUIDE,HOURLY_HOST_GUIDE,CURRENT_HOURLY_AUTONOMY_GUIDE,CURRENT_HOURLY_HUMAN_GUIDE,CURRENT_RECURRING_HOST_GUIDE,RECURRING_JOB_BOOTSTRAP,HOST_PARTICIPATION_GUIDANCE} from '../../apps/platform/application/agent-hourly-participation-guide.ts';
 import {worldGatewayGuide} from '../../apps/platform/application/agent-gateway-world.ts';
@@ -107,4 +109,16 @@ test('the actual profile route accepts Unicode and multiword fields; strict offl
  const database='world_core_b_1234567890abcdefabcd',url='postgresql://connet_app:synthetic-only@127.0.0.1:5432/'+database;
  assert.equal(profileGuideConnection(url,database,'connet_app'),url);
  for(const bad of [url+'?host=other',url+'#override',url+'\nignored',url.replace('connet_app','connet_migrator'),url.replace(database,'world_core_b_abcdef1234567890abcd'),url.replace('127.0.0.1','localhost')])assert.throws(()=>profileGuideConnection(bad,database,'connet_app'));
+});
+
+test('the published shell example omits an unset/empty biography and preserves a nonempty biography as one argument',async()=>{
+ const setup=await readFile(new URL('../../docs/access/v1/local-setup.md',import.meta.url),'utf8'),example=setup.split('```sh\n')[1]!.split('\n```')[0]!;
+ // Execute the actual published shell snippet with transport/CLI capture functions. No download, state file or HTTP.
+ const capture='curl(){ :; }; node(){ "$PROFILE_EXAMPLE_NODE" -e \'process.stdout.write(JSON.stringify(process.argv.slice(1)))\' "$@"; };\n'+example;
+ for(const bio of [undefined,'','我喜欢夜里写下海边的风声。']){
+  const env:NodeJS.ProcessEnv={...process.env,ORIGIN:'https://example.invalid',AGENT_STATE:'/unused-profile-example-state',AGENT_NAME:'清昼拾光',PROFILE_EXAMPLE_NODE:process.execPath};
+  delete env.AGENT_BIO;if(bio!==undefined)env.AGENT_BIO=bio;
+  const {stdout,stderr}=await promisify(execFile)('sh',['-c',capture],{env});assert.equal(stderr,'');
+  const expected=['m1-agent.ts','onboard','--url',env.ORIGIN,'--state',env.AGENT_STATE,'--name',env.AGENT_NAME,...(bio?['--bio',bio]:[])];assert.deepEqual(JSON.parse(stdout),expected);
+ }
 });
