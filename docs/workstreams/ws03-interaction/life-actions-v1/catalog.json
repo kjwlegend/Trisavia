@@ -17,15 +17,15 @@
     {"id":"tavern_shift","placeId":"harbor_tavern","durationSeconds":480,"coinReward":24,"energyCost":16,"workRecord":"hospitality"}
   ],
   "items": [
-    {"id":"basic_rod","name":"木柄鱼竿","kind":"tool","buyPrice":30,"sellPrice":null,"transferable":true,"stackable":false,"uses":["fish.session"]},
-    {"id":"bait","name":"通用鱼饵","kind":"consumable","buyPrice":2,"sellPrice":null,"transferable":true,"stackable":true,"uses":["fish.session"]},
-    {"id":"sardine","name":"银纹沙丁鱼","kind":"fish","buyPrice":null,"sellPrice":4,"transferable":true,"stackable":false,"weightGrams":[100,300],"uses":["shop.sell","meal.prepare","gift.offer"]},
-    {"id":"mackerel","name":"青背鲭鱼","kind":"fish","buyPrice":null,"sellPrice":8,"transferable":true,"stackable":false,"weightGrams":[400,900],"uses":["shop.sell","meal.prepare","gift.offer"]},
-    {"id":"sea_bass","name":"花斑海鲈","kind":"fish","buyPrice":null,"sellPrice":14,"transferable":true,"stackable":false,"weightGrams":[800,1800],"uses":["shop.sell","meal.prepare","gift.offer"]},
-    {"id":"bread_meal","name":"麦香便餐","kind":"food","buyPrice":6,"sellPrice":null,"transferable":true,"stackable":true,"energyGain":20,"durationSeconds":60,"uses":["meal.eat","gift.offer"]},
-    {"id":"herbal_tea","name":"草本茶","kind":"food","buyPrice":3,"sellPrice":null,"transferable":true,"stackable":true,"energyGain":8,"durationSeconds":30,"uses":["meal.eat","gift.offer"]},
-    {"id":"grilled_fish","name":"香煎鱼餐","kind":"food","buyPrice":null,"sellPrice":null,"transferable":true,"stackable":true,"energyGain":28,"durationSeconds":60,"uses":["meal.eat","gift.offer"]},
-    {"id":"harbor_handbook","name":"港湾生活手册","kind":"book","buyPrice":10,"sellPrice":null,"transferable":true,"stackable":false,"uses":["book.read","gift.offer"]}
+    {"id":"basic_rod","imageId":"life-item-basic_rod","name":"木柄鱼竿","kind":"tool","buyPrice":30,"sellPrice":null,"transferable":true,"stackable":false,"uses":["fish.session"]},
+    {"id":"bait","imageId":"life-item-bait","name":"通用鱼饵","kind":"consumable","buyPrice":2,"sellPrice":null,"transferable":true,"stackable":true,"uses":["fish.session"]},
+    {"id":"sardine","imageId":"life-item-sardine","name":"银纹沙丁鱼","kind":"fish","buyPrice":null,"sellPrice":4,"transferable":true,"stackable":false,"weightGrams":[100,300],"uses":["shop.sell","meal.prepare","gift.offer"]},
+    {"id":"mackerel","imageId":"life-item-mackerel","name":"青背鲭鱼","kind":"fish","buyPrice":null,"sellPrice":8,"transferable":true,"stackable":false,"weightGrams":[400,900],"uses":["shop.sell","meal.prepare","gift.offer"]},
+    {"id":"sea_bass","imageId":"life-item-sea_bass","name":"花斑海鲈","kind":"fish","buyPrice":null,"sellPrice":14,"transferable":true,"stackable":false,"weightGrams":[800,1800],"uses":["shop.sell","meal.prepare","gift.offer"]},
+    {"id":"bread_meal","imageId":"life-item-bread_meal","name":"麦香便餐","kind":"food","buyPrice":6,"sellPrice":null,"transferable":true,"stackable":true,"energyGain":20,"durationSeconds":60,"uses":["meal.eat","gift.offer"]},
+    {"id":"herbal_tea","imageId":"life-item-herbal_tea","name":"草本茶","kind":"food","buyPrice":3,"sellPrice":null,"transferable":true,"stackable":true,"energyGain":8,"durationSeconds":30,"uses":["meal.eat","gift.offer"]},
+    {"id":"grilled_fish","imageId":"life-item-grilled_fish","name":"香煎鱼餐","kind":"food","buyPrice":null,"sellPrice":null,"transferable":true,"stackable":true,"energyGain":28,"durationSeconds":60,"uses":["meal.eat","gift.offer"]},
+    {"id":"harbor_handbook","imageId":"life-item-harbor_handbook","name":"港湾生活手册","kind":"book","buyPrice":10,"sellPrice":null,"transferable":true,"stackable":false,"uses":["book.read","gift.offer"]}
   ],
   "legacyItems": ["resident_card","tavern_voucher","inn_voucher"],
   "fishing": {
