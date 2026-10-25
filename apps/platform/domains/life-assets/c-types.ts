@@ -8,12 +8,12 @@ export interface LifeCResources {
  totals:{itemId:LifeCItemId;available:number;reserved:number}[];items:LifeCItemInstance[];nextCursor:string|null;complete:boolean;
 }
 export interface LifeCAssetCatalog extends LifeAssetCatalog {
- services:{mealPreparation:{placeId:string;fishUnits:number;fee:number;durationSeconds:number;outputItemId:string};innRest:{placeId:string;price:number;durationSeconds:number}};
+ services:{mealPreparation:{placeId:string;fishUnits:number;fee:number;durationSeconds:number;outputItemId:string};innRest:{placeId:string;price:number;durationSeconds:number};reading:{placeId:string;durationSeconds:number}};
  items:readonly (LifeAssetCatalog['items'][number]&{durationSeconds?:number})[];
 }
 /** Read only through the source owner's same-transaction callback. Never accepted as a command payload. */
 export interface LifeCActivitySource {
- id:string;actorKind:WalletActorRef['kind'];actorId:string;actionId:'meal.prepare'|'meal.eat'|'rest.inn';state:'active'|'completed'|'cancelled'|'interrupted';
+ id:string;actorKind:WalletActorRef['kind'];actorId:string;actionId:'meal.prepare'|'meal.eat'|'rest.inn'|'book.read';state:'active'|'completed'|'cancelled'|'interrupted';
  catalogRevision:number;ruleVersion:number;placeId:string;itemInstanceId:string|null;maxSpend:number;
  startedAt:number;scheduledEndAt:number;endedAt:number|null;resultId:string|null;sourceEventId:string|null;
 }
@@ -36,4 +36,4 @@ export interface LifeCEffect {
  id:string;kind:LifeCEffectKind;sourceId:string;actorRef:WalletActorRef;recipientAgentId:string|null;occurredAt:number;
  moneyDelta:number;reservedCoinsDelta:number;reservedItemIds:string[];releasedItemIds:string[];consumedItemIds:string[];createdItemIds:string[];transferredItemIds:string[];
 }
-export interface LifeCReservationTerms {money:number;itemInstanceId:string|null;durationMs:number;outputItemId:'grilled_fish'|null}
+export interface LifeCReservationTerms {money:number;itemInstanceId:string|null;durationMs:number;outputItemId:'grilled_fish'|null;consumeItem:boolean}

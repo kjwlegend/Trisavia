@@ -9,8 +9,9 @@ export function validateLifeCAssetCatalog(c:LifeCAssetCatalog){
  if(c.items.length!==9||new Set(c.items.map(x=>x.id)).size!==9||ids.some(id=>!c.items.some(x=>x.id===id)))invalid('The exact nine life items are required');
  for(const [id,price]of [['bread_meal',6],['herbal_tea',3],['harbor_handbook',10]] as const){const rows=c.items.filter(x=>x.id===id);if(rows.length!==1||rows[0]!.buyPrice!==price||rows[0]!.sellPrice!==null)invalid('C purchase rules differ from the approved catalog');}
  if(c.items.find(x=>x.id==='bread_meal')?.durationSeconds!==60||c.items.find(x=>x.id==='herbal_tea')?.durationSeconds!==30||c.items.find(x=>x.id==='grilled_fish')?.durationSeconds!==60)invalid('C food durations differ from the approved catalog');
- const p=c.services.mealPreparation,r=c.services.innRest;
+ const p=c.services.mealPreparation,r=c.services.innRest,b=c.services.reading;
  if(p.placeId!=='harbor_tavern'||p.fishUnits!==1||p.fee!==3||p.durationSeconds!==60||p.outputItemId!=='grilled_fish'||r.placeId!=='stone_inn'||r.price!==12||r.durationSeconds!==180)invalid('C preparation and lodging rules differ from the approved catalog');
+ if(b?.placeId!=='blue_library'||b.durationSeconds!==180)invalid('C reading rules differ from the approved catalog');
 }
 function versioned(v:{catalogRevision:number;ruleVersion:number}) {if(v.catalogRevision!==3||v.ruleVersion!==1)invalid('A frozen C3 source is required');}
 export function lifeCPurchaseTerms(s:LifeTradeSource,c:LifeCAssetCatalog){
@@ -28,8 +29,9 @@ export function lifeCActivityTerms(s:LifeCActivitySource,item:LifeCItemInstance|
  if(s.actionId==='meal.prepare'){if(s.placeId!==c.services.mealPreparation.placeId||!item||!['sardine','mackerel','sea_bass'].includes(item.itemId))invalid('Preparation requires one explicitly selected owned fish');money=c.services.mealPreparation.fee;durationMs=c.services.mealPreparation.durationSeconds*1000;outputItemId='grilled_fish';}
  else if(s.actionId==='meal.eat'){if(!['harbor_tavern','garden_bench'].includes(s.placeId)||!item||!['bread_meal','herbal_tea','grilled_fish'].includes(item.itemId))invalid('Eating requires one explicitly selected owned food at a dining place');durationMs=c.items.find(x=>x.id===item.itemId)!.durationSeconds!*1000;}
  else if(s.actionId==='rest.inn'){if(s.placeId!==c.services.innRest.placeId||s.itemInstanceId!==null)invalid('Paid lodging uses coins rather than a legacy voucher');money=c.services.innRest.price;durationMs=c.services.innRest.durationSeconds*1000;}
+ else if(s.actionId==='book.read'){if(s.placeId!==c.services.reading.placeId||s.itemInstanceId!==null&&item?.itemId!=='harbor_handbook')invalid('Reading uses the library collection or one explicitly selected owned handbook');durationMs=c.services.reading.durationSeconds*1000;}
  else invalid('Unsupported C activity');
- if(s.scheduledEndAt-s.startedAt!==durationMs||money>s.maxSpend)invalid('The frozen duration or spend ceiling differs');return{money,itemInstanceId:s.itemInstanceId,durationMs,outputItemId};
+ if(s.scheduledEndAt-s.startedAt!==durationMs||money>s.maxSpend)invalid('The frozen duration or spend ceiling differs');return{money,itemInstanceId:s.itemInstanceId,durationMs,outputItemId,consumeItem:s.actionId==='meal.prepare'||s.actionId==='meal.eat'};
 }
 export function lifeCActivityOutcome(s:LifeCActivitySource){versioned(s);if(!['completed','cancelled','interrupted'].includes(s.state)||s.resultId!==s.id||!s.sourceEventId)invalid('C settlement requires its actual terminal result and event');boundedCInteger(s.endedAt,s.state==='completed'?s.scheduledEndAt:s.startedAt);return s.state==='completed'?'consume':'release';}
 export function lifeCGiftTerms(s:LifeCGiftSource){
