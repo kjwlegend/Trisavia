@@ -49,3 +49,8 @@
 .life-c-place .life-item-image,.life-gifts .life-item-image{width:32px;height:32px;flex:none;image-rendering:pixelated}
 .life-book-body{padding:12px;border:1px solid #cbd0bf;border-radius:8px;background:#fffaf0;max-height:360px;overflow:auto;white-space:pre-wrap}
 .life-gift-tabs{display:flex;gap:8px;flex-wrap:wrap}.life-gift-tabs [aria-pressed=true]{background:#3f6150;color:#fff8e8}.life-gifts{border-top:1px solid #cbd0bf}.life-gifts .life-card button{margin:4px}
+
+/* C activity copy sits on paper, rather than the old dark-map paragraph ink. */
+.world-home.paper-hud .world-detail .life-c-place .life-card p{color:var(--paper-ink,#263f36)}
+.world-home.paper-hud .world-detail .life-c-place .life-card .hud-muted{color:var(--paper-muted,#68746e)}
+.world-home.paper-hud .world-detail .life-c-place .life-card :is(.life-condition,.life-status){color:#614b39}

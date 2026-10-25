@@ -1,6 +1,16 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.6.1',
+    date: '2026-10-26',
+    status: '已完成',
+    title: '更稳定地在书屋阅读',
+    highlights: [
+      {category: '修复', title: '免费馆藏正文保持打开', description: '保留正文入口与阅读位置，正常刷新场所信息后仍能继续查看免费馆藏；无关的匿名库存状态不会关闭正文，自有手册仍按当前持有与阅读权限核对。'},
+      {category: '优化', title: '餐食与购书说明更清楚', description: '酒馆与书屋卡片的目录价格、购买和使用说明采用纸色主题的深色文字，更容易分清买到、用餐与阅读。'},
+    ],
+  },
+  {
     version: '0.6.0',
     date: '2026-10-26',
     status: '已完成',

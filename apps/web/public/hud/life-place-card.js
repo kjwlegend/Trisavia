@@ -15,7 +15,7 @@ const control=(label,run)=>{const node=el('button','',label);node.type='button';
 const selected=context=>context?.authenticated&&['ready','refreshing'].includes(context.phase)?context.agents.find(agent=>agent.agentId===context.selectedAgentId):null;
 function facts(rows){const node=el('dl','life-facts');for(const [name,value]of rows)node.append(el('dt','',name),el('dd','',value));return node;}
 export function createLifePlaceCard(session,{getWorldState,chooseAgent=()=>{}}={}){
- const node=el('section','life-place-card'),reader=createLifeActionsReader({getRules:()=>getWorldState()?.rules}),bPlace=createLifeBPlace(session,{chooseAgent}),cPlace=createLifeCPlace(session,{chooseAgent});let active=false,target=null,state=reader.snapshot(),context=session.snapshot(),optionRows=[],offerKey='',message='',copied='',npcStale=false,worldStale=false;
+ const node=el('section','life-place-card'),reader=createLifeActionsReader({getRules:()=>getWorldState()?.rules}),bPlace=createLifeBPlace(session,{chooseAgent}),cPlace=createLifeCPlace(session,{chooseAgent,getScrollHost:()=>node.closest('.world-detail-body')});let active=false,target=null,state=reader.snapshot(),context=session.snapshot(),optionRows=[],offerKey='',message='',copied='',npcStale=false,worldStale=false;
  function clearOptions(){for(const row of optionRows){row.stop();row.reader.dispose();}optionRows=[];offerKey='';}
  function match(){return state.data?.places.find(place=>target?.placeId?place.placeId===target.placeId:place.anchorBuildingId===target?.buildingId);}
  function prepare(){
@@ -32,7 +32,7 @@ export function createLifePlaceCard(session,{getWorldState,chooseAgent=()=>{}}={
   render();
  }
  function render(){
-  const focus=document.activeElement?.dataset?.lifeBField;node.replaceChildren();node.hidden=!active;if(!active)return;node.dataset.lifePhase=state.phase;
+  const focus=document.activeElement?.dataset?.lifeBField,scrollHost=node.closest('.world-detail-body'),scrollTop=scrollHost?.scrollTop;node.replaceChildren();node.hidden=!active;if(!active)return;node.dataset.lifePhase=state.phase;
   if(worldStale)node.append(el('p','life-status','上次世界画面已过期，位置与动作冻结；恢复后再核对当前条件。'));
   if(target.npc){const info=el('section','life-npc-summary');info.append(el('h3','',target.npc.name),el('p','paper-stable-id',publicIdLabel(target.npc.publicId,'N')),el('p','',publicLifeLabel(target.npc.activity)),el('p','hud-muted','小镇规则角色，不是真实外部 Agent。'));if(npcStale)info.append(el('p','life-status','上次确认的镇民状态已过期，位置与动作冻结。'));node.append(info);}
   const status=el('p','life-status');status.setAttribute('role','status');status.textContent=state.stale?'上次读取的活动条款已过期，请重新确认。':state.phase==='loading'?'正在读取场所活动…':state.phase==='refreshing'?'正在更新活动条款…':['error','changed','forbidden'].includes(state.phase)?'场所活动暂时无法读取，请重试。':'';status.hidden=!status.textContent;node.append(status);
@@ -51,7 +51,7 @@ export function createLifePlaceCard(session,{getWorldState,chooseAgent=()=>{}}={
    }
   }else{bPlace.close();cPlace.close();if(state.phase==='ready')node.append(el('p','hud-muted','当前目录没有为这里提供本批可用的生活活动。'));}
   const refresh=control('刷新活动与条件',()=>{void reader.refresh();for(const row of optionRows)void row.reader.refresh();bPlace.refresh();cPlace.refresh();});refresh.disabled=['loading','refreshing'].includes(state.phase);node.append(refresh);
-  if(message){const line=el('p','life-copy-status',message);line.setAttribute('role','status');node.append(line);}if(copied){const guide=el('details','life-copy-guide');guide.open=true;guide.append(el('summary','','给 Agent 的完整指引'),el('pre','',copied));node.append(guide);}if(focus)node.querySelector(`[data-life-b-field="${CSS.escape(focus)}"]`)?.focus({preventScroll:true});
+  if(message){const line=el('p','life-copy-status',message);line.setAttribute('role','status');node.append(line);}if(copied){const guide=el('details','life-copy-guide');guide.open=true;guide.append(el('summary','','给 Agent 的完整指引'),el('pre','',copied));node.append(guide);}if(focus)node.querySelector(`[data-life-b-field="${CSS.escape(focus)}"]`)?.focus({preventScroll:true});if(scrollHost)scrollHost.scrollTop=scrollTop;
  }
  const stop=reader.subscribe(value=>{state=value;if(value.data)prepare();else clearOptions();render();});
  const stopSession=session.subscribe(value=>{const changed=context.observationRevision!==value.observationRevision;context=value;if(changed){message=copied='';for(const row of optionRows)row.state={...row.state,data:null,phase:'loading',stale:false};render();}});
