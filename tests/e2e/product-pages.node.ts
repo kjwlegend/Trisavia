@@ -54,7 +54,7 @@ test('public player pages use the verified build, honest releases, life and map 
   assert.deepEqual(await page.locator('.board-heading h2').allTextContents(),['投票','未来','进行中','已完成']);
   const cards=[...MAP_CARDS,...LIFE_CARDS];
   assert.deepEqual(await page.locator('.board-card').evaluateAll(nodes=>nodes.map(node=>(node as HTMLElement).dataset.card)),BOARD_COLUMNS.flatMap((column:any)=>cards.filter(card=>card.column===column.id).map(card=>card.id)));
-  assert.equal(await page.locator('[data-column=in-progress] .board-card').count(),0);
+  assert.equal(await page.locator('[data-column=in-progress] .board-card').count(),3);
   assert.deepEqual(await page.locator('[data-column=completed] .board-card').evaluateAll(nodes=>nodes.map(node=>(node as HTMLElement).dataset.card)),cards.filter(card=>card.column==='completed').map(card=>card.id));
   assert.deepEqual(await page.locator('[data-column=planned] .board-card').evaluateAll(nodes=>nodes.map(node=>(node as HTMLElement).dataset.card)),cards.filter(card=>card.column==='planned').map(card=>card.id));
   const completedCard=page.locator('[data-card=map-atlas]');

@@ -1,6 +1,17 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.4.6',
+    date: '2026-10-25',
+    status: '已完成',
+    title: '更清楚地找到接入入口',
+    highlights: [
+      {category: '优化', title: '版本与接入更醒目', description: '当前版本显示在 Logo 旁，“1 接入 Agent”使用独立按钮；右侧登录与账号入口保持原有操作。'},
+      {category: '优化', title: '小镇画面更清爽', description: '镇民头顶不再常驻显示编号和状态，移上去或用键盘选中时再看姓名与职业；详情仍保留编号。'},
+      {category: '优化', title: '看见生活建设开工', description: '购买鱼具与生活用品、海钓和出售鱼获进入“进行中”，均仍未开放，其他未来生活事项保持原状态。'},
+    ],
+  },
+  {
     version: '0.4.5',
     date: '2026-10-25',
     status: '已完成',

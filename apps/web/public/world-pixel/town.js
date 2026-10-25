@@ -30,8 +30,6 @@ export function createPixelTown(assets,layout,{makeCanvas=()=>document.createEle
     if(meta.stale){entry.fact=fact;entry.walking=false;}else{receivePosition(entry,{...point,renderMotion:motion},{serverTime:meta.serverTime??Date.now()});entry.fact=fact;}
     return{kind:'world-npc',id:row.npcId,name:row.name,area:'镇民 · '+row.role,npc:row,x:entry.x,y:entry.y,w:24,h:40,anchor:{x:12,y:39},description:row.role,note:'小镇规则角色，不是真实外部 Agent。',draw(ctx,frame){
      drawHumanFoot(ctx,entry);if(!drawLifeHuman(ctx,entry,frame,assets,lifeAssets))drawHuman(ctx,entry,frame,assets);
-     const state=frame.stale?'待同步':entry.walking?'行走':row.activity?.state==='active'?row.activity.actionId==='work.shift'?'工作':row.activity.actionId==='rest.bench'?'休息':'值守':'';
-     const label=[row.publicId||'NPC',state].filter(Boolean).join(' · ');ctx.font='bold 9px sans-serif';ctx.textAlign='center';const width=Math.ceil(ctx.measureText(label).width)+6;ctx.fillStyle='#172b22';ctx.fillRect(entry.x-width/2,entry.y-31,width,11);ctx.fillStyle='#eee8cd';ctx.fillText(label,entry.x,entry.y-23);
     }};
    }));
   },
