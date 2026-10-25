@@ -1,6 +1,16 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.3.2',
+    date: '2026-10-25',
+    status: '已完成',
+    title: '页头入口更清楚',
+    highlights: [
+      {category: '优化', title: '在页头看见当前版本', description: '页头增加小字号的应用版本，方便确认当前打开的版本。'},
+      {category: '优化', title: '接入与登录更好找', description: '页头按“1 接入 Agent”“2 登录 / 注册”排列，并突出接入文字；登录后仍显示自己的账号名称，编号只用于辨认入口。'},
+    ],
+  },
+  {
     version: '0.3.1',
     date: '2026-10-25',
     status: '已完成',

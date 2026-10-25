@@ -32,6 +32,9 @@
 .paper-hud .brand .brand-mark{width:32px;height:28px;display:block;background:none;box-shadow:none;flex:none}
 .paper-hud .brand .brand-name{margin:0;color:inherit}
 .paper-hud header nav{gap:8px}
+.paper-hud .hud-app-version{font-size:11px;line-height:16px;color:var(--paper-muted);white-space:nowrap;flex:none;font-variant-numeric:tabular-nums}
+.paper-hud header .hud-nav-number{font-size:11px;line-height:16px;font-weight:500;color:var(--paper-muted);flex:none;overflow:visible}
+.paper-hud header .hud-entry{font-weight:700;color:#315b44!important}
 .paper-hud :is(.hud-account,.hud-entry,.world-audio .world-audio-button){background:transparent!important;color:var(--paper-ink)!important;box-shadow:none!important;border:0!important;border-radius:8px!important;min-height:36px;height:36px;padding:6px 8px;display:flex;align-items:center;gap:8px;font-size:14px;line-height:20px}
 .paper-hud .hud-account{max-width:240px}
 .paper-hud .hud-entry{white-space:nowrap}
