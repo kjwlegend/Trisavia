@@ -3,6 +3,10 @@ import type {LifeAssetCatalog,LifeItemId,LifeItemInstance,LifeTradeSource} from 
 
 export type LifeCItemId=LifeItemId|'bread_meal'|'herbal_tea'|'grilled_fish'|'harbor_handbook';
 export interface LifeCItemInstance extends Omit<LifeItemInstance,'itemId'> {itemId:LifeCItemId}
+export interface LifeCResources {
+ actorRef:WalletActorRef;wallet:{balance:number;reserved:number;available:number;version:number};
+ totals:{itemId:LifeCItemId;available:number;reserved:number}[];items:LifeCItemInstance[];nextCursor:string|null;complete:boolean;
+}
 export interface LifeCAssetCatalog extends LifeAssetCatalog {
  services:{mealPreparation:{placeId:string;fishUnits:number;fee:number;durationSeconds:number;outputItemId:string};innRest:{placeId:string;price:number;durationSeconds:number}};
  items:readonly (LifeAssetCatalog['items'][number]&{durationSeconds?:number})[];

@@ -1,7 +1,8 @@
 import {defineRuntimeRepository} from '../../contracts/runtime-store.ts';
 import type {WalletActorRef} from '../wallet/life-wallet.ts';
-import type {LifeCEffect,LifeCEffectKind,LifeCItemId,LifeCItemInstance} from './c-types.ts';
+import type {LifeCEffect,LifeCEffectKind,LifeCItemId,LifeCItemInstance,LifeCResources} from './c-types.ts';
 export interface LifeCCommerceReader {
+ resources(actorRef:WalletActorRef,options?:{itemIds?:readonly LifeCItemId[];limit?:number;afterId?:string}):Promise<LifeCResources>;
  getItem(actorRef:WalletActorRef,itemInstanceId:string):Promise<LifeCItemInstance|undefined>;
  availableItems(actorRef:WalletActorRef,options:{itemIds:readonly LifeCItemId[];limit:number}):Promise<LifeCItemInstance[]>;
  reservedCoins(actorRef:WalletActorRef):Promise<number>;
