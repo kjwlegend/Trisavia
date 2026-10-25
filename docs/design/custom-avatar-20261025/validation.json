@@ -1,0 +1,73 @@
+{
+  "date": "2026-10-25",
+  "scope": "Design prototype only; no backend validation or real application",
+  "browserTask": 122,
+  "viewports": [
+    {
+      "width": 1440,
+      "height": 900,
+      "horizontalOverflow": false,
+      "footerBottom": 873.796875
+    },
+    {
+      "width": 811,
+      "height": 854,
+      "horizontalOverflow": false
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "horizontalOverflow": false
+    }
+  ],
+  "observed": {
+    "optionalRestUsesIdleAndNotice": true,
+    "singleStepPausesPlayback": true,
+    "invalidDemoBlocksApply": true,
+    "readyDemoCanShowSavedState": true,
+    "agentSwitchClearsReadyState": true,
+    "referenceSelectionUsesBlobURLOnly": true,
+    "agentSwitchClearsReference": true,
+    "mobileOrphanHeadingFixed": true
+  },
+  "checks": [
+    "node --check studio.js",
+    "manifest JSON parse and A-contract field equality",
+    "copied built-in PNG byte equality",
+    "git diff --check"
+  ],
+  "assets": [
+    {
+      "file": "assets/human-base-idle.png",
+      "bytes": 1117,
+      "sha256": "fc4656a6355abc69d618ce31e0f3f2a66ac6d9b23b626640b556f0e8d5d29ac0",
+      "sourceByteIdentical": true
+    },
+    {
+      "file": "assets/human-base-walk.png",
+      "bytes": 1374,
+      "sha256": "454c1172cebb5417acc7a59c9b711b42ff5e91d315bb1ab3ec11526c7a977110",
+      "sourceByteIdentical": true
+    },
+    {
+      "file": "assets/human-shorthair-idle.png",
+      "bytes": 613,
+      "sha256": "d85fc5899bb6bd1f067a0c3c65e3d8e03753de666097feccb9c559a7c0c4c940",
+      "sourceByteIdentical": true
+    },
+    {
+      "file": "assets/human-shorthair-walk.png",
+      "bytes": 607,
+      "sha256": "9ca2c373d21f78f2e2221af2357def1595ff7f95389d18fe81242803ca6a86d2",
+      "sourceByteIdentical": true
+    }
+  ],
+  "exclusions": [
+    "Real custom avatar art",
+    "Private penguin JPG redistribution",
+    "API, preparation task authorization or upload",
+    "Production renderer or public profile synchronization",
+    "UAT release",
+    "Human final aesthetic approval"
+  ]
+}
