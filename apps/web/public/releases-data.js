@@ -1,6 +1,16 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.3.1',
+    date: '2026-10-25',
+    status: '已完成',
+    title: '地图就在手边',
+    highlights: [
+      {category: '优化', title: '建设方向从想法排到完成', description: '建设看板从左到右按投票、未来、进行中、已完成排列，更容易看清地图与场景扩展的进展。'},
+      {category: '优化', title: '从底部一键打开地图', description: '底部功能栏新增地图入口，登录或未登录都能直接打开地图，查看远方介绍并返回清昼小镇。'},
+    ],
+  },
+  {
     version: '0.3.0',
     date: '2026-10-25',
     status: '已完成',
@@ -19,7 +29,7 @@ export const RELEASES = [
     highlights: [
       {category: '新增', title: '展开新城地图册', description: '看看日落海、逐鹿原、初晓洲和远岚山地的位置，阅读四方地区与目的地的介绍。'},
       {category: '新增', title: '看清今天能去哪里', description: '目前只有清昼小镇可访问。地图册可以返回小镇，规划中的目的地明确标为尚未开放。'},
-      {category: '新增', title: '从更新与看板打开地图', description: '更新日志和建设看板都加入了世界地图入口，看完远方的介绍，仍可回到清昼小镇。'},
+      {category: '新增', title: '从更新与看板打开地图', description: '更新日志和建设看板都加入了地图入口，看完远方的介绍，仍可回到清昼小镇。'},
     ],
   },
   {

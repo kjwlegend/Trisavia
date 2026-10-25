@@ -1,6 +1,4 @@
 /* Scoped adaptation of accepted design e2b6a249; original terrain is unchanged. */
-.paper-hud #world-atlas-entry{height:36px;min-height:36px;display:inline-flex;align-items:center;gap:8px;margin-left:20px;margin-right:auto;padding:6px 8px;border:0;border-radius:4px;background:transparent;white-space:nowrap;font-size:14px;line-height:20px;color:#263f36;flex:none}
-.paper-hud #world-atlas-entry:hover{background:#e9eedf}
 #world-atlas{--paper:#f7f3e8;--ink:#263f36;--muted:#68746e;--edge:#d8d2c6;--accent:#be6346;--focus:#577960;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:22px}
 #world-atlas :is(button,a):focus-visible{outline:2px solid #577960;outline-offset:3px}
 #world-atlas button{font:inherit;color:inherit;cursor:pointer;min-height:36px;box-shadow:none}
@@ -119,5 +117,5 @@
 #world-atlas .atlas-map-stage{min-height:0}
 #world-atlas .atlas-status{padding:12px 20px;color:#68746e}
 #world-atlas .atlas-details .atlas-world-copy+.atlas-section-label{margin-top:18px}
-@media(max-width:760px){.paper-hud #world-atlas-entry{margin-left:8px;padding:6px 4px}.paper-hud header :is(.hud-entry,.hud-account)>span{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}}
+@media(max-width:760px){.paper-hud header :is(.hud-entry,.hud-account)>span{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}}
 @media(prefers-reduced-motion:reduce){#world-atlas *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}

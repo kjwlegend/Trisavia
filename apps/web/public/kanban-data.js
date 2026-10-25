@@ -7,14 +7,14 @@ export const WORLD_INTRODUCTION = {
 };
 
 export const BOARD_COLUMNS = [
+  {id: 'voting', title: '投票', empty: '暂未开放投票。未来会在这里征询新的地图提案。'},
+  {id: 'planned', title: '未来', empty: '这里暂时没有事项。'},
   {id: 'in-progress', title: '进行中', empty: '这里暂时没有事项。'},
   {id: 'completed', title: '已完成', empty: '这里暂时没有事项。'},
-  {id: 'planned', title: '未来计划', empty: '这里暂时没有事项。'},
-  {id: 'voting', title: '投票中', empty: '暂未开放投票。未来会在这里征询新的地图提案。'},
 ];
 
 export const MAP_CARDS = [
-  {id: 'map-atlas', column: 'completed', title: '展开新城地图册', summary: '浏览四方地区与故事，再回到已经开放的清昼小镇。', scope: '世界地图 · 已完成', completedVersion: '0.2.0', experienceHref: '/?atlas=1'},
+  {id: 'map-atlas', column: 'completed', title: '展开新城地图册', summary: '浏览四方地区与故事，再回到已经开放的清昼小镇。', scope: '地图 · 已完成', completedVersion: '0.2.0', experienceHref: '/?atlas=1'},
   {id: 'map-sunset-bay', column: 'planned', title: '日落海 · 暮帆湾', summary: '构想一处看落日的海湾，让远方海岸有落脚的地方。', scope: '海岸场景 · 尚未开放'},
   {id: 'map-plain-outpost', column: 'planned', title: '逐鹿原 · 风禾驿', summary: '从一段路和几处地标开始，构想中央草原的落脚点。', scope: '草原场景 · 尚未开放'},
   {id: 'map-dawn-lake', column: 'planned', title: '初晓洲 · 晨露湖畔', summary: '在小镇之外构想湖岸与步道，留下下一处可探索的风景。', scope: '湖岸场景 · 尚未开放'},

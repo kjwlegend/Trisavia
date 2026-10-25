@@ -1,5 +1,5 @@
-/* Five public-world entries retain the approved 344 × 60 dock geometry. */
-.paper-hud .hud-dock{grid-template-columns:repeat(5,minmax(0,1fr))}
+/* Six public-world entries retain the approved 344 × 60 dock geometry. */
+.paper-hud .hud-dock{grid-template-columns:repeat(6,minmax(0,1fr))}
 .paper-hud .hud-root .hud-window[data-feature=announcements]{width:min(780px,var(--world-panel-width))}
 .paper-hud .hud-window[data-feature=announcements]>.hud-window-body{display:flex;overflow:hidden;padding:0}
 .world-announcements{display:flex;flex:1;flex-direction:column;width:100%;min-width:0;min-height:0;color:var(--paper-ink,#263f36)}
