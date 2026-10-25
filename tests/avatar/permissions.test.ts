@@ -24,6 +24,32 @@ test('Owner-limited preparation never grants direct publication under Owner/prop
  }
 });
 
+test('direct Agent authority revokes only tasks created by that Agent; Owner can revoke both task sources',async()=>{
+ const f=avatarFixture(),ownerTask=(await f.execute(f.owner,'avatar_assets.tasks.create',{})).result.task as any,selfTask=(await f.execute(f.agent,'avatar_assets.tasks.create',{})).result.task as any;
+ const visible=await f.service.query(f.ctx,f.agent,f.agentId,f.origin,'avatar_assets.tasks',{}),tasks=visible.tasks as any[];
+ assert.ok(!tasks.find(t=>t.taskId===ownerTask.taskId).allowedActions.includes('avatar_assets.tasks.revoke'));
+ assert.ok(tasks.find(t=>t.taskId===selfTask.taskId).allowedActions.includes('avatar_assets.tasks.revoke'));
+ const denied=await f.execute(f.agent,'avatar_assets.tasks.revoke',{taskId:ownerTask.taskId,expectedVersion:1});assert.equal(denied.outcome,'rejected');assert.equal(denied.result.code,'avatar_task_creator_required');assert.equal(f.state.tasks.get(ownerTask.taskId)!.state,'active');assert.equal(f.state.tasks.get(ownerTask.taskId)!.version,1);
+ assert.equal((await f.execute(f.agent,'avatar_assets.tasks.revoke',{taskId:selfTask.taskId,expectedVersion:1})).outcome,'committed');
+ const secondSelf=(await f.execute(f.agent,'avatar_assets.tasks.create',{})).result.task as any;
+ for(const t of [ownerTask,secondSelf])assert.equal((await f.execute(f.owner,'avatar_assets.tasks.revoke',{taskId:t.taskId,expectedVersion:1})).outcome,'committed');
+});
+
+test('withdrawn direct authority hides self-task materials on every private read while preserving Owner-limited preparation',async()=>{
+ const f=avatarFixture(),selfTask=(await f.execute(f.agent,'avatar_assets.tasks.create',{})).result.task as any,ownerTask=(await f.execute(f.owner,'avatar_assets.tasks.create',{})).result.task as any,png=await pack();
+ const upload=async(t:any)=>(await f.execute(f.agent,'avatar_assets.drafts.create',{...source(t),kind:'avatar',...png})).result.draft as any,selfDraft=await upload(selfTask),ownerDraft=await upload(ownerTask),saved=structuredClone(f.state.tasks.get(selfTask.taskId));
+ policy(f,'owner_specified');
+ const tasks=(await f.service.query(f.ctx,f.agent,f.agentId,f.origin,'avatar_assets.tasks',{})).tasks as any[],drafts=(await f.service.query(f.ctx,f.agent,f.agentId,f.origin,'avatar_assets.drafts',{})).drafts as any[];
+ assert.deepEqual(tasks.map(t=>t.taskId),[ownerTask.taskId]);assert.deepEqual(drafts.map(d=>d.assetId),[ownerDraft.assetId]);
+ for(const [operation,input] of [['avatar_assets.task',{taskId:selfTask.taskId}],['avatar_assets.draft',{assetId:selfDraft.assetId}],['avatar_assets.drafts',{taskId:selfTask.taskId}]] as const)await assert.rejects(f.service.query(f.ctx,f.agent,f.agentId,f.origin,operation,input),{code:'confirmation_required'});
+ await assert.rejects(f.service.privateFile(f.ctx,f.agent,f.agentId,f.origin,selfDraft.assetId,'idle.png'),{code:'confirmation_required'});
+ assert.equal((await f.execute(f.agent,'avatar_assets.drafts.create',{...source(selfTask),kind:'avatar',...png})).result.code,'confirmation_required');assert.equal((await f.execute(f.agent,'avatar_assets.tasks.revoke',{taskId:selfTask.taskId,expectedVersion:1})).result.code,'confirmation_required');
+ assert.deepEqual(f.state.tasks.get(selfTask.taskId),saved);
+ assert.equal((await f.service.query(f.ctx,f.owner,f.agentId,f.origin,'avatar_assets.draft',{assetId:selfDraft.assetId})).draft!==null,true);
+ const current=(await f.service.query(f.ctx,f.agent,f.agentId,f.origin,'avatar_assets.task',{taskId:ownerTask.taskId})).task as any;assert.deepEqual(current.allowedActions,['avatar_assets.drafts.create']);
+ assert.ok((await f.service.privateFile(f.ctx,f.agent,f.agentId,f.origin,ownerDraft.assetId,'idle.png')).bytes.length);assert.equal((await upload(ownerTask)).validation.valid,true);assert.equal((await f.execute(f.agent,'avatar_assets.apply',application(f,ownerTask,ownerDraft))).result.code,'confirmation_required');
+});
+
 test('self-prepared authority is rechecked after policy, pause or target changes; shared Owner does not share asset rights',async()=>{
  const f=avatarFixture(),task=(await f.execute(f.agent,'avatar_assets.tasks.create',{})).result.task as any,payload={...source(task),kind:'avatar',...await pack()},a=(await f.execute(f.agent,'avatar_assets.drafts.create',payload)).result.draft as any;
  policy(f,'owner_specified');assert.equal((await f.execute(f.agent,'avatar_assets.drafts.create',payload)).result.code,'confirmation_required');await assert.rejects(f.service.privateFile(f.ctx,f.agent,f.agentId,f.origin,a.assetId,'idle.png'));
@@ -36,7 +62,7 @@ test('self-prepared authority is rechecked after policy, pause or target changes
 test('revoked or expired tasks expose only an original minimal receipt, including POST retries without material resurrection',async()=>{
  for(const expired of [false,true]){
   const f=avatarFixture(),t=(await f.execute(f.agent,'avatar_assets.tasks.create',{},'minimal-create-task')).result.task as any,payload={...source(t),kind:'avatar',...await pack()},uploaded=await f.execute(f.agent,'avatar_assets.drafts.create',payload,'minimal-upload-original');
-  if(expired)f.f.now+=8*86400000;else await f.execute(f.agent,'avatar_assets.tasks.revoke',{taskId:t.taskId,expectedVersion:1});
+  if(expired)f.f.now+=8*86400000;else await f.execute(f.agent,'avatar_assets.tasks.revoke',{taskId:t.taskId,expectedVersion:1});policy(f,'owner_specified');
   const r=await f.service.receipt(f.ctx,f.agent,f.agentId,f.origin,'minimal-upload-original','avatar_assets.drafts.create');assert.equal(r.outcome,uploaded.outcome);assert.deepEqual(r.result,{agentId:f.agentId,taskId:t.taskId,assetId:(uploaded.result.draft as any).assetId,taskState:expired?'expired':'revoked',materialsAccessible:false});assert.deepEqual(await f.execute(f.agent,'avatar_assets.drafts.create',payload,'minimal-upload-original'),r);await assert.rejects(f.service.privateFile(f.ctx,f.agent,f.agentId,f.origin,(uploaded.result.draft as any).assetId,'idle.png'));assert.equal(f.state.assets.size,1);
  }
 });

@@ -61,7 +61,7 @@ export function createAvatarAssetService(identity:IdentityAccess<RuntimeReadCont
   const active=t.state==='active'&&t.expiresAt>ctx.now(),assets=active?await ctx.repository(AVATAR_ASSET_REPOSITORY).listAssets({agentId:t.agentId,ownerId:t.ownerId,bindingId:t.bindingId,bindingVersion:t.bindingVersion,taskId:t.id,asOf:ctx.now(),limit:LIMITS.assetsPerTask}):[];
   let canManage=p.kind==='owner',canUpload=false;
   if(active){try{await business(ctx,p,t.agentId);if(p.kind==='agent'&&t.creatorKind==='agent'){const profile=await ctx.repository(AVATAR_ASSET_REPOSITORY).getProfile(t.agentId);if(!profile)absent();await direct(ctx,p,t.agentId,profile.data);}canUpload=true;}catch(e){if(!(e instanceof M1Error)||e.statusCode>=500)throw e;}}
-  if(!canManage&&active){try{const profile=await ctx.repository(AVATAR_ASSET_REPOSITORY).getProfile(t.agentId);if(profile){await direct(ctx,p,t.agentId,profile.data);canManage=true;}}catch(e){if(!(e instanceof M1Error)||e.statusCode>=500)throw e;}}
+  if(!canManage&&active&&p.kind==='agent'&&t.creatorKind==='agent'&&t.creatorId===p.agentId){try{const profile=await ctx.repository(AVATAR_ASSET_REPOSITORY).getProfile(t.agentId);if(profile){await direct(ctx,p,t.agentId,profile.data);canManage=true;}}catch(e){if(!(e instanceof M1Error)||e.statusCode>=500)throw e;}}
   return {taskId:t.id,agentId:t.agentId,version:t.version,state:t.state==='revoked'?'revoked':active?'active':'expired',preparedBy:t.creatorKind,origin:t.origin,createdAt:t.createdAt,expiresAt:t.expiresAt,instruction:t.instruction,materialAssetIds:assets.map(a=>a.id),allowedActions:active?[...(canManage?['avatar_assets.tasks.revoke']:[]),...(canUpload?['avatar_assets.drafts.create']:[])]:[]};
  }
  async function draftView(ctx:RuntimeReadContext,a:AvatarAsset){
@@ -105,7 +105,9 @@ export function createAvatarAssetService(identity:IdentityAccess<RuntimeReadCont
     await repo.saveTask(t,null);return {result:json({agentId:id,task:await taskView(current,p,t)}),eventIds:[]};
    }
    if(action==='avatar_assets.tasks.revoke'){
-    const {task:t}=await task(current,p,id,input.taskId,origin,true);if(version(input.expectedVersion)!==t.version)fail('version_conflict',409,'准备任务已变化，请重读。');
+    const {task:t}=await task(current,p,id,input.taskId,origin,true);
+    if(p.kind==='agent'&&(t.creatorKind!=='agent'||t.creatorId!==p.agentId))fail('avatar_task_creator_required',403,'只能撤回由本人创建的准备任务；主人签发的任务请由主人管理。');
+    if(version(input.expectedVersion)!==t.version)fail('version_conflict',409,'准备任务已变化，请重读。');
     const next=t.state==='revoked'?t:{...t,state:'revoked' as const,version:t.version+1,revokedAt:current.now()};if(next!==t)await repo.saveTask(next,t.version);
     return {result:json({agentId:id,task:await taskView(current,p,next)}),eventIds:[]};
    }
