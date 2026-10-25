@@ -1,0 +1,58 @@
+{
+  "status": "PASS",
+  "scope": "design preview and actual PNG only",
+  "alpha": [
+    {
+      "id": "basic_rod",
+      "width": 32,
+      "height": 32,
+      "opaqueOrPartial": 123,
+      "nontransparentInThreePixelMargin": 0
+    },
+    {
+      "id": "bait",
+      "width": 32,
+      "height": 32,
+      "opaqueOrPartial": 454,
+      "nontransparentInThreePixelMargin": 0
+    },
+    {
+      "id": "sardine",
+      "width": 32,
+      "height": 32,
+      "opaqueOrPartial": 114,
+      "nontransparentInThreePixelMargin": 0
+    },
+    {
+      "id": "mackerel",
+      "width": 32,
+      "height": 32,
+      "opaqueOrPartial": 149,
+      "nontransparentInThreePixelMargin": 0
+    },
+    {
+      "id": "sea_bass",
+      "width": 32,
+      "height": 32,
+      "opaqueOrPartial": 202,
+      "nontransparentInThreePixelMargin": 0
+    }
+  ],
+  "bag": {
+    "name": "青背鲭鱼",
+    "state": "已被活动预留。该数量不可重复出售、转赠或再次使用；结束后按实际结果更新。",
+    "overflow": false
+  },
+  "narrow": {
+    "width": 811,
+    "scrollWidth": 796,
+    "itemCards": 5,
+    "readableBody": "13px"
+  },
+  "notTested": [
+    "production purchase/sale/fishing",
+    "concurrent seat reservation",
+    "runtime custom-avatar integration",
+    "production frame-time performance"
+  ]
+}

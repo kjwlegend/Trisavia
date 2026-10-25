@@ -1,0 +1,6 @@
+<!doctype html><meta charset="utf-8"><title>Fishing asset workbench</title><style>body{margin:24px;background:#eae8dc;color:#39463c;font:14px sans-serif}canvas{display:block;image-rendering:pixelated;margin:16px 0;background:#f6f0dc}img{image-rendering:pixelated}</style><h1>原生钓鱼分帧</h1><canvas id="frames" width="1440" height="768"></canvas><script type="module">
+const c=document.querySelector('canvas'),x=c.getContext('2d');x.imageSmoothingEnabled=false;x.font='16px sans-serif';
+const load=async(path)=>{let i=new Image;i.src=path;await i.decode();return i};
+for(let row=0;row<4;row++){let a=['casting','waiting','reeling','caught'][row],n=[15,9,13,10][row];x.fillStyle='#39463c';x.fillText(a,10,row*192+20);let ims=await Promise.all(['base','spikeyhair','tools'].map(k=>load(`assets/fishing/${k}_${a}_strip${n}.png`)));for(let j=0;j<Math.min(n,7);j++){let f=Math.round(j*(n-1)/6);x.fillText(String(f),j*200+80,row*192+45);for(let im of ims)x.drawImage(im,f*96,0,96,64,j*200,row*192+48,192,128);}}
+window.workbenchReady=true;
+</script>
