@@ -1,0 +1,161 @@
+{
+  "scope": "Design prototype; not production integration or final human visual approval",
+  "date": "2026-10-25",
+  "checks": [
+    {
+      "type": "region",
+      "id": "sunset",
+      "title": "日落海",
+      "selectedOutline": "sunset",
+      "disabled": true
+    },
+    {
+      "type": "region",
+      "id": "plain",
+      "title": "逐鹿原",
+      "selectedOutline": "plain",
+      "disabled": true
+    },
+    {
+      "type": "region",
+      "id": "dawn",
+      "title": "初晓洲",
+      "selectedOutline": "dawn",
+      "disabled": false
+    },
+    {
+      "type": "region",
+      "id": "north",
+      "title": "远岚山地",
+      "selectedOutline": "north",
+      "disabled": true
+    },
+    {
+      "type": "destination",
+      "id": "dusk-sail-bay",
+      "title": "暮帆湾",
+      "entryEnabled": false,
+      "expectedOpen": false,
+      "overflow": false
+    },
+    {
+      "type": "destination",
+      "id": "tidal-isle",
+      "title": "潮汐小岛",
+      "entryEnabled": false,
+      "expectedOpen": false,
+      "overflow": false
+    },
+    {
+      "type": "destination",
+      "id": "evening-star-beacon",
+      "title": "晚星灯塔",
+      "entryEnabled": false,
+      "expectedOpen": false,
+      "overflow": false
+    },
+    {
+      "type": "destination",
+      "id": "wind-grain-post",
+      "title": "风禾驿",
+      "entryEnabled": false,
+      "expectedOpen": false,
+      "overflow": false
+    },
+    {
+      "type": "destination",
+      "id": "longwind-meadow",
+      "title": "长风草坡",
+      "entryEnabled": false,
+      "expectedOpen": false,
+      "overflow": false
+    },
+    {
+      "type": "destination",
+      "id": "three-river-valley",
+      "title": "三河谷",
+      "entryEnabled": false,
+      "expectedOpen": false,
+      "overflow": false
+    },
+    {
+      "type": "destination",
+      "id": "qingzhou-town",
+      "title": "清昼小镇",
+      "entryEnabled": true,
+      "expectedOpen": true,
+      "overflow": false
+    },
+    {
+      "type": "destination",
+      "id": "morning-dew-lake",
+      "title": "晨露湖畔",
+      "entryEnabled": false,
+      "expectedOpen": false,
+      "overflow": false
+    },
+    {
+      "type": "destination",
+      "id": "east-fence-ferry",
+      "title": "东篱渡口",
+      "entryEnabled": false,
+      "expectedOpen": false,
+      "overflow": false
+    },
+    {
+      "type": "destination",
+      "id": "pine-mist-valley",
+      "title": "松雾谷",
+      "entryEnabled": false,
+      "expectedOpen": false,
+      "overflow": false
+    },
+    {
+      "type": "destination",
+      "id": "snow-listening-pass",
+      "title": "听雪山口",
+      "entryEnabled": false,
+      "expectedOpen": false,
+      "overflow": false
+    }
+  ],
+  "drag": {
+    "before": "translate(-237.125px, -158.25px) scale(1.5)",
+    "after": "translate(-357.125px, -208.25px) scale(1.5)",
+    "changed": true
+  },
+  "artOnly": {
+    "selected": "true",
+    "pinsVisibility": "hidden",
+    "outlineVisibility": "hidden"
+  },
+  "locate": {
+    "zoom": "100%",
+    "title": "清昼小镇",
+    "focusedPin": "qingzhou-town",
+    "entryEnabled": true,
+    "artOnly": "false"
+  },
+  "close": {
+    "closed": true,
+    "focus": "open-map"
+  },
+  "reverseTab": "enter",
+  "forwardTab": "close-map",
+  "narrow": {
+    "width": 811,
+    "dialog": {
+      "x": 20,
+      "y": 144,
+      "width": 771,
+      "height": 566,
+      "top": 144,
+      "right": 791,
+      "bottom": 710,
+      "left": 20
+    },
+    "horizontalOverflow": false,
+    "detailHorizontalOverflow": false,
+    "bodyFont": "14px"
+  }
+}

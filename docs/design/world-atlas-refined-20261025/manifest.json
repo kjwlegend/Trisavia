@@ -1,0 +1,104 @@
+{
+  "id": "trisavia-world-atlas-refined-20261025",
+  "revision": 1,
+  "status": "Design candidate for user review; not production integrated",
+  "previewUrl": "http://127.0.0.1:59669/",
+  "generation": {
+    "tool": "built-in imagegen",
+    "promptFile": "PROMPT.txt",
+    "generatedOutputId": "exec-139f2933-67d2-4aab-95be-30a3aae1fa4e",
+    "original": "assets/trisavia-atlas-base.png",
+    "actualDimensions": [
+      1536,
+      1024
+    ],
+    "references": "No external reference images; existing approved four-region composition and catalog were prompt context",
+    "postprocess": "PNG preserved byte-identical; JPEG format encoding quality94 using sips; no content editing"
+  },
+  "layers": [
+    "raster terrain",
+    "independent SVG selection outlines",
+    "DOM destination pins and labels",
+    "paper HUD details and controls"
+  ],
+  "contentContract": {
+    "regionCount": 4,
+    "destinationCount": 11,
+    "onlyOpenDestination": "qingzhou-town",
+    "runtimeWorldId": "default",
+    "businessSource": "docs/design/world-map-20261025/map-data.js (original business fields only)",
+    "coordinateSpace": "Normalized image display anchors; not World cells, mapManifest or navigation",
+    "currentEntryLabel": "地图",
+    "existingProductionVersion": "0.3.1 entry semantics reported by TD; no deployment in this package"
+  },
+  "display": {
+    "nativeImageRatio": 1.5,
+    "zoomRange": [
+      1,
+      2.5
+    ],
+    "zoomMeaning": "Display magnification; does not add source detail",
+    "defaultLabels": "4 regions plus current destination; selected future destination gets its own label",
+    "offlineUse": "Static self-contained preview requires no APIs",
+    "productionLoading": "Load atlas JPEG and overlays on demand; keep existing World renderer and data unchanged"
+  },
+  "files": [
+    {
+      "path": "assets/trisavia-atlas-base.png",
+      "bytes": 3627447,
+      "sha256": "cae14477b4aeeec0371a8c83f4c16ff434b6ea121006cbabe1179ea859549a7e"
+    },
+    {
+      "path": "assets/trisavia-atlas-base.jpg",
+      "bytes": 1041462,
+      "sha256": "0be151633fa3ed096755ffcd9a097f4a886ab1604eec529a3337ee5a94127f41"
+    },
+    {
+      "path": "atlas-overlays.json",
+      "bytes": 4211,
+      "sha256": "ffdd48cbe13000fd0d5b01b3cd218e47cfbc5ffda374e1ed18555779478a8e48"
+    },
+    {
+      "path": "atlas-geometry.js",
+      "bytes": 3436,
+      "sha256": "45994ffda6616f7efe32d578a0eaa42f926c370bc868c6e6a2e8f14a91193523"
+    },
+    {
+      "path": "map-data.js",
+      "bytes": 4654,
+      "sha256": "b47b00d48d6824cec9d764508ec153eb10052de2fe69422a4f7c5ea8a6ee8db6"
+    },
+    {
+      "path": "index.html",
+      "bytes": 2822,
+      "sha256": "70ee81046853074b1eca23a1c0a5b2c40cbdd33e13ca5189f516e2483c402578"
+    },
+    {
+      "path": "atlas.css",
+      "bytes": 13147,
+      "sha256": "aaff24835bbce258d0729e24efad8cc3311d297fe328f8230898efee6132e65d"
+    },
+    {
+      "path": "atlas.js",
+      "bytes": 10103,
+      "sha256": "ab40db4f3b775f6b0aeffb2909f1604f006274bab37bdafc37322c00efbdda61"
+    },
+    {
+      "path": "PROMPT.txt",
+      "bytes": 4094,
+      "sha256": "f475fc37566f178753ce7d8882cad837225b676216886c5dbc6cb679fbecec9e"
+    },
+    {
+      "path": "DESIGN.md",
+      "bytes": 5010,
+      "sha256": "e1510e0d542c0a4b49e172b86e21f6a4454810ec33827b331dc053ccfab41c97"
+    }
+  ],
+  "previewRuntimeBytes": 1075624,
+  "checksFile": "validation.json",
+  "screenshots": [
+    "reference/preview-1440.png",
+    "reference/preview-town-detail.png",
+    "reference/preview-811.png"
+  ]
+}
