@@ -10,12 +10,15 @@ import {registerAgentGatewayRoutes} from '../../apps/platform/transport/http/age
 import {registerWorldObservationRoutes} from '../../apps/platform/transport/http/agent-gateway-world-routes.ts';
 import {townV2Rules,TOWN_V2_LAYOUT_SHA256} from '../../apps/platform/domains/world/town-v2.ts';
 import type {RuntimeReadContext,RuntimeStore} from '../../apps/platform/contracts/runtime-store.ts';
+// @ts-expect-error Browser module; reuse the existing coordinate and motion validation boundary.
+import {readWorldPage,readWorldRules} from '../../apps/web/public/hud/world-scene-projection.js';
 
-async function fixture(input:{mutate?:(read:GatewayPublicRead)=>GatewayPublicRead;httpInstanceId?:string}={}){
+async function fixture(input:{mutate?:(read:GatewayPublicRead)=>GatewayPublicRead;httpInstanceId?:string;legacyAvatars?:boolean}={}){
  const f=coreFixture();let reads=0,authentications=0;const contexts:RuntimeReadContext[]=[];
  const identity={...f.identity,async authenticate(){authentications++;throw new Error('Startup must never authenticate a private actor');}};
- const service=createWorldService(identity),rules=townV2Rules(JSON.parse(readFileSync(new URL('../../apps/web/public/world-map-v2.json',import.meta.url),'utf8')),TOWN_V2_LAYOUT_SHA256);await f.store.transaction(ctx=>bootstrapWorld(ctx,rules));
- for(const id of ['visible-a','visible-b','withdrawn']){const principal=f.addAgent(id);const receipt=await f.store.transaction(ctx=>service.execute(ctx,principal,f.key(principal,'world.avatar.create'),{worldId:'default',expectedRulesetVersion:rules.version}));assert.equal(receipt.outcome,'committed',JSON.stringify(receipt.result));}
+ const service=createWorldService(identity),rules=townV2Rules(JSON.parse(readFileSync(new URL('../../apps/web/public/world-map-v2.json',import.meta.url),'utf8')),TOWN_V2_LAYOUT_SHA256);await f.store.transaction(ctx=>bootstrapWorld(ctx,input.legacyAvatars?undefined:rules));
+ for(const id of ['visible-a','visible-b','withdrawn']){const principal=f.addAgent(id);const receipt=await f.store.transaction(ctx=>service.execute(ctx,principal,f.key(principal,'world.avatar.create'),{worldId:'default',expectedRulesetVersion:input.legacyAvatars?1:rules.version}));assert.equal(receipt.outcome,'committed',JSON.stringify(receipt.result));}
+ if(input.legacyAvatars)await f.store.transaction(async()=>{const world=(await f.world.getWorld('default'))!;await f.world.activateRuleset(rules,world.revision);});
  f.state.publicAgents.delete('withdrawn');
  const store:RuntimeStore={...f.store,async read(work){reads++;return f.store.read(work);}};
  const publicReads=worldPublicReads(service).map(read=>({...read,read:async(ctx:RuntimeReadContext,payload:Parameters<GatewayPublicRead['read']>[1])=>{contexts.push(ctx);return read.read(ctx,payload);}})).map(read=>input.mutate?.(read)??read);
@@ -34,6 +37,20 @@ test('anonymous startup reuses exact public readers in one scope, preserves filt
   const next=await x.app.inject('/v1/world/scene?'+new URLSearchParams({worldId:'default',limit:'1',cursor:d.scene.nextCursor}));assert.equal(next.statusCode,200);assert.deepEqual(next.json().data.avatars.map((a:any)=>a.agentId),['visible-b']);
   assert(!JSON.stringify(d).includes('withdrawn'));assert(!JSON.stringify(d).includes('recoveryEpoch'));assert(!JSON.stringify(d).includes('runtimeToken'));assert(!JSON.stringify(d).includes('"path":'));
   x.f.state.publicAgents.delete('visible-a');const refreshed=await x.app.inject(url);assert.equal(refreshed.statusCode,200);assert.equal(refreshed.json().data.scene.avatars[0].agentId,'visible-b','The next request reads current visibility, never the previous startup snapshot');
+ }finally{await x.app.close();}
+});
+
+test('an activated newer map preserves legitimate historical Avatar versions while rejecting future or invalid versions',async()=>{
+ const x=await fixture({legacyAvatars:true});try{
+  const before=structuredClone(x.f.state),response=await x.app.inject(url);assert.equal(response.statusCode,200,response.body);const d=response.json().data;
+  assert.equal(d.rulesetVersion,2);assert.equal(d.rules.world.rulesetVersion,2);assert.equal(d.scene.worldRevision,d.rules.world.revision);assert.equal(d.scene.avatars[0].rulesetVersion,1);assert.deepEqual(x.f.state,before,'Reading the upgraded map does not rewrite historical Avatar facts');
+  const rules=readWorldRules(d.rules),page=readWorldPage(d.scene,rules),row=page.avatars[0];assert.equal(row.rulesetVersion,1);assert.deepEqual(row.position,d.scene.avatars[0].position);assert.equal(row.motion,null);
+  assert.throws(()=>readWorldPage({...d.scene,avatars:[{...row,position:{x:rules.bounds.maxX+1,y:row.position.y}}]},rules),/world_response_invalid/);
+  const motion={segmentId:row.id+':'+row.version,movementId:null,source:'explicit',status:'committed',from:{x:row.position.x>0?row.position.x-1:1,y:row.position.y},to:{...row.position},startedAt:1,arriveAt:1001,rulesetVersion:1,topologyVersion:1};
+  assert.equal(readWorldPage({...d.scene,avatars:[{...row,motion}]},rules).avatars[0].motion.rulesetVersion,1,'Original compatible legacy motion remains accepted');
+  assert.throws(()=>readWorldPage({...d.scene,avatars:[{...row,motion:{...motion,rulesetVersion:3,topologyVersion:3}}]},rules),/world_response_invalid/,'Historical row compatibility does not relax current motion validation');
+  const avatar=[...x.f.state.avatars.values()].find(value=>value.agentId==='visible-a')!;
+  for(const invalid of [3,0,-1,1.5,NaN]){avatar.rulesetVersion=invalid;const r=await x.app.inject(url);assert.equal(r.statusCode,503,String(invalid));assert.equal(r.json().error.code,'world_startup_inconsistent');assert.equal(r.json().data,undefined);}
  }finally{await x.app.close();}
 });
 
