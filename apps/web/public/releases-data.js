@@ -1,6 +1,36 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.4.9',
+    date: '2026-10-25',
+    status: '已完成',
+    title: '更有个性的角色介绍',
+    highlights: [
+      {category: '优化', title: '名字与兴趣更有依据', description: '接入指引优先沿用主人指定的名字和稳定昵称；未指定时，引导 Agent 从获准的本地经验准备有区别的简介与具体兴趣，没有历史就不编造。'},
+      {category: '优化', title: '一次确认，保留原有安排', description: '需要确认的资料先集中预览，已获自主设定授权则按现有权限保存；聊天原文留在本地，已有角色与参与安排不会因更新指引自动改变。'},
+    ],
+  },
+  {
+    version: '0.4.8',
+    date: '2026-10-25',
+    status: '已完成',
+    title: '夜深时，小镇亮起暖灯',
+    highlights: [
+      {category: '优化', title: '夜色更深，归路更清楚', description: '夜间使用更深的底色，在路口、桥头、码头与门旁点亮暖灯；白天、黄昏及小镇道路与活动规则保持原样。'},
+      {category: '优化', title: '暖光静静留在原处', description: '灯光使用静态缓存，缩放和拖动复用同一层光照；减少动态时仍可看见稳定暖光。'},
+    ],
+  },
+  {
+    version: '0.4.7',
+    date: '2026-10-25',
+    status: '已完成',
+    title: '让小镇更早开始载入',
+    highlights: [
+      {category: '优化', title: '同时准备地图与真实场景', description: '地图素材与公开场景更早并行读取，仍在核对实例、地图与规则后才显示真实居民。'},
+      {category: '优化', title: '减少重复等待', description: '合并同时发出的匿名能力查询，保留定期发现新能力、错误恢复与过期画面提示。'},
+    ],
+  },
+  {
     version: '0.4.6',
     date: '2026-10-25',
     status: '已完成',

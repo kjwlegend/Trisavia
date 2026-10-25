@@ -1,13 +1,15 @@
 import {api} from '../common.js';
+import {readPublicCapabilities} from '../public-capabilities.js';
 import {readWorldRules,readWorldPage} from './world-scene-projection.js';
 const abortError=()=>new DOMException('World read cancelled','AbortError');
 const failure=code=>Object.assign(new Error(code),{code});
 const temporary=error=>![401,403,404,410].includes(error.status)&&!['world_not_available','world_not_accessible'].includes(error.code)&&(error.status===429||error.status>=500||['network_unknown','request_timeout','busy','unavailable'].includes(error.code));
 const READ_BUILD='world-provider-20261022-v1';
+const publicRequest=(path,options)=>path==='/capabilities'?readPublicCapabilities(options):api(path,options);
 
 // Public GETs only. Metadata is bounded, never an authority substitute for a
 // current scene response; reconnect/manual/visible boundaries rediscover it.
-export function createWorldSceneProvider({request=api,worldId='default',intervalMs=1000,maxPages=10,metadataTtlMs=30000,now=Date.now,setTimer=setTimeout,clearTimer=clearTimeout}={}){
+export function createWorldSceneProvider({request=publicRequest,worldId='default',intervalMs=1000,maxPages=10,metadataTtlMs=30000,now=Date.now,setTimer=setTimeout,clearTimer=clearTimeout}={}){
   const listeners=new Set();let revision=0,controller=null,timer=null,visible=false,started=false,disposed=false,failures=0,metadata=null,notBefore=0,retryError=null,readStarted=false;
   let state={phase:'loading',stale:false,enabled:null,worldId,rules:null,avatars:[],npcs:[],npcCatalogVersion:null,worldRevision:null,asOf:null,serverTime:null,timeSource:null,instanceId:null,complete:false,nextCursor:null,errorCode:null,errorStatus:null,lastSuccessAt:null,retryAt:null};
   const snapshot=()=>structuredClone(state);
@@ -24,7 +26,8 @@ export function createWorldSceneProvider({request=api,worldId='default',interval
     const readReason=!readStarted&&reason!=='manual'?'start':reason;
     const previous=state;let preserveAuthority=true;stop();const generation=revision,active=new AbortController();controller=active;
     const current=()=>!disposed&&visible&&generation===revision&&!active.signal.aborted;
-    const read=async path=>{readStarted=true;const result=await request(path,{signal:active.signal,headers:{'X-World-Read-Build':READ_BUILD,'X-World-Read-Reason':readReason}});if(!current())throw abortError();return result;};
+    const read=async(path,signal=active.signal)=>{readStarted=true;const result=await request(path,{signal,headers:{'X-World-Read-Build':READ_BUILD,'X-World-Read-Reason':readReason}});if(!current()||signal.aborted)throw abortError();return result;};
+    let firstPage=null,firstPageAbort=null;
     emit({phase:more?'partial':state.rules?'refreshing':'loading',errorCode:null,errorStatus:null,retryAt:null});
     try{
       if(force||failures>0||!metadata||now()>=metadata.expiresAt){
@@ -32,7 +35,11 @@ export function createWorldSceneProvider({request=api,worldId='default',interval
         if(caps?.apiVersion!=='v1'||typeof caps.instanceId!=='string')throw failure('world_response_invalid');
         if(!caps.gateway||caps.gateway.protocolVersion!==1||caps.gateway.worldSimulation?.enabled!==true||!caps.gateway.modules?.includes('world')){emit({enabled:false});throw failure('world_not_available');}
         if(previous.instanceId&&previous.instanceId!==caps.instanceId){preserveAuthority=false;emit({phase:'loading',...cleared(),instanceId:caps.instanceId});}
-        const result=await read(`/world/rules?${new URLSearchParams({worldId})}`);
+        const pendingRules=read(`/world/rules?${new URLSearchParams({worldId})}`);
+        // Enabled public reads may travel together. A scene is never parsed or
+        // emitted until the matching instance and strict rules are verified.
+        if(!more){firstPageAbort=new AbortController();firstPage=read(`/world/scene?${new URLSearchParams({worldId,limit:'50'})}`,AbortSignal.any([active.signal,firstPageAbort.signal])).then(value=>({value}),error=>({error}));}
+        const result=await pendingRules;
         if(result?.protocolVersion!==1||result.instanceId!==caps.instanceId||!result.data)throw failure('world_response_invalid');
         const rules=readWorldRules(result.data,worldId);
         if(previous.rules&&JSON.stringify(previous.rules)!==JSON.stringify(rules)){preserveAuthority=false;emit({phase:'loading',...cleared()});}
@@ -45,7 +52,9 @@ export function createWorldSceneProvider({request=api,worldId='default',interval
       const seenCursors=new Set(),seenAgents=new Set(avatars.map(row=>row.agentId));let complete=false;
       for(let page=0;page<maxPages;page++){
         const query=new URLSearchParams({worldId,limit:'50'});if(cursor)query.set('cursor',cursor);
-        const batch=readWorldPage(unwrap(await read(`/world/scene?${query}`)),rules);
+        const prefetched=page===0&&firstPage?await firstPage:null;
+        if(prefetched&&'error' in prefetched)throw prefetched.error;
+        const batch=readWorldPage(unwrap(prefetched?prefetched.value:await read(`/world/scene?${query}`)),rules);
         if(worldRevision!==null&&worldRevision!==batch.worldRevision)throw failure('world_scene_changed');
         worldRevision=batch.worldRevision;asOf=batch.asOf;if(page&&(JSON.stringify(npcs)!==JSON.stringify(batch.npcs)||npcCatalogVersion!==batch.npcCatalogVersion))throw failure('world_scene_changed');npcs=batch.npcs;npcCatalogVersion=batch.npcCatalogVersion;
         for(const avatar of batch.avatars){if(seenAgents.has(avatar.agentId))throw failure('world_response_invalid');seenAgents.add(avatar.agentId);avatars.push(avatar);}
@@ -66,7 +75,7 @@ export function createWorldSceneProvider({request=api,worldId='default',interval
       const code=error.code||(error.name==='AbortError'?'network_unknown':'world_response_invalid');
       retryError={errorCode:code,errorStatus:error.status??null};
       emit({phase:keep?'recovering':['world_not_accessible','world_not_available'].includes(code)?'unavailable':'error',enabled:state.enabled,...(keep?{stale:true,rules:previous.rules,avatars:previous.avatars,npcs:previous.npcs,npcCatalogVersion:previous.npcCatalogVersion,worldRevision:previous.worldRevision,asOf:previous.asOf,instanceId:previous.instanceId,complete:true,nextCursor:null,lastSuccessAt:previous.lastSuccessAt}:cleared()),errorCode:code,errorStatus:error.status??null,retryAt:now()+delay()});
-    }finally{if(current()){controller=null;schedule();}}
+    }finally{firstPageAbort?.abort();if(current()){controller=null;schedule();}}
   }
   return{snapshot,subscribe(listener){listeners.add(listener);listener(snapshot());return()=>listeners.delete(listener);},
     start(){if(disposed||started)return;started=true;if(visible)void refresh({force:true,reason:'start'});},

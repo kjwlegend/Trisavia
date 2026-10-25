@@ -1,3 +1,4 @@
+import {PROFILE_PERSONALIZATION_GUIDE} from './agent-profile-guide.ts';
 import {AVATAR_AUTHORING_GUIDE} from './agent-avatar-guide.ts';
 import {PUBLIC_IDENTIFIERS_GUIDE} from './public-identifiers.ts';
 import { mapAsync } from '../domains/common/async-collections.ts';
@@ -371,6 +372,35 @@ export async function publishRecurringBootstrapInTransaction(tx:M1Transaction,op
   if(typeof document.text!=='string'||old?.data.digest!==key(document)||await catalogRepository(tx).get(`guide:${moduleId}:${version}`)||document.text.includes(RECURRING_JOB_BOOTSTRAP))fail('version_conflict',409,'Exact recurring-guide source or destination is unavailable');
   const count=document.text.split(HOURLY_HOST_GUIDE).length-1;if(count>1)fail('version_conflict',409,'Retained host guidance is ambiguous');
   const text=count===1?document.text.replace(HOURLY_HOST_GUIDE,CURRENT_RECURRING_HOST_GUIDE):document.text+'\n'+CURRENT_RECURRING_HOST_GUIDE,next={...document,version,text};
+  await catalogRepository(tx).insert({id:`guide:${moduleId}:${version}`,version:1,data:{document:next,digest:key(next)}});
+ }
+ const data={...current.data,guideVersion:version,catalogRevision:revision,skillCatalogRevision:'skills-'+revision};await rememberCatalogRevision(tx,data);await catalogRepository(tx).replace({...current,version:current.version+1,data},current.version);
+ const result:JsonObject={changed:true,catalogRevision:revision,skillCatalogRevision:data.skillCatalogRevision,guideVersion:version,schemaVersion:8,newGuideDocuments:7,newSchemaDocuments:0,sourceStatesPreserved:true,businessFactsChanged:false,operationId:options.operationId,guideDigests:await mapAsync(modules,async moduleId=>({moduleId,digest:(await catalogRepository(tx).get(`guide:${moduleId}:${version}`))!.data.digest!}))};
+ await catalogRepository(tx).insert({id:identity.id,version:1,data:{kind:'administrative_receipt',payloadHash:identity.digest,result}});return result;
+}
+
+export type ProfilePersonalizationPublication=RecurringBootstrapPublication;
+function profilePersonalizationIdentity(options:ProfilePersonalizationPublication){
+ // Validate the same explicit pairing/operation shape without changing the retained recurring operation's payload.
+ recurringBootstrapIdentity(options);
+ const payload:JsonObject={...options,release:'agent-profile-personalization@1',expectedCatalogRevision:'catalog-recurring-bootstrap-1',revision:'catalog-profile-personalization-1',guideVersion:options.expectedGuideVersion+1,schemaVersion:8,profileGuide:PROFILE_PERSONALIZATION_GUIDE};
+ return{id:'admin-profile-personalization:'+key({operator:options.operator,operationId:options.operationId}),digest:key(payload)};
+}
+export async function readProfilePersonalizationReceipt(tx:M1Transaction,options:ProfilePersonalizationPublication):Promise<JsonObject|undefined>{
+ const identity=profilePersonalizationIdentity(options),prior=await catalogRepository(tx).get(identity.id);if(!prior)return;
+ if(prior.data.payloadHash!==identity.digest)fail('operation_id_conflict',409,'Original profile-guide publication payload changed');return plain(prior.data.result);
+}
+/** Append the named text-only successor. No profile, memory, policy, runtime job, schema or old exact document changes. */
+export async function publishProfilePersonalizationInTransaction(tx:M1Transaction,options:ProfilePersonalizationPublication):Promise<JsonObject>{
+ const prior=await readProfilePersonalizationReceipt(tx,options);if(prior)return prior;
+ const current=await catalogRepository(tx).get('current'),identity=profilePersonalizationIdentity(options),version=options.expectedGuideVersion+1,revision='catalog-profile-personalization-1';
+ if(Number(PERCEPTION_SCHEMA_VERSION)!==8||!current||current.data.schemaVersion!==8||current.data.catalogRevision!=='catalog-recurring-bootstrap-1'||current.data.guideVersion!==options.expectedGuideVersion||!await catalogRepository(tx).get('catalog-revision:'+key('catalog-recurring-bootstrap-1')))fail('version_conflict',409,'Exact retained schema8 recurring-bootstrap catalog and guide required');
+ await rememberCatalogRevision(tx,current.data);
+ const modules=['perception','world','profiles','items','inventory','mailbox','wallet'];
+ for(const moduleId of modules){
+  const old=await catalogRepository(tx).get(`guide:${moduleId}:${options.expectedGuideVersion}`),document=plain(old?.data.document);
+  if(typeof document.text!=='string'||old?.data.digest!==key(document)||!document.text.includes(RECURRING_JOB_BOOTSTRAP)||document.text.includes(PROFILE_PERSONALIZATION_GUIDE)||await catalogRepository(tx).get(`guide:${moduleId}:${version}`))fail('version_conflict',409,'Exact profile-guide source or destination is unavailable');
+  const next={...document,version,text:document.text+'\n'+PROFILE_PERSONALIZATION_GUIDE};
   await catalogRepository(tx).insert({id:`guide:${moduleId}:${version}`,version:1,data:{document:next,digest:key(next)}});
  }
  const data={...current.data,guideVersion:version,catalogRevision:revision,skillCatalogRevision:'skills-'+revision};await rememberCatalogRevision(tx,data);await catalogRepository(tx).replace({...current,version:current.version+1,data},current.version);
