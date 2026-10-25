@@ -1,3 +1,4 @@
+import {assertProfileBusinessWrite,assertProfileDirectSave,assertProfilePublicationMode,assertProfilePublicationFields} from '../domains/profile/publication-policy.ts';
 import {isCustomAvatar} from '../domains/profile/appearance.ts';
 import {assertWorldActionAllowed,worldActionPolicy,worldActionPolicyView} from '../domains/access/world-action-policy.ts';
 import {authenticateCredential} from '../domains/access/authentication.ts';
@@ -207,24 +208,13 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         return await required(agentRepository(tx), agentId);
     }
     async function businessWrite(tx: M1ReadSession, actor: CredentialRow, agentId: string): Promise<void> {
-        const member = await required(membershipRepository(tx), agentId);
-        if (actor.data.kind === "runtime" && member.data.ownerPaused)
-            fail("participation_paused", 403, "Owner paused platform participation");
-        if (member.data.platformRestricted)
-            fail("platform_restricted", 403, "Platform participation is restricted");
+        assertProfileBusinessWrite((await required(membershipRepository(tx),agentId)).data,actor.data.kind==='runtime'?'agent':'owner');
     }
     async function directSavePermission(tx: M1ReadSession, actor: CredentialRow, agentId: string, profile: StoredRow): Promise<void> {
-        await businessWrite(tx, actor, agentId);
-        if (actor.data.kind === "runtime" && profile.data.mode !== "agent_autonomous")
-            fail("confirmation_required", 403, "Owner confirmation is required for publication");
-        const member = await required(membershipRepository(tx), agentId);
-        if (member.data.state !== "joined" || (actor.data.kind === "runtime" && profile.data.published === null)) {
-            fail("role_not_public", 409, "Restore the explicit public role before using direct save", { membershipState: member.data.state!, published: profile.data.published !== null });
-        }
+        assertProfileDirectSave(profile.data,(await required(membershipRepository(tx),agentId)).data,actor.data.kind==='runtime'?'agent':'owner');
     }
     function publicationPermission(profile: StoredRow, actor: CredentialRow, unpublish: boolean): void {
-        if (actor.data.kind === "runtime" && profile.data.mode !== "agent_autonomous")
-            fail("confirmation_required", 403, "Owner confirmation is required for publication");
+        assertProfilePublicationMode(profile.data,actor.data.kind==="runtime"?"agent":"owner");
         const published = dataObject(profile.data.published);
         if (unpublish) {
             if (actor.data.kind === "runtime" && (profile.data.lockedFields as string[]).some((field) => Object.hasOwn(published, field)))
@@ -232,14 +222,9 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
             return;
         }
         const draft = dataObject(profile.data.draft);
-        if((isCustomAvatar(published.avatar)||isCustomAvatar(draft.avatar))&&payloadHash(dataObject(draft.avatar))!==payloadHash(dataObject(published.avatar)))fail('owner_confirmation_required',403,'从自定义形象更换或恢复必须在形象工作室明确确认。');
+        if((isCustomAvatar(published.avatar)||isCustomAvatar(draft.avatar))&&payloadHash(dataObject(draft.avatar))!==payloadHash(dataObject(published.avatar)))fail('avatar_asset_operation_required',403,'请使用形象资产接口核验素材归属及当前形象权限。');
         validatePublication(draft);
-        if (actor.data.kind === "runtime") {
-            for (const field of profile.data.lockedFields as string[]) {
-                if (JSON.stringify(draft[field]) !== JSON.stringify(published[field]))
-                    fail("field_locked", 403, "Owner locked a field changed in this draft");
-            }
-        }
+        assertProfilePublicationFields(profile.data,actor.data.kind==='runtime'?'agent':'owner',PROFILE_FIELDS.filter(field=>JSON.stringify(draft[field])!==JSON.stringify(published[field])));
     }
     function joinPermission(profile: StoredRow): void {
         if (profile.data.published === null)
@@ -803,7 +788,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     else
                         await businessWrite(tx, actor, agentId);
                     if (action === "saveDraft" || action === "saveProfile") {
-                        if(isCustomAvatar(dataObject(profile.data.published).avatar)&&input.fields&&typeof input.fields==='object'&&!Array.isArray(input.fields)&&Object.hasOwn(input.fields,'avatar'))fail('owner_confirmation_required',403,'从自定义形象恢复内置必须在形象工作室确认。');
+                        if(isCustomAvatar(dataObject(profile.data.published).avatar)&&input.fields&&typeof input.fields==='object'&&!Array.isArray(input.fields)&&Object.hasOwn(input.fields,'avatar'))fail('avatar_asset_operation_required',403,'请使用形象资产恢复接口核验当前形象权限。');
                         const fields = validateFields(input.fields) as JsonObject;
                         const removeFields = validateRemoveFields(input.removeFields);
                         if (removeFields.some((field) => Object.hasOwn(fields, field)))

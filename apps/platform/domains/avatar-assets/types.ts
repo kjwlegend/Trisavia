@@ -7,7 +7,7 @@ export interface AvatarManifest {version:1;type:'trisavia-avatar-strips';frame:{
 export interface AvatarFile {name:string;contentType:'image/png'|'image/jpeg';sha256:string;bytes:number;width:number;height:number}
 export interface AvatarValidationError {code:string;path:string;message:string;fix:string}
 export interface AvatarValidation {valid:boolean;errors:AvatarValidationError[]}
-export interface AvatarTask {id:string;version:number;agentId:string;ownerId:string;bindingId:string;bindingVersion:number;origin:string;recoveryEpoch:string;state:'active'|'revoked';instruction:string;createdAt:number;expiresAt:number;revokedAt:number|null}
+export interface AvatarTask {id:string;version:number;agentId:string;ownerId:string;bindingId:string;bindingVersion:number;origin:string;recoveryEpoch:string;state:'active'|'revoked';creatorKind:'agent'|'owner';creatorId:string;creationPolicyVersion:number;instruction:string;createdAt:number;expiresAt:number;revokedAt:number|null}
 export interface AvatarAsset {id:string;version:1;taskId:string;agentId:string;creatorKind:'agent'|'owner';creatorId:string;kind:'reference'|'avatar';createdAt:number;manifest:AvatarManifest|null;files:AvatarFile[];validation:AvatarValidation;digest:string;publicDocument:JsonObject|null}
 export interface AvatarPublication {assetId:string;agentId:string;publishedAt:number;ownerId:string;bindingId:string;bindingVersion:number}
 export interface CustomAvatar extends JsonObject {kind:'custom';assetId:string;version:1;digest:string;manifestUrl:string}
