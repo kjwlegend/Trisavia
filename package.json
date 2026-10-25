@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "fastify": "5.12.7",
+    "jpeg-js": "0.4.4",
     "pg": "^8.23.1",
     "pngjs": "7.0.0"
   },
