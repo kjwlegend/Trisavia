@@ -69,5 +69,29 @@
     "Production renderer or public profile synchronization",
     "UAT release",
     "Human final aesthetic approval"
-  ]
+  ],
+  "followup": {
+    "browserTask": 123,
+    "scope": "Reference-format and Agent task-flow copy correction only",
+    "referenceFormats": [
+      "image/png",
+      "image/jpeg"
+    ],
+    "pngLocalPreview": true,
+    "jpegLocalPreview": true,
+    "copyDisabledBeforePreparation": true,
+    "copyEnabledAfterExplicitDemoPrepare": true,
+    "agentSwitchClearsPreparation": true,
+    "promptContainsNonSecretTaskPlaceholders": true,
+    "promptRequiresNamedUploadAndRealValidation": true,
+    "ownerWebApplyOnly": true,
+    "viewportsWithoutHorizontalOverflow": [
+      1440,
+      811,
+      390
+    ],
+    "actualUploadOrApply": false,
+    "clipboardModified": false,
+    "screenshotsRefreshed": true
+  }
 }
