@@ -1,5 +1,7 @@
 import {createLifeFishingRepository,readLifeTradeSource,readLifeFishingSessionSource,readLifeFishingCastSource} from './life-b-repository.ts';
 import {createLifeCommerceRepository} from './life-commerce-repository.ts';
+import {createPublicWorldReadRevisionRepository} from './public-world-read-revision-repository.ts';
+import {registerPublicWorldReadPool} from '../../domains/world/public-read-revision.ts';
 import {LIFE_ASSET_RULES} from '../../domains/life/b-catalog.ts';
 import {createAvatarAssetRepository} from './avatar-assets-repository.ts';
 import {createLifeRepository,readCompletedWorkRewardSource} from './life-repository.ts';
@@ -34,7 +36,7 @@ export function runtimeIdentitySession(context:RuntimeReadContext):M1ReadSession
 export function createPostgresRuntimeContext(scope:PostgresScope,options:OpenRuntimeStoreOptions):RuntimeTransaction{
  const sql=runtimeSql(scope,options.now??Date.now),legacy=createPostgresSession(scope.client,false,scope.alive);
  const core=createRuntimeRepositories(sql,options.recoveryEpoch);
- const adapters=[createAvatarAssetRepository(sql),createLifeRepository(sql),createLifeFishingRepository(sql),createLifeCommerceRepository(sql,{catalog:LIFE_ASSET_RULES,readTradeSource:id=>readLifeTradeSource(sql,id),readFishingSessionSource:id=>readLifeFishingSessionSource(sql,id),readFishingCastSource:id=>readLifeFishingCastSource(sql,id)}),createLifeWalletRepository(sql,{catalog:LIFE_B_RUNTIME_RULES,readCompletedWorkRewardSource:id=>readCompletedWorkRewardSource(sql,id)}),createPublicIdentifierRepository(scope.client,scope.write,scope.alive),createWorldRepository(sql),createInteractionRepository(sql),createDecisionRepository(sql,options.recoveryEpoch),createRelationshipsRepository(sql),createBehaviorRepository(sql),createTownRepository(sql),createServiceInventoryRepository(sql),createOwnerMailboxRepository(sql),createWelcomeCreditRepository(sql),createResidentGiftRepository(sql)];
+ const adapters=[createPublicWorldReadRevisionRepository(sql),createAvatarAssetRepository(sql),createLifeRepository(sql),createLifeFishingRepository(sql),createLifeCommerceRepository(sql,{catalog:LIFE_ASSET_RULES,readTradeSource:id=>readLifeTradeSource(sql,id),readFishingSessionSource:id=>readLifeFishingSessionSource(sql,id),readFishingCastSource:id=>readLifeFishingCastSource(sql,id)}),createLifeWalletRepository(sql,{catalog:LIFE_B_RUNTIME_RULES,readCompletedWorkRewardSource:id=>readCompletedWorkRewardSource(sql,id)}),createPublicIdentifierRepository(scope.client,scope.write,scope.alive),createWorldRepository(sql),createInteractionRepository(sql),createDecisionRepository(sql,options.recoveryEpoch),createRelationshipsRepository(sql),createBehaviorRepository(sql),createTownRepository(sql),createServiceInventoryRepository(sql),createOwnerMailboxRepository(sql),createWelcomeCreditRepository(sql),createResidentGiftRepository(sql)];
  const repositories=new Map<object,{reader:unknown;writer:unknown}>();
  for(const adapter of adapters)repositories.set(adapter.port,{reader:Object.freeze(adapter.reader),writer:Object.freeze(adapter.writer)});
  const base={instanceId:options.instanceId,recoveryEpoch:options.recoveryEpoch,now:sql.now,
@@ -53,8 +55,9 @@ export async function openRuntimeStore(options:OpenRuntimeStoreOptions):Promise<
  if(options.now!==undefined&&typeof options.now!=='function')throw new StorageError('invalid_usage','A clock must be a function');
  const host=await openPostgresTransactionHost(options);
  function invoke<T>(scope:PostgresScope,work:(context:RuntimeTransaction)=>Promise<T>):Promise<T>{if(typeof work!=='function')throw new StorageError('invalid_usage','A runtime callback is required');const value=work(createPostgresRuntimeContext(scope,options));if(!value||typeof value.then!=='function')throw new StorageError('invalid_usage','Runtime callbacks must be asynchronous');return value;}
- return Object.freeze({instanceId:host.instanceId,recoveryEpoch:host.recoveryEpoch,
+ const store=Object.freeze({instanceId:host.instanceId,recoveryEpoch:host.recoveryEpoch,
   read:<T>(work:(context:RuntimeReadContext)=>Promise<T>)=>host.read(scope=>invoke(scope,work)),
   transaction:<T>(work:(context:RuntimeTransaction)=>Promise<T>)=>host.transaction(scope=>invoke(scope,work)),close:()=>host.close()});
+ registerPublicWorldReadPool(store,options.poolMax??4);return store;
 }
 export const openPostgresRuntimeStore=openRuntimeStore;

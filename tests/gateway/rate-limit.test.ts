@@ -26,49 +26,11 @@ async function fixture(t: TestContext) {
     const app = Fastify({ logger: false });
     registerWorldObservationRoutes(gateway, registerAgentGatewayRoutes(app, gateway, { instanceId: 'instance_isolated_rate_limit', now: () => now }));
     t.after(async () => { await app.close(); });
-    const request = (url = '/v1/world/scene?worldId=default', remoteAddress = '127.0.0.1') => app.inject({ method: 'GET', url, remoteAddress });
+    const request = (url = '/v1/world/npcs?worldId=default', remoteAddress = '127.0.0.1') => app.inject({ method: 'GET', url, remoteAddress });
     return { app, handled, request, advance(ms: number) { now += ms; }, failWith(error: unknown) { failure = error; } };
 }
 
-const discoveryReads = ['/v1/gateway/discovery', '/v1/gateway/schemas/world.public_scene.input?version=1', '/v1/gateway/schemas/world.public_scene.output?version=1', '/v1/gateway/schemas/world.public_rules.input?version=1', '/v1/gateway/schemas/world.public_rules.output?version=1', '/v1/gateway/guides/world?version=1'];
-
-await test('two natural one-second World pages plus normal exact-document discovery hit the shared cap and expose the remaining retry delay', async (t) => {
-    const f = await fixture(t), rejected = [];
-    for (const url of discoveryReads) assert.equal((await f.request(url)).statusCode, 200);
-    // 59 cycles/minute accounts for a small request/response delay, rather than
-    // assuming the page can poll instantaneously at an exact 60 cycles/minute.
-    for (let tick = 0; tick < 59; tick++) {
-        if (tick) f.advance(1010);
-        for (let tab = 0; tab < 2; tab++) for (const path of ['rules', 'scene']) {
-            const response = await f.request(`/v1/world/${path}?worldId=default`);
-            if (response.statusCode === 429) rejected.push(response);
-            else assert.equal(response.statusCode, 200);
-        }
-    }
-    assert.equal(f.handled.length, 240);
-    assert.equal(rejected.length, 2);
-    console.info(JSON.stringify({ isolatedRateModel: { visibleTabs: 2, cyclesPerTab: 59, metadataRequests: 6, worldRequests: 236, accepted: 240, rejected: 2, remainingWindowMs: 1420 } }));
-    for (const response of rejected) {
-        assert.equal(response.json().error.code, 'rate_limited');
-        assert.equal(response.headers['retry-after'], '2');
-        assert.equal(response.headers['cache-control'], 'no-store');
-        assert.deepEqual(Object.keys(response.json().error).sort(), ['code', 'message'], 'The error body contract remains unchanged');
-    }
-});
-
-await test('one page and normal discovery fit the existing cap without extra backoff metadata', async (t) => {
-    const f = await fixture(t);
-    for (const url of discoveryReads) assert.equal((await f.request(url)).statusCode, 200);
-    for (let tick = 0; tick < 59; tick++) {
-        if (tick) f.advance(1010);
-        for (const path of ['rules', 'scene']) {
-            const response = await f.request(`/v1/world/${path}?worldId=default`);
-            assert.equal(response.statusCode, 200);
-            assert.equal(response.headers['retry-after'], undefined);
-        }
-    }
-    assert.equal(f.handled.length, 124);
-});
+// The three public observation paths have their own cost admission, covered by public-world-read.test.ts.
 
 await test('Retry-After uses whole remaining seconds with a one-second floor; the exact window boundary, per-IP scope and authentication guard are retained', async (t) => {
     const f = await fixture(t);

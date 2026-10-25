@@ -8,6 +8,7 @@ import {StorageError} from '../../contracts/store.ts';
 import type {JsonObject} from '../../contracts/store.ts';
 import {object} from '../../domains/common/errors.ts';
 import {createGatewayQuotaObservation,isWorldReadObservationRoute,worldReadObservationHints,type GatewayQuotaDiagnosticSink,type GatewayQuotaRoute} from './gateway-request-observation.ts';
+import {createPublicWorldHttpBudget,PUBLIC_WORLD_PATHS,PublicWorldLimitError} from '../../application/public-world-read-budget.ts';
 class GatewayRateLimitError extends M1Error {
  readonly retryAfterSeconds:number;
  constructor(message:string,retryAfterSeconds:number){super('rate_limited',429,message);this.retryAfterSeconds=retryAfterSeconds;}
@@ -15,6 +16,8 @@ class GatewayRateLimitError extends M1Error {
 export function registerAgentGatewayRoutes(app:FastifyInstance,gateway:AgentGateway,identity:{instanceId:string;now:()=>number},diagnostics:{write?:GatewayQuotaDiagnosticSink}={}){
  const windows=new Map<string,{at:number;count:number}>();let cleanupAt=Date.now();
  const observation=createGatewayQuotaObservation(diagnostics.write);
+ const publicBudget=createPublicWorldHttpBudget(()=>Date.now()),signals=new WeakMap<FastifyRequest,AbortController>();
+ app.addHook('preClose',async()=>{gateway.closePublicWorldReads?.();});
  const publicDurations=new WeakMap<FastifyRequest,number>();
  const validators=new WeakMap<JsonObject,(input:unknown)=>boolean>();
  const validate=(request:FastifyRequest)=>(schema:JsonObject,input:unknown)=>{let check=validators.get(schema);if(!check){check=request.compileValidationSchema(schema,'body');validators.set(schema,check);}return check(input);};
@@ -34,15 +37,18 @@ export function registerAgentGatewayRoutes(app:FastifyInstance,gateway:AgentGate
   else if(error instanceof RuntimeError){status=error.code==='command_conflict'||error.code==='version_conflict'||error.code==='lease_lost'?409:503;code=error.code;message='The operation could not be completed';}
   else if(error instanceof StorageError){status=error.code==='constraint'||error.code==='conflict'?409:503;code=error.code==='unknown_commit'?'unknown_commit':error.code==='busy'?'busy':error.code==='constraint'||error.code==='conflict'?'conflict':'unavailable';message=error.code==='unknown_commit'?'Commit result is unknown; query the original command receipt':'The operation could not be completed';}
   else if(error&&typeof error==='object'&&'statusCode'in error&&typeof error.statusCode==='number'&&error.statusCode<500){status=error.statusCode===413?413:400;code='invalid_request';message='Request is invalid';}
-  if(error instanceof GatewayRateLimitError)reply.header('Retry-After',String(error.retryAfterSeconds)).header('Cache-Control','no-store');
+  if(error instanceof GatewayRateLimitError||error instanceof PublicWorldLimitError)reply.header('Retry-After',String(error.retryAfterSeconds)).header('Cache-Control','no-store');
   return reply.code(status).send({protocolVersion:1,requestId:String(request.id),error:{code,message}});
  }
  function route(method:'GET'|'POST',url:string,handler:(request:FastifyRequest)=>unknown|Promise<unknown>){
   const observedRoute:GatewayQuotaRoute={method,route:url,requestClass:method==='GET'?'public_read':'gateway_operation'};
   app.route({method,url,bodyLimit:32768,errorHandler:error,handler:async(request,reply)=>{
    const started=performance.now();reply.header('Cache-Control','no-store').header('X-Request-Id',String(request.id));
-   try{quota(request,observedRoute);return {protocolVersion:1,requestId:String(request.id||randomUUID()),instanceId:identity.instanceId,serverTime:identity.now(),data:await handler(request)};}
-   finally{const publicMs=publicDurations.get(request);reply.header('Server-Timing',`app;dur=${(performance.now()-started).toFixed(2)};desc="Gateway handler"`+(publicMs===undefined?'':`, public_read;dur=${publicMs.toFixed(2)};desc="Public read including store"`));}
+   const publicWorld=method==='GET'&&PUBLIC_WORLD_PATHS.has(url),controller=new AbortController();
+   const aborted=()=>controller.abort(),closed=()=>{if(!reply.raw.writableEnded)controller.abort();};
+   if(publicWorld){signals.set(request,controller);request.raw.once('aborted',aborted);reply.raw.once('close',closed);}
+   try{if(publicWorld)publicBudget.take(request.ip);else quota(request,observedRoute);return {protocolVersion:1,requestId:String(request.id||randomUUID()),instanceId:identity.instanceId,serverTime:identity.now(),data:await handler(request)};}
+   finally{request.raw.removeListener('aborted',aborted);reply.raw.removeListener('close',closed);const publicMs=publicDurations.get(request);reply.header('Server-Timing',`app;dur=${(performance.now()-started).toFixed(2)};desc="Gateway handler"`+(publicMs===undefined?'':`, public_read;dur=${publicMs.toFixed(2)};desc="Public read including store"`));}
   }});
  }
  async function measurePublicRead<T>(request:FastifyRequest,read:()=>Promise<T>):Promise<T>{const started=performance.now();try{return await read();}finally{publicDurations.set(request,(publicDurations.get(request)??0)+performance.now()-started);}}
@@ -52,6 +58,6 @@ export function registerAgentGatewayRoutes(app:FastifyInstance,gateway:AgentGate
  route('POST','/v1/gateway/query',request=>gateway.query(request.body,bearer(request),validate(request)));
  route('POST','/v1/gateway/commands',request=>gateway.command(request.body,bearer(request),validate(request)));
  route('POST','/v1/gateway/receipts/query',request=>gateway.receipt(request.body,bearer(request)));
- return {route,validate,measurePublicRead,instanceId:identity.instanceId};
+ return {route,validate,measurePublicRead,signal:(request:FastifyRequest)=>signals.get(request)?.signal,instanceId:identity.instanceId};
 }
 export type GatewayHttpTransport=ReturnType<typeof registerAgentGatewayRoutes>;
