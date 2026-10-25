@@ -19,7 +19,7 @@ export interface LifeTradeSource {
 }
 export interface LifeFishingSession {
  id:string;version:number;actorKind:LifeActorRef['kind'];actorId:string;catalogRevision:2;ruleVersion:1;
- activityId:string;spotId:LifeSpotId;rodInstanceId:string;requestedCasts:number;nextCastIndex:number;
+ actionId:'fish.session';activityId:string;spotId:LifeSpotId;rodInstanceId:string;requestedCasts:number;nextCastIndex:number;
  state:LifeState;startedAt:number;endedAt:number|null;currentCastId:string|null;castIds:string[];
  qualification:LifeQualification|null;ownerAudience:OwnerAudienceProof|null;resultId:string|null;sourceEventId:string|null;
 }
