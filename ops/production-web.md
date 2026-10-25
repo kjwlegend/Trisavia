@@ -20,4 +20,11 @@ Only current manifest-listed `/assets/build/<name>-<sha16>.<ext>` files receive 
 
 For future `trisavia.kjwlabs.com` vhost deployments, apply or verify `ops/trisavia-proxy.patch` on the reviewed candidate configuration. It preserves `If-None-Match` for public static routes and permits 12 MiB only on the Avatar draft upload path; the default 32 KiB limit, TLS and `/intro` configuration stay intact. Do not apply it again if both fixes are already present, and never overwrite the current Trisavia vhost with the historical `ops/openresty-domain.conf` template for `world.kjwlabs.com`. Validate the candidate with the site's `nginx -t` and perform a graceful reload only with deployment authorization. Both fixes are already deployed; adding this patch to source performs no configuration change or reload.
 
+The original patch baseline has SHA256 `ab646e060ce355f5dcdbb9f085d397a2dd13880caffc58d1ac501ff38579e887`; its patched result is `f0a48aaa384ccb89e85dd7f00eb41e931d973df04535b64167e7fe3419968429`. Work on a staged copy, verify that baseline hash when unchanged, and review any other candidate edits before applying. Require exact context matching and stop on any rejected hunk; never install a partially patched candidate:
+
+```sh
+patch --batch --forward --fuzz=0 --dry-run /path/to/staged/agents-era-trisavia.conf ops/trisavia-proxy.patch
+patch --batch --forward --fuzz=0 /path/to/staged/agents-era-trisavia.conf ops/trisavia-proxy.patch
+```
+
 This source/template change performs no deployment. UAT source, configuration and service changes require the user's separate explicit review approval.
