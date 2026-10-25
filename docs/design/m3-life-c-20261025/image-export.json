@@ -1,0 +1,89 @@
+{
+  "method": "Generated alpha bbox >=32; crop transparent margins; proportional nearest-neighbor fit within 26x26 centered in 32x32. No creative repaint, no background removal, alpha retained.",
+  "items": [
+    {
+      "dir": "m3-life-c-20261025",
+      "id": "bread_meal",
+      "master": "bread_meal",
+      "originalSize": [
+        1254,
+        1254
+      ],
+      "alphaBBox": [
+        275,
+        357,
+        706,
+        561
+      ],
+      "targetBBox": [
+        3,
+        5,
+        26,
+        21
+      ]
+    },
+    {
+      "dir": "m3-life-c-20261025",
+      "id": "herbal_tea",
+      "master": "herbal_tea",
+      "originalSize": [
+        1254,
+        1254
+      ],
+      "alphaBBox": [
+        342,
+        301,
+        615,
+        650
+      ],
+      "targetBBox": [
+        3,
+        3,
+        25,
+        26
+      ]
+    },
+    {
+      "dir": "m3-life-c-20261025",
+      "id": "grilled_fish",
+      "master": "grilled_fish",
+      "originalSize": [
+        1254,
+        1254
+      ],
+      "alphaBBox": [
+        223,
+        394,
+        808,
+        515
+      ],
+      "targetBBox": [
+        3,
+        7,
+        26,
+        17
+      ]
+    },
+    {
+      "dir": "m3-life-c-20261025",
+      "id": "harbor_handbook",
+      "master": "harbor_handbook",
+      "originalSize": [
+        1254,
+        1254
+      ],
+      "alphaBBox": [
+        301,
+        300,
+        657,
+        700
+      ],
+      "targetBBox": [
+        4,
+        3,
+        24,
+        26
+      ]
+    }
+  ]
+}

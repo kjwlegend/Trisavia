@@ -1,0 +1,389 @@
+{
+  "method": "Export existing native sprite/palette and approved A pose composition to PNG; source PNG untouched. SVG fixtures extend existing native pixel furniture.",
+  "files": [
+    {
+      "path": "assets/actors/npc-librarian-idle.png",
+      "width": 864,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 9,
+      "source": "existing native appearance palette renderer, no source pixels overwritten"
+    },
+    {
+      "path": "assets/actors/npc-librarian-walk.png",
+      "width": 768,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 8,
+      "source": "existing native appearance palette renderer, no source pixels overwritten"
+    },
+    {
+      "path": "assets/actors/npc-neighbor-idle.png",
+      "width": 864,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 9,
+      "source": "existing native appearance palette renderer, no source pixels overwritten"
+    },
+    {
+      "path": "assets/actors/npc-neighbor-walk.png",
+      "width": 768,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 8,
+      "source": "existing native appearance palette renderer, no source pixels overwritten"
+    },
+    {
+      "path": "assets/poses/shorthair-rest.png",
+      "width": 192,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 2,
+      "frameDurationMs": 1600,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props"
+    },
+    {
+      "path": "assets/poses/shorthair-read.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1200,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props"
+    },
+    {
+      "path": "assets/poses/shorthair-meal.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1000,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props"
+    },
+    {
+      "path": "assets/poses/longhair-rest.png",
+      "width": 192,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 2,
+      "frameDurationMs": 1600,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props"
+    },
+    {
+      "path": "assets/poses/longhair-read.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1200,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props"
+    },
+    {
+      "path": "assets/poses/longhair-meal.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1000,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props"
+    },
+    {
+      "path": "assets/poses/curlyhair-rest.png",
+      "width": 192,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 2,
+      "frameDurationMs": 1600,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props"
+    },
+    {
+      "path": "assets/poses/curlyhair-read.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1200,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props"
+    },
+    {
+      "path": "assets/poses/curlyhair-meal.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1000,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props"
+    },
+    {
+      "path": "assets/poses/bowlhair-rest.png",
+      "width": 192,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 2,
+      "frameDurationMs": 1600,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props"
+    },
+    {
+      "path": "assets/poses/bowlhair-read.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1200,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props"
+    },
+    {
+      "path": "assets/poses/bowlhair-meal.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1000,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props"
+    },
+    {
+      "path": "assets/poses/mophair-rest.png",
+      "width": 192,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 2,
+      "frameDurationMs": 1600,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props"
+    },
+    {
+      "path": "assets/poses/mophair-read.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1200,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props"
+    },
+    {
+      "path": "assets/poses/mophair-meal.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1000,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props"
+    },
+    {
+      "path": "assets/poses/spikeyhair-rest.png",
+      "width": 192,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 2,
+      "frameDurationMs": 1600,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props"
+    },
+    {
+      "path": "assets/poses/spikeyhair-read.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1200,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props"
+    },
+    {
+      "path": "assets/poses/spikeyhair-meal.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1000,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props"
+    },
+    {
+      "path": "assets/fixtures/chair.png",
+      "width": 14,
+      "height": 16,
+      "source": "assets/fixtures/chair.svg (native pixel shape)"
+    },
+    {
+      "path": "assets/fixtures/canopy-inn.png",
+      "width": 80,
+      "height": 50,
+      "source": "assets/fixtures/canopy-inn.svg (native pixel shape)"
+    },
+    {
+      "path": "assets/fixtures/canopy-library.png",
+      "width": 80,
+      "height": 50,
+      "source": "assets/fixtures/canopy-library.svg (native pixel shape)"
+    },
+    {
+      "path": "assets/fixtures/kitchen-counter.png",
+      "width": 48,
+      "height": 20,
+      "source": "assets/fixtures/kitchen-counter.svg (native pixel shape)"
+    },
+    {
+      "path": "assets/fixtures/open-book.png",
+      "width": 14,
+      "height": 9,
+      "source": "assets/fixtures/open-book.svg (native pixel shape)"
+    },
+    {
+      "path": "assets/fixtures/seated-legs.png",
+      "width": 14,
+      "height": 8,
+      "source": "assets/fixtures/seated-legs.svg (native pixel shape)"
+    }
+  ]
+}

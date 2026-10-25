@@ -1,0 +1,54 @@
+{
+  "id": "m3-c-facility-lights-v1",
+  "base": "../m3-life-b-20261025/night-lights.json",
+  "coordinateSpace": "Town3 source pixels 1536x1152",
+  "layoutSha256": "c025fbdce5cd5fba4a33c1013fb6a49847be55a68c7c12edcdaa0a37524d7b08",
+  "cachePolicy": "merge into same two 768x576 caches at build; no extra per-frame gradients or caches",
+  "lights": [
+    {
+      "id": "c-inn-porch",
+      "kind": "wall",
+      "groundAnchor": [
+        884,
+        578
+      ],
+      "emitterOffset": [
+        0,
+        0
+      ],
+      "radius": 50,
+      "clearance": 0.64,
+      "warmAlpha": 0.12
+    },
+    {
+      "id": "c-library-porch",
+      "kind": "wall",
+      "groundAnchor": [
+        832,
+        334
+      ],
+      "emitterOffset": [
+        0,
+        0
+      ],
+      "radius": 52,
+      "clearance": 0.64,
+      "warmAlpha": 0.12
+    },
+    {
+      "id": "c-tavern-dining",
+      "kind": "verge",
+      "groundAnchor": [
+        1340,
+        792
+      ],
+      "emitterOffset": [
+        0,
+        -20
+      ],
+      "radius": 62,
+      "clearance": 0.64,
+      "warmAlpha": 0.12
+    }
+  ]
+}
