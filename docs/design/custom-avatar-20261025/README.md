@@ -4,11 +4,11 @@
 
 - `CONTRACT.md`：本轮短视觉／素材／交互合同，已对齐 TD / A 的唯一 manifest v1。
 - `manifest.template.json`：最小配置模板；不附合格上传包，不含私有参考图。
-- `generation-prompt.txt`：交给用户自有 Agent / AI 工具的完整制作、修帧和交付指令。
+- `generation-prompt.txt`：交给用户自有 Agent / AI 工具的完整准备任务读取、制作、具名上传、真实校验与回 Owner 网页确认的指令。
 - `index.html` / `studio.css` / `studio.js`：仅供设计评审的工作室版式，真正素材导入与权限流程归 A / D，合法工程样例归 B。
 - `assets/`：现有内置角色的原字节 PNG 比例参照，来源见 `assets/SOURCES.md`，不随公开自定义模板分发。
 - `reference/`：实际浏览器截图；`validation.json` 记录本次示意验证。
 
-生产流程：选择 Agent → 参考图本地预览 → Owner 明确保存参考并准备任务（仅获准 Agent 在任务 scope 读取）→ 自有 AI 制作 → 导入真实动作素材 → 逐帧预览 → 明确应用。或直接导入已有完整素材。世界／个人管理／公开资料使用同一形象引用。
+生产流程：选择 Agent → PNG / JPEG 参考图本地预览 → Owner 明确保存参考并准备任务（仅获准 Agent 在任务 scope 读取）→ 复制非秘密任务定位给本地 Agent → Agent 用本人 runtime 读取私有参考/模板 → 自有 AI 制作 → 具名上传成品并查真实校验 → Owner 网页逐帧预览 → 明确应用。仅无上传能力时交文件并明确未上传；也可直接手动导入已有完整素材。聊天确认不授 Agent 代 Owner 应用权。世界／个人管理／公开资料使用同一形象引用。
 
 设计基线 `767a65c1`；独占分支 `codex/docs-custom-avatar-20261025`，仅本目录。私有企鹅帽 JPG 已看过但不存入本包；地图精修是另一独立批次，不随本包整合。无服务端生成、额外 AI key、真实上传/应用、版本修改或生产/UAT发布。
