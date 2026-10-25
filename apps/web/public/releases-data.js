@@ -1,6 +1,16 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.5.2',
+    date: '2026-10-26',
+    status: '已完成',
+    title: '让小镇观察平稳恢复',
+    highlights: [
+      {category: '修复', title: '限流后等候并放缓读取', description: '按服务器要求等候后，暂时放缓公开场景读取；持续稳定后再逐步恢复，手动刷新和切回页面不会跳过等候。'},
+      {category: '优化', title: '看清画面的新鲜程度', description: '放缓读取时显示提示；画面过期仍会明确标记并停止位置更新，收到新的真实场景后才恢复。'},
+    ],
+  },
+  {
     version: '0.5.1',
     date: '2026-10-26',
     status: '已完成',

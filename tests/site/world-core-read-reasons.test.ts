@@ -67,7 +67,7 @@ test('transient and unknown-network failures keep all cooling gates and label on
   await flush();fail=true;await timers.advance(1000);assert.equal(provider.snapshot().phase,'recovering');const before=calls.length,deadline=provider.snapshot().retryAt;assertHints(calls.slice(-1),'timer');
   await provider.refresh();provider.setVisible(false);provider.setVisible(true);await flush();await timers.advance(deadline-1);await provider.refresh();assert.equal(calls.length,before,'Manual and visible cannot bypass local or server deadlines');
   fail=false;await timers.advance(deadline);assert.equal(provider.snapshot().phase,'ready');assert.equal(calls.length-before,3);assertHints(calls.slice(before),'recovery');
-  const recovered=calls.length;await timers.advance(deadline+1000);assert.equal(calls.length-recovered,1);assertHints(calls.slice(recovered),'timer');assertHints(calls);provider.dispose();assert.equal(timers.pending.size,0);
+  const recovered=calls.length;await timers.advance(deadline+1000);assert.equal(calls.length-recovered,error.status===429?0:1);if(error.status===429){assert.equal(provider.snapshot().readCadenceMs,2000,'One success cannot clear the slower post-limit cadence');await timers.advance(deadline+2200);assert.equal(calls.length-recovered,1);}assertHints(calls.slice(recovered),'timer');assertHints(calls);provider.dispose();assert.equal(timers.pending.size,0);
  }
 });
 

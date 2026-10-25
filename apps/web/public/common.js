@@ -18,6 +18,12 @@ export function validToken(token) { return typeof token === 'string' && /^[A-Za-
 export class ApiError extends Error {
   constructor(code, status, details) { super(code); this.code = code; this.status = status; this.details = details; }
 }
+function retryAfter(error,response){
+  const retry=response?.headers.get('Retry-After');
+  const delay=retry&&/^\d+$/.test(retry)?Number(retry)*1000:retry?.endsWith(' GMT')?Date.parse(retry)-Date.now():NaN;
+  if(Number.isFinite(delay)&&delay>=0)error.retryAfterMs=delay;
+  return error;
+}
 export async function api(path, { method = 'GET', body, token, signal, headers: extraHeaders } = {}) {
   let response,source;
   const timeout = AbortSignal.timeout(15000),active=signal?AbortSignal.any([signal,timeout]):timeout;
@@ -31,15 +37,12 @@ export async function api(path, { method = 'GET', body, token, signal, headers: 
     source=await response.text();
   } catch (error) {
     if (signal?.aborted) throw new DOMException('Request cancelled','AbortError');
-    throw new ApiError(timeout.aborted?'request_timeout':'network_unknown',response?.status||0);
+    throw retryAfter(new ApiError(timeout.aborted?'request_timeout':'network_unknown',response?.status||0),response);
   }
   let result;
-  try { result = JSON.parse(source); } catch { throw new ApiError('response_unknown', response.status); }
+  try { result = JSON.parse(source); } catch { throw retryAfter(new ApiError('response_unknown', response.status),response); }
   if (!response.ok) {
-    const error=new ApiError(result?.error?.code||'request_failed',response.status,result?.error?.details),retry=response.headers.get('Retry-After');
-    const delay=retry&&/^\d+$/.test(retry)?Number(retry)*1000:retry?.endsWith(' GMT')?Date.parse(retry)-Date.now():NaN;
-    if(Number.isFinite(delay)&&delay>=0)error.retryAfterMs=delay;
-    throw error;
+    throw retryAfter(new ApiError(result?.error?.code||'request_failed',response.status,result?.error?.details),response);
   }
   return result;
 }
