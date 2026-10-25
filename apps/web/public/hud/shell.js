@@ -7,6 +7,7 @@ import {createDemoProvider,DEMO_SOURCE} from './demo-provider.js';
 import {createLocalHudState} from './local-state.js';
 import {createHudContextBridge} from './context.js';
 import {createDetailHost} from './detail-host.js';
+import {createLifeProfile} from './life-profile.js';
 import {createProfileFeature} from './features/profile.js';
 import {createInventoryFeature} from './features/inventory.js';
 import {createMailFeature} from './features/mail.js';
@@ -36,9 +37,12 @@ export function createHud({session,accountNode,onOpenAccount=()=>{},onLocateAgen
   const features={profile:createProfileFeature(provider,enterDemo('profile'),{session,walletProvider,chooseAgent}),inventory:createInventoryFeature(provider,enterDemo('inventory'),{store,context,detailHost,worldProvider,walletProvider,session,chooseAgent}),mail:createMailFeature(provider,enterDemo('mail'),{store,context,detailHost,worldProvider,session,chooseAgent}),friends:createFriendsFeature(session,{chooseAgent,detailHost}),announcements:createWorldAnnouncementsFeature({detailHost}),logs:createWorldLogFeature(session)};
   flushViews=()=>{for(const feature of Object.values(features))feature.flush?.();};
   const dockNames={profile:'个人',inventory:'背包',mail:'信箱',friends:'好友',announcements:'公告',atlas:'地图'},names={...dockNames,logs:'世界日志'},buttons={};let current='',trigger=null,hoverTimer=0,navigationRevision=0,personalAfterLogin=false;
+  const managedLife=createLifeProfile(session,{walletProvider,chooseAgent}),managedOverview=accountNode.querySelector('[data-account-page=overview]');managedOverview?.append(managedLife.node);
+  const syncManagedLife=()=>managedLife.setActive(Boolean(current==='account'&&accountNode.dataset.layout==='manager'&&!accountNode.hidden&&managedOverview&&!managedOverview.hidden));
+  const accountLifeObserver=new MutationObserver(syncManagedLife);accountLifeObserver.observe(accountNode,{subtree:true,attributes:true,attributeFilter:['hidden','data-layout']});
   const worldControls=createWorldControls(root),floatingFeedback=el('div','hud-floating-feedback');root.append(floatingFeedback);
   function moveFeedback(){(current==='mail'?features.mail.feedbackSlot:floatingFeedback).append(features.mail.feedbackNode);}
-  function worldState(){const visible=!current&&!$('#world-layout').classList.contains('has-detail');worldControls.setVisible(visible);}
+  function worldState(){syncManagedLife();const visible=!current&&!$('#world-layout').classList.contains('has-detail');worldControls.setVisible(visible);}
   function hideTip(){clearTimeout(hoverTimer);tipTransition.hide();for(const button of Object.values(buttons))button.removeAttribute('aria-describedby');}
   function showTip(key){hideTip();tooltip.textContent=names[key];const box=root.getBoundingClientRect(),slot=buttons[key].getBoundingClientRect();tooltip.style.left=`${Math.max(8,Math.min(box.width-72,slot.left-box.left+slot.width/2-32))}px`;tooltip.style.top=`${slot.top-box.top-32}px`;tipTransition.show();buttons[key].setAttribute('aria-describedby','hud-tooltip');}
   function size(){const manager=current==='account'&&accountNode.dataset.layout==='manager';windowNode.classList.toggle('is-manager',manager);if(current==='account'){buttons.profile?.setAttribute('aria-pressed',String(manager));buttons.profile?.setAttribute('aria-expanded',String(manager));}const compact=root.clientWidth<760;root.classList.toggle('is-compact',compact);for(const feature of Object.values(features))feature.setCompact?.(compact);}
@@ -59,7 +63,7 @@ export function createHud({session,accountNode,onOpenAccount=()=>{},onLocateAgen
   const agentCard=el('div','hud-agent-card');agentCard.append(selector,locate);locate.prepend(icon('location'));root.append(dock,windowNode,tooltip,agentCard,exploreExit);
   const panelLayout=createPanelLayout($('#world-layout'),dock,$('header'));
   const placeObserver=new MutationObserver(worldState);placeObserver.observe($('#world-layout'),{attributes:true,attributeFilter:['class']});worldState();moveFeedback();
-  window.addEventListener('pagehide',event=>{flushViews();if(!event.persisted){for(const feature of Object.values(features))feature.dispose?.();walletProvider.dispose();worldProvider.dispose();stopContext();context.dispose();store.dispose();worldControls.destroy();placeObserver.disconnect();detailHost.destroy();transition.destroy();tipTransition.destroy();panelLayout.destroy();}});
+  window.addEventListener('pagehide',event=>{flushViews();if(!event.persisted){accountLifeObserver.disconnect();managedLife.dispose();for(const feature of Object.values(features))feature.dispose?.();walletProvider.dispose();worldProvider.dispose();stopContext();context.dispose();store.dispose();worldControls.destroy();placeObserver.disconnect();detailHost.destroy();transition.destroy();tipTransition.destroy();panelLayout.destroy();}});
   const nav=$('header nav'),brand=$('header .brand'),brandGroup=el('div','hud-brand-group'),appVersion=el('span','hud-app-version'),accountButton=el('button','hud-account'),entry=el('button','hud-entry'),navNumber=value=>{const number=el('span','hud-nav-number',value);number.setAttribute('aria-hidden','true');return number;};appVersion.id='hud-app-version';appVersion.hidden=true;brand.replaceWith(brandGroup);brandGroup.append(brand,appVersion);entry.append(navNumber('1'),icon('connection'),el('span','','接入 Agent'));accountButton.id='hud-account';accountButton.type='button';accountButton.setAttribute('aria-controls','hud-window');entry.type='button';entry.id='hud-agent-entry';nav.replaceChildren(entry,accountButton);void showHeaderVersion(appVersion);
   accountButton.setAttribute('aria-expanded','false');entry.setAttribute('aria-controls','hud-window');selector.setAttribute('aria-controls','hud-window');
   accountButton.addEventListener('click',()=>openAccount(session.snapshot().accountIntent==='resume'?'resume':'account','',accountButton));entry.addEventListener('click',()=>openAccount('entry','',entry));

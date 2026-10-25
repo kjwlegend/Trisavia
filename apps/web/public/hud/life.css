@@ -45,3 +45,7 @@
 .life-fishing-result-stage{margin:12px 0}.life-fishing-result-stage canvas{display:block;width:100%;max-width:288px;height:auto;image-rendering:pixelated}
 .life-fishing-result-stage figcaption{font-size:12px;line-height:20px;color:#68746e}
 .life-fish-result{flex-wrap:wrap}.life-item-instances{font-size:12px;line-height:20px}
+
+.life-c-place .life-item-image,.life-gifts .life-item-image{width:32px;height:32px;flex:none;image-rendering:pixelated}
+.life-book-body{padding:12px;border:1px solid #cbd0bf;border-radius:8px;background:#fffaf0;max-height:360px;overflow:auto;white-space:pre-wrap}
+.life-gift-tabs{display:flex;gap:8px;flex-wrap:wrap}.life-gift-tabs [aria-pressed=true]{background:#3f6150;color:#fff8e8}.life-gifts{border-top:1px solid #cbd0bf}.life-gifts .life-card button{margin:4px}

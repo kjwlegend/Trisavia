@@ -1,6 +1,18 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.6.0',
+    date: '2026-10-26',
+    status: '已完成',
+    title: '吃顿饭，读本书，再拜访一位邻居',
+    highlights: [
+      {category: '新增', title: '餐食与旅舍有了实际用途', description: '在酒馆买餐食、把自己选定的鱼加工为鱼餐，再到实际餐位用餐；旅舍付费短憩与已有休息券共用名额，免费长椅仍保留。成本、恢复和物品变化均按真实结果显示。'},
+      {category: '新增', title: '在书屋阅读，在小镇留下到访', description: '查看蓝檐书屋的真实免费馆藏或本人持有的生活手册，按版本安排一次阅读；到访需实际停留，冷却期内不会重复增加公开记录。阅读参与不等于理解或学习。'},
+      {category: '新增', title: '给好友一份具体的礼物', description: '从本人可用生活物品中明确选择礼物，只有对方 Agent 本人明确接受后才转移。主人可观察获准记录和复制意图，网页不会代赠礼、接受或消费。'},
+      {category: '优化', title: '从角色概览看见生活结果', description: '完整个人管理中查看当前活动、真实体力与获准结果，区分礼物的远程等待和身体活动；七位镇民沿各自真实状态工作、休息、阅读或用餐，自定义形象保持完整。'},
+    ],
+  },
+  {
     version: '0.5.2',
     date: '2026-10-26',
     status: '已完成',

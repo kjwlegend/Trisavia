@@ -1,0 +1,754 @@
+{
+  "id": "m3-life-c-assets-v1",
+  "version": "1.0.0",
+  "catalogRevision": 1,
+  "items": [
+    {
+      "assetId": "life-item-bread_meal",
+      "itemId": "bread_meal",
+      "name": "麦香便餐",
+      "alt": "Bread roll and slice on cream plate",
+      "sprite": {
+        "path": "items/bread_meal.png",
+        "bytes": 1863,
+        "sha256": "14ced12c3baff0081ed5cd5ee708698cfa08111613dfef3194112fe5b273811a",
+        "size": [
+          32,
+          32
+        ]
+      },
+      "frame": [
+        0,
+        0,
+        32,
+        32
+      ],
+      "pivot": [
+        16,
+        16
+      ]
+    },
+    {
+      "assetId": "life-item-herbal_tea",
+      "itemId": "herbal_tea",
+      "name": "草本茶",
+      "alt": "Sage cup with leaf and steam",
+      "sprite": {
+        "path": "items/herbal_tea.png",
+        "bytes": 1608,
+        "sha256": "561b2a2a74d0ccd4ca86685544b3d796e7ad10973e8fe5aac730f3500cf4e317",
+        "size": [
+          32,
+          32
+        ]
+      },
+      "frame": [
+        32,
+        0,
+        32,
+        32
+      ],
+      "pivot": [
+        16,
+        16
+      ]
+    },
+    {
+      "assetId": "life-item-grilled_fish",
+      "itemId": "grilled_fish",
+      "name": "香煎鱼餐",
+      "alt": "Cooked golden fish fillet and greens on plate",
+      "sprite": {
+        "path": "items/grilled_fish.png",
+        "bytes": 1566,
+        "sha256": "8c68ca63bcd3074ee2a8740aae5d1e7ee66b441bfdc06ce7508971f820d58c8f",
+        "size": [
+          32,
+          32
+        ]
+      },
+      "frame": [
+        64,
+        0,
+        32,
+        32
+      ],
+      "pivot": [
+        16,
+        16
+      ]
+    },
+    {
+      "assetId": "life-item-harbor_handbook",
+      "itemId": "harbor_handbook",
+      "name": "港湾生活手册",
+      "alt": "Sea-green handbook with wave and ribbon",
+      "sprite": {
+        "path": "items/harbor_handbook.png",
+        "bytes": 1856,
+        "sha256": "d94822733f819a4ecf0367704071e36807141fe80b5c91b1cd5cc4a9c98e20a9",
+        "size": [
+          32,
+          32
+        ]
+      },
+      "frame": [
+        96,
+        0,
+        32,
+        32
+      ],
+      "pivot": [
+        16,
+        16
+      ]
+    }
+  ],
+  "atlas": {
+    "path": "items/items-atlas.png",
+    "bytes": 6304,
+    "sha256": "496039f5f8c47876af391b1a3f7b7b97cab0c3b9a0646d733260000c643be1b3",
+    "size": [
+      128,
+      32
+    ]
+  },
+  "fixtures": [
+    {
+      "path": "fixtures/chair.png",
+      "width": 14,
+      "height": 16,
+      "source": "assets/fixtures/chair.svg (native pixel shape)",
+      "bytes": 208,
+      "sha256": "dc648aa8f71c6941d7cae632d34a1297d191c4985462174b7b5076615db86299",
+      "size": [
+        14,
+        16
+      ]
+    },
+    {
+      "path": "fixtures/canopy-inn.png",
+      "width": 80,
+      "height": 50,
+      "source": "assets/fixtures/canopy-inn.svg (native pixel shape)",
+      "bytes": 553,
+      "sha256": "b91f6645496cba2f3dae3d6c4a8d6f66f8b030ff4501a189de643dff8568c5fe",
+      "size": [
+        80,
+        50
+      ]
+    },
+    {
+      "path": "fixtures/canopy-library.png",
+      "width": 80,
+      "height": 50,
+      "source": "assets/fixtures/canopy-library.svg (native pixel shape)",
+      "bytes": 533,
+      "sha256": "41318e24bd883f77c85d4cc93d883faea8f31f8a1dc2794643775e5099db3792",
+      "size": [
+        80,
+        50
+      ]
+    },
+    {
+      "path": "fixtures/kitchen-counter.png",
+      "width": 48,
+      "height": 20,
+      "source": "assets/fixtures/kitchen-counter.svg (native pixel shape)",
+      "bytes": 324,
+      "sha256": "898b154899501ca0003fc53b1e3308c6722ad8743ca8b43bd53a0d28597e67a8",
+      "size": [
+        48,
+        20
+      ]
+    },
+    {
+      "path": "fixtures/open-book.png",
+      "width": 14,
+      "height": 9,
+      "source": "assets/fixtures/open-book.svg (native pixel shape)",
+      "bytes": 199,
+      "sha256": "464e105d924f8f9c44a56ae07cd35310c63104044e7716b7d8e705cb97d6de8a",
+      "size": [
+        14,
+        9
+      ]
+    },
+    {
+      "path": "fixtures/seated-legs.png",
+      "width": 14,
+      "height": 8,
+      "source": "assets/fixtures/seated-legs.svg (native pixel shape)",
+      "bytes": 204,
+      "sha256": "7a379d8d1eca89391e3385d4ad5ece5cd2b8fcd2fc45adcac65ccb2f08cc2555",
+      "size": [
+        14,
+        8
+      ]
+    }
+  ],
+  "actors": [
+    {
+      "path": "actors/npc-librarian-idle.png",
+      "width": 864,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 9,
+      "source": "existing native appearance palette renderer, no source pixels overwritten",
+      "bytes": 3121,
+      "sha256": "8742835963ae8f0ac58c7ea57f3cf3c0cb4a5fc1390898e2c00e7dbbf21e5fd9",
+      "size": [
+        864,
+        64
+      ]
+    },
+    {
+      "path": "actors/npc-librarian-walk.png",
+      "width": 768,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 8,
+      "source": "existing native appearance palette renderer, no source pixels overwritten",
+      "bytes": 3055,
+      "sha256": "fca02eaffd79e398c20b1ea4a63195edfdd48aa458bb1164a7934950f9e0e592",
+      "size": [
+        768,
+        64
+      ]
+    },
+    {
+      "path": "actors/npc-neighbor-idle.png",
+      "width": 864,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 9,
+      "source": "existing native appearance palette renderer, no source pixels overwritten",
+      "bytes": 3179,
+      "sha256": "2c281fb819285d6725060b91be4613957cba2b7af77f37627855b682f042b5b8",
+      "size": [
+        864,
+        64
+      ]
+    },
+    {
+      "path": "actors/npc-neighbor-walk.png",
+      "width": 768,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 8,
+      "source": "existing native appearance palette renderer, no source pixels overwritten",
+      "bytes": 3160,
+      "sha256": "3ce18c1dea080546c6e23744c009b10a38d39f00d1ced575b3d5d0fc31517891",
+      "size": [
+        768,
+        64
+      ]
+    }
+  ],
+  "poses": [
+    {
+      "path": "poses/shorthair-rest.png",
+      "width": 192,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 2,
+      "frameDurationMs": 1600,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props",
+      "bytes": 1182,
+      "sha256": "6911aea01e62654609a7d612fa99acdcd7ca760011280ab13bd2644e9dbe090c",
+      "size": [
+        192,
+        64
+      ]
+    },
+    {
+      "path": "poses/shorthair-read.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1200,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props",
+      "bytes": 1889,
+      "sha256": "6eab160e50b30c8ded596b1711d7a6b77a08dd6d73aa385a12e63083d34794c7",
+      "size": [
+        384,
+        64
+      ]
+    },
+    {
+      "path": "poses/shorthair-meal.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1000,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props",
+      "bytes": 2131,
+      "sha256": "67d798c95ab31981f6934f3773d232149d602c1e0e49c58cec35ad8d015a76a3",
+      "size": [
+        384,
+        64
+      ]
+    },
+    {
+      "path": "poses/longhair-rest.png",
+      "width": 192,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 2,
+      "frameDurationMs": 1600,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props",
+      "bytes": 1559,
+      "sha256": "03642c68b38873293089f82af9370375caeeb66748d52a19000ba4f0586de406",
+      "size": [
+        192,
+        64
+      ]
+    },
+    {
+      "path": "poses/longhair-read.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1200,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props",
+      "bytes": 2217,
+      "sha256": "5ff59d24d85282b4e31d94da58dd19132dd1ef8015b9123d450d3cbbcbdeb832",
+      "size": [
+        384,
+        64
+      ]
+    },
+    {
+      "path": "poses/longhair-meal.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1000,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props",
+      "bytes": 2480,
+      "sha256": "29d621c4b9b133b20387c1e0211fe396a72c53486880543e7854e818733705b3",
+      "size": [
+        384,
+        64
+      ]
+    },
+    {
+      "path": "poses/curlyhair-rest.png",
+      "width": 192,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 2,
+      "frameDurationMs": 1600,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props",
+      "bytes": 1578,
+      "sha256": "aa94691727fb6b5b6b0a7c27b391aa3e94d3ebe9385419c663a4cf25ca8ff22d",
+      "size": [
+        192,
+        64
+      ]
+    },
+    {
+      "path": "poses/curlyhair-read.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1200,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props",
+      "bytes": 2242,
+      "sha256": "ffb14d8750feef964b0a2153080480bcb431fcf4f9fd2ef392eb21e6784e843c",
+      "size": [
+        384,
+        64
+      ]
+    },
+    {
+      "path": "poses/curlyhair-meal.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1000,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props",
+      "bytes": 2584,
+      "sha256": "3aee80030a4ce9b570a33194951e41adf30ce8449b3ba5d69c14bb70b7a923c5",
+      "size": [
+        384,
+        64
+      ]
+    },
+    {
+      "path": "poses/bowlhair-rest.png",
+      "width": 192,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 2,
+      "frameDurationMs": 1600,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props",
+      "bytes": 1409,
+      "sha256": "e81fabf02afdd76a2755ef0f4835b0a424a7285646ab9302e998ff22797201da",
+      "size": [
+        192,
+        64
+      ]
+    },
+    {
+      "path": "poses/bowlhair-read.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1200,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props",
+      "bytes": 2020,
+      "sha256": "eb1b4d1f820aca9ba3a291472b5bd359ff1e1e747b7dd9088e141403db619666",
+      "size": [
+        384,
+        64
+      ]
+    },
+    {
+      "path": "poses/bowlhair-meal.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1000,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props",
+      "bytes": 2349,
+      "sha256": "8faf67317d07240a1696932cb4f2c423db403fa2317e0a1f1767a9ccfc8a7906",
+      "size": [
+        384,
+        64
+      ]
+    },
+    {
+      "path": "poses/mophair-rest.png",
+      "width": 192,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 2,
+      "frameDurationMs": 1600,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props",
+      "bytes": 1292,
+      "sha256": "9fa05db7b84384c6415b7f09f1a54ff43d696886d212a48ff89831d89a4f0af8",
+      "size": [
+        192,
+        64
+      ]
+    },
+    {
+      "path": "poses/mophair-read.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1200,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props",
+      "bytes": 1977,
+      "sha256": "568145f3d146ec9e52ee46b0d98c4b7da3c6f9791e2a69dc4d7b42b503f1201d",
+      "size": [
+        384,
+        64
+      ]
+    },
+    {
+      "path": "poses/mophair-meal.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1000,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props",
+      "bytes": 2285,
+      "sha256": "5670860e6eb00c2c729e13cf5d7ea7236bd9d206a51311ecc92e9c349e42fa47",
+      "size": [
+        384,
+        64
+      ]
+    },
+    {
+      "path": "poses/spikeyhair-rest.png",
+      "width": 192,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 2,
+      "frameDurationMs": 1600,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props",
+      "bytes": 1271,
+      "sha256": "8538b48e842c47eeae124024af06fdfcea9c2b40c1a1005ec5f3e58f8e75dbb8",
+      "size": [
+        192,
+        64
+      ]
+    },
+    {
+      "path": "poses/spikeyhair-read.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1200,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props",
+      "bytes": 2011,
+      "sha256": "68fff52cdbd932bf4b01eae7db68a30623e2ab494b5e74c699f7aebc58d574cb",
+      "size": [
+        384,
+        64
+      ]
+    },
+    {
+      "path": "poses/spikeyhair-meal.png",
+      "width": 384,
+      "height": 64,
+      "frameSize": [
+        96,
+        64
+      ],
+      "feet": [
+        48,
+        39
+      ],
+      "frames": 4,
+      "frameDurationMs": 1000,
+      "source": "native human seated composition based on delivered A pose + repo-native SVG chair/props",
+      "bytes": 2294,
+      "sha256": "b40f2470266199517c69bd9c1b315286fa25d3538f5435610a8b49363e55650e",
+      "size": [
+        384,
+        64
+      ]
+    }
+  ],
+  "fixturePlacement": [
+    {
+      "asset": "canopy-inn",
+      "source": [
+        884,
+        600
+      ],
+      "imageOffset": [
+        -40,
+        -46
+      ],
+      "size": [
+        80,
+        50
+      ]
+    },
+    {
+      "asset": "canopy-library",
+      "source": [
+        832,
+        360
+      ],
+      "imageOffset": [
+        -40,
+        -46
+      ],
+      "size": [
+        80,
+        50
+      ]
+    },
+    {
+      "asset": "kitchen-counter",
+      "source": [
+        1408,
+        725
+      ],
+      "imageOffset": [
+        -24,
+        -20
+      ],
+      "size": [
+        48,
+        20
+      ]
+    }
+  ],
+  "sourcePolicy": "Native original PNGs unchanged; existing finite appearance-palette.js render and A seated pose composition. New SVG fixtures extend existing native pixel shape style. Do not substitute human body for a custom non-human avatar.",
+  "svgSources": [
+    {
+      "path": "fixtures/chair.svg",
+      "bytes": 313,
+      "sha256": "778bef892f2cea2f753f7675ad9ef9e450d6909ce60d28017e7685a692251c87"
+    },
+    {
+      "path": "fixtures/canopy-inn.svg",
+      "bytes": 525,
+      "sha256": "86237dad7fc3307265157af94cb9a288f941e685476c325c766e847dfd08c80d"
+    },
+    {
+      "path": "fixtures/canopy-library.svg",
+      "bytes": 533,
+      "sha256": "b15fad9f85961a24d18eac56bce2415338647aac5cb47ca6bf289b0d049e1e95"
+    },
+    {
+      "path": "fixtures/kitchen-counter.svg",
+      "bytes": 403,
+      "sha256": "3ed08fa13437ff8b71d233dc5aaeacf0232f5b6077b6282008dd855142f3f3f8"
+    },
+    {
+      "path": "fixtures/open-book.svg",
+      "bytes": 315,
+      "sha256": "eae0bbcabb67766d89f26e5921b2122199c4c0d73adb30153a7f8687f73645d5"
+    },
+    {
+      "path": "fixtures/seated-legs.svg",
+      "bytes": 281,
+      "sha256": "4128304ccb953699fea473ff0dd568eeeb15a61192494b650008ebed60d910df"
+    }
+  ]
+}

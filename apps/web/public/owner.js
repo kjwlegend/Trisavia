@@ -1,3 +1,4 @@
+import {lifeReadInput,giftReadInput} from './hud/life-owner-input.js';
 import {$ as query,$$ as queryAll,el,api,ApiError,errorText,isUnknown,notice,credential,id,validToken,tokenId,stamp,downloadPrivate} from './common.js';
 import {avatar} from './scene.js';
 import {publicIdLabel,residentPath} from './public-id.js';
@@ -1077,30 +1078,17 @@ async function readTownService(operation,input={}, {signal}={}){
 // Life actions stay Agent-only. This facade exposes current-owner inspection of
 // the selected Agent; it cannot submit activities, plans or cancellations.
 async function readLife(operation,input={}, {signal}={}){
-  if(!['state','options','items'].includes(operation))throw new ApiError('insufficient_scope',403);
-  const ctx=friendshipContext(),fields={agentId:ctx.target};
-  const validId=value=>typeof value==='string'&&/^[A-Za-z0-9_.:-]{1,240}$/.test(value),integer=value=>Number.isSafeInteger(value)&&value>=0,itemIds=['basic_rod','bait','sardine','mackerel','sea_bass'];
-  if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(key=>!(operation==='options'?['actionId','placeId','jobId','params']:operation==='items'?['afterId','limit','itemIds']:[]).includes(key)))throw new ApiError('invalid_request',422);
-  if(operation==='items'){
-    if(input.afterId!==undefined){if(!validId(input.afterId))throw new ApiError('invalid_request',422);fields.afterId=input.afterId;}
-    if(input.limit!==undefined){if(!integer(input.limit)||input.limit<1||input.limit>100)throw new ApiError('invalid_request',422);fields.limit=input.limit;}
-    if(input.itemIds!==undefined){if(!Array.isArray(input.itemIds)||!input.itemIds.length||input.itemIds.length>5||new Set(input.itemIds).size!==input.itemIds.length||input.itemIds.some(id=>!itemIds.includes(id)))throw new ApiError('invalid_request',422);fields.itemIds=[...input.itemIds];}
-  }
-  if(operation==='options'){
-    if(!['work.shift','rest.bench','fish.session','shop.buy','shop.sell'].includes(input.actionId))throw new ApiError('invalid_request',422);
-    fields.actionId=input.actionId;
-    for(const key of ['placeId','jobId'])if(input[key]!==undefined){if(!validId(input[key]))throw new ApiError('invalid_request',422);fields[key]=input[key];}
-    if(input.params!==undefined){
-      const p=input.params,keys=input.actionId==='fish.session'?['spotId','castCount','rodInstanceId']:input.actionId==='shop.buy'?['itemId','quantity','quoteRef','maxTotalPrice']:input.actionId==='shop.sell'?['itemInstanceIds','minTotalProceeds','quoteRef']:[];
-      if(!p||typeof p!=='object'||Array.isArray(p)||Object.keys(p).some(key=>!keys.includes(key))||!keys.length)throw new ApiError('invalid_request',422);
-      if(input.actionId==='fish.session'&&(!['shore_spot','pier_spot'].includes(p.spotId)||!integer(p.castCount)||p.castCount<1||p.castCount>5||!validId(p.rodInstanceId))||input.actionId==='shop.buy'&&(!['basic_rod','bait'].includes(p.itemId)||!integer(p.quantity)||p.quantity<1||p.quantity>20||!validId(p.quoteRef)||!integer(p.maxTotalPrice))||input.actionId==='shop.sell'&&(!Array.isArray(p.itemInstanceIds)||!p.itemInstanceIds.length||p.itemInstanceIds.length>20||p.itemInstanceIds.some(id=>!validId(id))||new Set(p.itemInstanceIds).size!==p.itemInstanceIds.length||!integer(p.minTotalProceeds)||p.quoteRef!==undefined&&!validId(p.quoteRef)))throw new ApiError('invalid_request',422);
-      fields.params=structuredClone(p);
-    }
-  }
+  const ctx=friendshipContext(),fields=lifeReadInput(operation,input,ctx.target);
   const body={protocolVersion:1,consumerId:'connet.owner.hud.v1',purpose:'human-inspect',operation:`life.${operation}`,input:fields};
   try{const result=await api('/gateway/query',{method:'POST',body,token:ctx.session,signal});if(!ctx.current()||signal?.aborted)throw new DOMException('Context changed','AbortError');return result;}
   catch(error){if(ctx.current()&&error.status===401)expireAuthenticatedSession(ctx.source,ctx.session,ctx.generation);throw error;}
 }
+async function readGifts(operation,input={}, {signal}={}){
+  const ctx=friendshipContext(),fields=giftReadInput(operation,input,ctx.target),body={protocolVersion:1,consumerId:'connet.owner.hud.v1',purpose:'human-inspect',operation:`relationships.gifts.${operation}`,input:fields};
+  try{const result=await api('/gateway/query',{method:'POST',body,token:ctx.session,signal});if(!ctx.current()||signal?.aborted)throw new DOMException('Context changed','AbortError');return result;}
+  catch(error){if(ctx.current()&&error.status===401)expireAuthenticatedSession(ctx.source,ctx.session,ctx.generation);throw error;}
+}
+
 async function commandFriendship(operation,input={}){
   if(!['send','accept','decline','cancel'].includes(operation))throw new ApiError('insufficient_scope',403);const ctx=friendshipContext(),fields=friendshipInput(operation,input,ctx.target),action=`relationships.invitation.${operation}`,scope=JSON.stringify([ctx.ownerId,ctx.target,action,fields.toAgentId||fields.requestId]),storageKey=`connet.owner.friendship.pending.v1:${scope}`;
   if(friendshipWrites.has(scope))return friendshipWrites.get(scope);
@@ -1192,7 +1180,7 @@ const worldActionSettings=mountWorldActionPolicy($('#world-autonomy-form'),{sess
 const behaviorLogs=mountOwnerBehaviorLogs($('#owner-behavior-logs'),{snapshot:()=>structuredClone(summary()),readBehaviorHistory,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}});
 const worldSummary=mountOwnerWorldSummary($('#owner-world-summary'),{read:readOwnerWorldSummary,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}});
 window.addEventListener('pagehide',event=>{if(!event.persisted){behaviorLogs.dispose();worldSummary.dispose();worldActionSettings.dispose();}});
-return{start,open,select:selectAgent,refresh:refreshSummary,readPerception,readWallet,readFriends,readInteraction,readFriendship,readMailbox,readTownService,readLife,readBehaviorHistory,commandFriendship,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
+return{start,open,select:selectAgent,refresh:refreshSummary,readPerception,readWallet,readFriends,readInteraction,readFriendship,readMailbox,readTownService,readLife,readGifts,readBehaviorHistory,commandFriendship,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
   hudContext(){if(authenticatedOwner()&&['ready','refreshing'].includes(summary().phase))return{kind:'owner',ownerId:account.ownerId,agentId:agents.some(agent=>agent.agentId===selectedId)?selectedId:''};return sessionPhase==='anonymous'&&!vault.sessionToken?{kind:'guest',ownerId:'',agentId:''}:null;},
   attachPresentation(value){presentation=value;value.setNavigator(navigateManager);value.connectAvatarStudio({request:avatarAssetRequest,context:()=>{const ctx=friendshipContext(),agent=current();return{ownerId:ctx.ownerId,agentId:ctx.target,profileVersion:agent.profile.version,policyVersion:agent.profile.policyVersion};},refresh:async()=>{await loadAgents({resetProfile:false});presentation?.resetAppearance();}});},
   notifyPresentation:controls,

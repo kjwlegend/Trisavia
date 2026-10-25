@@ -1,8 +1,9 @@
 import manifest from '../world-life/night-lights.json' with {type:'json'};
+import additions from '../world-life/c/night-light-additions.json' with {type:'json'};
 
 // Decorative source-pixel lighting only; no world cells, routes or capacities.
 export function createNightLighting({makeCanvas=()=>document.createElement('canvas')}={}){
- const [width,height]=manifest.sourceSize,[cw,ch]=manifest.cache.resolution,lights=manifest.lights;let caches=null,disposed=false;
+ const [width,height]=manifest.sourceSize,[cw,ch]=manifest.cache.resolution,lights=[...manifest.lights,...additions.lights];let caches=null,disposed=false;
  function build(){
   const layers=manifest.cache.layers.map(()=>{const c=makeCanvas();c.width=cw;c.height=ch;return c;}),veil=layers[0].getContext('2d'),warm=layers[1].getContext('2d'),sx=cw/width,sy=ch/height;
   veil.fillStyle=`rgba(${manifest.palette.night.color.join(',')},${manifest.palette.night.opacity})`;veil.fillRect(0,0,cw,ch);

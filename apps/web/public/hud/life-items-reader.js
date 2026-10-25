@@ -1,3 +1,4 @@
+import {readCQuote} from './life-c-contract.js';
 import {api} from '../common.js';
 import {LIFE_ITEM_IDS} from './life-item-art.js';
 import {createLifeReadState} from './life-read-state.js';
@@ -15,6 +16,6 @@ export function readLifeItems(raw,agentId,itemIds=LIFE_ITEM_IDS){
 }
 export function createLifeItemsReader(session,{itemIds=LIFE_ITEM_IDS}={}){return createLifeReadState({session,privateScope:true,refreshMs:0,read:({signal})=>session.readLife('items',{itemIds:[...itemIds],limit:100},{signal}),validate:(raw,agentId)=>readLifeItems(raw,agentId,itemIds)});}
 export function readLifeQuote(raw,side,itemId){
- const data=unwrap(raw),q=data.quote;if(data.catalogRevision!==2||q?.catalogRevision!==2||q.ruleVersion!==1||q.placeId!=='fisher_shop'||q.side!==side||q.itemId!==itemId||!(side==='buy'?['basic_rod','bait']:side==='sell'?fishIds:[]).includes(itemId)||!text(q.quoteId)||!integer(q.unitPrice)||q.unitPrice<1||!integer(q.issuedAt)||!integer(q.expiresAt)||q.issuedAt>data.asOf||q.expiresAt<=data.asOf)throw invalid();return{instanceId:raw.instanceId,data:{catalogRevision:2,quote:{quoteId:q.quoteId,catalogRevision:2,ruleVersion:1,placeId:q.placeId,side,itemId,unitPrice:q.unitPrice,issuedAt:q.issuedAt,expiresAt:q.expiresAt},asOf:data.asOf}};
+ const data=unwrap(raw),q=data.quote;if(q?.catalogRevision===3){const accepted=readCQuote(q);if(data.catalogRevision!==3||side!=='buy'||q.itemId!==itemId||q.expiresAt<=data.asOf||q.issuedAt>data.asOf)throw invalid();return{instanceId:raw.instanceId,data:{catalogRevision:3,quote:accepted,asOf:data.asOf}};}if(![2,3].includes(data.catalogRevision)||q?.catalogRevision!==2||q.ruleVersion!==1||q.placeId!=='fisher_shop'||q.side!==side||q.itemId!==itemId||!(side==='buy'?['basic_rod','bait']:side==='sell'?fishIds:[]).includes(itemId)||!text(q.quoteId)||!integer(q.unitPrice)||q.unitPrice<1||!integer(q.issuedAt)||!integer(q.expiresAt)||q.issuedAt>data.asOf||q.expiresAt<=data.asOf)throw invalid();return{instanceId:raw.instanceId,data:{catalogRevision:data.catalogRevision,quote:{quoteId:q.quoteId,catalogRevision:2,ruleVersion:1,placeId:q.placeId,side,itemId,unitPrice:q.unitPrice,issuedAt:q.issuedAt,expiresAt:q.expiresAt},asOf:data.asOf}};
 }
 export function createLifeQuoteReader(side,itemId){return createLifeReadState({refreshMs:0,read:({signal})=>api('/world/life/shop/quote?'+new URLSearchParams({side,itemId}),{signal}),validate:raw=>readLifeQuote(raw,side,itemId)});}

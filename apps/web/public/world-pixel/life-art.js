@@ -1,5 +1,5 @@
 import manifest from '../world-life/asset-manifest.json' with {type:'json'};
-import spatial from '../world-life/spatial-manifest-b-v1.json' with {type:'json'};
+import spatial from '../world-life/spatial-manifest-c-v1.json' with {type:'json'};
 import {PIXEL_MAP} from './map.js';
 import {resolveLook,drawLook} from './look.js';
 import {appearanceLayer} from './appearance-palette.js';
@@ -13,7 +13,7 @@ export async function loadLifeArt({signal}={}){
  const images=new Map(settled.map((row,index)=>[refs[index].id,row.value]));let disposed=false;
  return{images,dispose(){if(disposed)return;disposed=true;controller.abort();for(const image of images.values())image.src='';images.clear();}};
 }
-function poseFor(entry){const activity=entry.fact?.activity;if(activity?.state!=='active'||entry.walking)return null;if(activity.actionId==='work.shift')return activity.placeId==='harbor_work'?'work-crate':'work-tray';if(activity.actionId==='rest.bench')return'rest-bench';if(activity.actionId==='npc.duty')return'duty';return null;}
+function poseFor(entry){const activity=entry.fact?.activity;if(activity?.state!=='active'||entry.walking)return null;if(activity.actionId==='meal.prepare')return'work-tray';if(activity.actionId==='work.shift')return activity.placeId==='harbor_work'?'work-crate':'work-tray';if(activity.actionId==='rest.bench')return'rest-bench';if(activity.actionId==='npc.duty')return'duty';return null;}
 export function lifeSortOffset(entry){return poseFor(entry)==='rest-bench'?5:0;}
 export function drawLifeHuman(ctx,entry,frame,pixelAssets,lifeAssets){
  if(entry.fact?.profile?.appearance?.kind==='custom')return false;
