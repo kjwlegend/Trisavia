@@ -42,7 +42,7 @@ async function fixture(t:{after:(work:()=>Promise<void>)=>void}){
  registerSiteRoutes(app,{assetMode:'production',repoRoot,webRoot,buildRoot});
  return {repoRoot,webRoot,buildRoot,app,manifest,assets};
 }
-test('only validated hash assets are immutable; HTML, authenticated responses and APIs stay no-store',async t=>{
+test('only validated public hash assets are immutable; HTML and APIs stay no-store',async t=>{
  const f=await fixture(t),url=f.assets[0]!.url;
  const asset=await f.app.inject(url);assert.equal(asset.statusCode,200);assert.equal(asset.headers['cache-control'],'public, max-age=31536000, immutable');assert.match(asset.headers.etag!,/^W\/"sha256-/);
  const again=await f.app.inject({url,headers:{'if-none-match':asset.headers.etag!}});assert.equal(again.statusCode,304);assert.equal(again.body,'');
@@ -51,8 +51,20 @@ test('only validated hash assets are immutable; HTML, authenticated responses an
  }
  assert.match((await f.app.inject('/')).body,/built/);
  assert.match((await f.app.inject('/agent/entry.md')).headers['content-type']!,/^text\/markdown/);
- const auth=await f.app.inject({url,headers:{authorization:'Bearer isolated-synthetic','if-none-match':asset.headers.etag!}});assert.equal(auth.statusCode,200);assert.equal(auth.headers['cache-control'],'no-store');assert.equal(auth.headers.etag,undefined);
+ const auth=await f.app.inject({url,headers:{authorization:'Bearer isolated-synthetic','if-none-match':asset.headers.etag!}});assert.equal(auth.statusCode,304);assert.equal(auth.headers['cache-control'],'public, max-age=31536000, immutable');assert.equal(auth.headers.etag,asset.headers.etag);
  assert.equal(asset.headers['x-content-type-options'],'nosniff');assert.equal(asset.headers['referrer-policy'],'no-referrer');assert.match(asset.headers['content-security-policy']!,/frame-ancestors 'none'/);
+});
+test('incidental cookie/auth headers do not disable cache or gzip on explicitly public file routes',async t=>{
+ const f=await fixture(t);
+ // Header-presence fixtures only: these are not Owner sessions or a real login claim.
+ for(const headers of [{cookie:'synthetic=header-only'},{authorization:'Bearer synthetic-header-only'},{cookie:'synthetic=header-only',authorization:'Bearer synthetic-header-only'}]){
+  for(const url of [f.assets[0]!.url,'/world-map-v2.json','/assets/plain.js','/assets/vector.svg']){
+   const plain=await f.app.inject(url),withHeaders=await f.app.inject({url,headers});assert.equal(withHeaders.statusCode,200);assert.equal(withHeaders.body,plain.body);assert.equal(withHeaders.headers.etag,plain.headers.etag);assert.equal(withHeaders.headers['cache-control'],plain.headers['cache-control']);
+   const cached=await f.app.inject({url,headers:{...headers,'if-none-match':plain.headers.etag!}});assert.equal(cached.statusCode,304);assert.equal(cached.body,'');assert.equal(cached.headers['cache-control'],plain.headers['cache-control']);
+   const compressed=await f.app.inject({url,headers:{...headers,'accept-encoding':'gzip'}});if(Buffer.byteLength(plain.body)>=1024){assert.equal(compressed.headers['content-encoding'],'gzip');assert.equal(gunzipSync(compressed.rawPayload).toString(),plain.body);}
+  }
+  for(const url of ['/','/owner','/residents/A001','/agent/entry.md','/v1/fixture']){const r=await f.app.inject({url,headers:{...headers,'if-none-match':'*','accept-encoding':'gzip'}});assert.equal(r.statusCode,200);assert.equal(r.headers['cache-control'],'no-store');assert.equal(r.headers.etag,undefined);assert.equal(r.headers['content-encoding'],undefined);}
+ }
 });
 test('ordinary public files revalidate and changed content produces a new validator',async t=>{
  const f=await fixture(t);
