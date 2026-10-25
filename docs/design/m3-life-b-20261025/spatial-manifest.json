@@ -1,0 +1,1811 @@
+{
+  "schemaVersion": 1,
+  "revision": 2,
+  "id": "m3-life-b-semantic-v1",
+  "scope": "A preserved + B fishing and self-service fisher shop; frozen design, not live server state",
+  "parent": {
+    "worldId": "default",
+    "worldUiId": "trisavia",
+    "regionId": "dawn",
+    "regionName": "初晓洲",
+    "parentSceneId": "qingzhou-town",
+    "sceneName": "清昼小镇"
+  },
+  "map": {
+    "mapId": "pixel-town-v2",
+    "rulesetVersion": 4,
+    "topologyVersion": 4,
+    "mapManifestVersion": 4,
+    "layoutUrl": "/world-map-life-b-v1.json",
+    "sourceFile": "world-map-life-b-v1.json",
+    "layoutSha256": "ca3e40e358594e6fd60a49bde053b9de1f54cc8b3a3ea72a05560680ca04bcd8",
+    "baseLayoutSha256": "740961688871187a4d058a00822073283bc19642508ff128229c4420cb60b4b0",
+    "geometryDigest": "TD runtime converter computes canonical digest; byte SHA is not geometryDigest",
+    "sourceSize": [
+      1536,
+      1152
+    ],
+    "tileSize": 16,
+    "origin": [
+      520,
+      520
+    ]
+  },
+  "places": [
+    {
+      "placeId": "harbor_work",
+      "parentSceneId": "qingzhou-town",
+      "name": "港湾码头",
+      "anchorBuildingId": "h-warehouse",
+      "interior": false,
+      "cells": [
+        [
+          41,
+          0
+        ],
+        [
+          43,
+          0
+        ],
+        [
+          42,
+          2
+        ],
+        [
+          44,
+          2
+        ],
+        [
+          42,
+          3
+        ],
+        [
+          44,
+          3
+        ],
+        [
+          45,
+          3
+        ],
+        [
+          42,
+          4
+        ],
+        [
+          44,
+          4
+        ]
+      ],
+      "entrances": [
+        [
+          45,
+          3
+        ]
+      ],
+      "approachCells": [
+        [
+          42,
+          3
+        ],
+        [
+          44,
+          3
+        ]
+      ],
+      "waitingCells": [
+        [
+          41,
+          0
+        ],
+        [
+          43,
+          0
+        ]
+      ],
+      "waitingCapacity": 2,
+      "waitingMaxSeconds": 120,
+      "arrivalHandoffSeconds": 5,
+      "capacity": 4,
+      "stations": [
+        {
+          "id": "harbor_work-01",
+          "actionIds": [
+            "work.shift"
+          ],
+          "capacity": 1,
+          "cells": [
+            [
+              42,
+              2
+            ]
+          ],
+          "approachCells": [
+            [
+              42,
+              3
+            ]
+          ],
+          "facing": "right",
+          "assetRef": "work-crate",
+          "visualAnchor": {
+            "cell": [
+              42,
+              2
+            ],
+            "source": [
+              1192,
+              552
+            ],
+            "feetPivot": [
+              48,
+              39
+            ]
+          },
+          "jobId": "harbor_shift"
+        },
+        {
+          "id": "harbor_work-02",
+          "actionIds": [
+            "work.shift"
+          ],
+          "capacity": 1,
+          "cells": [
+            [
+              44,
+              2
+            ]
+          ],
+          "approachCells": [
+            [
+              44,
+              3
+            ]
+          ],
+          "facing": "left",
+          "assetRef": "work-crate",
+          "visualAnchor": {
+            "cell": [
+              44,
+              2
+            ],
+            "source": [
+              1224,
+              552
+            ],
+            "feetPivot": [
+              48,
+              39
+            ]
+          },
+          "jobId": "harbor_shift"
+        },
+        {
+          "id": "harbor_work-03",
+          "actionIds": [
+            "work.shift"
+          ],
+          "capacity": 1,
+          "cells": [
+            [
+              42,
+              4
+            ]
+          ],
+          "approachCells": [
+            [
+              42,
+              3
+            ]
+          ],
+          "facing": "right",
+          "assetRef": "work-crate",
+          "visualAnchor": {
+            "cell": [
+              42,
+              4
+            ],
+            "source": [
+              1192,
+              584
+            ],
+            "feetPivot": [
+              48,
+              39
+            ]
+          },
+          "jobId": "harbor_shift"
+        },
+        {
+          "id": "harbor_work-04",
+          "actionIds": [
+            "work.shift"
+          ],
+          "capacity": 1,
+          "cells": [
+            [
+              44,
+              4
+            ]
+          ],
+          "approachCells": [
+            [
+              44,
+              3
+            ]
+          ],
+          "facing": "left",
+          "assetRef": "work-crate",
+          "visualAnchor": {
+            "cell": [
+              44,
+              4
+            ],
+            "source": [
+              1224,
+              584
+            ],
+            "feetPivot": [
+              48,
+              39
+            ]
+          },
+          "jobId": "harbor_shift"
+        }
+      ],
+      "walkableVersion": 4,
+      "visualAnchor": {
+        "sourceCrop": [
+          1160,
+          472,
+          256,
+          152
+        ],
+        "building": "h-warehouse"
+      },
+      "occlusionLayer": "world-feet-y; work overlays in actor group; bench back / seated actor / bench front",
+      "assetRefs": [
+        "work-crate",
+        "place-harbor_work",
+        "state-badge"
+      ],
+      "occupancyPolicy": {
+        "foregroundActivityMax": 1,
+        "npcActiveMax": 1,
+        "externalAgentReservedMin": 1,
+        "publicApproachMustRemainFree": true
+      },
+      "publicBypassCells": [
+        [
+          45,
+          2
+        ],
+        [
+          45,
+          3
+        ],
+        [
+          45,
+          4
+        ],
+        [
+          46,
+          2
+        ],
+        [
+          46,
+          3
+        ],
+        [
+          46,
+          4
+        ]
+      ]
+    },
+    {
+      "placeId": "harbor_tavern",
+      "parentSceneId": "qingzhou-town",
+      "name": "港湾酒馆",
+      "anchorBuildingId": "h-tavern",
+      "interior": false,
+      "cells": [
+        [
+          47,
+          12
+        ],
+        [
+          48,
+          12
+        ],
+        [
+          49,
+          12
+        ],
+        [
+          51,
+          12
+        ],
+        [
+          52,
+          12
+        ],
+        [
+          47,
+          13
+        ],
+        [
+          48,
+          13
+        ],
+        [
+          49,
+          13
+        ],
+        [
+          50,
+          13
+        ],
+        [
+          51,
+          13
+        ],
+        [
+          47,
+          14
+        ],
+        [
+          48,
+          14
+        ],
+        [
+          49,
+          14
+        ],
+        [
+          50,
+          14
+        ],
+        [
+          51,
+          14
+        ]
+      ],
+      "entrances": [
+        [
+          48,
+          12
+        ],
+        [
+          52,
+          12
+        ]
+      ],
+      "approachCells": [
+        [
+          47,
+          12
+        ],
+        [
+          49,
+          12
+        ],
+        [
+          51,
+          12
+        ]
+      ],
+      "waitingCells": [
+        [
+          48,
+          14
+        ],
+        [
+          50,
+          14
+        ]
+      ],
+      "waitingCapacity": 2,
+      "waitingMaxSeconds": 120,
+      "arrivalHandoffSeconds": 5,
+      "capacity": 3,
+      "stations": [
+        {
+          "id": "harbor_tavern-01",
+          "actionIds": [
+            "work.shift"
+          ],
+          "capacity": 1,
+          "cells": [
+            [
+              47,
+              13
+            ]
+          ],
+          "approachCells": [
+            [
+              47,
+              12
+            ]
+          ],
+          "facing": "right",
+          "assetRef": "work-tray",
+          "visualAnchor": {
+            "cell": [
+              47,
+              13
+            ],
+            "source": [
+              1272,
+              728
+            ],
+            "feetPivot": [
+              48,
+              39
+            ]
+          },
+          "jobId": "tavern_shift"
+        },
+        {
+          "id": "harbor_tavern-02",
+          "actionIds": [
+            "work.shift"
+          ],
+          "capacity": 1,
+          "cells": [
+            [
+              49,
+              13
+            ]
+          ],
+          "approachCells": [
+            [
+              49,
+              12
+            ]
+          ],
+          "facing": "left",
+          "assetRef": "work-tray",
+          "visualAnchor": {
+            "cell": [
+              49,
+              13
+            ],
+            "source": [
+              1304,
+              728
+            ],
+            "feetPivot": [
+              48,
+              39
+            ]
+          },
+          "jobId": "tavern_shift"
+        },
+        {
+          "id": "harbor_tavern-03",
+          "actionIds": [
+            "work.shift"
+          ],
+          "capacity": 1,
+          "cells": [
+            [
+              51,
+              13
+            ]
+          ],
+          "approachCells": [
+            [
+              51,
+              12
+            ]
+          ],
+          "facing": "right",
+          "assetRef": "work-tray",
+          "visualAnchor": {
+            "cell": [
+              51,
+              13
+            ],
+            "source": [
+              1336,
+              728
+            ],
+            "feetPivot": [
+              48,
+              39
+            ]
+          },
+          "jobId": "tavern_shift"
+        }
+      ],
+      "walkableVersion": 4,
+      "visualAnchor": {
+        "sourceCrop": [
+          1240,
+          624,
+          232,
+          160
+        ],
+        "building": "h-tavern"
+      },
+      "occlusionLayer": "world-feet-y; work overlays in actor group; bench back / seated actor / bench front",
+      "assetRefs": [
+        "work-tray",
+        "place-harbor_tavern",
+        "state-badge"
+      ],
+      "occupancyPolicy": {
+        "foregroundActivityMax": 1,
+        "npcActiveMax": 1,
+        "externalAgentReservedMin": 1,
+        "publicApproachMustRemainFree": true
+      },
+      "publicBypassCells": [
+        [
+          47,
+          12
+        ],
+        [
+          48,
+          12
+        ],
+        [
+          49,
+          12
+        ],
+        [
+          50,
+          12
+        ],
+        [
+          51,
+          12
+        ],
+        [
+          52,
+          12
+        ],
+        [
+          53,
+          12
+        ]
+      ]
+    },
+    {
+      "placeId": "garden_bench",
+      "parentSceneId": "qingzhou-town",
+      "name": "花园凉亭",
+      "anchorBuildingId": "g-pavilion",
+      "interior": false,
+      "cells": [
+        [
+          -23,
+          27
+        ],
+        [
+          -25,
+          28
+        ],
+        [
+          -23,
+          28
+        ],
+        [
+          -21,
+          28
+        ],
+        [
+          -26,
+          29
+        ],
+        [
+          -25,
+          29
+        ],
+        [
+          -24,
+          29
+        ],
+        [
+          -23,
+          29
+        ],
+        [
+          -22,
+          29
+        ],
+        [
+          -21,
+          29
+        ],
+        [
+          -25,
+          30
+        ],
+        [
+          -24,
+          30
+        ],
+        [
+          -23,
+          30
+        ],
+        [
+          -22,
+          30
+        ],
+        [
+          -21,
+          30
+        ],
+        [
+          -24,
+          31
+        ],
+        [
+          -22,
+          31
+        ]
+      ],
+      "entrances": [
+        [
+          -26,
+          29
+        ],
+        [
+          -23,
+          27
+        ]
+      ],
+      "approachCells": [
+        [
+          -25,
+          29
+        ],
+        [
+          -23,
+          29
+        ],
+        [
+          -21,
+          29
+        ]
+      ],
+      "waitingCells": [
+        [
+          -24,
+          31
+        ],
+        [
+          -22,
+          31
+        ]
+      ],
+      "waitingCapacity": 2,
+      "waitingMaxSeconds": 120,
+      "arrivalHandoffSeconds": 5,
+      "capacity": 6,
+      "stations": [
+        {
+          "id": "garden_bench-01",
+          "actionIds": [
+            "rest.bench"
+          ],
+          "capacity": 1,
+          "cells": [
+            [
+              -25,
+              28
+            ]
+          ],
+          "approachCells": [
+            [
+              -25,
+              29
+            ]
+          ],
+          "facing": "right",
+          "assetRef": "rest-bench",
+          "visualAnchor": {
+            "cell": [
+              -25,
+              28
+            ],
+            "source": [
+              120,
+              968
+            ],
+            "feetPivot": [
+              48,
+              39
+            ]
+          }
+        },
+        {
+          "id": "garden_bench-02",
+          "actionIds": [
+            "rest.bench"
+          ],
+          "capacity": 1,
+          "cells": [
+            [
+              -23,
+              28
+            ]
+          ],
+          "approachCells": [
+            [
+              -23,
+              29
+            ]
+          ],
+          "facing": "left",
+          "assetRef": "rest-bench",
+          "visualAnchor": {
+            "cell": [
+              -23,
+              28
+            ],
+            "source": [
+              152,
+              968
+            ],
+            "feetPivot": [
+              48,
+              39
+            ]
+          }
+        },
+        {
+          "id": "garden_bench-03",
+          "actionIds": [
+            "rest.bench"
+          ],
+          "capacity": 1,
+          "cells": [
+            [
+              -21,
+              28
+            ]
+          ],
+          "approachCells": [
+            [
+              -21,
+              29
+            ]
+          ],
+          "facing": "right",
+          "assetRef": "rest-bench",
+          "visualAnchor": {
+            "cell": [
+              -21,
+              28
+            ],
+            "source": [
+              184,
+              968
+            ],
+            "feetPivot": [
+              48,
+              39
+            ]
+          }
+        },
+        {
+          "id": "garden_bench-04",
+          "actionIds": [
+            "rest.bench"
+          ],
+          "capacity": 1,
+          "cells": [
+            [
+              -25,
+              30
+            ]
+          ],
+          "approachCells": [
+            [
+              -25,
+              29
+            ]
+          ],
+          "facing": "left",
+          "assetRef": "rest-bench",
+          "visualAnchor": {
+            "cell": [
+              -25,
+              30
+            ],
+            "source": [
+              120,
+              1000
+            ],
+            "feetPivot": [
+              48,
+              39
+            ]
+          }
+        },
+        {
+          "id": "garden_bench-05",
+          "actionIds": [
+            "rest.bench"
+          ],
+          "capacity": 1,
+          "cells": [
+            [
+              -23,
+              30
+            ]
+          ],
+          "approachCells": [
+            [
+              -23,
+              29
+            ]
+          ],
+          "facing": "right",
+          "assetRef": "rest-bench",
+          "visualAnchor": {
+            "cell": [
+              -23,
+              30
+            ],
+            "source": [
+              152,
+              1000
+            ],
+            "feetPivot": [
+              48,
+              39
+            ]
+          }
+        },
+        {
+          "id": "garden_bench-06",
+          "actionIds": [
+            "rest.bench"
+          ],
+          "capacity": 1,
+          "cells": [
+            [
+              -21,
+              30
+            ]
+          ],
+          "approachCells": [
+            [
+              -21,
+              29
+            ]
+          ],
+          "facing": "left",
+          "assetRef": "rest-bench",
+          "visualAnchor": {
+            "cell": [
+              -21,
+              30
+            ],
+            "source": [
+              184,
+              1000
+            ],
+            "feetPivot": [
+              48,
+              39
+            ]
+          }
+        }
+      ],
+      "walkableVersion": 4,
+      "visualAnchor": {
+        "sourceCrop": [
+          72,
+          856,
+          176,
+          184
+        ],
+        "building": "g-pavilion"
+      },
+      "occlusionLayer": "world-feet-y; work overlays in actor group; bench back / seated actor / bench front",
+      "assetRefs": [
+        "rest-bench",
+        "place-garden_bench",
+        "state-badge"
+      ],
+      "occupancyPolicy": {
+        "foregroundActivityMax": 1,
+        "npcActiveMax": 1,
+        "externalAgentReservedMin": 1,
+        "publicApproachMustRemainFree": true
+      },
+      "publicBypassCells": [
+        [
+          -26,
+          27
+        ],
+        [
+          -26,
+          28
+        ],
+        [
+          -26,
+          29
+        ],
+        [
+          -26,
+          30
+        ],
+        [
+          -26,
+          31
+        ]
+      ]
+    },
+    {
+      "placeId": "harbor_shore",
+      "parentSceneId": "qingzhou-town",
+      "name": "港区近岸",
+      "anchorBuildingId": "h-warehouse",
+      "dockId": null,
+      "interior": false,
+      "cells": [
+        [
+          44,
+          5
+        ],
+        [
+          44,
+          7
+        ],
+        [
+          44,
+          11
+        ],
+        [
+          44,
+          13
+        ],
+        [
+          45,
+          5
+        ],
+        [
+          45,
+          7
+        ],
+        [
+          45,
+          11
+        ],
+        [
+          45,
+          13
+        ]
+      ],
+      "entrances": [
+        [
+          46,
+          8
+        ]
+      ],
+      "approachCells": [
+        [
+          45,
+          5
+        ],
+        [
+          45,
+          7
+        ],
+        [
+          45,
+          11
+        ],
+        [
+          45,
+          13
+        ]
+      ],
+      "waitingCells": [],
+      "waitingCapacity": 0,
+      "waitingPolicy": "no reserved waiting positions; capacity full returns unavailable; do not idle on bridge or pier aisle",
+      "capacity": 4,
+      "stations": [
+        {
+          "id": "harbor_shore-01",
+          "spotId": "shore_spot",
+          "actionIds": [
+            "fish.session"
+          ],
+          "capacity": 1,
+          "cells": [
+            [
+              44,
+              5
+            ]
+          ],
+          "approachCells": [
+            [
+              45,
+              5
+            ]
+          ],
+          "facing": "left",
+          "assetRef": "fishing-wait",
+          "visualAnchor": {
+            "cell": [
+              44,
+              5
+            ],
+            "source": [
+              1224,
+              600
+            ],
+            "feetPivot": [
+              48,
+              39
+            ]
+          },
+          "lineLandingSource": [
+            1194,
+            623
+          ],
+          "lineLandingWaterCell": [
+            42,
+            6
+          ],
+          "lineIsDecorative": true
+        },
+        {
+          "id": "harbor_shore-02",
+          "spotId": "shore_spot",
+          "actionIds": [
+            "fish.session"
+          ],
+          "capacity": 1,
+          "cells": [
+            [
+              44,
+              7
+            ]
+          ],
+          "approachCells": [
+            [
+              45,
+              7
+            ]
+          ],
+          "facing": "left",
+          "assetRef": "fishing-wait",
+          "visualAnchor": {
+            "cell": [
+              44,
+              7
+            ],
+            "source": [
+              1224,
+              632
+            ],
+            "feetPivot": [
+              48,
+              39
+            ]
+          },
+          "lineLandingSource": [
+            1194,
+            655
+          ],
+          "lineLandingWaterCell": [
+            42,
+            8
+          ],
+          "lineIsDecorative": true
+        },
+        {
+          "id": "harbor_shore-03",
+          "spotId": "shore_spot",
+          "actionIds": [
+            "fish.session"
+          ],
+          "capacity": 1,
+          "cells": [
+            [
+              44,
+              11
+            ]
+          ],
+          "approachCells": [
+            [
+              45,
+              11
+            ]
+          ],
+          "facing": "left",
+          "assetRef": "fishing-wait",
+          "visualAnchor": {
+            "cell": [
+              44,
+              11
+            ],
+            "source": [
+              1224,
+              696
+            ],
+            "feetPivot": [
+              48,
+              39
+            ]
+          },
+          "lineLandingSource": [
+            1194,
+            719
+          ],
+          "lineLandingWaterCell": [
+            42,
+            12
+          ],
+          "lineIsDecorative": true
+        },
+        {
+          "id": "harbor_shore-04",
+          "spotId": "shore_spot",
+          "actionIds": [
+            "fish.session"
+          ],
+          "capacity": 1,
+          "cells": [
+            [
+              44,
+              13
+            ]
+          ],
+          "approachCells": [
+            [
+              45,
+              13
+            ]
+          ],
+          "facing": "left",
+          "assetRef": "fishing-wait",
+          "visualAnchor": {
+            "cell": [
+              44,
+              13
+            ],
+            "source": [
+              1224,
+              728
+            ],
+            "feetPivot": [
+              48,
+              39
+            ]
+          },
+          "lineLandingSource": [
+            1194,
+            751
+          ],
+          "lineLandingWaterCell": [
+            42,
+            14
+          ],
+          "lineIsDecorative": true
+        }
+      ],
+      "walkableVersion": 4,
+      "visualAnchor": {
+        "sourceCrop": [
+          1140,
+          560,
+          176,
+          208
+        ]
+      },
+      "occlusionLayer": "native feet y; line behind actor, water splash without collision",
+      "assetRefs": [
+        "fishing-cast",
+        "fishing-wait",
+        "fishing-reel",
+        "fishing-caught"
+      ],
+      "occupancyPolicy": "1 actor per station; only authority assigns/relinquishes occupancy",
+      "publicBypassCells": [
+        [
+          46,
+          5
+        ],
+        [
+          46,
+          6
+        ],
+        [
+          46,
+          7
+        ],
+        [
+          46,
+          8
+        ],
+        [
+          46,
+          9
+        ],
+        [
+          46,
+          10
+        ],
+        [
+          46,
+          11
+        ],
+        [
+          46,
+          12
+        ],
+        [
+          46,
+          13
+        ],
+        [
+          46,
+          14
+        ]
+      ]
+    },
+    {
+      "placeId": "harbor_pier",
+      "parentSceneId": "qingzhou-town",
+      "name": "港湾木栈台",
+      "anchorBuildingId": null,
+      "dockId": "inner-pier",
+      "interior": false,
+      "cells": [
+        [
+          41,
+          10
+        ],
+        [
+          43,
+          10
+        ],
+        [
+          45,
+          10
+        ],
+        [
+          41,
+          9
+        ],
+        [
+          43,
+          9
+        ],
+        [
+          45,
+          9
+        ]
+      ],
+      "entrances": [
+        [
+          46,
+          9
+        ]
+      ],
+      "approachCells": [
+        [
+          41,
+          9
+        ],
+        [
+          43,
+          9
+        ],
+        [
+          45,
+          9
+        ]
+      ],
+      "waitingCells": [],
+      "waitingCapacity": 0,
+      "waitingPolicy": "no reserved waiting positions; capacity full returns unavailable; do not idle on bridge or pier aisle",
+      "capacity": 3,
+      "stations": [
+        {
+          "id": "harbor_pier-01",
+          "spotId": "pier_spot",
+          "actionIds": [
+            "fish.session"
+          ],
+          "capacity": 1,
+          "cells": [
+            [
+              41,
+              10
+            ]
+          ],
+          "approachCells": [
+            [
+              41,
+              9
+            ]
+          ],
+          "facing": "left",
+          "assetRef": "fishing-wait",
+          "visualAnchor": {
+            "cell": [
+              41,
+              10
+            ],
+            "source": [
+              1176,
+              680
+            ],
+            "feetPivot": [
+              48,
+              39
+            ]
+          },
+          "lineLandingSource": [
+            1146,
+            703
+          ],
+          "lineLandingWaterCell": [
+            39,
+            11
+          ],
+          "lineIsDecorative": true
+        },
+        {
+          "id": "harbor_pier-02",
+          "spotId": "pier_spot",
+          "actionIds": [
+            "fish.session"
+          ],
+          "capacity": 1,
+          "cells": [
+            [
+              43,
+              10
+            ]
+          ],
+          "approachCells": [
+            [
+              43,
+              9
+            ]
+          ],
+          "facing": "left",
+          "assetRef": "fishing-wait",
+          "visualAnchor": {
+            "cell": [
+              43,
+              10
+            ],
+            "source": [
+              1208,
+              680
+            ],
+            "feetPivot": [
+              48,
+              39
+            ]
+          },
+          "lineLandingSource": [
+            1178,
+            703
+          ],
+          "lineLandingWaterCell": [
+            41,
+            11
+          ],
+          "lineIsDecorative": true
+        },
+        {
+          "id": "harbor_pier-03",
+          "spotId": "pier_spot",
+          "actionIds": [
+            "fish.session"
+          ],
+          "capacity": 1,
+          "cells": [
+            [
+              45,
+              10
+            ]
+          ],
+          "approachCells": [
+            [
+              45,
+              9
+            ]
+          ],
+          "facing": "left",
+          "assetRef": "fishing-wait",
+          "visualAnchor": {
+            "cell": [
+              45,
+              10
+            ],
+            "source": [
+              1240,
+              680
+            ],
+            "feetPivot": [
+              48,
+              39
+            ]
+          },
+          "lineLandingSource": [
+            1210,
+            703
+          ],
+          "lineLandingWaterCell": [
+            43,
+            11
+          ],
+          "lineIsDecorative": true
+        }
+      ],
+      "walkableVersion": 4,
+      "visualAnchor": {
+        "sourceCrop": [
+          1112,
+          624,
+          200,
+          112
+        ]
+      },
+      "occlusionLayer": "native feet y; line behind actor, water splash without collision",
+      "assetRefs": [
+        "fishing-cast",
+        "fishing-wait",
+        "fishing-reel",
+        "fishing-caught"
+      ],
+      "occupancyPolicy": "1 actor per station; only authority assigns/relinquishes occupancy",
+      "publicBypassCells": [
+        [
+          41,
+          9
+        ],
+        [
+          42,
+          9
+        ],
+        [
+          43,
+          9
+        ],
+        [
+          44,
+          9
+        ],
+        [
+          45,
+          9
+        ],
+        [
+          46,
+          9
+        ]
+      ]
+    },
+    {
+      "placeId": "fisher_shop",
+      "parentSceneId": "qingzhou-town",
+      "name": "渔人小铺",
+      "anchorBuildingId": "e-stall",
+      "interior": false,
+      "cells": [
+        [
+          27,
+          17
+        ],
+        [
+          28,
+          17
+        ]
+      ],
+      "entrances": [
+        [
+          27,
+          17
+        ]
+      ],
+      "approachCells": [
+        [
+          27,
+          17
+        ]
+      ],
+      "waitingCells": [],
+      "waitingCapacity": 0,
+      "capacity": null,
+      "stations": [],
+      "walkableVersion": 4,
+      "visualAnchor": {
+        "sourceCrop": [
+          900,
+          704,
+          112,
+          112
+        ]
+      },
+      "assetRefs": [
+        "life-item-basic_rod",
+        "life-item-bait",
+        "life-item-sardine",
+        "life-item-mackerel",
+        "life-item-sea_bass"
+      ],
+      "publicBypassCells": [
+        [
+          25,
+          17
+        ],
+        [
+          26,
+          17
+        ],
+        [
+          27,
+          17
+        ]
+      ],
+      "shopId": "fisher_shop",
+      "npcId": "npc-fishing-clerk",
+      "shopService": "self-service; only rod/bait for sale; only three fish bought back; no interior and no duplicate building"
+    }
+  ],
+  "npcs": [
+    {
+      "npcId": "npc-mayor",
+      "name": "镇长",
+      "role": "镇长",
+      "anchorBuildingId": "p-hall",
+      "dutyPlaceId": "town_hall",
+      "initialCell": [
+        2,
+        -17
+      ],
+      "dutyCell": [
+        2,
+        -17
+      ],
+      "approachCells": [
+        [
+          2,
+          -16
+        ]
+      ],
+      "appearance": {
+        "lookId": "sunnyside-human-shorthair",
+        "catalogVersion": "2026-10-21.appearance-v1.1",
+        "hair": "shorthair"
+      },
+      "shortIdPolicy": "preserve_existing",
+      "movementSource": "authoritative snapshot; duty anchor is not permanent current position",
+      "stateAssets": [
+        "work-tray",
+        "rest-bench",
+        "duty"
+      ]
+    },
+    {
+      "npcId": "npc-tavern",
+      "name": "港湾酒馆·酒保",
+      "role": "酒保",
+      "anchorBuildingId": "h-tavern",
+      "dutyPlaceId": "harbor_tavern",
+      "initialCell": [
+        53,
+        12
+      ],
+      "dutyCell": [
+        53,
+        12
+      ],
+      "approachCells": [
+        [
+          52,
+          12
+        ]
+      ],
+      "appearance": {
+        "lookId": "sunnyside-human-curlyhair",
+        "catalogVersion": "2026-10-21.appearance-v1.1",
+        "hair": "curlyhair"
+      },
+      "shortIdPolicy": "preserve_existing",
+      "movementSource": "authoritative snapshot; duty anchor is not permanent current position",
+      "stateAssets": [
+        "work-tray",
+        "rest-bench",
+        "duty"
+      ]
+    },
+    {
+      "npcId": "npc-innkeeper",
+      "name": "石岸旅舍·老板",
+      "role": "旅社老板",
+      "anchorBuildingId": "e-inn",
+      "dutyPlaceId": "stone_inn",
+      "initialCell": [
+        28,
+        8
+      ],
+      "dutyCell": [
+        28,
+        8
+      ],
+      "approachCells": [
+        [
+          27,
+          8
+        ]
+      ],
+      "appearance": {
+        "lookId": "sunnyside-human-longhair",
+        "catalogVersion": "2026-10-21.appearance-v1.1",
+        "hair": "longhair"
+      },
+      "shortIdPolicy": "preserve_existing",
+      "movementSource": "authoritative snapshot; duty anchor is not permanent current position",
+      "stateAssets": [
+        "work-tray",
+        "rest-bench",
+        "duty"
+      ]
+    },
+    {
+      "npcId": "npc-harbor-hand",
+      "name": "码头熟手",
+      "role": "码头工作",
+      "anchorBuildingId": "h-warehouse",
+      "dutyPlaceId": "harbor_work",
+      "initialCell": [
+        47,
+        3
+      ],
+      "dutyCell": [
+        47,
+        3
+      ],
+      "approachCells": [
+        [
+          46,
+          3
+        ]
+      ],
+      "appearance": {
+        "lookId": "sunnyside-human-bowlhair",
+        "catalogVersion": "2026-10-21.appearance-v1.1",
+        "hair": "bowlhair"
+      },
+      "shortIdPolicy": "allocator_assigns; no hardcoded short ID",
+      "movementSource": "authoritative snapshot; duty anchor is not permanent current position",
+      "stateAssets": [
+        "work-crate",
+        "rest-bench",
+        "duty"
+      ]
+    },
+    {
+      "npcId": "npc-fishing-clerk",
+      "name": "渔具店员",
+      "role": "渔具店员",
+      "anchorBuildingId": "e-stall",
+      "dutyPlaceId": "fisher_shop",
+      "initialCell": [
+        28,
+        17
+      ],
+      "dutyCell": [
+        28,
+        17
+      ],
+      "approachCells": [
+        [
+          27,
+          17
+        ]
+      ],
+      "appearance": {
+        "lookId": "sunnyside-human-spikeyhair",
+        "catalogVersion": "2026-10-21.appearance-v1.1",
+        "hair": "spikeyhair"
+      },
+      "shortIdPolicy": "allocator_assigns; never hardcode N005",
+      "movementSource": "authoritative; duty cell is not a perpetual position",
+      "stateAssets": [
+        "fishing-cast",
+        "fishing-wait",
+        "fishing-reel",
+        "duty"
+      ],
+      "servicePolicy": "fisher_shop remains self-service while clerk is away"
+    }
+  ],
+  "preserve": {
+    "legacyLayoutUnchanged": true,
+    "originalWalkableCells": 1175,
+    "physicalBlockedCells": 1622,
+    "buildingEntrances": 31,
+    "serviceAnchors": [
+      {
+        "npcId": "npc-mayor",
+        "buildingId": "p-hall",
+        "cell": [
+          2,
+          -17
+        ],
+        "approachCells": [
+          [
+            2,
+            -16
+          ]
+        ]
+      },
+      {
+        "npcId": "npc-tavern",
+        "buildingId": "h-tavern",
+        "cell": [
+          53,
+          12
+        ],
+        "approachCells": [
+          [
+            52,
+            12
+          ]
+        ]
+      },
+      {
+        "npcId": "npc-innkeeper",
+        "buildingId": "e-inn",
+        "cell": [
+          28,
+          8
+        ],
+        "approachCells": [
+          [
+            27,
+            8
+          ]
+        ]
+      }
+    ],
+    "notice": {
+      "cell": [
+        -3,
+        -3
+      ],
+      "approachCells": [
+        [
+          -4,
+          -3
+        ],
+        [
+          -3,
+          -2
+        ]
+      ]
+    },
+    "legacyServices": [
+      "welcome.claim",
+      "tavern.host",
+      "inn.rest"
+    ],
+    "npcMetadataCorrection": "The old raw layout contained preview-only identities; this new layout uses the actual runtime catalog old 3 identities, plus harbor hand. Old raw layout bytes are preserved.",
+    "lifeAStationIdsUnchanged": true
+  },
+  "deferred": [
+    "C four remaining item images and librarian/neighbor NPCs; not part of B activation"
+  ],
+  "authoritativeDisplay": {
+    "source": "API activity, NPC position, startedAt/dueAt and confirmed result only",
+    "offline": "freeze last confirmed pose/progress, mark stale; refresh before claiming completion",
+    "reducedMotion": "static representative frame + state label",
+    "animationRewards": false
+  }
+}

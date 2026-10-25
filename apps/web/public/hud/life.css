@@ -37,3 +37,11 @@
 .world-home.paper-hud .world-detail :is(.life-current-options p,.character-life-activity){color:var(--paper-ink,#263f36)}
 .world-home.paper-hud .world-detail .life-current-options .hud-muted{color:var(--paper-muted,#68746e)}
 .world-home.paper-hud .world-detail .life-current-options .life-condition{color:#614b39}
+.life-b-place .life-item-image,.life-fish-result .life-item-image{width:32px;height:32px;flex:none;image-rendering:pixelated}
+.life-b-price,.life-b-fish,.life-fish-result{display:flex;align-items:center;gap:8px;margin:8px 0}
+.life-b-fish{min-height:36px;font-size:12px;line-height:20px}
+.life-b-field{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0}
+.life-b-field input{width:80px}.life-b-field select{max-width:180px;min-width:0}
+.life-fishing-result-stage{margin:12px 0}.life-fishing-result-stage canvas{display:block;width:100%;max-width:288px;height:auto;image-rendering:pixelated}
+.life-fishing-result-stage figcaption{font-size:12px;line-height:20px;color:#68746e}
+.life-fish-result{flex-wrap:wrap}.life-item-instances{font-size:12px;line-height:20px}

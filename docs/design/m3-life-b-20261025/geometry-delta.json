@@ -1,0 +1,53 @@
+{
+  "baseFile": "apps/web/public/world-map-life-v1.json",
+  "baseSha256": "740961688871187a4d058a00822073283bc19642508ff128229c4420cb60b4b0",
+  "newFile": "world-map-life-b-v1.json",
+  "newSha256": "ca3e40e358594e6fd60a49bde053b9de1f54cc8b3a3ea72a05560680ca04bcd8",
+  "addedWalkable": [
+    [
+      44,
+      5
+    ],
+    [
+      44,
+      7
+    ],
+    [
+      44,
+      11
+    ],
+    [
+      44,
+      13
+    ],
+    [
+      28,
+      17
+    ]
+  ],
+  "oldWalkable": 1175,
+  "newWalkable": 1180,
+  "physicalBlockedUnchanged": 1622,
+  "unopened": 2830,
+  "decorativeBoatRelocation": {
+    "id": "boat-a",
+    "fromCell": [
+      41,
+      12
+    ],
+    "toCell": [
+      39,
+      18
+    ],
+    "fromSource": [
+      1176,
+      712
+    ],
+    "toSource": [
+      1144,
+      808
+    ]
+  },
+  "rulesetVersion": 4,
+  "topologyVersion": 4
+}

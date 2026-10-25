@@ -3,6 +3,8 @@ import {avatar} from '../../scene.js';
 import {createOwnerExchanges} from './owner-interactions.js';
 import {readPhase} from '../world-read-provider.js';
 import {el,button,focusNode,selectedAgent} from './shared.js';
+import {lifeItemFromRef,lifeItemImage} from '../life-item-art.js';
+import {readLifeItems} from '../life-items-reader.js';
 
 const keyOf=record=>JSON.stringify([record?.ref?.moduleId,record?.ref?.type,record?.ref?.id]);
 const same=(a,b)=>keyOf(a)===keyOf(b)&&a?.version===b?.version;
@@ -28,6 +30,7 @@ const dataLabel=(record,holding=false)=>['town_service_definition','npc_service_
 const time=value=>typeof value==='number'&&Number.isFinite(value)?new Date(value).toLocaleString('zh-CN',{hour12:false}):'';
 function sourceText(value){
   const source=value?.summary?.source||value?.content?.source;
+  if(['life_item_definition','life_item_balance'].includes(source?.kind))return '来源：小镇生活';
   if(['town_service_definition','npc_service_item'].includes(source?.kind))return '来源：小镇服务';
   if(source?.kind==='demo_seed')return '来源：平台演示内容';
   if(source?.kind==='demo_holding')return '来源：平台演示持有记录';
@@ -83,6 +86,7 @@ export function createContentSwitcher(example,platform,{session,onEnterDemo=()=>
 }
 
 function inventoryIcon(record){
+  const lifeItem=lifeItemFromRef(record?.summary?.itemRef);if(lifeItem)return lifeItemImage(lifeItem);
   const id=record?.summary?.itemRef?.id;
   if(!['town-tavern-voucher','town-inn-voucher'].includes(id))return icon(record?.summary?.itemKind==='work'?'document':'inventory');
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 40 40');svg.setAttribute('aria-hidden','true');svg.classList.add('paper-voucher-icon');
@@ -109,6 +113,7 @@ export function createPlatformInventory(provider,{session,context,walletProvider
       if(!own){detail={summaryOnly:true};renderDetail();return;}
       const loaded={own};detail=loaded;
       if(own.content.itemRef){try{const item=await provider.detail('items',{ref:own.content.itemRef},{signal:request.signal});if(generation!==detailRevision||disposed)return;loaded.item=item;}catch(error){if(generation!==detailRevision||disposed||error.name==='AbortError')return;loaded.itemError=error;}}
+      const lifeItem=lifeItemFromRef(own.content.itemRef);if(lifeItem){try{const target=selectedAgent(state)?.agentId,raw=await session.readLife('items',{itemIds:[lifeItem],limit:100},{signal:request.signal});if(generation!==detailRevision||disposed||request.signal.aborted)return;loaded.life=readLifeItems(raw,target,[lifeItem]).data;}catch(error){if(generation!==detailRevision||disposed||error.name==='AbortError')return;loaded.lifeError=error;}}
       if(generation===detailRevision&&!disposed)renderDetail();
     }catch(error){if(generation!==detailRevision||disposed||error.name==='AbortError')return;detailError=error;detail=null;renderDetail();}
   }
@@ -132,6 +137,8 @@ export function createPlatformInventory(provider,{session,context,walletProvider
     const quantity=detail.own.content.quantity??selected.summary.quantity,status=detail.own.content.status??selected.summary.status;
     const labels={available:'可用',reserved:'已保留，尚未消耗',consumed:'已消耗',active:'有效'};
     const facts=el('dl','paper-item-facts');for(const [label,value]of [['数量',Number.isSafeInteger(quantity)&&quantity>=0?String(quantity):'暂未提供'],['状态',labels[status]||'暂未提供'],['来源',sourceText(detail.item||detail.own).replace(/^来源：/,'')]]){facts.append(el('dt','',label),el('dd',label==='状态'?'paper-item-status':'',value));}details.append(facts);
+    if(detail.life){const source=detail.life,total=source.totals[0],live=el('section','life-item-instances');live.append(el('h4','','实际可用与预留'),el('p','',`可用 ${total.available} · 已预留 ${total.reserved}`),el('p','hud-muted',`实例确认于 ${time(source.asOf)}；预留中的物品不可再次使用或出售。`));if(!source.complete)live.append(el('p','hud-muted','当前实例尚未全部读取，数量以完整聚合为准。'));for(const item of source.items){const row=el('details');row.append(el('summary','',`${item.state==='available'?'可用':'已预留'}${item.fish?` · ${item.fish.weightGrams} 克`:''}`),el('p','hud-muted',`取得于 ${time(item.issuedAt)}`));if(item.fish)row.append(el('p','',`${item.fish.spotId==='shore_spot'?'港区近岸':'外侧栈桥'} · 钓获于 ${time(item.fish.caughtAt)}`));const audit=el('details');audit.append(el('summary','','来源记录'),el('p','mono',item.sourceId),el('p','mono',item.id));row.append(audit);live.append(row);}details.append(live);}
+    else if(detail.lifeError)details.append(el('p','hud-muted','实际可用数量、预留与鱼实例暂时无法核对，不按零处理。'),button('重试实例读取',()=>void read(selected)));
     if(typeof detail.own.content.text==='string'&&detail.own.content.text&&detail.item)details.append(el('p','paper-item-holding-note',detail.own.content.text));
     if(detailHost){const link=button(detail.item?'查看内容':'查看持有说明',()=>void openContent(),'paper-item-content');link.prepend(icon('document'));details.append(link);}
     details.scrollTop=top||views.holdings.detailTop;

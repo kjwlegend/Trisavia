@@ -1,0 +1,20 @@
+import {api} from '../common.js';
+import {LIFE_ITEM_IDS} from './life-item-art.js';
+import {createLifeReadState} from './life-read-state.js';
+const invalid=()=>Object.assign(Error('life_items_response_invalid'),{code:'life_items_response_invalid'});
+const integer=value=>Number.isSafeInteger(value)&&value>=0;
+const text=value=>typeof value==='string'&&value.length>0&&value.length<=240;
+const fishIds=['sardine','mackerel','sea_bass'];
+function unwrap(raw){if(raw?.protocolVersion!==1||!text(raw.instanceId)||!integer(raw.data?.asOf))throw invalid();return raw.data;}
+export function readLifeItems(raw,agentId,itemIds=LIFE_ITEM_IDS){
+ const data=unwrap(raw),wallet=data.wallet,actor=data.actorRef;
+ if(data.agentId!==agentId||actor?.kind!=='agent'||actor.id!==agentId||!wallet||!['balance','reserved','available','version'].every(key=>integer(wallet[key]))||wallet.version<1||wallet.reserved>wallet.balance||wallet.available!==wallet.balance-wallet.reserved||!Array.isArray(data.totals)||data.totals.length!==itemIds.length||!Array.isArray(data.items)||data.items.length>100||typeof data.complete!=='boolean'||(data.complete?data.nextCursor!==null:!text(data.nextCursor)))throw invalid();
+ const seen=new Set(),totals=data.totals.map(row=>{if(!itemIds.includes(row.itemId)||seen.has(row.itemId)||!integer(row.available)||!integer(row.reserved))throw invalid();seen.add(row.itemId);return{itemId:row.itemId,available:row.available,reserved:row.reserved};});seen.clear();
+ const items=data.items.map(row=>{if(!text(row.id)||seen.has(row.id)||!integer(row.version)||row.version<1||row.actorRef?.kind!=='agent'||row.actorRef.id!==agentId||!itemIds.includes(row.itemId)||!['available','reserved'].includes(row.state)||(row.state==='reserved'?!text(row.reservationId):row.reservationId!==null)||!text(row.sourceId)||!integer(row.issuedAt)||!integer(row.updatedAt)||row.updatedAt<row.issuedAt)throw invalid();seen.add(row.id);let fish=null;if(fishIds.includes(row.itemId)){const f=row.fish;if(!f||!integer(f.weightGrams)||f.weightGrams<1||!['shore_spot','pier_spot'].includes(f.spotId)||!text(f.castId)||!integer(f.caughtAt))throw invalid();fish={weightGrams:f.weightGrams,spotId:f.spotId,castId:f.castId,caughtAt:f.caughtAt};}else if(row.fish!==null)throw invalid();return{id:row.id,version:row.version,itemId:row.itemId,state:row.state,reservationId:row.reservationId,sourceId:row.sourceId,issuedAt:row.issuedAt,updatedAt:row.updatedAt,fish};});
+ return{instanceId:raw.instanceId,data:{agentId,wallet:{balance:wallet.balance,reserved:wallet.reserved,available:wallet.available,version:wallet.version},totals,items,complete:data.complete,nextCursor:data.nextCursor,asOf:data.asOf}};
+}
+export function createLifeItemsReader(session,{itemIds=LIFE_ITEM_IDS}={}){return createLifeReadState({session,privateScope:true,refreshMs:0,read:({signal})=>session.readLife('items',{itemIds:[...itemIds],limit:100},{signal}),validate:(raw,agentId)=>readLifeItems(raw,agentId,itemIds)});}
+export function readLifeQuote(raw,side,itemId){
+ const data=unwrap(raw),q=data.quote;if(data.catalogRevision!==2||q?.catalogRevision!==2||q.ruleVersion!==1||q.placeId!=='fisher_shop'||q.side!==side||q.itemId!==itemId||!(side==='buy'?['basic_rod','bait']:side==='sell'?fishIds:[]).includes(itemId)||!text(q.quoteId)||!integer(q.unitPrice)||q.unitPrice<1||!integer(q.issuedAt)||!integer(q.expiresAt)||q.issuedAt>data.asOf||q.expiresAt<=data.asOf)throw invalid();return{instanceId:raw.instanceId,data:{catalogRevision:2,quote:{quoteId:q.quoteId,catalogRevision:2,ruleVersion:1,placeId:q.placeId,side,itemId,unitPrice:q.unitPrice,issuedAt:q.issuedAt,expiresAt:q.expiresAt},asOf:data.asOf}};
+}
+export function createLifeQuoteReader(side,itemId){return createLifeReadState({refreshMs:0,read:({signal})=>api('/world/life/shop/quote?'+new URLSearchParams({side,itemId}),{signal}),validate:raw=>readLifeQuote(raw,side,itemId)});}

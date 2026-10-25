@@ -1,0 +1,106 @@
+{
+  "method": "Generated alpha bbox >=32; crop transparent margins; proportional nearest-neighbor fit within 26x26 centered in 32x32. No creative repaint, no background removal, alpha retained.",
+  "items": [
+    {
+      "id": "basic_rod",
+      "originalSize": [
+        1254,
+        1254
+      ],
+      "alphaBBox": [
+        147,
+        149,
+        1031,
+        985
+      ],
+      "targetBBox": [
+        3,
+        3,
+        26,
+        25
+      ],
+      "transparentPixels": 1390569
+    },
+    {
+      "dir": "m3-life-b-20261025",
+      "id": "bait",
+      "master": "bait-v2",
+      "originalSize": [
+        1254,
+        1254
+      ],
+      "alphaBBox": [
+        299,
+        234,
+        695,
+        783
+      ],
+      "targetBBox": [
+        4,
+        3,
+        23,
+        26
+      ]
+    },
+    {
+      "id": "sardine",
+      "originalSize": [
+        1254,
+        1254
+      ],
+      "alphaBBox": [
+        76,
+        489,
+        1104,
+        317
+      ],
+      "targetBBox": [
+        3,
+        12,
+        26,
+        7
+      ],
+      "transparentPixels": 1354836
+    },
+    {
+      "id": "mackerel",
+      "originalSize": [
+        1774,
+        887
+      ],
+      "alphaBBox": [
+        193,
+        147,
+        1416,
+        602
+      ],
+      "targetBBox": [
+        3,
+        10,
+        26,
+        11
+      ],
+      "transparentPixels": 1129475
+    },
+    {
+      "id": "sea_bass",
+      "originalSize": [
+        1619,
+        971
+      ],
+      "alphaBBox": [
+        48,
+        110,
+        1524,
+        783
+      ],
+      "targetBBox": [
+        3,
+        9,
+        26,
+        13
+      ],
+      "transparentPixels": 861426
+    }
+  ]
+}
