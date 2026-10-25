@@ -21,3 +21,5 @@
 .hud-root .hud-window .account-root .avatar-studio .stage-native-size{z-index:3}
 
 .hud-root .hud-window .account-root .avatar-studio .stage-native-size>canvas{position:static;transform:none;max-width:none}
+
+.avatar-studio-custom-entry{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 20px;padding:16px;margin-bottom:20px;background:#e3e9d8;border:1px solid #a9b5a0;border-radius:8px}.avatar-studio-custom-entry h3{margin:0 0 6px;font-size:18px;line-height:24px}.avatar-studio-custom-entry p{margin:0;font-size:14px;line-height:22px}.avatar-studio-custom-entry button{flex:none}
