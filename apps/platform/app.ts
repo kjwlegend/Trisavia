@@ -66,7 +66,7 @@ export interface BuildAppOptions extends OpenPostgresStoreOptions {
 }
 /** Composition-level guide gate; all physical Life/world/actor checks still run separately. */
 export async function verifyLifeGuideCatalogForStartup(store:Pick<M1Store,'read'>):Promise<void>{
- if(!await store.read(async tx=>['catalog-life-a-1','catalog-avatar-assets-1','catalog-avatar-assets-fresh-1','catalog-recurring-bootstrap-1'].includes(String((await catalogRepository(tx).get('current'))?.data.catalogRevision))))fail('life_not_enabled',503,'Publish the exact current life guide before startup');
+ if(!await store.read(async tx=>['catalog-life-a-1','catalog-avatar-assets-1','catalog-avatar-assets-fresh-1','catalog-recurring-bootstrap-1','catalog-profile-personalization-1'].includes(String((await catalogRepository(tx).get('current'))?.data.catalogRevision))))fail('life_not_enabled',503,'Publish the exact current life guide before startup');
 }
 /** PostgreSQL runtime only. Opening validates existing schema, identity and exact application documents. */
 export async function buildApp(options:BuildAppOptions):Promise<FastifyInstance> {
