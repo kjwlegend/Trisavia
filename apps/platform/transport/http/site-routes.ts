@@ -36,11 +36,13 @@ export function registerSiteRoutes(app:FastifyInstance,options:SiteRouteOptions=
  app.addHook('onSend',async(request,reply,payload)=>{
   reply.header('X-Content-Type-Options','nosniff');
   reply.header('Referrer-Policy','no-referrer');
-  reply.header('Cache-Control',anonymous(request)&&(reply.statusCode===200||reply.statusCode===304)?policies.get(reply)??'no-store':'no-store');
+  // Only file() marks identity-independent public files. Header presence cannot personalize these bytes.
+  const publicFile=policies.has(reply)&&(reply.statusCode===200||reply.statusCode===304);
+  reply.header('Cache-Control',publicFile?policies.get(reply)!:'no-store');
   reply.header('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'");
-  // Compression changes transport bytes only. Private/authenticated responses remain untouched.
+  // Public files keep the same transport policy with incidental credentials; other authenticated responses remain untouched.
   const type=String(reply.getHeader('Content-Type')??'');
-  if(reply.statusCode===200&&anonymous(request)&&['GET','HEAD'].includes(request.method)&&/^(application\/json|image\/svg\+xml|text\/(?:html|javascript|css))\b/.test(type)&&!reply.hasHeader('Content-Encoding')&&(typeof payload==='string'||Buffer.isBuffer(payload))){
+  if(reply.statusCode===200&&(publicFile||anonymous(request))&&['GET','HEAD'].includes(request.method)&&/^(application\/json|image\/svg\+xml|text\/(?:html|javascript|css))\b/.test(type)&&!reply.hasHeader('Content-Encoding')&&(typeof payload==='string'||Buffer.isBuffer(payload))){
    varyEncoding(reply);
    const bytes=typeof payload==='string'?Buffer.from(payload):payload;
    if(bytes.length>=1024&&acceptsGzip(request.headers['accept-encoding'])){
@@ -57,7 +59,7 @@ export function registerSiteRoutes(app:FastifyInstance,options:SiteRouteOptions=
   if(expected&&(body.length!==expected.bytes||webSha256(body)!==expected.sha256))return unavailable(reply);
   if(expected)reply.type(expected.contentType);
   else if(!reply.hasHeader('Content-Type'))reply.type(WEB_MIME[extname(name)]??'text/plain; charset=utf-8');
-  if(cache&&anonymous(request)){
+  if(cache){
    const etag='W/"sha256-'+(expected?.sha256??webSha256(body))+'"';
    policies.set(reply,cache==='immutable'?'public, max-age=31536000, immutable':'public, max-age=0, must-revalidate');
    reply.header('ETag',etag);varyEncoding(reply);

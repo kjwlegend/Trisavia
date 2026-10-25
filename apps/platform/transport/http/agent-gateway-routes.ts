@@ -1,4 +1,5 @@
 import {randomUUID} from 'node:crypto';
+import {performance} from 'node:perf_hooks';
 import type {FastifyInstance,FastifyReply,FastifyRequest} from 'fastify';
 import type {AgentGateway} from '../../application/agent-gateway.ts';
 import {M1Error} from '../../domains/common/errors.ts';
@@ -14,6 +15,7 @@ class GatewayRateLimitError extends M1Error {
 export function registerAgentGatewayRoutes(app:FastifyInstance,gateway:AgentGateway,identity:{instanceId:string;now:()=>number},diagnostics:{write?:GatewayQuotaDiagnosticSink}={}){
  const windows=new Map<string,{at:number;count:number}>();let cleanupAt=Date.now();
  const observation=createGatewayQuotaObservation(diagnostics.write);
+ const publicDurations=new WeakMap<FastifyRequest,number>();
  const validators=new WeakMap<JsonObject,(input:unknown)=>boolean>();
  const validate=(request:FastifyRequest)=>(schema:JsonObject,input:unknown)=>{let check=validators.get(schema);if(!check){check=request.compileValidationSchema(schema,'body');validators.set(schema,check);}return check(input);};
  function quota(request:FastifyRequest,route:GatewayQuotaRoute){
@@ -37,14 +39,19 @@ export function registerAgentGatewayRoutes(app:FastifyInstance,gateway:AgentGate
  }
  function route(method:'GET'|'POST',url:string,handler:(request:FastifyRequest)=>unknown|Promise<unknown>){
   const observedRoute:GatewayQuotaRoute={method,route:url,requestClass:method==='GET'?'public_read':'gateway_operation'};
-  app.route({method,url,bodyLimit:32768,errorHandler:error,handler:async(request,reply)=>{quota(request,observedRoute);reply.header('Cache-Control','no-store');return {protocolVersion:1,requestId:String(request.id||randomUUID()),instanceId:identity.instanceId,serverTime:identity.now(),data:await handler(request)};}});
+  app.route({method,url,bodyLimit:32768,errorHandler:error,handler:async(request,reply)=>{
+   const started=performance.now();reply.header('Cache-Control','no-store').header('X-Request-Id',String(request.id));
+   try{quota(request,observedRoute);return {protocolVersion:1,requestId:String(request.id||randomUUID()),instanceId:identity.instanceId,serverTime:identity.now(),data:await handler(request)};}
+   finally{const publicMs=publicDurations.get(request);reply.header('Server-Timing',`app;dur=${(performance.now()-started).toFixed(2)};desc="Gateway handler"`+(publicMs===undefined?'':`, public_read;dur=${publicMs.toFixed(2)};desc="Public read including store"`));}
+  }});
  }
+ async function measurePublicRead<T>(request:FastifyRequest,read:()=>Promise<T>):Promise<T>{const started=performance.now();try{return await read();}finally{publicDurations.set(request,(publicDurations.get(request)??0)+performance.now()-started);}}
  route('GET','/v1/gateway/discovery',request=>{object(request.query,[]);return gateway.discovery();});
  route('GET','/v1/gateway/schemas/:schemaId',request=>gateway.schema((request.params as {schemaId:string}).schemaId,object(request.query,['version']).version));
  route('GET','/v1/gateway/guides/:moduleId',request=>gateway.guide((request.params as {moduleId:string}).moduleId,object(request.query,['version']).version));
  route('POST','/v1/gateway/query',request=>gateway.query(request.body,bearer(request),validate(request)));
  route('POST','/v1/gateway/commands',request=>gateway.command(request.body,bearer(request),validate(request)));
  route('POST','/v1/gateway/receipts/query',request=>gateway.receipt(request.body,bearer(request)));
- return {route,validate};
+ return {route,validate,measurePublicRead,instanceId:identity.instanceId};
 }
 export type GatewayHttpTransport=ReturnType<typeof registerAgentGatewayRoutes>;

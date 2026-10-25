@@ -1,6 +1,7 @@
 import {api} from '../common.js';
 import {readPublicCapabilities} from '../public-capabilities.js';
 import {readWorldRules,readWorldPage} from './world-scene-projection.js';
+import {readWorldStartup,startupUnsupported} from './world-startup.js';
 const abortError=()=>new DOMException('World read cancelled','AbortError');
 const failure=code=>Object.assign(new Error(code),{code});
 const temporary=error=>![401,403,404,410].includes(error.status)&&!['world_not_available','world_not_accessible'].includes(error.code)&&(error.status===429||error.status>=500||['network_unknown','request_timeout','busy','unavailable'].includes(error.code));
@@ -9,7 +10,7 @@ const publicRequest=(path,options)=>path==='/capabilities'?readPublicCapabilitie
 
 // Public GETs only. Metadata is bounded, never an authority substitute for a
 // current scene response; reconnect/manual/visible boundaries rediscover it.
-export function createWorldSceneProvider({request=publicRequest,worldId='default',intervalMs=1000,maxPages=10,metadataTtlMs=30000,now=Date.now,setTimer=setTimeout,clearTimer=clearTimeout}={}){
+export function createWorldSceneProvider({request=publicRequest,canReadStartup=()=>false,worldId='default',intervalMs=1000,maxPages=10,metadataTtlMs=30000,now=Date.now,setTimer=setTimeout,clearTimer=clearTimeout}={}){
   const listeners=new Set();let revision=0,controller=null,timer=null,visible=false,started=false,disposed=false,failures=0,metadata=null,notBefore=0,retryError=null,readStarted=false;
   let state={phase:'loading',stale:false,enabled:null,worldId,rules:null,avatars:[],npcs:[],npcCatalogVersion:null,worldRevision:null,asOf:null,serverTime:null,timeSource:null,instanceId:null,complete:false,nextCursor:null,errorCode:null,errorStatus:null,lastSuccessAt:null,retryAt:null};
   const snapshot=()=>structuredClone(state);
@@ -17,6 +18,7 @@ export function createWorldSceneProvider({request=publicRequest,worldId='default
   function stop(){revision++;controller?.abort();controller=null;if(timer!==null)clearTimer(timer);timer=null;}
   function cleared(){return{stale:false,rules:null,avatars:[],npcs:[],npcCatalogVersion:null,worldRevision:null,asOf:null,serverTime:null,timeSource:null,complete:false,nextCursor:null,lastSuccessAt:null};}
   const backoff=()=>Math.max(1000,intervalMs)*Math.min(30,2**Math.min(failures,5));
+  let startupPending=true;
   const delay=()=>notBefore>now()?notBefore-now():failures?backoff():Math.max(1000,intervalMs);
   function schedule(){if(disposed||!visible||!started||state.phase==='partial')return;if(timer!==null)clearTimer(timer);timer=setTimer(()=>{timer=null;void refresh({reason:failures>0&&notBefore>0?'recovery':'timer'});},delay());}
   async function refresh({more=false,force=false,reason='timer'}={}){
@@ -31,22 +33,34 @@ export function createWorldSceneProvider({request=publicRequest,worldId='default
     emit({phase:more?'partial':state.rules?'refreshing':'loading',errorCode:null,errorStatus:null,retryAt:null});
     try{
       if(force||failures>0||!metadata||now()>=metadata.expiresAt){
-        const caps=await read('/capabilities');
-        if(caps?.apiVersion!=='v1'||typeof caps.instanceId!=='string')throw failure('world_response_invalid');
-        if(!caps.gateway||caps.gateway.protocolVersion!==1||caps.gateway.worldSimulation?.enabled!==true||!caps.gateway.modules?.includes('world')){emit({enabled:false});throw failure('world_not_available');}
-        if(previous.instanceId&&previous.instanceId!==caps.instanceId){preserveAuthority=false;emit({phase:'loading',...cleared(),instanceId:caps.instanceId});}
-        const pendingRules=read(`/world/rules?${new URLSearchParams({worldId})}`);
-        // Enabled public reads may travel together. A scene is never parsed or
-        // emitted until the matching instance and strict rules are verified.
-        if(!more){firstPageAbort=new AbortController();firstPage=read(`/world/scene?${new URLSearchParams({worldId,limit:'50'})}`,AbortSignal.any([active.signal,firstPageAbort.signal])).then(value=>({value}),error=>({error}));}
-        const result=await pendingRules;
-        if(result?.protocolVersion!==1||result.instanceId!==caps.instanceId||!result.data)throw failure('world_response_invalid');
-        const rules=readWorldRules(result.data,worldId);
-        if(previous.rules&&JSON.stringify(previous.rules)!==JSON.stringify(rules)){preserveAuthority=false;emit({phase:'loading',...cleared()});}
-        metadata={caps,rules,expiresAt:now()+Math.min(30000,Math.max(1000,metadataTtlMs))};
+        let startup=null;
+        if(startupPending&&canReadStartup()===true){
+          try{startup=readWorldStartup(await read(`/world/startup?${new URLSearchParams({version:'1',worldId,limit:'50'})}`),worldId);}
+          catch(error){if(!startupUnsupported(error))throw error;startupPending=false;}
+          if(startup){startupPending=false;firstPage=Promise.resolve({value:startup.sceneEnvelope});}
+        }else startupPending=false;
+        if(startup){
+          if(previous.instanceId&&previous.instanceId!==startup.instanceId){preserveAuthority=false;emit({phase:'loading',...cleared(),instanceId:startup.instanceId});}
+          if(previous.rules&&JSON.stringify(previous.rules)!==JSON.stringify(startup.rules)){preserveAuthority=false;emit({phase:'loading',...cleared()});}
+          metadata={instanceId:startup.instanceId,rules:startup.rules,expiresAt:now()+Math.min(30000,Math.max(1000,metadataTtlMs))};
+        }else{
+          const caps=await read('/capabilities');
+          if(caps?.apiVersion!=='v1'||typeof caps.instanceId!=='string')throw failure('world_response_invalid');
+          if(!caps.gateway||caps.gateway.protocolVersion!==1||caps.gateway.worldSimulation?.enabled!==true||!caps.gateway.modules?.includes('world')){emit({enabled:false});throw failure('world_not_available');}
+          if(previous.instanceId&&previous.instanceId!==caps.instanceId){preserveAuthority=false;emit({phase:'loading',...cleared(),instanceId:caps.instanceId});}
+          const pendingRules=read(`/world/rules?${new URLSearchParams({worldId})}`);
+          // Enabled public reads may travel together. A scene is never parsed or
+          // emitted until the matching instance and strict rules are verified.
+          if(!more){firstPageAbort=new AbortController();firstPage=read(`/world/scene?${new URLSearchParams({worldId,limit:'50'})}`,AbortSignal.any([active.signal,firstPageAbort.signal])).then(value=>({value}),error=>({error}));}
+          const result=await pendingRules;
+          if(result?.protocolVersion!==1||result.instanceId!==caps.instanceId||!result.data)throw failure('world_response_invalid');
+          const rules=readWorldRules(result.data,worldId);
+          if(previous.rules&&JSON.stringify(previous.rules)!==JSON.stringify(rules)){preserveAuthority=false;emit({phase:'loading',...cleared()});}
+          metadata={instanceId:caps.instanceId,rules,expiresAt:now()+Math.min(30000,Math.max(1000,metadataTtlMs))};
+        }
       }
-      const {caps,rules}=metadata;emit({enabled:true,instanceId:caps.instanceId});
-      let serverTime=null;const unwrap=result=>{if(result?.protocolVersion!==1||result.instanceId!==caps.instanceId||!result.data)throw failure('world_response_invalid');serverTime=Number.isSafeInteger(result.serverTime)&&result.serverTime>=0?result.serverTime:null;return result.data;};
+      const {instanceId,rules}=metadata;emit({enabled:true,instanceId});
+      let serverTime=null;const unwrap=result=>{if(result?.protocolVersion!==1||result.instanceId!==instanceId||!result.data)throw failure('world_response_invalid');serverTime=Number.isSafeInteger(result.serverTime)&&result.serverTime>=0?result.serverTime:null;return result.data;};
       let cursor=more?previous.nextCursor:null,avatars=more?[...previous.avatars]:[],worldRevision=more?previous.worldRevision:null,asOf=more?previous.asOf:null,npcs=[],npcCatalogVersion=null;
       if(more&&(!cursor||JSON.stringify(rules)!==JSON.stringify(previous.rules)))throw failure('world_scene_changed');
       const seenCursors=new Set(),seenAgents=new Set(avatars.map(row=>row.agentId));let complete=false;
@@ -63,7 +77,7 @@ export function createWorldSceneProvider({request=publicRequest,worldId='default
         if(seenCursors.has(cursor))throw failure('world_response_invalid');seenCursors.add(cursor);
       }
       if(!current())throw abortError();
-      failures=0;notBefore=0;retryError=null;emit({phase:complete?'ready':'partial',stale:false,enabled:true,rules,avatars,npcs,npcCatalogVersion,worldRevision,asOf,serverTime:serverTime??asOf,timeSource:serverTime===null?'asOf':'serverTime',instanceId:caps.instanceId,complete,nextCursor:cursor,errorCode:null,errorStatus:null,lastSuccessAt:complete?now():null,retryAt:null});
+      failures=0;notBefore=0;retryError=null;emit({phase:complete?'ready':'partial',stale:false,enabled:true,rules,avatars,npcs,npcCatalogVersion,worldRevision,asOf,serverTime:serverTime??asOf,timeSource:serverTime===null?'asOf':'serverTime',instanceId,complete,nextCursor:cursor,errorCode:null,errorStatus:null,lastSuccessAt:complete?now():null,retryAt:null});
     }catch(error){
       if(!current())return;
       failures++;metadata=null;
