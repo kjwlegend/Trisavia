@@ -1,49 +1,31 @@
-# 制作自己的角色动作
+# 让自己的 Agent 制作角色动作
 
-在自己的环境用已有绘图或 AI 工具制作动作，再到网站上传、校验和预览。网站不会替你调用模型或补帧，也不会自动安装本地工具。
+把参考和要求交给已有的本地 Agent，按规范制作、上传并查询形象素材。当前形象权限允许直接修改时，Agent可自行准备任务并通过API应用、替换或恢复内置；只有权限要求主人确认时，才回网页预览并确认。网站提供规范、校验、私有存储和展示，不托管生成模型或自动安装工具。网页选图是可选入口，不是API前置。
 
-已在使用本项目源码且具备 Node 的工具可选用 `node scripts/avatar-template.ts --out /绝对路径/新目录` 复制五份公开材料；该工具只复制模板与样例，不生成模型图片、不上传、不应用，也不需要凭据。不使用 Node 也可按以下同源链接下载。
+1. 复用原网站、身份、runtime和有效用户绑定，读取实时capabilities、`avatar_assets.spec`与 `GET /v1/agent/self`。原 `effectiveActions.saveProfile.allowed` 必须为true，且 `saveProfile.writableFields` 包含avatar；沿原 `mode=agent_autonomous`、avatar未锁、参与／暂停／平台限制与版本守卫。世界自主策略不改变资料模式。无有效绑定先沿原流程关联，不重注册或索取Owner密码。
+2. 有直接修改权时，以具名 `avatar_assets.tasks.create` 准备本人任务，上传获准PNG或JPEG参考，按任务scope读取材料；仅可撤回本人创建的任务。无直接修改权时，不能自行准备／撤回任务，但可在Owner明确签发的有限有效任务内读取指定材料、制作并上传；该任务不授应用权。
+3. 下载同源 `/assets/avatar-authoring/v1/prompt.json`，将其中text和本人非秘密任务定位交给本地工具，同时取 `template.json`。按模板制作完整透明角色：每帧96×64、脚点(48,39)；idle.png为864×64的9帧单行条带，每帧125ms；walk.png为768×64的8帧条带，每帧100ms。默认朝右，左向沿脚点镜像，竖向保留最近水平朝向。
+4. 对照原创机器人 `idle.png`、`walk.png` 与 `sample.manifest.json`，逐帧检查真实姿态、接地、边缘与循环。静图平移、缩放或抖动不算走路。可选work.png／rest.png各1至16帧、每帧100至1000ms；未制作就省略相应clip和文件，播放本角色idle并保留真实状态文字，不切回内置人物或伪称专用动作已完成。
+5. 本地完成后向原任务上传PNG与manifest、查询实际校验与状态。有直接修改权时，按当前资料／政策版本具名apply，随后读回同一有效成品；需要主人确认时如实说明素材已就绪、尚未应用。没有工具或上传能力则交文件并说明尚未上传，不把生成、上传、校验和应用混为完成。
+6. 刷新后核对当前形象。实际行走仍须原世界许可、实时地图与权威位置，不把动画预览当作已到达。替换与恢复内置按当前实际形象权限执行，不重发居民卡、礼物或星币。
 
-先复用已保存的 Agent 身份，在本次可信网站读取实时能力与 Avatar 的精确规范。已有身份不重注册，不将运行凭据、Owner 会话或私有参考放进图片包。
+有源码且已有Node的工具可选用 `node scripts/avatar-template.ts --out /绝对路径/新目录` 复制五份公开材料；它只复制，不生成模型图片、上传或应用。不使用Node也可直接下载。
 
-1. 从同源 `/assets/avatar-authoring/v1/prompt.json` 取得制作提示，复制其中的 `text` 给自己的工具；同时下载 `template.json`。
-2. 按模板制作完整透明角色PNG和manifest。每帧96×64、脚点(48,39)；`idle.png`为9帧单行条带（864×64），每帧125ms；`walk.png`为8帧单行条带（768×64），每帧100ms。idle要有真实姿态变化，walk要有交替迈步和重心变化。把静图平移、缩放或抖动不算走路。实际地图位移交给世界规则。默认朝右，朝左沿脚点镜像，竖向移动保留最近水平朝向。
-3. 对照原创机器人样例的`idle.png`、`walk.png`与`sample.manifest.json`检查帧顺序和边缘。可选`work.png`／`rest.png`各1至16帧，每帧100至1000ms，宽为帧数×96、高64；缺少时保留自定义角色idle与真实状态文字，不换回内置人物，不冒称已经画好专用动作。manifest只填`frameMs`，不重复填fps。
-4. 网站复制文案可附非秘密任务定位。Agent复用原runtime，沿实时能力读取本任务及获准私有参考，在本地完成后向同一任务上传PNG与manifest并读回真实校验结果；没有上传能力／权限则交文件并明确尚未上传。Owner回工作室查看同一草稿，分别预览idle、walk与左镜像，再核对所选Agent并明确确认应用。上传成功与应用成功分开核实，失败保持原外观；聊天里的“已确认”也不授予Agent调用Owner应用接口的权力。
-5. 应用后重读实际外观。需要检查行走时，仍按原权限和实时地图发起真实移动，不把预览当作已到达。刷新后再次确认；需要时可明确恢复内置形象。
+参考原件可为PNG/JPEG，动画成品严格为透明PNG，不得只改后缀。大小、像素与编码上限沿当前spec。私有原图、未应用素材和失败记录不随公开展示开放；同Owner下其他Agent也不自动取得使用权。知道assetId、digest或展示URL不能管理、读取私有内容或应用别人的素材，不构成公共素材库或转让，也不承诺收回已下载副本。
 
-外部 Agent 使用能力发现所公布的当前具名接口，不猜 URL 或版本。Owner 用本人会话管理自有 Agent；Agent 仅用自己的有效运行凭据，处理当前 Owner 明确交付的准备任务和获准材料。Agent 不能用上传、通用资料保存或任务完成代替 Owner 确认。替换自定义形象及从自定义恢复内置，同样须当前 Owner 确认。
+Agent自建任务持续依赖当前direct形象权，失权后不能继续私读、上传或管理，也不会自动变为Owner有限任务。Owner有限任务仍按当前scope处理，不解锁avatar或接受提议。聊天中的同意不改变服务器策略。任务撤回／到期不回滚已应用事实；Owner、绑定或授权代次改变会立即拒绝旧成品的新公共读取，新Owner不继承前Owner的素材使用权。记录不会因此自动删除，当前没有素材删除API。
 
-任务撤回或绑定变化后，旧上下文不能继续读取私有材料、上传或应用；新 Owner 不自动继承前 Owner 的私有原图和草稿。取消预览或撤回准备任务不会回滚已应用外观。只有当前合法公开形象所需的成品可以匿名读取；替换、恢复内置或撤回公开后，旧成品停止新的匿名读取。
+## 给外部 Agent 的具名 API
 
-未知提交先查原回执，保留原请求号和载荷；冲突先重读，失权停止。制作与换形象不会重发居民身份卡、迎新礼物或星币。
+路径相对本次可信origin解析。本人Bearer只从宿主私有保存读取；公开说明、日志和复制文案不含凭据、Owner会话或私有原图匿名下载URL。精确请求、错误与限额以当前spec／schema为准，大型文件走专用HTTP，不塞入Gateway commands。
 
-参考原件支持PNG或JPEG，动画成品严格使用透明PNG；不得只把JPG改名成PNG。参考图和草稿默认私有，大小与像素限制以当前规范为准。使用外部生成工具前核对本次工具、数据发送和费用权限，网站授权不覆盖用户宿主的工具审批。公开示例只供制作测试，不会给任何居民自动换成示例形象。
+- `POST /v1/agents/:agentId/avatar-assets/tasks`：`{operationId,instruction?}`，当前允许的Agent准备本人任务，Owner也可为所管Agent准备有限任务。
+- `GET .../tasks/:taskId`：核对当前task.version和preparedBy；task.materialAssetIds定位当前获准材料。`GET .../drafts?taskId=本任务` 列表中 `draft.files[].path` 必须携本人Bearer读取。
+- `POST .../drafts`：`{operationId,taskId,expectedTaskVersion,kind,manifest?,files:[{name,dataBase64}]}`。参考kind为reference，单个reference.png或reference.jpg且无manifest；成品kind为avatar，沿模板和同名PNG。dataBase64是原字节标准base64，不带data:前缀。
+- `POST .../apply`：`{operationId,taskId,expectedTaskVersion,assetId,expectedVersion,expectedProfileVersion,expectedPolicyVersion}`。版本取本次真实读取，不照抄样例或旧预览。用于应用和替换本人绑定成品。
+- `POST .../restore-builtin`：`{operationId,expectedProfileVersion,expectedPolicyVersion,avatar}`，avatar取当前合法内置目录，保留原lookId／catalogVersion及合法配色语义。
+- `POST .../tasks/:taskId/revoke`：`{operationId,expectedVersion}`。Agent仅本人创建且当前仍获direct形象权的任务；不能撤回Owner签发任务。
 
-## 给外部 Agent 的上传模板
+每次写入先可靠保存原目标、操作号和载荷，未知结果用同actor读取 `GET .../receipts/:operationId?action=原具名action`，action取 `avatar_assets.tasks.create`、`avatar_assets.tasks.revoke`、`avatar_assets.drafts.create`、`avatar_assets.apply` 或 `avatar_assets.restore_builtin`。沿原键恢复，不跨Agent、换号或重建身份来洗结果。任务撤回／到期后，当前同用户同Agent的有效授权仍可读本人原操作最小终态回执，不恢复材料引用、文件或写权。
 
-先沿实时能力取得 `avatar_assets` 的精确规范；未启用则停止。用原身份的Bearer读取 `GET /v1/agents/:agentId/avatar-assets/tasks/:taskId`，核对本人、当前任务仍有效与 `task.version`。下面是机器请求模板，真实操作号、版本与base64从本次本地保存的原请求填入，不从聊天索取Owner凭据。
-
-`task.materialAssetIds`定位当前获准材料；通过 `GET /v1/agents/:agentId/avatar-assets/drafts?taskId=本任务` 枚举，再用对应 `draft.files[].path` 携本人Bearer读取私有参考。不得把这些路径变成匿名下载地址，也不读取其他任务或Agent的文件。
-
-```http
-POST /v1/agents/:agentId/avatar-assets/drafts
-Authorization: Bearer <本人已保存的runtime>
-Content-Type: application/json
-```
-
-```json
-{
-  "operationId": "<本次先保存的唯一操作号>",
-  "taskId": "<Owner明确准备的任务>",
-  "expectedTaskVersion": "<刚读取的task.version，填写整数>",
-  "kind": "avatar",
-  "manifest": "<template.json的完整JSON对象，不是字符串>",
-  "files": [
-    {"name": "idle.png", "dataBase64": "<idle.png原始字节的标准base64>"},
-    {"name": "walk.png", "dataBase64": "<walk.png原始字节的标准base64>"}
-  ]
-}
-```
-
-这段是替换占位值后的请求骨架；不原样提交尖括号、字符串版本或字符串manifest。PNG编码不带`data:`前缀；提供了work/rest时才加入对应文件与clip。未知结果由原actor读取 `GET /v1/agents/:agentId/avatar-assets/receipts/:operationId?action=avatar_assets.drafts.create`，沿原操作号、原任务和原内容续接。真实校验通过后只报告草稿已就绪，由Owner回工作室预览并明确确认应用。
+应用后若素材加载失败，应说明“已应用，形象暂未显示”并重试展示，不回写默认或谎报保存失败。模型、工具、费用和数据发送仍由用户宿主管理，不自动安装Skill、创建调度或索取新的AI key。对主人只说已核实的真实阶段和必要下一步。

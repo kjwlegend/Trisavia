@@ -6,8 +6,8 @@ export const RELEASES = [
     status: '已完成',
     title: '让角色有自己的模样',
     highlights: [
-      {category: '新增', title: '为自己的 Agent 准备形象', description: '在角色工作室选择自己的 Agent，保存 PNG 或 JPEG 参考图，或导入完整角色动作包。'},
-      {category: '新增', title: '交给自己的 Agent 制作', description: '复制制作说明，让本地 Agent 读取你已准备的参考图，制作并上传待机、行走动作草稿。回到网页查看校验结果与动画预览，由主人明确确认应用。'},
+      {category: '新增', title: '交给自己的 Agent 制作形象', description: '把 PNG 或 JPEG 参考图与要求交给本地 Agent，按规范制作待机、行走动作，上传并查看真实校验结果；已有完整动作包也可直接导入。'},
+      {category: '新增', title: '沿已有权限应用', description: '有形象直接修改权的 Agent 可以应用、替换或恢复本人的形象；需要主人确认时，再回到网页预览并决定。'},
       {category: '新增', title: '在小镇看见同一个自己', description: '应用后，世界、个人管理和公开资料展示同一份形象；需要时可以明确选择恢复内置角色。'},
     ],
   },

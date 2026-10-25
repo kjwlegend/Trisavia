@@ -1,285 +1,234 @@
-/** Finite HTTP checks for the already-owned, isolated 18958 Avatar fixture.
- * Executed by D with D's existing private Owner/A002 context; B never receives those credentials.
- * No registration, binding change, Life action, welcome claim, database, service or model operation.
- * node scripts/avatar-http-acceptance.ts --self-check  # offline: zero HTTP/files
- * Execution requires TD's exact reviewed candidate/resource authorization; flags are in --help.
- * D supplies one 0600 JSON: {format:'trisavia-avatar-http-auth-v1',instanceId,recoveryEpoch,
- * agentId:the original A002,ownerSessionToken:own session,runtimeToken:own runtime}.
- * B's separate verify-other phase reads B's original A001 private-state.json without rewriting it.
- * Use the same run ID/task after an unknown result. Website preview/apply/movement and the
- * controlled service restart have separate evidence; this tool does not perform those actions.
+/** Finite Avatar API checks, only after TD authorizes an exact reviewed source on retained 18958.
+ * No Agent registration, credential replacement, database, service, model or Life operation.
+ * B uses original A001; D keeps D's A002 runtime. A 0600 context may use format
+ * 'trisavia-avatar-http-auth-v1' plus instanceId,recoveryEpoch,agentId,runtimeToken;
+ * B's original M3 private-state.json is also accepted without rewriting that file.
+ * setup-owner is solely the authorized second synthetic Owner + existing A001 binding.
+ * Phases: setup-owner -> prepare -> apply -> verify (also after restart) -> replace ->
+ * owner-limited -> restore-policy -> revoke -> restore. Policy changes are normal Owner CAS.
+ * Optional limited uses an already Owner-issued task under an actually restricted profile.
+ * --self-check is offline. --help gives execution flags. Reuse the same run and original operation.
  */
 import assert from 'node:assert/strict';
-import { createHash, randomUUID } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
-import { mkdir, lstat, readFile, rename, writeFile } from 'node:fs/promises';
-import { isAbsolute, join, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import {createHash,randomBytes,randomUUID} from 'node:crypto';
+import {execFileSync} from 'node:child_process';
+import {mkdir,lstat,readFile,rename,writeFile} from 'node:fs/promises';
+import {isAbsolute,join,resolve} from 'node:path';
+import {fileURLToPath,pathToFileURL} from 'node:url';
+import {setTimeout as delay} from 'node:timers/promises';
+import {PNG} from 'pngjs';
+import jpeg from 'jpeg-js';
 
-type ObjectValue = Record<string, any>;
-type Target = { baseUrl: string; sourceCommit: string; instanceId: string; recoveryEpoch: string; runId: string; authFile: string; taskId: string; phase: string; assetId?: string };
-type Auth = { format: 'trisavia-avatar-http-auth-v1'; instanceId: string; recoveryEpoch: string; agentId: string; ownerSessionToken: string; runtimeToken: string };
-const root = fileURLToPath(new URL('../', import.meta.url));
-const instance = 'instance_ebd77200-9ad5-4816-82fb-664044ffa570';
-const epoch = 'epoch_683a63fc-95df-4531-96fc-0f5da7683f05';
-const phases = ['upload', 'verify-applied', 'verify-retired', 'verify-other'];
-const sha = (value: Uint8Array) => createHash('sha256').update(value).digest('hex');
-const canonical = (value: any): string => value === null || typeof value !== 'object' ? JSON.stringify(value) : Array.isArray(value) ? '[' + value.map(canonical).join(',') + ']' : '{' + Object.keys(value).sort().map(key => JSON.stringify(key) + ':' + canonical(value[key])).join(',') + '}';
-function check(value: unknown, code: string): asserts value { if (!value) throw new Error(code); }
-
-function targetFrom(args: string[]): Target {
-  check(args[0] === '--execute', 'explicit_execute_required');
-  const allowed = new Set(['--base-url', '--source-sha', '--expected-instance', '--expected-epoch', '--run-id', '--auth-file', '--task-id', '--phase', '--asset-id']);
-  const values = new Map<string, string>();
-  for (let index = 1; index < args.length; index += 2) {
-    const key = args[index]!, value = args[index + 1];
-    check(allowed.has(key) && !values.has(key) && value && !value.startsWith('--'), 'invalid_arguments');
-    values.set(key, value);
-  }
-  check(values.size === 8 || values.size === 9 && values.has('--asset-id'), 'all_target_arguments_required');
-  const baseUrl = values.get('--base-url')!;
-  check(baseUrl === 'http://127.0.0.1:18958', 'only_original_isolated_loopback_fixture');
-  const sourceCommit = values.get('--source-sha')!, instanceId = values.get('--expected-instance')!, recoveryEpoch = values.get('--expected-epoch')!;
-  check(/^[a-f0-9]{40}$/.test(sourceCommit), 'full_source_sha_required');
-  check(instanceId === instance && recoveryEpoch === epoch, 'original_paired_identity_required');
-  const runId = values.get('--run-id')!, authFile = values.get('--auth-file')!, taskId = values.get('--task-id')!, phase = values.get('--phase')!;
-  check(/^[a-z0-9][a-z0-9-]{7,79}$/.test(runId), 'stable_run_id_required');
-  check(isAbsolute(authFile) && /^[A-Za-z0-9_-]{8,100}$/.test(taskId) && phases.includes(phase), 'private_context_task_and_phase_required');
-  const assetId = values.get('--asset-id');
-  check(phase !== 'verify-other' || assetId && /^[A-Za-z0-9_-]{8,100}$/.test(assetId), 'observer_requires_explicit_asset_locator');
-  return { baseUrl, sourceCommit, instanceId, recoveryEpoch, runId, authFile, taskId, phase, ...(assetId ? { assetId } : {}) };
+type ObjectValue=Record<string,any>;
+type Target={baseUrl:string;sourceCommit:string;instanceId:string;recoveryEpoch:string;runId:string;authFile:string;agentId:string;phase:string;taskId?:string;assetId?:string;foreignAgentId?:string};
+const root=fileURLToPath(new URL('../',import.meta.url)),instance='instance_ebd77200-9ad5-4816-82fb-664044ffa570',epoch='epoch_683a63fc-95df-4531-96fc-0f5da7683f05';
+const agent='2240d64c-7ab4-42fd-9c3a-a1caad7c58cc',other='ff2ac518-37cd-423d-bb90-f8b7b6db74aa';
+const phases=['setup-owner','prepare','apply','move','verify','replace','revoke','restore','limited','owner-limited','restore-policy','verify-other'];
+const sha=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
+const canonical=(v:any):string=>v===null||typeof v!=='object'?JSON.stringify(v):Array.isArray(v)?'['+v.map(canonical).join(',')+']':'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canonical(v[k])).join(',')+'}';
+function check(value:unknown,code:string):asserts value{if(!value)throw new Error(code);}
+function targetFrom(args:string[]):Target{
+ check(args[0]==='--execute','explicit_execute_required');
+ const required=['--base-url','--source-sha','--expected-instance','--expected-epoch','--run-id','--auth-file','--agent-id','--phase'];
+ const allowed=new Set([...required,'--task-id','--asset-id','--foreign-agent-id']),values=new Map<string,string>();
+ for(let i=1;i<args.length;i+=2){const key=args[i]!,value=args[i+1];check(allowed.has(key)&&!values.has(key)&&value&&!value.startsWith('--'),'invalid_arguments');values.set(key,value);}
+ check(required.every(key=>values.has(key)),'all_target_arguments_required');
+ const baseUrl=values.get('--base-url')!,sourceCommit=values.get('--source-sha')!,instanceId=values.get('--expected-instance')!,recoveryEpoch=values.get('--expected-epoch')!,runId=values.get('--run-id')!,authFile=values.get('--auth-file')!,phase=values.get('--phase')!;
+ check(baseUrl==='http://127.0.0.1:18958','only_retained_isolated_loopback');check(/^[a-f0-9]{40}$/.test(sourceCommit),'full_source_required');check(instanceId===instance&&recoveryEpoch===epoch,'original_paired_identity_required');
+ const agentId=values.get('--agent-id')!;check([agent,other].includes(agentId),'only_two_registered_fixture_agents');
+ check(/^[a-z0-9][a-z0-9-]{7,79}$/.test(runId)&&isAbsolute(authFile)&&phases.includes(phase),'private_context_run_phase_required');
+ const taskId=values.get('--task-id'),assetId=values.get('--asset-id');
+ for(const id of [taskId,assetId])check(id===undefined||/^[A-Za-z0-9_-]{8,100}$/.test(id),'invalid_locator');
+ const foreignAgentId=values.get('--foreign-agent-id');check(foreignAgentId===undefined||[agent,other].includes(foreignAgentId)&&foreignAgentId!==agentId,'only_other_registered_fixture_agent');
+ check(!['limited','verify-other'].includes(phase)||taskId,'explicit_task_locator_required');check(phase!=='verify-other'||assetId&&foreignAgentId,'explicit_foreign_locators_required');
+ check(!['setup-owner','owner-limited','restore-policy'].includes(phase)||agentId===other,'owner_setup_only_for_original_unbound_a001');
+ return {baseUrl,sourceCommit,instanceId,recoveryEpoch,runId,authFile,agentId,phase,...(taskId?{taskId}:{}),...(assetId?{assetId}:{}),...(foreignAgentId?{foreignAgentId}:{})};
 }
-
-async function privateJson(path: string): Promise<ObjectValue> {
-  const info = await lstat(path);
-  check(info.isFile() && !info.isSymbolicLink() && (info.mode & 0o077) === 0 && info.size <= 2_000_000, 'private_file_required');
-  return JSON.parse(await readFile(path, 'utf8'));
+async function privateJson(path:string):Promise<ObjectValue>{const s=await lstat(path);check(s.isFile()&&!s.isSymbolicLink()&&(s.mode&0o077)===0&&s.size<=2_000_000,'private_file_required');return JSON.parse(await readFile(path,'utf8'));}
+async function saveJson(path:string,value:ObjectValue){await writeFile(path+'.tmp',JSON.stringify(value,null,2)+'\n',{mode:0o600});await rename(path+'.tmp',path);}
+function direct(self:ObjectValue){const permission=self.effectiveActions?.saveProfile;return self.profile?.mode==='agent_autonomous'&&Array.isArray(self.profile.lockedFields)&&!self.profile.lockedFields.includes('avatar')&&permission?.allowed===true&&Array.isArray(permission.writableFields)&&permission.writableFields.includes('avatar');}
+/** Private draft DTOs expose digest; only public resource documents expose sha256. */
+function verifyPrivateBytes(file:ObjectValue,bytes:Buffer){check(typeof file.digest==='string'&&/^[a-f0-9]{64}$/.test(file.digest)&&Number.isSafeInteger(file.bytes)&&file.bytes===bytes.length&&sha(bytes)===file.digest,'private_file_digest_or_bytes_invalid');}
+function markFailure(e:ObjectValue,code:string,at:number){const failure={code,at};e.status='failed';e.failure??=failure;e.failures??=[];e.failures.push(failure);}
+function complete(e:ObjectValue,phase:string,observation:ObjectValue){e.phases??={};e.phases[phase]=observation;e.phaseHistory??=[];e.phaseHistory.push({phase,...observation});e.status=e.failure||e.failures?.length?'failed':'observed';}
+class Client{
+ requests=0;readonly target:Target;readonly evidence:ObjectValue;
+ constructor(target:Target,evidence:ObjectValue){this.target=target;this.evidence=evidence;}
+ async call(method:string,path:string,token?:string,body?:ObjectValue){
+  check(++this.requests<=40&&this.evidence.requests.length<240,'finite_request_budget_exceeded');check(path==='/health'||path.startsWith('/v1/'),'only_named_http_api');
+  const url=new URL(path,this.target.baseUrl);check(url.origin===this.target.baseUrl&&!url.username&&!url.password&&!url.hash,'same_origin_required');
+  const at=Date.now();let status=0;
+  try{const response=await fetch(url,{method,redirect:'error',signal:AbortSignal.timeout(15_000),headers:{...(token?{authorization:'Bearer '+token}:{}),...(body?{'content-type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});status=response.status;
+   const bytes=Buffer.from(await response.arrayBuffer());check(bytes.length<=3*1024*1024,'bounded_response_required');const contentType=response.headers.get('content-type')??'';
+   return {status,body:contentType.includes('application/json')?JSON.parse(bytes.toString('utf8')) as ObjectValue:{} as ObjectValue,bytes,cache:response.headers.get('cache-control')??''};
+  }finally{this.evidence.requests.push({method,path,status,at,endedAt:Date.now()});}
+ }
 }
-async function saveJson(path: string, value: ObjectValue) {
-  await writeFile(path + '.tmp', JSON.stringify(value, null, 2) + '\n', { mode: 0o600 });
-  await rename(path + '.tmp', path);
+type Reply=Awaited<ReturnType<Client['call']>>;
+async function recoverCommand(c:Client,prefix:string,token:string,action:string,input:ObjectValue,suffix:string){
+ const path=`${prefix}/receipts/${input.operationId}?action=${action}`;let r=await c.call('GET',path,token);
+ if(r.status===404){try{await c.call('POST',prefix+suffix,token,input);}catch{/* Unknown response: query the same key. */}r=await c.call('GET',path,token);}return r;
 }
-function validateAuth(value: ObjectValue, target: Target): asserts value is Auth {
-  check(value.format === 'trisavia-avatar-http-auth-v1' && value.instanceId === target.instanceId && value.recoveryEpoch === target.recoveryEpoch, 'auth_context_target_mismatch');
-  check(value.agentId === '2240d64c-7ab4-42fd-9c3a-a1caad7c58cc', 'original_owned_a002_required');
-  for (const key of ['ownerSessionToken', 'runtimeToken']) check(typeof value[key] === 'string' && value[key].length >= 20 && !/[\r\n\x00]/.test(value[key]), 'private_existing_bearer_required');
+async function recoverFoundation(c:Client,original:ObjectValue,writeToken:string|undefined,receiptTokens:string[]){
+ const recover=async()=>{for(const token of [...new Set(receiptTokens)]){const r=await c.call('GET',`/v1/operations/${original.input.operationId}?scope=${encodeURIComponent(original.scope)}&action=${original.action}`,token);if(r.status===200){check(r.body.operationId===original.input.operationId&&r.body.outcome==='committed','foundation_receipt_invalid');return r.body;}check([401,404].includes(r.status),'foundation_commit_unknown_stop');}return undefined;};
+ let result=await recover();if(!result){try{const r=await c.call(original.method,original.path,writeToken,original.input);if(r.status===200){check(r.body.operationId===original.input.operationId&&r.body.outcome==='committed','foundation_result_invalid');result=r.body;}else check(r.status>=500,'foundation_command_rejected');}catch(error){if(error instanceof Error&&error.message==='foundation_command_rejected')throw error;}result??=await recover();}check(result,'original_foundation_commit_unresolved');return result;
 }
-
-class Client {
-  requests = 0;
-  readonly target: Target;
-  readonly evidence: ObjectValue;
-  constructor(target: Target, evidence: ObjectValue) { this.target = target; this.evidence = evidence; }
-  async call(method: string, path: string, token?: string, body?: ObjectValue): Promise<{ status: number; body: ObjectValue; bytes: Buffer; cacheControl: string }> {
-    check(++this.requests <= 40, 'finite_request_budget_exceeded');
-    check(path === '/health' || path.startsWith('/v1/'), 'only_named_http_api');
-    const url = new URL(path, this.target.baseUrl);
-    check(url.origin === this.target.baseUrl && !url.username && !url.password && !url.hash, 'same_origin_required');
-    const at = Date.now();
-    let status = 0;
-    try {
-      const response = await fetch(url, { method, redirect: 'error', signal: AbortSignal.timeout(15_000), headers: { ...(token ? { authorization: 'Bearer ' + token } : {}), ...(body ? { 'content-type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
-      status = response.status;
-      const bytes = Buffer.from(await response.arrayBuffer()); check(bytes.length <= 3 * 1024 * 1024, 'bounded_response_required');
-      const contentType = response.headers.get('content-type') ?? '';
-      return { status, body: contentType.includes('application/json') ? JSON.parse(bytes.toString('utf8')) : {}, bytes, cacheControl: response.headers.get('cache-control') ?? '' };
-    } finally { this.evidence.requests.push({ method, path, status, at, endedAt: Date.now() }); }
-  }
+function denied(reply:Reply,anonymous=false,inactive=false){check([403,404,...(anonymous?[401]:[]),...(inactive?[410]:[])].includes(reply.status),'private_or_foreign_material_exposed');check(typeof reply.body.error?.code==='string'&&reply.body.data===undefined,'private_data_in_rejection');}
+async function sample(){const source=join(root,'apps/web/public/avatar-authoring/v1'),manifest=JSON.parse(await readFile(join(source,'sample.manifest.json'),'utf8'));const files=await Promise.all(['idle.png','walk.png'].map(async name=>({name,dataBase64:(await readFile(join(source,name))).toString('base64')})));return {manifest,files};}
+async function selfCheck(){
+ const args=['--execute','--base-url','http://127.0.0.1:18958','--source-sha','a'.repeat(40),'--expected-instance',instance,'--expected-epoch',epoch,'--run-id','avatar-api-offline','--auth-file','/private/test.json','--agent-id',other,'--phase','prepare'];assert.equal(targetFrom(args).phase,'prepare');
+ for(const bad of ['http://127.0.0.1:18893','http://localhost:18958','http://127.0.0.1:18958?x=1','https://trisavia.kjwlabs.com'])assert.throws(()=>targetFrom(args.map(v=>v==='http://127.0.0.1:18958'?bad:v)));
+ assert.throws(()=>targetFrom(args.map(v=>v===epoch?'other-epoch':v)));
+ assert.throws(()=>targetFrom(args.map(v=>v===other?'00000000-0000-4000-8000-000000000001':v)));
+ assert.throws(()=>targetFrom(args.map(v=>v===other?agent:v==='prepare'?'setup-owner':v)));
+ const privateBytes=Buffer.from('offline-private-image-bytes'),privateFile={name:'idle.png',digest:sha(privateBytes),bytes:privateBytes.length,width:864,height:64,contentType:'image/png',path:'/v1/agents/offline/avatar-assets/drafts/offline-asset/files/idle.png'};
+ assert.equal(Object.hasOwn(privateFile,'sha256'),false);verifyPrivateBytes(privateFile,privateBytes);assert.throws(()=>verifyPrivateBytes({...privateFile,digest:undefined,sha256:privateFile.digest},privateBytes),/private_file_digest_or_bytes_invalid/);assert.throws(()=>verifyPrivateBytes({...privateFile,digest:'0'.repeat(64)},privateBytes),/private_file_digest_or_bytes_invalid/);
+ const permission={profile:{mode:'agent_autonomous',lockedFields:[]},effectiveActions:{saveProfile:{allowed:true,writableFields:['avatar']}}};assert(direct(permission));assert(!direct({...permission,profile:{mode:'owner_specified',lockedFields:[]}}));assert(!direct({...permission,profile:{mode:'agent_autonomous',lockedFields:['avatar']}}));assert(!direct({...permission,profile:{mode:'agent_autonomous'}}));assert(!direct({...permission,effectiveActions:{saveProfile:{allowed:false,writableFields:['avatar']}}}));
+ const failed:ObjectValue={};markFailure(failed,'original_failed_condition',1);const resumed=JSON.parse(JSON.stringify(failed));complete(resumed,'verify',{valid:true});assert.equal(resumed.status,'failed');assert.equal(resumed.failure.at,1);
+ const saved=globalThis.fetch,calls:ObjectValue[]=[],evidence:ObjectValue={requests:[]},input={operationId:'offline-original-operation',taskId:'offline-task',kind:'avatar'};
+ try{globalThis.fetch=(async(url:any,init:any)=>{calls.push({path:String(url),method:init.method,body:init.body?JSON.parse(init.body):null});if(calls.length===1)return new Response(JSON.stringify({error:{code:'target_not_accessible'}}),{status:404,headers:{'content-type':'application/json'}});if(calls.length===2)throw new Error('offline response loss');return new Response(JSON.stringify({data:{key:{commandId:input.operationId}}}),{status:200,headers:{'content-type':'application/json'}});}) as typeof fetch;
+  const c=new Client(targetFrom(args),evidence),r=await recoverCommand(c,'/v1/agents/offline/avatar-assets','offline-private-token','avatar_assets.drafts.create',input,'/drafts');assert.equal(r.status,200);assert.equal(calls.length,3);assert.deepEqual(calls[1]!.body,input);assert.equal(calls[0]!.path,calls[2]!.path);assert.deepEqual(evidence.requests.map((r:ObjectValue)=>r.status),[404,0,200]);assert(!JSON.stringify(evidence).includes('offline-private-token'));c.requests=40;await assert.rejects(c.call('GET','/health'),/finite_request_budget_exceeded/);assert.equal(calls.length,3);
+ }finally{globalThis.fetch=saved;}
+ const savedM1=globalThis.fetch,m1Calls:ObjectValue[]=[],m1Evidence:ObjectValue={requests:[]},original={method:'POST',path:'/v1/owner/registration-attempts',action:'startRegistration',scope:'owner-registration:offline-attempt',input:{operationId:'offline-owner-original',attemptId:'offline-attempt'}};
+ try{globalThis.fetch=(async(url:any,init:any)=>{m1Calls.push({path:String(url),method:init.method,body:init.body?JSON.parse(init.body):null});if(m1Calls.length===1)return new Response(JSON.stringify({error:{code:'authentication_failed'}}),{status:401,headers:{'content-type':'application/json'}});if(m1Calls.length===2)throw new Error('offline foundation response loss');return new Response(JSON.stringify({operationId:original.input.operationId,outcome:'committed'}),{status:200,headers:{'content-type':'application/json'}});}) as typeof fetch;
+  const result=await recoverFoundation(new Client(targetFrom(args),m1Evidence),original,'offline-browser-secret',['offline-browser-secret']);assert.equal(result.operationId,original.input.operationId);assert.equal(m1Calls.length,3);assert.deepEqual(m1Calls[1]!.body,original.input);assert.equal(m1Calls[0]!.path,m1Calls[2]!.path);assert(!JSON.stringify(m1Evidence).includes('offline-browser-secret'));
+ }finally{globalThis.fetch=savedM1;}
+ console.info(JSON.stringify({status:'passed',mode:'offline-target-permission-recovery-checkpoint',privateDtoDigestOnly:true,networkRequests:0,simulatedRequests:6,filesWritten:0}));
 }
-
-function markFailure(evidence: ObjectValue, code: string, at: number) {
-  const failure = { code, at }; evidence.status = 'failed'; evidence.failure ??= failure;
-  evidence.failures ??= []; evidence.failures.push(failure); return failure;
-}
-function completePhase(evidence: ObjectValue, phase: string, observation: ObjectValue) {
-  evidence.phases ??= {}; evidence.phases[phase] = observation;
-  evidence.phaseHistory ??= []; evidence.phaseHistory.push({ phase, ...observation });
-  evidence.status = evidence.failure || evidence.failures?.length ? 'failed' : 'observed';
-}
-
-async function recoverUploadedDraft(client: Client, prefix: string, token: string, input: ObjectValue) {
-  const path = `${prefix}/receipts/${input.operationId}?action=avatar_assets.drafts.create`;
-  let recovered = await client.call('GET', path, token);
-  if (recovered.status === 404) {
-    try { await client.call('POST', `${prefix}/drafts`, token, input); } catch { /* Read the same operation after a lost response. */ }
-    recovered = await client.call('GET', path, token);
-  }
-  return recovered;
-}
-
-async function selfCheck() {
-  const base = ['--execute', '--base-url', 'http://127.0.0.1:18958', '--source-sha', 'a'.repeat(40), '--expected-instance', instance, '--expected-epoch', epoch, '--run-id', 'avatar-http-offline', '--auth-file', '/private/test.json', '--task-id', 'task-offline', '--phase', 'upload'];
-  assert.equal(targetFrom(base).phase, 'upload');
-  for (const bad of ['http://127.0.0.1:18893', 'http://localhost:18958', 'http://127.0.0.1:18958?x=1', 'https://trisavia.kjwlabs.com']) assert.throws(() => targetFrom(base.map(value => value === 'http://127.0.0.1:18958' ? bad : value)));
-  assert.throws(() => targetFrom(base.map(value => value === epoch ? 'another-epoch' : value)));
-  const failed: ObjectValue = {}; markFailure(failed, 'original_condition_failed', 1);
-  const restored = JSON.parse(JSON.stringify(failed)); completePhase(restored, 'verify-applied', { valid: true });
-  assert.equal(restored.status, 'failed'); assert.deepEqual(restored.failure, { code: 'original_condition_failed', at: 1 });
-  const savedFetch = globalThis.fetch, calls: Array<{ path: string; method: string; body: any }> = [], evidence: ObjectValue = { requests: [] };
-  const input = { operationId: 'offline-original-operation', taskId: 'offline-task', expectedTaskVersion: 1, kind: 'avatar', files: [] };
-  try {
-    globalThis.fetch = (async (url: any, init: any) => {
-      const path = new URL(String(url)).pathname + new URL(String(url)).search;
-      calls.push({ path, method: init.method, body: init.body ? JSON.parse(init.body) : null });
-      if (calls.length === 1) return new Response(JSON.stringify({ error: { code: 'target_not_accessible' } }), { status: 404, headers: { 'content-type': 'application/json' } });
-      if (calls.length === 2) throw new Error('offline simulated response loss');
-      return new Response(JSON.stringify({ protocolVersion: 1, instanceId: instance, data: { key: { commandId: input.operationId }, result: { draft: { assetId: 'offline-asset' } } } }), { status: 200, headers: { 'content-type': 'application/json' } });
-    }) as typeof fetch;
-    const client = new Client(targetFrom(base), evidence);
-    const result = await recoverUploadedDraft(client, '/v1/agents/offline/avatar-assets', 'offline-private-bearer', input);
-    assert.equal(result.status, 200); assert.equal(result.body.data.key.commandId, input.operationId);
-    assert.equal(calls.length, 3); assert.deepEqual(calls[1]!.body, input); assert.equal(calls[0]!.path, calls[2]!.path);
-    assert.deepEqual(evidence.requests.map((entry: ObjectValue) => entry.status), [404, 0, 200]);
-    assert(!JSON.stringify(evidence).includes('offline-private-bearer'));
-    client.requests = 40; await assert.rejects(client.call('GET', '/health'), /finite_request_budget_exceeded/);
-    assert.equal(calls.length, 3, 'request budget rejects before transport');
-  } finally { globalThis.fetch = savedFetch; }
-  console.info(JSON.stringify({ status: 'passed', mode: 'offline-arguments-recovery-checkpoint-check', networkRequests: 0, simulatedRequests: 3, filesWritten: 0 }));
-}
-
-async function execute(target: Target): Promise<void> {
-  check(execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim() === target.sourceCommit, 'checkout_not_expected_candidate');
-  execFileSync('git', ['diff', '--quiet', 'HEAD'], { cwd: root, stdio: 'ignore' });
-  const auth = await privateJson(target.authFile);
-  const observer = target.phase === 'verify-other';
-  if (observer) {
-    check(auth.version === 1 && auth.agentId === 'ff2ac518-37cd-423d-bb90-f8b7b6db74aa' && auth.target?.instanceId === instance && auth.target?.recoveryEpoch === epoch && typeof auth.runtimeToken === 'string', 'original_a001_private_context_required');
-  } else validateAuth(auth, target);
-  const { phase: _phase, authFile: _authFile, assetId: _assetId, ...runTarget } = target;
-  const directory = join(root, 'outputs/avatar-http', target.runId + (observer ? '-observer' : ''));
-  await mkdir(directory, { recursive: true, mode: 0o700 });
-  const stateFile = join(directory, 'private-state.json'), evidenceFile = join(directory, 'evidence.json');
-  const exists = async (path: string) => { try { return await privateJson(path); } catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined; throw error; } };
-  const state = await exists(stateFile) ?? { version: 1, target: runTarget, operationId: randomUUID() };
-  assert.deepEqual(state.target, runTarget, 'original_run_target_must_match');
-  const evidence = await exists(evidenceFile) ?? { version: 1, target: runTarget, status: 'running', requests: [], phases: {}, boundaries: { existingIdentitiesOnly: true, publicOriginalSample: true, modelGeneration: false, submitResponseDiscardedByClient: true, serverUnknownCommitInjection: false, ownerApplicationByWebsite: true, databaseAccess: false, lifecycleOperations: false, lifeActions: false } };
-  const save = async () => { await saveJson(stateFile, state); await saveJson(evidenceFile, evidence); };
-  await save();
-  const client = new Client(target, evidence), agentId = '2240d64c-7ab4-42fd-9c3a-a1caad7c58cc', prefix = `/v1/agents/${agentId}/avatar-assets`;
-  const unbox = (response: Awaited<ReturnType<Client['call']>>) => {
-    check(response.status === 200 && response.body.protocolVersion === 1 && response.body.instanceId === target.instanceId && response.body.data && typeof response.body.data === 'object', 'gateway_response_invalid');
-    return response.body.data as ObjectValue;
-  };
-  const ok = async (method: string, path: string, token?: string, body?: ObjectValue) => unbox(await client.call(method, path, token, body));
-  const requirePrivateRejection = (reply: Awaited<ReturnType<Client['call']>>, anonymous = false) => {
-    check(reply.status === 404 || reply.status === 403 || anonymous && reply.status === 401, 'private_material_exposed');
-    check(typeof reply.body.error?.code === 'string' && reply.body.data === undefined && reply.body.task === undefined && reply.body.draft === undefined, 'private_content_in_rejection');
-  };
-  try {
-    const health = await client.call('GET', '/health');
-    check(health.status === 200 && health.body.instanceId === target.instanceId && health.body.appVersion === '0.4.0' && health.body.worldCore === 'ready', 'approved_avatar_service_required');
-    const self = await client.call('GET', '/v1/agent/self', auth.runtimeToken);
-    check(self.status === 200 && self.body.agentId === (observer ? 'ff2ac518-37cd-423d-bb90-f8b7b6db74aa' : agentId), 'original_actor_authentication_required');
-    if (observer) {
-      const taskReply = await client.call('GET', `${prefix}/tasks/${target.taskId}`, auth.runtimeToken);
-      const draftReply = await client.call('GET', `${prefix}/drafts/${target.assetId}`, auth.runtimeToken);
-      const fileReply = await client.call('GET', `${prefix}/drafts/${target.assetId}/files/idle.png`, auth.runtimeToken);
-      for (const reply of [taskReply, draftReply, fileReply]) requirePrivateRejection(reply);
-      completePhase(evidence, target.phase, { at: Date.now(), taskStatus: taskReply.status, draftStatus: draftReply.status, fileStatus: fileReply.status });
-    } else {
-      const profilePath = `/v1/agents/${agentId}/profile`;
-      const profileReply = await client.call('GET', profilePath, auth.ownerSessionToken);
-      check(profileReply.status === 200 && Number.isSafeInteger(profileReply.body.version) && Number.isSafeInteger(profileReply.body.publishedVersion), 'current_owner_profile_required');
-      const profile = profileReply.body;
-      if (target.phase === 'upload') {
-        const capabilities = await client.call('GET', '/v1/capabilities');
-        check(capabilities.status === 200 && capabilities.body.instanceId === target.instanceId && capabilities.body.gateway?.discovery?.path === '/v1/gateway/discovery', 'real_capabilities_required');
-        const discovery = await ok('GET', '/v1/gateway/discovery');
-        check(Array.isArray(discovery.operations), 'real_discovery_required');
-        check(discovery.operations.some((entry: ObjectValue) => entry.id === 'avatar_assets.spec'), 'avatar_module_not_discoverable');
-        const specification = await ok('GET', '/v1/avatar-assets/spec');
-        check(specification.version === 1 && specification.httpOperations?.some((entry: ObjectValue) => entry.action === 'avatar_assets.drafts.create' && entry.method === 'POST' && entry.path === '/v1/agents/:agentId/avatar-assets/drafts'), 'discovered_upload_contract_invalid');
-        const specOperation = discovery.operations.find((entry: ObjectValue) => entry.id === 'avatar_assets.spec');
-        check(typeof specOperation.usageGuide?.path === 'string', 'exact_avatar_guide_not_discovered');
-        const guide = await ok('GET', specOperation.usageGuide.path);
-        check(guide.digestAlgorithm === 'sha256-utf8-hex' && sha(Buffer.from(guide.canonicalDocument)) === guide.digest && canonical(guide.document) === guide.canonicalDocument, 'exact_avatar_guide_digest_invalid');
-        const taskResult = await ok('GET', `${prefix}/tasks/${target.taskId}`, auth.runtimeToken), task = taskResult.task;
-        check(task?.taskId === target.taskId && task.agentId === agentId && task.state === 'active' && Number.isSafeInteger(task.version), 'current_owner_task_required');
-        const materials = await ok('GET', `${prefix}/drafts?taskId=${encodeURIComponent(target.taskId)}&limit=20`, auth.runtimeToken);
-        check(Array.isArray(materials.drafts) && materials.drafts.every((entry: ObjectValue) => entry.taskId === target.taskId), 'task_material_scope_invalid');
-        const reference = materials.drafts.find((entry: ObjectValue) => entry.kind === 'reference');
-        let referenceRead: ObjectValue = { present: false, read: false };
-        if (reference) {
-          const file = reference.files?.[0];
-          check(reference.files.length === 1 && ['reference.png', 'reference.jpg'].includes(file?.name) && file.path === `${prefix}/drafts/${reference.assetId}/files/${file.name}`, 'reference_material_binding_invalid');
-          const read = await client.call('GET', file.path, auth.runtimeToken);
-          check(read.status === 200 && sha(read.bytes) === file.sha256 && read.bytes.length === file.bytes, 'task_private_reference_read_failed');
-          requirePrivateRejection(await client.call('GET', file.path), true);
-          referenceRead = { present: true, read: true, assetId: reference.assetId, name: file.name, sha256: file.sha256, bytes: file.bytes };
-        }
-        const source = join(root, 'apps/web/public/avatar-authoring/v1');
-        if (!state.input) {
-          const manifest = JSON.parse(await readFile(join(source, 'sample.manifest.json'), 'utf8'));
-          const files = await Promise.all(['idle.png', 'walk.png'].map(async name => ({ name, dataBase64: (await readFile(join(source, name))).toString('base64') })));
-          state.input = { operationId: state.operationId, taskId: target.taskId, expectedTaskVersion: task.version, kind: 'avatar', manifest, files };
-          state.before = { profileVersion: profile.version, publishedVersion: profile.publishedVersion, appearance: profile.published?.avatar };
-          await save(); // Original command is durable before the first submit.
-        }
-        const recovered = await recoverUploadedDraft(client, prefix, auth.runtimeToken, state.input);
-        const receipt = unbox(recovered), draft = receipt.result?.draft;
-        check(receipt.key?.commandId === state.operationId && receipt.key?.action === 'avatar_assets.drafts.create' && receipt.key?.principal?.id === agentId && receipt.key?.recoveryEpoch === epoch && receipt.outcome === 'committed', 'original_receipt_not_committed');
-        check(draft?.taskId === target.taskId && draft.agentId === agentId && draft.version === 1 && draft.kind === 'avatar' && draft.validation?.valid === true && draft.validation.errors.length === 0 && typeof draft.assetId === 'string', 'real_draft_validation_failed');
-        const replay = await ok('POST', `${prefix}/drafts`, auth.runtimeToken, state.input);
-        assert.deepEqual(replay, receipt, 'same_operation_changed_receipt');
-        const detail = await ok('GET', `${prefix}/drafts/${draft.assetId}`, auth.runtimeToken);
-        check(detail.draft?.assetId === draft.assetId && detail.draft.validation?.valid === true, 'saved_draft_unavailable');
-        check(detail.draft.files.length === 2, 'unexpected_sample_files');
-        for (const file of detail.draft.files) {
-          check(['idle.png', 'walk.png'].includes(file.name) && file.path === `${prefix}/drafts/${draft.assetId}/files/${file.name}`, 'private_file_binding_invalid');
-          const bytes = await client.call('GET', file.path, auth.runtimeToken);
-          check(bytes.status === 200 && sha(bytes.bytes) === file.sha256 && bytes.bytes.length === file.bytes, 'private_png_bytes_changed');
-          requirePrivateRejection(await client.call('GET', file.path), true);
-        }
-        const after = await client.call('GET', profilePath, auth.ownerSessionToken);
-        check(after.body.publishedVersion === state.before.publishedVersion && canonical(after.body.published?.avatar) === canonical(state.before.appearance), 'draft_changed_public_appearance');
-        // Persist the checkpoint only after receipt, validation, private bytes and public state all pass.
-        state.assetId = draft.assetId; state.uploadVerified = true;
-        completePhase(evidence, target.phase, { at: Date.now(), assetId: draft.assetId, operationId: state.operationId, valid: true, idempotentReplay: true, originalReceiptRecovered: true, appearanceUnchanged: true, guideDigest: guide.digest, referenceRead });
-      } else {
-        check(state.uploadVerified === true && typeof state.assetId === 'string', 'original_verified_upload_required');
-        const appearance = profile.published?.avatar;
-        if (target.phase === 'verify-applied') {
-          check(appearance?.kind === 'custom' && appearance.assetId === state.assetId && appearance.version === 1 && /^[a-f0-9]{64}$/.test(appearance.digest), 'owner_has_not_applied_this_draft');
-          check(profile.publishedVersion === state.before.publishedVersion + 1, 'owner_publication_version_invalid');
-          const publicProfile = await client.call('GET', `/v1/public/agents/${agentId}`);
-          assert.deepEqual(publicProfile.body.profile?.avatar, appearance, 'public_profile_uses_another_appearance');
-          const document = await client.call('GET', appearance.manifestUrl);
-          check(document.status === 200 && document.cacheControl.includes('no-store') && sha(Buffer.from(canonical(document.body))) === appearance.digest, 'public_document_digest_or_cache_invalid');
-          assert.deepEqual(document.body.manifest, state.input.manifest);
-          check(document.body.files?.length === 2, 'public_document_files_invalid');
-          for (const file of document.body.files) {
-            check(['idle.png', 'walk.png'].includes(file.name) && file.url === `/v1/avatar-assets/public/${state.assetId}/1/${file.sha256}/${file.name}`, 'public_file_binding_invalid');
-            const png = await client.call('GET', file.url);
-            check(png.status === 200 && png.cacheControl.includes('no-store') && sha(png.bytes) === file.sha256 && png.bytes.length === file.bytes, 'public_png_bytes_changed');
-          }
-          if (state.applied) assert.deepEqual(state.applied, { appearance, publishedVersion: profile.publishedVersion }, 'restart_or_refresh_changed_applied_version');
-          state.applied = { appearance, publishedVersion: profile.publishedVersion };
-          completePhase(evidence, target.phase, { at: Date.now(), assetId: state.assetId, publishedVersion: profile.publishedVersion, digest: appearance.digest, publicBytesVerified: true, lifecycleAndMovementEvidence: 'recorded separately by B lifecycle and D UI' });
-        } else {
-          check(state.applied?.appearance?.assetId === state.assetId && appearance?.assetId !== state.assetId, 'owner_has_not_retired_the_applied_draft');
-          check((await client.call('GET', state.applied.appearance.manifestUrl)).status === 404, 'retired_public_document_still_readable');
-          for (const file of state.input.files) {
-            const url = `/v1/avatar-assets/public/${state.assetId}/1/${sha(Buffer.from(file.dataBase64, 'base64'))}/${file.name}`;
-            check((await client.call('GET', url)).status === 404, 'retired_public_png_still_readable');
-          }
-          completePhase(evidence, target.phase, { at: Date.now(), assetId: state.assetId, retiredBy: appearance?.kind === 'custom' ? 'owner-replacement' : 'owner-builtin-restore', newAnonymousReadsRejected: true });
-        }
-      }
+async function execute(target:Target){
+ check(execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim()===target.sourceCommit,'checkout_not_expected_candidate');execFileSync('git',['diff','--quiet','HEAD'],{cwd:root,stdio:'ignore'});
+ const auth=await privateJson(target.authFile),observer=target.phase==='verify-other',actorId=target.agentId;
+ check(auth.agentId===actorId&&((auth.version===1&&actorId===other&&auth.target?.instanceId===instance&&auth.target?.recoveryEpoch===epoch)||(auth.format==='trisavia-avatar-http-auth-v1'&&auth.instanceId===instance&&auth.recoveryEpoch===epoch)),'original_private_context_required');
+ check(typeof auth.runtimeToken==='string'&&auth.runtimeToken.length>=20&&!/[\r\n\x00]/.test(auth.runtimeToken),'private_existing_runtime_required');
+ const {phase:_phase,authFile:_auth,taskId:_task,assetId:_asset,...runTarget}=target;
+ const directory=join(root,'outputs/avatar-http',target.runId+(observer?'-observer':''));await mkdir(directory,{recursive:true,mode:0o700});const stateFile=join(directory,'private-state.json'),evidenceFile=join(directory,'evidence.json');
+ const existing=async(path:string)=>{try{return await privateJson(path);}catch(e){if((e as NodeJS.ErrnoException).code==='ENOENT')return;throw e;}};
+ const state=await existing(stateFile)??{version:2,target:runTarget,commands:{}};check(state.version===2,'old_owner_only_runner_state_is_not_api_matrix_evidence');assert.deepEqual(state.target,runTarget,'original_run_target_must_match');
+ const evidence=await existing(evidenceFile)??{version:2,target:runTarget,status:'running',requests:[],phases:{},boundaries:{existingAgentsOnly:true,newAgents:0,authorizedSyntheticOwnerPreparation:true,publicOriginalSample:true,modelGeneration:false,submitResponseDiscardedByClient:true,serverFaultInjection:false,agentApiWrites:true,noOwnerSecretRequested:true,databaseAccess:false,lifecycleOperations:false,lifeActions:false}};
+ const save=async()=>{await saveJson(stateFile,state);await saveJson(evidenceFile,evidence);};await save();
+ const client=new Client(target,evidence),prefix=`/v1/agents/${actorId}/avatar-assets`,foreignPrefix=`/v1/agents/${target.foreignAgentId}/avatar-assets`;
+ const unbox=(r:Reply)=>{check(r.status===200&&r.body.protocolVersion===1&&r.body.instanceId===instance&&r.body.data&&typeof r.body.data==='object','gateway_response_invalid');return r.body.data as ObjectValue;};
+ const ok=async(method:string,path:string,token=auth.runtimeToken,body?:ObjectValue)=>unbox(await client.call(method,path,token,body));
+ const profile=async()=>{const r=await client.call('GET',`/v1/agents/${actorId}/profile`,auth.runtimeToken);check(r.status===200&&Number.isSafeInteger(r.body.version)&&Number.isSafeInteger(r.body.policyVersion),'current_profile_required');return r.body;};
+ const command=async(name:string,action:string,suffix:string,input:ObjectValue,replay=false,owner=false)=>{
+  const principalId=owner?state.owner?.ownerId:actorId,token=owner?state.owner?.sessionToken:auth.runtimeToken,kind=owner?'owner':'agent';check(typeof token==='string'&&typeof principalId==='string','same_actor_context_required');
+  let original=state.commands[name];if(!original){original={action,principalId,kind,input:{operationId:randomUUID(),...input}};state.commands[name]=original;await save();}check(original.action===action&&original.principalId===principalId&&original.kind===kind,'original_command_actor_or_action_changed');
+  const receipt=unbox(await recoverCommand(client,prefix,token,action,original.input,suffix));check(receipt.key?.commandId===original.input.operationId&&receipt.key?.action===action&&receipt.key?.principal?.id===principalId&&receipt.key?.principal?.kind===kind&&receipt.key?.recoveryEpoch===epoch&&receipt.outcome==='committed','original_command_not_committed');
+  if(replay)assert.deepEqual(await ok('POST',prefix+suffix,token,original.input),receipt,'same_command_changed_receipt');original.receipt=receipt;await save();return receipt.result as ObjectValue;
+ };
+ const m1Command=async(name:string,method:string,path:string,action:string,scope:string,input:ObjectValue,writeToken:string|undefined,receiptTokens:string[])=>{
+  state.m1Commands??={};let original=state.m1Commands[name];if(!original){original={method,path,action,scope,input:{operationId:randomUUID(),...input}};state.m1Commands[name]=original;await save();}
+  check(original.action===action&&original.path===path&&original.scope===scope,'original_foundation_command_changed');
+  if(original.result)return original.result as ObjectValue;
+  const result=await recoverFoundation(client,original,writeToken,receiptTokens);original.result=result;await save();return result;
+ };
+ const readTask=async(id:string)=>{const r=await ok('GET',prefix+'/tasks/'+id);check(r.task?.taskId===id&&r.task.agentId===actorId&&r.task.state==='active'&&Number.isSafeInteger(r.task.version),'current_task_required');return r.task;};
+ const upload=async(name:string,t:ObjectValue,kind:'reference'|'avatar',payload:ObjectValue,replay=false)=>{
+  const result=await command(name,'avatar_assets.drafts.create','/drafts',{taskId:t.taskId,expectedTaskVersion:t.version,kind,...payload},replay),draft=result.draft;
+  check(draft?.agentId===actorId&&draft.taskId===t.taskId&&draft.kind===kind&&draft.version===1&&draft.validation?.valid===true&&draft.validation.errors.length===0&&typeof draft.assetId==='string','real_material_validation_failed');
+  const detail=await ok('GET',prefix+'/drafts/'+draft.assetId);check(detail.draft?.assetId===draft.assetId&&detail.draft.validation?.valid===true&&Array.isArray(detail.draft.files)&&detail.draft.files.length===payload.files.length,'stored_material_unavailable');for(const f of detail.draft.files){const original=payload.files.find((v:ObjectValue)=>v.name===f.name);check(original&&f.digest===sha(Buffer.from(original.dataBase64,'base64')),'private_metadata_not_original_input');}return detail.draft as ObjectValue;
+ };
+ const verifyPublic=async(expected:ObjectValue,expectedVersion:number)=>{
+  const p=await profile();assert.deepEqual(p.published?.avatar,expected,'current_profile_appearance_changed');check(p.publishedVersion===expectedVersion,'publication_version_changed');
+  const pub=await client.call('GET',`/v1/public/agents/${actorId}`);check(pub.status===200,'current_public_profile_unavailable');assert.deepEqual(pub.body.profile?.avatar,expected);
+  const document=await client.call('GET',expected.manifestUrl);check(document.status===200&&document.cache.includes('no-store')&&sha(Buffer.from(canonical(document.body)))===expected.digest,'public_document_digest_or_cache_invalid');assert.deepEqual(document.body.manifest,state.sample.manifest);check(document.body.files?.length===2,'public_file_count_invalid');
+  for(const f of document.body.files){const input=state.sample.files.find((v:ObjectValue)=>v.name===f.name);check(input&&f.url===`/v1/avatar-assets/public/${expected.assetId}/1/${f.sha256}/${f.name}`&&sha(Buffer.from(input.dataBase64,'base64'))===f.sha256,'public_file_binding_invalid');const image=await client.call('GET',f.url);check(image.status===200&&image.cache.includes('no-store')&&sha(image.bytes)===f.sha256&&image.bytes.length===f.bytes,'public_image_bytes_changed');}
+  return p;
+ };
+ const retired=async(ref:ObjectValue)=>{check((await client.call('GET',ref.manifestUrl)).status===404,'retired_manifest_still_public');for(const f of state.sample.files){const path=`/v1/avatar-assets/public/${ref.assetId}/1/${sha(Buffer.from(f.dataBase64,'base64'))}/${f.name}`;check((await client.call('GET',path)).status===404,'retired_png_still_public');}};
+ try{
+  const health=await client.call('GET','/health');check(health.status===200&&health.body.instanceId===instance&&health.body.appVersion==='0.4.0'&&health.body.worldCore==='ready','approved_avatar_service_required');
+  const selfReply=await client.call('GET','/v1/agent/self',auth.runtimeToken);check(selfReply.status===200&&selfReply.body.agentId===actorId,'original_runtime_required');const self=selfReply.body;
+  if(target.phase==='setup-owner'){
+   check(actorId===other,'only_authorized_a001_owner_setup');const caps=await client.call('GET','/v1/capabilities');check(caps.status===200&&caps.body.emailMode==='experience'&&caps.body.ownerEmailVerification===true,'synthetic_email_mode_required_no_external_mail');
+   if(!state.owner){check(self.management?.managementStatus==='pending_setup'&&self.ownerPublicId===null,'only_original_unbound_agent_can_be_claimed');const attemptId=randomUUID(),credential=()=>randomUUID()+'.'+randomBytes(32).toString('base64url'),username='QA_Avatar_'+randomBytes(6).toString('hex');state.owner={ownerId:attemptId,attemptId,username,email:username.toLowerCase()+'@example.test',password:'Synthetic-avatar-only-'+randomUUID()+'!',browserToken:credential(),sessionToken:credential(),inviteToken:credential()};await save();}
+   const o=state.owner,scope='owner-registration:'+o.attemptId;
+   await m1Command('owner-start','POST','/v1/owner/registration-attempts','startRegistration',scope,{attemptId:o.attemptId,browserToken:o.browserToken,username:o.username,email:o.email},undefined,[o.browserToken]);
+   const send=await m1Command('owner-send','POST',`/v1/owner/registration-attempts/${o.attemptId}/email-challenges`,'sendRegistrationCode',scope,{},o.browserToken,[o.browserToken]);
+   await m1Command('owner-verify','POST',`/v1/owner/registration-attempts/${o.attemptId}/email-verifications`,'verifyRegistrationEmail',scope,{sendOperationId:send.operationId,code:'1234'},o.browserToken,[o.browserToken]);
+   const account=await m1Command('owner-complete','POST','/v1/owner/accounts','registerOwner',scope,{attemptId:o.attemptId,password:o.password,sessionToken:o.sessionToken},o.browserToken,[o.browserToken,o.sessionToken]);check(account.ownerId===o.ownerId&&account.emailVerified===false,'synthetic_owner_result_invalid');
+   await m1Command('owner-invite','POST','/v1/owner/agent-invites','issueInvite','owner:'+o.ownerId,{inviteToken:o.inviteToken},o.sessionToken,[o.sessionToken]);
+   await m1Command('agent-consume-invite','POST','/v1/agent/invitations/consume','consumeInvite','agent:'+actorId,{inviteToken:o.inviteToken},auth.runtimeToken,[auth.runtimeToken]);
+   const bound=await client.call('GET','/v1/agent/self',auth.runtimeToken);check(bound.status===200&&bound.body.agentId===actorId&&bound.body.ownerId===o.ownerId&&bound.body.management?.managementStatus==='managed','existing_agent_not_legally_bound');
+   const ownerOnly={purpose:'synthetic-avatar-owner-only',baseUrl:target.baseUrl,instanceId:instance,recoveryEpoch:epoch,ownerId:o.ownerId,ownerPublicId:bound.body.ownerPublicId,agentId:actorId,agentPublicId:bound.body.publicId,username:o.username,password:o.password};
+   const ownerOnlyFile=join(directory,'owner-only.json'),prior=await existing(ownerOnlyFile);if(prior)assert.deepEqual(prior,ownerOnly);else await writeFile(ownerOnlyFile,JSON.stringify(ownerOnly,null,2)+'\n',{mode:0o600,flag:'wx'});
+   state.ownerBound=true;state.ownerOnlyFile=ownerOnlyFile;complete(evidence,target.phase,{at:Date.now(),ownerId:o.ownerId,ownerPublicId:bound.body.ownerPublicId,agentId:actorId,newAgents:0,testEmailMode:'experience',emailVerified:false,legalExistingAgentBinding:true,ownerOnlyFile});
+  }else if(observer){
+   const scope={taskId:target.taskId,assetId:target.assetId};if(state.scope)assert.deepEqual(state.scope,scope);else{state.scope=scope;await save();}
+   for(const path of [`${foreignPrefix}/tasks/${target.taskId}`,`${foreignPrefix}/drafts/${target.assetId}`,`${foreignPrefix}/drafts/${target.assetId}/files/idle.png`])denied(await client.call('GET',path,auth.runtimeToken));
+   // Foreign management must reject before giving current target versions or material data.
+   for(const [name,suffix,input]of [['foreign-revoke',`/tasks/${target.taskId}/revoke`,{expectedVersion:1}],['foreign-apply','/apply',{taskId:target.taskId,expectedTaskVersion:1,assetId:target.assetId,expectedVersion:1,expectedProfileVersion:1,expectedPolicyVersion:1}]] as const){state.commands[name]??={input:{operationId:randomUUID(),...input}};await save();denied(await client.call('POST',foreignPrefix+suffix,auth.runtimeToken,state.commands[name].input));}
+   const publicReply=await client.call('GET',`/v1/public/agents/${target.foreignAgentId}`),foreignRef=publicReply.body.profile?.avatar;
+   if(direct(self)&&self.management?.managementStatus==='managed'&&self.ownerPublicId&&foreignRef?.kind==='custom'&&foreignRef.assetId===target.assetId){
+    const p=await profile();const own=await command('foreign-reuse-own-task','avatar_assets.tasks.create','/tasks',{instruction:'隔离检查：仅本人任务，不授他人素材使用权'});check(own.task?.preparedBy==='agent','own_agent_task_required');
+    state.commands['foreign-reuse']??={input:{operationId:randomUUID(),taskId:own.task.taskId,expectedTaskVersion:own.task.version,assetId:foreignRef.assetId,expectedVersion:1,expectedProfileVersion:p.version,expectedPolicyVersion:p.policyVersion}};await save();denied(await client.call('POST',prefix+'/apply',auth.runtimeToken,state.commands['foreign-reuse'].input));
+    state.commands['foreign-profile-reference']??={input:{operationId:randomUUID(),expectedVersion:p.version,expectedPolicyVersion:p.policyVersion,fields:{avatar:foreignRef}}};await save();const alias=await client.call('PUT',`/v1/agents/${actorId}/profile`,auth.runtimeToken,state.commands['foreign-profile-reference'].input);check([400,403,404,422].includes(alias.status)&&typeof alias.body.error?.code==='string','foreign_public_ref_accepted');const after=await profile();assert.deepEqual(after.published?.avatar,p.published?.avatar);check(after.publishedVersion===p.publishedVersion,'foreign_reuse_changed_profile');
+    complete(evidence,target.phase,{at:Date.now(),privateReadsRejected:true,foreignManagementRejected:true,eligibleOtherAgentReuseRejected:true,secondActiveOwnerEvidence:'requires separate approved inventory; no account is created by this tool'});
+   }else complete(evidence,target.phase,{at:Date.now(),privateReadsRejected:true,foreignManagementRejected:true,eligibleOtherAgentReuse:'not tested: current other Agent lacks direct permission/binding or target is not currently applied'});
+  }else if(target.phase==='owner-limited'){
+   check(state.ownerBound===true&&state.owner?.sessionToken&&state.prepared===true&&self.ownerId===state.owner.ownerId,'owned_setup_and_preparation_required');const before=await profile();
+   if(!state.policyBefore){check(direct(self),'capture_original_direct_policy_required');state.policyBefore={mode:before.mode,lockedFields:before.lockedFields,version:before.version,policyVersion:before.policyVersion};await save();}
+   const changed=await m1Command('owner-restrict-policy','PUT',`/v1/owner/agents/${actorId}/profile-policy`,'profilePolicy','owner:'+state.owner.ownerId,{expectedVersion:before.version,expectedPolicyVersion:before.policyVersion,mode:'owner_specified',lockedFields:before.lockedFields},state.owner.sessionToken,[state.owner.sessionToken]);
+   const now=await client.call('GET','/v1/agent/self',auth.runtimeToken);check(now.status===200&&!direct(now.body)&&now.body.profile?.mode==='owner_specified','actual_owner_only_policy_required');
+   denied(await client.call('GET',prefix+'/tasks/'+state.taskId,auth.runtimeToken));denied(await client.call('GET',prefix+'/drafts/'+state.assetId,auth.runtimeToken));denied(await client.call('GET',`${prefix}/drafts/${state.assetId}/files/idle.png`,auth.runtimeToken));
+   denied(await client.call('GET',`${prefix}/drafts?taskId=${state.taskId}`,auth.runtimeToken));const listed=await ok('GET',prefix+'/tasks');check(Array.isArray(listed.tasks)&&listed.tasks.every((t:ObjectValue)=>t.taskId!==state.taskId),'self_created_task_leaked_in_restricted_list');
+   const finite=await command('owner-finite-task','avatar_assets.tasks.create','/tasks',{instruction:'仅本人Agent的有限素材准备，不授予应用权'},false,true);check(finite.task?.preparedBy==='owner','owner_issued_finite_task_required');const t=await readTask(finite.task.taskId),draft=await upload('owner-finite-upload',t,'avatar',state.sample,true),p=await profile();
+   state.commands['restricted-apply']??={input:{operationId:randomUUID(),taskId:t.taskId,expectedTaskVersion:t.version,assetId:draft.assetId,expectedVersion:1,expectedProfileVersion:p.version,expectedPolicyVersion:p.policyVersion}};state.commands['restricted-create']??={input:{operationId:randomUUID(),instruction:'受限主体不可自建任务'}};state.commands['restricted-own-revoke']??={input:{operationId:randomUUID(),expectedVersion:1}};state.commands['restricted-restore']??={input:{operationId:randomUUID(),expectedProfileVersion:p.version,expectedPolicyVersion:p.policyVersion,avatar:state.baseline.avatar}};await save();
+   for(const [suffix,input]of [['/apply',state.commands['restricted-apply'].input],['/tasks',state.commands['restricted-create'].input],[`/tasks/${state.taskId}/revoke`,state.commands['restricted-own-revoke'].input],['/restore-builtin',state.commands['restricted-restore'].input]] as const){const r=await client.call('POST',prefix+suffix,auth.runtimeToken,input);check(r.status===403||r.status===200&&unbox(r).outcome==='rejected','finite_task_elevated_profile_permission');}
+   const after=await profile();assert.deepEqual(after.published?.avatar,p.published?.avatar);check(after.publishedVersion===p.publishedVersion,'restricted_subject_published');state.limitedTaskId=t.taskId;complete(evidence,target.phase,{at:Date.now(),policyBefore:state.policyBefore,policyAfter:{mode:after.mode,version:after.version,policyVersion:after.policyVersion},policyReceiptId:changed.receiptId,ownTaskPrivateAccessStopped:true,limitedTaskUploadValid:true,applyAndTaskCreateRejected:true});
+  }else if(target.phase==='restore-policy'){
+   check(state.ownerBound&&state.policyBefore&&state.limitedTaskId&&self.ownerId===state.owner.ownerId,'original_owner_limited_case_required');const p=await profile();const restored=await m1Command('owner-restore-policy','PUT',`/v1/owner/agents/${actorId}/profile-policy`,'profilePolicy','owner:'+state.owner.ownerId,{expectedVersion:p.version,expectedPolicyVersion:p.policyVersion,mode:state.policyBefore.mode,lockedFields:state.policyBefore.lockedFields},state.owner.sessionToken,[state.owner.sessionToken]);const now=await client.call('GET','/v1/agent/self',auth.runtimeToken);check(now.status===200&&direct(now.body),'original_direct_policy_not_restored');
+   state.commands['cannot-revoke-owner-task']??={input:{operationId:randomUUID(),expectedVersion:1}};await save();const r=await client.call('POST',`${prefix}/tasks/${state.limitedTaskId}/revoke`,auth.runtimeToken,state.commands['cannot-revoke-owner-task'].input);check(r.status===403||r.status===200&&unbox(r).outcome==='rejected','agent_revoked_owner_issued_task');complete(evidence,target.phase,{at:Date.now(),policyBeforeRestore:{mode:p.mode,version:p.version,policyVersion:p.policyVersion},policyAfterRestore:{mode:restored.mode,version:restored.version,policyVersion:restored.policyVersion},ownerTaskRevokeRejected:true});
+  }else if(target.phase==='limited'){
+   check(!direct(self),'limited_case_requires_actual_restricted_profile');const t=await readTask(target.taskId!);check(t.preparedBy==='owner','explicit_owner_task_required');state.sample??=await sample();await save();const before=await profile(),draft=await upload('limited-upload',t,'avatar',state.sample,true);
+   state.commands['limited-apply']??={input:{operationId:randomUUID(),taskId:t.taskId,expectedTaskVersion:t.version,assetId:draft.assetId,expectedVersion:1,expectedProfileVersion:before.version,expectedPolicyVersion:before.policyVersion}};await save();const response=await client.call('POST',prefix+'/apply',auth.runtimeToken,state.commands['limited-apply'].input);
+   check(response.status===403||response.status===200&&unbox(response).outcome==='rejected','owner_task_elevated_apply_permission');const after=await profile();assert.deepEqual(after.published?.avatar,before.published?.avatar);check(after.publishedVersion===before.publishedVersion,'limited_task_published');complete(evidence,target.phase,{at:Date.now(),taskId:t.taskId,assetId:draft.assetId,uploadValid:true,directApplyRejected:true});
+  }else{
+   check(direct(self),'current_direct_avatar_permission_required');const p=await profile();
+   if(target.phase==='prepare'){
+    const caps=await client.call('GET','/v1/capabilities');check(caps.status===200&&caps.body.instanceId===instance&&caps.body.gateway?.discovery?.path==='/v1/gateway/discovery','real_capabilities_required');const discovery=await ok('GET','/v1/gateway/discovery');const op=discovery.operations?.find((v:ObjectValue)=>v.id==='avatar_assets.spec');check(op&&typeof op.usageGuide?.path==='string','avatar_spec_not_discoverable');const spec=await ok('GET','/v1/avatar-assets/spec');check(spec.version===1&&spec.httpOperations?.some((v:ObjectValue)=>v.action==='avatar_assets.drafts.create'),'current_spec_required');const guide=await ok('GET',op.usageGuide.path);check(sha(Buffer.from(guide.canonicalDocument))===guide.digest&&canonical(guide.document)===guide.canonicalDocument,'guide_digest_invalid');
+    if(!state.baseline){check(p.published?.avatar&&p.published.avatar.kind!=='custom','builtin_baseline_required');state.baseline={avatar:p.published.avatar,publishedVersion:p.publishedVersion};state.sample=await sample();await save();}
+    const made=await command('prepare-task','avatar_assets.tasks.create','/tasks',{instruction:'仅本人原创公开样例的隔离API验证，不含用户私有参考'});check(made.task?.preparedBy==='agent'&&typeof made.task.taskId==='string','agent_created_task_required');const t=await readTask(made.task.taskId);
+    const png=PNG.sync.read(Buffer.from(state.sample.files[0].dataBase64,'base64'),{checkCRC:true});const jpg=jpeg.encode({width:png.width,height:png.height,data:png.data},90).data;const ref=await upload('prepare-reference',t,'reference',{files:[{name:'reference.jpg',dataBase64:jpg.toString('base64')}]});
+    const file=ref.files?.[0];check(file?.name==='reference.jpg'&&file.path===`${prefix}/drafts/${ref.assetId}/files/reference.jpg`,'private_reference_binding_invalid');const bytes=await client.call('GET',file.path,auth.runtimeToken);check(bytes.status===200&&sha(bytes.bytes)===sha(jpg),'private_jpeg_reference_read_failed');verifyPrivateBytes(file,bytes.bytes);denied(await client.call('GET',file.path),true);
+    const incomplete=await command('incomplete-avatar','avatar_assets.drafts.create','/drafts',{taskId:t.taskId,expectedTaskVersion:t.version,kind:'avatar',manifest:state.sample.manifest,files:[state.sample.files[0]]});
+    check(incomplete.draft?.validation?.valid===false&&incomplete.draft.validation.errors.some((e:ObjectValue)=>e.code==='clip_file_missing'),'incomplete_package_not_reported');const invalid=await ok('GET',prefix+'/drafts/'+incomplete.draft.assetId);check(invalid.draft?.validation?.valid===false,'invalid_preparation_state_lost');
+    const draft=await upload('prepare-avatar',t,'avatar',state.sample,true);check(state.commands['prepare-avatar'].input.operationId!==state.commands['incomplete-avatar'].input.operationId,'corrected_content_requires_new_operation');for(const f of draft.files){check(f.path===`${prefix}/drafts/${draft.assetId}/files/${f.name}`,'private_png_binding_invalid');const read=await client.call('GET',f.path,auth.runtimeToken);check(read.status===200,'private_png_read_failed');verifyPrivateBytes(f,read.bytes);denied(await client.call('GET',f.path),true);}
+    const after=await profile();assert.deepEqual(after.published?.avatar,state.baseline.avatar);check(after.publishedVersion===state.baseline.publishedVersion,'preparation_changed_publication');
+    state.taskId=t.taskId;state.assetId=draft.assetId;state.prepared=true;complete(evidence,target.phase,{at:Date.now(),taskId:t.taskId,preparedBy:t.preparedBy,referenceAssetId:ref.assetId,referenceType:'JPEG',incompleteAssetId:incomplete.draft.assetId,incompleteReported:true,correctedWithNewOperation:true,assetId:draft.assetId,valid:true,publicationUnchanged:true,guideDigest:guide.digest});
+   }else{
+    check(state.prepared===true&&state.taskId&&state.assetId,'original_verified_preparation_required');
+    if(target.phase==='apply'||target.phase==='replace'){
+     const t=await readTask(state.taskId);let assetId=state.assetId;
+     if(target.phase==='replace'){check(state.current?.ref,'original_application_required');const replacement=await upload('replacement-avatar',t,'avatar',state.sample);check(replacement.assetId!==state.assetId,'replacement_requires_distinct_asset');assetId=replacement.assetId;}
+     const previous=state.current?.ref;const result=await command(target.phase,'avatar_assets.apply','/apply',{taskId:t.taskId,expectedTaskVersion:t.version,assetId,expectedVersion:1,expectedProfileVersion:p.version,expectedPolicyVersion:p.policyVersion},target.phase==='apply');
+     check(result.assetId===assetId&&result.appearance?.kind==='custom'&&result.appearance.assetId===assetId&&Number.isSafeInteger(result.publishedVersion),'agent_application_result_invalid');await verifyPublic(result.appearance,result.publishedVersion);if(target.phase==='replace')await retired(previous);
+     state.current={ref:result.appearance,publishedVersion:result.publishedVersion};complete(evidence,target.phase,{at:Date.now(),assetId,publishedVersion:result.publishedVersion,actor:'agent',oldAnonymousReadRejected:target.phase==='replace',sampleReuse:'replacement uses the same original art under a new immutable asset, not a claim of different artwork'});
+    }else if(target.phase==='move'){
+     check(state.current?.ref,'applied_custom_appearance_required');const caps=await client.call('GET','/v1/capabilities'),gateway=caps.body.gateway;check(caps.status===200&&gateway?.query?.path&&gateway.command?.path&&gateway.receipt?.path,'current_world_gateway_required');
+     const discovery=await ok('GET',gateway.discovery.path),ops=new Map<string,ObjectValue>(discovery.operations.map((op:ObjectValue)=>[op.id,op]));for(const id of ['world.rules','world.avatar','world.scene','world.avatar.move','world.movement'])check(ops.has(id),'world_move_operation_missing');
+     const query=async(operation:string,input:ObjectValue)=>ok('POST',ops.get(operation)!.http.path,auth.runtimeToken,{protocolVersion:1,consumerId:'avatar-api-'+target.runId,purpose:'agent-manual',operation,input});
+     if(!state.worldMove){const rules=(await query('world.rules',{worldId:'default'})).rules,scene=await query('world.scene',{worldId:'default',limit:100}),avatar=(await query('world.avatar',{worldId:'default'})).avatar;check(avatar?.agentId===actorId&&avatar.status==='idle'&&Number.isSafeInteger(avatar.version),'existing_available_avatar_required_no_creation');
+      const blocked=new Set([...rules.blocked,...(rules.unopened??[])].map((p:ObjectValue)=>p.x+','+p.y)),occupied=new Set([...(scene.avatars??[]).filter((a:ObjectValue)=>a.agentId!==actorId),...(scene.npcs??[])].map((a:ObjectValue)=>a.position.x+','+a.position.y));const b=rules.bounds??{minX:0,minY:0,maxX:rules.width-1,maxY:rules.height-1};
+      const destination=[[1,0],[0,1],[-1,0],[0,-1]].map(([x,y])=>({x:avatar.position.x+x!,y:avatar.position.y+y!})).find(point=>point.x>=b.minX&&point.x<=b.maxX&&point.y>=b.minY&&point.y<=b.maxY&&!blocked.has(point.x+','+point.y)&&!occupied.has(point.x+','+point.y)&&!rules.places.some((place:ObjectValue)=>place.access==='closed'&&point.x>=place.bounds.left&&point.x<=place.bounds.right&&point.y>=place.bounds.top&&point.y<=place.bounds.bottom));check(destination,'no_safe_adjacent_rule_cell');
+      state.worldMove={operation:'world.avatar.move',commandId:randomUUID(),avatarId:avatar.id,from:avatar.position,to:destination,input:{worldId:'default',expectedVersion:avatar.version,expectedRulesetVersion:rules.version,expectedTopologyVersion:rules.topologyVersion,path:[destination]}};await save();
+     }
+     const original=state.worldMove,receiptInput={protocolVersion:1,consumerId:'avatar-api-'+target.runId,purpose:'agent-manual',operation:original.operation,commandId:original.commandId};let r=await client.call('POST',gateway.receipt.path,auth.runtimeToken,receiptInput);
+     if(r.status===404){try{await client.call('POST',gateway.command.path,auth.runtimeToken,{...receiptInput,input:original.input});}catch{/* Read the original World command receipt. */}r=await client.call('POST',gateway.receipt.path,auth.runtimeToken,receiptInput);}const receipt=unbox(r);check(receipt.key?.commandId===original.commandId&&receipt.key?.principal?.id===actorId&&receipt.outcome==='committed'&&typeof receipt.result?.movementId==='string','original_world_move_not_committed');
+     let progress:ObjectValue|undefined;for(let attempt=0;attempt<6;attempt++){if(attempt)await delay(2000);progress=await query('world.movement',{worldId:'default',movementId:receipt.result.movementId});if(progress.state==='completed')break;check(['pending','running'].includes(progress.state),'world_move_stopped');}check(progress?.state==='completed'&&progress.nextStep===1&&progress.pathLength===1,'bounded_world_move_did_not_complete');
+     const after=(await query('world.avatar',{worldId:'default'})).avatar;check(after.id===original.avatarId,'world_avatar_identity_changed');assert.deepEqual(after.position,original.to,'authoritative_destination_not_observed');await verifyPublic(state.current.ref,state.current.publishedVersion);state.movementVerified=true;complete(evidence,target.phase,{at:Date.now(),avatarId:after.id,commandId:original.commandId,movementId:progress.movementId,from:original.from,to:after.position,state:progress.state,completedAt:progress.completedAt,customAppearanceUnchanged:true});
+    }else if(target.phase==='verify'){
+     check(state.current?.ref,'original_application_required');await verifyPublic(state.current.ref,state.current.publishedVersion);complete(evidence,target.phase,{at:Date.now(),assetId:state.current.ref.assetId,publishedVersion:state.current.publishedVersion,digest:state.current.ref.digest,movementEvidence:state.movementVerified?'same-run move phase':'not executed',restartEvidence:'separate B lifecycle receipt; compare repeated verify phase observations'});
+    }else if(target.phase==='revoke'){
+     check(state.current?.ref,'applied_appearance_required');const t=await readTask(state.taskId);check(t.preparedBy==='agent','agent_cannot_revoke_owner_task');const result=await command('revoke','avatar_assets.tasks.revoke',`/tasks/${t.taskId}/revoke`,{expectedVersion:t.version},true);
+     check(result.agentId===actorId&&result.taskId===t.taskId&&result.taskState==='revoked'&&result.materialsAccessible===false&&result.task===undefined&&result.draft===undefined,'minimal_terminal_receipt_required');await verifyPublic(state.current.ref,state.current.publishedVersion);denied(await client.call('GET',prefix+'/drafts/'+state.assetId,auth.runtimeToken),false,true);complete(evidence,target.phase,{at:Date.now(),taskId:t.taskId,minimalReceipt:true,materialAccessStopped:true,appliedAppearancePreserved:true});
+    }else{
+     check(target.phase==='restore'&&state.current?.ref,'applied_appearance_required');const old=state.current.ref,result=await command('restore','avatar_assets.restore_builtin','/restore-builtin',{expectedProfileVersion:p.version,expectedPolicyVersion:p.policyVersion,avatar:state.baseline.avatar},true);assert.deepEqual(result.appearance,state.baseline.avatar);check(result.assetId===null,'builtin_restore_kept_custom_asset');const after=await profile();assert.deepEqual(after.published?.avatar,state.baseline.avatar);check(after.publishedVersion===result.publishedVersion,'builtin_restore_version_changed');await retired(old);state.restored=true;complete(evidence,target.phase,{at:Date.now(),actor:'agent',restoredBuiltin:true,publishedVersion:result.publishedVersion,oldAnonymousReadRejected:true});
     }
-    await save();
-    console.info(JSON.stringify({ runId: target.runId, phase: target.phase, status: evidence.status, requests: client.requests, assetId: state.assetId ?? target.assetId ?? null }));
-    if (evidence.status === 'failed') process.exitCode = 1;
-  } catch {
-    markFailure(evidence, 'phase_acceptance_failed', Date.now());
-    await writeFile(join(directory, `failure-${Date.now()}-${randomUUID()}.json`), JSON.stringify(evidence, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
-    await save(); throw new Error('retained_avatar_run_failed');
+   }
   }
+  await save();console.info(JSON.stringify({runId:target.runId,phase:target.phase,status:evidence.status,requests:client.requests,taskId:state.taskId??target.taskId??null,assetId:state.current?.ref?.assetId??state.assetId??target.assetId??null}));if(evidence.status==='failed')process.exitCode=1;
+ }catch{markFailure(evidence,'phase_acceptance_failed',Date.now());await writeFile(join(directory,`failure-${Date.now()}-${randomUUID()}.json`),JSON.stringify(evidence,null,2)+'\n',{flag:'wx',mode:0o600});await save();throw new Error('retained_avatar_run_failed');}
 }
-
-async function main() {
-  const args = process.argv.slice(2);
-  if (args.length === 1 && args[0] === '--self-check') await selfCheck();
-  else if (args.length === 1 && args[0] === '--help') console.info('Existing private auth context only; --execute --phase upload|verify-applied|verify-retired --base-url http://127.0.0.1:18958 --source-sha <40hex> --expected-instance <original> --expected-epoch <original> --run-id <stable-id> --auth-file /absolute/0600.json --task-id <existing-owner-task>. B alone may use --phase verify-other --asset-id <D-provided-nonsecret-id> with B original A001 file. Owner uses the website to preview/confirm; the runner never applies, registers or starts a server.');
-  else await execute(targetFrom(args));
-}
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) main().catch(() => { console.error('avatar_http_check_failed; retain the original context, operation and evidence'); process.exitCode = 1; });
+async function main(){const args=process.argv.slice(2);if(args.length===1&&args[0]==='--self-check')await selfCheck();else if(args.length===1&&args[0]==='--help')console.info('Only after TD candidate/resource authorization: --execute --phase setup-owner|prepare|apply|verify|replace|owner-limited|restore-policy|revoke|restore --base-url http://127.0.0.1:18958 --source-sha <reviewed40hex> --expected-instance <retained> --expected-epoch <retained> --agent-id <original-A001-or-A002-UUID> --run-id <stable-id> --auth-file /absolute/0600-runtime.json. B alone setup-owner normally registers one synthetic Owner and binds existing A001; no Agent creation. B owner-limited/restore-policy use that same private Owner, normal policy CAS, and record versions. Independent verify-other needs --foreign-agent-id <other-registered-UUID> --task-id/--asset-id <nonsecret-locators> and own runtime. No service, database, login, Life action, external email or model operation; maximum40 requests/phase and240/run.');else await execute(targetFrom(args));}
+if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)main().catch(()=>{console.error('avatar_http_check_failed; retain original identity, operation and evidence');process.exitCode=1;});
