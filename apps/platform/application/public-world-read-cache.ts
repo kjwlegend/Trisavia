@@ -39,6 +39,7 @@ export function createPublicWorldReader(store:RuntimeStore,catalogRevision:strin
   }),signal);
  }
  async function build(requests:readonly PublicWorldRequest[],query:string,owner:symbol,signal?:AbortSignal){
+  if(signal?.aborted)throw new DOMException('Public world read cancelled','AbortError');
   let flight=flights.get(query);
   if(!flight){if(flights.size>=18)throw new PublicWorldLimitError();const controller=new AbortController();
    const promise=db.run(async()=>{work.take();const started=now();const result=await store.read(async ctx=>{const v=await cut(ctx);if(!v.writeGate)return{owner,closed:true as const};

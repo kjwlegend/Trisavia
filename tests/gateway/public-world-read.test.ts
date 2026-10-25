@@ -64,6 +64,14 @@ test('singleflight followers wait without DB scopes; one cancellation cannot can
  first.abort();await assert.rejects(a,(e:any)=>e.name==='AbortError');assert.equal(reader.inspect().clients,1);release();assert.equal((await b).instanceId,m.store.instanceId);assert.equal(builds,1);assert.equal(m.active,0);assert.equal(reader.inspect().clients,0);assert.equal(reader.inspect().flights,0);reader.close();
 });
 
+test('cancellation while the initial probe is still reading cannot start a new projection after that probe completes',async()=>{
+ const m=model();let release!:()=>void,entered!:()=>void,builds=0;const gate=new Promise<void>(r=>release=r),started=new Promise<void>(r=>entered=r);
+ const store:RuntimeStore={...m.store,read:work=>m.store.read(ctx=>work({...ctx,repository:(port:any)=>port===PUBLIC_WORLD_READ_REVISION?{async read(){entered();await gate;return ctx.repository(PUBLIC_WORLD_READ_REVISION).read();}}:ctx.repository(port)} as RuntimeReadContext))};registerPublicWorldReadPool(store,4);
+ const reader=createPublicWorldReader(store,'probe-cancellation',async()=>{builds++;return m.bundle();},m.now)!,controller=new AbortController(),pending=reader.read(request,controller.signal);
+ await started;assert.equal(m.active,1);controller.abort();release();await assert.rejects(pending,(e:any)=>e.name==='AbortError');
+ assert.equal(builds,0,'A disconnected caller cannot initiate a new DB projection after the original probe');assert.equal(m.active,0);assert.equal(reader.inspect().clients,0);assert.equal(reader.inspect().flights,0);assert.equal(reader.inspect().queued,0);reader.close();
+});
+
 test('a follower revalidates its cut after connection-free waiting rather than returning the old leader snapshot',async()=>{
  const m=model();const projected=new WeakSet<RuntimeReadContext>();let releases:Array<()=>void>=[],builds=0;
  const store:RuntimeStore={...m.store,async read(work){let built=false;const result=await m.store.read(async ctx=>{const value=await work(ctx);built=projected.has(ctx);return value;});if(built)m.change();return result;}};registerPublicWorldReadPool(store,4);
