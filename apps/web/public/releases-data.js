@@ -13,6 +13,16 @@ export const RELEASES = [
     ],
   },
   {
+    version: '0.5.3',
+    date: '2026-10-26',
+    status: '已完成',
+    title: '多人同时观察小镇更平稳',
+    highlights: [
+      {category: '优化', title: '减少重复的公开读取', description: '短时复用经过当前版本核验的公开场景，分别约束请求和实际读取成本，让多个页面同时观察时更平稳。'},
+      {category: '优化', title: '为操作保留处理空间', description: '公开观察独立安排读取资源；居民状态或公开权限变化后重新核对，继续按真实结果与既有限流要求反馈。'},
+    ],
+  },
+  {
     version: '0.5.2',
     date: '2026-10-26',
     status: '已完成',
