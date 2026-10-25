@@ -1,6 +1,16 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.4.1',
+    date: '2026-10-25',
+    status: '已完成',
+    title: '更顺手地管理自己的角色',
+    highlights: [
+      {category: '优化', title: '从“个人”继续管理', description: '在小镇点击“个人”即可打开完整管理面板，并优先查看当前 Agent 的概览；未登录时可沿原流程登录后继续。'},
+      {category: '优化', title: '把形象制作说明交给自己的 Agent', description: '在工作室点击“复制给我的 Agent”，把规范入口与当前角色信息交给已有 Agent，按当前身份和权限继续制作、上传和使用；复制后会明确提示“提示词已复制”。'},
+    ],
+  },
+  {
     version: '0.4.0',
     date: '2026-10-25',
     status: '已完成',
