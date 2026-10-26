@@ -1,5 +1,6 @@
 import {el,button} from './shared.js';
 import {icon} from '../icons.js';
+import {expressionPolicy} from '../world-expression-reader.js';
 
 // Reuse the renderer's controls and listeners; World itself opens no panel.
 export function createWorldControls(root){
@@ -9,6 +10,7 @@ export function createWorldControls(root){
   const logs=button('',()=>document.dispatchEvent(new Event('hud:world-logs')));logs.id='hud-open-world-logs';logs.setAttribute('aria-label','世界日志');logs.title='世界日志';logs.append(icon('document'),el('span','','日志'));
   fit.replaceChildren(icon('world'),el('span','','全景'));list.replaceChildren(icon('place'),el('span','','场所'));more.replaceChildren(icon('more'),el('span','','更多'));
   menu.append(document.querySelector('#world-explore'),document.querySelector('#world-reset'),document.querySelector('#world-pause'),document.querySelector('#world-learn'));
+  const expressionSettings=el('div','world-expression-settings');for(const[id,label,options]of [['world-expression-density','地图气泡',[['standard','标准 · 最多2个'],['quiet','安静 · 最多1个'],['off','关闭']]],['world-expression-style','表情样式',expressionPolicy.sets.map(set=>[set.id,set.name])]]){const field=el('label'),select=el('select');select.id=id;select.setAttribute('aria-label',label);for(const[value,text]of options){const option=el('option','',text);option.value=value;select.append(option);}field.append(el('span','',label),select);expressionSettings.append(field);}menu.append(expressionSettings);
   for(const [href,label,symbol]of [['/releases','更新日志','document'],['/kanban','建设看板','record']]){const link=el('a');link.href=href;link.append(icon(symbol),el('span','',label));menu.append(link);}
   const actions=el('div','hud-map-actions');actions.append(fit,list,logs,more);controls.classList.add('hud-map-tools');controls.replaceChildren(zoom,actions,menu);root.append(controls);
   function close(restore=false){if(menu.hidden)return;menu.hidden=true;more.setAttribute('aria-expanded','false');if(restore)more.focus({preventScroll:true});}

@@ -2,6 +2,7 @@ import {api} from '../common.js';
 import {readPublicCapabilities} from '../public-capabilities.js';
 import {readWorldRules,readWorldPage} from './world-scene-projection.js';
 import {readWorldStartup,startupUnsupported} from './world-startup.js';
+import {mergeExpressions,expressionActors} from './world-expression-reader.js';
 const abortError=()=>new DOMException('World read cancelled','AbortError');
 const failure=code=>Object.assign(new Error(code),{code});
 const temporary=error=>![401,403,404,410].includes(error.status)&&!['world_not_available','world_not_accessible'].includes(error.code)&&(error.status===429||error.status>=500||['network_unknown','request_timeout','busy','unavailable'].includes(error.code));
@@ -12,11 +13,12 @@ const publicRequest=(path,options)=>path==='/capabilities'?readPublicCapabilitie
 // current scene response; reconnect/manual/visible boundaries rediscover it.
 export function createWorldSceneProvider({request=publicRequest,canReadStartup=()=>false,worldId='default',intervalMs=1000,maxPages=10,metadataTtlMs=30000,now=Date.now,random=Math.random,setTimer=setTimeout,clearTimer=clearTimeout}={}){
   const listeners=new Set();let revision=0,controller=null,timer=null,ageTimer=null,visible=false,started=false,disposed=false,failures=0,metadata=null,notBefore=0,retryError=null,readStarted=false;
-  let state={phase:'loading',stale:false,enabled:null,worldId,rules:null,avatars:[],npcs:[],npcCatalogVersion:null,worldRevision:null,asOf:null,serverTime:null,timeSource:null,instanceId:null,complete:false,nextCursor:null,errorCode:null,errorStatus:null,lastSuccessAt:null,retryAt:null};
+  const expressionReadTimes=new WeakMap();
+  let state={phase:'loading',stale:false,enabled:null,worldId,rules:null,avatars:[],npcs:[],expressions:[],expressionError:null,npcCatalogVersion:null,worldRevision:null,asOf:null,serverTime:null,timeSource:null,instanceId:null,complete:false,nextCursor:null,errorCode:null,errorStatus:null,lastSuccessAt:null,retryAt:null};
   const snapshot=()=>structuredClone(state);
   function emit(next){state={...state,...next};for(const listener of listeners)listener(snapshot());}
   function stop(){revision++;controller?.abort();controller=null;if(timer!==null)clearTimer(timer);timer=null;if(ageTimer!==null)clearTimer(ageTimer);ageTimer=null;}
-  function cleared(){return{stale:false,rules:null,avatars:[],npcs:[],npcCatalogVersion:null,worldRevision:null,asOf:null,serverTime:null,timeSource:null,complete:false,nextCursor:null,lastSuccessAt:null};}
+  function cleared(){return{stale:false,rules:null,avatars:[],npcs:[],expressions:[],expressionError:null,npcCatalogVersion:null,worldRevision:null,asOf:null,serverTime:null,timeSource:null,complete:false,nextCursor:null,lastSuccessAt:null};}
   const backoff=()=>Math.max(1000,intervalMs)*Math.min(30,2**Math.min(failures,5));
   // A shared admission window may still be busy after Retry-After. Keep a
   // slower public cadence after recovery instead of immediately refilling it.
@@ -43,14 +45,14 @@ export function createWorldSceneProvider({request=publicRequest,canReadStartup=(
     // A slower cadence plus network time can cross the existing five-second
     // freshness boundary. Expire the old view without cancelling its real read.
     if(previous.complete&&!previous.stale&&Number.isSafeInteger(previous.lastSuccessAt))ageTimer=setTimer(()=>{ageTimer=null;if(current()&&state.complete&&state.lastSuccessAt===previous.lastSuccessAt){relaxAt=null;emit({stale:true});}},Math.max(0,5000-(now()-previous.lastSuccessAt)));
-    const read=async(path,signal=active.signal)=>{readStarted=true;const result=await request(path,{signal,headers:{'X-World-Read-Build':READ_BUILD,'X-World-Read-Reason':readReason}});if(!current()||signal.aborted)throw abortError();return result;};
+    const read=async(path,signal=active.signal)=>{readStarted=true;const dispatchedAt=performance.now(),result=await request(path,{signal,headers:{'X-World-Read-Build':READ_BUILD,'X-World-Read-Reason':readReason}});if(!current()||signal.aborted)throw abortError();if(result&&typeof result==='object')expressionReadTimes.set(result,{dispatchedAt});return result;};
     let firstPage=null,firstPageAbort=null;
     emit({phase:more?'partial':state.rules?'refreshing':'loading',errorCode:null,errorStatus:null,retryAt:null});
     try{
       if(force||failures>0||!metadata||now()>=metadata.expiresAt){
         let startup=null;
         if(startupPending&&canReadStartup()===true){
-          try{startup=readWorldStartup(await read(`/world/startup?${new URLSearchParams({version:'1',worldId,limit:'50'})}`),worldId);}
+          try{const raw=await read(`/world/startup?${new URLSearchParams({version:'1',worldId,limit:'50'})}`);startup=readWorldStartup(raw,worldId);expressionReadTimes.set(startup.sceneEnvelope,expressionReadTimes.get(raw));}
           catch(error){if(!startupUnsupported(error))throw error;startupPending=false;}
           if(startup){startupPending=false;firstPage=Promise.resolve({value:startup.sceneEnvelope});}
         }else startupPending=false;
@@ -75,15 +77,16 @@ export function createWorldSceneProvider({request=publicRequest,canReadStartup=(
         }
       }
       const {instanceId,rules}=metadata;emit({enabled:true,instanceId});
-      let serverTime=null;const unwrap=result=>{if(result?.protocolVersion!==1||result.instanceId!==instanceId||!result.data)throw failure('world_response_invalid');serverTime=Number.isSafeInteger(result.serverTime)&&result.serverTime>=0?result.serverTime:null;return result.data;};
+      let serverTime=null,expressionClockSample=null;const unwrap=result=>{if(result?.protocolVersion!==1||result.instanceId!==instanceId||!result.data)throw failure('world_response_invalid');serverTime=Number.isSafeInteger(result.serverTime)&&result.serverTime>=0?result.serverTime:null;expressionClockSample={server:serverTime??result.data.asOf,dispatchedAt:expressionReadTimes.get(result)?.dispatchedAt??performance.now()};return result.data;};
       let cursor=more?previous.nextCursor:null,avatars=more?[...previous.avatars]:[],worldRevision=more?previous.worldRevision:null,asOf=more?previous.asOf:null,npcs=[],npcCatalogVersion=null;
       if(more&&(!cursor||JSON.stringify(rules)!==JSON.stringify(previous.rules)))throw failure('world_scene_changed');
-      const seenCursors=new Set(),seenAgents=new Set(avatars.map(row=>row.agentId));let complete=false;
+      const seenCursors=new Set(),seenAgents=new Set(avatars.map(row=>row.agentId)),expressionBatches=more?[{expressions:previous.expressions||[],expressionError:previous.expressionError}]:[];let complete=false;
       for(let page=0;page<maxPages;page++){
         const query=new URLSearchParams({worldId,limit:'50'});if(cursor)query.set('cursor',cursor);
         const prefetched=page===0&&firstPage?await firstPage:null;
         if(prefetched&&'error' in prefetched)throw prefetched.error;
         const batch=readWorldPage(unwrap(prefetched?prefetched.value:await read(`/world/scene?${query}`)),rules);
+        expressionBatches.push(batch);
         if(worldRevision!==null&&worldRevision!==batch.worldRevision)throw failure('world_scene_changed');
         worldRevision=batch.worldRevision;asOf=batch.asOf;if(page&&(JSON.stringify(npcs)!==JSON.stringify(batch.npcs)||npcCatalogVersion!==batch.npcCatalogVersion))throw failure('world_scene_changed');npcs=batch.npcs;npcCatalogVersion=batch.npcCatalogVersion;
         for(const avatar of batch.avatars){if(seenAgents.has(avatar.agentId))throw failure('world_response_invalid');seenAgents.add(avatar.agentId);avatars.push(avatar);}
@@ -93,7 +96,11 @@ export function createWorldSceneProvider({request=publicRequest,canReadStartup=(
       }
       if(!current())throw abortError();
       if(complete)acceptedCadence();else relaxAt=null;
-      failures=0;notBefore=0;retryError=null;emit({phase:complete?'ready':'partial',stale:false,enabled:true,rules,avatars,npcs,npcCatalogVersion,worldRevision,asOf,serverTime:serverTime??asOf,timeSource:serverTime===null?'asOf':'serverTime',instanceId,complete,nextCursor:cursor,errorCode:null,errorStatus:null,lastSuccessAt:complete?now():null,retryAt:null,readCadenceMs});
+      const expressions=mergeExpressions(expressionBatches,{actors:expressionActors(avatars,npcs)});
+      // This upper estimate is only for expression expiry, never position time.
+      // Counting the whole read cost is conservative when response transit is unknown.
+      const expressionObservedAtMono=performance.now(),expressionServerTime=expressionClockSample.server+Math.max(0,expressionObservedAtMono-expressionClockSample.dispatchedAt);
+      failures=0;notBefore=0;retryError=null;emit({phase:complete?'ready':'partial',stale:false,enabled:true,rules,avatars,npcs,...expressions,expressionServerTime,expressionObservedAtMono,npcCatalogVersion,worldRevision,asOf,serverTime:serverTime??asOf,timeSource:serverTime===null?'asOf':'serverTime',instanceId,complete,nextCursor:cursor,errorCode:null,errorStatus:null,lastSuccessAt:complete?now():null,retryAt:null,readCadenceMs});
     }catch(error){
       if(!current())return;
       failures++;metadata=null;
@@ -105,7 +112,7 @@ export function createWorldSceneProvider({request=publicRequest,canReadStartup=(
       notBefore=recoverable?Math.max(notBefore,now()+Math.max(backoff(),serverWait)):0;
       const code=error.code||(error.name==='AbortError'?'network_unknown':'world_response_invalid');
       retryError={errorCode:code,errorStatus:error.status??null};
-      emit({phase:keep?'recovering':['world_not_accessible','world_not_available'].includes(code)?'unavailable':'error',enabled:state.enabled,...(keep?{stale:true,rules:previous.rules,avatars:previous.avatars,npcs:previous.npcs,npcCatalogVersion:previous.npcCatalogVersion,worldRevision:previous.worldRevision,asOf:previous.asOf,instanceId:previous.instanceId,complete:true,nextCursor:null,lastSuccessAt:previous.lastSuccessAt}:cleared()),errorCode:code,errorStatus:error.status??null,retryAt:now()+delay()});
+      emit({phase:keep?'recovering':['world_not_accessible','world_not_available'].includes(code)?'unavailable':'error',enabled:state.enabled,...(keep?{stale:true,rules:previous.rules,avatars:previous.avatars,npcs:previous.npcs,expressions:[],expressionError:null,npcCatalogVersion:previous.npcCatalogVersion,worldRevision:previous.worldRevision,asOf:previous.asOf,instanceId:previous.instanceId,complete:true,nextCursor:null,lastSuccessAt:previous.lastSuccessAt}:cleared()),errorCode:code,errorStatus:error.status??null,retryAt:now()+delay()});
     }finally{firstPageAbort?.abort();if(current()){if(ageTimer!==null)clearTimer(ageTimer);ageTimer=null;controller=null;schedule();}}
   }
   return{snapshot,subscribe(listener){listeners.add(listener);listener(snapshot());return()=>listeners.delete(listener);},

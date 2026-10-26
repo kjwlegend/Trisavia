@@ -1,6 +1,7 @@
 import {readCustomAppearance} from '../world-pixel/custom-appearance.js';
 import {readPublicLifeActivity} from './life-public-state.js';
 import {readPublicId} from '../public-id.js';
+import {readExpressions,expressionActors} from './world-expression-reader.js';
 // Public DTO validation and display projection. No client route or future
 // movement is inferred from scenery; the native renderer verifies its manifest.
 import appearanceColors from '../world-pixel/appearance-colors-v1.json' with {type:'json'};
@@ -39,7 +40,8 @@ export function readWorldPage(data,rules){
     if(row.status==='left')continue;
     avatars.push({id:row.id,worldId:row.worldId,agentId:row.agentId,publicId:readPublicId(row.publicId),version:row.version,status:row.status,position:{x:p.x,y:p.y},motion:readWorldMotion(row.motion,row,rules),placeId:row.placeId,activity:readPublicLifeActivity(row.activity),rulesetVersion:row.rulesetVersion,createdAt:row.createdAt,updatedAt:row.updatedAt,profile:{agentId:row.agentId,publicId:readPublicId(profile.publicId),publishedVersion:profile.publishedVersion,displayName:profile.displayName,appearance:readAppearance(profile.appearance)}});
   }
-  return{worldId:rules.worldId,worldRevision:data.worldRevision,asOf:data.asOf,avatars,npcCatalogVersion:data.npcCatalogVersion??null,npcs:readWorldNpcs(data.npcs??[],rules),complete:data.complete,nextCursor:data.nextCursor};
+  const npcs=readWorldNpcs(data.npcs??[],rules),expressions=readExpressions(data.expressions,{worldId:rules.worldId,mapId:rules.mapManifest?.mapId||'pixel-town-v2',actors:expressionActors(avatars,npcs)});
+  return{worldId:rules.worldId,worldRevision:data.worldRevision,asOf:data.asOf,avatars,npcCatalogVersion:data.npcCatalogVersion??null,npcs,...expressions,complete:data.complete,nextCursor:data.nextCursor};
 }
 export function projectWorldAvatars(avatars,rules,{width=1536,height=1024,projectPoint,projectionVersion=WORLD_PROJECTION_VERSION}={}){
   return avatars.map(row=>({agentId:row.agentId,publicId:row.publicId,name:row.profile.displayName,avatar:{...row.profile.appearance},fact:structuredClone(row),projectionVersion,

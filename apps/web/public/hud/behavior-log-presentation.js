@@ -16,6 +16,7 @@ export function groupLogItems(items,{mode}={}){
 }
 export function logOutcomes(item,{mode}={}){
  if(mode!=='owner')return[];
+ if(item.details?.journal)return[]; // The source already supplies the specific summary.
  const life=item.details?.life;if(!life)return[];const facts=[];
  if(life.actionId==='work.shift'&&life.coinReward!==null)facts.push(`工资 ${life.coinReward} 星币`);
  if(life.energyRestored>0)facts.push(`体力恢复 ${life.energyRestored}`);

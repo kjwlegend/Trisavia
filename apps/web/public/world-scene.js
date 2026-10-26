@@ -7,6 +7,8 @@ import {freeAreas,worldOverlayRects} from './world-safe-area.js';
 import {assertPixelSnapshot} from './world-pixel/map.js';
 import {humanHitSize} from './world-pixel/human.js';
 import {createTownTargets} from './world-town-targets.js';
+import {createExpressionLifecycle} from './hud/world-expression-lifecycle.js';
+import {createExpressionLayer} from './hud/world-expression-layer.js';
 export const WORLD_SIZE = Object.freeze({ width: 1536, height: 1024 });
 const W = WORLD_SIZE.width, H = WORLD_SIZE.height;
 const demoNote = '这是背景演示场所，不表示真实 Agent 的到访或活动。角色位置与互动以服务器记录为准。';
@@ -185,6 +187,15 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   const currentLight=()=>reduced.matches||reduceOverride?stillLight:light;
   let frames=0,drawMs=0,slowSamples=[],metrics={fps:0,meanDrawMs:0};
   const abort=new AbortController(),eventOptions={signal:abort.signal};
+  const expressions=createExpressionLifecycle();let fullExpressions=[],expressionsUserPaused=false;
+  const expressionLayer=createExpressionLayer(root,expressions,{redraw:draw,onActive:rows=>{fullExpressions=rows;document.dispatchEvent(new CustomEvent('world:expressions',{detail:{expressions:structuredClone(rows)}}));}});
+  function expressionPreferences(){expressionLayer.settings({density:document.querySelector('#world-expression-density')?.value||'standard',setId:document.querySelector('#world-expression-style')?.value||'gestures'});}
+  document.addEventListener('change',event=>{if(event.target.matches?.('#world-expression-density,#world-expression-style'))expressionPreferences();},eventOptions);expressionPreferences();
+  function expressionBoxes(point,scale){
+    const result=new Map(),add=(kind,id,name,x,y,appearance,activity,geometry)=>{const g=geometry||{width:32,height:40,anchor:{x:16,y:36},hitBox:{left:-16,right:16,top:-36,bottom:4}},b=appearance?.kind==='custom'?{left:-g.anchor.x,right:g.width-g.anchor.x,top:-g.anchor.y,bottom:g.height-g.anchor.y}:g.hitBox,p=point(x,y);result.set(kind+':'+id,{name,activity,rect:{left:p.x+b.left*scale,right:p.x+b.right*scale,top:p.y+b.top*scale,bottom:p.y+b.bottom*scale}});};
+    for(const entry of ownedLayer.actors())if(entry.fact)add('agent',entry.agentId,entry.nameValue,entry.x,entry.y,entry.fact.profile.appearance,entry.fact.activity,ownedLayer.geometry(entry.agentId));
+    for(const target of rendering?.npcs||[])add('npc',target.id,target.name,target.x,target.y,target.npc.appearance,target.npc.activity,rendering.avatarGeometry(target));return result;
+  }
   const state=()=>({mode,exploring,minZoom:overviewScale()/camera.base,zoom:camera.zoom,paused,pauseReason,theme:light.period,lighting:structuredClone(currentLight()),reducedMotion:reduced.matches||reduceOverride,visible:visible&&!document.hidden,actorCount:actorLimit,quality,frames,...metrics,camera:{x:camera.x,y:camera.y,scale:camera.base*camera.zoom,width:camera.width,height:camera.height,sourceWidth:W,sourceHeight:H,coordinateSpace:rendering?'source-pixel':'legacy-town-pixel'},actors:actors.slice(0,actorLimit).map(a=>({id:a.id,x:a.x,y:a.y,pause:a.pause})),selectedId:selected?.id??null,
     rendering:rendering?{backend:'pixel-town',mapVersion:rendering.mapSpec.version,assetVersion:rendering.sourceVersion,imageCount:rendering.imageCount}:null,
     worldScene:{npcCatalogVersion:worldView.npcCatalogVersion??null,npcs:structuredClone(worldView.npcs||[]),phase:worldView.phase,stale:worldView.stale===true,enabled:worldView.enabled,asOf:worldView.asOf,worldRevision:worldView.worldRevision,complete:worldView.complete,errorCode:worldView.errorCode??null,errorStatus:worldView.errorStatus??null,retryAt:worldView.retryAt??null,lastSuccessAt:worldView.lastSuccessAt??null,projectionVersion:rendering?.mapSpec.version||WORLD_PROJECTION_VERSION,avatars:ownedLayer.actors().filter(row=>row.fact).map(row=>({fact:structuredClone(row.fact),x:row.x,y:row.y,walking:row.walking,renderPosition:structuredClone(row.renderPosition)}))}});
@@ -220,6 +231,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
       ctx.restore();
       townTargets.layout({scale,point:(x,y)=>({x:(x-camera.x)*scale+center.x,y:(y-camera.y)*scale+center.y})});
       ownedLayer.layout({scale,point:(x,y)=>({x:(x-camera.x)*scale+center.x,y:(y-camera.y)*scale+center.y})});
+      expressionLayer.tick({actors:()=>expressionBoxes((x,y)=>({x:(x-camera.x)*scale+center.x,y:(y-camera.y)*scale+center.y}),scale),scale,active:visible&&!document.hidden&&!expressionsUserPaused&&!worldView.stale&&worldView.complete&&['ready','refreshing'].includes(worldView.phase),reducedMotion:reduced.matches||reduceOverride,error:worldView.expressionError});
       frames++;drawMs+=performance.now()-start;
     }catch{fail();}
   }
@@ -259,7 +271,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   function reset(){if(rendering){fit();return;}mode='initial';exploring=false;resize();}
   // Opening, switching or closing a reading panel never takes the camera.
   function select(place){selected=place??null;draw();notify();}
-  function setPaused(value){paused=Boolean(value)||reduced.matches;pauseReason=reduced.matches?'reduced':'user';reconcile();notify();}
+  function setPaused(value){expressionsUserPaused=Boolean(value);paused=Boolean(value)||reduced.matches;pauseReason=reduced.matches?'reduced':'user';reconcile();notify();}
   function setTime(value){if(!Number.isFinite(value)||value<0||value>8.64e15)return;sceneTime=value;light=daylightAt(value);stillLight=daylightAt(value,{reducedMotion:true});draw();}
   function setReducedMotion(value){reduceOverride=Boolean(value);if(reduceOverride&&zoomMotion)advanceZoom(Infinity);reconcile();notify();}
   function applyAgents(){
@@ -271,10 +283,10 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   }
   function setTownNotice(value){townNotice=value;applyAgents();draw();}
   function setOwnedAgents(projection){if(destroyed)return;ownedProjection=structuredClone(projection);applyAgents();draw();}
-  function clearScene(){if(destroyed)return;worldView={...worldView,phase:'unavailable',stale:false,rules:null,avatars:[],npcs:[],asOf:null,complete:false,worldRevision:null};actorLimit=0;selected=null;applyAgents();draw();notify();}
+  function clearScene(){if(destroyed)return;worldView={...worldView,phase:'unavailable',stale:false,rules:null,avatars:[],npcs:[],expressions:[],asOf:null,complete:false,worldRevision:null};expressions.observe(worldView);actorLimit=0;selected=null;applyAgents();draw();notify();}
   function setWorldScene(value){if(destroyed)return;
     if(rendering){try{assertPixelSnapshot(value,worldView);}catch(error){clearScene();return{accepted:false,reason:error.message};}}
-    worldView=structuredClone(value);if(rendering&&!value.complete){worldView.avatars=[];worldView.npcs=[];}actorLimit=!rendering&&value.phase==='demo'?(quality>=2?(mobile?8:10):actors.length):0;canvas.dataset.worldSource=!rendering&&value.phase==='demo'?'demo':'server';canvas.setAttribute('aria-label',rendering?'像素小镇世界画布。角色位置来自服务器；沿开放街巷与公共庭显示真实角色，不代表在线。':value.phase==='demo'?'清昼小镇演示地图。人物与环境为演示。':'清昼小镇世界画布。角色来自服务器逻辑坐标投影；背景场所为演示，不代表在线。');applyAgents();draw();notify();return{accepted:true};}
+    worldView=structuredClone(value);if(rendering&&!value.complete){worldView.avatars=[];worldView.npcs=[];}expressions.observe(worldView);actorLimit=!rendering&&value.phase==='demo'?(quality>=2?(mobile?8:10):actors.length):0;canvas.dataset.worldSource=!rendering&&value.phase==='demo'?'demo':'server';canvas.setAttribute('aria-label',rendering?'像素小镇世界画布。角色位置来自服务器；沿开放街巷与公共庭显示真实角色，不代表在线。':value.phase==='demo'?'清昼小镇演示地图。人物与环境为演示。':'清昼小镇世界画布。角色来自服务器逻辑坐标投影；背景场所为演示，不代表在线。');applyAgents();draw();notify();return{accepted:true};}
   function selectAgent(agentId,origin){const entry=ownedLayer.actors().find(row=>row.agentId===agentId);if(!entry)return;if(entry.owned)onOwnedSelect(agentId,origin);else if(entry.fact)onSelect({...structuredClone(entry.fact),kind:'world-avatar',projectionVersion:entry.projectionVersion,x:entry.x,y:entry.y},origin);}
   function locateOwnedAgent(agentId){
     const point=ownedLayer.point(agentId);if(!point||destroyed||broken)return false;
@@ -350,7 +362,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   document.addEventListener('visibilitychange',()=>{reconcile();notify();},eventOptions);
   const observer=new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;reconcile();notify();},{threshold:.01});observer.observe(root);
   const resizer=new ResizeObserver(resize);resizer.observe(root);resize();reconcile();notify();
-  return{canvas,setZoom,zoomBy,fit,reset,setExploring,select,setPaused,setTime,setReducedMotion,setOwnedAgents,setWorldScene,setTownNotice,clearScene,locateOwnedAgent,getState:state,destroy(){if(destroyed)return;destroyed=true;zoomMotion=null;cancelAnimationFrame(raf);observer.disconnect();resizer.disconnect();abort.abort();ownedLayer.destroy();townTargets.destroy();rendering?.dispose?.();canvas.remove();}};
+  return{canvas,setZoom,zoomBy,fit,reset,setExploring,select,setPaused,setTime,setReducedMotion,setOwnedAgents,setWorldScene,setTownNotice,clearScene,locateOwnedAgent,getState:state,getExpressions:()=>structuredClone(fullExpressions),destroy(){if(destroyed)return;destroyed=true;zoomMotion=null;cancelAnimationFrame(raf);observer.disconnect();resizer.disconnect();abort.abort();expressionLayer.dispose();expressions.clear();ownedLayer.destroy();townTargets.destroy();rendering?.dispose?.();canvas.remove();}};
 }
 export function placeDetails(place){
   if(place.kind==='world-avatar')return{name:place.profile.displayName,area:place.placeId==='commons'?'公共庭':'',icon:'○',description:'',note:''};

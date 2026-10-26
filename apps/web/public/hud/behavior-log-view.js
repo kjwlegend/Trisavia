@@ -9,6 +9,14 @@ function recordDetail(item,timeZone){
  const node=el('article','behavior-log-detail'),details=item.details;node.append(el('h3','',item.title),el('p','hud-muted',`${item.agent.displayName||'一位角色'} · 记录于 ${item.date} ${item.time}`),el('p','behavior-log-result',details?.summary||item.result));
  if(details?.summary&&item.result&&![details.summary,item.title].includes(item.result))node.append(el('p','',item.result));
  if(!details){node.append(el('p','hud-muted','该记录未保存更多细节'));return node;}
+ if(details.journal){
+  const journal=details.journal,facts=el('dl','behavior-log-facts'),roles={bought:'买到',sold:'卖出',caught:'钓到',consumed:'消耗',created:'得到',released:'解除预留',sent:'送出',received:'收到'};
+  for(const item of journal.items)facts.append(el('dt','',roles[item.role]),el('dd','',`${item.name} × ${item.quantity}`));
+  for(const[label,value]of [['星币变化',journal.moneyDelta?`${journal.moneyDelta>0?'+':''}${journal.moneyDelta}`:null],['消耗体力',journal.energySpent||null],['实际恢复体力',journal.energyRestored||null]])if(value!==null)facts.append(el('dt','',label),el('dd','',String(value)));
+  if(details.life?.c?.book)facts.append(el('dt','','阅读'),el('dd','',`《${details.life.c.book.title}》 · ${details.life.c.book.authorDisplay}`));
+  if(facts.childNodes.length)node.append(facts);if(journal.quotaRefunded)node.append(el('p','','本次额度已退回。'));const counterparts=details.participants.filter(person=>person.agentId!==item.agent.agentId);if(counterparts.length)node.append(el('p','',counterparts.map(p=>p.displayName).join('、')));
+  if(details.completeness==='partial'||details.gaps.length)node.append(el('p','hud-muted',details.gaps.join(' ')||'这条记录只保留了部分细节。'));if(item.source.label)node.append(el('p','hud-muted',item.source.label));return node;
+ }
  const actors=el('p','hud-muted');actors.textContent=[details.phaseLabel,details.initiator?`发起：${details.initiator.label}`:'',details.executor?`执行：${details.executor.label}`:''].filter(Boolean).join(' · ');node.append(actors);
  const places=details.location;if(places||['movement','wander'].includes(details.phase)){const section=el('section');section.append(el('h4','','地点'),el('p','',`起点：${places?.from?.name||'未记录'}\n终点：${places?.to?.name||'未记录'}`));node.append(section);}
  const time=details.timeRange,facts=el('dl','behavior-log-facts');for(const [label,value]of [['开始',time.startedAt===null?'未记录':detailTime(time.startedAt,timeZone)],['结束',time.endedAt===null?'未记录':detailTime(time.endedAt,timeZone)],['实际耗时',time.durationMs===null?'未记录':duration(time.durationMs)]])facts.append(el('dt','',label),el('dd','',value));const times=el('section');times.append(el('h4','',`时间（${timeZone}）`));if(time.startedAt===null&&time.endedAt!==null)times.append(el('p','hud-muted','这条记录只保存了完成时间。'));times.append(facts);node.append(times);
