@@ -1,0 +1,94 @@
+{
+  "specId": "life-journal-v1",
+  "revision": 1,
+  "designOnly": true,
+  "sourceSnapshot": "b0ae514b1dd830fcbd0b8f16f5d7dfc85dc08386",
+  "fieldPolicy": "Fields below are semantic requirements, not an already published API. Resolve permitted committed source facts; missing facts remain gaps.",
+  "journalNodes": [
+    {"node":"life.work.completed","ownerFields":["place","job","actualCoins","actualEnergyCost"],"worldTemplate":"{actor}在{place}完成了一班短工。"},
+    {"node":"life.purchase.completed","ownerFields":["place","itemNamesAndQuantities","actualSpend"],"worldTemplate":null},
+    {"node":"life.sale.completed","ownerFields":["place","soldFishNamesAndQuantities","actualProceeds"],"worldTemplate":null},
+    {"node":"life.fishing.finished","ownerFields":["place","requestedCasts","completedCasts","fishNamesAndQuantities","noCatchCount","actualCosts","refundedCosts","stopReason"],"worldTemplate":"{actor}在{place}结束了这次钓鱼。","publicCondition":"completed_and_source_public_allowed"},
+    {"node":"life.meal.prepared","ownerFields":["place","consumedFish","createdMeal","actualSpend"],"worldTemplate":null},
+    {"node":"life.meal.completed","ownerFields":["place","consumedFood","actualEnergyRestored"],"worldTemplate":"{actor}在{place}用过餐。"},
+    {"node":"life.rest.completed","ownerFields":["place","duration","paymentOrVoucher","actualEnergyRestored"],"worldTemplate":"{actor}在{place}完成了休息。"},
+    {"node":"life.reading.completed","ownerFields":["place","permittedBookTitle","bookVersion","duration"],"worldTemplate":"{actor}在{place}读了一会儿书。"},
+    {"node":"life.visit.completed","ownerFields":["place","duration","visitRecorded"],"worldTemplate":"{actor}到访了{place}。","condition":"visitRecorded_true_and_original_24h_cooldown"},
+    {"node":"life.activity.interrupted","ownerFields":["place","completedPart","actualCosts","refunds","releasedReservations","stopReason"],"worldTemplate":null,"condition":"actual_effect_or_partial_result"},
+    {"node":"relationships.gift.accepted","ownerFields":["permittedCounterparty","direction","itemNamesAndQuantities","actualDelivery"],"worldTemplate":null},
+    {"node":"relationships.gift.declined","ownerFields":["permittedCounterparty","releasedReservations"],"worldTemplate":null,"condition":"actual_reservation_released"},
+    {"node":"relationships.gift.withdrawn","ownerFields":["permittedCounterparty","releasedReservations"],"worldTemplate":null,"condition":"actual_reservation_released"},
+    {"node":"relationships.gift.expired","ownerFields":["permittedCounterparty","releasedReservations"],"worldTemplate":null,"condition":"actual_reservation_released"},
+    {"node":"relationships.gift.unavailable","ownerFields":["releasedReservations","safeStopReason"],"worldTemplate":null,"condition":"actual_reservation_released"}
+  ],
+  "journalDefaultSuppressedNodes": [
+    "world.movement.received","world.movement.started","world.movement.completed","world.movement.stopped","world.idle.completed",
+    "relationships.invitation.sent","relationships.invitation.received","interaction.invitation.sent","interaction.invitation.received",
+    "relationships.gift.offered","relationships.gift.received","town_services.service.started"
+  ],
+  "existingOtherNodes": "Retain existing meaningful outcomes and original permissions; this map does not grant public access or delete source history.",
+  "expressionKinds": {
+    "speech":{"origin":"agent_authored","ttlMs":12000,"maxCodePoints":80,"journal":false,"priority":3},
+    "emote":{"origin":"agent_authored","ttlMs":6000,"journal":false,"priority":3},
+    "status":{"origin":"authoritative_action","ttlMs":6000,"maxCodePoints":24,"journal":false,"priority":2},
+    "ambient":{"origin":"npc_scripted","ttlMs":6000,"maxCodePoints":24,"journal":false,"priority":1}
+  },
+  "limits": {
+    "intentMaxFutureSeconds":30,
+    "agentSharedMinIntervalSeconds":30,
+    "agentSharedWindowSeconds":300,
+    "agentSharedWindowMax":4,
+    "agentSameNormalizedExpressionSeconds":60,
+    "statusActorMinIntervalSeconds":60,
+    "npcActorMinIntervalSeconds":180,
+    "npcSameLineMinIntervalSeconds":1800,
+    "npcEligibilityProbability":0.25,
+    "activeBubblePerActor":1,
+    "visibleBubblesPerViewport":{"standard":2,"quiet":1,"off":0},
+    "speechVisualMaxMs":6800,
+    "expressionsPerReadMax":16,
+    "expressionBatchBytesMax":8192
+  },
+  "dedup": {
+    "behavior":"sourceEventId + actor + node; cross-domain grouping requires an explicit shared business-result reference",
+    "expression":"stable expressionId; command replay returns original createdAt/expiresAt, never renews display",
+    "npc":"source event or existing decision sequence + npcId + policy revision; choose once, never redraw on read",
+    "status":"activityId + startedAt; start only, never regenerate from polling an unchanged activity"
+  },
+  "visualSets":["gestures","keepsakes","motes"],
+  "emotes": [
+    {"id":"joy","label":"开心"},
+    {"id":"surprise","label":"惊讶"},
+    {"id":"question","label":"疑问"},
+    {"id":"thinking","label":"思考"},
+    {"id":"thanks","label":"感谢"},
+    {"id":"celebrate","label":"庆祝"},
+    {"id":"tired","label":"疲惫"},
+    {"id":"sad","label":"失落"}
+  ],
+  "emotePolicy":"Match the design director's 3 sets x 8 semantics. Only explicit public Agent expression: thinking is not chain-of-thought, tired is not inferred from energy, thanks is not inferred from gift acceptance. NPC ambient lines use neutral presentation. Actual assets remain design-owned.",
+  "statusTemplates": [
+    {"actionId":"work.shift","text":"正在帮工"},
+    {"actionId":"fish.session","text":"正在钓鱼"},
+    {"actionId":"meal.prepare","text":"正在加工餐食"},
+    {"actionId":"meal.eat","text":"正在用餐"},
+    {"actionId":"rest.bench","text":"正在长椅休息"},
+    {"actionId":"rest.inn","text":"正在旅舍休息"},
+    {"actionId":"rest.voucher","text":"正在旅舍休息"},
+    {"actionId":"book.read","text":"正在阅读"}
+  ],
+  "statusPolicy":"Only while an activity is active and its action/place is independently allowed in the public scene. Never expose private materials, price, book holding or gift state. Unknown actions have no fallback invented text.",
+  "npcAmbientLines": [
+    {"id":"mayor-notice","npcId":"npc-mayor","placeId":"town_hall","requiredActionId":"npc.duty","requiredFacility":"public_notice","text":"新来的朋友，可以看看公告。"},
+    {"id":"tavern-menu","npcId":"npc-tavern","placeId":"harbor_tavern","requiredActionId":"npc.duty","requiredFacility":"meal_catalog","text":"酒馆的餐食可以在这里查看。"},
+    {"id":"fisher-self-service","npcId":"npc-fishing-clerk","placeId":"fisher_shop","requiredActionId":"npc.duty","text":"鱼竿和鱼饵可以自助购买。"},
+    {"id":"library-free-reading","npcId":"npc-librarian","placeId":"blue_library","requiredActionId":"npc.duty","text":"这里有免费的馆藏可以读。"},
+    {"id":"inn-rest-service","npcId":"npc-innkeeper","placeId":"stone_inn","requiredActionId":"npc.duty","text":"旅舍设有休憩位。"},
+    {"id":"harbor-workplace","npcId":"npc-harbor-hand","placeId":"harbor_work","requiredActionId":"work.shift","requiredFacility":"harbor_job","text":"仓棚这边是码头岗位。"},
+    {"id":"neighbor-library","npcId":"npc-neighbor","placeId":"blue_library","requiredActionId":"book.read","requiredFacility":"free_library_book","text":"书屋里也有免费的馆藏。"}
+  ],
+  "npcAmbientPolicy":"Requires actual NPC presence, the exact required active action at that place, and the current published facility capability. Missing evidence means silence. Facility labels are semantic conditions to bind to existing services, not new operation IDs. No private facts, automatic replies or new schedule.",
+  "fullTextPolicy":"Keep up to 80 Unicode code points in the same scene payload; map preview may truncate at 28 graphemes with an indicator. Current actor card can read the full unexpired text, without an extra per-actor request or a journal entry.",
+  "foldPolicy":"Only adjacent actually returned and authorized same-NPC/place/outcome/day rows; retain source event IDs, count this group only, never hidden or unloaded rows.",
+  "expiryPolicy":"First entry may show currently valid expressions statically; visual duration is min(remaining server TTL, speechVisualMaxMs for speech). Never reset same-ID clocks or import history. Only unexpired currently permitted same-scene expressions. No backlog or replay; stale scene hides expressions. Withdrawal, pause, departure and visibility loss remove them. Existing receipt/audit retention remains separate from display TTL."
+}
