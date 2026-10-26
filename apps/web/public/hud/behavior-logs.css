@@ -7,3 +7,32 @@
 
 .behavior-logs-world>h3{display:none}.behavior-log-copy>.behavior-log-identity{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 8px}.hud-root .behavior-log-row,.world-detail .behavior-log-row{padding-top:9px;padding-bottom:9px}.account-root .behavior-log-tools :is(input,select){font-size:12px;font-weight:400;min-height:34px}
 .behavior-log-detail-tools{flex:none;padding-bottom:4px}.behavior-log-detail-back{margin:0}.behavior-log-detail{font-size:14px;line-height:1.65;overflow-wrap:anywhere}.behavior-log-detail>h3{margin:0 0 8px;font-size:20px;line-height:1.4}.behavior-log-detail p{white-space:pre-wrap}.behavior-log-detail .behavior-log-result{font-size:15px}.behavior-log-detail>section{margin-top:20px;padding-top:12px;border-top:1px solid #536c46}.behavior-log-detail h4{font-size:14px;color:#e4ddae;margin:0 0 10px}.behavior-log-facts{display:grid;grid-template-columns:76px minmax(0,1fr);gap:8px 12px;margin:0}.behavior-log-facts dt{color:#bdc9ad}.behavior-log-facts dd{margin:0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.behavior-log-detail-gaps p:last-child{margin-bottom:0}
+
+/* One returned fact per entry. Original records stay reachable inside folds. */
+.behavior-logs .behavior-log-row{grid-template-columns:32px minmax(0,1fr) 42px;gap:10px;align-items:start}
+.behavior-logs .behavior-log-row time{text-align:right;line-height:22px;padding-top:1px}
+.behavior-log-copy>.behavior-log-story{margin:0;font-size:14px;line-height:22px}
+.behavior-log-story>strong{display:inline;font-size:14px;font-weight:600;line-height:inherit;margin-right:3px}
+.behavior-log-copy>.behavior-log-hint{margin:3px 0 0;font-size:11px;line-height:20px;color:#d5c4a0}
+.behavior-log-copy>:is(.behavior-log-outcomes,.behavior-log-group-note){margin:3px 0 0;font-size:12px;line-height:18px}
+.behavior-log-group{border:0;margin:0;padding:0}
+.behavior-log-group>summary{cursor:pointer;list-style:none}
+.behavior-log-group>summary::-webkit-details-marker{display:none}
+.behavior-log-group>summary .behavior-log-hint:before{content:'▸ ';font-size:10px}
+.behavior-log-group[open]>summary .behavior-log-hint:before{content:'▾ '}
+.behavior-log-group-rows{padding:0 10px 0 18px;border-left:2px solid #7a865e;margin:0 0 8px 14px}
+.behavior-logs .behavior-log-group-rows .behavior-log-row{grid-template-columns:24px minmax(0,1fr) 42px;gap:8px;min-height:0}
+.behavior-log-group-rows .behavior-log-avatar{width:24px;height:24px}
+.behavior-log-group-rows .behavior-log-avatar .hud-icon{width:16px;height:16px}
+.behavior-logs>.behavior-log-coverage{flex:none;margin:0;font-size:12px;line-height:20px}
+.behavior-log-group>summary:focus-visible{outline:2px solid #577960;outline-offset:-2px}
+.paper-hud :is(.hud-root,.world-detail,.resident-log-host) .behavior-logs .behavior-log-row{grid-template-columns:32px minmax(0,1fr) 42px;gap:10px;min-height:0;padding:12px 0;color:var(--paper-ink,#263f36);border-color:var(--paper-border,#ded7c9);background:transparent;font-weight:400}
+.paper-hud :is(.hud-root,.world-detail,.resident-log-host) .behavior-logs .behavior-log-row:hover{background:#eeeee4}
+.paper-hud .behavior-logs .behavior-log-copy>.behavior-log-hint{color:#7d6a4e;font-size:11px;line-height:20px}
+.paper-hud .behavior-logs .behavior-log-outcomes{color:#785a38}
+.paper-hud .behavior-logs .behavior-log-group-note{color:var(--paper-muted,#68746e)}
+.paper-hud .behavior-log-group-rows{background:#eeeade;border-color:#c8b89b;padding-right:10px}
+.paper-hud :is(.hud-root,.world-detail,.resident-log-host) .behavior-log-group-rows .behavior-log-row{grid-template-columns:24px minmax(0,1fr) 42px;gap:8px}
+.paper-hud .behavior-log-date{display:flex;align-items:center;gap:12px;border:0}
+.paper-hud .behavior-log-date:after{content:'';height:1px;flex:1;background:var(--paper-border,#ded7c9)}
+@media(max-width:759px){.behavior-logs .behavior-log-tools{gap:6px}.behavior-log-group-rows{margin-left:10px;padding-left:10px}.paper-hud :is(.hud-root,.world-detail,.resident-log-host) .behavior-logs .behavior-log-row{grid-template-columns:28px minmax(0,1fr) 38px;gap:8px}.behavior-log-copy>.behavior-log-story{font-size:13px;line-height:21px}.behavior-log-avatar{width:28px;height:28px}}
