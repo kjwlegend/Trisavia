@@ -1,3 +1,5 @@
+import type {AgentRuntimeGuideProvider} from './agent-runtime-guide.ts';
+import {currentAgentRuntime,runtimeRuleMetadata,runtimeCatalogRevision} from './agent-runtime-publication.ts';
 import type {CommandKey,CommandReceipt,RuntimeReadContext,RuntimeStore,RuntimeTransaction} from '../contracts/runtime-store.ts';
 import type {JsonObject,JsonValue} from '../contracts/store.ts';
 import type {IdentityAccess,Principal} from '../domains/access/public.ts';
@@ -22,7 +24,7 @@ export function canonicalGatewayDocument(value:JsonValue):string{
 }
 export const gatewayBaseInput:JsonObject={type:'object',additionalProperties:false,required:['protocolVersion','consumerId','purpose','operation','input'],properties:{protocolVersion:{const:1},consumerId:{type:'string',minLength:1,maxLength:100},purpose:{enum:['agent-manual','human-inspect']},operation:{type:'string',minLength:1,maxLength:100},input:{type:'object'},commandId:{type:'string',minLength:8,maxLength:100}}};
 export function gatewayEnvelope(data:JsonObject):JsonObject{return {type:'object',additionalProperties:false,required:['protocolVersion','requestId','instanceId','serverTime','data'],properties:{protocolVersion:{const:1},requestId:{type:'string'},instanceId:{type:'string'},serverTime:{type:'integer'},data}};}
-export function createAgentGateway(options:{store:RuntimeStore;identity:IdentityAccess<RuntimeReadContext>;operations:GatewayOperation[];guides:GatewayGuide[];publicReads?:GatewayPublicRead[]}){
+export function createAgentGateway(options:{store:RuntimeStore;identity:IdentityAccess<RuntimeReadContext>;operations:GatewayOperation[];guides:GatewayGuide[];publicReads?:GatewayPublicRead[];runtimeGuide?:AgentRuntimeGuideProvider;retainedGuides?:GatewayGuide[]}){
  const operations=new Map<string,GatewayOperation>(),publicReads=new Map<string,GatewayPublicRead>(),documents=new Map<string,{version:number;document:JsonObject}>(),guides=new Map<string,GatewayGuide>();
  const validVersion=(value:number)=>Number.isSafeInteger(value)&&value>=1&&value<=1000000;
  const moduleId=(id:string)=>/^[a-z][a-z0-9_.-]{0,95}$/.test(id);
@@ -41,15 +43,19 @@ export function createAgentGateway(options:{store:RuntimeStore;identity:Identity
   documents.set(`${read.id}.input`,{version:read.schemaVersion,document:{$id:`gateway.${read.id}.input@${read.schemaVersion}`,...read.input}});
   documents.set(`${read.id}.output`,{version:read.schemaVersion,document:{$id:`gateway.${read.id}.output@${read.schemaVersion}`,...gatewayEnvelope(read.output)}});
  }
+ const retainedGuides=new Map<string,GatewayGuide>();
  const all=[...options.operations,...options.publicReads??[]];
  for(const guide of options.guides){if(guides.has(guide.moduleId)||!validVersion(guide.version)||!moduleId(guide.moduleId)||guide.document.version!==guide.version||!all.some(op=>op.moduleId===guide.moduleId))throw new Error('Invalid Gateway guide registration');guides.set(guide.moduleId,structuredClone(guide));}
  for(const operation of all)if(!guides.has(operation.moduleId))throw new Error('Missing exact Gateway module guide');
+ for(const guide of options.retainedGuides??[]){const key=guide.moduleId+':'+guide.version;if(!guides.has(guide.moduleId)||!validVersion(guide.version)||guide.document.version!==guide.version||guides.get(guide.moduleId)!.version===guide.version||retainedGuides.has(key))throw new Error('Invalid retained exact Gateway guide');retainedGuides.set(key,structuredClone(guide));}
  const schemaRef=(id:string,version:number)=>({id,version,path:`/v1/gateway/schemas/${encodeURIComponent(id)}?version=${version}`});
  const guideRef=(id:string)=>{const guide=guides.get(id)!;return {moduleId:id,version:guide.version,path:`/v1/gateway/guides/${id}?version=${guide.version}`};};
  const descriptors=[...options.operations.map(op=>({id:op.id,moduleId:op.moduleId,kind:op.kind,actors:op.actors,description:op.description,http:{method:'POST',path:op.kind==='command'?'/v1/gateway/commands':'/v1/gateway/query'},inputSchema:schemaRef(`${op.id}.input`,op.schemaVersion),outputSchema:schemaRef(`${op.id}.output`,op.schemaVersion),usageGuide:guideRef(op.moduleId)})),...[...publicReads.values()].map(read=>({id:read.id,moduleId:read.moduleId,kind:'query',actors:['public'],description:read.description,http:{method:'GET',path:read.path},inputSchema:schemaRef(`${read.id}.input`,read.schemaVersion),outputSchema:schemaRef(`${read.id}.output`,read.schemaVersion),usageGuide:guideRef(read.moduleId)}))];
  const catalogRevision=`gateway-${hashRuntimeRequest({operations:descriptors,schemas:[...documents].map(([id,entry])=>({id,version:entry.version,digest:hashRuntimeRequest(entry.document)})),guides:[...guides.values()].map(guide=>({moduleId:guide.moduleId,version:guide.version,digest:hashRuntimeRequest(guide.document)}))}).slice(0,24)}`;
  async function publicProjection(ctx:RuntimeReadContext,requests:readonly PublicWorldRequest[]){const results:Record<string,JsonObject>={};for(const r of requests)results[r.id]=await publicReads.get(r.id)!.read(ctx,r.input);return{instanceId:ctx.instanceId,asOf:ctx.now(),results};}
  const worldReader=createPublicWorldReader(options.store,catalogRevision,publicProjection);
+ // World artifacts depend on the API/source cut, not rule prose. Runtime stamps are read fresh outside that cache.
+ async function currentCatalogState():Promise<JsonObject>{if(!options.runtimeGuide)return{catalogRevision};const runtimeRules=runtimeRuleMetadata(await currentAgentRuntime(options.runtimeGuide));return {catalogRevision:runtimeCatalogRevision(catalogRevision,runtimeRules),runtimeRules};}
  function sceneRequests(input:JsonObject):PublicWorldRequest[]{return[{id:'world.public_rules',input:{worldId:input.worldId!}},{id:'world.public_scene',input:{worldId:input.worldId!,limit:input.limit??50,...(input.cursor===undefined?{}:{cursor:input.cursor})}}];}
  function definition(id:unknown,kind:'query'|'command'){const operation=operations.get(text(id,'operation',1,100));if(!operation||operation.kind!==kind)fail('capability_not_available',404,'Capability is not available');return operation;}
  function parse(raw:unknown,kind:'query'|'command',validate:GatewayValidator){
@@ -65,13 +71,13 @@ export function createAgentGateway(options:{store:RuntimeStore;identity:Identity
   if(principal.kind==='agent'&&purpose!=='agent-manual'||principal.kind==='owner'&&purpose!=='human-inspect')fail('insufficient_scope',403,'Purpose does not match the authenticated actor');
   return principal;
  }
- return {
+ const gateway={
   catalogRevision,
   publicPaths:[...publicReads.values()].map(read=>({id:read.id,path:read.path})),
   capabilities(){return {protocolVersion:1,catalogRevision,discovery:{method:'GET',path:'/v1/gateway/discovery'},query:{method:'POST',path:'/v1/gateway/query'},command:{method:'POST',path:'/v1/gateway/commands'},receipt:{method:'POST',path:'/v1/gateway/receipts/query'},modules:[...guides.keys()],manualOnly:true,externalExecution:'host-controlled',ownerBindingRequiredForAgent:false};},
   discovery(){return {protocolVersion:1,catalogRevision,operations:descriptors,modules:[...guides.values()].map(guide=>({moduleId:guide.moduleId,usageGuide:{version:guide.version,path:`/v1/gateway/guides/${guide.moduleId}?version=${guide.version}`}})),schemaDialect:'JSON-Schema-draft-07',coverage:'activated-handlers-only'};},
   schema(id:string,version:unknown){if(typeof version!=='string'||!/^[1-9][0-9]{0,6}$/.test(version))fail('exact_schema_version_required',400,'Request an exact schema version from current discovery');const entry=documents.get(id);if(!entry)fail('capability_not_available',404,'Schema is not available');if(version!==String(entry.version))fail('schema_version_not_available',404,'That schema version is not available; rediscover the current registered version');return {schemaId:id,version:entry.version,document:entry.document,canonicalDocument:canonicalGatewayDocument(entry.document),digest:hashRuntimeRequest(entry.document),digestAlgorithm:'sha256-utf8-hex'};},
-  guide(id:string,version:unknown){if(typeof version!=='string'||!/^[1-9][0-9]{0,6}$/.test(version))fail('exact_guide_version_required',400,'Request an exact guide version from current discovery');const guide=guides.get(id);if(!guide)fail('capability_not_available',404,'Guide is not available');if(version!==String(guide.version))fail('guide_version_not_available',404,'That guide version is not available; rediscover the current registered version');return {moduleId:id,version:guide.version,document:guide.document,canonicalDocument:canonicalGatewayDocument(guide.document),digest:hashRuntimeRequest(guide.document),digestAlgorithm:'sha256-utf8-hex'};},
+  guide(id:string,version:unknown){if(typeof version!=='string'||!/^[1-9][0-9]{0,6}$/.test(version))fail('exact_guide_version_required',400,'Request an exact guide version from current discovery');const current=guides.get(id);if(!current)fail('capability_not_available',404,'Guide is not available');const guide=version===String(current.version)?current:retainedGuides.get(id+':'+version);if(!guide)fail('guide_version_not_available',404,'That guide version is not available; rediscover the current registered version');return {moduleId:id,version:guide.version,document:guide.document,canonicalDocument:canonicalGatewayDocument(guide.document),digest:hashRuntimeRequest(guide.document),digestAlgorithm:'sha256-utf8-hex'};},
   async publicRead(id:string,input:unknown,validate:GatewayValidator,signal?:AbortSignal){const read=publicReads.get(id);if(!read)fail('capability_not_available',404,'Public capability is not available');if(!validate(read.input,input))fail('invalid_request',400,'Query does not match the current public read schema');
    if(worldReader&&(id==='world.public_scene'||id==='world.public_rules')&&publicReads.has('world.public_scene')&&publicReads.has('world.public_rules')){const payload=input as JsonObject,requests=id==='world.public_scene'?sceneRequests(payload):[{id,input:{worldId:payload.worldId!}}];return(await worldReader.read(requests,signal)).results[id]!;}
    return await options.store.read(ctx=>read.read(ctx,input as JsonObject));},
@@ -95,5 +101,6 @@ export function createAgentGateway(options:{store:RuntimeStore;identity:Identity
     if(!receipt)fail('target_not_accessible',404,'Receipt is not accessible');await operation.authorizeReceipt!(ctx,principal,receipt);return receipt;});
   },
  };
+ return {...gateway,currentCatalogState,async currentCapabilities(){return {...gateway.capabilities(),...await currentCatalogState()};},async currentDiscovery(){return {...gateway.discovery(),...await currentCatalogState()};},async currentGuide(id:string,version:unknown){const exact=gateway.guide(id,version);return {...exact,...(options.runtimeGuide&&String(guides.get(id)?.version)===String(version)?await currentCatalogState():{})};}};
 }
 export type AgentGateway=ReturnType<typeof createAgentGateway>;

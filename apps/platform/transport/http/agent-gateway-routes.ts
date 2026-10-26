@@ -52,9 +52,9 @@ export function registerAgentGatewayRoutes(app:FastifyInstance,gateway:AgentGate
   }});
  }
  async function measurePublicRead<T>(request:FastifyRequest,read:()=>Promise<T>):Promise<T>{const started=performance.now();try{return await read();}finally{publicDurations.set(request,(publicDurations.get(request)??0)+performance.now()-started);}}
- route('GET','/v1/gateway/discovery',request=>{object(request.query,[]);return gateway.discovery();});
+ route('GET','/v1/gateway/discovery',request=>{object(request.query,[]);return gateway.currentDiscovery();});
  route('GET','/v1/gateway/schemas/:schemaId',request=>gateway.schema((request.params as {schemaId:string}).schemaId,object(request.query,['version']).version));
- route('GET','/v1/gateway/guides/:moduleId',request=>gateway.guide((request.params as {moduleId:string}).moduleId,object(request.query,['version']).version));
+ route('GET','/v1/gateway/guides/:moduleId',request=>gateway.currentGuide((request.params as {moduleId:string}).moduleId,object(request.query,['version']).version));
  route('POST','/v1/gateway/query',request=>gateway.query(request.body,bearer(request),validate(request)));
  route('POST','/v1/gateway/commands',request=>gateway.command(request.body,bearer(request),validate(request)));
  route('POST','/v1/gateway/receipts/query',request=>gateway.receipt(request.body,bearer(request)));
