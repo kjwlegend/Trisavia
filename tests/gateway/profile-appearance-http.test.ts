@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {randomUUID,randomBytes} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
 import {join} from 'node:path';
+import {readFile} from 'node:fs/promises';
 import test from 'node:test';
 import {buildApp} from '../../apps/platform/app.ts';
 import {createM1Service} from '../../apps/platform/application/m1-service.ts';
@@ -10,6 +11,7 @@ import {readLegacyAvatarIdentity} from '../../apps/platform/infrastructure/postg
 import {APPEARANCE_CATALOG_VERSION} from '../../apps/platform/domains/profile/appearance-catalog.ts';
 import {resolveAppearance} from '../../apps/platform/domains/profile/appearance.ts';
 import {meteredRead} from '../../apps/platform/domains/perception/read-budget.ts';
+import {ensurePublicId} from '../../apps/platform/domains/public-identifiers/repository.ts';
 import type {M1Transaction} from '../../apps/platform/contracts/store.ts';
 import {gatewayFixture} from './postgresql-fixture.ts';
 import {ownerFixture,type Api} from '../../scripts/agent-manager-qa-fixture.ts';
@@ -65,10 +67,13 @@ test('legacy actual Avatar identity resolves consistently through real public/pr
  const baseline=process.env.PROFILE_APPEARANCE_BASELINE_SOURCE;if(!baseline)throw new Error('An explicit frozen ad5 application source is required');
  const {createM1Service:oldService}=await import(pathToFileURL(join(baseline,'apps/platform/application/m1-service.ts')).href);
  const f=await gatewayFixture({interaction:false}),app=await buildApp({...f.options,worldCoreEnabled:true});
+ const resource=JSON.parse(await readFile(join(f.privateConnections,'created-database.json'),'utf8'));console.info(JSON.stringify({resource:'legacy_appearance_metering',database:f.database,oid:resource.oid,creator:resource.creator,created:true}));
  const invoke=async(method:'GET'|'PUT'|'POST',url:string,payload?:unknown,token?:string)=>{const response=await app.inject({method,url,headers:{...(payload===undefined?{}:{'content-type':'application/json'}),...(token?{authorization:'Bearer '+token}:{})},...(payload===undefined?{}:{payload:JSON.stringify(payload)})});return {status:response.statusCode,body:response.json()};};
  try{
   const runtimeToken=randomUUID()+'.'+randomBytes(32).toString('base64url'),continuationToken=randomUUID()+'.'+randomBytes(32).toString('base64url'),legacyService=oldService(f.legacy,{now:f.now});
   const registration=await legacyService.invoke('register',{operationId:randomUUID(),attemptId:randomUUID(),runtimeToken,continuationToken}),agentId=registration.agentId;
+  // This historical registration predates public IDs; prepare only its new isolated subject, without rewriting its old profile/receipt.
+  await f.legacy.transaction(async tx=>{const id=await ensurePublicId(tx,'agent',String(agentId));assert.equal(await ensurePublicId(tx,'agent',String(agentId)),id);});
   const raw={template:'basic',color:'olive'},initial=(await invoke('GET',`/v1/agents/${agentId}/profile`,undefined,runtimeToken)).body;assert.deepEqual(initial.published.avatar,raw);assert.deepEqual(initial.publishedAppearance,raw,'No actual Avatar fact means explicitly unresolved');
   const oldInput={operationId:randomUUID(),agentId,expectedVersion:initial.version,expectedPolicyVersion:initial.policyVersion,fields:{avatar:{template:'basic',color:'cream'}}};const receipt=await legacyService.invoke('saveProfile',oldInput,runtimeToken);
   const newService=createM1Service(f.legacy,{now:f.now,legacyAvatarIdentity:readLegacyAvatarIdentity});assert.deepEqual(await newService.invoke('saveProfile',oldInput,runtimeToken),receipt);
@@ -79,8 +84,8 @@ test('legacy actual Avatar identity resolves consistently through real public/pr
   assert.deepEqual(profile.published.avatar,{template:'basic',color:'cream'});assert.deepEqual(profile.publishedAppearance,expected);assert.deepEqual((await invoke('GET',`/v1/public/agents/${agentId}`)).body.appearance,expected);assert.deepEqual((await invoke('GET','/v1/world/scene?worldId=default')).body.data.avatars[0].profile.appearance,expected);
   const list=await invoke('POST','/v1/perception/list',{protocolVersion:1,consumerId:'appearance-legacy-source',purpose:'agent-inspect',channel:'world',categoryId:'people',metricId:'agents'},runtimeToken);assert.equal(list.status,200);assert.deepEqual(list.body.data.records[0].summary.fields.appearance,expected);assert.deepEqual(list.body.data.records[0].summary.fields.avatar,{template:'basic',color:'cream'});
   const ref={moduleId:'profiles',type:'profiles.agent@1',id:agentId},before=await f.legacy.read(async tx=>({sessions:await tx.count('perception_sessions',{},10000),facts:await tx.count('perception_access',{},10000)}));
-  const denied=await invoke('POST','/v1/perception/detail',{protocolVersion:1,consumerId:'appearance-budget',purpose:'agent-inspect',channel:'world',ref,budget:{maxScannedRows:1}},runtimeToken);assert.equal(denied.status,422);assert.equal(denied.body.error.code,'budget_too_small');assert.deepEqual(await f.legacy.read(async tx=>({sessions:await tx.count('perception_sessions',{},10000),facts:await tx.count('perception_access',{},10000)})),before);
-  const detail=await invoke('POST','/v1/perception/detail',{protocolVersion:1,consumerId:'appearance-budget',purpose:'agent-inspect',channel:'world',ref,budget:{maxScannedRows:2}},runtimeToken);assert.equal(detail.status,200);assert.deepEqual(detail.body.data.content.fields.appearance,expected);
+  const denied=await invoke('POST','/v1/perception/detail',{protocolVersion:1,consumerId:'appearance-budget',purpose:'agent-inspect',channel:'world',ref,budget:{maxScannedRows:2}},runtimeToken);assert.equal(denied.status,422);assert.equal(denied.body.error.code,'budget_too_small');assert.deepEqual(await f.legacy.read(async tx=>({sessions:await tx.count('perception_sessions',{},10000),facts:await tx.count('perception_access',{},10000)})),before);
+  const detail=await invoke('POST','/v1/perception/detail',{protocolVersion:1,consumerId:'appearance-budget',purpose:'agent-inspect',channel:'world',ref,budget:{maxScannedRows:3}},runtimeToken);assert.equal(detail.status,200);assert.deepEqual(detail.body.data.content.fields.appearance,expected);
   let endedSession:M1Transaction|undefined;await f.legacy.transaction(async tx=>{endedSession=tx;});const endedMeter=meteredRead(endedSession!,{maxScannedRows:2,deadlineMs:250});await assert.rejects(endedMeter.readAuxiliary('ended-legacy-source',()=>readLegacyAvatarIdentity(endedSession!,{agentId,worldId:'default'})),error=>(error as {code:string}).code==='closed');
- }finally{await app.close();await f.dispose();}
+ }finally{await app.close();await f.dispose();console.info(JSON.stringify({resource:'legacy_appearance_metering',database:f.database,oid:resource.oid,creator:resource.creator,dropped:true}));}
 });

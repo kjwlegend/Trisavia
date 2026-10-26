@@ -8,7 +8,8 @@ import {buildApp} from '../../apps/platform/app.ts';
 import {openRuntimeStore} from '../../apps/platform/infrastructure/postgresql/runtime-store.ts';
 import {prepareTownItemDefinitions} from '../../apps/platform/infrastructure/postgresql/service-inventory-repository.ts';
 import {publishNpcServiceReaders} from '../../apps/platform/application/perception-admin.ts';
-import {catalogRepository} from '../../apps/platform/domains/perception/repository.ts';
+import {catalogRepository,contentRepository} from '../../apps/platform/domains/perception/repository.ts';
+import {refId} from '../../apps/platform/domains/perception/protocol.ts';
 import {RESIDENT_GIFT_REPOSITORY} from '../../apps/platform/domains/town-services/resident-gift.ts';
 import {SERVICE_INVENTORY_REPOSITORY} from '../../apps/platform/domains/town-services/repository.ts';
 import {readPublicId} from '../../apps/platform/domains/public-identifiers/repository.ts';
@@ -54,6 +55,13 @@ test('real PG metered card and public profile reads retain public IDs, row budge
   const bounded={purpose:'human-inspect',channel:'inventory',categoryId:'holdings',agentRef:personRef};
   const exhausted=await call('list',{...bounded,budget:{maxScannedRows:2}},owner.sessionToken);assert.equal(exhausted.status,422);assert.equal(exhausted.body.error.code,'budget_too_small');assert.equal(exhausted.body.data,undefined);
   const exact=await read('list',{...bounded,budget:{maxScannedRows:3}},owner.sessionToken);assert.equal(exact.records.length,1);
+  // A publication's related-person lookup uses the second metered reader in detail().
+  const publicationRef={moduleId:'world',type:'world.occurrence@1',id:'synthetic-metered-person-publication'};
+  await f.legacy.transaction(tx=>contentRepository(tx).insert({id:refId(publicationRef),version:1,data:{ref:publicationRef,moduleId:'world',type:publicationRef.type,refId:publicationRef.id,categoryId:'events',metricId:'occurrences',channel:'world',sourceId:'platform-publications',title:'合成居民资料关联',body:'仅供隔离读取预算验证。',public:true,active:true,available:true,dataMode:'platform',attachments:[],eventKind:'occurrence',status:'committed',occurredAt:f.now(),publishedRefs:[personRef],actor:{kind:'administrator',id:'synthetic-card-reader'},source:{kind:'administrative_publication',administrator:'synthetic-card-reader',publishedAt:f.now()}}}));
+  const publicationInput={purpose:'human-inspect',channel:'world',ref:publicationRef};
+  const shortRelated=await call('detail',{...publicationInput,budget:{maxScannedRows:3}},owner.sessionToken);assert.equal(shortRelated.status,422);assert.equal(shortRelated.body.error.code,'budget_too_small');assert.equal(shortRelated.body.data,undefined);
+  const related=await read('detail',{...publicationInput,budget:{maxScannedRows:5}},owner.sessionToken);assert.deepEqual(related.content.publication.relatedItems,[{ref:personRef,title:agent.name}]);
+  const linkedPerson=await read('detail',{purpose:'human-inspect',channel:'world',ref:related.content.publication.relatedItems[0].ref},owner.sessionToken);assert.equal(linkedPerson.content.fields.publicId,publicId);
   for(const [operation,input]of [['list',bounded],['detail',{purpose:'human-inspect',channel:'inventory',agentRef:personRef,ref}]] as const){const denied=await call(operation,input,other.sessionToken);assert.equal(denied.status,404);assert.equal(denied.body.error.code,'target_not_accessible');assert.equal(denied.body.data,undefined);}
   assert.deepEqual(await f.runtime.read(ctx=>ctx.repository(SERVICE_INVENTORY_REPOSITORY).findResidentCard(agent.agentId)),before,'Reads never rewrite original card issue facts');
  }finally{
