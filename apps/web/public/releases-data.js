@@ -4,9 +4,9 @@ export const RELEASES = [
     version: '0.6.3',
     date: '2026-10-26',
     status: '已完成',
-    title: '恢复居民卡与人物编号读取',
+    title: '背包与居民资料恢复正常',
     highlights: [
-      {category: '修复', title: '正常查看居民卡与居民编号', description: '修复读取居民卡时的来源不可用提示；公开人物列表与详情保持同一居民编号，继续按当前权限和读取预算核对。'},
+      {category: '修复', title: '正常查看居民卡与居民编号', description: '恢复背包中的居民身份卡展示，并修复查看居民资料时的编号读取问题。已有物品和资料保持不变。'},
     ],
   },
   {
