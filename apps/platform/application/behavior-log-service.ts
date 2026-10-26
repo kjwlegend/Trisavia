@@ -1,8 +1,11 @@
+import journalPolicy from '../../../docs/workstreams/ws03-interaction/life-journal-v1/event-expression-map.json' with {type:'json'};
+import type {PublicAgentView} from '../domains/access/public.ts';
+import type {ProfileAvatar} from '../domains/profile/appearance.ts';
 import type {RuntimeReadContext} from '../contracts/runtime-store.ts';
 import type {JsonObject} from '../contracts/store.ts';
 import type {IdentityAccess,OwnerObservationDomain,Principal} from '../domains/access/public.ts';
 import {BEHAVIOR_REPOSITORY} from '../domains/behavior/repository.ts';
-import {BEHAVIOR_SCOPES,USER_LOG_PROCESS_NODES,type BehaviorDetails,type BehaviorRecord} from '../domains/behavior/types.ts';
+import {BEHAVIOR_SCOPES,USER_LOG_PROCESS_NODES,JOURNAL_SUPPRESSED_NODES,type BehaviorDetails,type BehaviorRecord} from '../domains/behavior/types.ts';
 import {fail,M1Error,object,text} from '../domains/common/errors.ts';
 import {hashRuntimeRequest} from '../domains/runtime/command.ts';
 import {createGatewayContinuation} from './agent-gateway-continuation.ts';
@@ -10,7 +13,7 @@ import {createGatewayContinuation} from './agent-gateway-continuation.ts';
 interface BehaviorSource {
  canObserveBehavior(ctx:RuntimeReadContext,record:BehaviorRecord,audience:'owner'|'public'):Promise<boolean>;
  describeBehavior(ctx:RuntimeReadContext,record:BehaviorRecord,audience:'owner'|'public'):Promise<BehaviorDetails|null>;
- readNpcIdentity?(ctx:RuntimeReadContext,npcId:string):Promise<{name:string}|null>;
+ readNpcIdentity?(ctx:RuntimeReadContext,npcId:string):Promise<{name:string;appearance?:ProfileAvatar;publishedVersion?:number;publicId?:string}|null>;
  behaviorDetailRef?(ctx:RuntimeReadContext,record:BehaviorRecord):Promise<{invitationId:string}|null>;
  invitation?(ctx:RuntimeReadContext,p:Principal,input:JsonObject):Promise<unknown>;
 }
@@ -75,22 +78,27 @@ function rangeOf(input:JsonObject,timeZone:string){const from=input.fromDate===u
 function limitOf(value:unknown){const limit=value??20;if(typeof limit!=='number'||!Number.isSafeInteger(limit)||limit<1||limit>50)fail('invalid_request',400,'Choose a limit from 1 to 50');return limit;}
 
 /** Source projections, read authorization and human wording; it never changes a business or read state. */
-export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadContext>,sources:Sources){
+export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadContext>,sources:Sources,options:{journalEnabled?:boolean}={}){
+ const journalEnabled=options.journalEnabled===true;
  const cursors=createGatewayContinuation(1024);
  async function coverage(ctx:RuntimeReadContext,asOf:number){const rows=await ctx.repository(BEHAVIOR_REPOSITORY).getCoverage();if(BEHAVIOR_SCOPES.filter(scope=>scope!=='life'||!!sources.life).some(scope=>!rows.some(row=>row.scope===scope)))fail('behavior_unavailable',503,'Behavior sources have not been enabled');const starts=rows.map(row=>row.fromAt),gaps=['启用前的记录未补录'];if(new Set(starts).size>1)gaps.push('各来源启用时间不同，更早记录不完整');return {from:Math.min(...starts),to:asOf,complete:rows.every(row=>!row.partial)&&new Set(starts).size===1,gaps};}
  async function visible(ctx:RuntimeReadContext,row:BehaviorRecord,audience:'owner'|'public',p?:Principal){
-  if(USER_LOG_PROCESS_NODES.includes(row.node))return false;
+  if(USER_LOG_PROCESS_NODES.includes(row.node)||journalEnabled&&JOURNAL_SUPPRESSED_NODES.includes(row.node))return false;
   const source=sources[row.sourceDomain];if(!source)return false;
   if(audience==='public'&&!row.publicProjection)return false;
+  const selection=journalPolicy.journalNodes.find(x=>x.node===row.node);if(journalEnabled&&audience==='public'&&selection&&selection.worldTemplate===null)return false;
   if(audience==='owner'){
    if(row.agentId===null||p?.kind!=='owner'||row.ownerAudience?.ownerId!==p.ownerId)return false;
    const current=await identity.captureOwnerObservation?.(ctx,row.agentId,row.sourceDomain);
    if(!current||current.ownerId!==p.ownerId||current.authorizationVersion!==row.ownerAudience.authorizationVersion||current.bindingId!==row.ownerAudience.bindingId||current.bindingVersion!==row.ownerAudience.bindingVersion||current.sharingGeneration!==row.ownerAudience.sharingGeneration)return false;
   }
-  return await source.canObserveBehavior(ctx,row,audience);
+  if(!await source.canObserveBehavior(ctx,row,audience))return false;
+  if(journalEnabled&&(row.node==='life.activity.interrupted'||['relationships.gift.declined','relationships.gift.withdrawn','relationships.gift.expired','relationships.gift.unavailable'].includes(row.node))){const d=await source.describeBehavior(ctx,row,audience),j=d?.journal,f=d?.life?.fishing;if(!j?.items.length&&!j?.moneyDelta&&!j?.energySpent&&!j?.energyRestored&&!j?.quotaRefunded&&!f?.completedCasts&&!f?.actualCosts.bait&&!f?.refundedCosts.bait)return false;}
+  return true;
  }
- async function item(ctx:RuntimeReadContext,row:BehaviorRecord,timeZone:string,owner?:Principal):Promise<JsonObject>{
-  const profile=row.agentId===null?null:await identity.readPublicAgent(ctx,row.agentId),[originalTitle,action,originalResult]=natural[row.node];let title=originalTitle,result=originalResult;const npcIdentity=row.npcId?await sources[row.sourceDomain]?.readNpcIdentity?.(ctx,row.npcId):null;
+ async function item(ctx:RuntimeReadContext,row:BehaviorRecord,timeZone:string,owner?:Principal,profiles=new Map<string,Promise<PublicAgentView|null>>()):Promise<JsonObject>{
+  const publicProfile=(id:string)=>{let v=profiles.get(id);if(!v){v=identity.readPublicAgent(ctx,id);profiles.set(id,v);}return v;};
+  const profile=row.agentId===null?null:await publicProfile(row.agentId),[originalTitle,action,originalResult]=natural[row.node];let title=originalTitle,result=originalResult;const npcIdentity=row.npcId?await sources[row.sourceDomain]?.readNpcIdentity?.(ctx,row.npcId):null;
   const place=row.publicProjection?.placeName;
   if(place&&row.node==='world.movement.started')result='从'+place+'出发';
   if(place&&row.node==='world.movement.completed')title=result='已抵达'+place;
@@ -116,24 +124,37 @@ export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadCont
     if(row.node==='town_services.service.cancelled')title=result=service.serviceName+'已取消';
    }
    const participants:JsonObject[]=[];
-   for(const participant of described.participants){const visibleProfile=participant.agentId===row.agentId?profile:await identity.readPublicAgent(ctx,participant.agentId);if(visibleProfile)participants.push({agentId:participant.agentId,displayName:visibleProfile.displayName,role:participant.role});}
+   for(const participant of described.participants){const visibleProfile=participant.agentId===row.agentId?profile:await publicProfile(participant.agentId);if(visibleProfile)participants.push({agentId:participant.agentId,displayName:visibleProfile.displayName,role:participant.role});}
+   if(journalEnabled&&!owner){const mapping=journalPolicy.journalNodes.find(x=>x.node===row.node);if(mapping?.worldTemplate){title=result=mapping.worldTemplate.replaceAll('{actor}',profile?.displayName??npcIdentity?.name??'居民').replaceAll('{place}',described.location?.to?.name??'小镇');}}
+   else if(journalEnabled&&described.journal){const j=described.journal,list=(role:string)=>j.items.filter(x=>x.role===role).map(x=>x.name+'×'+x.quantity).join('、'),where=described.location?.to?.name,at=where?'在'+where:'';
+    if(row.node==='life.purchase.completed')title=result=at+'买了'+(list('bought')||'生活物品（这次记录未保存品名）')+(j.moneyDelta!==null?'，花费'+(-j.moneyDelta)+'星币':'');
+    if(row.node==='life.sale.completed')title=result=at+'卖出'+(list('sold')||'自己的鱼（这次记录未保存品名）')+(j.moneyDelta!==null?'，得到'+j.moneyDelta+'星币':'');
+    if(row.node==='life.work.completed')title=result=at+'完成一班短工'+(described.life?.coinReward?'，赚到'+described.life.coinReward+'星币':'')+(j.energySpent?'，消耗'+j.energySpent+'体力':'');
+    if(row.node==='life.meal.prepared')title=result=at+'把'+(list('consumed')||'选中的鱼')+'加工成'+(list('created')||'鱼餐')+(j.moneyDelta?'，花费'+(-j.moneyDelta)+'星币':'');
+    if(row.node==='life.meal.completed')title=result=at+'吃了'+(list('consumed')||'选中的餐食')+(j.energyRestored?'，实际恢复'+j.energyRestored+'体力':'');
+    if(row.node==='life.rest.completed')title=result=at+'完成休息'+(j.moneyDelta?'，花费'+(-j.moneyDelta)+'星币':'')+(j.energyRestored?'，实际恢复'+j.energyRestored+'体力':'');
+    if(row.node==='life.reading.completed')title=result=at+'读了'+(described.life?.c?.book?'《'+described.life.c.book.title+'》':'一会儿书');
+    if(row.node==='life.fishing.finished'){const f=described.life?.fishing;if(f)title=result=at+'完成'+f.completedCasts+'／'+f.requestedCasts+'竿'+(f.completedCasts<f.requestedCasts?'后停止':'')+'，'+(list('caught')||'没有鱼获')+'，'+f.noCatchCount+'次空竿';}
+    if(row.node==='life.activity.interrupted')title=result=at+'活动已停止'+(list('caught')?'，保留'+list('caught'):'')+(list('released')?'，释放'+list('released'):'')+(j.energySpent?'，实际消耗'+j.energySpent+'体力':'');
+    if(described.gift){const other=participants.find(x=>x.agentId!==row.agentId),name=typeof other?.displayName==='string'?other.displayName:'对方';if(row.node==='relationships.gift.accepted')title=result=described.gift.direction==='sent'?name+'收下了'+list('sent')+'，物品已交付':'收到了'+name+'送来的'+list('received');else title=result=originalTitle+(list('released')?'，已释放'+list('released'):'');}
+   }
    // Public movement does not disclose whether a human initiated the action.
    // Only the separately authorized Owner view retains that actor distinction.
    const initiator=owner?{kind:row.initiator.kind,label:actorLabel(row.initiator.kind)}:row.node==='world.idle.completed'?{kind:'system',label:'日常系统漫游'}:null;
    const executor=row.sourceDomain==='town_services'&&row.executor.kind==='system'?{kind:'system',label:'镇民服务规则执行'}:owner?{kind:row.executor.kind,label:actorLabel(row.executor.kind,true)}:row.sourceDomain==='world'?{kind:'system',label:'世界系统推进'}:null;
-   details={version:1,completeness:described.completeness,phase:described.phase,phaseLabel:phaseLabels[described.phase],summary:result,timeRange:{startedAt:described.startedAt,endedAt:described.endedAt,durationMs:described.durationMs},location:described.location?{from:described.location.from?{...described.location.from}:null,to:described.location.to?{...described.location.to}:null,via:described.location.via.map(place=>({...place}))}:null,journey:described.journey?{...described.journey}:null,participants,initiator,executor,service:service?{...service}:null,...(described.life?{life:JSON.parse(JSON.stringify(described.life)) as JsonObject}:{}),...(described.gift?{gift:JSON.parse(JSON.stringify(described.gift)) as JsonObject}:{}),gaps:[...described.gaps]};
+   details={version:1,completeness:described.completeness,phase:described.phase,phaseLabel:phaseLabels[described.phase],summary:result,timeRange:{startedAt:described.startedAt,endedAt:described.endedAt,durationMs:described.durationMs},location:described.location?{from:described.location.from?{...described.location.from}:null,to:described.location.to?{...described.location.to}:null,via:described.location.via.map(place=>({...place}))}:null,journey:described.journey?{...described.journey}:null,participants,initiator,executor,service:service?{...service}:null,...(described.life?{life:JSON.parse(JSON.stringify(described.life)) as JsonObject}:{}),...(described.gift?{gift:JSON.parse(JSON.stringify(described.gift)) as JsonObject}:{}),...(journalEnabled&&described.journal&&owner?{journal:JSON.parse(JSON.stringify(described.journal)) as JsonObject}:{}),gaps:[...described.gaps]};
   }
   const time=new Intl.DateTimeFormat('en-GB',{timeZone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(row.occurredAt);
-  return {id:row.id,agent:{agentId:row.agentId,displayName:profile?.displayName??npcIdentity?.name??null,...(row.npcId?{npcId:row.npcId,actorKind:'npc'}:{})},title,action,result,occurredAt:row.occurredAt,date:localDate(row.occurredAt,timeZone),time,details,source:{domain:row.sourceDomain,node:row.node,detail}};
+  return {id:row.id,agent:{agentId:row.agentId,displayName:profile?.displayName??npcIdentity?.name??null,...(journalEnabled?{publicId:profile?.publicId??npcIdentity?.publicId??null,publishedVersion:profile?.publishedVersion??npcIdentity?.publishedVersion??null,appearance:profile?.appearance??npcIdentity?.appearance??null}:{}),...(row.npcId?{npcId:row.npcId,actorKind:'npc'}:{})},title,action,result,occurredAt:row.occurredAt,date:localDate(row.occurredAt,timeZone),time,details,source:{domain:row.sourceDomain,node:row.node,detail,...(journalEnabled?{label:({world:'世界活动',relationships:'居民交往',interaction:'文字交流',town_services:'镇民服务',life:'生活经历'})[row.sourceDomain]}:{})}};
  }
  function base(agentId:string|null,timeZone:string,items:JsonObject[],historyCoverage:JsonObject,partial:boolean,nextPageToken:string|null,asOf:number){return {worldId:'default',agentId,timeZone,items,historyCoverage,partial,nextPageToken,asOf};}
  async function publicRead(ctx:RuntimeReadContext,input:JsonObject,agentId:string|null){
   object(input,agentId===null?['worldId','timeZone']:['agentId','timeZone']);if(input.worldId!==undefined&&input.worldId!=='default')absent();
   const timeZone=timeZoneOf(input.timeZone);if(agentId!==null&&!await identity.readPublicAgent(ctx,agentId))absent();
-  const repo=ctx.repository(BEHAVIOR_REPOSITORY),cut=await repo.cut(),historyCoverage=await coverage(ctx,cut.asOf),items:JsonObject[]=[],counts=new Map<string,number>(),cap=agentId===null?30:10;
+  const repo=ctx.repository(BEHAVIOR_REPOSITORY),cut=await repo.cut(),historyCoverage=await coverage(ctx,cut.asOf),items:JsonObject[]=[],counts=new Map<string,number>(),cap=agentId===null?30:10,profiles=new Map<string,Promise<PublicAgentView|null>>();
   let after:{occurredAt:number;id:string}|undefined,scanned=0,complete=false;
   while(scanned<500&&items.length<cap&&!complete){const size=Math.min(50,500-scanned),rows=await repo.list({maxSequence:cut.maxSequence,userLogOnly:true,publicOnly:true,toAt:cut.asOf+1,...(agentId===null?{}:{agentId}),...(after?{after}:{}),limit:size});if(!rows.length){complete=true;break;}
-   for(const row of rows){scanned++;after={occurredAt:row.occurredAt,id:row.id};if((counts.get(row.agentId??row.npcId!)??0)>=10)continue;if(!await visible(ctx,row,'public'))continue;counts.set(row.agentId??row.npcId!,(counts.get(row.agentId??row.npcId!)??0)+1);items.push(await item(ctx,row,timeZone));if(items.length===cap)break;}
+   for(const row of rows){scanned++;after={occurredAt:row.occurredAt,id:row.id};if((counts.get(row.agentId??row.npcId!)??0)>=10)continue;if(!await visible(ctx,row,'public'))continue;counts.set(row.agentId??row.npcId!,(counts.get(row.agentId??row.npcId!)??0)+1);items.push(await item(ctx,row,timeZone,undefined,profiles));if(items.length===cap)break;}
    if(rows.length<size)complete=true;
   }
   return base(agentId,timeZone,items,historyCoverage,!complete&&items.length<cap,null,cut.asOf);
@@ -146,11 +167,11 @@ export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadCont
    const agentId=text(input.agentId,'agentId',1,100),authority=await identity.authorizeAgent(ctx,p,agentId),participation=await identity.readParticipation(ctx,agentId),proof=await identity.captureOwnerObservation?.(ctx,agentId,'world');
    if(!proof||proof.ownerId!==p.ownerId||!authority.binding)absent();
    const timeZone=timeZoneOf(input.timeZone),range=rangeOf(input,timeZone),limit=limitOf(input.limit),repo=ctx.repository(BEHAVIOR_REPOSITORY),profile=await identity.readPublicAgent(ctx,agentId);
-   const scope={instanceId:ctx.instanceId,recoveryEpoch:ctx.recoveryEpoch,principal:p.ownerId,authorizationVersion:hashRuntimeRequest({authority:authority.authorizationVersion,proof:{...proof},participation:{...participation,membership:{...participation.membership}},profile:profile?{publishedVersion:profile.publishedVersion,displayName:profile.displayName}:null,visibilityVersion:await repo.visibilityVersion(agentId)}),query:'behavior.owner_history:business-events-v1',target:JSON.stringify([agentId,timeZone,range.fromDate,range.toDate]),limit};
-   let anchor:Anchor|undefined;if(input.pageToken!==undefined){try{anchor=JSON.parse(cursors.decode(text(input.pageToken,'pageToken',1,2048),scope,ctx.now())) as Anchor;if(!Number.isSafeInteger(anchor.cut.maxSequence)||anchor.cut.maxSequence<0||!Number.isSafeInteger(anchor.cut.asOf)||anchor.cut.asOf>ctx.now()||!Number.isSafeInteger(anchor.after.occurredAt)||typeof anchor.after.id!=='string')throw new Error('Invalid anchor');}catch{fail('invalid_cursor',409,'Restart the current history query');}}
+   const scope={instanceId:ctx.instanceId,recoveryEpoch:ctx.recoveryEpoch,principal:p.ownerId,authorizationVersion:hashRuntimeRequest({authority:authority.authorizationVersion,proof:{...proof},participation:{...participation,membership:{...participation.membership}},profile:profile?{publishedVersion:profile.publishedVersion,displayName:profile.displayName}:null,visibilityVersion:await repo.visibilityVersion(agentId)}),query:journalEnabled?'behavior.owner_history:life-journal-v1':'behavior.owner_history:business-events-v1',target:JSON.stringify([agentId,timeZone,range.fromDate,range.toDate]),limit};
+   const profiles=new Map<string,Promise<PublicAgentView|null>>();let anchor:Anchor|undefined;if(input.pageToken!==undefined){try{anchor=JSON.parse(cursors.decode(text(input.pageToken,'pageToken',1,2048),scope,ctx.now())) as Anchor;if(!Number.isSafeInteger(anchor.cut.maxSequence)||anchor.cut.maxSequence<0||!Number.isSafeInteger(anchor.cut.asOf)||anchor.cut.asOf>ctx.now()||!Number.isSafeInteger(anchor.after.occurredAt)||typeof anchor.after.id!=='string')throw new Error('Invalid anchor');}catch{fail('invalid_cursor',409,'Restart the current history query');}}
    const cut=anchor?.cut??await repo.cut(),historyCoverage=await coverage(ctx,cut.asOf),items:JsonObject[]=[];let after=anchor?.after,scanned=0,complete=false,byteBudget=0,budgetHit=false,hasMore=false;
    while(scanned<500&&!complete&&!budgetHit&&!hasMore){const size=Math.min(50,500-scanned),rows=await repo.list({agentId,userLogOnly:true,maxSequence:cut.maxSequence,...(range.fromAt===undefined?{}:{fromAt:Math.max(0,range.fromAt)}),toAt:Math.max(0,Math.min(range.toAt??cut.asOf+1,cut.asOf+1)),...(after?{after}:{}),limit:size});if(!rows.length){complete=true;break;}
-    for(let i=0;i<rows.length;i++){const row=rows[i]!;scanned++;if(await visible(ctx,row,'owner',p)){if(items.length===limit){hasMore=true;break;}const projected=await item(ctx,row,timeZone,p),bytes=Buffer.byteLength(JSON.stringify(projected));if(byteBudget+bytes>60000){budgetHit=true;break;}items.push(projected);byteBudget+=bytes;}after={occurredAt:row.occurredAt,id:row.id};}
+    for(let i=0;i<rows.length;i++){const row=rows[i]!;scanned++;if(await visible(ctx,row,'owner',p)){if(items.length===limit){hasMore=true;break;}const projected=await item(ctx,row,timeZone,p,profiles),bytes=Buffer.byteLength(JSON.stringify(projected));if(byteBudget+bytes>60000){budgetHit=true;break;}items.push(projected);byteBudget+=bytes;}after={occurredAt:row.occurredAt,id:row.id};}
     if(!budgetHit&&!hasMore&&rows.length<size)complete=true;
    }
    return base(agentId,timeZone,items,historyCoverage,!complete&&(scanned>=500||budgetHit),!complete&&after?cursors.encode(JSON.stringify({cut,after}),scope,ctx.now()):null,cut.asOf);

@@ -30,8 +30,8 @@ export async function verifyWorldReadiness(context: RuntimeReadContext, worldId 
   assertRuleset(rules);
 }
 const actions = ['world.avatar.create', 'world.avatar.move', 'world.avatar.leave', 'world.movement.stop'];
-export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,options:{observation?:BehaviorObservationAccess<RuntimeReadContext>;activities?:WorldActivityAccess;publicActivity?:(context:RuntimeReadContext,agentId:string)=>Promise<unknown>;currentNpcs?:(context:RuntimeReadContext,worldId:string)=>Promise<{catalogVersion:number;npcs:CurrentTownNpc[]}>}={}) {
-  const cursors = createWorldCursor();
+export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,options:{observation?:BehaviorObservationAccess<RuntimeReadContext>;activities?:WorldActivityAccess;publicActivity?:(context:RuntimeReadContext,agentId:string)=>Promise<unknown>;withdrawExpressions?:(context:RuntimeTransaction,worldId:string,agentId:string)=>Promise<void>;expressions?:(context:RuntimeReadContext,worldId:string,actors:{kind:'agent'|'npc';id:string}[])=>Promise<unknown[]>;currentNpcs?:(context:RuntimeReadContext,worldId:string)=>Promise<{catalogVersion:number;npcs:CurrentTownNpc[]}>}={}) {
+  const cursors = createWorldCursor(),readExpressions=options.expressions;
   async function authorize(context: RuntimeReadContext, principal: Principal): Promise<string> {
     if (principal.kind !== 'agent') fail('agent_identity_required', 403, 'This action requires the Agent identity');
     await identity.authorizeAgent(context, principal, principal.agentId); return principal.agentId;
@@ -252,7 +252,9 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
         }
         if (avatars.length < limit && candidates.length < batchSize) complete = true;
       }
-      return { worldId, worldRevision: world.revision, asOf: context.now(), scope: 'world', avatars,...await npcProjection(context,worldId,rules), complete, nextCursor: !complete && after ? cursors.encode(after, scope, context.now()) : null };
+      const npcState=await npcProjection(context,worldId,rules);
+      const expressions=readExpressions?await readExpressions(context,worldId,[...avatars.map(a=>({kind:'agent' as const,id:a.agentId})),...npcState.npcs.map(n=>({kind:'npc' as const,id:n.npcId}))]):undefined;
+      return { worldId, worldRevision: world.revision, asOf: context.now(), scope: 'world', avatars,...npcState,...(expressions?{expressions}:{}), complete, nextCursor: !complete && after ? cursors.encode(after, scope, context.now()) : null };
   }
   async function execute(context: RuntimeTransaction, principal: Principal, key: CommandKey, input: JsonObject): Promise<CommandReceipt> {
     if (key.domain !== 'world' || !actions.includes(key.action) || principal.kind !== 'agent' || key.principal.kind !== 'agent' || key.principal.id !== principal.agentId) fail('invalid_request', 400, 'Invalid world command identity');
@@ -306,7 +308,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
         } else {
           if (!old || old.status === 'left') fail('avatar_not_found', 404, 'Avatar is not available');
           if (version(request.expectedVersion) !== old.version) fail('version_conflict', 409, 'Avatar has changed');
-          if (key.action === 'world.avatar.leave') { await options.activities?.interrupt(current,worldId,agentId,'avatar_left'); const active = await repository.getActiveMovement(worldId, agentId); if (active) await repository.saveMovement(stopped(active, now, 'avatar_left'), active.version); avatar = { ...old, version: old.version + 1, status: 'left', placeId: null, updatedAt: now,motion:null }; kind = 'world.avatar.left'; }
+          if (key.action === 'world.avatar.leave') { await options.withdrawExpressions?.(current,worldId,agentId); await options.activities?.interrupt(current,worldId,agentId,'avatar_left'); const active = await repository.getActiveMovement(worldId, agentId); if (active) await repository.saveMovement(stopped(active, now, 'avatar_left'), active.version); avatar = { ...old, version: old.version + 1, status: 'left', placeId: null, updatedAt: now,motion:null }; kind = 'world.avatar.left'; }
           else {
             if (version(request.expectedRulesetVersion, 'expectedRulesetVersion') !== rules.version || version(request.expectedTopologyVersion, 'expectedTopologyVersion') !== rules.topologyVersion) fail('version_conflict', 409, 'World rules have changed');
             if (await repository.getActiveMovement(worldId, agentId)) fail('movement_in_progress', 409, 'The Avatar already has an active movement');

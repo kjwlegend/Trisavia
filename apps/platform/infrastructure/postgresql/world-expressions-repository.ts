@@ -1,0 +1,9 @@
+import {WORLD_EXPRESSIONS,emptyExpressionLimits,type ExpressionRepository,type ExpressionSource} from '../../domains/world/expressions.ts';
+import type {RuntimeSql} from './runtime-sql.ts';
+export function createWorldExpressionRepository(sql:RuntimeSql){const repo:ExpressionRepository={
+ async getLimits(w,a){return(await sql.query('SELECT data FROM world.expression_limits WHERE world_id=$1 AND actor_kind=$2 AND actor_id=$3 FOR UPDATE',[w,a.kind,a.id]))[0]?.data??emptyExpressionLimits();},
+ async saveLimits(w,a,v){await sql.mutate('INSERT INTO world.expression_limits(world_id,actor_kind,actor_id,data) VALUES($1,$2,$3,$4) ON CONFLICT(world_id,actor_kind,actor_id) DO UPDATE SET data=EXCLUDED.data',[w,a.kind,a.id,v]);},
+ async put(s){const v=s.value;await sql.mutate('INSERT INTO world.expressions(world_id,actor_kind,actor_id,expression_id,created_at,expires_at,data) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(world_id,actor_kind,actor_id) DO UPDATE SET expression_id=EXCLUDED.expression_id,created_at=EXCLUDED.created_at,expires_at=EXCLUDED.expires_at,data=EXCLUDED.data',[v.worldId,v.actor.kind,v.actor.id,v.expressionId,v.createdAt,v.expiresAt,s]);},
+ async withdraw(w,a){await sql.mutate(`UPDATE world.expressions SET data=data||'{"withdrawn":true}'::jsonb WHERE world_id=$1 AND actor_kind=$2 AND actor_id=$3`,[w,a.kind,a.id]);},
+ async current(w,actors,at){if(actors.length>228)throw new Error('Expression actor batch exceeds the bounded scene');if(!actors.length)return[];return(await sql.query('SELECT e.data FROM world.expressions e JOIN jsonb_to_recordset($2::jsonb) a(kind text,id text) ON a.kind=e.actor_kind AND a.id=e.actor_id WHERE e.world_id=$1 AND e.expires_at>$3 ORDER BY e.created_at DESC,e.expression_id COLLATE "C"',[w,JSON.stringify(actors),at])).map(r=>r.data as ExpressionSource);}
+ };return {port:WORLD_EXPRESSIONS,writer:repo,reader:{current:repo.current}};}

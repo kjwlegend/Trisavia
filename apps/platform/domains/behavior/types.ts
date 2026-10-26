@@ -1,3 +1,4 @@
+import journalPolicy from '../../../../docs/workstreams/ws03-interaction/life-journal-v1/event-expression-map.json' with {type:'json'};
 import type {OwnerAudienceProof,OwnerObservationDomain} from '../access/public.ts';
 import type {RuntimeActor,RuntimeSource} from '../../contracts/runtime-store.ts';
 export type {OwnerAudienceProof} from '../access/public.ts';
@@ -16,6 +17,7 @@ export const BEHAVIOR_NODES=[
 export type BehaviorNode=typeof BEHAVIOR_NODES[number];
 /** Internal user-log selection, never a client-supplied list of filters. */
 export const USER_LOG_PROCESS_NODES:readonly BehaviorNode[]=Object.freeze(['world.movement.received','world.movement.started','world.movement.completed','world.movement.stopped','world.idle.completed']);
+export const JOURNAL_SUPPRESSED_NODES:readonly BehaviorNode[]=Object.freeze(journalPolicy.journalDefaultSuppressedNodes as BehaviorNode[]);
 export interface BehaviorObservationAccess<C extends object>{capture(context:C,agentId:string,sourceDomain:OwnerObservationDomain):Promise<OwnerAudienceProof|null>}
 export interface BehaviorCoverage {scope:BehaviorScope;fromAt:number;policyVersion:1;partial:boolean}
 export interface BehaviorPublicProjection {policyVersion:1;worldId:string;sharingGeneration:number;placeId:string|null;placeName:string|null}
@@ -36,6 +38,7 @@ export interface BehaviorDetails {
  journey:{completedSteps:number|null;plannedSteps:number|null}|null;
  participants:{agentId:string;role:'sender'|'recipient'}[];
  resultCode:string;gaps:string[];
+ journal?:{items:{itemId:string;name:string;quantity:number;role:'bought'|'sold'|'caught'|'consumed'|'created'|'released'|'sent'|'received'}[];moneyDelta:number|null;energySpent:number|null;energyRestored:number|null;quotaRefunded:boolean;stopCode:string|null};
  service?:{npcId:string;npcName:string;serviceId:string;serviceName:string;choice:string|null;response:string|null};
  gift?:{giftId:string;state:string;direction:'sent'|'received';items:{itemInstanceId:string;itemId:string;name:string}[]};
  life?:{activityId:string;actionId:string;jobId:string|null;resultId:string;scheduledEndAt:number;energySpent:number|null;energyRestored:number|null;coinReward:number|null;fishing?:import('../life/b-types.ts').LifeFishingResult&{unstartedCasts:number}|null;trade?:{moneyDelta:number;quantity:number}|null;c?:{book:{bookId:string;version:number;title:string;authorDisplay:string;digest:string}|null;visit:{first:boolean;recorded:boolean}|null;moneyDelta:number|null;consumedItems:number|null;createdItems:number|null}|null};

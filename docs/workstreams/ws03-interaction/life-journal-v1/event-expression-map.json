@@ -79,13 +79,13 @@
   ],
   "statusPolicy":"Only while an activity is active and its action/place is independently allowed in the public scene. Never expose private materials, price, book holding or gift state. Unknown actions have no fallback invented text.",
   "npcAmbientLines": [
-    {"id":"mayor-notice","npcId":"npc-mayor","placeId":"town_hall","requiredActionId":"npc.duty","requiredFacility":"public_notice","text":"新来的朋友，可以看看公告。"},
-    {"id":"tavern-menu","npcId":"npc-tavern","placeId":"harbor_tavern","requiredActionId":"npc.duty","requiredFacility":"meal_catalog","text":"酒馆的餐食可以在这里查看。"},
-    {"id":"fisher-self-service","npcId":"npc-fishing-clerk","placeId":"fisher_shop","requiredActionId":"npc.duty","text":"鱼竿和鱼饵可以自助购买。"},
-    {"id":"library-free-reading","npcId":"npc-librarian","placeId":"blue_library","requiredActionId":"npc.duty","text":"这里有免费的馆藏可以读。"},
-    {"id":"inn-rest-service","npcId":"npc-innkeeper","placeId":"stone_inn","requiredActionId":"npc.duty","text":"旅舍设有休憩位。"},
-    {"id":"harbor-workplace","npcId":"npc-harbor-hand","placeId":"harbor_work","requiredActionId":"work.shift","requiredFacility":"harbor_job","text":"仓棚这边是码头岗位。"},
-    {"id":"neighbor-library","npcId":"npc-neighbor","placeId":"blue_library","requiredActionId":"book.read","requiredFacility":"free_library_book","text":"书屋里也有免费的馆藏。"}
+    {"id":"mayor-notice","npcId":"npc-mayor","placeId":"town_hall","requiredActionId":"npc.duty","requiredFacility":"public_notice","text":"新朋友，欢迎来到清昼。"},
+    {"id":"tavern-menu","npcId":"npc-tavern","placeId":"harbor_tavern","requiredActionId":"npc.duty","requiredFacility":"meal_catalog","text":"欢迎，坐下歇歇吧。"},
+    {"id":"fisher-self-service","npcId":"npc-fishing-clerk","placeId":"fisher_shop","requiredActionId":"npc.duty","text":"想钓鱼？挑根顺手的竿吧。"},
+    {"id":"library-free-reading","npcId":"npc-librarian","placeId":"blue_library","requiredActionId":"npc.duty","text":"不着急，挑本喜欢的书。"},
+    {"id":"inn-rest-service","npcId":"npc-innkeeper","placeId":"stone_inn","requiredActionId":"npc.duty","text":"走累了，就来歇会儿吧。"},
+    {"id":"harbor-workplace","npcId":"npc-harbor-hand","placeId":"harbor_work","requiredActionId":"work.shift","requiredFacility":"harbor_job","text":"正忙着呢，先跟你打个招呼。"},
+    {"id":"neighbor-library","npcId":"npc-neighbor","placeId":"blue_library","requiredActionId":"book.read","requiredFacility":"free_library_book","text":"我在这儿读会儿书，你随意。"}
   ],
   "npcAmbientPolicy":"Requires actual NPC presence, the exact required active action at that place, and the current published facility capability. Missing evidence means silence. Facility labels are semantic conditions to bind to existing services, not new operation IDs. No private facts, automatic replies or new schedule.",
   "fullTextPolicy":"Keep up to 80 Unicode code points in the same scene payload; map preview may truncate at 28 graphemes with an indicator. Current actor card can read the full unexpired text, without an extra per-actor request or a journal entry.",
