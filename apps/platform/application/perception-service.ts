@@ -59,8 +59,14 @@ const common = ['protocolVersion', 'channel', 'purpose', 'consumerId', 'scope', 
 const DOCUMENT_RESPONSE_MAX_BYTES = 256 * 1024;
 export function createPerceptionService(store: M1Store, auth: PerceptionAuth, options: PerceptionOptions = {}) {
     const appearanceReaders=new WeakMap<M1ReadSession,LegacyAvatarIdentityReader<M1ReadSession>>();
-    function bindMeteredAppearance(original:M1Transaction,reader:M1Transaction,meter:ReturnType<typeof meteredRead>):void {
+    const publicIdReaders=new WeakMap<M1ReadSession,(agentId:string)=>Promise<string>>();
+    function bindMeteredSources(original:M1Transaction,reader:M1Transaction,meter:ReturnType<typeof meteredRead>):void {
+        // The wrapper has no infrastructure binding; keep the real lookup in this transaction and charge one row per subject.
+        publicIdReaders.set(reader,id=>meter.readAuxiliary(`public-id:agent:${id}`,()=>readPublicId(original,'agent',id)));
         if(options.legacyAvatarIdentity)appearanceReaders.set(reader,(_session,input)=>meter.readAuxiliary(`legacy-avatar:${input.agentId}`,()=>options.legacyAvatarIdentity!(original,input)));
+    }
+    function agentPublicId(reader:M1ReadSession,id:string):Promise<string>{
+        return publicIdReaders.get(reader)?.(id)??readPublicId(reader,'agent',id);
     }
     const now = options.now ?? Date.now;
     const mailboxSources = options.mailboxSources ?? [];
@@ -101,7 +107,7 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
         const p = plain(row.data.published), av = projectAvatar(p.avatar);
         if (typeof p.displayName !== 'string' || !p.displayName.trim() || !av)
             return null;
-        const fields: JsonObject = { publicId:await readPublicId(tx,'agent',id),displayName: p.displayName, avatar:av,appearance:await readAppearance(tx,id,av,appearanceReaders.get(tx)??options.legacyAvatarIdentity),publishedVersion:row.data.publishedVersion! };
+        const fields: JsonObject = { publicId:await agentPublicId(tx,id),displayName: p.displayName, avatar:av,appearance:await readAppearance(tx,id,av,appearanceReaders.get(tx)??options.legacyAvatarIdentity),publishedVersion:row.data.publishedVersion! };
         if (typeof p.bio === 'string')
             fields.bio = p.bio;
         if (Array.isArray(p.interests))
@@ -129,7 +135,7 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
                 fail('target_not_accessible', 404, 'Target is not accessible');
             await checkSource(tx, 'holdings');
             const itemPermitted = item && item.data.active === true && item.data.available === true && item.data.public === true && await currentSource(tx, String(item.data.sourceId)) === 'enabled';
-            const card=plain(g.data.residentCard),cardBody=card.agentId===a.agentId&&typeof card.displayName==='string'&&typeof card.issuedAt==='number'?`居民身份卡\n姓名：${card.displayName}\n居民编号：${await readPublicId(tx,'agent',a.agentId!)}\n首次加入：${typeof card.firstWorldJoinedAt==='number'?new Date(card.firstWorldJoinedAt).toISOString():'未记录'}\n签发时间：${new Date(card.issuedAt).toISOString()}\n此卡绑定本人，不可转让、交易或作为服务券使用；不是运行凭据。`:null;
+            const card=plain(g.data.residentCard),cardBody=card.agentId===a.agentId&&typeof card.displayName==='string'&&typeof card.issuedAt==='number'?`居民身份卡\n姓名：${card.displayName}\n居民编号：${await agentPublicId(tx,a.agentId!)}\n首次加入：${typeof card.firstWorldJoinedAt==='number'?new Date(card.firstWorldJoinedAt).toISOString():'未记录'}\n签发时间：${new Date(card.issuedAt).toISOString()}\n此卡绑定本人，不可转让、交易或作为服务券使用；不是运行凭据。`:null;
             const townItem=plain(g.data.source).kind==='npc_service_item',body=cardBody??(townItem&&g.data.status==='available'?'这张券当前可用；使用仍须本人到对应服务点按当前条件办理，不可转赠。':townItem&&g.data.status==='reserved'?'这张券正在为一次服务预留，尚未消耗；不可转赠。':g.data.dataMode==='demo'?'明确标识的示例持有记录，不代表经济资产、货币或交易权。':'当前获准的持有关系记录；不授使用、转移、删除或交易权。');
             return { ref: r, grant: g, row: { id: g.id, version: g.version, data: { ref: r, categoryId: 'holdings', metricId: 'held', channel: 'inventory', sourceId: 'holdings', title: itemPermitted ? item.data.title! : '持有记录', body, ...(itemPermitted ? { itemRef: item.data.ref!, ...(item.data.itemKind ? { itemKind: item.data.itemKind } : {}) } : {}), quantity: g.data.quantity ?? 1, status: g.data.status ?? 'active', public: false, active: true, available: true, dataMode: g.data.dataMode ?? 'real', attachments: [], source: g.data.source ?? { kind: g.data.dataMode === 'demo' ? 'demo_holding' : 'holding_record' } } } };
         }
@@ -459,7 +465,7 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
         tx = meter.reader;
         const ctx = validateContext(input, a);
         a = await readActor(tx, a, input, String(input.channel));
-        bindMeteredAppearance(original,tx,meter);
+        bindMeteredSources(original,tx,meter);
         const categoryId = text(input.categoryId, 'categoryId', 1, 60), category = perceptionCategories(plain((await catalogRepository(tx).get('current'))!.data.sourceStates)).find(c => c.categoryId === categoryId);
         if (!category || input.channel !== category.channel)
             fail('invalid_request', 422, 'Category does not belong to the channel');
@@ -521,7 +527,7 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
         const channel = text(input.channel, 'channel', 1, 30), baseContext = validateContext(input, a);
         a = await readActor(tx, a, input, channel);
         let meter=meteredRead(tx,limits,{started});
-        bindMeteredAppearance(tx,tx,meter);
+        bindMeteredSources(tx,tx,meter);
         const ctx = { ...baseContext, ...(a.kind === 'owner_session' && a.agentId ? { agentRef: input.agentRef as JsonObject } : {}) }, r = ref(input.ref), c = await readable(tx, a, r, channel);
         let offset = 0, readSessionId = `body_${randomUUID()}`;
         if (input.knownVersion !== undefined)
@@ -546,7 +552,7 @@ export function createPerceptionService(store: M1Store, auth: PerceptionAuth, op
         if (attachments.length > 50 || Buffer.byteLength(JSON.stringify(attachments)) > 8000)
             fail('source_unavailable', 503, 'Attachment descriptions exceed the bounded source contract');
         if(c.row.data.sourceId==='platform-publications')meter=meteredRead(tx,limits,{started,sourceRow:c.row});
-        bindMeteredAppearance(tx,meter.reader,meter);
+        bindMeteredSources(tx,meter.reader,meter);
         meter.check();
         const related: JsonObject[] = [];
         if (c.row.data.sourceId === 'platform-publications' && Array.isArray(c.row.data.publishedRefs))

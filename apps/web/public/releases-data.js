@@ -1,6 +1,15 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.6.3',
+    date: '2026-10-26',
+    status: '已完成',
+    title: '恢复居民卡与人物编号读取',
+    highlights: [
+      {category: '修复', title: '正常查看居民卡与居民编号', description: '修复读取居民卡时的来源不可用提示；公开人物列表与详情保持同一居民编号，继续按当前权限和读取预算核对。'},
+    ],
+  },
+  {
     version: '0.6.2',
     date: '2026-10-26',
     status: '已完成',
