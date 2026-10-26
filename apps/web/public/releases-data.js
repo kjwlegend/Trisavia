@@ -1,6 +1,16 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.6.4',
+    date: '2026-10-26',
+    status: '已完成',
+    title: '更清楚地阅读小镇经历',
+    highlights: [
+      {category: '优化', title: '紧凑的经历时间线', description: '生活记录以更紧凑的时间线展示，个人经历更容易顺着时间阅读。'},
+      {category: '优化', title: '折叠重复的镇民日常', description: '相邻重复的镇民日常可折叠，展开后仍能查看每条原记录。'},
+    ],
+  },
+  {
     version: '0.6.3',
     date: '2026-10-26',
     status: '已完成',

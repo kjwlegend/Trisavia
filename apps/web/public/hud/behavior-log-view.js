@@ -1,12 +1,13 @@
 import {el} from '../common.js';
 import {icon} from './icons.js';
 import {browserLogTimeZone,logDateTime} from './behavior-log-reader.js';
-const labels={world:'世界行动',relationships:'好友',interaction:'作品交流',town_services:'小镇服务',life:'生活活动'};
+import {groupLogItems,logFact,logOutcomes} from './behavior-log-presentation.js';
 const control=(label,run)=>{const node=el('button','',label);node.type='button';node.addEventListener('click',run);return node;};
 const duration=value=>{const hours=Math.floor(value/3600000),minutes=Math.floor(value%3600000/60000),seconds=value%60000/1000;return[hours?`${hours}小时`:'',minutes?`${minutes}分`:'',seconds||!hours&&!minutes?`${seconds}秒`:''].filter(Boolean).join('');};
 const detailTime=(value,timeZone)=>new Intl.DateTimeFormat('zh-CN',{timeZone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).format(value);
 function recordDetail(item,timeZone){
  const node=el('article','behavior-log-detail'),details=item.details;node.append(el('h3','',item.title),el('p','hud-muted',`${item.agent.displayName||'一位角色'} · 记录于 ${item.date} ${item.time}`),el('p','behavior-log-result',details?.summary||item.result));
+ if(details?.summary&&item.result&&![details.summary,item.title].includes(item.result))node.append(el('p','',item.result));
  if(!details){node.append(el('p','hud-muted','该记录未保存更多细节'));return node;}
  const actors=el('p','hud-muted');actors.textContent=[details.phaseLabel,details.initiator?`发起：${details.initiator.label}`:'',details.executor?`执行：${details.executor.label}`:''].filter(Boolean).join(' · ');node.append(actors);
  const places=details.location;if(places||['movement','wander'].includes(details.phase)){const section=el('section');section.append(el('h4','','地点'),el('p','',`起点：${places?.from?.name||'未记录'}\n终点：${places?.to?.name||'未记录'}`));node.append(section);}
@@ -21,14 +22,25 @@ function recordDetail(item,timeZone){
 }
 export function createBehaviorLogView(reader,{mode,chooseAgent=()=>{},openSource=null}={}){
  const node=el('section',`behavior-logs behavior-logs-${mode}`),heading=el('h3'),subtitle=el('p','hud-muted'),toolbar=el('div','behavior-log-tools'),status=el('p','behavior-log-status'),coverage=el('details','behavior-log-coverage'),coverageText=el('p'),detailTools=el('div','behavior-log-detail-tools'),list=el('div','behavior-log-list'),footer=el('div','behavior-log-footer'),refresh=control('刷新',()=>reader.refresh()),previous=control('上一页',()=>reader.previous()),next=control('下一页',()=>reader.next()),retry=control('重试',()=>reader.retry()),choose=control('选择 Agent',chooseAgent),zones=el('select'),zoneName=el('span','hud-muted');
- coverage.append(el('summary','','记录范围'),coverageText);node.append(heading,subtitle,toolbar,status,detailTools,list,footer);detailTools.hidden=true;status.setAttribute('role','status');list.tabIndex=-1;list.setAttribute('aria-label',mode==='world'?'世界日志记录':mode==='owner'?'个人日志记录':'角色最近记录');let value=reader.snapshot(),selected=null,savedScroll=0;
+ coverage.append(el('summary','','记录范围'),coverageText);node.append(heading,subtitle,toolbar,status,detailTools,list,coverage,footer);detailTools.hidden=true;status.setAttribute('role','status');list.tabIndex=-1;list.setAttribute('aria-label',mode==='world'?'世界日志记录':mode==='owner'?'个人日志记录':'角色最近记录');let value=reader.snapshot(),selected=null,savedScroll=0;const expanded=new Set();
  const from=el('input'),to=el('input');from.type=to.type='date';from.setAttribute('aria-label','起始日期');to.setAttribute('aria-label','结束日期');zones.setAttribute('aria-label','日志显示时区');for(const zone of [...new Set([browserLogTimeZone(),'Asia/Shanghai','UTC'])]){const option=el('option','',zone);option.value=zone;zones.append(option);}zones.value=value.filters.timeZone;zones.addEventListener('change',()=>reader.configure({timeZone:zones.value}));from.addEventListener('change',()=>reader.configure({fromDate:from.value}));to.addEventListener('change',()=>reader.configure({toDate:to.value}));
  if(mode==='owner'){for(const [label,input]of [['从',from],['至',to],['时区',zones]]){const field=el('label');field.append(el('span','',label),input);toolbar.append(field);}}else if(mode==='world')toolbar.append(zones);else toolbar.append(zoneName);toolbar.append(refresh);if(mode==='owner')footer.append(previous,next);footer.append(retry,choose);
- function sourceLabel(item){return item.details?.phaseLabel||(item.source.domain==='world'&&item.source.node==='world.idle.completed'?'日常漫游':labels[item.source.domain]);}
  function showDetail(item){selected=item;savedScroll=list.scrollTop;renderList();list.scrollTop=0;list.focus({preventScroll:true});}
+ function returnToList(){const id=selected?.id;selected=null;renderList();list.scrollTop=savedScroll;if(id)list.querySelector(`[data-log-id="${CSS.escape(id)}"]`)?.focus({preventScroll:true});}
+ function recordParts(item,{groupCount=0}={}){
+  const picture=el('span','behavior-log-avatar');picture.setAttribute('aria-hidden','true');picture.append(icon('profile'));
+  const copy=el('span','behavior-log-copy'),story=el('span','behavior-log-story'),name=el('strong','',item.agent.displayName||'一位角色');story.append(name,document.createTextNode(' '),el('span','',logFact(item)));copy.append(story);
+  const outcomes=logOutcomes(item,{mode});if(outcomes.length)copy.append(el('small','behavior-log-outcomes',outcomes.join(' · ')));
+  if(groupCount){copy.append(el('small','behavior-log-group-note',`相邻 ${groupCount} 条 · 同一镇民、地点和活动`),el('span','behavior-log-hint',`展开这 ${groupCount} 条记录`));}
+  else copy.append(el('span','behavior-log-hint','查看详情'));
+  const time=el('time','',item.time);time.dateTime=new Date(item.occurredAt).toISOString();return[picture,copy,time];
+ }
+ function recordRow(item){const row=control('',()=>showDetail(item));row.className='behavior-log-row';row.dataset.logId=item.id;row.append(...recordParts(item));return row;}
  function renderList(){
-  list.replaceChildren();detailTools.replaceChildren();detailTools.hidden=!selected;if(selected){const back=control('返回日志',()=>{selected=null;renderList();list.scrollTop=savedScroll;list.querySelector(`[data-log-id="${CSS.escape(itemId)}"]`)?.focus({preventScroll:true});}),itemId=selected.id;back.className='behavior-log-detail-back';detailTools.append(back);list.append(recordDetail(selected,value.data.timeZone));if(openSource&&selected.source.detail)list.append(control('查看相关记录',()=>openSource(selected.source.detail)));return;}
-  list.append(coverage);let date='';for(const item of value.data?.items||[]){if(item.date!==date){date=item.date;list.append(el('h4','behavior-log-date',date));}const row=control('',()=>showDetail(item));row.className='behavior-log-row';row.dataset.logId=item.id;const time=el('time','',item.time);time.dateTime=new Date(item.occurredAt).toISOString();const picture=el('span','behavior-log-avatar');picture.append(icon('profile'));const copy=el('span','behavior-log-copy'),identity=el('span','behavior-log-identity'),label=sourceLabel(item);identity.append(el('strong','',item.agent.displayName||'一位角色'),el('small','hud-muted',[item.agent.actorKind==='npc'?'镇民 NPC':'',label,item.details?.initiator?.label].filter(Boolean).join(' · ')));copy.append(identity,el('span','',item.details?.summary||[...new Set([item.action===label?'':item.action,item.result].filter(Boolean))].join('，')||item.title));row.append(time,picture,copy);list.append(row);}
+  list.replaceChildren();detailTools.replaceChildren();detailTools.hidden=!selected;coverage.hidden=!value.data||Boolean(selected);if(selected){const back=control('返回日志',returnToList);back.className='behavior-log-detail-back';detailTools.append(back);list.append(recordDetail(selected,value.data.timeZone));if(openSource&&selected.source.detail)list.append(control('查看相关记录',()=>openSource(selected.source.detail)));return;}
+  let date='';for(const group of groupLogItems(value.data?.items||[],{mode})){const item=group.items[0];if(item.date!==date){date=item.date;list.append(el('h4','behavior-log-date',date));}if(group.items.length===1){list.append(recordRow(item));continue;}
+   const fold=el('details','behavior-log-group'),summary=el('summary','behavior-log-row'),rows=el('div','behavior-log-group-rows');fold.dataset.logGroup=group.id;summary.append(...recordParts(item,{groupCount:group.items.length}));rows.append(...group.items.map(recordRow));fold.append(summary,rows);fold.open=expanded.has(group.id);fold.addEventListener('toggle',()=>{if(!fold.isConnected)return;if(fold.open)expanded.add(group.id);else expanded.delete(group.id);});list.append(fold);
+  }
  }
  function render(){
   const ready=value.phase==='ready',data=value.data;node.dataset.logPhase=value.phase;heading.textContent=mode==='world'?'世界日志':mode==='owner'?`${value.agentName||'当前角色'}的个人日志`:'最近记录';subtitle.textContent=mode==='world'?'最近公开活动':mode==='owner'?'你可查看的历史记录':'当前获准公开的最近记录，最多 10 条。';zoneName.textContent=value.filters.timeZone;from.value=value.filters.fromDate;to.value=value.filters.toDate;zones.value=value.filters.timeZone;refresh.disabled=value.phase==='loading';previous.disabled=!value.canPrevious||value.phase==='loading';next.disabled=!value.canNext||value.phase==='loading';retry.hidden=value.phase!=='error'&&value.phase!=='changed';choose.hidden=!['session','no_agent'].includes(value.phase);choose.textContent=value.phase==='session'?'登录账号':'选择 Agent';
@@ -36,6 +48,6 @@ export function createBehaviorLogView(reader,{mode,chooseAgent=()=>{},openSource
   coverage.hidden=!data;coverageText.textContent='';if(data){const c=data.historyCoverage;coverageText.textContent=(c.from===null?'更早记录的覆盖范围暂未确认。':`可查记录始于 ${logDateTime(c.from,data.timeZone)}。`)+(!c.complete?'更早的记录不完整。':'')+(c.gaps.length?c.gaps.join(' ')+' ':'');}
   if(!data||!data.items.some(item=>item.id===selected?.id))selected=null;renderList();
  }
- const stop=reader.subscribe(next=>{const changed=next.data!==value.data;value=next;if(changed)selected=null;render();});
- return{node,dispose(){stop();},back(){if(!selected)return false;selected=null;renderList();list.scrollTop=savedScroll;return true;}};
+ const stop=reader.subscribe(next=>{const changed=next.data!==value.data;value=next;if(changed){selected=null;expanded.clear();}render();});
+ return{node,dispose(){stop();},back(){if(!selected)return false;returnToList();return true;}};
 }
