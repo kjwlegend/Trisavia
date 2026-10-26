@@ -1,0 +1,62 @@
+{
+  "scope": "design prototype only, not production acceptance",
+  "at": "2026-10-26",
+  "assetFilesChecked": 33,
+  "standaloneEmotes": 24,
+  "transparentPaddingMinPx": 4,
+  "sameSemanticsAllSets": true,
+  "fixedActorCells": [
+    [
+      22,
+      8
+    ],
+    [
+      41,
+      10
+    ],
+    [
+      21,
+      -3
+    ],
+    [
+      28,
+      17
+    ],
+    [
+      47,
+      13
+    ]
+  ],
+  "allActorCellsWalkable": true,
+  "desktop": [
+    1440,
+    1120
+  ],
+  "desktopHorizontalOverflow": false,
+  "mobileWidth": 390,
+  "mobileHorizontalOverflow": false,
+  "mobileBodyFont": "13px",
+  "densityCounts": {
+    "standard": 2,
+    "quiet": 1,
+    "off": 0
+  },
+  "lowZoomUsesDots": true,
+  "bubblePointerEvents": "none",
+  "reducedMotionToggle": true,
+  "worldStatesChecked": [
+    "ready",
+    "partial",
+    "error",
+    "empty"
+  ],
+  "longSpeechFullTextInCard": true,
+  "unverified": [
+    "production permissions and transport",
+    "live expiry/replay and rate limits",
+    "actual custom-avatar bbox variants",
+    "production performance",
+    "human aesthetic acceptance"
+  ],
+  "businessRuleBaseline": "Commander final direction: Agent 30s/5min4, NPC180s/1800s, speech12s/other6s; M03 final machine file is integration authority."
+}

@@ -1,0 +1,25 @@
+{
+  "desktop": {
+    "width": 1440,
+    "height": 1120,
+    "overflow": false,
+    "bubbles": [
+      {
+        "kind": "action",
+        "dot": true,
+        "hidden": false,
+        "pointerEvents": "none"
+      },
+      {
+        "kind": "ambient",
+        "dot": true,
+        "hidden": false,
+        "pointerEvents": "none"
+      }
+    ],
+    "standaloneImageCount": 24
+  },
+  "quiet": 1,
+  "off": 0,
+  "reduced": true
+}

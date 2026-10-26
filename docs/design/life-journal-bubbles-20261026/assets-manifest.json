@@ -1,0 +1,1002 @@
+{
+  "schemaVersion": 1,
+  "packageId": "life-journal-bubbles-1.0.0",
+  "generatedOn": "2026-10-26",
+  "mode": "built-in imagegen; three transparent eight-frame sprite-sheet assets; noncreative nearest-neighbor export",
+  "sets": [
+    {
+      "setId": "motes",
+      "name": "芽芽情绪",
+      "atlas": {
+        "path": "assets/emotes/motes/atlas.png",
+        "size": [
+          384,
+          48
+        ],
+        "bytes": 26440,
+        "sha256": "d3cb9fdd7e55e95e98b664e9fdd56467d7f5cda652d3cf0dfe39f15225115964",
+        "layout": "8 columns × 1 row",
+        "frameSize": [
+          48,
+          48
+        ]
+      },
+      "master": {
+        "path": "assets/generated/motes.png",
+        "size": [
+          1536,
+          1024
+        ],
+        "bytes": 1440021,
+        "sha256": "396875ddad78d9b931e2570904fa758a1388c31c37299d66195313ae33be9472"
+      },
+      "prompt": "prompts/motes.txt",
+      "items": [
+        {
+          "assetId": "town-emote-motes-joy",
+          "semanticId": "joy",
+          "label": "开心",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/motes/joy.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 3556,
+            "sha256": "f683da10c00b9fcc552c8aca458c153448fc56ad0a0798f7bc85b091dc175a70"
+          },
+          "atlasRect": [
+            0,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        },
+        {
+          "assetId": "town-emote-motes-surprise",
+          "semanticId": "surprise",
+          "label": "惊讶",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/motes/surprise.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 3551,
+            "sha256": "f3c610ea1d609a6dd5665b774d3b466c121e796f9e0393edaba7589ed50ab7d9"
+          },
+          "atlasRect": [
+            48,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        },
+        {
+          "assetId": "town-emote-motes-question",
+          "semanticId": "question",
+          "label": "疑问",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/motes/question.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 3576,
+            "sha256": "766241b3dc3d660d68cc13b1754217467ca1cf93c39d426246813f99347c06fd"
+          },
+          "atlasRect": [
+            96,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        },
+        {
+          "assetId": "town-emote-motes-thinking",
+          "semanticId": "thinking",
+          "label": "思考",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/motes/thinking.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 3695,
+            "sha256": "6f4f5376e7fdea2dd7a931ac9ca749714e83ad19f4c0f44c68b4d7ea59515b03"
+          },
+          "atlasRect": [
+            144,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        },
+        {
+          "assetId": "town-emote-motes-thanks",
+          "semanticId": "thanks",
+          "label": "感谢",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/motes/thanks.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 3417,
+            "sha256": "a1c8e3e399712f5aa90f3aa75ae8cd82571331d0022599e8e499bc7b9ebe3445"
+          },
+          "atlasRect": [
+            192,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        },
+        {
+          "assetId": "town-emote-motes-celebrate",
+          "semanticId": "celebrate",
+          "label": "庆祝",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/motes/celebrate.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 3816,
+            "sha256": "4810c54bf25e1df29bca69cbc142eac240bb5d85f3043c60062a8c6c339500b4"
+          },
+          "atlasRect": [
+            240,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        },
+        {
+          "assetId": "town-emote-motes-tired",
+          "semanticId": "tired",
+          "label": "疲惫",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/motes/tired.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 3682,
+            "sha256": "8fde1aedc9759a3c23de8b3875b6faa27e6443636ecd3c4362e84b5007ee1418"
+          },
+          "atlasRect": [
+            288,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        },
+        {
+          "assetId": "town-emote-motes-sad",
+          "semanticId": "sad",
+          "label": "失落",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/motes/sad.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 3312,
+            "sha256": "b85fb531a316d2afdaf1c64e0504bb33b04b21319cf1ca2c623637e77ed9c77f"
+          },
+          "atlasRect": [
+            336,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        }
+      ]
+    },
+    {
+      "setId": "gestures",
+      "name": "社交手势",
+      "atlas": {
+        "path": "assets/emotes/gestures/atlas.png",
+        "size": [
+          384,
+          48
+        ],
+        "bytes": 27099,
+        "sha256": "bc9a7bc6cf73322611b7ac7b3a8aca159f0a979a219aa36f5f15a66660903651",
+        "layout": "8 columns × 1 row",
+        "frameSize": [
+          48,
+          48
+        ]
+      },
+      "master": {
+        "path": "assets/generated/gestures.png",
+        "size": [
+          1536,
+          1024
+        ],
+        "bytes": 1473062,
+        "sha256": "4e6ad2e3ea2850176ef306e62faa372f26e65ee744e00c2a9677a95fae5bf5e2"
+      },
+      "prompt": "prompts/gestures.txt",
+      "items": [
+        {
+          "assetId": "town-emote-gestures-joy",
+          "semanticId": "joy",
+          "label": "开心",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/gestures/joy.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 3132,
+            "sha256": "28b8dfeb8353c2f37a570f18b1135d436575f73395070682fdc9b68c56f90e27"
+          },
+          "atlasRect": [
+            0,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        },
+        {
+          "assetId": "town-emote-gestures-surprise",
+          "semanticId": "surprise",
+          "label": "惊讶",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/gestures/surprise.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 3484,
+            "sha256": "2ba16bf7a2fb3cae556b35e5a6d247161e7b7873b9e1bd3e96b4ed390a6a8baf"
+          },
+          "atlasRect": [
+            48,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        },
+        {
+          "assetId": "town-emote-gestures-question",
+          "semanticId": "question",
+          "label": "疑问",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/gestures/question.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 3642,
+            "sha256": "77a56f05509d983cc63a93d7fdddf714349ba69a57a975d3269539ba0410cf30"
+          },
+          "atlasRect": [
+            96,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        },
+        {
+          "assetId": "town-emote-gestures-thinking",
+          "semanticId": "thinking",
+          "label": "思考",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/gestures/thinking.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 3264,
+            "sha256": "6414a72a207b33e6f4e4ad5342f96f7dc566f959de0098b3539257ea24dc75f4"
+          },
+          "atlasRect": [
+            144,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        },
+        {
+          "assetId": "town-emote-gestures-thanks",
+          "semanticId": "thanks",
+          "label": "感谢",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/gestures/thanks.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 3995,
+            "sha256": "ef3dd6b1611c2166a85709ec67532d084f07425170181378ef9ef080f8ef75f2"
+          },
+          "atlasRect": [
+            192,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        },
+        {
+          "assetId": "town-emote-gestures-celebrate",
+          "semanticId": "celebrate",
+          "label": "庆祝",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/gestures/celebrate.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 4095,
+            "sha256": "b47d927f1a516723d1e3278c29383f3f47da1fb5ae10a3a9d9de0e0ae2736e12"
+          },
+          "atlasRect": [
+            240,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        },
+        {
+          "assetId": "town-emote-gestures-tired",
+          "semanticId": "tired",
+          "label": "疲惫",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/gestures/tired.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 3105,
+            "sha256": "8149e75f39c6005323d02128b9026f9b656ceb646059223777109a4bfc406b94"
+          },
+          "atlasRect": [
+            288,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        },
+        {
+          "assetId": "town-emote-gestures-sad",
+          "semanticId": "sad",
+          "label": "失落",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/gestures/sad.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 4279,
+            "sha256": "665a06764fb636fe4ea8b2c0843677c5de9cdb6e6fd6fb7d3ba8a3ac05503cd4"
+          },
+          "atlasRect": [
+            336,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        }
+      ]
+    },
+    {
+      "setId": "keepsakes",
+      "name": "生活小物",
+      "atlas": {
+        "path": "assets/emotes/keepsakes/atlas.png",
+        "size": [
+          384,
+          48
+        ],
+        "bytes": 28227,
+        "sha256": "00ae0d0178a2288378f17717c90d89f654b1224974c9743aae528ffdf51bea7f",
+        "layout": "8 columns × 1 row",
+        "frameSize": [
+          48,
+          48
+        ]
+      },
+      "master": {
+        "path": "assets/generated/keepsakes.png",
+        "size": [
+          1536,
+          1024
+        ],
+        "bytes": 1438130,
+        "sha256": "24ba540622df6c6d0cb9731c9b7d76f8740dae34e23f4781e9adfe3d2134cbdf"
+      },
+      "prompt": "prompts/keepsakes.txt",
+      "items": [
+        {
+          "assetId": "town-emote-keepsakes-joy",
+          "semanticId": "joy",
+          "label": "开心",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/keepsakes/joy.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 3818,
+            "sha256": "08c3045e493c00db1e76523678a1068f02722d15237cee74dcac059a90fd4c35"
+          },
+          "atlasRect": [
+            0,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        },
+        {
+          "assetId": "town-emote-keepsakes-surprise",
+          "semanticId": "surprise",
+          "label": "惊讶",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/keepsakes/surprise.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 3893,
+            "sha256": "68fa6eccbf588823fdf92900a55c93a910997b3777f9e87aa0b3d3e5e848dd70"
+          },
+          "atlasRect": [
+            48,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        },
+        {
+          "assetId": "town-emote-keepsakes-question",
+          "semanticId": "question",
+          "label": "疑问",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/keepsakes/question.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 3851,
+            "sha256": "6ce4815e874d61932f88581af4f269f03d78271f4302506cf75e58326af66e6b"
+          },
+          "atlasRect": [
+            96,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        },
+        {
+          "assetId": "town-emote-keepsakes-thinking",
+          "semanticId": "thinking",
+          "label": "思考",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/keepsakes/thinking.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 3817,
+            "sha256": "e4c8a51930c2a8b0e13b247b633820ff3cd9f5ce2e2b5097bb9d4dc70520f1bd"
+          },
+          "atlasRect": [
+            144,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        },
+        {
+          "assetId": "town-emote-keepsakes-thanks",
+          "semanticId": "thanks",
+          "label": "感谢",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/keepsakes/thanks.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 4098,
+            "sha256": "d7e9fad32d9b45e63506b464e3858b5fd5c5f74f2193d30a8452ece3ff0062ef"
+          },
+          "atlasRect": [
+            192,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        },
+        {
+          "assetId": "town-emote-keepsakes-celebrate",
+          "semanticId": "celebrate",
+          "label": "庆祝",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/keepsakes/celebrate.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 3198,
+            "sha256": "7c645aad34ec2359e6f53e48f557962e45e2df97193d50e7ad9ecc81506cff9c"
+          },
+          "atlasRect": [
+            240,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        },
+        {
+          "assetId": "town-emote-keepsakes-tired",
+          "semanticId": "tired",
+          "label": "疲惫",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/keepsakes/tired.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 3533,
+            "sha256": "8a52a87485000bb3300ef5af8530716984760fe9d84c7327f3c78b273bb250ac"
+          },
+          "atlasRect": [
+            288,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        },
+        {
+          "assetId": "town-emote-keepsakes-sad",
+          "semanticId": "sad",
+          "label": "失落",
+          "trigger": "explicit_public_expression_only",
+          "file": {
+            "path": "assets/emotes/keepsakes/sad.png",
+            "size": [
+              48,
+              48
+            ],
+            "bytes": 3681,
+            "sha256": "7088316b5c513352f1bf1b5209c38a812434214e6d545272bb160b60b6d72b0c"
+          },
+          "atlasRect": [
+            336,
+            0,
+            48,
+            48
+          ],
+          "anchor": [
+            24,
+            48
+          ],
+          "contentPaddingAtLeast": 4,
+          "frameSequence": [
+            0
+          ],
+          "frameDurationsMs": [
+            6000
+          ],
+          "loop": false
+        }
+      ]
+    }
+  ],
+  "statusAssets": [
+    {
+      "semanticId": "state.fishing",
+      "label": "正在钓鱼",
+      "trigger": "current_authoritative_public_activity_only",
+      "file": {
+        "path": "assets/states/fishing.png",
+        "size": [
+          32,
+          32
+        ],
+        "bytes": 989,
+        "sha256": "5553bd7dfe6ef3592f4f5282c19392e57045669c6b3e0a4d90c633e9a3e106f1"
+      },
+      "source": "../m3-life-b-20261025/assets/items/basic_rod.png",
+      "frameSequence": [
+        0
+      ],
+      "frameDurationsMs": [
+        6000
+      ],
+      "loop": false
+    },
+    {
+      "semanticId": "state.reading",
+      "label": "正在阅读",
+      "trigger": "current_authoritative_public_activity_only",
+      "file": {
+        "path": "assets/states/reading.png",
+        "size": [
+          32,
+          32
+        ],
+        "bytes": 1856,
+        "sha256": "d94822733f819a4ecf0367704071e36807141fe80b5c91b1cd5cc4a9c98e20a9"
+      },
+      "source": "../m3-life-c-20261025/assets/items/harbor_handbook.png",
+      "frameSequence": [
+        0
+      ],
+      "frameDurationsMs": [
+        6000
+      ],
+      "loop": false
+    },
+    {
+      "semanticId": "state.resting",
+      "label": "正在休息",
+      "trigger": "current_authoritative_public_activity_only",
+      "file": {
+        "path": "assets/states/resting.png",
+        "size": [
+          14,
+          16
+        ],
+        "bytes": 208,
+        "sha256": "dc648aa8f71c6941d7cae632d34a1297d191c4985462174b7b5076615db86299"
+      },
+      "source": "../m3-life-c-20261025/assets/fixtures/chair.png",
+      "frameSequence": [
+        0
+      ],
+      "frameDurationsMs": [
+        6000
+      ],
+      "loop": false
+    }
+  ],
+  "render": {
+    "mapCSSSize": [
+      28,
+      28
+    ],
+    "lowZoomBadgeCSSSize": [
+      34,
+      34
+    ],
+    "reviewCSSSize": [
+      64,
+      64
+    ],
+    "imageRendering": "pixelated",
+    "placement": "independent overlay above projected avatar bounding box; never replace head",
+    "enterMs": 160,
+    "exitMs": 140,
+    "translateYPx": 3,
+    "reducedMotion": "no animation, static fade-free appearance/disappearance; no repeated loop",
+    "speechVisualMaxMs": 6800,
+    "emoteStatusAmbientVisualMaxMs": 6000,
+    "effectiveDisplayMs": "min(kind visual cap, authoritative expiresAt minus estimated server now)",
+    "firstRead": "still valid expression may appear static for remaining TTL; never renew TTL or replay entry for seen ID",
+    "serverTtlMs": {
+      "speech": 12000,
+      "emote": 6000,
+      "status": 6000,
+      "ambient": 6000
+    }
+  },
+  "loading": {
+    "productionPathSuggestion": "/assets/world-expression/v1/",
+    "firstScreen": "load no master PNG; lazy-load only selected 384×48 atlas when first eligible visible bubble exists",
+    "cache": "immutable by filename/hash; no per-character request",
+    "wholeAtlasDecodedBytes": 73728,
+    "onePNGDecodedBytes": 9216
+  },
+  "previewOnly": [
+    "assets/world-town.png",
+    "assets/actors/",
+    "reference/",
+    "assets/generated/",
+    "prompts/"
+  ]
+}
