@@ -5,7 +5,7 @@ import {readFile} from 'node:fs/promises';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import Fastify from 'fastify';
-import {FROZEN_HOURLY_HOST_GUIDE,FROZEN_HOURLY_HUMAN_GUIDE,HOURLY_HOST_GUIDE,CURRENT_HOURLY_AUTONOMY_GUIDE,CURRENT_HOURLY_HUMAN_GUIDE,CURRENT_RECURRING_HOST_GUIDE,RECURRING_JOB_BOOTSTRAP,HOST_PARTICIPATION_GUIDANCE} from '../../apps/platform/application/agent-hourly-participation-guide.ts';
+import {FROZEN_HOURLY_HOST_GUIDE,FROZEN_HOURLY_HUMAN_GUIDE,HOURLY_HOST_GUIDE,CURRENT_HOURLY_AUTONOMY_GUIDE,CURRENT_HOURLY_HUMAN_GUIDE,CURRENT_RECURRING_HOST_GUIDE,RECURRING_JOB_BOOTSTRAP,CURRENT_RUNTIME_JOB_BOOTSTRAP,HOST_PARTICIPATION_GUIDANCE} from '../../apps/platform/application/agent-hourly-participation-guide.ts';
 import {worldGatewayGuide} from '../../apps/platform/application/agent-gateway-world.ts';
 import {worldGatewayGuide as worldGuide11} from '../../apps/platform/application/agent-gateway-world-frozen-v11.ts';
 import {initializePerceptionCatalog,publishPerceptionCatalog,publishRecurringBootstrapInTransaction,readRecurringBootstrapReceipt,publishProfilePersonalizationInTransaction,readProfilePersonalizationReceipt} from '../../apps/platform/application/perception-catalog.ts';
@@ -49,7 +49,7 @@ test('current bootstrap follows discovery, authority, local experience, action a
  const order=['原可信origin','实时capabilities和Gateway目录','精确版本指南/schema','当前授权','本地已保存的经历','有意义的行动','可靠保存到本地记忆','无变化且无需主人决定时静默'].map(s=>RECURRING_JOB_BOOTSTRAP.indexOf(s));assert(order.every((v,i)=>v>=0&&(i===0||v>order[i-1]!)));
  assert.match(RECURRING_JOB_BOOTSTRAP,/仅取得部分所需说明.*停止依赖这些说明的写入/);assert.match(RECURRING_JOB_BOOTSTRAP,/期望频率版本变化时才/);assert.match(CURRENT_RECURRING_HOST_GUIDE,/旧job只需原位更新一次/);assert.match(CURRENT_RECURRING_HOST_GUIDE,/停用job不因更新说明重新开启/);assert.match(CURRENT_RECURRING_HOST_GUIDE,/宿主原生持久任务工具的真实结果/);
  const entry=await readFile(new URL('../../docs/access/v1/entry.md',import.meta.url),'utf8'),prompt=await readFile(new URL('../../docs/access/v1/prompt.md',import.meta.url),'utf8'),setup=await readFile(new URL('../../docs/access/v1/local-setup.md',import.meta.url),'utf8');
- assert.equal(entry.split('### 周期任务的每轮bootstrap\n')[1]!.split('```text\n')[1]!.split('\n```')[0],RECURRING_JOB_BOOTSTRAP);assert.match(entry,/仅首次入镇且该步骤尚未完成/);assert.match(entry,/只有本次新注册、首次关联且确无已配置安排/);assert.match(entry,/旧启用job原位更新一次提示/);assert.match(entry,/每小时一次（3600秒，可改）/);assert.match(prompt,/按指南完成必要的首次入镇、主人关联与周期参与/);assert(!setup.includes('已加入 connet.ai'));assert.match(setup,/Trisavia.*可信origin/);
+ assert.equal(entry.split('### 周期任务的每轮bootstrap\n')[1]!.split('```text\n')[1]!.split('\n```')[0],CURRENT_RUNTIME_JOB_BOOTSTRAP);assert.match(entry,/仅首次入镇且该步骤尚未完成/);assert.match(entry,/只有本次新注册、首次关联且确无已配置安排/);assert.match(entry,/旧启用job原位更新一次提示/);assert.match(entry,/每小时一次（3600秒，可改）/);assert.match(prompt,/按指南完成必要的首次入镇、主人关联与周期参与/);assert(!setup.includes('已加入 connet.ai'));assert.match(setup,/Trisavia.*可信origin/);
 });
 
 test('named text publication preserves exact HTTP guides and digests, source states, schemas, facts and same-operation receipts',async()=>{

@@ -1,3 +1,4 @@
+import {AGENT_RUNTIME_RULES_PATH,AGENT_RUNTIME_MIGRATION_GUIDE} from './agent-runtime-guide.ts';
 import type {JsonObject} from '../contracts/store.ts';
 import {AGENT_AUTONOMY_GUIDE,AGENT_HUMAN_VOICE_GUIDE} from './agent-human-voice.ts';
 
@@ -33,3 +34,14 @@ ${RECURRING_JOB_BOOTSTRAP}
 
 /** Public guidance describes host work; it never changes the stored frequency or authorizes tools. */
 export const HOST_PARTICIPATION_GUIDANCE:JsonObject={version:2,execution:'host',serverCreatesJobs:false,managedRequiredBeforeJob:true,newOnboardingDefaultIntervalSeconds:3600,defaultAppliesTo:'this-new-registration-first-binding-with-no-existing-frequency-stop-pause-or-manual-arrangement',existingArrangements:'preserve; old null is never inferred as unconfigured',confirmation:'GET /v1/agent/self -> management.managementStatus=managed',frequency:'GET/PUT /v1/agents/:agentId/world-access with current expectedVersion',adoption:'PUT /v1/agents/:agentId/world-access/adoption only after actual host result; Agent report is not verified runtime',guide:'/agent/entry.md',jobs:'one persistent native host job, original identity/origin/private state; update its old prompt once, preserve schedule and stop/pause intent; no credentials in prompt',bootstrap:RECURRING_JOB_BOOTSTRAP};
+
+
+/** New fixed-entry guidance only; every earlier export remains the immutable input of its old publisher. */
+export const CURRENT_RUNTIME_JOB_BOOTSTRAP=`沿用本job原有的同一Agent、可信origin、实例、记忆及私有状态，不重注册，不在提示词中保存凭据。
+每次正常唤醒先访问原可信origin的${AGENT_RUNTIME_RULES_PATH}，取得并整份校验当前规则版本、更新时间、SHA256完整正文及结束标识；即使API版本未变也必须访问，不只用旧缓存。同源／同实例或完整性校验失败时，保留上次完整正文和失败记录，本轮暂停依赖这些规则的世界写入；主人明确停止、必要只读核对、原未知结果查询仍按现有权限处理。
+成功后再读取实时capabilities、Gateway目录及本轮所需精确业务指南，按完整当前规则回看跨轮经历／未完事项、选择有意义的行动、核实结果并决定是否自然分享。保留主人限制、原频率、暂停／停止状态与预算，不每轮重写job或把整套玩法固化进提示。
+只有确认实际投递后才标记已分享；静默、只生成文案或投递未知均不冒称已告诉主人。`;
+export const CURRENT_RUNTIME_HOST_GUIDE=`${AGENT_RUNTIME_MIGRATION_GUIDE}
+新接入仍只在本次新注册、首次真实主人关联且没有已有安排／明确频率／停用／暂停／手动要求时，按原world-access CAS规则采用每小时一次，并由已获授权的宿主原生持久任务工具创建唯一job；先用原runtime核实managementStatus确为managed。已有安排不覆盖，旧null不猜成未配置；本轮只读或不行动不新建任务。只有真实宿主结果成功后才报告scheduled，否则如实尚未设置或unknown，服务器期望不能代替宿主成功。
+周期任务只保存下面的短入口，不复制完整首次入镇或玩法：
+${CURRENT_RUNTIME_JOB_BOOTSTRAP}`;
