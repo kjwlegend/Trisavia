@@ -1,6 +1,15 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.6.2',
+    date: '2026-10-26',
+    status: '已完成',
+    title: '按需载入面板装饰',
+    highlights: [
+      {category: '优化', title: '延后未显示的装饰加载', description: '未显示的像素边框不再提前请求图片，需要显示时仍使用原有素材；小镇画面与人物素材保持原样。'},
+    ],
+  },
+  {
     version: '0.6.1',
     date: '2026-10-26',
     status: '已完成',
