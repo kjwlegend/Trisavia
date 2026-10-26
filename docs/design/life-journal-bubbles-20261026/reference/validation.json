@@ -58,5 +58,15 @@
     "production performance",
     "human aesthetic acceptance"
   ],
-  "businessRuleBaseline": "Commander final direction: Agent 30s/5min4, NPC180s/1800s, speech12s/other6s; M03 final machine file is integration authority."
+  "businessRuleBaseline": "Commander final direction: Agent 30s/5min4, NPC180s/1800s, speech12s/other6s; M03 final machine file is integration authority.",
+  "overviewCapture": {
+    "eachSetDecodedImages": [
+      8,
+      8,
+      8
+    ],
+    "allNaturalWidth": 48,
+    "waitedForDecodeAndTwoPaintFrames": true,
+    "causeOfPriorIncompleteCapture": "lazy images not decoded before immediate screenshot; gallery now eagerly loads all 24 upon entering overview"
+  }
 }
