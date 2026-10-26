@@ -1,0 +1,232 @@
+{
+  "schemaVersion": 1,
+  "status": "Design consumption mapping; M03 business contract and TD actual fields take precedence",
+  "journal": {
+    "world": {
+      "required": [
+        "event occurred",
+        "source public at occurrence",
+        "source public now",
+        "actor visible now"
+      ],
+      "summary": "actor + confirmed place if present + actual outcome",
+      "never": [
+        "private messages",
+        "owner chat",
+        "internal reasoning",
+        "nonpublic gifts",
+        "routine wander",
+        "API retries",
+        "per-cell movement",
+        "invented feelings",
+        "private catch species or quantity",
+        "private trade amounts",
+        "private book title"
+      ],
+      "lifeSourceLimit": "Current public life source exposes place, activity and completion only; no catch/trade/book details. Explicitly public authored expression is a separate source."
+    },
+    "personal": {
+      "required": [
+        "current viewer authorized for this actor and source"
+      ],
+      "summary": "actor pinned in header + confirmed place + actual outcome/state",
+      "detailOnlyIfPresent": [
+        "quantity",
+        "actualMoneyDelta",
+        "actualEnergyDelta",
+        "counterparty",
+        "timeRange",
+        "remainingSteps",
+        "sourceRecord"
+      ],
+      "defaultSuppressed": [
+        "pending gift",
+        "invitation sent or received",
+        "routine movement"
+      ]
+    },
+    "groups": {
+      "only": "adjacent already-authorized same NPC/place/outcome/day",
+      "retain": "all original event IDs",
+      "label": "日常合并 · N 条",
+      "neverCrossHiddenRecords": true
+    },
+    "examples": [
+      {
+        "kind": "fishing_completed",
+        "world": "林溪在港湾木栈台完成了一次钓鱼。",
+        "personalDetail": "完成3竿，2次空竿；消耗鱼饵3份、体力6。",
+        "condition": "confirmed completed result; world only allowed public subset"
+      },
+      {
+        "kind": "fishing_no_catch",
+        "world": null,
+        "condition": "confirmed zero catch, not unknown",
+        "personal": "林溪结束了这次钓鱼，没有钓到鱼。"
+      },
+      {
+        "kind": "reading_completed",
+        "world": "阿宁在蓝檐书屋完成了阅读。",
+        "never": "学会了、理解了、记住了"
+      },
+      {
+        "kind": "work_completed",
+        "world": "酒保在港湾酒馆结束了一段帮工。",
+        "personalDetail": "only actual confirmed wage and energy delta"
+      },
+      {
+        "kind": "rest_completed",
+        "personal": "在石岸旅舍休息，实际恢复35体力。",
+        "condition": "actual restoration, not advertised max70"
+      },
+      {
+        "kind": "gift_pending",
+        "personal": "向阿宁送出一份手册，等待回应。",
+        "detail": "本人持有，暂时预留；尚未转移。",
+        "world": null,
+        "surface": "current_tasks_not_default_history"
+      },
+      {
+        "kind": "gift_accepted",
+        "personal": "阿宁收下了这份手册。",
+        "condition": "confirmed transfer and current source permission",
+        "world": null
+      },
+      {
+        "kind": "partial_plan",
+        "personal": "计划部分完成；已完成的结果保留，剩余步骤未完成。",
+        "condition": "show only known completed steps"
+      },
+      {
+        "kind": "read_failure",
+        "text": "暂时读不到日志。连接恢复后再试。",
+        "never": "没有活动"
+      }
+    ]
+  },
+  "bubbles": {
+    "kinds": [
+      {
+        "kind": "speech",
+        "label": "公开短句",
+        "source": "actual agent public submission",
+        "allowQuotedFirstPerson": true,
+        "allowRandomText": false,
+        "emoteTrigger": "explicit public semanticId only"
+      },
+      {
+        "kind": "action",
+        "label": "动作状态",
+        "source": "current authoritative public activity",
+        "allowQuotedFirstPerson": false,
+        "allowOffline": true,
+        "emoteTrigger": "state.* only; no emotion inference"
+      },
+      {
+        "kind": "ambient",
+        "label": "日常",
+        "source": "NPC deterministic eligible copy pool",
+        "actorKind": "npc",
+        "createsSocialFact": false,
+        "allowRandomAgentSpeech": false
+      }
+    ],
+    "limits": {
+      "standard": 2,
+      "quiet": 1,
+      "off": 0,
+      "onePerActor": true,
+      "maxLines": 2,
+      "recommendedMaxGraphemes": 28,
+      "maxWidthCssPx": 218,
+      "npcCooldownMs": 180000,
+      "sameNpcLineCooldownMs": 1800000,
+      "viewportGapCssPx": 12,
+      "lowZoomThreshold": 0.75,
+      "serverTtlMs": {
+        "speech": 12000,
+        "emote": 6000,
+        "status": 6000,
+        "ambient": 6000
+      },
+      "visualMaxMs": {
+        "speech": 6800,
+        "emote": 6000,
+        "status": 6000,
+        "ambient": 6000
+      },
+      "clampToRemainingTtl": true,
+      "agentMinIntervalMs": 30000,
+      "agentWindowMs": 300000,
+      "agentWindowMax": 4,
+      "statusCooldownMs": 60000,
+      "npcEligibilityProbability": 0.25
+    },
+    "freshness": {
+      "dedup": "stable expressionId; content changes do not renew original TTL",
+      "firstSnapshot": "may show currently valid expression statically for its remaining TTL; do not replay history or seen entry animation",
+      "pollRepeat": "ignore",
+      "reconnect": "do not replay expired/seen",
+      "offscreen": "drop rather than queue",
+      "permissionRevoked": "hide immediately",
+      "activityEndedOrUnknown": "hide action immediately",
+      "hiddenTab": "pause rendering only",
+      "noNewPerActorRequests": true,
+      "noServerLLM": true,
+      "fullSpeech": "same-batch original text in current public actor card, never fictional history link"
+    },
+    "stateSymbols": [
+      {
+        "state": "fish.session active",
+        "semanticId": "state.fishing",
+        "text": "正在钓鱼"
+      },
+      {
+        "state": "book.read active",
+        "semanticId": "state.reading",
+        "text": "正在阅读"
+      },
+      {
+        "state": "rest.bench or rest.inn or rest.voucher active",
+        "semanticId": "state.resting",
+        "text": "正在休息"
+      }
+    ],
+    "emotionSemanticIds": {
+      "joy": "开心",
+      "surprise": "惊讶",
+      "question": "疑问",
+      "thinking": "思考",
+      "thanks": "感谢",
+      "celebrate": "庆祝",
+      "tired": "疲惫",
+      "sad": "失落"
+    },
+    "emotionCondition": "All 24 emotes require actual explicit public expression. thinking is a submitted reaction, never model chain-of-thought or inferred reading state. tired is not inferred from energy. thanks is not inferred from gift acceptance.",
+    "npcCopy": [
+      {
+        "id": "fisher-self-service",
+        "npcId": "npc-fishing-clerk",
+        "placeId": "fisher_shop",
+        "requiredActionId": "npc.duty",
+        "text": "鱼竿和鱼饵可以自助购买。"
+      },
+      {
+        "id": "library-free-reading",
+        "npcId": "npc-librarian",
+        "placeId": "blue_library",
+        "requiredActionId": "npc.duty",
+        "text": "这里有免费的馆藏可以读。"
+      },
+      {
+        "id": "inn-rest-service",
+        "npcId": "npc-innkeeper",
+        "placeId": "stone_inn",
+        "requiredActionId": "npc.duty",
+        "text": "旅舍设有休憩位。"
+      }
+    ],
+    "npcCopyAuthority": "M03 machine map is sole copy pool; mayor/bartender entries are to be taken from its final approved roster, not invented in this visual map. Ambient has no emotion attachment by default."
+  },
+  "businessContract": "docs/workstreams/ws03-interaction/life-journal-v1/event-expression-map.json"
+}

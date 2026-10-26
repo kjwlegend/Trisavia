@@ -1,0 +1,410 @@
+{
+  "method": "Imagegen alpha retained. Per-cell alpha>=192 content bounds, nearest-neighbor fit into 40px within 48px. No repainting. Native world/actor export from existing project renderer.",
+  "files": [
+    {
+      "path": "assets/emotes/motes/joy.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        66,
+        147,
+        272,
+        308
+      ],
+      "exportContent": [
+        35,
+        40
+      ]
+    },
+    {
+      "path": "assets/emotes/motes/surprise.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        450,
+        154,
+        254,
+        303
+      ],
+      "exportContent": [
+        34,
+        40
+      ]
+    },
+    {
+      "path": "assets/emotes/motes/question.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        840,
+        158,
+        278,
+        300
+      ],
+      "exportContent": [
+        37,
+        40
+      ]
+    },
+    {
+      "path": "assets/emotes/motes/thinking.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        1217,
+        169,
+        288,
+        289
+      ],
+      "exportContent": [
+        40,
+        40
+      ]
+    },
+    {
+      "path": "assets/emotes/motes/thanks.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        77,
+        604,
+        280,
+        299
+      ],
+      "exportContent": [
+        37,
+        40
+      ]
+    },
+    {
+      "path": "assets/emotes/motes/celebrate.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        445,
+        602,
+        296,
+        301
+      ],
+      "exportContent": [
+        39,
+        40
+      ]
+    },
+    {
+      "path": "assets/emotes/motes/tired.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        826,
+        607,
+        293,
+        296
+      ],
+      "exportContent": [
+        40,
+        40
+      ]
+    },
+    {
+      "path": "assets/emotes/motes/sad.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        1216,
+        607,
+        240,
+        296
+      ],
+      "exportContent": [
+        32,
+        40
+      ]
+    },
+    {
+      "path": "assets/emotes/motes/atlas.png",
+      "width": 384,
+      "height": 48
+    },
+    {
+      "path": "assets/emotes/gestures/joy.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        71,
+        167,
+        250,
+        282
+      ],
+      "exportContent": [
+        35,
+        40
+      ]
+    },
+    {
+      "path": "assets/emotes/gestures/surprise.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        418,
+        177,
+        338,
+        263
+      ],
+      "exportContent": [
+        40,
+        31
+      ]
+    },
+    {
+      "path": "assets/emotes/gestures/question.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        835,
+        167,
+        261,
+        266
+      ],
+      "exportContent": [
+        39,
+        40
+      ]
+    },
+    {
+      "path": "assets/emotes/gestures/thinking.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        1222,
+        149,
+        247,
+        316
+      ],
+      "exportContent": [
+        31,
+        40
+      ]
+    },
+    {
+      "path": "assets/emotes/gestures/thanks.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        68,
+        573,
+        281,
+        299
+      ],
+      "exportContent": [
+        38,
+        40
+      ]
+    },
+    {
+      "path": "assets/emotes/gestures/celebrate.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        438,
+        572,
+        291,
+        300
+      ],
+      "exportContent": [
+        39,
+        40
+      ]
+    },
+    {
+      "path": "assets/emotes/gestures/tired.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        823,
+        642,
+        284,
+        215
+      ],
+      "exportContent": [
+        40,
+        30
+      ]
+    },
+    {
+      "path": "assets/emotes/gestures/sad.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        1195,
+        594,
+        277,
+        278
+      ],
+      "exportContent": [
+        40,
+        40
+      ]
+    },
+    {
+      "path": "assets/emotes/gestures/atlas.png",
+      "width": 384,
+      "height": 48
+    },
+    {
+      "path": "assets/emotes/keepsakes/joy.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        51,
+        142,
+        311,
+        335
+      ],
+      "exportContent": [
+        37,
+        40
+      ]
+    },
+    {
+      "path": "assets/emotes/keepsakes/surprise.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        442,
+        154,
+        292,
+        286
+      ],
+      "exportContent": [
+        40,
+        39
+      ]
+    },
+    {
+      "path": "assets/emotes/keepsakes/question.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        799,
+        193,
+        318,
+        266
+      ],
+      "exportContent": [
+        40,
+        33
+      ]
+    },
+    {
+      "path": "assets/emotes/keepsakes/thinking.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        1165,
+        148,
+        337,
+        330
+      ],
+      "exportContent": [
+        40,
+        39
+      ]
+    },
+    {
+      "path": "assets/emotes/keepsakes/thanks.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        51,
+        588,
+        299,
+        324
+      ],
+      "exportContent": [
+        37,
+        40
+      ]
+    },
+    {
+      "path": "assets/emotes/keepsakes/celebrate.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        436,
+        598,
+        298,
+        295
+      ],
+      "exportContent": [
+        40,
+        40
+      ]
+    },
+    {
+      "path": "assets/emotes/keepsakes/tired.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        785,
+        583,
+        331,
+        337
+      ],
+      "exportContent": [
+        39,
+        40
+      ]
+    },
+    {
+      "path": "assets/emotes/keepsakes/sad.png",
+      "width": 48,
+      "height": 48,
+      "sourceCrop": [
+        1204,
+        600,
+        282,
+        312
+      ],
+      "exportContent": [
+        36,
+        40
+      ]
+    },
+    {
+      "path": "assets/emotes/keepsakes/atlas.png",
+      "width": 384,
+      "height": 48
+    },
+    {
+      "path": "assets/world-town.png",
+      "width": 1536,
+      "height": 1152
+    },
+    {
+      "path": "assets/actors/shorthair.png",
+      "width": 96,
+      "height": 64
+    },
+    {
+      "path": "assets/actors/longhair.png",
+      "width": 96,
+      "height": 64
+    },
+    {
+      "path": "assets/actors/mophair.png",
+      "width": 96,
+      "height": 64
+    },
+    {
+      "path": "assets/actors/curlyhair.png",
+      "width": 96,
+      "height": 64
+    },
+    {
+      "path": "assets/actors/spikeyhair.png",
+      "width": 96,
+      "height": 64
+    }
+  ]
+}
