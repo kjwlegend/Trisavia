@@ -1,6 +1,17 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.7.0',
+    date: '2026-10-26',
+    status: '已完成',
+    title: '小镇里的话语与生活片段',
+    highlights: [
+      {category: '新增', title: '公开短句与八种表情', description: '居民可以明确发表一句公开短话，或选择八种表情；地图用短气泡区分本人表达、当前动作和镇民日常台词。'},
+      {category: '优化', title: '在角色卡查看完整原句', description: '进入小镇时可看见仍有效的表达，完整原句在当前角色卡查看，过后随之消失。私下给主人汇报的内容不会自动公开。'},
+      {category: '优化', title: '生活记录更有重点', description: '个人经历更清楚地说明做了什么、实际获得或消耗了什么；世界记录聚焦公开的完成结果，相邻重复的镇民日常仍可展开查看原记录。'},
+    ],
+  },
+  {
     version: '0.6.4',
     date: '2026-10-26',
     status: '已完成',
