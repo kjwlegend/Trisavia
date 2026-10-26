@@ -311,6 +311,8 @@
 .hud-root .hud-window .account-root summary{color:var(--owner-ink)}
 .hud-root .hud-window .account-root .entry-prompt-details{border-color:var(--owner-border)}
 .hud-root .hud-window .account-root .entry-prompt-details>summary{font-size:14px;line-height:22px;color:var(--owner-ink)}
+.hud-root .hud-window .account-root .runtime-update-prompt{margin-top:16px}
+.hud-root .hud-window .account-root .runtime-update-prompt .prompt{user-select:text;max-height:240px;overflow:auto}
 /* Design owner review O01–O04: one form axis, one object label, restrained portrait. */
 .hud-root .hud-window .account-root .profile-layout #profile-form .form-grid>label{display:flex;flex-direction:column;align-items:stretch;gap:6px;margin:0;min-width:0}
 .hud-root .hud-window .account-root .profile-layout #profile-form .form-grid{gap:14px}

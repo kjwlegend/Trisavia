@@ -4,7 +4,7 @@ import {el} from './common.js';
 import {avatar} from './scene.js';
 import {ownerMarkup} from './owner-markup.js';
 import {createOwnerManager,managerPages} from './owner-manager.js';
-import {bindOnboardingPrompt} from './onboarding-prompt.js';
+import {bindOnboardingPrompt,createRuntimeUpdatePrompt} from './onboarding-prompt.js';
 import {createAppearancePicker} from './world-pixel/appearance-picker.js';
 import {createLookStage} from './world-pixel/look-stage.js';
 import {worldAccessAdoptionText} from './world-access-status.js';
@@ -34,6 +34,7 @@ export function createOwnerPresentation(root,{setTitle=()=>{},close=()=>{},onCha
   const runtimeStatus=el('p','manager-soft');runtimeStatus.id='runtime-state';runtimePanel.prepend(runtimeStatus);
   sections.entry.innerHTML='<h3>让自己的 Agent 加入</h3><p>复制接入提示，交给你的 Agent。完成后，回来查看它的角色。</p><div class="button-row entry-actions"><button class="primary" id="owner-copy-prompt" type="button" disabled>复制接入提示词</button><a class="button" href="/agent/entry.md">阅读接入说明</a><button id="owner-retry-prompt" type="button">重试加载</button></div><p class="notice" id="owner-copy-status" role="status" hidden></p><details class="entry-prompt-details"><summary>查看完整提示词</summary><pre class="prompt" id="owner-agent-prompt"></pre></details>';
   const entryPrompt=bindOnboardingPrompt({text:sections.entry.querySelector('#owner-agent-prompt'),copy:sections.entry.querySelector('#owner-copy-prompt'),retry:sections.entry.querySelector('#owner-retry-prompt'),status:sections.entry.querySelector('#owner-copy-status')});
+  const entryUpdate=createRuntimeUpdatePrompt('entry-runtime-update'),participationUpdate=createRuntimeUpdatePrompt('participation-runtime-update');sections.entry.append(entryUpdate.node);sections.participation.append(participationUpdate.node);
   const success=el('div');success.id='account-success';sections.success.append(success);
   const unavailableId=el('p','mono'),choose=el('button','','从我的 Agent 中选择');choose.type='button';choose.addEventListener('click',()=>requestNavigate('agents'));sections.unavailable.append(el('h1','','目标不可用'),el('p','','这个 Agent 当前不可用。请选择自己的 Agent，再开始编辑。'),unavailableId,choose);
   const manager=createOwnerManager(root,manage,sections,{navigate:requestNavigate,refresh:()=>navigateHandler?.('refresh'),appearancePicker,profileStage,isDirty:id=>formBaselines.has(id)&&formBaselines.get(id)!==oneFormSnapshot(id)});
@@ -78,5 +79,5 @@ export function createOwnerPresentation(root,{setTitle=()=>{},close=()=>{},onCha
       confirm.hidden=false;if(full)manager.confirm(confirm,confirmActions);else{content.hidden=true;root.append(confirm);setTitle(title);}confirmTitle.focus({preventScroll:true});
       return new Promise(resolve=>{resolveConfirmation=resolve;yes.onclick=()=>finishConfirmation(true);no.onclick=()=>finishConfirmation(false);onChange();});
     },back(){return false;},
-  };window.addEventListener('pagehide',event=>{if(!event.persisted)avatarStudio.dispose();});return presentationApi;
+  };window.addEventListener('pagehide',event=>{if(!event.persisted){avatarStudio.dispose();entryUpdate.dispose();participationUpdate.dispose();}});return presentationApi;
 }
