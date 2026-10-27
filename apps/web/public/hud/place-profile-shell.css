@@ -1,0 +1,3 @@
+/* Shared shell only; the profile module owns its source image and prose. */
+.world-detail.is-place-profile .life-place-heading{display:none}
+.world-detail.is-place-profile #world-detail-area:empty{display:none}

@@ -20,6 +20,7 @@ import {icon} from './icons.js';
 import {createNpcLifeDirectoryReader} from './npc-life-reader.js';
 import {npcLifePlace} from './npc-life-place.js';
 import {createNpcPersonCard} from './npc-person-card.js';
+import {createPlaceProfileCard,placeProfileTargetId} from './place-profile-card.js';
 let scene=null;
 export function initSceneRenderer({session,onSelectAgent=()=>{},rendering=null}={}){
 let mapReady=false,mapFailed=false,pageActive=true,firstSceneMarked=false;
@@ -54,13 +55,15 @@ async function tryPublicFocus(){
 function focusPublicResident(agentId){cancelPublicFocus();if(!readPublicId(agentId)&&!/^[A-Za-z0-9_-]{8,100}$/.test(agentId)){focusMessage('这个居民档案链接暂时无法定位。');return;}publicFocus={agentId,waiting:true,reading:false};focusMessage('正在寻找这位居民的公开位置…');void tryPublicFocus();}
 focusRetry.addEventListener('click',()=>{if(!publicFocus)return;publicFocus.waiting=true;focusMessage('正在重新确认公开位置…');void worldProvider.refresh();});
 const detail=$('#world-detail'),detailTransition=createPanelTransition(detail),environment=getPanelEnvironment();detail.prepend(nativeFrame('lightWood'));$('#world-detail-close').replaceChildren(icon('close'));
-const npcPerson=createNpcPersonCard(),publicCharacter=createPublicCharacterReader(),characterCard=createPublicCharacterCard(publicCharacter,{session,getExpressions:()=>scene?.getExpressions()||[]});const townCard=createTownServiceCard(session,{chooseAgent:()=>document.dispatchEvent(new CustomEvent('hud:choose-agent')),getWorldState:()=>scene?{...scene.getState(),rules:worldData.rules}:null,onContextChange:townContextChanged});townCard.node.hidden=true;const lifeCard=createLifePlaceCard(session,{npcLifeDirectory,chooseAgent:()=>document.dispatchEvent(new CustomEvent('hud:choose-agent')),getWorldState:()=>scene?{...scene.getState(),rules:worldData.rules}:null});lifeCard.node.hidden=true;$('.world-detail-body',detail).prepend(npcPerson.node,characterCard.node,townCard.node,lifeCard.node);
+const placeProfile=createPlaceProfileCard({getRules:()=>worldData.rules,request:api}),npcPerson=createNpcPersonCard(),publicCharacter=createPublicCharacterReader(),characterCard=createPublicCharacterCard(publicCharacter,{session,getExpressions:()=>scene?.getExpressions()||[]});const townCard=createTownServiceCard(session,{chooseAgent:()=>document.dispatchEvent(new CustomEvent('hud:choose-agent')),getWorldState:()=>scene?{...scene.getState(),rules:worldData.rules}:null,onContextChange:townContextChanged});townCard.node.hidden=true;const lifeCard=createLifePlaceCard(session,{npcLifeDirectory,chooseAgent:()=>document.dispatchEvent(new CustomEvent('hud:choose-agent')),getWorldState:()=>scene?{...scene.getState(),rules:worldData.rules}:null});lifeCard.node.hidden=true;$('.world-detail-body',detail).prepend(placeProfile.node,npcPerson.node,characterCard.node,townCard.node,lifeCard.node);
+const profileMapKey=()=>JSON.stringify([worldData.instanceId,worldData.rules?.mapManifest]);let currentProfileMap=null;
 let noticeVersion=null,noticeAbort=null;
 async function syncTownNotice(){const version=worldData.npcCatalogVersion;if(!mapReady||!worldData.complete||!version||noticeVersion===version)return;noticeVersion=version;noticeAbort?.abort();const controller=new AbortController();noticeAbort=controller;try{const data=await readTownNotice({signal:controller.signal});if(!controller.signal.aborted&&worldData.npcCatalogVersion===data.catalogVersion)scene?.setTownNotice(data);}catch{/* The map never invents a missing object's location. */}}
 function townContextChanged(value){
   if(!currentPlace||!detail.classList.contains('is-town-service'))return;
   const notice=value.kind==='notice',source=notice?value.notice:value.npc;
   currentTownVersion=value.catalogVersion;
+  if(!notice&&placeProfileTargetId(currentPlace)){currentPlace={...currentPlace,...(currentPlace.serviceNpc?{serviceNpc:source}:{npc:source})};scene?.select(currentPlace);return;}
   currentPlace={...currentPlace,...(worldData.rules?pixelPoint(source.position,worldData.rules):{}),id:notice?'notice':source.npcId,name:source.name,kind:notice?'town-notice':'world-npc',...(notice?{notice:source,serviceNpc:null,npc:null}:{npc:source,serviceNpc:null})};
   if(!notice)npcPerson.set(source,{stale:worldData.stale===true});
   $('#world-detail-area').textContent=notice?'小镇公告':'镇民服务';$('#world-detail-title').textContent=notice?source.name:'镇民';
@@ -69,8 +72,10 @@ function townContextChanged(value){
 function renderDetails(place){
   const character=place.kind==='world-avatar',provider=place.serviceNpc||place.npc,town=place.kind==='town-notice'||Boolean(provider&&!provider.readOnly&&provider.serviceIds?.length),life=lifeBuilding(place);detail.classList.toggle('is-life-place',life);lifeCard.node.hidden=!life;detail.classList.toggle('is-town-service',town);townCard.node.hidden=!town;detail.classList.toggle('is-character-card',character);characterCard.node.hidden=!character;
   npcPerson.set(place.kind==='world-npc'?provider:null,{stale:worldData.stale===true});detail.classList.toggle('is-npc-person',place.kind==='world-npc');if(place.kind==='world-npc')detail.setAttribute('aria-label',`${provider.name}的镇民详情`);else detail.removeAttribute('aria-label');
+  const profile=placeProfileTargetId(place);detail.classList.toggle('is-place-profile',Boolean(profile));
   $('#world-detail-close').setAttribute('aria-label',character?'关闭角色详情':'关闭场所说明');detail.dataset.agentId=character?place.agentId:'';
   if(character){$('#world-detail-area').textContent='';$('#world-detail-title').textContent='角色资料';$('#world-detail-description').textContent='';$('#world-detail-note').textContent='';return{links:[]};}
+  if(profile){$('#world-detail-area').textContent='';$('#world-detail-title').textContent='场所';$('#world-detail-icon').textContent='';$('#world-detail-description').textContent='';$('#world-detail-note').textContent='';return{links:placeDetails(place).links||[]};}
   if(npcLifePlace(place)){$('#world-detail-area').textContent='园务照料';$('#world-detail-title').textContent='镇民';$('#world-detail-icon').textContent='';$('#world-detail-description').textContent='读取园务牌，了解当前照料点与真实资格。';$('#world-detail-note').textContent='网页只提供查看与复制意图，由 Agent 按现有权限执行。';return{links:[]};}
   if(life&&!town){$('#world-detail-area').textContent=place.kind==='world-npc'?'镇民与场所活动':'场所活动';$('#world-detail-title').textContent=place.kind==='world-npc'?'镇民':place.name;$('#world-detail-icon').textContent='';$('#world-detail-description').textContent='活动位于建筑外场，条件与名额以当前目录为准。';$('#world-detail-note').textContent='建筑室内尚未开放。';return{links:[]};}
   if(town){$('#world-detail-area').textContent=place.kind==='town-notice'?'小镇公告':'镇民服务';$('#world-detail-title').textContent=place.kind==='world-npc'?'镇民':place.name;return{links:[]};}
@@ -120,6 +125,7 @@ function openPlace(place, origin,{reuseProfile=false,fromPublicFocus=false}={}) 
   document.dispatchEvent(new CustomEvent('world:place-open'));
   currentPlace = place;
   returnFocus = origin;
+  currentProfileMap=profileMapKey();if(placeProfileTargetId(place))void placeProfile.open(place);else placeProfile.close();
   const details = renderDetails(place);lifeCard.close();if(lifeBuilding(place))lifeCard.open(place);currentTownVersion=detail.classList.contains('is-town-service')?worldData.npcCatalogVersion:null;townCard.close();if(detail.classList.contains('is-town-service'))townCard.open(place.kind==='town-notice'?{notice:true,catalogVersion:worldData.npcCatalogVersion}:{npc:place.serviceNpc||place.npc,catalogVersion:worldData.npcCatalogVersion});if(place.kind==='world-avatar'){if(!reuseProfile)void publicCharacter.open(place);}else publicCharacter.clear();
   const links = $('#world-detail-links'); links.replaceChildren();
   for (const link of details.links || []) { const node = el('a', '', `${link.label} ↗`); node.href = link.href; links.append(node); }
@@ -133,7 +139,7 @@ function openPlace(place, origin,{reuseProfile=false,fromPublicFocus=false}={}) 
 }
 function closePlace(restoreFocus=true) {
   if (!currentPlace) return;
-  currentPlace = null;npcPerson.clear();publicCharacter.clear();townCard.close();lifeCard.close();
+  currentPlace = null;currentProfileMap=null;placeProfile.close();npcPerson.clear();publicCharacter.clear();townCard.close();lifeCard.close();
   environment.set('world',null);detailTransition.hide();
   $('#world-layout').classList.remove('has-detail');
   for (const button of list.querySelectorAll('button')) button.setAttribute('aria-pressed', 'false');
@@ -208,6 +214,7 @@ refreshWorld.addEventListener('click',()=>{noticeVersion=null;noticeAbort?.abort
 worldProvider.subscribe(value=>{
   worldData=value;statusHud.update(value);const applied=scene?.setWorldScene(value);if(applied?.accepted===false)value={...value,phase:'unavailable',avatars:[],complete:false,errorCode:applied.reason};refreshWorld.hidden=false;refreshWorld.disabled=Boolean(value.errorStatus===429&&value.retryAt&&value.retryAt>Date.now());moreWorld.hidden=value.phase!=='partial';
   worldData=value;syncNpcLifeDirectory();if(applied?.accepted===false)statusHud.update(value);markFirstScene();
+  if(placeProfileTargetId(currentPlace)&&value.rules&&currentProfileMap!==profileMapKey()){currentProfileMap=profileMapKey();void placeProfile.refresh();}
   void tryPublicFocus();void syncTownNotice();
   if(currentPlace&&detail.classList.contains('is-town-service')&&(!value.complete||value.npcCatalogVersion!==currentTownVersion))closePlace(false);
   if(currentPlace&&detail.classList.contains('is-life-place')){if(!value.complete)closePlace(false);else lifeCard.observeWorld(value);}
@@ -233,7 +240,7 @@ document.addEventListener('visibilitychange',()=>{syncNpcLifeDirectory();worldPr
 for (const link of document.querySelectorAll('a[href="#connect"]')) link.addEventListener('click', () => { $('#connect').open = true; });
 if (location.hash === '#connect') $('#connect').open = true;
 worldProvider.setVisible(!document.hidden);worldProvider.start();startScene();
-window.addEventListener('pagehide', event => {pageActive=false;syncNpcLifeDirectory(false);stopEntryRead();worldProvider.setVisible(false);statusHud.setVisible(false);if (!event.persisted){stopNpcLifeDirectory();npcLifeDirectory.dispose();cancelPublicFocus();noticeAbort?.abort();townCard.dispose();lifeCard.dispose();entryObserver?.disconnect();sceneGeneration++;sceneAbort?.abort();worldProvider.dispose();statusHud.dispose();stopStatusSession?.();ownedAgents?.dispose();characterCard.dispose();publicCharacter.dispose();window.removeEventListener('resize',positionCharacterCard);characterSize.disconnect();detailTransition.destroy();scene?.destroy();} });
+window.addEventListener('pagehide', event => {pageActive=false;syncNpcLifeDirectory(false);stopEntryRead();worldProvider.setVisible(false);statusHud.setVisible(false);if (!event.persisted){stopNpcLifeDirectory();npcLifeDirectory.dispose();cancelPublicFocus();noticeAbort?.abort();placeProfile.dispose();townCard.dispose();lifeCard.dispose();entryObserver?.disconnect();sceneGeneration++;sceneAbort?.abort();worldProvider.dispose();statusHud.dispose();stopStatusSession?.();ownedAgents?.dispose();characterCard.dispose();publicCharacter.dispose();window.removeEventListener('resize',positionCharacterCard);characterSize.disconnect();detailTransition.destroy();scene?.destroy();} });
 window.addEventListener('pageshow',()=>{pageActive=true;syncNpcLifeDirectory();if(scene&&!mapFailed){worldProvider.setVisible(scene.getState().visible);statusHud.setVisible(scene.getState().visible&&!document.hidden);}if(entryVisible)void readEntryCapabilities();});
 return{focusPublicResident,returnToTown(){if(!mapReady||!scene)return false;closePlace(false);scene.fit();$('#world-canvas')?.focus({preventScroll:true});return true;},locateAgent(agentId){return mapReady&&scene?.locateOwnedAgent(agentId)||false;}};
 }
