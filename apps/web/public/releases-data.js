@@ -1,6 +1,15 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.8.1',
+    date: '2026-10-27',
+    status: '已完成',
+    title: '镇民的活动状态更清楚',
+    highlights: [
+      {category: '优化', title: '更容易看见镇民当前活动', description: '镇民进行公开活动时，会显示简短的状态提示，方便看清正在做什么；真实发言、表情和镇民原句优先呈现，提示随当前状态更新。'},
+    ],
+  },
+  {
     version: '0.8.0',
     date: '2026-10-27',
     status: '已完成',
