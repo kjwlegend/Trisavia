@@ -1,34 +1,17 @@
 {
   "version": 1,
   "url": "/assets/world-life/place-profiles-map-v1.png",
-  "width": 2048,
-  "height": 1536,
-  "sha256": "098594fbcf8492832bb861fd4237bfc876e717282163aee5cfa8fad87332503e",
-  "scope": "Existing renderer scenery only: no NPCs, Agent avatars, speech, selection or fabricated service state.",
-  "sources": [
-    {
-      "path": "apps/web/public/world-pixel/town.js",
-      "sha256": "80af6549c938564f8f3b7387ca534102fa007f7e50f5bb4e3e9a9455824b021b"
-    },
-    {
-      "path": "apps/web/public/world-pixel/town-v2-art.js",
-      "sha256": "e5bf2d103894a5b387b07bafe567e2e0f5a05d0ee4a348b53bbb989b8a6b3421"
-    },
-    {
-      "path": "apps/web/public/world-pixel/asset-kit.js",
-      "sha256": "34513316775f9a09887a7fb7397aabd2d02e93ee4a05b620631305fd4f439387"
-    },
-    {
-      "path": "apps/web/public/world-pixel/life-art.js",
-      "sha256": "a13f336dcea8cc2a2d79bf34499945cf78a2c394e5319e4f977bbd21dc14f4ad"
-    },
-    {
-      "path": "apps/web/public/world-pixel/life-c-art.js",
-      "sha256": "b5c825a8d7846447f70e3963060c919d79a8be6086bd8664cf63d3e60dfb2eb8"
-    },
-    {
-      "path": "apps/web/public/world-life/world-map-expansion-v1.json",
-      "sha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
-    }
-  ]
+  "source": {
+    "path": "docs/design/town-expansion-20261027/assets/town-expanded.png",
+    "sha256": "0c0713c189910b33def81462f7b2553cc5531c032236b332cfe2ed8e2cbb12e6",
+    "dimensions": [
+      2048,
+      1536
+    ],
+    "cropCoordinates": "original-image-pixels",
+    "fit": "contain",
+    "pixelated": true
+  },
+  "contentSetRef": "ws02-place-profiles@1",
+  "scope": "Byte-exact existing static scenery selected by WS02; no runtime rendering, avatars, speech or selection layer."
 }

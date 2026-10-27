@@ -6,7 +6,7 @@ import {object} from '../../domains/common/errors.ts';
 export function registerPlaceProfileRoutes(gateway: AgentGateway, http: GatewayHttpTransport): void {
   for (const read of [
     {id:'world.public_place_profiles',path:'/v1/world/place-profiles',fields:['worldId']},
-    {id:'world.public_place_profile',path:'/v1/world/place-profile',fields:['worldId','placeId']},
+    {id:'world.public_place_profile',path:'/v1/world/place-profile',fields:['worldId','targetId']},
   ]) http.route('GET',read.path,request => {
     const input = {...object(request.query,read.fields)};
     return http.measurePublicRead(request,() => gateway.publicRead(read.id,input,http.validate(request),http.signal(request)));

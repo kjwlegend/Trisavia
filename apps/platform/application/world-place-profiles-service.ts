@@ -35,16 +35,16 @@ export function createWorldPlaceProfilesService(options: WorldPlaceProfilesOptio
     async query(context: RuntimeReadContext, _principal: Principal | null, operation: string, input: JsonObject): Promise<JsonObject> {
       if (!['world.place_profiles','world.place_profile'].includes(operation)) fail('unknown_operation', 404, 'Unknown place profile read');
       const single = operation === 'world.place_profile';
-      object(input, single ? ['worldId','placeId'] : ['worldId']);
+      object(input, single ? ['worldId','targetId'] : ['worldId']);
       const worldId = input.worldId === undefined ? 'default' : identifier(input.worldId, 'worldId');
-      const placeId = single ? identifier(input.placeId, 'placeId') : null;
+      const targetId = single ? identifier(input.targetId, 'targetId') : null;
       const {rules, asOf} = await options.world.readPublicRules(context, worldId);
       const manifest = rules.mapManifest;
       if (!manifest || manifest.mapId !== catalog.map.mapId || manifest.layoutSha256 !== catalog.map.layoutSha256 || manifest.geometryDigest !== catalog.map.geometryDigest) fail('place_profiles_unavailable', 409, 'Place profiles do not match the current world map');
-      const active = (p: PlaceProfileSource) => p.kind !== 'building' || manifest.buildings.some(b => b.id === p.placeId);
+      const active = (p: PlaceProfileSource) => p.kind !== 'building' || manifest.buildings.some(b => b.id === p.profileId);
       const base = {worldId, version: catalog.version, map: structuredClone(catalog.map), asOf};
       if (single) {
-        const profile = profiles.get(placeId!);
+        const profile = profiles.get(targetId!);
         if (!profile || !active(profile)) fail('place_profile_not_found', 404, 'This place has no current public profile');
         if (!options.assetExists(profile.image.url)) fail('place_profile_image_unavailable', 503, 'The current place image is unavailable');
         return {...base, profile: project(profile)} as unknown as JsonObject;

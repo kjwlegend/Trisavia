@@ -7,7 +7,9 @@ export interface PlaceProfileImage {
   sourceRef: string;
 }
 export interface PlaceProfileSource {
-  placeId: string;
+  profileId: string;
+  /** Existing business place reference; a building ID is never promoted to a Life place ID. */
+  placeId: string | null;
   targetIds: string[];
   kind: 'building' | 'commons' | 'region' | 'life-place' | 'care-point' | 'notice';
   name: string;
@@ -35,7 +37,7 @@ export function assertPlaceProfileCatalog(catalog: PlaceProfileCatalog): void {
   const targets = new Set<string>();
   for (const p of catalog.profiles) {
     const im = p.image, frame = im?.frame;
-    if (!id(p.placeId) || !['building','commons','region','life-place','care-point','notice'].includes(p.kind) || !text(p.name, 100) || !text(p.area, 100) || !text(p.description, 2000) || p.availabilityNote !== null && !text(p.availabilityNote, 500) || p.ownerNpcId !== null && !id(p.ownerNpcId) || !Array.isArray(p.targetIds) || !p.targetIds.includes(p.placeId) || p.targetIds.length > 10) throw Error('place_profiles_catalog_invalid');
+    if (!id(p.profileId) || p.placeId !== null && !id(p.placeId) || !['building','commons','region','life-place','care-point','notice'].includes(p.kind) || !text(p.name, 100) || !text(p.area, 100) || !text(p.description, 2000) || p.availabilityNote !== null && !text(p.availabilityNote, 500) || p.ownerNpcId !== null && !id(p.ownerNpcId) || !Array.isArray(p.targetIds) || !p.targetIds.includes(p.profileId) || p.targetIds.length > 10) throw Error('place_profiles_catalog_invalid');
     if (!im || !/^\/assets\/[A-Za-z0-9_./-]+\.(png|webp|svg)$/.test(im.url) || im.url.includes('..') || !text(im.sourceRef, 500) || !Number.isSafeInteger(im.sourceWidth) || !Number.isSafeInteger(im.sourceHeight) || im.sourceWidth < 1 || im.sourceHeight < 1 || !Array.isArray(frame) || frame.length !== 4 || frame.some(v => !Number.isSafeInteger(v) || v < 0) || frame[2] < 1 || frame[3] < 1 || frame[0] + frame[2] > im.sourceWidth || frame[1] + frame[3] > im.sourceHeight) throw Error('place_profiles_image_invalid');
     for (const target of p.targetIds) {
       if (!id(target) || targets.has(target)) throw Error('place_profiles_target_invalid');

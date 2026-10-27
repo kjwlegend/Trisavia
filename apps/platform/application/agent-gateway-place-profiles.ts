@@ -7,10 +7,10 @@ const text: JsonObject = {type:'string', minLength:1, maxLength:2000};
 const hash: JsonObject = {type:'string', pattern:'^[a-f0-9]{64}$'};
 const frame: JsonObject = {type:'array', items:{type:'integer', minimum:0}, minItems:4, maxItems:4};
 const image = obj({url:{type:'string', pattern:'^/assets/[A-Za-z0-9_./-]+\\.(png|webp|svg)$'}, sourceWidth:positive, sourceHeight:positive, frame, sourceRef:text});
-const profile = obj({placeId:string, targetIds:array(string,10), kind:{enum:['building','commons','region','life-place','care-point','notice']}, name:string, area:string, description:text, ownerNpcId:nullable(string), owner:nullable(obj({npcId:string,name:string})), image, availabilityNote:nullable(text)});
+const profile = obj({profileId:string, placeId:nullable(string), targetIds:array(string,10), kind:{enum:['building','commons','region','life-place','care-point','notice']}, name:string, area:string, description:text, ownerNpcId:nullable(string), owner:nullable(obj({npcId:string,name:string})), image, availabilityNote:nullable(text)});
 const map = obj({mapId:string, layoutSha256:hash, geometryDigest:hash});
 const common = {worldId:string, version:{const:1}, map, asOf:timestamp};
-const listInput = obj({worldId:string}, []), detailInput = obj({worldId:string,placeId:string}, ['placeId']);
+const listInput = obj({worldId:string}, []), detailInput = obj({worldId:string,targetId:string}, ['targetId']);
 const listOutput = obj({...common, profiles:array(profile,100)}), detailOutput = obj({...common, profile});
 type Service = ReturnType<typeof createWorldPlaceProfilesService>;
 
@@ -30,6 +30,6 @@ export function placeProfilePublicReads(service: Service): GatewayPublicRead[] {
 /** Optional guide paragraph for the World guide owner; do not replace its existing movement rules. */
 export const placeProfileGuideSection: JsonObject = {
   queries:['world.place_profiles','world.place_profile'],
-  public:['GET /v1/world/place-profiles','GET /v1/world/place-profile?placeId=...'],
+  public:['GET /v1/world/place-profiles','GET /v1/world/place-profile?targetId=...'],
   meaning:'Place descriptions and exact source image frames are authored public context. Only an explicit ownerNpcId resolved by the current NPC identity source has an owner name. A nearby or service NPC is not proof of ownership. Profile reads never move an actor, reserve a service, grant access indoors or change ownership. Existing service actions and current eligibility remain authoritative in their original catalogs.'
 };

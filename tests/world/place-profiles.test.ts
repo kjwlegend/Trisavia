@@ -9,8 +9,8 @@ import {M1Error} from '../../apps/platform/domains/common/errors.ts';
 
 const map={mapId:'pixel-town-v2',layoutSha256:'a'.repeat(64),geometryDigest:'b'.repeat(64)};
 function source():PlaceProfileCatalog{return {version:1,map,profiles:[
-  {placeId:'s-green',targetIds:['s-green'],kind:'building',name:'园丁之家',area:'南侧',description:'用于只读服务测试的场所原文。',ownerNpcId:null,image:{url:'/assets/world-life/test-map.png',sourceWidth:2048,sourceHeight:1536,frame:[480,768,112,128],sourceRef:'source test map'},availabilityNote:'这里暂未开放入内。'},
-  {placeId:'harbor_tavern',targetIds:['harbor_tavern','life-place:harbor_tavern'],kind:'life-place',name:'港湾酒馆',area:'港湾',description:'用于只读服务测试的外场原文。',ownerNpcId:'npc-example-owner',image:{url:'/assets/world-life/test-map.png',sourceWidth:2048,sourceHeight:1536,frame:[1312,624,160,96],sourceRef:'source test map'},availabilityNote:null},
+  {profileId:'s-green',placeId:null,targetIds:['s-green'],kind:'building',name:'园丁之家',area:'南侧',description:'用于只读服务测试的场所原文。',ownerNpcId:null,image:{url:'/assets/world-life/test-map.png',sourceWidth:2048,sourceHeight:1536,frame:[480,768,112,128],sourceRef:'source test map'},availabilityNote:'这里暂未开放入内。'},
+  {profileId:'life:harbor_tavern',placeId:'harbor_tavern',targetIds:['life:harbor_tavern','harbor_tavern','life-place:harbor_tavern'],kind:'life-place',name:'港湾酒馆',area:'港湾',description:'用于只读服务测试的外场原文。',ownerNpcId:'npc-example-owner',image:{url:'/assets/world-life/test-map.png',sourceWidth:2048,sourceHeight:1536,frame:[1312,624,160,96],sourceRef:'source test map'},availabilityNote:null},
 ]};}
 const context={} as RuntimeReadContext;
 const rules=()=>({worldId:'default',mapManifest:{...map,buildings:[{id:'s-green'}]}} as unknown as WorldRuleset);
@@ -22,17 +22,17 @@ function fixture(catalog=source()){
 test('human and Agent descriptors read the same World place source without writes or provider-based ownership',async()=>{
   const f=fixture(),operation=placeProfileGatewayOperations(f.service).find(o=>o.id==='world.place_profile')!,publicRead=placeProfilePublicReads(f.service).find(o=>o.id==='world.public_place_profile')!;
   assert.equal(operation.kind,'query');
-  const publicValue=await publicRead.read(context,{placeId:'s-green'}),agentValue=await f.service.query(context,{kind:'agent',agentId:'source-fixture-agent'} as any,'world.place_profile',{placeId:'s-green'});
+  const publicValue=await publicRead.read(context,{targetId:'s-green'}),agentValue=await f.service.query(context,{kind:'agent',agentId:'source-fixture-agent'} as any,'world.place_profile',{targetId:'s-green'});
   assert.deepEqual(publicValue,agentValue);assert.equal((publicValue.profile as any).owner,null);assert.equal((publicValue.profile as any).ownerNpcId,null);
-  const aliased=await f.service.query(context,null,'world.place_profile',{placeId:'life-place:harbor_tavern'});
+  const aliased=await f.service.query(context,null,'world.place_profile',{targetId:'life-place:harbor_tavern'});
   assert.deepEqual((aliased.profile as any).owner,{npcId:'npc-example-owner',name:'正式姓名'});assert.equal((aliased.profile as any).placeId,'harbor_tavern');assert.equal(f.reads(),3);
   (aliased.profile as any).description='mutated transport copy';
   assert.equal(((await f.service.query(context,null,'world.place_profiles',{})).profiles as any[])[1].description,source().profiles[1]!.description);
 });
 test('missing identities omit resolved ownership; unknown IDs and a changed map fail closed',async()=>{
   const catalog=source();catalog.profiles[1]!.ownerNpcId='npc-unresolved';const f=fixture(catalog);
-  assert.equal(((await f.service.query(context,null,'world.place_profile',{placeId:'harbor_tavern'})).profile as any).owner,null);
-  await assert.rejects(f.service.query(context,null,'world.place_profile',{placeId:'not-on-this-map'}),e=>e instanceof M1Error&&e.code==='place_profile_not_found');
+  assert.equal(((await f.service.query(context,null,'world.place_profile',{targetId:'harbor_tavern'})).profile as any).owner,null);
+  await assert.rejects(f.service.query(context,null,'world.place_profile',{targetId:'not-on-this-map'}),e=>e instanceof M1Error&&e.code==='place_profile_not_found');
   f.r.mapManifest!.geometryDigest='c'.repeat(64);
   await assert.rejects(f.service.query(context,null,'world.place_profiles',{}),e=>e instanceof M1Error&&e.code==='place_profiles_unavailable');
 });
@@ -46,5 +46,5 @@ test('a removed source asset fails the read rather than returning an invented or
   let available=true;
   const service=createWorldPlaceProfilesService({catalog:source(),assetExists:()=>available,world:{async readPublicRules(){return{rules:rules(),asOf:1};}}});
   available=false;
-  for(const [operation,input]of [['world.place_profile',{placeId:'s-green'}],['world.place_profiles',{}]] as const)await assert.rejects(service.query(context,null,operation,input),e=>e instanceof M1Error&&e.code==='place_profile_image_unavailable');
+  for(const [operation,input]of [['world.place_profile',{targetId:'s-green'}],['world.place_profiles',{}]] as const)await assert.rejects(service.query(context,null,operation,input),e=>e instanceof M1Error&&e.code==='place_profile_image_unavailable');
 });
