@@ -1,4 +1,4 @@
-import {AUTONOMOUS_LIFE_MEMORY_GUIDE,AUTONOMOUS_LIFE_HUMAN_GUIDE} from '../../apps/platform/application/agent-autonomous-life-guide.ts';
+import {APPROVED_REGISTRATION_PROMPT,APPROVED_TASK_UPDATE_PROMPT,APPROVED_RECURRING_JOB_BOOTSTRAP,APPROVED_RUNTIME_HOST_GUIDE} from '../../apps/platform/application/agent-approved-prompts.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {createHash} from 'node:crypto';
@@ -15,10 +15,9 @@ function revision(text:string,ruleVersion:number){return text.replace(/^.*\n/,`<
 
 test('current autonomous runtime keeps complete sections and exact current guide text',async()=>{
  const raw=await source(),guide=await readAgentRuntimeGuide();
- assert.equal(guide.path,AGENT_RUNTIME_RULES_PATH);assert.equal(guide.ruleVersion,4);assert(Object.isFrozen(guide));
+ assert.equal(guide.path,AGENT_RUNTIME_RULES_PATH);assert.equal(guide.ruleVersion,5);assert(Object.isFrozen(guide));
  assert.equal(guide.bytes,raw.length);assert.equal(guide.text,raw.toString('utf8'));assert.equal(guide.digestAlgorithm,'sha256-utf8-hex');assert.equal(guide.digest,createHash('sha256').update(raw).digest('hex'));assert(raw.length<AGENT_RUNTIME_MAX_BYTES);
- assert(guide.text.includes(AUTONOMOUS_LIFE_MEMORY_GUIDE));assert(guide.text.includes(AUTONOMOUS_LIFE_HUMAN_GUIDE));
- assert.match(guide.text,/即使没有新增活动/);assert.match(guide.text,/本轮实际可读上下文/);
+ assert.match(guide.text,/## 1. 授权与调度/);assert.match(guide.text,/## 7. 通知、投递与记录/);assert.match(guide.text,/长度随内容，不强压成一至三句/);
 
 });
 
@@ -39,8 +38,8 @@ test('same provider freshly discovers a rule-only update and never serves old or
 test('incomplete, malformed and unbounded runtime documents fail as whole documents',async()=>{
  const text=(await source()).toString('utf8'),header=text.split('\n')[0]!;
  const malformed=[
-  '',text.slice(0,-1),text.replace(end,''),text+end,text.replace('### 2. 选择行动','### 缺失'),
-  text.replace('### 2. 选择行动','### 1. 每次唤醒'),text.replaceAll('\n','\r\n'),'\uFEFF'+text,text+'\0',
+  '',text.slice(0,-1),text.replace(end,''),text+end,text.replace('## 2. 获取规则与续接','## 缺失'),
+  text.replace('## 2. 获取规则与续接','## 1. 授权与调度'),text.replaceAll('\n','\r\n'),'\uFEFF'+text,text+'\0',
   text.replace(/"ruleVersion":\d+/,'"ruleVersion":0'),text.replace(/"ruleVersion":\d+/,'"ruleVersion":1,"ruleVersion":2'),
   text.replace(header,header.replace(/"updatedAt":"[^"]+"/,'"updatedAt":"2026-02-30T00:00:00.000Z"')),
   text.replace('"changeSummary":','"extra":true,"changeSummary":'),text.replace(/"changeSummary":"[^"]+"/,'"changeSummary":""'),
@@ -55,8 +54,8 @@ test('join and one-time update prompts point to the same rules without executing
  const block=(name:string)=>{const start=`<!-- connet:${name}:start -->`,finish=`<!-- connet:${name}:end -->`;assert.equal(prompt.split(start).length,2);assert.equal(prompt.split(finish).length,2);return prompt.split(start)[1]!.split(finish)[0]!;};
  const joinPrompt=block('copy-prompt'),update=block('runtime-update');
  for(const value of [joinPrompt,update])assert(value.includes('{{ORIGIN}}'+AGENT_RUNTIME_RULES_PATH));
- const urls=[...update.matchAll(/\{\{ORIGIN\}\}[^\s，。；]+/g)].map(match=>match[0]);assert.deepEqual(urls,['{{ORIGIN}}'+AGENT_RUNTIME_RULES_PATH]);assert(!/runtimeToken|ownerId|agentId|managementUrl|https?:\/\//.test(update));
- assert.match(update,/仅为这一个任务更新能确认来自旧服务器模板/);assert.match(update,/自定义要求/);assert.match(update,/暂停或停止状态/);assert.match(update,/不重新注册、绑定或新建第二个任务/);assert.match(update,/不唤醒或恢复已停用/);assert.match(update,/无法确认同一个任务时不要猜选或批量修改/);assert.match(update,/宿主不支持修改任务.*如实说明/);assert.match(update,/不算后续任务已更新/);
- assert.equal(entry.split('### 周期任务的每轮bootstrap\n')[1]!.split('```text\n')[1]!.split('\n```')[0],CURRENT_RUNTIME_JOB_BOOTSTRAP);
- assert.match(CURRENT_RUNTIME_JOB_BOOTSTRAP,/即使API版本未变也必须访问/);assert.match(CURRENT_RUNTIME_HOST_GUIDE,/先用原runtime核实managementStatus确为managed/);assert.match(CURRENT_RUNTIME_HOST_GUIDE,/旧null不猜成未配置/);assert.match(AGENT_RUNTIME_MIGRATION_GUIDE,/服务器不能远程更新从不读指引的旧job/);assert.match(AGENT_RUNTIME_MIGRATION_GUIDE,/宿主原生持久任务工具实际确认后/);
+ assert.equal(joinPrompt.trim(),APPROVED_REGISTRATION_PROMPT);assert.equal(update.trim(),APPROVED_TASK_UPDATE_PROMPT);
+ assert(!/runtimeToken|ownerId|agentId|managementUrl|https?:\/\//.test(update));
+ assert.equal(entry.split('### 周期任务的每轮bootstrap\n')[1]!.split('```text\n')[1]!.split('\n```')[0],APPROVED_RECURRING_JOB_BOOTSTRAP);
+ assert.match(APPROVED_RUNTIME_HOST_GUIDE,/首次真实关联/);assert.match(APPROVED_RUNTIME_HOST_GUIDE,/旧null不猜作未配置/);assert.match(AGENT_RUNTIME_MIGRATION_GUIDE,/服务器不能远程更新从不读指引的旧job/);assert.match(AGENT_RUNTIME_MIGRATION_GUIDE,/宿主原生持久任务工具实际确认后/);
 });

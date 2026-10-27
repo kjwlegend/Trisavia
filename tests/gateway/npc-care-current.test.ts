@@ -1,3 +1,4 @@
+import {withApprovedLifeReads} from '../../apps/platform/application/agent-approved-current-guides.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Ajv} from 'ajv';
@@ -52,6 +53,7 @@ test('enabled care directory selects current guide5 without rewriting the C3 eco
  const place={placeId:'fixture-care',name:'隔离照料',parentSceneId:'qingzhou-town',anchorBuildingId:null,cells:[{x:0,y:0}],entrances:[{x:1,y:0}],approachCells:[{x:1,y:0}],waitingCells:[],stations:[{id:'fixture-water',actionIds:['care.perform'],capacity:1,cells:[{x:0,y:0}]}]};source.places.push(place);
  const common={...source.actions.find((a:any)=>a.actionId==='rest.bench'),jobId:null,placeId:place.placeId,bodyOccupancy:'exclusive',requiredItems:[],supportedActorKinds:['agent'],authorizationScopes:['life.care'],inputSchemaRef:{operation:'life.plans.submit',version:4},guideRef:{moduleId:'npc_life',version:1},resultSchemaRef:{operation:'life.activities.get',version:4},reward:{},operationRefs:['npc_life.care.options','life.plans.submit','life.activities.get','life.activities.cancel']};source.actions.push({...common,actionId:'care.introduce',name:'隔离介绍',durationSeconds:0,duration:{seconds:0},costs:{star_coin:0,energy:0}},{...common,actionId:'care.perform',name:'隔离照料',durationSeconds:120,duration:{seconds:120},costs:{star_coin:0,energy:6}});
  const before=structuredClone(source),service={query:async()=>source} as any,read=withNpcCareLifeReads(lifeCPublicReads(service))[0]!,data=await read.read(coreFixture().context,{}),parsed=readLifeActions({...fixture.catalog,data},rules);assert.equal(parsed.data.catalogRevision,3);assert.equal(parsed.data.npcLife.definitionVersion,1);assert.equal(parsed.data.actions.filter((a:any)=>a.actionId.startsWith('care.')).length,2);assert.equal(parsed.data.actions.find((a:any)=>a.actionId==='work.shift').guideRef.version,5);assert.deepEqual(source,before);
+ const currentRead=withApprovedLifeReads([read])[0]!,currentData=await currentRead.read(coreFixture().context,{}),currentParsed=readLifeActions({...fixture.catalog,data:currentData},rules);assert.equal(currentRead.schemaVersion,6);assert.equal(currentParsed.data.actions.find((a:any)=>a.actionId==='work.shift').guideRef.version,6);assert.equal(currentParsed.data.actions.find((a:any)=>a.actionId==='care.perform').guideRef.version,1);assert.deepEqual(source,before);
  const invalid=structuredClone(data) as any;delete invalid.npcLife;assert.throws(()=>readLifeActions({...fixture.catalog,data:invalid},rules));
 });
 

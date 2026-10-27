@@ -1,6 +1,7 @@
 import {el,notice} from './common.js';
 
 function extractBlock(markdown,origin,name){
+  const site=new URL(origin);if(!['http:','https:'].includes(site.protocol)||site.origin!==origin)throw new Error('invalid_prompt');
   if(typeof markdown!=='string'||markdown.length>65536)throw new Error('invalid_prompt');
   const start=`<!-- connet:${name}:start -->`,end=`<!-- connet:${name}:end -->`,parts=markdown.split(start);if(parts.length!==2||parts[0].includes(end))throw new Error('invalid_prompt');
   const block=parts[1].split(end);if(block.length!==2)throw new Error('invalid_prompt');
@@ -11,7 +12,8 @@ export const extractOnboardingPrompt=(markdown,origin)=>extractBlock(markdown,or
 export function extractRuntimeUpdatePrompt(markdown,origin){
   const site=new URL(origin);if(!['http:','https:'].includes(site.protocol)||site.origin!==origin)throw new Error('invalid_prompt');
   const text=extractBlock(markdown,origin,'runtime-update'),urls=[...text.matchAll(/https?:\/\/[^\s<>()（）\[\]`"'，。；、！？]+/g)].map(match=>match[0].replace(/[，。；、]+$/u,''));
-  if(!urls.length||urls.some(url=>url!==origin+'/agent/runtime.md')||/\/(?:owner|residents)(?:\b|[/?#])|\/v1\/(?:owner|agents)\b|\b(?:javascript|data|file):/i.test(text))throw new Error('invalid_prompt');return text;
+  const allowed=new Set([origin+'/agent/runtime.md',origin+'/agent/entry.md']);
+  if(!urls.includes(origin+'/agent/runtime.md')||urls.some(url=>!allowed.has(url))||/\/(?:owner|residents)(?:\b|[/?#])|\/v1\/(?:owner|agents)\b|\b(?:javascript|data|file):/i.test(text))throw new Error('invalid_prompt');return text;
 }
 
 // The same public document supplies independently validated joining/update sections.
@@ -28,6 +30,9 @@ async function load(){
     finally{inFlight=null;}
   })();return inFlight;
 }
+// Owner invitation copy uses the same approved public registration block.
+// A failed source never falls back to an obsolete, separately generated prompt.
+export async function readOnboardingPrompt(){if(states.onboarding.phase!=='ready')await load();if(states.onboarding.phase!=='ready'||!states.onboarding.text)throw new Error('prompt_unavailable');return states.onboarding.text;}
 function bindPrompt(kind,{text,copy,retry,status}){
   const runtime=kind==='runtime';
   function sync(){const state=states[kind];copy.disabled=state.phase!=='ready';retry.hidden=!runtime&&state.phase==='ready';retry.disabled=state.phase==='loading';if(runtime)retry.textContent=state.phase==='ready'?'重新读取提示':'重试加载提示';}

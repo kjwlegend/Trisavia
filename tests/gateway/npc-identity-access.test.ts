@@ -1,3 +1,5 @@
+import {approvedWorldGuide,approvedLifeGuide,APPROVED_LIFE_ACTION_IDS,withApprovedLifeOperations,withApprovedLifeReads} from '../../apps/platform/application/agent-approved-current-guides.ts';
+import {runtimeWorldGuide} from '../../apps/platform/application/agent-runtime-publication.ts';
 import {writeFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
@@ -37,12 +39,12 @@ export function residentDescriptorFixture(){
 test('all source-owned NPC identity projections preserve 70 exact documents within one fixed UTF-8 bound',()=>{
  const {original,retained,operations,reads}=residentDescriptorFixture();assert.equal(original.length,48);assert.equal(original.reduce((n,d)=>n+Buffer.byteLength(canonicalGatewayDocument(d.document)),0),254678);
  assert.equal(retained.length,70);assert.equal(new Set(retained.map(row=>row.id+':'+row.version)).size,70);assert.equal(retained.reduce((n,d)=>n+Buffer.byteLength(canonicalGatewayDocument(d.document)),0),358442);
- if(process.env.JOURNAL_SCHEMA_RECEIPT)writeFileSync(process.env.JOURNAL_SCHEMA_RECEIPT,JSON.stringify({retainedCount:retained.length,retainedBytes:358442,countLimit:74,byteLimit:393216,npcChangedIds:[...NPC_IDENTITY_CHANGED_IDS],documents:retained.map(row=>{const canonical=canonicalGatewayDocument(row.document);return{id:row.id,version:row.version,$id:row.document.$id,bytes:Buffer.byteLength(canonical),sha256:createHash('sha256').update(canonical).digest('hex')};})},null,2)+'\n');
+ if(process.env.JOURNAL_SCHEMA_RECEIPT)writeFileSync(process.env.JOURNAL_SCHEMA_RECEIPT,JSON.stringify({retainedCount:retained.length,retainedBytes:358442,countLimit:74,byteLimit:425984,npcChangedIds:[...NPC_IDENTITY_CHANGED_IDS],documents:retained.map(row=>{const canonical=canonicalGatewayDocument(row.document);return{id:row.id,version:row.version,$id:row.document.$id,bytes:Buffer.byteLength(canonical),sha256:createHash('sha256').update(canonical).digest('hex')};})},null,2)+'\n');
  const f=coreFixture();assert.throws(()=>createAgentGateway({store:f.store,identity:f.identity,operations,publicReads:reads,guides:[],retainedSchemas:Array(75).fill(retained[0]!)}),/Too many retained exact schemas/);const gateway=createAgentGateway({store:f.store,identity:f.identity,operations,publicReads:reads,guides:[residentWorldGuide,npcCareLifeGuide,residentJournalGatewayGuide,residentTownGuide,residentNpcLifeGuide],retainedGuides:[npcCareBehaviorGuide],retainedSchemas:retained});
  for(const row of retained)assert.equal(gateway.schema(row.id,String(row.version)).canonicalDocument,canonicalGatewayDocument(row.document));
  assert.throws(()=>gateway.schema('world.scene.output','999'),(e:any)=>e.code==='schema_version_not_available');
  assert.throws(()=>createAgentGateway({store:f.store,identity:f.identity,operations,publicReads:reads,guides:[],retainedSchemas:[...retained,retained[0]!]}),/Invalid retained exact schema/);
- assert.throws(()=>createAgentGateway({store:f.store,identity:f.identity,operations,publicReads:reads,guides:[],retainedSchemas:[{...retained[0]!,document:{...retained[0]!.document,description:'x'.repeat(393216)}},...retained.slice(1)]}),/UTF-8 byte budget/);
+ assert.throws(()=>createAgentGateway({store:f.store,identity:f.identity,operations,publicReads:reads,guides:[],retainedSchemas:[{...retained[0]!,document:{...retained[0]!.document,description:'x'.repeat(425984)}},...retained.slice(1)]}),/UTF-8 byte budget/);
 });
 test('identity is optional source data, validated once and retained by the current public NPC reader',()=>{
  assert.deepEqual(readNpcIdentity(identity,{name:identity.name,role:identity.role}),identity);
@@ -58,4 +60,18 @@ test('current Town accepts eight live NPCs with only the reviewed gardener sprit
  assert(validRow(gardener),JSON.stringify(validRow.errors));assert(!validRow({...gardener,npcId:'unreviewed-npc'}));assert(!ajv.compile((old.output.properties as any).npcs.items)(gardener));
  assert.equal((old.output.properties as any).npcs.maxItems,7);assert.equal((current.output.properties as any).npcs.maxItems,8);assert.equal(current.schemaVersion,7);
  const rules={version:6,topologyVersion:6,bounds:{minX:-100,maxX:100,minY:-100,maxY:100}};assert.equal(readWorldNpcs([gardener],rules)[0]!.appearance.kind,'npc_sprite');
+});
+
+
+test('approved World24/Life6 preserve old exact documents and retain current action guide5 bytes',()=>{
+ const base=residentDescriptorFixture(),previous=[...base.operations.filter(o=>APPROVED_LIFE_ACTION_IDS.has(o.id)).flatMap(gatewayOperationSchemas),...base.reads.filter(r=>APPROVED_LIFE_ACTION_IDS.has(r.id)).flatMap(gatewayPublicReadSchemas)],retained=[...base.retained,...previous];
+ const bytes=retained.reduce((n,row)=>n+Buffer.byteLength(canonicalGatewayDocument(row.document)),0);
+ assert.equal(retained.length,74);assert.equal(bytes,401868);assert(bytes<=425984,String(bytes));
+ const f=coreFixture(),gateway=createAgentGateway({store:f.store,identity:f.identity,operations:withApprovedLifeOperations(base.operations),publicReads:withApprovedLifeReads(base.reads),guides:[approvedWorldGuide,approvedLifeGuide,residentJournalGatewayGuide,residentTownGuide,residentNpcLifeGuide],retainedGuides:[residentWorldGuide,npcCareLifeGuide,runtimeWorldGuide],retainedSchemas:retained});
+ for(const row of retained)assert.equal(gateway.schema(row.id,String(row.version)).canonicalDocument,canonicalGatewayDocument(row.document));
+ for(const [module,version,expected] of [['world',23,'bea974eaea33b2accc8f33ce6116f2bbf084f6b770ca72021f5a258d4a0731a3'],['life',5,'16630ffe377591332404b1dcd35af14c3cfd8963ed0a0f3ef9d60e84da1781a2'],['world',19,'9c069d7b318d380c07310b4f036298e36f2700821a83481569cc45498d19a7c3']] as const)assert.equal(gateway.guide(module,String(version)).digest,expected);
+ assert.equal(gateway.guide('world','24').document.profilePersonalization,approvedWorldGuide.document.profilePersonalization);
+ assert(!canonicalGatewayDocument(approvedWorldGuide.document).includes('通常1–3句'));assert(!canonicalGatewayDocument(approvedLifeGuide.document).includes('通常1–3句'));
+ assert.equal(withApprovedLifeOperations(base.operations).find(o=>o.id==='life.actions')!.schemaVersion,6);
+ console.log(JSON.stringify({approvedTemplateRetainedCount:retained.length,approvedTemplateRetainedUtf8Bytes:bytes,limitCount:74,limitUtf8Bytes:425984}));
 });

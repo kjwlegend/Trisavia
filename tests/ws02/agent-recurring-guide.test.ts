@@ -1,3 +1,4 @@
+import {APPROVED_PROFILE_GUIDANCE,APPROVED_PROFILE_RULES,APPROVED_REGISTRATION_PROMPT,APPROVED_RECURRING_JOB_BOOTSTRAP} from '../../apps/platform/application/agent-approved-prompts.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {createHash} from 'node:crypto';
@@ -49,7 +50,7 @@ test('current bootstrap follows discovery, authority, local experience, action a
  const order=['原可信origin','实时capabilities和Gateway目录','精确版本指南/schema','当前授权','本地已保存的经历','有意义的行动','可靠保存到本地记忆','无变化且无需主人决定时静默'].map(s=>RECURRING_JOB_BOOTSTRAP.indexOf(s));assert(order.every((v,i)=>v>=0&&(i===0||v>order[i-1]!)));
  assert.match(RECURRING_JOB_BOOTSTRAP,/仅取得部分所需说明.*停止依赖这些说明的写入/);assert.match(RECURRING_JOB_BOOTSTRAP,/期望频率版本变化时才/);assert.match(CURRENT_RECURRING_HOST_GUIDE,/旧job只需原位更新一次/);assert.match(CURRENT_RECURRING_HOST_GUIDE,/停用job不因更新说明重新开启/);assert.match(CURRENT_RECURRING_HOST_GUIDE,/宿主原生持久任务工具的真实结果/);
  const entry=await readFile(new URL('../../docs/access/v1/entry.md',import.meta.url),'utf8'),prompt=await readFile(new URL('../../docs/access/v1/prompt.md',import.meta.url),'utf8'),setup=await readFile(new URL('../../docs/access/v1/local-setup.md',import.meta.url),'utf8');
- assert.equal(entry.split('### 周期任务的每轮bootstrap\n')[1]!.split('```text\n')[1]!.split('\n```')[0],CURRENT_RUNTIME_JOB_BOOTSTRAP);assert.match(entry,/仅首次入镇且该步骤尚未完成/);assert.match(entry,/只有本次新注册、首次关联且确无已配置安排/);assert.match(entry,/旧启用job原位更新一次提示/);assert.match(entry,/每小时一次（3600秒，可改）/);assert.match(prompt,/按指南完成必要的首次入镇、主人关联与周期参与/);assert(!setup.includes('已加入 connet.ai'));assert.match(setup,/Trisavia.*可信origin/);
+ assert.equal(entry.split('### 周期任务的每轮bootstrap\n')[1]!.split('```text\n')[1]!.split('\n```')[0],APPROVED_RECURRING_JOB_BOOTSTRAP);assert.match(entry,/仅首次入镇且该步骤尚未完成/);assert.match(entry,/只有本次新注册、首次关联且确无已配置安排/);assert.match(entry,/旧启用job原位更新一次提示/);assert.match(entry,/每小时一次（3600秒，可改）/);assert.match(prompt,/完成尚未完成的首次入镇、主人关联和周期参与设置/);assert(!setup.includes('已加入 connet.ai'));assert.match(setup,/Trisavia.*可信origin/);
 });
 
 test('named text publication preserves exact HTTP guides and digests, source states, schemas, facts and same-operation receipts',async()=>{
@@ -76,11 +77,11 @@ test('occupied next exact guide rolls back the complete publication and retains 
 test('personalization is explicit, local, confirmed once and discoverable without rewriting the recurring job',async()=>{
  assert.equal(worldGatewayGuide.document.profilePersonalization,PROFILE_PERSONALIZATION_GUIDE);
  assert.equal(PROFILE_PERSONALIZATION_GUIDANCE.existingAgents,'no automatic profile changes');
- const metadata=memory();await metadata.store.transaction(initializePerceptionCatalog);assert.deepEqual((await createM1Service(metadata.store,{email:{mode:'experience'}}).invoke('capabilities',{})).profilePersonalization,PROFILE_PERSONALIZATION_GUIDANCE);
+ const metadata=memory();await metadata.store.transaction(initializePerceptionCatalog);assert.deepEqual((await createM1Service(metadata.store,{email:{mode:'experience'}}).invoke('capabilities',{})).profilePersonalization,APPROVED_PROFILE_GUIDANCE);
  for(const text of ['主人明确指定','稳定昵称','中文、英文、多字和合理空格','没有历史或无读取权','不套固定名字池','固定三标签','一次简短本地预览','已授权自主设定','确认前不提交','原聊天和记忆原文留在本地','不重注册','原可信origin、实时capabilities和Gateway发现'])assert(PROFILE_PERSONALIZATION_GUIDE.includes(text),text);
  const entry=await readFile(new URL('../../docs/access/v1/entry.md',import.meta.url),'utf8'),prompt=await readFile(new URL('../../docs/access/v1/prompt.md',import.meta.url),'utf8'),setup=await readFile(new URL('../../docs/access/v1/local-setup.md',import.meta.url),'utf8');
- assert.match(entry,/<a id="role-personalization"><\/a>/);assert.match(entry,/中文、英文、多字及合理空格/);assert.match(entry,/一次简短预览/);assert.match(entry,/原聊天、记忆原文不上传/);assert(!entry.includes('不必读取聊天历史'));
- const copied=prompt.split('<!-- connet:copy-prompt:start -->')[1]!.split('<!-- connet:copy-prompt:end -->')[0]!;assert.match(copied,/仅新角色或我明确要求改资料/);assert.match(copied,/必要时集中确认一次/);assert.match(copied,/已获自主设定授权则按当前权限/);assert.equal(copied.trim().split(/\n\s*\n/u).length,3);assert(copied.trim().length<400);for(const detail of ['100星币','每小时','job','bootstrap','固定三标签'])assert(!copied.includes(detail),detail);assert.match(setup,/需要文案确认时必须先完成确认再运行/);assert.match(setup,/此示例只传名字与简介，不代表兴趣标签已经保存/);
+ assert.match(entry,/<a id="role-personalization"><\/a>/);assert(entry.includes(APPROVED_PROFILE_RULES));
+ const copied=prompt.split('<!-- connet:copy-prompt:start -->')[1]!.split('<!-- connet:copy-prompt:end -->')[0]!.trim();assert.equal(copied,APPROVED_REGISTRATION_PROMPT);assert.match(setup,/本次获准重塑时，沿用原身份、关联和 state/);assert.match(setup,/此示例只传 `displayName` 对应的名字与 `bio` 对应的背景/);
 });
 
 test('personalization publication keeps real exact-guide reads and the startup catalog gate consistent; original receipts remain readable',async()=>{

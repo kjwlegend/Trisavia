@@ -42,8 +42,8 @@ test('private strict reader keeps final prose distinct and refuses public or mal
 });
 
 test('current fixed runtime freshly exposes private final-account guidance without changing jobs',async()=>{
- const current=await readAgentRuntimeGuide();assert.equal(current.ruleVersion,4);assert(current.bytes<=16384);
+ const current=await readAgentRuntimeGuide();assert.equal(current.ruleVersion,5);assert(current.bytes<=16384);
  assert.match(current.text,/behavior\.journal\.submit/);assert.match(current.text,/behavior\.journal\.history/);
  assert.match(current.text,/同步失败只补日志，不重做业务/);assert.match(current.text,/无值得记录的新内容不强造日志/);
- assert.match(current.text,/服务器保存和宿主送达分别核实/);assert.match(current.text,/原有执行频率/);const body=current.text.slice(current.text.indexOf('\n')+1),withoutNew=body.replace(/个人日志能力实际启用后，[\s\S]*?(?=### 3\. 向主人分享\n)/,'');assert.equal(createHash('sha256').update(withoutNew).digest('hex'),'dddae52fc6361319142ae70eb0ce2b025a157b608ec21cb069d424c44cf05fce');
+ assert.match(current.text,/服务器保存和宿主送达分别核实/);assert.match(current.text,/不自行改频率/);const block=current.text.slice(current.text.indexOf('个人日志能力实际启用后，'),current.text.indexOf('\n\n当前个人日志的纯文本正文'));assert.equal(createHash('sha256').update(block).digest('hex'),'1112496eced9e2ee6cdac47fa2239f28939ca6b87215e8e137dda09e8bd3afef');
 });
