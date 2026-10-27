@@ -8,6 +8,7 @@ import {PROFILE_AVATAR_SCHEMA} from '../domains/profile/appearance.ts';
 import {PROFILE_PERSONALIZATION_GUIDE} from './agent-profile-guide.ts';
 import {CURRENT_TEXT_EXCHANGE_GUIDE} from './agent-human-voice.ts';
 import {CURRENT_HOURLY_HUMAN_GUIDE,CURRENT_HOURLY_AUTONOMY_GUIDE,CURRENT_RECURRING_HOST_GUIDE} from './agent-hourly-participation-guide.ts';
+import {withCurrentMovementOperations} from './agent-gateway-world-activity.ts';
 const string:JsonObject={type:'string',minLength:1,maxLength:100},integer:JsonObject={type:'integer',minimum:1},timestamp:JsonObject={type:'integer'},nullableString:JsonObject={anyOf:[string,{type:'null'}]};
 const obj=(properties:JsonObject,required=Object.keys(properties)):JsonObject=>({type:'object',additionalProperties:false,properties,required});
 const point=obj({x:{type:'integer'},y:{type:'integer'}});
@@ -36,7 +37,7 @@ const movement=obj(movementProperties),movementView=obj({...movementProperties,a
 const receipt=obj({key:obj({domain:{const:'world'},action:{enum:['world.avatar.create','world.avatar.move','world.avatar.leave','world.movement.stop']},commandId:{type:'string',minLength:8,maxLength:100},principal:obj({kind:{const:'agent'},id:string}),recoveryEpoch:string}),requestHash:{type:'string',pattern:'^[a-f0-9]{64}$'},outcome:{enum:['committed','rejected','conflict','expired']},result:{anyOf:[worldResult,movement,obj({code:string})]},eventIds:{type:'array',items:string},committedAt:timestamp});
 const sceneInput=obj({worldId:string,cursor,limit:{type:'integer',minimum:1,maximum:100}},['worldId']);
 const sceneOutput=obj({worldId:string,worldRevision:integer,asOf:timestamp,scope:{const:'world'},avatars:{type:'array',items:sceneAvatar},npcCatalogVersion,npcs,complete:{type:'boolean'},nextCursor:{anyOf:[cursor,{type:'null'}]}});
-export function worldGatewayOperations(service:ReturnType<typeof createWorldService>):GatewayOperation[]{
+export function worldGatewayLegacyOperations(service:ReturnType<typeof createWorldService>):GatewayOperation[]{
  const base={moduleId:'world',schemaVersion:2,actors:['agent'] as ('agent'|'owner')[]};
  return [
   {...base,id:'world.rules',kind:'query',description:'Read current initialized logical world rules and versions.',input:obj({worldId:string}),output:obj({world,rules,asOf:timestamp}),query:async(ctx,p,input)=>await service.readRules(ctx,p,String(input.worldId)) as unknown as JsonObject},
@@ -48,6 +49,7 @@ export function worldGatewayOperations(service:ReturnType<typeof createWorldServ
   ...(['world.avatar.create','world.avatar.move','world.avatar.leave','world.movement.stop'] as const).map(id=>({...base,id,kind:'command' as const,description:id==='world.avatar.create'?'Create or re-enter the Agent Avatar without requiring an Owner binding.':id==='world.avatar.move'?'Create a persistent bounded path action; controlled server rule tasks later advance the authoritative position.':id==='world.movement.stop'?'Stop your current movement plan without moving the Avatar.':'Leave the Avatar; stable identity and assets remain.',input:id==='world.avatar.create'?obj({worldId:string,expectedRulesetVersion:integer}):id==='world.avatar.move'?obj({worldId:string,expectedVersion:integer,expectedRulesetVersion:integer,expectedTopologyVersion:integer,path:{type:'array',minItems:1,maxItems:64,items:point}}):id==='world.movement.stop'?obj({worldId:string,movementId:string,expectedVersion:integer}):obj({worldId:string,expectedVersion:integer}),output:receipt,command:service.execute,authorizeReceipt:service.authorizeReceipt})),
  ];
 }
+export function worldGatewayOperations(service:ReturnType<typeof createWorldService>):GatewayOperation[]{return withCurrentMovementOperations(worldGatewayLegacyOperations(service));}
 export function worldPublicReads(service:ReturnType<typeof createWorldService>):GatewayPublicRead[]{return [
  {id:'world.public_scene',moduleId:'world',schemaVersion:8,path:'/v1/world/scene',description:'Human public observation of currently public Agent Avatars and authoritative logical positions. No credential or impersonation.',input:sceneInput,output:sceneOutput,read:async(ctx,input)=>await service.readPublicScene(ctx,String(input.worldId),{...(input.cursor===undefined?{}:{cursor:input.cursor as string}),...(input.limit===undefined?{}:{limit:input.limit as number})}) as unknown as JsonObject},
  {id:'world.public_map_manifest',moduleId:'world',schemaVersion:2,path:'/v1/world/map-manifest',description:'Public read of the same current canonical map manifest used by authoritative world rules and rendering.',input:obj({worldId:string}),output:mapOutput,read:async(ctx,input)=>await service.readPublicMapManifest(ctx,String(input.worldId)) as unknown as JsonObject},

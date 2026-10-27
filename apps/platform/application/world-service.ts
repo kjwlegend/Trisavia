@@ -11,8 +11,9 @@ import { commitRuntimeCommandIn, hashRuntimeRequest } from '../domains/runtime/c
 import { createWorldCursor } from '../domains/world/cursor.ts';
 import { WORLD_REPOSITORY } from '../domains/world/repository.ts';
 import { assertCell, assertRuleset, containingPlace, DEFAULT_WORLD_RULES, validatePath } from '../domains/world/rules.ts';
-import { MOVEMENT_POLICY_V1, type GridPoint, type WorldAvatar, type WorldMovement, type WorldRuleset, type WorldMapManifest, type WorldNpc } from '../domains/world/types.ts';
-import { IDLE_LIFE_POLICY_V1, idlePath, idleSeed, spawnCandidates } from '../domains/world/idle-life.ts';
+import { type GridPoint, type WorldAvatar, type WorldMovement, type WorldRuleset, type WorldMapManifest, type WorldNpc } from '../domains/world/types.ts';
+import {CURRENT_MOVEMENT_POLICY,supportedMovementPolicy} from '../domains/world/movement-policy.ts';
+import { CURRENT_IDLE_LIFE_POLICY,IDLE_LIFE_POLICY_V1,roamingPath,idleSeed,spawnCandidates } from '../domains/world/idle-life.ts';
 import type {CurrentTownNpc} from '../domains/town-services/types.ts';
 export interface WorldActivityAccess {lockActor?(context:RuntimeTransaction,worldId:string,agentId:string):Promise<void>;isOccupied(context:RuntimeTransaction,worldId:string,agentId:string):Promise<boolean>;interrupt(context:RuntimeTransaction,worldId:string,agentId:string,reason:string):Promise<void>}
 
@@ -95,27 +96,27 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
     }
     return {version:1,completeness:'partial',phase:record.scope==='world_idle'?'wander':'movement',startedAt:null,endedAt:['world.movement.completed','world.movement.stopped','world.idle.completed'].includes(record.node)?record.occurredAt:null,durationMs:null,location:record.publicProjection?.placeName?{from:null,to:{kind:'place',name:record.publicProjection.placeName},via:[],mapId:null,rulesetVersion:null,topologyVersion:null}:null,journey:null,participants:[],resultCode:record.scope==='world_idle'?'idle_completed':'movement_details_unrecorded',gaps:['起点、经过与耗时未记录']};
   }
-  async function commitPosition(context: RuntimeTransaction, rules: WorldRuleset, avatar: WorldAvatar, cell: GridPoint, source:'explicit'|'idle'='idle',movementId:string|null=null): Promise<WorldAvatar> {
+  async function commitPosition(context: RuntimeTransaction, rules: WorldRuleset, avatar: WorldAvatar, cell: GridPoint, source:'explicit'|'idle'='idle',movementId:string|null=null,stepIntervalMs:number=source==='explicit'?CURRENT_MOVEMENT_POLICY.stepIntervalMs:CURRENT_IDLE_LIFE_POLICY.stepIntervalMs): Promise<WorldAvatar> {
     const destination = validatePath(rules, avatar.position, [cell])[0]!;
     await capacity(context, rules, [destination], avatar.agentId);
-    const next = { ...avatar, version: avatar.version + 1, position: { ...destination }, placeId: containingPlace(rules, destination)?.id ?? null, rulesetVersion: rules.version, updatedAt: context.now(),motion:{segmentId:avatar.id+':'+(avatar.version+1),movementId,source,from:{...avatar.position},to:{...destination},startedAt:context.now(),arriveAt:context.now()+(source==='explicit'?MOVEMENT_POLICY_V1.stepIntervalMs:IDLE_LIFE_POLICY_V1.stepIntervalMs),rulesetVersion:rules.version,topologyVersion:rules.topologyVersion,status:'committed' as const} };
+    const next = { ...avatar, version: avatar.version + 1, position: { ...destination }, placeId: containingPlace(rules, destination)?.id ?? null, rulesetVersion: rules.version, updatedAt: context.now(),motion:{segmentId:avatar.id+':'+(avatar.version+1),movementId,source,from:{...avatar.position},to:{...destination},startedAt:context.now(),arriveAt:context.now()+stepIntervalMs,rulesetVersion:rules.version,topologyVersion:rules.topologyVersion,status:'committed' as const} };
     await context.repository(WORLD_REPOSITORY).saveAvatar(next, avatar.version); return next;
   }
-  const restMs = (avatar: WorldAvatar) => IDLE_LIFE_POLICY_V1.minRestMs + idleSeed(avatar.id + ':' + avatar.version) % IDLE_LIFE_POLICY_V1.restJitterMs;
+  const restMs = (avatar: WorldAvatar) => CURRENT_IDLE_LIFE_POLICY.minRestMs + idleSeed(avatar.id + ':' + avatar.version) % CURRENT_IDLE_LIFE_POLICY.restJitterMs;
   async function ensureIdleTask(context: RuntimeTransaction, avatar: WorldAvatar): Promise<void> {
     const generation = await context.tasks.currentGeneration('world'), taskId = 'world-idle:' + avatar.id + ':' + generation;
     if (await context.tasks.get(taskId)) return;
     await context.tasks.schedule({ taskId, domain: 'world', kind: 'world.idle.step', handlerVersion: 1, dedupeKey: taskId,
       target: { type: 'avatar', id: avatar.id, version: 1 }, timeKind: 'utc', dueAt: context.now() + restMs(avatar), generation, maxAttempts: 5, payloadVersion: 1,
-      payload: { worldId: avatar.worldId, agentId: avatar.agentId, path: [], avatarVersion: avatar.version, qualification: '', explicitStamp: '' } });
+      payload: { worldId: avatar.worldId, agentId: avatar.agentId, path: [], avatarVersion: avatar.version, qualification: '', explicitStamp: '',idlePolicyVersion:CURRENT_IDLE_LIFE_POLICY.version } });
   }
   /** Bounded discovery only; no identity creation, position change, model, or browser dependency. */
   async function ensureIdleLife(context: RuntimeTransaction, worldId = 'default', afterAgentId?: string): Promise<string | undefined> {
     const repository = context.repository(WORLD_REPOSITORY);
     const world = await repository.lockWorld(worldId); if (!world?.active) return;
-    const avatars = await repository.listAvatars(worldId, { ...(afterAgentId ? { afterAgentId } : {}), limit: IDLE_LIFE_POLICY_V1.scanBatch });
+    const avatars = await repository.listAvatars(worldId, { ...(afterAgentId ? { afterAgentId } : {}), limit: CURRENT_IDLE_LIFE_POLICY.scanBatch });
     for (const avatar of avatars) await ensureIdleTask(context, avatar);
-    return avatars.length === IDLE_LIFE_POLICY_V1.scanBatch ? avatars.at(-1)!.agentId : undefined;
+    return avatars.length === CURRENT_IDLE_LIFE_POLICY.scanBatch ? avatars.at(-1)!.agentId : undefined;
   }
   /** Current state is the fact: reuse one task and never append idle movement/event/outbox history. */
   async function handleIdleTask(context: RuntimeTransaction, scheduled: RuntimeTask): Promise<IdleTaskRecurrence> {
@@ -126,7 +127,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
     await options.activities?.lockActor?.(context,worldId,agentId);
     const repository = context.repository(WORLD_REPOSITORY), world = await repository.lockWorld(worldId), avatar = await repository.getAvatar(worldId, agentId), now = context.now();
     const again = (delay: number, next: JsonObject): IdleTaskRecurrence => ({ idle: { dueAt: now + delay, payload: next } });
-    const rest = (explicitStamp = String(payload.explicitStamp ?? ''), delay = avatar ? restMs(avatar) : 30000) => again(delay, { worldId, agentId, path: [], avatarVersion: avatar?.version ?? 1, qualification: '', explicitStamp });
+    const rest = (explicitStamp = String(payload.explicitStamp ?? ''), delay = avatar ? restMs(avatar) : 30000) => again(delay, { worldId, agentId, path: [], avatarVersion: avatar?.version ?? 1, qualification: '', explicitStamp,idlePolicyVersion:CURRENT_IDLE_LIFE_POLICY.version });
     if (!world?.active || !avatar || avatar.id !== task.target.id || avatar.status !== 'idle') return rest();
     try { assertWorldActionAllowed((await identity.readParticipation(context, agentId)).actionPolicy, 'world.idle.step'); await participation(context, agentId, worldId, true); } catch (error) { if (error instanceof M1Error && error.statusCode < 500) return rest(); throw error; }
     if(await options.activities?.isOccupied(context,worldId,agentId))return rest();
@@ -134,34 +135,36 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
     const qualification = [context.recoveryEpoch, status.runtimeVersion, status.membership.ownerPauseVersion, status.membership.platformVersion, status.membership.sharingGeneration, status.actionPolicy.version].join(':');
     const explicit = await repository.getLatestMovement(worldId, agentId), explicitStamp = explicit ? explicit.id + ':' + explicit.version : '';
     if (await repository.getActiveMovement(worldId, agentId)) return rest(explicitStamp);
+    if(avatar.motion&&now<avatar.motion.arriveAt)return again(Math.max(1000,avatar.motion.arriveAt-now),{...payload});
     // A deliberate stop or arrival earns a full pause, even if its Avatar version did not change.
     if (explicit && now < explicit.updatedAt + restMs(avatar)) return rest(explicitStamp, Math.max(1000, explicit.updatedAt + restMs(avatar) - now));
     if (payload.explicitStamp !== explicitStamp || payload.avatarVersion !== avatar.version) return rest(explicitStamp);
     const { rules } = await rulesFor(context, worldId);
     let path: GridPoint[];
-    if (!Array.isArray(payload.path) || payload.path.length > IDLE_LIFE_POLICY_V1.maxPathLength) fail('invalid_task', 400, 'Invalid bounded idle path');
+    const idlePolicy=Array.isArray(payload.path)&&payload.path.length&&(payload.idlePolicyVersion??1)===1?IDLE_LIFE_POLICY_V1:CURRENT_IDLE_LIFE_POLICY;
+    if (!Array.isArray(payload.path) || payload.path.length > idlePolicy.maxPathLength) fail('invalid_task', 400, 'Invalid bounded idle path');
+    const neighbors=await repository.listAvatars(worldId,{limit:100}),npcs=options.currentNpcs?(await options.currentNpcs(context,worldId)).npcs:[];
+    const occupied=[...neighbors.filter(other=>other.agentId!==agentId).map(other=>other.position),...npcs.map(n=>n.position)];
     if (payload.path.length) {
       if (payload.qualification !== qualification || payload.rulesetVersion !== rules.version || payload.topologyVersion !== rules.topologyVersion) return rest(explicitStamp);
       path = payload.path as unknown as GridPoint[];
     } else {
-      const neighbors = await repository.listAvatars(worldId, { limit: 100 });
-      path = idlePath(rules, avatar.position, neighbors.filter(other => other.agentId !== agentId).map(other => other.position), idleSeed(avatar.id + ':' + avatar.version));
+      path = roamingPath(rules,avatar.position,occupied,idleSeed(avatar.id+':'+avatar.version));
       if (!path.length) return rest(explicitStamp);
     }
     const step = path[0]!;
-    const neighbors = await repository.listAvatars(worldId, { limit: 100 });
-    if (neighbors.some(other => other.agentId !== agentId && other.position.x === step.x && other.position.y === step.y)) return rest(explicitStamp);
+    if(occupied.some(p=>p.x===step.x&&p.y===step.y))return rest(explicitStamp);
     context.validateBeforeCommit(async latest => {
       await participation(latest, agentId, worldId, true); const fresh = await identity.readParticipation(latest, agentId), current = await rulesFor(latest, worldId);
       if ([latest.recoveryEpoch, fresh.runtimeVersion, fresh.membership.ownerPauseVersion, fresh.membership.platformVersion, fresh.membership.sharingGeneration, fresh.actionPolicy.version].join(':') !== qualification
         || current.rules.version !== rules.version || current.rules.topologyVersion !== rules.topologyVersion) fail('world_qualification_changed', 409, 'Idle qualification changed before commit');
     });
     let next: WorldAvatar;
-    try { next = await commitPosition(context, rules, avatar, step); } catch (error) { if (error instanceof M1Error && error.statusCode < 500) return rest(explicitStamp); throw error; }
+    try { next = await commitPosition(context,rules,avatar,step,'idle',null,idlePolicy.stepIntervalMs); } catch (error) { if (error instanceof M1Error && error.statusCode < 500) return rest(explicitStamp); throw error; }
     await repository.advanceRevision(worldId, world.revision);
     // Ordinary wandering updates authoritative state only; it is not a user log entry.
-    return again(path.length > 1 ? IDLE_LIFE_POLICY_V1.stepIntervalMs : restMs(next), { worldId, agentId, path: path.slice(1) as unknown as JsonObject[], avatarVersion: next.version,
-      qualification, rulesetVersion: rules.version, topologyVersion: rules.topologyVersion, explicitStamp });
+    return again(path.length > 1 ? idlePolicy.stepIntervalMs : restMs(next), { worldId, agentId, path: path.slice(1) as unknown as JsonObject[], avatarVersion: next.version,
+      qualification, rulesetVersion: rules.version, topologyVersion: rules.topologyVersion, explicitStamp,idlePolicyVersion:idlePolicy.version });
   }
   async function scheduleStep(context: RuntimeTransaction, movement: WorldMovement, actionPolicyVersion: number): Promise<void> {
     if (movement.nextDueAt === null) return;
@@ -199,7 +202,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
       if (movement.recoveryEpoch !== context.recoveryEpoch || status.runtimeVersion !== q.runtimeVersion || status.membership.ownerPauseVersion !== q.ownerPauseVersion
         || status.membership.platformVersion !== q.platformVersion || status.membership.sharingGeneration !== q.sharingGeneration || status.actionPolicy.version !== (task.payload.actionPolicyVersion ?? 0)) fail('movement_qualification_changed', 409, 'Movement qualification has changed');
       const current = await rulesFor(context, movement.worldId); rules = current.rules;
-      if (!currentPlanRules(movement,rules) || movement.policyVersion !== MOVEMENT_POLICY_V1.version || movement.stepIntervalMs !== MOVEMENT_POLICY_V1.stepIntervalMs) fail('movement_rules_changed', 409, 'Movement rules have changed');
+      if (!currentPlanRules(movement,rules) || !supportedMovementPolicy(movement.policyVersion,movement.stepIntervalMs)) fail('movement_rules_changed', 409, 'Movement rules have changed');
       const existing = await repository.getAvatar(movement.worldId, movement.agentId); if (!existing || existing.id !== movement.avatarId || existing.status !== 'idle' || existing.version !== movement.expectedAvatarVersion) fail('movement_avatar_changed', 409, 'Avatar has changed'); avatar = existing;
       const cell = movement.path[movement.nextStep]; if (!cell || movement.nextDueAt === null || task.dueAt !== movement.nextDueAt || context.now() < movement.nextDueAt) fail('movement_plan_invalid', 409, 'Movement plan is not executable');
       destination = validatePath(rules, avatar.position, [cell])[0]!; await capacity(context, rules, [destination], movement.agentId);
@@ -213,7 +216,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
       if (!(error instanceof M1Error) || error.statusCode >= 500) throw error;
       const next = stopped(movement, context.now(), error.code); await repository.saveMovement(next, movement.version); const revision = await repository.advanceRevision(movement.worldId, world.revision); await movementFact(context, key, next, revision); return;
     }
-    const now = context.now(), nextAvatar = await commitPosition(context, rules, avatar, destination,'explicit',movement.id);
+    const now = context.now(), nextAvatar = await commitPosition(context,rules,avatar,destination,'explicit',movement.id,movement.stepIntervalMs);
     const finished = movement.nextStep + 1 === movement.path.length;
     const next: WorldMovement = { ...movement, version: movement.version + 1, state: finished ? 'completed' : 'running', nextStep: movement.nextStep + 1,
       expectedAvatarVersion: nextAvatar.version, updatedAt: now, nextDueAt: finished ? null : now + movement.stepIntervalMs, completedAt: finished ? now : null };
@@ -316,8 +319,8 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
             await options.activities?.interrupt(current,worldId,agentId,'movement_requested');
             const status = await identity.readParticipation(current, agentId);
             const movement: WorldMovement = { id: randomUUID(), worldId, agentId, avatarId: old.id, version: 1, state: 'pending', origin: { ...old.position }, path,
-              nextStep: 0, expectedAvatarVersion: old.version, rulesetVersion: rules.version, topologyVersion: rules.topologyVersion, policyVersion: MOVEMENT_POLICY_V1.version,
-              stepIntervalMs: MOVEMENT_POLICY_V1.stepIntervalMs, createdAt: now, updatedAt: now, nextDueAt: now + MOVEMENT_POLICY_V1.stepIntervalMs, completedAt: null, stoppedCode: null,
+              nextStep: 0, expectedAvatarVersion: old.version, rulesetVersion: rules.version, topologyVersion: rules.topologyVersion, policyVersion: CURRENT_MOVEMENT_POLICY.version,
+              stepIntervalMs: CURRENT_MOVEMENT_POLICY.stepIntervalMs, createdAt: now, updatedAt: now, nextDueAt: Math.max(now,old.motion?.arriveAt??now) + CURRENT_MOVEMENT_POLICY.stepIntervalMs, completedAt: null, stoppedCode: null,
               commandId: key.commandId, recoveryEpoch: current.recoveryEpoch, qualification: { runtimeVersion: status.runtimeVersion, ownerPauseVersion: status.membership.ownerPauseVersion,
                 platformVersion: status.membership.platformVersion, sharingGeneration: status.membership.sharingGeneration } };
             await repository.saveMovement(movement, null); await scheduleStep(current, movement, status.actionPolicy.version); const revision = await repository.advanceRevision(worldId, world.revision);
