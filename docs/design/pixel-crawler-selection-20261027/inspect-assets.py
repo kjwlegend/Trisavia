@@ -49,5 +49,5 @@ for p in sorted(SRC.rglob('*')):
  if p.suffix=='.aseprite':row.update(ase_info(p))
  inventory.append(row)
 (R/'source-inventory.json').write_text(json.dumps(inventory,ensure_ascii=False,indent=2)+'\n')
-shutil.copyfile(SRC/'Terms.txt',R/'Terms.txt')
+(R/'Terms.txt').write_text((SRC/'Terms.txt').read_text().rstrip()+'\n')
 print('inventoried',len(inventory),'new-version native sheets',[(x['export'],x['frames'],x['frameSize'],x['frameBboxes'][0]) for x in new])
