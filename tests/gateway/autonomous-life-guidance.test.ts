@@ -6,6 +6,20 @@ import {autonomousLifeGuide} from '../../apps/platform/application/agent-autonom
 import {lifeCGatewayOperations,lifeCPublicReads,lifeCGatewayGuide} from '../../apps/platform/application/agent-gateway-life-c.ts';
 import {coreFixture} from '../world/runtime-fixture.ts';
 import {lifeCUiFixture} from '../fixtures/life-c-ui.ts';
+import Fastify from 'fastify';
+import {autonomousWorldGuide} from '../../apps/platform/application/agent-autonomous-life-guide.ts';
+import {quoteWorldGuide} from '../../apps/platform/application/agent-quote-communication-guide.ts';
+import {runtimeWorldGuide} from '../../apps/platform/application/agent-runtime-publication.ts';
+import {worldExpressionGuide} from '../../apps/platform/application/agent-gateway-world-expressions.ts';
+import {worldGatewayOperations,worldGatewayLegacyOperations} from '../../apps/platform/application/agent-gateway-world.ts';
+import {gatewayOperationSchemas} from '../../apps/platform/application/agent-gateway.ts';
+import {createWorldService} from '../../apps/platform/application/world-service.ts';
+import {readAgentRuntimeGuide} from '../../apps/platform/application/agent-runtime-guide.ts';
+import {registerAgentGatewayRoutes} from '../../apps/platform/transport/http/agent-gateway-routes.ts';
+import {registerAgentRuntimeRoute} from '../../apps/platform/transport/http/agent-runtime-routes.ts';
+import {CURRENT_MOVEMENT_POLICY} from '../../apps/platform/domains/world/movement-policy.ts';
+import {CURRENT_IDLE_LIFE_POLICY} from '../../apps/platform/domains/world/idle-life.ts';
+import {CURRENT_EXPRESSION_POLICY} from '../../apps/platform/domains/world/expression-current-policy.ts';
 // @ts-expect-error Browser DTO reader, no HTTP request or authenticated session.
 import {readLifeActions} from '../../apps/web/public/hud/life-readers.js';
 // @ts-expect-error Pure browser intent generator.
@@ -39,4 +53,17 @@ test('default B/C intents refresh technical conditions without inventing command
  assert.throws(()=>buildLifeBIntent({origin:'https://own.invalid',description:'买竿',actionId:'shop.buy',placeId:'fisher_shop',params:{...input,password:'secret'},maxSpend:30}));
  assert.throws(()=>buildLifeBIntent({origin:'https://own.invalid',description:'买竿',actionId:'shop.buy',placeId:'fisher_shop',params:input,maxSpend:-1}));
  assert.throws(()=>lifeReadInput('activities.start',{},'own-agent'));assert.throws(()=>lifeReadInput('options',{actionId:'shop.buy',placeId:'fisher_shop',params:{itemId:'basic_rod',quantity:1,maxTotalPrice:30}},'own-agent'));
+});
+
+test('current World21 uses current policy exports and fixed rule3 while exact World20/19/18 and movement2 stay readable',async()=>{
+ const f=coreFixture(),world=createWorldService(f.identity),ops=worldGatewayOperations(world),legacy=worldGatewayLegacyOperations(world).filter(o=>['world.movement','world.avatar.create','world.avatar.move','world.avatar.leave','world.movement.stop'].includes(o.id)),retained=legacy.flatMap(gatewayOperationSchemas),gateway=createAgentGateway({store:f.store,identity:f.identity,operations:ops,guides:[autonomousWorldGuide],retainedGuides:[quoteWorldGuide,runtimeWorldGuide,worldExpressionGuide],retainedSchemas:retained,runtimeGuide:readAgentRuntimeGuide}),app=Fastify();
+ registerAgentGatewayRoutes(app,gateway,{instanceId:f.context.instanceId,now:()=>f.now});registerAgentRuntimeRoute(app,readAgentRuntimeGuide,f.context.instanceId);
+ try{
+  const current=(await app.inject('/v1/gateway/guides/world?version=21')).json().data,discovery=(await app.inject('/v1/gateway/discovery')).json().data,raw=await app.inject('/agent/runtime.md');assert.equal(current.runtimeRules.ruleVersion,3);assert.equal(current.runtimeRules.digest,discovery.runtimeRules.digest);assert.equal(raw.body,(await readAgentRuntimeGuide()).text);assert.equal(raw.headers['cache-control'],'no-store');
+  assert.deepEqual(current.document.expressionPolicy,CURRENT_EXPRESSION_POLICY);assert.equal(current.document.worldRuleAdvancement.policyVersion,CURRENT_MOVEMENT_POLICY.version);assert.equal(current.document.worldRuleAdvancement.stepIntervalMs,CURRENT_MOVEMENT_POLICY.stepIntervalMs);assert.deepEqual(current.document.worldRuleAdvancement.idleLife,CURRENT_IDLE_LIFE_POLICY);
+  for(const g of [quoteWorldGuide,runtimeWorldGuide,worldExpressionGuide]){const response=(await app.inject(`/v1/gateway/guides/world?version=${g.version}`)).json().data;assert.equal(response.canonicalDocument,gateway.guide('world',String(g.version)).canonicalDocument);assert.deepEqual(response.document,g.document);}
+  assert.equal(gateway.guide('world','20').digest,'5d616eb629817ccb99841e0fafb68e1f45adf7588c76ae095e07c53acdac94c6');assert.equal(gateway.guide('world','19').digest,'9c069d7b318d380c07310b4f036298e36f2700821a83481569cc45498d19a7c3');
+  for(const row of retained){assert.deepEqual(gateway.schema(row.id,'2').document,row.document);assert.equal(gateway.schema(row.id,'3').version,3);}
+  assert(discovery.operations.every((operation:any)=>operation.usageGuide.version===21));
+ }finally{await app.close();}
 });

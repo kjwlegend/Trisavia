@@ -1,3 +1,4 @@
+import {AUTONOMOUS_LIFE_MEMORY_GUIDE,AUTONOMOUS_LIFE_HUMAN_GUIDE} from '../../apps/platform/application/agent-autonomous-life-guide.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {createHash} from 'node:crypto';
@@ -12,26 +13,25 @@ const source=()=>readFile(new URL('docs/access/v1/runtime.md',root));
 const code=(expected:string)=>(error:unknown)=>error instanceof AgentRuntimeGuideError&&error.code===expected&&error.message==='Current Agent runtime rules could not be verified';
 function revision(text:string,ruleVersion:number){return text.replace(/^.*\n/,`<!-- connet:runtime-rule ${JSON.stringify({ruleVersion,updatedAt:'2026-10-27T00:00:00.000Z',changeSummary:'分享规则单独更新；业务API不变。'})} -->\n`).replace('普通经历也可以值得分享','跨轮普通经历也可以值得分享');}
 
-test('runtime document retains all three approved sections and hashes the original complete UTF-8 bytes',async()=>{
+test('current autonomous runtime keeps complete sections and exact current guide text',async()=>{
  const raw=await source(),guide=await readAgentRuntimeGuide();
- assert.equal(guide.path,AGENT_RUNTIME_RULES_PATH);assert.equal(guide.ruleVersion,2);assert(Object.isFrozen(guide));
+ assert.equal(guide.path,AGENT_RUNTIME_RULES_PATH);assert.equal(guide.ruleVersion,3);assert(Object.isFrozen(guide));
  assert.equal(guide.bytes,raw.length);assert.equal(guide.text,raw.toString('utf8'));assert.equal(guide.digestAlgorithm,'sha256-utf8-hex');assert.equal(guide.digest,createHash('sha256').update(raw).digest('hex'));assert(raw.length<AGENT_RUNTIME_MAX_BYTES);
- const approved=await readFile(new URL('docs/design/agent-runtime-update-20261026.md',root),'utf8');
- const sections=approved.slice(approved.indexOf('### 1. 每次唤醒\n'),approved.indexOf('\n## 主人一次性迁移提示'));
- assert.equal(guide.text.slice(guide.text.indexOf('### 1. 每次唤醒\n'),guide.text.indexOf(end)).trimEnd(),sections.trimEnd());
- assert.match(guide.text,/即使没有新增活动/);assert.match(guide.text,/上次实际分享之后/);assert.match(guide.text,/仅生成了文案或选择了静默，不算已经告诉主人/);assert.match(guide.text,/投递时记录为未知/);assert.match(guide.text,/私人分享不自动发布/);
+ assert(guide.text.includes(AUTONOMOUS_LIFE_MEMORY_GUIDE));assert(guide.text.includes(AUTONOMOUS_LIFE_HUMAN_GUIDE));
+ assert.match(guide.text,/即使没有新增活动/);assert.match(guide.text,/本轮实际可读上下文/);
+
 });
 
 test('same provider freshly discovers a rule-only update and never serves old or partial text as current after failure',async()=>{
  const dir=await mkdtemp(join(tmpdir(),'trisavia-runtime-guide-')),file=join(dir,'runtime.md');
  try{
   const original=await source();await writeFile(file,original);const provider=createAgentRuntimeGuideProvider(file),first=await provider();
-  const next=revision(first.text,3);await writeFile(file,next);const updated=await provider();
-  assert.equal(updated.path,first.path);assert.equal(updated.ruleVersion,3);assert.notEqual(updated.digest,first.digest);assert.equal(updated.text,next);assert.equal(first.text,original.toString('utf8'));
+  const next=revision(first.text,first.ruleVersion+1);await writeFile(file,next);const updated=await provider();
+  assert.equal(updated.path,first.path);assert.equal(updated.ruleVersion,first.ruleVersion+1);assert.notEqual(updated.digest,first.digest);assert.equal(updated.text,next);assert.equal(first.text,original.toString('utf8'));
   await writeFile(file,next.slice(0,-end.length));await assert.rejects(provider,code('runtime_rules_invalid'));
   // The caller can retain its immutable last complete snapshot; failure returns no adoptable new snapshot.
-  assert.equal(updated.text,next);assert.equal(updated.ruleVersion,3);
-  await writeFile(file,revision(first.text,4));assert.equal((await provider()).ruleVersion,4);
+  assert.equal(updated.text,next);assert.equal(updated.ruleVersion,first.ruleVersion+1);
+  await writeFile(file,revision(first.text,first.ruleVersion+2));assert.equal((await provider()).ruleVersion,first.ruleVersion+2);
   await rm(file);await assert.rejects(provider,code('runtime_rules_unavailable'));await assert.rejects(readAgentRuntimeGuide(dir),code('runtime_rules_unavailable'));
  }finally{await rm(dir,{recursive:true,force:true});}
 });
@@ -41,7 +41,7 @@ test('incomplete, malformed and unbounded runtime documents fail as whole docume
  const malformed=[
   '',text.slice(0,-1),text.replace(end,''),text+end,text.replace('### 2. 选择行动','### 缺失'),
   text.replace('### 2. 选择行动','### 1. 每次唤醒'),text.replaceAll('\n','\r\n'),'\uFEFF'+text,text+'\0',
-  text.replace('"ruleVersion":2','"ruleVersion":0'),text.replace('"ruleVersion":2','"ruleVersion":2,"ruleVersion":3'),
+  text.replace(/"ruleVersion":\d+/,'"ruleVersion":0'),text.replace(/"ruleVersion":\d+/,'"ruleVersion":1,"ruleVersion":2'),
   text.replace(header,header.replace(/"updatedAt":"[^"]+"/,'"updatedAt":"2026-02-30T00:00:00.000Z"')),
   text.replace('"changeSummary":','"extra":true,"changeSummary":'),text.replace(/"changeSummary":"[^"]+"/,'"changeSummary":""'),
  ];

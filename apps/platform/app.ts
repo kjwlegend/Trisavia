@@ -1,3 +1,6 @@
+import {autonomousWorldGuide,autonomousLifeGuide} from './application/agent-autonomous-life-guide.ts';
+import {withAutonomousLifeOperations,withAutonomousLifeReads,retainedLifeActionSchemas} from './application/agent-gateway-autonomous-life.ts';
+import {CURRENT_MOVEMENT_POLICY,CURRENT_WORLD_RULE_INTERVAL_MS} from './domains/world/movement-policy.ts';
 import {quoteWorldGuide} from './application/agent-quote-communication-guide.ts';
 import {readAgentRuntimeGuide,type AgentRuntimeGuideProvider} from './application/agent-runtime-guide.ts';
 import {runtimeWorldGuide} from './application/agent-runtime-publication.ts';
@@ -55,8 +58,8 @@ import { registerBehaviorLogRoutes } from './transport/http/behavior-log-routes.
 import { createWorldService, verifyWorldReadiness } from './application/world-service.ts';
 import { createRelationshipsService } from './application/relationships-service.ts';
 import { relationshipsGatewayOperations, relationshipsGatewayGuide } from './application/agent-gateway-relationships.ts';
-import { createAgentGateway } from './application/agent-gateway.ts';
-import { worldGatewayGuide, worldGatewayOperations, worldPublicReads } from './application/agent-gateway-world.ts';
+import { createAgentGateway,gatewayOperationSchemas } from './application/agent-gateway.ts';
+import { worldGatewayGuide, worldGatewayOperations, worldGatewayLegacyOperations, worldPublicReads } from './application/agent-gateway-world.ts';
 import { registerAgentGatewayRoutes } from './transport/http/agent-gateway-routes.ts';
 import { registerWorldObservationRoutes } from './transport/http/agent-gateway-world-routes.ts';
 import { createDeterministicScheduler, type DeterministicTaskHandler } from './infrastructure/scheduling/deterministic-scheduler.ts';
@@ -66,7 +69,7 @@ import { createDecisionService } from './application/decision-service.ts';
 import { interactionGatewayGuide, interactionGatewayOperations } from './application/agent-gateway-interaction.ts';
 import { decisionGatewayGuide, decisionGatewayOperations } from './application/agent-gateway-decision.ts';
 import { fail, M1Error, object } from './domains/common/errors.ts';
-import { IDLE_LIFE_POLICY_V1 } from './domains/world/idle-life.ts';
+import { CURRENT_IDLE_LIFE_POLICY } from './domains/world/idle-life.ts';
 import {createTownService} from './application/town-services.ts';
 import {TOWN_REPOSITORY} from './domains/town-services/repository.ts';
 import {townGatewayGuide,townGatewayOperations,townPublicReads} from './application/agent-gateway-town.ts';
@@ -139,14 +142,16 @@ export async function buildApp(options:BuildAppOptions):Promise<FastifyInstance>
    }
    const avatarAssets=createAvatarAssetService(identity,localAvatarStore(options.avatarAssetRoot??avatarStorageRoot(options.instanceId)));
    registerAvatarAssetRoutes(app,runtime,identity,avatarAssets,options.clock??Date.now);operations.push(...avatarAssetGatewayOperations());guides.push(avatarAssetGatewayGuide);
-   if(runtimeRulesEnabled){runtimeGuideProvider=options.agentRuntimeGuide??readAgentRuntimeGuide;guides[0]=quoteWorldGuide;registerAgentRuntimeRoute(app,runtimeGuideProvider,store.instanceId);}
-   const gateway=createAgentGateway({store:runtime,identity,operations,publicReads,guides,...(runtimeGuideProvider?{runtimeGuide:runtimeGuideProvider,retainedGuides:[worldExpressionGuide,runtimeWorldGuide]}:{})});
-   gatewayCapabilities=async()=>({...await gateway.currentCapabilities(),worldSimulation:{enabled:true,actionAdvancement:'deterministic-rule-tasks',movementPolicyVersion:1,stepIntervalMs:1000,pollIntervalMs:1000,idleLife:{enabled:true,policyVersion:IDLE_LIFE_POLICY_V1.version,stepIntervalMs:IDLE_LIFE_POLICY_V1.stepIntervalMs,maxPathLength:IDLE_LIFE_POLICY_V1.maxPathLength,minRestMs:IDLE_LIFE_POLICY_V1.minRestMs,restJitterMs:IDLE_LIFE_POLICY_V1.restJitterMs},externalAgentExecution:false}});
+   if(runtimeRulesEnabled){runtimeGuideProvider=options.agentRuntimeGuide??readAgentRuntimeGuide;guides[0]=autonomousWorldGuide;registerAgentRuntimeRoute(app,runtimeGuideProvider,store.instanceId);}
+   const retainedSchemas=worldGatewayLegacyOperations(world).filter(o=>['world.movement','world.avatar.create','world.avatar.move','world.avatar.leave','world.movement.stop'].includes(o.id)).flatMap(gatewayOperationSchemas);
+   if(runtimeGuideProvider&&lifeCEnabled){retainedSchemas.push(...retainedLifeActionSchemas(operations,publicReads));operations.splice(0,operations.length,...withAutonomousLifeOperations(operations));publicReads.splice(0,publicReads.length,...withAutonomousLifeReads(publicReads));guides[guides.findIndex(g=>g.moduleId==='life')]=autonomousLifeGuide;}
+   const gateway=createAgentGateway({store:runtime,identity,operations,publicReads,guides,retainedSchemas,...(runtimeGuideProvider?{runtimeGuide:runtimeGuideProvider,retainedGuides:[worldExpressionGuide,runtimeWorldGuide,quoteWorldGuide,...(lifeCEnabled?[lifeCGatewayGuide,lifeBGatewayGuide]:[])]}:{})});
+   gatewayCapabilities=async()=>({...await gateway.currentCapabilities(),worldSimulation:{enabled:true,actionAdvancement:'deterministic-rule-tasks',movementPolicyVersion:CURRENT_MOVEMENT_POLICY.version,stepIntervalMs:CURRENT_MOVEMENT_POLICY.stepIntervalMs,pollIntervalMs:1000,idleLife:{enabled:true,policyVersion:CURRENT_IDLE_LIFE_POLICY.version,stepIntervalMs:CURRENT_IDLE_LIFE_POLICY.stepIntervalMs,maxPathLength:CURRENT_IDLE_LIFE_POLICY.maxPathLength,minRestMs:CURRENT_IDLE_LIFE_POLICY.minRestMs,restJitterMs:CURRENT_IDLE_LIFE_POLICY.restJitterMs},externalAgentExecution:false}});
    const gatewayHttp=registerAgentGatewayRoutes(app,gateway,{instanceId:store.instanceId,now:options.clock??Date.now});registerWorldObservationRoutes(gateway,gatewayHttp);if(behaviorLogs)registerBehaviorLogRoutes(gateway,gatewayHttp);
    if(life)registerLifeObservationRoutes(gateway,gatewayHttp,lifeRevision);if(town)registerTownObservationRoutes(gateway,gatewayHttp);registerPublicIdentifierRoutes(gateway,gatewayHttp);
    const scheduler=createDeterministicScheduler({store:runtime,workerId:`world-rules-${process.pid}`,handlers,batchLimit:10,leaseMs:30000});
    let nextIdleDiscovery=0,idleAfter:string|undefined,lifeAfter:string|undefined,giftAfter:string|undefined;
-   ruleDriver=createWorldRuleDriver({async runDue(){const now=(options.clock??Date.now)();if(now>=nextIdleDiscovery){idleAfter=await runtime!.transaction(ctx=>world.ensureIdleLife(ctx,'default',idleAfter));if(life)lifeAfter=await runtime!.transaction(ctx=>life!.reconcile(ctx,lifeAfter));if(gifts)giftAfter=await runtime!.transaction(ctx=>gifts!.reconcile(ctx,giftAfter));nextIdleDiscovery=now+IDLE_LIFE_POLICY_V1.scanIntervalMs;}return scheduler.runDue();},close:()=>scheduler.close()});app.addHook('onReady',async()=>{ruleDriver!.start();});
+   ruleDriver=createWorldRuleDriver({async runDue(){const now=(options.clock??Date.now)();if(now>=nextIdleDiscovery){idleAfter=await runtime!.transaction(ctx=>world.ensureIdleLife(ctx,'default',idleAfter));if(life)lifeAfter=await runtime!.transaction(ctx=>life!.reconcile(ctx,lifeAfter));if(gifts)giftAfter=await runtime!.transaction(ctx=>gifts!.reconcile(ctx,giftAfter));nextIdleDiscovery=now+CURRENT_IDLE_LIFE_POLICY.scanIntervalMs;}return scheduler.runDue();},close:()=>scheduler.close()},CURRENT_WORLD_RULE_INTERVAL_MS);app.addHook('onReady',async()=>{ruleDriver!.start();});
   }
   registerHealthRoute(app,async()=>{if(runtime)await runtime.read(ctx=>verifyWorldReadiness(ctx));return await store.read(async()=>({instanceId:store.instanceId,...(runtime?{worldCore:'ready' as const}:{})}));});
   const service=createM1Service(store,{legacyAvatarIdentity:readLegacyAvatarIdentity,...(options.clock?{now:options.clock}:{}),...(options.email?{email:options.email}:{}),...(options.perception?{perception:options.perception}:{}),...(gatewayCapabilities?{gateway:gatewayCapabilities,avatarAssetsApi:avatarAssetSpec}:{}),...(runtimeGuideProvider?{runtimeGuide:runtimeGuideProvider}:{}),...(friendshipOwnerRead?{friendshipOwnerRead}:{}),...(ownerMailboxRead?{ownerMailboxRead}:{})});
