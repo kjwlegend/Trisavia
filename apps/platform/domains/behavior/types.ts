@@ -43,5 +43,5 @@ export interface BehaviorDetails {
  gift?:{giftId:string;state:string;direction:'sent'|'received';items:{itemInstanceId:string;itemId:string;name:string}[]};
  life?:{activityId:string;actionId:string;jobId:string|null;resultId:string;scheduledEndAt:number;energySpent:number|null;energyRestored:number|null;coinReward:number|null;fishing?:import('../life/b-types.ts').LifeFishingResult&{unstartedCasts:number}|null;trade?:{moneyDelta:number;quantity:number}|null;c?:{book:{bookId:string;version:number;title:string;authorDisplay:string;digest:string}|null;visit:{first:boolean;recorded:boolean}|null;moneyDelta:number|null;consumedItems:number|null;createdItems:number|null}|null};
 }
-export interface BehaviorListInput {agentId?:string;publicOnly?:boolean;userLogOnly?:true;maxSequence:number;fromAt?:number;toAt?:number;after?:{occurredAt:number;id:string};limit:number}
+export interface BehaviorListInput {agentId?:string;publicOnly?:boolean;userLogOnly?:true;worldPublicOnly?:true;maxSequence:number;fromAt?:number;toAt?:number;after?:{occurredAt:number;id:string};limit:number}
 export const IDLE_BEHAVIOR_INTERVAL_MS=300000;

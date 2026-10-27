@@ -1,6 +1,7 @@
 import {BEHAVIOR_REPOSITORY,type BehaviorRepository,type BehaviorReader} from '../../domains/behavior/repository.ts';
 import {IDLE_BEHAVIOR_INTERVAL_MS,USER_LOG_PROCESS_NODES,type BehaviorCoverage,type BehaviorRecord,type BehaviorRecordDraft} from '../../domains/behavior/types.ts';
 import {behaviorRecordId,sameBehavior,validateBehaviorDraft,validateBehaviorEvent} from '../../domains/behavior/records.ts';
+import {WORLD_LOG_PUBLIC_RULES} from '../../domains/behavior/world-public-selection.ts';
 import {RuntimeError} from '../../contracts/runtime-store.ts';
 import {integer,number,text,type RuntimeSql} from './runtime-sql.ts';
 const record=(r:Record<string,any>):BehaviorRecord=>({id:r.id,sequence:number(r.sequence),scope:r.scope,sourceDomain:r.source_domain,sourceEventId:r.source_event_id,sourceRef:{type:r.source_type,id:r.source_id,version:number(r.source_version)},node:r.node,agentId:r.agent_id,...(r.npc_id?{npcId:r.npc_id}:{}),occurredAt:number(r.occurred_at),recordedAt:number(r.recorded_at),causationId:r.causation_id,correlationId:r.correlation_id,initiator:{kind:r.initiator_kind,id:r.initiator_id},executor:{kind:r.executor_kind,id:r.executor_id},origin:r.origin,ownerAudience:r.owner_audience,publicProjection:r.public_projection});
@@ -14,6 +15,8 @@ export function createBehaviorRepository(sql:RuntimeSql):{port:typeof BEHAVIOR_R
   async get(id){const row=(await sql.query('SELECT * FROM behavior.records WHERE id=$1',[text(id)]))[0];return row?record(row):undefined;},
   async list(input){integer(input.limit,1,100);integer(input.maxSequence);const values:unknown[]=[input.maxSequence],where=['sequence<=$1'];const add=(clause:string,value:unknown)=>{values.push(value);where.push(clause.replace('?',`$${values.length}`));};
    if(input.userLogOnly!==undefined&&input.userLogOnly!==true)throw new RuntimeError('invalid_usage','Invalid user-log selection');if(input.userLogOnly)add('node <> ALL(?::text[])',USER_LOG_PROCESS_NODES);
+   if(input.worldPublicOnly!==undefined&&input.worldPublicOnly!==true)throw new RuntimeError('invalid_usage','Invalid public-world selection');
+   if(input.worldPublicOnly){const rules=WORLD_LOG_PUBLIC_RULES.map(rule=>{values.push(rule.sourceDomain,rule.sourceType,rule.nodes);return `(source_domain=$${values.length-2} AND source_type=$${values.length-1} AND node=ANY($${values.length}::text[]) AND ${rule.subject==='agent'?'agent_id IS NOT NULL AND npc_id IS NULL':'agent_id IS NULL AND npc_id IS NOT NULL'})`;});where.push('public_projection IS NOT NULL',`(${rules.join(' OR ')||'FALSE'})`);}
    if(input.agentId!==undefined)add('agent_id=?',text(input.agentId));if(input.publicOnly)where.push('public_projection IS NOT NULL');if(input.fromAt!==undefined)add('occurred_at>=?',integer(input.fromAt));if(input.toAt!==undefined)add('occurred_at<?',integer(input.toAt));
    if(input.after){values.push(integer(input.after.occurredAt),text(input.after.id));where.push(`(occurred_at,id COLLATE "C")<($${values.length-1},$${values.length} COLLATE "C")`);}values.push(input.limit);
    return(await sql.query(`SELECT * FROM behavior.records WHERE ${where.join(' AND ')} ORDER BY occurred_at DESC,id COLLATE "C" DESC LIMIT $${values.length}`,values)).map(record);},

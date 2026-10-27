@@ -6,6 +6,7 @@ import type {JsonObject} from '../contracts/store.ts';
 import type {IdentityAccess,OwnerObservationDomain,Principal} from '../domains/access/public.ts';
 import {BEHAVIOR_REPOSITORY} from '../domains/behavior/repository.ts';
 import {BEHAVIOR_SCOPES,USER_LOG_PROCESS_NODES,JOURNAL_SUPPRESSED_NODES,type BehaviorDetails,type BehaviorRecord} from '../domains/behavior/types.ts';
+import {eligibleForPublicWorldLog} from '../domains/behavior/world-public-selection.ts';
 import {fail,M1Error,object,text} from '../domains/common/errors.ts';
 import {hashRuntimeRequest} from '../domains/runtime/command.ts';
 import {createGatewayContinuation} from './agent-gateway-continuation.ts';
@@ -96,7 +97,7 @@ export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadCont
   if(journalEnabled&&(row.node==='life.activity.interrupted'||['relationships.gift.declined','relationships.gift.withdrawn','relationships.gift.expired','relationships.gift.unavailable'].includes(row.node))){const d=await source.describeBehavior(ctx,row,audience),j=d?.journal,f=d?.life?.fishing;if(!j?.items.length&&!j?.moneyDelta&&!j?.energySpent&&!j?.energyRestored&&!j?.quotaRefunded&&!f?.completedCasts&&!f?.actualCosts.bait&&!f?.refundedCosts.bait)return false;}
   return true;
  }
- async function item(ctx:RuntimeReadContext,row:BehaviorRecord,timeZone:string,owner?:Principal,profiles=new Map<string,Promise<PublicAgentView|null>>()):Promise<JsonObject>{
+ async function item(ctx:RuntimeReadContext,row:BehaviorRecord,timeZone:string,owner?:Principal,profiles=new Map<string,Promise<PublicAgentView|null>>(),worldOnly=false):Promise<JsonObject>{
   const publicProfile=(id:string)=>{let v=profiles.get(id);if(!v){v=identity.readPublicAgent(ctx,id);profiles.set(id,v);}return v;};
   const profile=row.agentId===null?null:await publicProfile(row.agentId),[originalTitle,action,originalResult]=natural[row.node];let title=originalTitle,result=originalResult;const npcIdentity=row.npcId?await sources[row.sourceDomain]?.readNpcIdentity?.(ctx,row.npcId):null;
   const place=row.publicProjection?.placeName;
@@ -144,6 +145,13 @@ export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadCont
    const executor=row.sourceDomain==='town_services'&&row.executor.kind==='system'?{kind:'system',label:'镇民服务规则执行'}:owner?{kind:row.executor.kind,label:actorLabel(row.executor.kind,true)}:row.sourceDomain==='world'?{kind:'system',label:'世界系统推进'}:null;
    details={version:1,completeness:described.completeness,phase:described.phase,phaseLabel:phaseLabels[described.phase],summary:result,timeRange:{startedAt:described.startedAt,endedAt:described.endedAt,durationMs:described.durationMs},location:described.location?{from:described.location.from?{...described.location.from}:null,to:described.location.to?{...described.location.to}:null,via:described.location.via.map(place=>({...place}))}:null,journey:described.journey?{...described.journey}:null,participants,initiator,executor,service:service?{...service}:null,...(described.life?{life:JSON.parse(JSON.stringify(described.life)) as JsonObject}:{}),...(described.gift?{gift:JSON.parse(JSON.stringify(described.gift)) as JsonObject}:{}),...(journalEnabled&&described.journal&&owner?{journal:JSON.parse(JSON.stringify(described.journal)) as JsonObject}:{}),gaps:[...described.gaps]};
   }
+  if(worldOnly&&row.sourceDomain==='town_services'){
+   const place=described?.location?.to??(row.publicProjection?.placeName?{kind:'place' as const,name:row.publicProjection.placeName}:null);
+   title=result=(place?'在'+place.name:'')+'完成了一次镇民服务';
+   // The original source has approved the result. The world face exposes only that result/place,
+   // without copying the private service name, chosen topic, voucher, gift or payment particulars.
+   details={version:1,completeness:described?.completeness??'partial',phase:'npc_service',phaseLabel:phaseLabels.npc_service,summary:result,timeRange:{startedAt:null,endedAt:null,durationMs:null},location:place?{from:null,to:{...place},via:[]}:null,journey:null,participants:[],initiator:null,executor:null,service:null,gaps:[]};
+  }
   const time=new Intl.DateTimeFormat('en-GB',{timeZone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(row.occurredAt);
   return {id:row.id,agent:{agentId:row.agentId,displayName:profile?.displayName??npcIdentity?.name??null,...(journalEnabled?{publicId:profile?.publicId??npcIdentity?.publicId??null,publishedVersion:profile?.publishedVersion??npcIdentity?.publishedVersion??null,appearance:profile?.appearance??npcIdentity?.appearance??null}:{}),...(row.npcId?{npcId:row.npcId,actorKind:'npc'}:{})},title,action,result,occurredAt:row.occurredAt,date:localDate(row.occurredAt,timeZone),time,details,source:{domain:row.sourceDomain,node:row.node,detail,...(journalEnabled?{label:({world:'世界活动',relationships:'居民交往',interaction:'文字交流',town_services:'镇民服务',life:'生活经历'})[row.sourceDomain]}:{})}};
  }
@@ -153,8 +161,8 @@ export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadCont
   const timeZone=timeZoneOf(input.timeZone);if(agentId!==null&&!await identity.readPublicAgent(ctx,agentId))absent();
   const repo=ctx.repository(BEHAVIOR_REPOSITORY),cut=await repo.cut(),historyCoverage=await coverage(ctx,cut.asOf),items:JsonObject[]=[],counts=new Map<string,number>(),cap=agentId===null?30:10,profiles=new Map<string,Promise<PublicAgentView|null>>();
   let after:{occurredAt:number;id:string}|undefined,scanned=0,complete=false;
-  while(scanned<500&&items.length<cap&&!complete){const size=Math.min(50,500-scanned),rows=await repo.list({maxSequence:cut.maxSequence,userLogOnly:true,publicOnly:true,toAt:cut.asOf+1,...(agentId===null?{}:{agentId}),...(after?{after}:{}),limit:size});if(!rows.length){complete=true;break;}
-   for(const row of rows){scanned++;after={occurredAt:row.occurredAt,id:row.id};if((counts.get(row.agentId??row.npcId!)??0)>=10)continue;if(!await visible(ctx,row,'public'))continue;counts.set(row.agentId??row.npcId!,(counts.get(row.agentId??row.npcId!)??0)+1);items.push(await item(ctx,row,timeZone,undefined,profiles));if(items.length===cap)break;}
+  while(scanned<500&&items.length<cap&&!complete){const size=Math.min(50,500-scanned),rows=await repo.list({maxSequence:cut.maxSequence,userLogOnly:true,publicOnly:true,toAt:cut.asOf+1,...(agentId===null?{worldPublicOnly:true}:{agentId}),...(after?{after}:{}),limit:size});if(!rows.length){complete=true;break;}
+   for(const row of rows){scanned++;after={occurredAt:row.occurredAt,id:row.id};if(agentId===null&&!eligibleForPublicWorldLog(row))continue;if((counts.get(row.agentId??row.npcId!)??0)>=10)continue;if(!await visible(ctx,row,'public'))continue;counts.set(row.agentId??row.npcId!,(counts.get(row.agentId??row.npcId!)??0)+1);items.push(await item(ctx,row,timeZone,undefined,profiles,agentId===null));if(items.length===cap)break;}
    if(rows.length<size)complete=true;
   }
   return base(agentId,timeZone,items,historyCoverage,!complete&&items.length<cap,null,cut.asOf);
