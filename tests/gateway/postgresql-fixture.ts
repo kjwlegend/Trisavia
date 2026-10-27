@@ -14,7 +14,7 @@ import {createM1Service} from '../../apps/platform/application/m1-service.ts';
 import {createRuntimeIdentity} from '../../apps/platform/application/runtime-identity.ts';
 import type {WorldRuleset} from '../../apps/platform/domains/world/types.ts';
 /** Each case owns a fresh A database, least-privilege application pools, and manifest/OID checked cleanup. */
-export async function gatewayFixture(input:{interaction?:boolean;worldRules?:WorldRuleset;database?:string}={}){
+export async function gatewayFixture(input:{interaction?:boolean;worldRules?:WorldRuleset;database?:string;onCreated?:(resource:{database:string;oid:number;creator:string})=>void}={}){
  const runtimeFile=process.env.WORLD_CORE_TEST_RUNTIME;if(!runtimeFile)throw new Error('An explicit private World PG test runtime is required');
  const config=await readRuntime(runtimeFile),directory=await mkdtemp(join(tmpdir(),'world-core-a-')),database=input.database??'world_core_a_'+randomBytes(10).toString('hex');
  const identity={instanceId:'instance_'+randomUUID(),recoveryEpoch:'epoch_'+randomUUID()};let connections:string|undefined;let clock=Date.UTC(2026,9,21);
@@ -22,6 +22,7 @@ export async function gatewayFixture(input:{interaction?:boolean;worldRules?:Wor
  const dispose=async()=>{for(const store of stores)await store.close();stores.clear();if(connections)await dropWorldTestDatabase(config,connections,'a');await rm(directory,{recursive:true,force:true});};
  try{
   connections=(await createWorldDatabase(config,database,join(directory,'connections'),'a')).privateConnections;
+  if(input.onCreated){const created=JSON.parse(await requirePrivateFile(join(connections,'created-database.json')));input.onCreated({database,oid:created.oid,creator:created.creator});}
   await prepareWorldCoreDatabase(config,connections,identity);
   const maintenance={...identity,connectionString:(await requirePrivateFile(join(connections,'migration-database-url'))).trim()};
   const options={...identity,connectionString:(await requirePrivateFile(join(connections,'application-database-url'))).trim()};

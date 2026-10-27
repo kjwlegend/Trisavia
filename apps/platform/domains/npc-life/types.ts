@@ -27,6 +27,7 @@ export interface NpcLifeParticipant {
  currentNpcs(ctx:RuntimeReadContext):Promise<import('../town-services/types.ts').CurrentTownNpc[]>;
  npcIdentity(ctx:RuntimeReadContext,npcId:string):Promise<{name:string;appearance:NpcLifeSprite;publishedVersion:number;publicId?:string}|null>;
  effectiveCatalog(ctx:RuntimeReadContext,catalog:LifeCatalog):Promise<LifeCatalog>;
+ lockIntroduction(ctx:RuntimeTransaction):Promise<void>;
  introduce(ctx:RuntimeTransaction,activity:LifeActivity,input:unknown):Promise<CareIntroductionView>;
  careTerms(ctx:RuntimeTransaction,actor:LifeActorRef,input:{placeId:string;params:unknown;planId?:string},qualification:LifeQualification|null):Promise<CareSnapshot>;
  reserveCare(ctx:RuntimeTransaction,activity:LifeActivity):Promise<void>;

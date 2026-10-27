@@ -15,7 +15,7 @@ CREATE FUNCTION npc_life.protect_point() RETURNS trigger LANGUAGE plpgsql AS $$ 
  ELSE
   IF NEW.active_activity_id IS NOT NULL OR activity.state='active' THEN RAISE EXCEPTION 'Only a terminal activity releases the point' USING ERRCODE='23514';END IF;
   IF activity.state='completed' THEN
-   IF activity.ended_at<activity.scheduled_end_at OR NEW.last_care_at IS DISTINCT FROM activity.ended_at OR NEW.actor_id IS DISTINCT FROM activity.actor_id OR NEW.last_activity_id IS DISTINCT FROM activity.id OR NEW.next_eligible_at IS DISTINCT FROM activity.ended_at+3600000 OR NEW.material_available IS DISTINCT FROM CASE WHEN OLD.care_kind='clear' THEN false ELSE OLD.material_available END THEN RAISE EXCEPTION 'Point completion must preserve the actual result' USING ERRCODE='23514';END IF;
+   IF activity.ended_at<activity.scheduled_end_at OR NEW.last_care_at IS DISTINCT FROM activity.ended_at OR NEW.actor_id IS DISTINCT FROM activity.actor_id OR NEW.last_activity_id IS DISTINCT FROM activity.id OR NEW.next_eligible_at IS DISTINCT FROM activity.ended_at+3600000 OR NEW.material_available IS DISTINCT FROM (CASE WHEN OLD.care_kind='clear' THEN false ELSE OLD.material_available END) THEN RAISE EXCEPTION 'Point completion must preserve the actual result' USING ERRCODE='23514';END IF;
   ELSIF (to_jsonb(NEW)-ARRAY['version','active_activity_id']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['version','active_activity_id']) THEN RAISE EXCEPTION 'An interruption cannot invent completed care' USING ERRCODE='23514';END IF;
  END IF;RETURN NEW;END $$;
 CREATE TRIGGER care_point_transition BEFORE UPDATE ON npc_life.care_points FOR EACH ROW EXECUTE FUNCTION npc_life.protect_point();
@@ -26,15 +26,17 @@ CREATE FUNCTION npc_life.check_life_source() RETURNS trigger LANGUAGE plpgsql AS
  SELECT * INTO activity FROM life.activities WHERE id=coalesce(j->>'source_activity_id',j->>'activity_id');
  IF NOT FOUND OR activity.actor_kind<>'agent' OR activity.actor_id IS DISTINCT FROM j->>'agent_id' OR activity.state<>'completed' OR activity.source_event_id IS DISTINCT FROM j->>'source_event_id'
  OR TG_TABLE_NAME='introductions' AND (activity.action_id<>'care.introduce' OR activity.data->>'planId' IS DISTINCT FROM j->>'plan_id')
- OR TG_TABLE_NAME='care_facts' AND (activity.action_id<>'care.perform' OR activity.ended_at<activity.scheduled_end_at OR activity.scheduled_end_at<>activity.started_at+120000 OR (activity.data->>'reservedEnergy')::integer<>6) THEN RAISE EXCEPTION 'A matching actual terminal Life source is required' USING ERRCODE='23514';END IF;RETURN NULL;END $$;
+ OR TG_TABLE_NAME='care_facts' AND (activity.action_id<>'care.perform' OR activity.data->'care'->>'pointId' IS DISTINCT FROM j->>'point_id' OR activity.ended_at<activity.scheduled_end_at OR activity.scheduled_end_at<>activity.started_at+120000 OR (activity.data->>'reservedEnergy')::integer<>6) THEN RAISE EXCEPTION 'A matching actual terminal Life source is required' USING ERRCODE='23514';END IF;RETURN NULL;END $$;
 CREATE CONSTRAINT TRIGGER care_introduction_real_source AFTER INSERT ON npc_life.introductions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION npc_life.check_life_source();
 CREATE CONSTRAINT TRIGGER care_fact_real_source AFTER INSERT ON npc_life.care_facts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION npc_life.check_life_source();
 CREATE INDEX care_actor_point_latest ON npc_life.care_facts(agent_id,point_id,completed_at DESC,activity_id COLLATE "C" DESC);
 CREATE TRIGGER care_fact_no_change BEFORE UPDATE OR DELETE ON npc_life.care_facts FOR EACH ROW EXECUTE FUNCTION platform.reject_immutable_content_change();
-CREATE FUNCTION npc_life.protect_introduction() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+CREATE FUNCTION npc_life.protect_introduction() RETURNS trigger LANGUAGE plpgsql AS $$ DECLARE activity life.activities;BEGIN
  IF OLD.consumed_by_activity_id IS NOT NULL OR NEW.consumed_by_activity_id IS NULL OR NEW.version<>OLD.version+1 OR
  (to_jsonb(NEW)-ARRAY['version','consumed_by_activity_id','data']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['version','consumed_by_activity_id','data']) OR
- (NEW.data-ARRAY['version','consumedByActivityId']) IS DISTINCT FROM (OLD.data-ARRAY['version','consumedByActivityId']) THEN RAISE EXCEPTION 'Introduction identity or consumption changed' USING ERRCODE='23514';END IF;RETURN NEW;END $$;
+ (NEW.data-ARRAY['version','consumedByActivityId']) IS DISTINCT FROM (OLD.data-ARRAY['version','consumedByActivityId']) THEN RAISE EXCEPTION 'Introduction identity or consumption changed' USING ERRCODE='23514';END IF;
+ SELECT * INTO activity FROM life.activities WHERE id=NEW.consumed_by_activity_id;
+ IF NOT FOUND OR activity.state<>'active' OR activity.action_id<>'care.perform' OR activity.actor_kind<>'agent' OR activity.actor_id<>OLD.agent_id OR activity.data->>'planId' IS DISTINCT FROM OLD.plan_id OR activity.data->'care'->>'pointId' IS DISTINCT FROM OLD.point_id OR activity.data->'care'->>'introductionId' IS DISTINCT FROM OLD.id THEN RAISE EXCEPTION 'Only the actual same-plan care start consumes an introduction' USING ERRCODE='23514';END IF;RETURN NEW;END $$;
 CREATE TRIGGER introduction_single_consumption BEFORE UPDATE ON npc_life.introductions FOR EACH ROW EXECUTE FUNCTION npc_life.protect_introduction();
 CREATE TRIGGER introduction_no_delete BEFORE DELETE ON npc_life.introductions FOR EACH ROW EXECUTE FUNCTION platform.reject_immutable_content_change();
 `};

@@ -88,6 +88,7 @@ export function createLifeService(identity:IdentityAccess<RuntimeReadContext>,wa
   const job=input.actionId==='work.shift'?c.jobs.find(j=>j.id===input.jobId&&j.placeId===p.placeId):undefined;if(input.actionId==='work.shift'&&!job||input.actionId==='rest.bench'&&p.placeId!=='garden_bench')fail('life_action_not_supported',400,'Choose a published job or free bench');
   if(a.body&&!(input.planId&&a.body.kind==='plan'&&a.body.id===input.planId)||a.activePlanId&&a.activePlanId!==input.planId)fail('body_occupied',409,'Finish or cancel the current body activity first');
   if(await legacyBusy(ctx,ref,input.legacyOperationId))fail('body_occupied',409,'The original voucher rest still occupies this body');
+  if(input.actionId==='care.introduce')await options.npcLife!.lockIntroduction(ctx);
   await ctx.repository(WORLD_REPOSITORY).lockWorld('default');const point=await position(ctx,ref);if(!(input.actionId.startsWith('shop.')&&p.shopApproachCells?p.shopApproachCells:[...p.cells,...p.approachCells,...(input.planId?p.waitingCells:[])]).some(cell=>sameCell(cell,point)))fail('life_not_at_place',409,'Move to the actual activity place first');
   if(ref.kind==='agent'&&await ctx.repository(WORLD_REPOSITORY).getActiveMovement('default',ref.id))fail('movement_in_progress',409,'Wait for the current movement to finish');
   const params=input.actionId==='fish.session'?parseFishingParams(input.params):null;
