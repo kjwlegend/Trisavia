@@ -24,7 +24,7 @@ export function createExpressionLayer(root,lifecycle,{redraw=()=>{},onActive=()=
   node.dataset.protocolError=error||'';
   const full=active?lifecycle.full():[],key=JSON.stringify(full);if(key!==lastFull){lastFull=key;onActive(full);}
   if(!active){lifecycle.suspend();clear();return;}
-  const max=policy.limits.visibleBubblesPerViewport[density],candidates=lifecycle.candidates();if(!max||!candidates.length){lifecycle.admit([]);clear();return;}
+  const max=policy.limits.visibleBubblesPerViewport[density],candidates=lifecycle.candidates();if(!max||!candidates.length){lifecycle.admit([],{discardPending:!max});clear();return;}
   const locations=typeof actors==='function'?actors():actors,bounds=root.getBoundingClientRect(),blocked=worldOverlayRects(root,0),admitted=[],seen=new Set(),actorIds=new Set(),low=scale<.75,set=policy.sets.find(s=>s.id===setId);
   for(const element of document.querySelectorAll('#world-owned-tooltip,#world-town-tooltip,dialog[open]'))if(!element.hidden&&element.getClientRects().length){const b=element.getBoundingClientRect();blocked.push({left:b.left-bounds.left,right:b.right-bounds.left,top:b.top-bounds.top,bottom:b.bottom-bounds.top});}
   for(const record of candidates){const row=record.row,actorId=expressionActorKey(row.actor),actor=locations.get(actorId);if(!actor||actorIds.has(actorId)||admitted.length>=max)continue;let bubble=nodes.get(row.expressionId);
