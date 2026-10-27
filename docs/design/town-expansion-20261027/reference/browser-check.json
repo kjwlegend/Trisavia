@@ -1,0 +1,105 @@
+{
+  "scope": "Design preview only, not runtime acceptance",
+  "results": [
+    {
+      "view": "all",
+      "size": [
+        1680,
+        1120
+      ],
+      "bubbles": 0,
+      "overflow": false,
+      "bubbleSizes": []
+    },
+    {
+      "view": "pine-walk",
+      "size": [
+        1680,
+        1120
+      ],
+      "bubbles": 4,
+      "overflow": false,
+      "bubbleSizes": [
+        [
+          115,
+          55
+        ],
+        [
+          112,
+          55
+        ],
+        [
+          115,
+          55
+        ],
+        [
+          112,
+          55
+        ]
+      ]
+    },
+    {
+      "view": "river-walk",
+      "size": [
+        1680,
+        1120
+      ],
+      "bubbles": 4,
+      "overflow": false,
+      "bubbleSizes": [
+        [
+          115,
+          55
+        ],
+        [
+          115,
+          55
+        ],
+        [
+          112,
+          55
+        ],
+        [
+          115,
+          55
+        ]
+      ]
+    },
+    {
+      "view": "east-street",
+      "size": [
+        1680,
+        1120
+      ],
+      "bubbles": 4,
+      "overflow": false,
+      "bubbleSizes": [
+        [
+          115,
+          55
+        ],
+        [
+          180,
+          55
+        ],
+        [
+          112,
+          55
+        ],
+        [
+          115,
+          55
+        ]
+      ]
+    },
+    {
+      "view": "east-street narrow available map",
+      "size": [
+        1200,
+        959
+      ],
+      "bubbles": 2,
+      "overflow": false
+    }
+  ]
+}

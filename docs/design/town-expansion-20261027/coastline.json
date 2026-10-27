@@ -1,0 +1,2931 @@
+{
+  "coordinateSystem": "logical cells; cardinal bank adjacency, not extra walk permission",
+  "edges": [
+    {
+      "waterCell": [
+        31,
+        -28
+      ],
+      "landCell": [
+        31,
+        -27
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        -28
+      ],
+      "landCell": [
+        30,
+        -28
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        62,
+        -28
+      ],
+      "landCell": [
+        63,
+        -28
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        69,
+        -28
+      ],
+      "landCell": [
+        68,
+        -28
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        32,
+        -27
+      ],
+      "landCell": [
+        31,
+        -27
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        62,
+        -27
+      ],
+      "landCell": [
+        63,
+        -27
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        69,
+        -27
+      ],
+      "landCell": [
+        69,
+        -26
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        69,
+        -27
+      ],
+      "landCell": [
+        68,
+        -27
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        70,
+        -27
+      ],
+      "landCell": [
+        70,
+        -26
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        71,
+        -27
+      ],
+      "landCell": [
+        71,
+        -26
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        72,
+        -27
+      ],
+      "landCell": [
+        72,
+        -26
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        73,
+        -27
+      ],
+      "landCell": [
+        73,
+        -26
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        32,
+        -26
+      ],
+      "landCell": [
+        31,
+        -26
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        62,
+        -26
+      ],
+      "landCell": [
+        63,
+        -26
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        74,
+        -26
+      ],
+      "landCell": [
+        73,
+        -26
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        32,
+        -25
+      ],
+      "landCell": [
+        31,
+        -25
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        61,
+        -25
+      ],
+      "landCell": [
+        61,
+        -24
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        62,
+        -25
+      ],
+      "landCell": [
+        63,
+        -25
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        62,
+        -25
+      ],
+      "landCell": [
+        62,
+        -24
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        74,
+        -25
+      ],
+      "landCell": [
+        74,
+        -24
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        74,
+        -25
+      ],
+      "landCell": [
+        73,
+        -25
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        75,
+        -25
+      ],
+      "landCell": [
+        75,
+        -24
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        76,
+        -25
+      ],
+      "landCell": [
+        76,
+        -24
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        77,
+        -25
+      ],
+      "landCell": [
+        77,
+        -24
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        78,
+        -25
+      ],
+      "landCell": [
+        78,
+        -24
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        32,
+        -24
+      ],
+      "landCell": [
+        31,
+        -24
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        60,
+        -24
+      ],
+      "landCell": [
+        61,
+        -24
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        79,
+        -24
+      ],
+      "landCell": [
+        78,
+        -24
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        32,
+        -23
+      ],
+      "landCell": [
+        31,
+        -23
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        60,
+        -23
+      ],
+      "landCell": [
+        61,
+        -23
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        79,
+        -23
+      ],
+      "landCell": [
+        79,
+        -22
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        79,
+        -23
+      ],
+      "landCell": [
+        78,
+        -23
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        80,
+        -23
+      ],
+      "landCell": [
+        80,
+        -22
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        81,
+        -23
+      ],
+      "landCell": [
+        81,
+        -22
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        82,
+        -23
+      ],
+      "landCell": [
+        82,
+        -22
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        83,
+        -23
+      ],
+      "landCell": [
+        83,
+        -22
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        -22
+      ],
+      "landCell": [
+        31,
+        -23
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        -22
+      ],
+      "landCell": [
+        30,
+        -22
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        58,
+        -22
+      ],
+      "landCell": [
+        58,
+        -21
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        59,
+        -22
+      ],
+      "landCell": [
+        59,
+        -21
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        60,
+        -22
+      ],
+      "landCell": [
+        61,
+        -22
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        60,
+        -22
+      ],
+      "landCell": [
+        60,
+        -21
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        84,
+        -22
+      ],
+      "landCell": [
+        83,
+        -22
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        -21
+      ],
+      "landCell": [
+        30,
+        -21
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        57,
+        -21
+      ],
+      "landCell": [
+        58,
+        -21
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        84,
+        -21
+      ],
+      "landCell": [
+        84,
+        -20
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        84,
+        -21
+      ],
+      "landCell": [
+        83,
+        -21
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        85,
+        -21
+      ],
+      "landCell": [
+        85,
+        -20
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        86,
+        -21
+      ],
+      "landCell": [
+        86,
+        -20
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        87,
+        -21
+      ],
+      "landCell": [
+        87,
+        -20
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        88,
+        -21
+      ],
+      "landCell": [
+        88,
+        -20
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        -20
+      ],
+      "landCell": [
+        30,
+        -20
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        57,
+        -20
+      ],
+      "landCell": [
+        58,
+        -20
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        89,
+        -20
+      ],
+      "landCell": [
+        88,
+        -20
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        -19
+      ],
+      "landCell": [
+        30,
+        -19
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        56,
+        -19
+      ],
+      "landCell": [
+        56,
+        -18
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        57,
+        -19
+      ],
+      "landCell": [
+        58,
+        -19
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        57,
+        -19
+      ],
+      "landCell": [
+        57,
+        -18
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        89,
+        -19
+      ],
+      "landCell": [
+        89,
+        -18
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        89,
+        -19
+      ],
+      "landCell": [
+        88,
+        -19
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        90,
+        -19
+      ],
+      "landCell": [
+        90,
+        -18
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        91,
+        -19
+      ],
+      "landCell": [
+        91,
+        -18
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        -18
+      ],
+      "landCell": [
+        31,
+        -17
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        -18
+      ],
+      "landCell": [
+        30,
+        -18
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        55,
+        -18
+      ],
+      "landCell": [
+        56,
+        -18
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        32,
+        -17
+      ],
+      "landCell": [
+        31,
+        -17
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        54,
+        -17
+      ],
+      "landCell": [
+        54,
+        -16
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        55,
+        -17
+      ],
+      "landCell": [
+        56,
+        -17
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        55,
+        -17
+      ],
+      "landCell": [
+        55,
+        -16
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        32,
+        -16
+      ],
+      "landCell": [
+        31,
+        -16
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        53,
+        -16
+      ],
+      "landCell": [
+        54,
+        -16
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        32,
+        -15
+      ],
+      "landCell": [
+        31,
+        -15
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        52,
+        -15
+      ],
+      "landCell": [
+        52,
+        -14
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        53,
+        -15
+      ],
+      "landCell": [
+        54,
+        -15
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        53,
+        -15
+      ],
+      "landCell": [
+        53,
+        -14
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        32,
+        -14
+      ],
+      "landCell": [
+        31,
+        -14
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        51,
+        -14
+      ],
+      "landCell": [
+        52,
+        -14
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        32,
+        -13
+      ],
+      "landCell": [
+        31,
+        -13
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        50,
+        -13
+      ],
+      "landCell": [
+        50,
+        -12
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        51,
+        -13
+      ],
+      "landCell": [
+        52,
+        -13
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        51,
+        -13
+      ],
+      "landCell": [
+        51,
+        -12
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        -12
+      ],
+      "landCell": [
+        31,
+        -13
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        -12
+      ],
+      "landCell": [
+        30,
+        -12
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        49,
+        -12
+      ],
+      "landCell": [
+        50,
+        -12
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        -11
+      ],
+      "landCell": [
+        30,
+        -11
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        48,
+        -11
+      ],
+      "landCell": [
+        48,
+        -10
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        49,
+        -11
+      ],
+      "landCell": [
+        50,
+        -11
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        49,
+        -11
+      ],
+      "landCell": [
+        49,
+        -10
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        -10
+      ],
+      "landCell": [
+        30,
+        -11
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        -10
+      ],
+      "landCell": [
+        29,
+        -10
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        47,
+        -10
+      ],
+      "landCell": [
+        48,
+        -10
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        -9
+      ],
+      "landCell": [
+        29,
+        -9
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        45,
+        -9
+      ],
+      "landCell": [
+        45,
+        -8
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        46,
+        -9
+      ],
+      "landCell": [
+        46,
+        -8
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        47,
+        -9
+      ],
+      "landCell": [
+        48,
+        -9
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        47,
+        -9
+      ],
+      "landCell": [
+        47,
+        -8
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        -8
+      ],
+      "landCell": [
+        30,
+        -7
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        -8
+      ],
+      "landCell": [
+        29,
+        -8
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        44,
+        -8
+      ],
+      "landCell": [
+        45,
+        -8
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        -7
+      ],
+      "landCell": [
+        30,
+        -7
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        43,
+        -7
+      ],
+      "landCell": [
+        43,
+        -6
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        44,
+        -7
+      ],
+      "landCell": [
+        45,
+        -7
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        44,
+        -7
+      ],
+      "landCell": [
+        44,
+        -6
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        -6
+      ],
+      "landCell": [
+        30,
+        -6
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        41,
+        -6
+      ],
+      "landCell": [
+        41,
+        -5
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        42,
+        -6
+      ],
+      "landCell": [
+        43,
+        -6
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        42,
+        -6
+      ],
+      "landCell": [
+        42,
+        -5
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        -5
+      ],
+      "landCell": [
+        30,
+        -6
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        -5
+      ],
+      "landCell": [
+        29,
+        -5
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        40,
+        -5
+      ],
+      "landCell": [
+        41,
+        -5
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        40,
+        -5
+      ],
+      "landCell": [
+        40,
+        -4
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        -4
+      ],
+      "landCell": [
+        29,
+        -4
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        -4
+      ],
+      "landCell": [
+        40,
+        -4
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        29,
+        -3
+      ],
+      "landCell": [
+        29,
+        -4
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        29,
+        -3
+      ],
+      "landCell": [
+        28,
+        -3
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        -3
+      ],
+      "landCell": [
+        40,
+        -3
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        29,
+        -2
+      ],
+      "landCell": [
+        28,
+        -2
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        -2
+      ],
+      "landCell": [
+        40,
+        -2
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        29,
+        -1
+      ],
+      "landCell": [
+        29,
+        0
+      ],
+      "landWalkable": true
+    },
+    {
+      "waterCell": [
+        29,
+        -1
+      ],
+      "landCell": [
+        28,
+        -1
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        -1
+      ],
+      "landCell": [
+        40,
+        -1
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        0
+      ],
+      "landCell": [
+        29,
+        0
+      ],
+      "landWalkable": true
+    },
+    {
+      "waterCell": [
+        39,
+        0
+      ],
+      "landCell": [
+        40,
+        0
+      ],
+      "landWalkable": true
+    },
+    {
+      "waterCell": [
+        30,
+        1
+      ],
+      "landCell": [
+        29,
+        1
+      ],
+      "landWalkable": true
+    },
+    {
+      "waterCell": [
+        39,
+        1
+      ],
+      "landCell": [
+        40,
+        1
+      ],
+      "landWalkable": true
+    },
+    {
+      "waterCell": [
+        30,
+        2
+      ],
+      "landCell": [
+        30,
+        3
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        2
+      ],
+      "landCell": [
+        29,
+        2
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        2
+      ],
+      "landCell": [
+        40,
+        2
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        3
+      ],
+      "landCell": [
+        30,
+        3
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        3
+      ],
+      "landCell": [
+        40,
+        3
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        4
+      ],
+      "landCell": [
+        30,
+        4
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        4
+      ],
+      "landCell": [
+        40,
+        4
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        5
+      ],
+      "landCell": [
+        30,
+        5
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        40,
+        5
+      ],
+      "landCell": [
+        40,
+        4
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        41,
+        5
+      ],
+      "landCell": [
+        41,
+        4
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        42,
+        5
+      ],
+      "landCell": [
+        42,
+        4
+      ],
+      "landWalkable": true
+    },
+    {
+      "waterCell": [
+        43,
+        5
+      ],
+      "landCell": [
+        43,
+        4
+      ],
+      "landWalkable": true
+    },
+    {
+      "waterCell": [
+        43,
+        5
+      ],
+      "landCell": [
+        44,
+        5
+      ],
+      "landWalkable": true
+    },
+    {
+      "waterCell": [
+        30,
+        6
+      ],
+      "landCell": [
+        30,
+        5
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        6
+      ],
+      "landCell": [
+        29,
+        6
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        43,
+        6
+      ],
+      "landCell": [
+        44,
+        6
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        7
+      ],
+      "landCell": [
+        29,
+        7
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        43,
+        7
+      ],
+      "landCell": [
+        44,
+        7
+      ],
+      "landWalkable": true
+    },
+    {
+      "waterCell": [
+        30,
+        8
+      ],
+      "landCell": [
+        30,
+        9
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        8
+      ],
+      "landCell": [
+        29,
+        8
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        43,
+        8
+      ],
+      "landCell": [
+        44,
+        8
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        9
+      ],
+      "landCell": [
+        30,
+        9
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        43,
+        9
+      ],
+      "landCell": [
+        44,
+        9
+      ],
+      "landWalkable": true
+    },
+    {
+      "waterCell": [
+        31,
+        10
+      ],
+      "landCell": [
+        31,
+        11
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        10
+      ],
+      "landCell": [
+        30,
+        10
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        43,
+        10
+      ],
+      "landCell": [
+        44,
+        10
+      ],
+      "landWalkable": true
+    },
+    {
+      "waterCell": [
+        32,
+        11
+      ],
+      "landCell": [
+        31,
+        11
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        43,
+        11
+      ],
+      "landCell": [
+        44,
+        11
+      ],
+      "landWalkable": true
+    },
+    {
+      "waterCell": [
+        32,
+        12
+      ],
+      "landCell": [
+        31,
+        12
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        43,
+        12
+      ],
+      "landCell": [
+        44,
+        12
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        32,
+        13
+      ],
+      "landCell": [
+        31,
+        13
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        43,
+        13
+      ],
+      "landCell": [
+        44,
+        13
+      ],
+      "landWalkable": true
+    },
+    {
+      "waterCell": [
+        31,
+        14
+      ],
+      "landCell": [
+        31,
+        13
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        14
+      ],
+      "landCell": [
+        30,
+        14
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        42,
+        14
+      ],
+      "landCell": [
+        42,
+        15
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        43,
+        14
+      ],
+      "landCell": [
+        44,
+        14
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        43,
+        14
+      ],
+      "landCell": [
+        43,
+        15
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        15
+      ],
+      "landCell": [
+        30,
+        15
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        41,
+        15
+      ],
+      "landCell": [
+        42,
+        15
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        16
+      ],
+      "landCell": [
+        30,
+        16
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        41,
+        16
+      ],
+      "landCell": [
+        42,
+        16
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        17
+      ],
+      "landCell": [
+        30,
+        16
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        17
+      ],
+      "landCell": [
+        29,
+        17
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        41,
+        17
+      ],
+      "landCell": [
+        42,
+        17
+      ],
+      "landWalkable": true
+    },
+    {
+      "waterCell": [
+        30,
+        18
+      ],
+      "landCell": [
+        29,
+        18
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        41,
+        18
+      ],
+      "landCell": [
+        42,
+        18
+      ],
+      "landWalkable": true
+    },
+    {
+      "waterCell": [
+        30,
+        19
+      ],
+      "landCell": [
+        30,
+        20
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        19
+      ],
+      "landCell": [
+        29,
+        19
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        40,
+        19
+      ],
+      "landCell": [
+        40,
+        20
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        41,
+        19
+      ],
+      "landCell": [
+        42,
+        19
+      ],
+      "landWalkable": true
+    },
+    {
+      "waterCell": [
+        41,
+        19
+      ],
+      "landCell": [
+        41,
+        20
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        20
+      ],
+      "landCell": [
+        30,
+        20
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        20
+      ],
+      "landCell": [
+        40,
+        20
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        21
+      ],
+      "landCell": [
+        31,
+        22
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        21
+      ],
+      "landCell": [
+        30,
+        21
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        21
+      ],
+      "landCell": [
+        40,
+        21
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        32,
+        22
+      ],
+      "landCell": [
+        31,
+        22
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        22
+      ],
+      "landCell": [
+        40,
+        22
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        32,
+        23
+      ],
+      "landCell": [
+        31,
+        23
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        23
+      ],
+      "landCell": [
+        40,
+        23
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        32,
+        24
+      ],
+      "landCell": [
+        31,
+        24
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        24
+      ],
+      "landCell": [
+        40,
+        24
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        32,
+        25
+      ],
+      "landCell": [
+        31,
+        25
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        25
+      ],
+      "landCell": [
+        40,
+        25
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        26
+      ],
+      "landCell": [
+        31,
+        25
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        26
+      ],
+      "landCell": [
+        30,
+        26
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        26
+      ],
+      "landCell": [
+        40,
+        26
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        27
+      ],
+      "landCell": [
+        30,
+        27
+      ],
+      "landWalkable": true
+    },
+    {
+      "waterCell": [
+        39,
+        27
+      ],
+      "landCell": [
+        40,
+        27
+      ],
+      "landWalkable": true
+    },
+    {
+      "waterCell": [
+        31,
+        28
+      ],
+      "landCell": [
+        30,
+        28
+      ],
+      "landWalkable": true
+    },
+    {
+      "waterCell": [
+        39,
+        28
+      ],
+      "landCell": [
+        40,
+        28
+      ],
+      "landWalkable": true
+    },
+    {
+      "waterCell": [
+        30,
+        29
+      ],
+      "landCell": [
+        30,
+        28
+      ],
+      "landWalkable": true
+    },
+    {
+      "waterCell": [
+        30,
+        29
+      ],
+      "landCell": [
+        29,
+        29
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        29
+      ],
+      "landCell": [
+        40,
+        29
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        30
+      ],
+      "landCell": [
+        29,
+        30
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        30
+      ],
+      "landCell": [
+        40,
+        30
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        31
+      ],
+      "landCell": [
+        29,
+        31
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        31
+      ],
+      "landCell": [
+        40,
+        31
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        32
+      ],
+      "landCell": [
+        30,
+        33
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        32
+      ],
+      "landCell": [
+        29,
+        32
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        32
+      ],
+      "landCell": [
+        40,
+        32
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        33
+      ],
+      "landCell": [
+        30,
+        33
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        33
+      ],
+      "landCell": [
+        40,
+        33
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        34
+      ],
+      "landCell": [
+        30,
+        34
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        34
+      ],
+      "landCell": [
+        40,
+        34
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        35
+      ],
+      "landCell": [
+        30,
+        35
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        35
+      ],
+      "landCell": [
+        40,
+        35
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        36
+      ],
+      "landCell": [
+        30,
+        35
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        36
+      ],
+      "landCell": [
+        29,
+        36
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        36
+      ],
+      "landCell": [
+        40,
+        36
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        37
+      ],
+      "landCell": [
+        29,
+        37
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        37
+      ],
+      "landCell": [
+        40,
+        37
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        38
+      ],
+      "landCell": [
+        30,
+        39
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        30,
+        38
+      ],
+      "landCell": [
+        29,
+        38
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        38
+      ],
+      "landCell": [
+        40,
+        38
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        39
+      ],
+      "landCell": [
+        30,
+        39
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        39
+      ],
+      "landCell": [
+        40,
+        39
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        40
+      ],
+      "landCell": [
+        30,
+        40
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        40
+      ],
+      "landCell": [
+        40,
+        40
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        41
+      ],
+      "landCell": [
+        30,
+        41
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        41
+      ],
+      "landCell": [
+        40,
+        41
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        42
+      ],
+      "landCell": [
+        30,
+        42
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        42
+      ],
+      "landCell": [
+        40,
+        42
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        43
+      ],
+      "landCell": [
+        30,
+        43
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        43
+      ],
+      "landCell": [
+        40,
+        43
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        44
+      ],
+      "landCell": [
+        30,
+        44
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        44
+      ],
+      "landCell": [
+        40,
+        44
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        45
+      ],
+      "landCell": [
+        30,
+        45
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        45
+      ],
+      "landCell": [
+        40,
+        45
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        46
+      ],
+      "landCell": [
+        31,
+        47
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        46
+      ],
+      "landCell": [
+        30,
+        46
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        46
+      ],
+      "landCell": [
+        40,
+        46
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        32,
+        47
+      ],
+      "landCell": [
+        31,
+        47
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        47
+      ],
+      "landCell": [
+        40,
+        47
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        32,
+        48
+      ],
+      "landCell": [
+        31,
+        48
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        40,
+        48
+      ],
+      "landCell": [
+        40,
+        47
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        40,
+        48
+      ],
+      "landCell": [
+        41,
+        48
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        32,
+        49
+      ],
+      "landCell": [
+        31,
+        49
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        40,
+        49
+      ],
+      "landCell": [
+        41,
+        49
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        32,
+        50
+      ],
+      "landCell": [
+        31,
+        50
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        40,
+        50
+      ],
+      "landCell": [
+        41,
+        50
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        32,
+        51
+      ],
+      "landCell": [
+        31,
+        51
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        40,
+        51
+      ],
+      "landCell": [
+        41,
+        51
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        32,
+        52
+      ],
+      "landCell": [
+        31,
+        52
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        40,
+        52
+      ],
+      "landCell": [
+        41,
+        52
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        32,
+        53
+      ],
+      "landCell": [
+        31,
+        53
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        40,
+        53
+      ],
+      "landCell": [
+        41,
+        53
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        54
+      ],
+      "landCell": [
+        31,
+        53
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        54
+      ],
+      "landCell": [
+        30,
+        54
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        40,
+        54
+      ],
+      "landCell": [
+        41,
+        54
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        55
+      ],
+      "landCell": [
+        30,
+        55
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        40,
+        55
+      ],
+      "landCell": [
+        41,
+        55
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        40,
+        55
+      ],
+      "landCell": [
+        40,
+        56
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        56
+      ],
+      "landCell": [
+        30,
+        56
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        56
+      ],
+      "landCell": [
+        40,
+        56
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        57
+      ],
+      "landCell": [
+        30,
+        57
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        57
+      ],
+      "landCell": [
+        40,
+        57
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        58
+      ],
+      "landCell": [
+        30,
+        58
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        58
+      ],
+      "landCell": [
+        40,
+        58
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        31,
+        59
+      ],
+      "landCell": [
+        30,
+        59
+      ],
+      "landWalkable": false
+    },
+    {
+      "waterCell": [
+        39,
+        59
+      ],
+      "landCell": [
+        40,
+        59
+      ],
+      "landWalkable": false
+    }
+  ]
+}
