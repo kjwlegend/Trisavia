@@ -1,0 +1,1607 @@
+{
+  "qinghe": {
+    "generatedSource": "reference/qinghe-generated.png",
+    "generatedSha256": "89e8be0cc714dcb1afc7564486a4f0bc63d9219afd13b77c220c61b7fed2bde3",
+    "normalization": "Nearest-neighbour technical downsampling; alpha threshold 160; no redrawn pixels",
+    "sourceRows": [
+      [
+        84,
+        281
+      ],
+      [
+        342,
+        543
+      ],
+      [
+        596,
+        797
+      ],
+      [
+        867,
+        1066
+      ],
+      [
+        1147,
+        1320
+      ]
+    ],
+    "scale": 0.08121827411167512,
+    "actions": {
+      "idle": {
+        "file": "assets/qinghe-idle.png",
+        "sha256": "f613ad07d77ae8d5d340ae63c2f7c94d2843d7b1ceb2c9c2efdb8e5411b9b3ba",
+        "frames": 4,
+        "frameSize": [
+          32,
+          32
+        ],
+        "durationsMs": [
+          240,
+          240,
+          240,
+          240
+        ],
+        "feetPivot": [
+          16,
+          24
+        ],
+        "extraction": [
+          {
+            "sourceRect": [
+              88,
+              84,
+              226,
+              281
+            ],
+            "destinationRect": [
+              10,
+              8,
+              11,
+              16
+            ],
+            "alphaBBox": [
+              10,
+              8,
+              21,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              357,
+              84,
+              494,
+              281
+            ],
+            "destinationRect": [
+              10,
+              8,
+              11,
+              16
+            ],
+            "alphaBBox": [
+              10,
+              8,
+              21,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              625,
+              84,
+              762,
+              281
+            ],
+            "destinationRect": [
+              10,
+              8,
+              11,
+              16
+            ],
+            "alphaBBox": [
+              10,
+              8,
+              21,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              893,
+              84,
+              1028,
+              281
+            ],
+            "destinationRect": [
+              11,
+              8,
+              11,
+              16
+            ],
+            "alphaBBox": [
+              11,
+              8,
+              22,
+              24
+            ]
+          }
+        ]
+      },
+      "walk": {
+        "file": "assets/qinghe-walk.png",
+        "sha256": "cf444541a2cc31eaff1bf9f38d2509bd19245d2964f2606c9cb253a691b69338",
+        "frames": 4,
+        "frameSize": [
+          32,
+          32
+        ],
+        "durationsMs": [
+          180,
+          180,
+          180,
+          180
+        ],
+        "feetPivot": [
+          16,
+          24
+        ],
+        "extraction": [
+          {
+            "sourceRect": [
+              88,
+              342,
+              226,
+              543
+            ],
+            "destinationRect": [
+              10,
+              8,
+              11,
+              16
+            ],
+            "alphaBBox": [
+              10,
+              8,
+              21,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              358,
+              342,
+              497,
+              543
+            ],
+            "destinationRect": [
+              11,
+              8,
+              11,
+              16
+            ],
+            "alphaBBox": [
+              11,
+              8,
+              22,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              626,
+              342,
+              765,
+              543
+            ],
+            "destinationRect": [
+              11,
+              8,
+              11,
+              16
+            ],
+            "alphaBBox": [
+              11,
+              8,
+              22,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              896,
+              342,
+              1034,
+              543
+            ],
+            "destinationRect": [
+              11,
+              8,
+              11,
+              16
+            ],
+            "alphaBBox": [
+              11,
+              8,
+              22,
+              24
+            ]
+          }
+        ]
+      },
+      "point": {
+        "file": "assets/qinghe-point.png",
+        "sha256": "a71cdd8ad393d201a07affb87dae028b0f9f49c16354b217a49be71257aa3852",
+        "frames": 4,
+        "frameSize": [
+          32,
+          32
+        ],
+        "durationsMs": [
+          240,
+          240,
+          240,
+          240
+        ],
+        "feetPivot": [
+          16,
+          24
+        ],
+        "extraction": [
+          {
+            "sourceRect": [
+              85,
+              596,
+              232,
+              797
+            ],
+            "destinationRect": [
+              10,
+              8,
+              12,
+              16
+            ],
+            "alphaBBox": [
+              10,
+              8,
+              22,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              352,
+              596,
+              502,
+              797
+            ],
+            "destinationRect": [
+              10,
+              8,
+              12,
+              16
+            ],
+            "alphaBBox": [
+              10,
+              8,
+              22,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              618,
+              596,
+              775,
+              797
+            ],
+            "destinationRect": [
+              10,
+              8,
+              13,
+              16
+            ],
+            "alphaBBox": [
+              10,
+              8,
+              23,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              895,
+              596,
+              1046,
+              797
+            ],
+            "destinationRect": [
+              11,
+              8,
+              12,
+              16
+            ],
+            "alphaBBox": [
+              11,
+              8,
+              23,
+              24
+            ]
+          }
+        ]
+      },
+      "water": {
+        "file": "assets/qinghe-water.png",
+        "sha256": "eb04e6a196b56e535b2360fa7d7431fb016f0fdbb65c28652991a27b639e8768",
+        "frames": 4,
+        "frameSize": [
+          32,
+          32
+        ],
+        "durationsMs": [
+          240,
+          240,
+          240,
+          240
+        ],
+        "feetPivot": [
+          16,
+          24
+        ],
+        "extraction": [
+          {
+            "sourceRect": [
+              79,
+              867,
+              247,
+              1066
+            ],
+            "destinationRect": [
+              10,
+              8,
+              14,
+              16
+            ],
+            "alphaBBox": [
+              10,
+              8,
+              24,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              348,
+              867,
+              509,
+              1066
+            ],
+            "destinationRect": [
+              10,
+              8,
+              13,
+              16
+            ],
+            "alphaBBox": [
+              10,
+              8,
+              23,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              613,
+              867,
+              829,
+              1066
+            ],
+            "destinationRect": [
+              9,
+              8,
+              18,
+              16
+            ],
+            "alphaBBox": [
+              9,
+              8,
+              27,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              892,
+              867,
+              1083,
+              1066
+            ],
+            "destinationRect": [
+              10,
+              8,
+              16,
+              16
+            ],
+            "alphaBBox": [
+              10,
+              8,
+              26,
+              24
+            ]
+          }
+        ]
+      },
+      "clean": {
+        "file": "assets/qinghe-clean.png",
+        "sha256": "370d3af1a6ec855491ca2d2a4ff611531c7b9531dcca50129486b9c0f5a0c81a",
+        "frames": 4,
+        "frameSize": [
+          32,
+          32
+        ],
+        "durationsMs": [
+          240,
+          240,
+          240,
+          240
+        ],
+        "feetPivot": [
+          16,
+          24
+        ],
+        "extraction": [
+          {
+            "sourceRect": [
+              95,
+              1147,
+              237,
+              1320
+            ],
+            "destinationRect": [
+              11,
+              10,
+              12,
+              14
+            ],
+            "alphaBBox": [
+              11,
+              10,
+              23,
+              23
+            ]
+          },
+          {
+            "sourceRect": [
+              366,
+              1147,
+              513,
+              1320
+            ],
+            "destinationRect": [
+              11,
+              10,
+              12,
+              14
+            ],
+            "alphaBBox": [
+              11,
+              10,
+              23,
+              23
+            ]
+          },
+          {
+            "sourceRect": [
+              632,
+              1147,
+              801,
+              1320
+            ],
+            "destinationRect": [
+              11,
+              10,
+              14,
+              14
+            ],
+            "alphaBBox": [
+              11,
+              10,
+              25,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              896,
+              1147,
+              1065,
+              1320
+            ],
+            "destinationRect": [
+              11,
+              10,
+              14,
+              14
+            ],
+            "alphaBBox": [
+              11,
+              10,
+              25,
+              24
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "xiaoman": {
+    "generatedSource": "reference/xiaoman-generated.png",
+    "generatedSha256": "9b7e36b9b87bc93ea2c12c13f9fe8a049794e8f4995afdbd2443a69fa4a29706",
+    "normalization": "Nearest-neighbour technical downsampling; alpha threshold 160; no redrawn pixels",
+    "sourceRows": [
+      [
+        67,
+        230
+      ],
+      [
+        266,
+        426
+      ],
+      [
+        450,
+        618
+      ],
+      [
+        648,
+        799
+      ],
+      [
+        828,
+        976
+      ]
+    ],
+    "scale": 0.09815950920245399,
+    "actions": {
+      "idle": {
+        "file": "assets/xiaoman-idle.png",
+        "sha256": "f5037c1248a30dda9776bea5f3c1216ff0140b6db28132178d1810788fbbaff6",
+        "frames": 4,
+        "frameSize": [
+          32,
+          32
+        ],
+        "durationsMs": [
+          240,
+          240,
+          240,
+          240
+        ],
+        "feetPivot": [
+          16,
+          24
+        ],
+        "extraction": [
+          {
+            "sourceRect": [
+              388,
+              67,
+              478,
+              230
+            ],
+            "destinationRect": [
+              12,
+              8,
+              9,
+              16
+            ],
+            "alphaBBox": [
+              12,
+              8,
+              21,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              598,
+              67,
+              688,
+              230
+            ],
+            "destinationRect": [
+              12,
+              8,
+              9,
+              16
+            ],
+            "alphaBBox": [
+              12,
+              9,
+              21,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              831,
+              67,
+              920,
+              230
+            ],
+            "destinationRect": [
+              12,
+              8,
+              9,
+              16
+            ],
+            "alphaBBox": [
+              12,
+              8,
+              21,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              1053,
+              67,
+              1143,
+              230
+            ],
+            "destinationRect": [
+              12,
+              8,
+              9,
+              16
+            ],
+            "alphaBBox": [
+              12,
+              8,
+              21,
+              24
+            ]
+          }
+        ]
+      },
+      "walk": {
+        "file": "assets/xiaoman-walk.png",
+        "sha256": "5baffc05cdf7c737b79f76d849aea0b774ce447069eb79d6dcb86a5ff6d83e4a",
+        "frames": 4,
+        "frameSize": [
+          32,
+          32
+        ],
+        "durationsMs": [
+          180,
+          180,
+          180,
+          180
+        ],
+        "feetPivot": [
+          16,
+          24
+        ],
+        "extraction": [
+          {
+            "sourceRect": [
+              381,
+              266,
+              477,
+              426
+            ],
+            "destinationRect": [
+              11,
+              8,
+              9,
+              16
+            ],
+            "alphaBBox": [
+              11,
+              8,
+              20,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              609,
+              266,
+              708,
+              426
+            ],
+            "destinationRect": [
+              13,
+              8,
+              10,
+              16
+            ],
+            "alphaBBox": [
+              13,
+              8,
+              23,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              827,
+              266,
+              927,
+              426
+            ],
+            "destinationRect": [
+              11,
+              8,
+              10,
+              16
+            ],
+            "alphaBBox": [
+              11,
+              8,
+              21,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              1047,
+              266,
+              1147,
+              426
+            ],
+            "destinationRect": [
+              11,
+              8,
+              10,
+              16
+            ],
+            "alphaBBox": [
+              11,
+              8,
+              21,
+              24
+            ]
+          }
+        ]
+      },
+      "tray": {
+        "file": "assets/xiaoman-tray.png",
+        "sha256": "b8f306db5e1642c94024dc6d1af0677820705dbb87c5e714ca1b457ff09d9513",
+        "frames": 4,
+        "frameSize": [
+          32,
+          32
+        ],
+        "durationsMs": [
+          240,
+          240,
+          240,
+          240
+        ],
+        "feetPivot": [
+          16,
+          24
+        ],
+        "extraction": [
+          {
+            "sourceRect": [
+              387,
+              450,
+              502,
+              618
+            ],
+            "destinationRect": [
+              11,
+              8,
+              11,
+              16
+            ],
+            "alphaBBox": [
+              11,
+              8,
+              22,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              590,
+              450,
+              719,
+              618
+            ],
+            "destinationRect": [
+              11,
+              8,
+              13,
+              16
+            ],
+            "alphaBBox": [
+              11,
+              8,
+              24,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              816,
+              450,
+              957,
+              618
+            ],
+            "destinationRect": [
+              10,
+              8,
+              14,
+              16
+            ],
+            "alphaBBox": [
+              10,
+              8,
+              24,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              1048,
+              450,
+              1161,
+              618
+            ],
+            "destinationRect": [
+              11,
+              8,
+              11,
+              16
+            ],
+            "alphaBBox": [
+              11,
+              8,
+              22,
+              24
+            ]
+          }
+        ]
+      },
+      "sit-quiet": {
+        "file": "assets/xiaoman-sit-quiet.png",
+        "sha256": "e0ba03a8e67e3b55e7557afa64cb5007b0e3299c8afc729df552e54ef549ebd8",
+        "frames": 4,
+        "frameSize": [
+          32,
+          32
+        ],
+        "durationsMs": [
+          240,
+          240,
+          240,
+          240
+        ],
+        "feetPivot": [
+          16,
+          24
+        ],
+        "extraction": [
+          {
+            "sourceRect": [
+              391,
+              648,
+              497,
+              799
+            ],
+            "destinationRect": [
+              12,
+              9,
+              10,
+              15
+            ],
+            "alphaBBox": [
+              12,
+              10,
+              22,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              607,
+              648,
+              705,
+              799
+            ],
+            "destinationRect": [
+              12,
+              9,
+              10,
+              15
+            ],
+            "alphaBBox": [
+              12,
+              9,
+              22,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              819,
+              648,
+              921,
+              799
+            ],
+            "destinationRect": [
+              10,
+              9,
+              10,
+              15
+            ],
+            "alphaBBox": [
+              10,
+              9,
+              20,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              1041,
+              648,
+              1142,
+              799
+            ],
+            "destinationRect": [
+              10,
+              9,
+              10,
+              15
+            ],
+            "alphaBBox": [
+              10,
+              10,
+              20,
+              24
+            ]
+          }
+        ]
+      },
+      "sit-talk": {
+        "file": "assets/xiaoman-sit-talk.png",
+        "sha256": "0feee989ec20e090d6184b657127c6b808235b54564d89d494545fafa9341ea6",
+        "frames": 4,
+        "frameSize": [
+          32,
+          32
+        ],
+        "durationsMs": [
+          240,
+          240,
+          240,
+          240
+        ],
+        "feetPivot": [
+          16,
+          24
+        ],
+        "extraction": [
+          {
+            "sourceRect": [
+              384,
+              828,
+              486,
+              976
+            ],
+            "destinationRect": [
+              11,
+              9,
+              10,
+              15
+            ],
+            "alphaBBox": [
+              11,
+              9,
+              21,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              590,
+              828,
+              699,
+              976
+            ],
+            "destinationRect": [
+              11,
+              9,
+              11,
+              15
+            ],
+            "alphaBBox": [
+              11,
+              9,
+              22,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              815,
+              828,
+              922,
+              976
+            ],
+            "destinationRect": [
+              10,
+              9,
+              11,
+              15
+            ],
+            "alphaBBox": [
+              10,
+              9,
+              21,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              1041,
+              828,
+              1147,
+              976
+            ],
+            "destinationRect": [
+              10,
+              9,
+              10,
+              15
+            ],
+            "alphaBBox": [
+              10,
+              10,
+              20,
+              24
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "wenxi": {
+    "generatedSource": "reference/wenxi-generated.png",
+    "generatedSha256": "9f62783535a0b10bf341c2095770484b78abe9de086a306ca44bf45f127b69af",
+    "normalization": "Nearest-neighbour technical downsampling; alpha threshold 160; no redrawn pixels",
+    "sourceRows": [
+      [
+        71,
+        252
+      ],
+      [
+        294,
+        481
+      ],
+      [
+        508,
+        691
+      ],
+      [
+        725,
+        906
+      ],
+      [
+        933,
+        1120
+      ]
+    ],
+    "scale": 0.08839779005524862,
+    "actions": {
+      "idle": {
+        "file": "assets/wenxi-idle.png",
+        "sha256": "da84eabf5355b23b197fc880ec61611fb3899937a4a6cd5470afa3e289cc29d8",
+        "frames": 4,
+        "frameSize": [
+          32,
+          32
+        ],
+        "durationsMs": [
+          240,
+          240,
+          240,
+          240
+        ],
+        "feetPivot": [
+          16,
+          24
+        ],
+        "extraction": [
+          {
+            "sourceRect": [
+              224,
+              71,
+              353,
+              252
+            ],
+            "destinationRect": [
+              10,
+              8,
+              11,
+              16
+            ],
+            "alphaBBox": [
+              10,
+              8,
+              21,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              483,
+              71,
+              611,
+              252
+            ],
+            "destinationRect": [
+              10,
+              8,
+              11,
+              16
+            ],
+            "alphaBBox": [
+              10,
+              8,
+              21,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              742,
+              71,
+              868,
+              252
+            ],
+            "destinationRect": [
+              10,
+              8,
+              11,
+              16
+            ],
+            "alphaBBox": [
+              10,
+              8,
+              21,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              1006,
+              71,
+              1136,
+              252
+            ],
+            "destinationRect": [
+              10,
+              8,
+              11,
+              16
+            ],
+            "alphaBBox": [
+              10,
+              8,
+              21,
+              24
+            ]
+          }
+        ]
+      },
+      "walk": {
+        "file": "assets/wenxi-walk.png",
+        "sha256": "f2d35fdb054443c36a60f065be51ff53f0ee69541a06b49d29166045a705187d",
+        "frames": 4,
+        "frameSize": [
+          32,
+          32
+        ],
+        "durationsMs": [
+          180,
+          180,
+          180,
+          180
+        ],
+        "feetPivot": [
+          16,
+          24
+        ],
+        "extraction": [
+          {
+            "sourceRect": [
+              223,
+              294,
+              353,
+              481
+            ],
+            "destinationRect": [
+              10,
+              7,
+              11,
+              17
+            ],
+            "alphaBBox": [
+              10,
+              7,
+              21,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              469,
+              294,
+              605,
+              481
+            ],
+            "destinationRect": [
+              9,
+              7,
+              12,
+              17
+            ],
+            "alphaBBox": [
+              9,
+              7,
+              21,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              737,
+              294,
+              872,
+              481
+            ],
+            "destinationRect": [
+              10,
+              7,
+              12,
+              17
+            ],
+            "alphaBBox": [
+              10,
+              7,
+              22,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              996,
+              294,
+              1129,
+              481
+            ],
+            "destinationRect": [
+              9,
+              7,
+              12,
+              17
+            ],
+            "alphaBBox": [
+              9,
+              7,
+              21,
+              24
+            ]
+          }
+        ]
+      },
+      "point": {
+        "file": "assets/wenxi-point.png",
+        "sha256": "8088f9e62d03d6e457e6ffe1a0be7a9207ff8124aab822c830de15bd604afbba",
+        "frames": 4,
+        "frameSize": [
+          32,
+          32
+        ],
+        "durationsMs": [
+          240,
+          240,
+          240,
+          240
+        ],
+        "feetPivot": [
+          16,
+          24
+        ],
+        "extraction": [
+          {
+            "sourceRect": [
+              215,
+              508,
+              347,
+              691
+            ],
+            "destinationRect": [
+              10,
+              8,
+              12,
+              16
+            ],
+            "alphaBBox": [
+              10,
+              8,
+              22,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              470,
+              508,
+              630,
+              691
+            ],
+            "destinationRect": [
+              9,
+              8,
+              14,
+              16
+            ],
+            "alphaBBox": [
+              9,
+              8,
+              23,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              733,
+              508,
+              906,
+              691
+            ],
+            "destinationRect": [
+              10,
+              8,
+              15,
+              16
+            ],
+            "alphaBBox": [
+              10,
+              8,
+              25,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              993,
+              508,
+              1174,
+              691
+            ],
+            "destinationRect": [
+              9,
+              8,
+              16,
+              16
+            ],
+            "alphaBBox": [
+              9,
+              8,
+              25,
+              24
+            ]
+          }
+        ]
+      },
+      "listen": {
+        "file": "assets/wenxi-listen.png",
+        "sha256": "4470bf73bde06f52dd4a6f6a8fb642234e257e9da1ba1ac438f7078c85bac332",
+        "frames": 4,
+        "frameSize": [
+          32,
+          32
+        ],
+        "durationsMs": [
+          240,
+          240,
+          240,
+          240
+        ],
+        "feetPivot": [
+          16,
+          24
+        ],
+        "extraction": [
+          {
+            "sourceRect": [
+              220,
+              725,
+              350,
+              906
+            ],
+            "destinationRect": [
+              10,
+              8,
+              11,
+              16
+            ],
+            "alphaBBox": [
+              10,
+              8,
+              21,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              484,
+              725,
+              617,
+              906
+            ],
+            "destinationRect": [
+              10,
+              8,
+              12,
+              16
+            ],
+            "alphaBBox": [
+              10,
+              8,
+              22,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              734,
+              725,
+              873,
+              906
+            ],
+            "destinationRect": [
+              10,
+              8,
+              12,
+              16
+            ],
+            "alphaBBox": [
+              10,
+              9,
+              22,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              998,
+              725,
+              1129,
+              906
+            ],
+            "destinationRect": [
+              10,
+              8,
+              12,
+              16
+            ],
+            "alphaBBox": [
+              10,
+              8,
+              22,
+              24
+            ]
+          }
+        ]
+      },
+      "map": {
+        "file": "assets/wenxi-map.png",
+        "sha256": "ca9cf9b8f47fd654793e57b1d304904fe57d7412bd24e85a97f07c8d80e1d58d",
+        "frames": 4,
+        "frameSize": [
+          32,
+          32
+        ],
+        "durationsMs": [
+          240,
+          240,
+          240,
+          240
+        ],
+        "feetPivot": [
+          16,
+          24
+        ],
+        "extraction": [
+          {
+            "sourceRect": [
+              215,
+              933,
+              360,
+              1120
+            ],
+            "destinationRect": [
+              10,
+              7,
+              13,
+              17
+            ],
+            "alphaBBox": [
+              10,
+              8,
+              23,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              483,
+              933,
+              648,
+              1120
+            ],
+            "destinationRect": [
+              10,
+              7,
+              15,
+              17
+            ],
+            "alphaBBox": [
+              10,
+              8,
+              25,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              741,
+              933,
+              904,
+              1120
+            ],
+            "destinationRect": [
+              10,
+              7,
+              14,
+              17
+            ],
+            "alphaBBox": [
+              10,
+              7,
+              24,
+              24
+            ]
+          },
+          {
+            "sourceRect": [
+              1002,
+              933,
+              1195,
+              1120
+            ],
+            "destinationRect": [
+              10,
+              7,
+              17,
+              17
+            ],
+            "alphaBBox": [
+              10,
+              7,
+              27,
+              24
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
