@@ -19,7 +19,7 @@ function identity(o:ApprovedAgentTemplatePublication){
  if(!/^[A-Za-z0-9_.:@-]{1,100}$/.test(o.operator)||!/^[A-Za-z0-9_.:@-]{8,100}$/.test(o.operationId)||!o.instanceId||!o.recoveryEpoch||!Number.isSafeInteger(o.expectedGuideVersion)||o.expectedGuideVersion<1||o.expectedGuideVersion>=999999)throw new Error('Original approved-template publication identity required');
  // Only immutable approved replacements belong to the original operation.
  // The independently refreshed runtime.md snapshot is recorded in the result.
- return{id:'admin-approved-agent-templates:'+key({operator:o.operator,operationId:o.operationId}),payloadHash:key({...o,release:'approved-agent-templates@1',catalogRevision:APPROVED_AGENT_TEMPLATE_CATALOG,replacements:APPROVED_TEMPLATE_REPLACEMENTS.map(r=>({id:r.id,before:sha(r.before),after:sha(r.after)}))})};
+ return{id:'admin-approved-agent-templates:'+key({operator:o.operator,operationId:o.operationId}),payloadHash:key({...o,release:'approved-agent-templates@1',catalogRevision:APPROVED_AGENT_TEMPLATE_CATALOG,replacements:APPROVED_TEMPLATE_REPLACEMENTS.map(r=>({id:r.id,before:sha(r.before),beforeVariants:r.beforeVariants.map(sha),allowAlreadyCorrect:r.allowAlreadyCorrect,after:sha(r.after)}))})};
 }
 export async function readApprovedAgentTemplatePublication(tx:M1ReadSession,o:ApprovedAgentTemplatePublication):Promise<JsonObject|undefined>{
  const op=identity(o),row=await catalogRepository(tx).get(op.id);if(!row)return;

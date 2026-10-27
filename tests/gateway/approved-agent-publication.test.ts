@@ -52,3 +52,21 @@ test('original publication and receipt replay use frozen payload and result even
 test('a first publication requires the complete approved current runtime5 snapshot without advancing old source metadata',async()=>{
  const f=await fixture(),before=structuredClone(f.tables),snapshot=await readAgentRuntimeGuide();await assert.rejects(publishApprovedAgentTemplates(f.tx,f.options,async()=>({...snapshot,ruleVersion:4})),{code:'version_conflict'});assert.deepEqual(f.tables,before);
 });
+
+
+test('publication receipt pins every allowed exact predecessor and the already-correct selection policy',async()=>{
+ const f=await fixture();await publishApprovedAgentTemplates(f.tx,f.options);
+ const id='admin-approved-agent-templates:'+key({operator:f.options.operator,operationId:f.options.operationId}),receipt=(await f.tx.get('perception_catalog',id))!;
+ const replacements=APPROVED_TEMPLATE_REPLACEMENTS.map(row=>({id:row.id,before:sha(row.before),beforeVariants:row.beforeVariants.map(sha),allowAlreadyCorrect:row.allowAlreadyCorrect,after:sha(row.after)}));
+ const payload={...f.options,release:'approved-agent-templates@1',catalogRevision:APPROVED_AGENT_TEMPLATE_CATALOG,replacements};
+ assert.equal(receipt.data.payloadHash,key(payload));
+ assert(replacements.some(row=>row.beforeVariants.length>1),'Published human-guide variants must be pinned');
+ assert(replacements.some(row=>row.allowAlreadyCorrect),'The already-correct hourly choice must be pinned');
+ const incomplete={...payload,replacements:replacements.map(({id,before,after})=>({id,before,after}))};
+ assert.notEqual(key(incomplete),receipt.data.payloadHash,'The old before/after-only identity omits accepted source policy');
+ for(const changed of replacements.map((row,index)=>({...payload,replacements:replacements.map((other,i)=>i!==index?other:{...row,beforeVariants:[],allowAlreadyCorrect:!row.allowAlreadyCorrect})}))){
+  assert.notEqual(key(changed),receipt.data.payloadHash);
+  await f.tx.update('perception_catalog',{...receipt,data:{...receipt.data,payloadHash:key(changed)}},receipt.version);
+  await assert.rejects(readApprovedAgentTemplatePublication(f.tx,f.options),{code:'operation_id_conflict'});
+ }
+});
