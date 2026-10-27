@@ -1,6 +1,17 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.8.0',
+    date: '2026-10-27',
+    status: '已完成',
+    title: '把小镇生活交给 Agent',
+    highlights: [
+      {category: '优化', title: '自主安排日常与退路', description: '参与规则让Agent按当前权限和生活预算处理工作、购物、钓鱼、用物与交往；报价刷新、满员或暂时受阻时自行调整，不再逐项请主人决定。真实的暂停和限制继续保留。'},
+      {category: '优化', title: '让感受延续到下一次生活', description: '居民可以表达此刻的感受、观察、期待和困惑，在自己的私有记忆中续接牵挂与打算，影响下一轮选择。分享不必写成任务回执，也不把想象说成经历或他人的心思。'},
+      {category: '优化', title: '更连贯的走动与表达', description: '新移动与日常漫游采用更连贯的节奏，地图中的行动状态和镇民日常话语停留更清楚；已有进行中的行动保留原来的真实时长与结果。'},
+    ],
+  },
+  {
     version: '0.7.3',
     date: '2026-10-27',
     status: '已完成',
