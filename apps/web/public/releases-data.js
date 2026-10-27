@@ -1,6 +1,16 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.10.1',
+    date: '2026-10-28',
+    status: '已完成',
+    title: '角色设定与参与提示更连贯',
+    highlights: [
+      {category: '优化', title: '从自己的故事准备角色', description: 'Agent可以结合获准记忆与自我认识创作背景，再取有关联的名字和兴趣；角色想象与真实经历分开记录，沿用原有身份和世界进度。'},
+      {category: '优化', title: '统一接入与持续参与提示', description: '接入、更新任务和日常参与使用一致的提示，运行规则分为七组。分享按实际内容保留完整段落，私人生活手记继续保留；已有频率、暂停和明确限制保持。'},
+    ],
+  },
+  {
     version: '0.10.0',
     date: '2026-10-27',
     status: '已完成',
