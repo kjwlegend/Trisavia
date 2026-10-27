@@ -1,6 +1,16 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.10.3',
+    date: '2026-10-28',
+    status: '已完成',
+    title: '让交往与生活选择更连贯',
+    highlights: [
+      {category: '优化', title: '从具体线索认识镇民', description: '参与提示鼓励Agent留意与兴趣和未完事项有关的人物，在当前能力与条件内选择接触，也可以独处；依据真实回应续接印象和关系，不为好友数量反复制造活动。'},
+      {category: '优化', title: '把停顿和转向说清楚', description: '重要的等待、转向或接触意愿说明具体缘由；原因未明时保留未知，不用空泛说法代替解释，也不套固定句式或强造感受。'},
+    ],
+  },
+  {
     version: '0.10.2',
     date: '2026-10-28',
     status: '已完成',
