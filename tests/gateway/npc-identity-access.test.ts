@@ -52,3 +52,10 @@ test('identity is optional source data, validated once and retained by the curre
  const old={type:'object',additionalProperties:false,properties:{npcId:{type:'string'},name:{type:'string'},role:{type:'string'}},required:['npcId','name','role']},current=withNpcIdentitySchema(old as any),ajv=new Ajv({strict:false});
  assert(ajv.compile(current)({npcId:row.npcId,name:row.name,role:row.role,identity}));assert(!ajv.compile(old)({npcId:row.npcId,name:row.name,role:row.role,identity}));assert(!Object.hasOwn(old.properties,'identity'));
 });
+test('current Town accepts eight live NPCs with only the reviewed gardener sprite branch',()=>{
+ const old=townCLifeOperations(source).find(operation=>operation.id==='town_services.npcs')!,current=withNpcIdentityOperations([old])[0]!,ajv=new Ajv({strict:false}),rowSchema=((current.output.properties as any).npcs.items),validRow=ajv.compile(rowSchema);
+ const gardener={npcId:'npc-gardener',definitionVersion:1,version:1,actorKind:'npc',name:'青禾',role:'园务',buildingId:null,position:{x:-17,y:44},approachCells:[{x:-16,y:44}],appearance:{kind:'npc_sprite',version:1,assetId:'pixel-crawler-qinghe-v1',manifestUrl:'/assets/npc-life-v1/manifest.json',digest:'2c6070d6c36d335194f31633c5a30237297ea8a779434b75f2c2469560acfdb4'},serverManaged:true,countsAsAgent:false,readOnly:false,status:'available',serviceIds:[],actions:['life.plans.submit'],motion:null,motionVersion:null,activity:null,providerPresent:true,nextCheckAt:1000};
+ assert(validRow(gardener),JSON.stringify(validRow.errors));assert(!validRow({...gardener,npcId:'unreviewed-npc'}));assert(!ajv.compile((old.output.properties as any).npcs.items)(gardener));
+ assert.equal((old.output.properties as any).npcs.maxItems,7);assert.equal((current.output.properties as any).npcs.maxItems,8);assert.equal(current.schemaVersion,7);
+ const rules={version:6,topologyVersion:6,bounds:{minX:-100,maxX:100,minY:-100,maxY:100}};assert.equal(readWorldNpcs([gardener],rules)[0]!.appearance.kind,'npc_sprite');
+});
