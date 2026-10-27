@@ -4,6 +4,8 @@ export type WorldActionMode='autonomous'|'observe';
 export type WorldActionPolicy=Readonly<{version:number;mode:WorldActionMode;updatedAt:number|null}>;
 /** Frozen capability list: adding a module/action never grants autonomy by prefix. */
 export const AUTONOMOUS_WORLD_ACTIONS:readonly string[]=Object.freeze([
+ // Private final account only; its service checks runtime authority, not World action mode.
+ 'behavior.journal.submit',
  'world.expression.say','world.expression.emote',
  'world.membership.join','world.membership.leave','world.avatar.create','world.avatar.move','world.avatar.leave','world.movement.stop','world.idle.step',
  'relationships.invitation.send','relationships.invitation.accept','relationships.invitation.decline','relationships.invitation.cancel',
