@@ -1,0 +1,7826 @@
+[
+  {
+    "source": "Entities/Characters/Body_A/Animations/Carry_Idle/Carry_Idle_Down-Sheet.png",
+    "bytes": 992,
+    "sha256": "37568054762b535dbbceca1a7d2f119f008b051355adcd51cb36294db7a4d0a3",
+    "size": [
+      256,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Carry_Idle/Carry_Idle_Down.aseprite",
+    "bytes": 1991,
+    "sha256": "4664352c49aff09d45d68d5523243a2fb8abba872ecb78f71fee1efcb131f451",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Corpo",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Cabeça",
+        "visible": true
+      },
+      {
+        "name": "Braço",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Carry_Idle/Carry_Idle_Side-Sheet.png",
+    "bytes": 1001,
+    "sha256": "7304bf5968892f5bd3fc287158400c3c9ea1e41b7b09193e5750dd8cbc43f0b9",
+    "size": [
+      256,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Carry_Idle/Carry_Idle_Side.aseprite",
+    "bytes": 2072,
+    "sha256": "173e655efbd598ab21da24b18fd923fb356b203a63d6962c1aee47461b2c9587",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Corpo",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Cabeça",
+        "visible": true
+      },
+      {
+        "name": "Braços",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Carry_Idle/Carry_Idle_Up-Sheet.png",
+    "bytes": 827,
+    "sha256": "15f2b4ddd58cfb9a3a8c23003f0aaed932769e2d6d73f1381825f1305265916d",
+    "size": [
+      256,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Carry_Idle/Carry_Idle_Up.aseprite",
+    "bytes": 1931,
+    "sha256": "79f8579e11b5ecd4e8a3dae1898354b2e6e466107b6ab095c5fda4eb5327dd62",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Corpo",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Braço",
+        "visible": true
+      },
+      {
+        "name": "Cabeça",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Carry_Run/Carry_Run_Down-Sheet.png",
+    "bytes": 1375,
+    "sha256": "87cc7ff2d68edbc33df61c3c5e34557c38754474bbbd0ded50f6f38999ea30c8",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Carry_Run/Carry_Run_Down.aseprite",
+    "bytes": 2913,
+    "sha256": "b41ce37e7672e51be908f9acbf916a14410a03fc229365a9f48689745a6b5af8",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Legs",
+        "visible": true
+      },
+      {
+        "name": "Chest",
+        "visible": true
+      },
+      {
+        "name": "Head",
+        "visible": true
+      },
+      {
+        "name": "Arm_R",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Carry_Run/Carry_Run_Side-Sheet.png",
+    "bytes": 1369,
+    "sha256": "4c5b85d760cde76b21e97599df59cd574752c9afc886482d912d80798bc98f6f",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Carry_Run/Carry_Run_Side.aseprite",
+    "bytes": 3006,
+    "sha256": "8dd457936d9aebe8437c4dfe602103cbda05b8ebe34b32c5449f256f6dca05f4",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Leg_B",
+        "visible": true
+      },
+      {
+        "name": "Chest",
+        "visible": true
+      },
+      {
+        "name": "Head",
+        "visible": true
+      },
+      {
+        "name": "Arm_B",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Carry_Run/Carry_Run_Up-Sheet.png",
+    "bytes": 1073,
+    "sha256": "c57c568165d65862cc5c0abf5ca177d9dcb7bbe1f06b93565250a025e9bbce38",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Carry_Run/Carry_Run_Up.aseprite",
+    "bytes": 2770,
+    "sha256": "55d64e7f8cdff6b3c24e5b4dbf7543996355b44cabb689cb054ea1e05eb3ecab",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Legs",
+        "visible": true
+      },
+      {
+        "name": "Chest",
+        "visible": true
+      },
+      {
+        "name": "Arms",
+        "visible": true
+      },
+      {
+        "name": "Head",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Carry_Walk/Carry_Walk_Down-Sheet.png",
+    "bytes": 1283,
+    "sha256": "8dc99fb0a48043a37af70f17acf45140821470f722f8df169191261a2f468432",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Carry_Walk/Carry_Walk_Down.aseprite",
+    "bytes": 2861,
+    "sha256": "b9875b867fd4c5554dbb7ced3110ef4b8c29a399f2a353ee22663329b6a162d1",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Legs",
+        "visible": true
+      },
+      {
+        "name": "Chest",
+        "visible": true
+      },
+      {
+        "name": "Head",
+        "visible": true
+      },
+      {
+        "name": "Arm_R",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Carry_Walk/Carry_Walk_Side-Sheet.png",
+    "bytes": 1367,
+    "sha256": "168a93f9ace8ff567b2451bdede7f75e7e79aa27a80e1ba567596af01180153f",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Carry_Walk/Carry_Walk_Side.aseprite",
+    "bytes": 3007,
+    "sha256": "3cd2253c31339316b829e20ac564572b9ade12416d3c7a8152f705e058ce0368",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Leg_Back",
+        "visible": true
+      },
+      {
+        "name": "Chest",
+        "visible": true
+      },
+      {
+        "name": "Head",
+        "visible": true
+      },
+      {
+        "name": "Arm_Back",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Carry_Walk/Carry_Walk_Up-Sheet.png",
+    "bytes": 1123,
+    "sha256": "f5cd37f008e1059055cff55b033f2aa57b303d1948b40dc5caf75e84a03a357b",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Carry_Walk/Carry_Walk_Up.aseprite",
+    "bytes": 2751,
+    "sha256": "aebd2dc132b6dfb5fbf971831b995007c25e6d1417592d929d42df77f8cef45b",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Legs",
+        "visible": true
+      },
+      {
+        "name": "Chest",
+        "visible": true
+      },
+      {
+        "name": "Arms",
+        "visible": true
+      },
+      {
+        "name": "Head",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Collect_Base/Collect_Down-Sheet.png",
+    "bytes": 1743,
+    "sha256": "53059de9192f902109141fce53490cf07fe188cd835b64a004313106b6541508",
+    "size": [
+      512,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Collect_Base/Collect_Down.aseprite",
+    "bytes": 3560,
+    "sha256": "fa84b78b0630b4e1323fb5ab9fda9fc164f8929d6755291bbceafb3e971d9422",
+    "frames": 8,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Collect_Base/Collect_Side-Sheet.png",
+    "bytes": 2053,
+    "sha256": "609c9bb2ae5119cdf2f603ee329c395d3fee7eb9bb8d21599440f2fe96143a18",
+    "size": [
+      512,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Collect_Base/Collect_Side.aseprite",
+    "bytes": 3771,
+    "sha256": "c5459585fcc75d144f088701f0f97886e29c8ca891cb6a04f51282c592c1fe03",
+    "frames": 8,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": false
+      },
+      {
+        "name": "Layer 3",
+        "visible": false
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Collect_Base/Collect_Up-Sheet.png",
+    "bytes": 1544,
+    "sha256": "4300740862362ea6e657f3a8d98f373ccdfbaa401cb3ff126d5b2f1d6c9a6fd6",
+    "size": [
+      512,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Collect_Base/Collect_Up.aseprite",
+    "bytes": 3393,
+    "sha256": "10c37ae5afdeb184403e3f8ef12eb7b7e1428a61c069b107cfce9cc242bf2f69",
+    "frames": 8,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Crush_Base/Crush_Down-Sheet.png",
+    "bytes": 2629,
+    "sha256": "b00d51da9145fca040220711e528e2dbf2d9100720e4cc8b1e78a4b9637769bd",
+    "size": [
+      512,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Crush_Base/Crush_Down.aseprite",
+    "bytes": 4831,
+    "sha256": "a3bdbbeb3d17ca1329a2488b3df62decfa1248b1b88e265fdc68188c20299f47",
+    "frames": 8,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Crush_Base/Crush_Side-Sheet.png",
+    "bytes": 2664,
+    "sha256": "900f7f84ba6af66c994056768947b6c3b01a70145867d19892408ea536381612",
+    "size": [
+      512,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Crush_Base/Crush_Side.aseprite",
+    "bytes": 4951,
+    "sha256": "8374ad69bf0733f01a7627a2bb35c4f80e5991911b77a40441f97852801a500f",
+    "frames": 8,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Crush_Base/Crush_Up-Sheet.png",
+    "bytes": 2202,
+    "sha256": "0396400d6461913a4380910dad8cd5cb29aa2a15ecd10e329ef552f94c69355c",
+    "size": [
+      512,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Crush_Base/Crush_Up.aseprite",
+    "bytes": 4455,
+    "sha256": "b35682e6c6c8070e78492f03b9c2dbc56b82ca0c7186b3615e180b3968f5754c",
+    "frames": 8,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Death_Base/Death_Down-Sheet.png",
+    "bytes": 2017,
+    "sha256": "4f67348d436057f3e4b1796e8a47ec4ee5aaa25b3799ed24dfd3de3fe40ca207",
+    "size": [
+      512,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Death_Base/Death_Down.aseprite",
+    "bytes": 3476,
+    "sha256": "ff4f1a2fb6b4c009d07f93c74d51aa17c5470600ae0c191e625fdddf9a4b7b40",
+    "frames": 8,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Death_Base/Death_Side-Sheet.png",
+    "bytes": 1803,
+    "sha256": "5f3712aea819df286dede4c75ef75b532b26d2a75a7b250c859264c0906ab9d1",
+    "size": [
+      512,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Death_Base/Death_Side.aseprite",
+    "bytes": 3599,
+    "sha256": "8f0e2590b917b4d93693af9f7fc70ba5a90edc163c633289708f654c48bad128",
+    "frames": 8,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Death_Base/Death_Up-Sheet.png",
+    "bytes": 1692,
+    "sha256": "2065ee6f5da1fcf8387e7cbd0b584552fe70c3135193bb3df93f0053a03a37eb",
+    "size": [
+      512,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Death_Base/Death_Up.aseprite",
+    "bytes": 3374,
+    "sha256": "c3327abb691191640f99716db7e0bc3a8405e20dde1e79b43df85061f4c0a736",
+    "frames": 8,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Fishing_Base/Fishing_Down-Sheet.png",
+    "bytes": 2425,
+    "sha256": "201ad2e204d1f67086012db266a5b99e41ca29812c7429fb9993b3ca00d5d946",
+    "size": [
+      512,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Fishing_Base/Fishing_Down.aseprite",
+    "bytes": 4878,
+    "sha256": "20545e3083cb11e4d04ab7167c8eda9dcae76b0a423daa294dc5934988e29edb",
+    "frames": 8,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 6",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Fishing_Base/Fishing_Side-Sheet.png",
+    "bytes": 2471,
+    "sha256": "1349a3739775be6a8d36d690cae254c809ef3b6afeac2ce9c9d3261620f497b7",
+    "size": [
+      512,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Fishing_Base/Fishing_Side.aseprite",
+    "bytes": 5162,
+    "sha256": "97e53836da019f0640e33b8231b7e1aecbfa44132705709f192bfa5b35539c03",
+    "frames": 8,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Fishing_Base/Fishing_Up-Sheet.png",
+    "bytes": 2303,
+    "sha256": "e95e26a70939e3f575489c0375015e71040d6ec70da98acb48bc03de3edc67c0",
+    "size": [
+      512,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Fishing_Base/Fishing_Up.aseprite",
+    "bytes": 4880,
+    "sha256": "a0c1ccc4782ac67473344cf5a974763140d0a699669ae04015ae6384e23a9aa2",
+    "frames": 8,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Hit_Base/Hit_Down-Sheet.png",
+    "bytes": 1163,
+    "sha256": "f205fcc336ab72f23b6a31157b266b3266d91f6d0a54735c2fbbcd4ffffe98d7",
+    "size": [
+      256,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Hit_Base/Hit_Down.aseprite",
+    "bytes": 1971,
+    "sha256": "1c3cba8a15cb7aca71bd3938016b86a35082612832a41caea64e13c3b19026f2",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Hit_Base/Hit_Side-Sheet.png",
+    "bytes": 1169,
+    "sha256": "48f126dd9fb5fbca4efce79a9a266e1645e5fc4a7a972ebdb2ae8e4e691d7f83",
+    "size": [
+      256,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Hit_Base/Hit_Side.aseprite",
+    "bytes": 2104,
+    "sha256": "4c473eafc881ccd3ef3f8126db061bc986e523c98b6ae67d5abcce5f0a917fb6",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Hit_Base/Hit_Up-Sheet.png",
+    "bytes": 988,
+    "sha256": "faa2767001407a50d897ea4d252c8fdc6b3dfdf7c8f7577124c34fe3442a0582",
+    "size": [
+      256,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Hit_Base/Hit_Up.aseprite",
+    "bytes": 1896,
+    "sha256": "ec70f926a6be8e929a5e8ad5503d040d402e6ac6837a88742be2f864d436a5ea",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Idle_Base/Idle_Down-Sheet.png",
+    "bytes": 1026,
+    "sha256": "bf4d3b6ab3faaa076fc15d181f8b67075deb195edee8411ff9bbb1422402594e",
+    "size": [
+      256,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Idle_Base/Idle_Down.aseprite",
+    "bytes": 1954,
+    "sha256": "b5c782663e255a68995e2967afffda0d30c9822e13ac0a9540107d5a4984fffa",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Corpo",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Braço",
+        "visible": true
+      },
+      {
+        "name": "Cabeça",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Idle_Base/Idle_Side-Sheet.png",
+    "bytes": 1068,
+    "sha256": "4cbfcbb3dd132426c0f7226224fb8a06faac5eca9735af52b4ca775fd98a751d",
+    "size": [
+      256,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Idle_Base/Idle_Side.aseprite",
+    "bytes": 2144,
+    "sha256": "ef7f2750c801fae685d14522c1710f26958388cecb3d375eddfafed3977ca7e4",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Corpo",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Braços",
+        "visible": true
+      },
+      {
+        "name": "Cabeça",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Idle_Base/Idle_Up-Sheet.png",
+    "bytes": 863,
+    "sha256": "c3f35fc8236a3bb89a9bc32c2df2a1e0e96eb2b6ef75ad5fe99d5871f0baca7a",
+    "size": [
+      256,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Idle_Base/Idle_Up.aseprite",
+    "bytes": 1851,
+    "sha256": "ed85b8df38d3f75c0f327ee63f004c85d5e81b713a2be8d35fa3e840f7ad891d",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Corpo",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Braço",
+        "visible": true
+      },
+      {
+        "name": "Cabeça",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Pierce_Base/Pierce_Down-Sheet.png",
+    "bytes": 2313,
+    "sha256": "f29d8550f22b873140e8b6cf94ee3690261d95070e77e1b0010e5297f81ce197",
+    "size": [
+      512,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Pierce_Base/Pierce_Down.aseprite",
+    "bytes": 4776,
+    "sha256": "79a507092228880dfefd41de520b99824cd699985ba23815e83381e410de801b",
+    "frames": 8,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Arma_Teste",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Pierce_Base/Pierce_Side-Sheet.png",
+    "bytes": 2166,
+    "sha256": "5280b390af51df08393f377030eacdf0798a06a1832ab75a164ff91714946348",
+    "size": [
+      512,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Pierce_Base/Pierce_Side.aseprite",
+    "bytes": 5114,
+    "sha256": "3c8049493d49dbeff6b697eeb40c05f1eb0d798f87e40a632b0efd0729670113",
+    "frames": 8,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Corpo",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Arma",
+        "visible": true
+      },
+      {
+        "name": "Braços",
+        "visible": true
+      },
+      {
+        "name": "Cabeça",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Pierce_Base/Pierce_Top-Sheet.png",
+    "bytes": 1748,
+    "sha256": "b0f5cc527f432bd58f3083b2c340ebf6162ebe05e444fc7d32dce36eebbb1183",
+    "size": [
+      512,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Pierce_Base/Pierce_Top.aseprite",
+    "bytes": 4504,
+    "sha256": "089a87721838ecf754c89acf4a2a2c1e3a44725c80ff9560db7718e537a21237",
+    "frames": 8,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Arma",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Run_Base/Run_Down-Sheet.png",
+    "bytes": 1490,
+    "sha256": "b007d2184c8c046dbe84bf3f424aba6a0c80faac9e6799bf6fb161c0ff8248bd",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Run_Base/Run_Down.aseprite",
+    "bytes": 2930,
+    "sha256": "2c478a9bee21302464ce5f3c3b157d96317ef4132092c41b73286cbcbb5e1f55",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Legs",
+        "visible": true
+      },
+      {
+        "name": "Chest",
+        "visible": true
+      },
+      {
+        "name": "Arm_R",
+        "visible": true
+      },
+      {
+        "name": "Head",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Run_Base/Run_Side-Sheet.png",
+    "bytes": 1696,
+    "sha256": "c6b081c575723a19ecd24897cfc8a8fedcb5ddd878ee31bf54a579fa99cc1bca",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Run_Base/Run_Side.aseprite",
+    "bytes": 2963,
+    "sha256": "e7fe0e93dad637f61ef6c2f2aa00cc1f62187de24a916664ac50b51d5e959f3f",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Leg_B",
+        "visible": true
+      },
+      {
+        "name": "Chest",
+        "visible": true
+      },
+      {
+        "name": "Head",
+        "visible": true
+      },
+      {
+        "name": "Arm_B",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Run_Base/Run_Up-Sheet.png",
+    "bytes": 1357,
+    "sha256": "5738b852a54be1ffc8c2fac1874e774bc8ffa884d849c77869a6c1bd92a6bfbc",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Run_Base/Run_Up.aseprite",
+    "bytes": 2730,
+    "sha256": "fd7d276e8479c8a25fe4c5e011206b26052f878a2fb9e8a2e73ddf293c08cc7c",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Legs",
+        "visible": true
+      },
+      {
+        "name": "Chest",
+        "visible": true
+      },
+      {
+        "name": "Arms",
+        "visible": true
+      },
+      {
+        "name": "Head",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Slice_Base/Slice_Down-Sheet.png",
+    "bytes": 2780,
+    "sha256": "2c09d7338cbbfacd57fd316f5258ee864f2a3676e9a077bd5246f165b9d5b2d7",
+    "size": [
+      512,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Slice_Base/Slice_Down.aseprite",
+    "bytes": 5011,
+    "sha256": "4c0ceec95a823ab62e1c7789a9cfeda7a401e11e206c64263abc5635f6b94b1a",
+    "frames": 8,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Slice_Base/Slice_Side-Sheet.png",
+    "bytes": 2871,
+    "sha256": "e2446a4fe54605cc29ceff1d0e114d1852b30633f87d5fdf33c0b97db3d16908",
+    "size": [
+      512,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Slice_Base/Slice_Side.aseprite",
+    "bytes": 5354,
+    "sha256": "338dee8688fb02c187f677ea8370ccfd584e19af46b46d9e7c552211c0241441",
+    "frames": 8,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Corpo",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Braço",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Cabeça",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Slice_Base/Slice_Up-Sheet.png",
+    "bytes": 2319,
+    "sha256": "bc7540c68a6a38f7ae116dfc4b35d4cbdf3acddf9180c5daa4ef874602411938",
+    "size": [
+      512,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Slice_Base/Slice_Up.aseprite",
+    "bytes": 4722,
+    "sha256": "a01443c6fd3638404693887a562063ddbcdc5793a309ce426f5ea3ae906eb0e2",
+    "frames": 8,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Arma",
+        "visible": true
+      },
+      {
+        "name": "Braços",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Walk_Base/Walk_Down-Sheet.png",
+    "bytes": 1424,
+    "sha256": "f15e09d43d752cafe0b9b75d0d4461aec316ef9306b71010cb9297b0ca7d2f4b",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Walk_Base/Walk_Down.aseprite",
+    "bytes": 2828,
+    "sha256": "81005f89fef6a1ce56897cc35e4b819198bb3d09ad36495b2ed1e93b5a617a11",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Legs",
+        "visible": true
+      },
+      {
+        "name": "Chest",
+        "visible": true
+      },
+      {
+        "name": "Arm_R",
+        "visible": true
+      },
+      {
+        "name": "Head",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Walk_Base/Walk_Side-Sheet.png",
+    "bytes": 1414,
+    "sha256": "ad88d53f121e01338be4a46189cae130c7341ebda52d58ec0f5aa35b7ffdf6ba",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Walk_Base/Walk_Side.aseprite",
+    "bytes": 2970,
+    "sha256": "17888019d1504e2dc942905d0b3ef6030811d199e86fa53637bb643d5153c61e",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Leg_Back",
+        "visible": true
+      },
+      {
+        "name": "Chest",
+        "visible": true
+      },
+      {
+        "name": "Arm_Back",
+        "visible": true
+      },
+      {
+        "name": "Head",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Walk_Base/Walk_Up-Sheet.png",
+    "bytes": 1319,
+    "sha256": "2ae249575542aefeef595120d3d7c0778d51f468d60f778000fe5c797e4892b5",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Walk_Base/Walk_Up.aseprite",
+    "bytes": 2735,
+    "sha256": "b9089dbb8d39abb8ea30104dff4f31ae0a6bad4ec970ea0119340e43cd02681a",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Legs",
+        "visible": true
+      },
+      {
+        "name": "Chest",
+        "visible": true
+      },
+      {
+        "name": "Arms",
+        "visible": true
+      },
+      {
+        "name": "Head",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Watering_Base/Watering_Down-Sheet.png",
+    "bytes": 1841,
+    "sha256": "49dfb395b3bf466d747456dadf7efe3e418e4c8e7182dd9bde421214efd3363d",
+    "size": [
+      512,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Watering_Base/Watering_Down.aseprite",
+    "bytes": 5058,
+    "sha256": "581a686e7cee74b4898ff9464e5dc635172de77fa718d21d3cdbb913c4183cd6",
+    "frames": 8,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 7",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Layer 6",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Watering_Base/Watering_Side-Sheet.png",
+    "bytes": 2377,
+    "sha256": "3f10c31204d610107c36a4531193869d9ce07d9ec6bda11ef850b090d045da4b",
+    "size": [
+      512,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Watering_Base/Watering_Side.aseprite",
+    "bytes": 5071,
+    "sha256": "56ff00c73dea3ddc452132204d42f244562a05014ca70482477cb56a876c8c37",
+    "frames": 8,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Watering_Base/Watering_Up-Sheet.png",
+    "bytes": 1547,
+    "sha256": "9b5e65b6b07113e6af8645e6c6b94ddf1f7afaf346ee22090a757c4770a39e79",
+    "size": [
+      512,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Characters/Body_A/Animations/Watering_Base/Watering_Up.aseprite",
+    "bytes": 4179,
+    "sha256": "2d0354315706f7d377d2ad68cbcce015cd45adf89b42f5f2ff5352062a7d595e",
+    "frames": 8,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/New_Version/Idle/Idle_Down.aseprite",
+    "bytes": 1350,
+    "sha256": "8e64964e54894bb9bdd33f6e04a312031b3276396edb4516d0a5aa51320a3b6a",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/New_Version/Idle/Idle_Side.aseprite",
+    "bytes": 1316,
+    "sha256": "d64592446c5a8361cafd0300aca07778534c760b1a0311b04c0f11c79547f18b",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/New_Version/Idle/Idle_Up.aseprite",
+    "bytes": 1344,
+    "sha256": "a6b3d9bc4c4a39bd02bfe7de876770ff1646061e2fd7220c9ea21a9f426d0252",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/New_Version/Walk/Down.aseprite",
+    "bytes": 1853,
+    "sha256": "ff2434b38528ff9672985396a1896ee4e132688dcf6d10fd3ec179924c8af5f0",
+    "frames": 6,
+    "frameSize": [
+      48,
+      48
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/New_Version/Walk/Up.aseprite",
+    "bytes": 1845,
+    "sha256": "a96b9840f2723ed247541392fbe1eb8b2e626a867b189142522e74b03c9c9c41",
+    "frames": 6,
+    "frameSize": [
+      48,
+      48
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Characters/New_Version/Walk/Walk_Side.aseprite",
+    "bytes": 2505,
+    "sha256": "992cc0d05480bd0bd5c1532d89d8d541d550209349b32aba760a57fb2565249d",
+    "frames": 6,
+    "frameSize": [
+      48,
+      48
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc/Death/Death-Sheet.png",
+    "bytes": 3080,
+    "sha256": "f84b800994a76c104deb768280381a413fe6ef0a50db913a7bddc53c2ec6840d",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc/Death/Death.aseprite",
+    "bytes": 2753,
+    "sha256": "600c1cbb6d80b6665d707da0b6a80088e6f09baacbb192c9e89063d2bfb9daa4",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc/Idle/Idle-Sheet.png",
+    "bytes": 1544,
+    "sha256": "9585cdedf513595614956f6e08c89b06c4587909ad4ea6f27eb5e8e3d71cf412",
+    "size": [
+      128,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc/Idle/Idle.aseprite",
+    "bytes": 2295,
+    "sha256": "436c70f8c6104cf80f4c4ed1c8dbc8df9a680f66bd2b5270ab5142df04fb23da",
+    "frames": 4,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc/Run/Run-Sheet.png",
+    "bytes": 2443,
+    "sha256": "3e7ceba4eca7d14584118c672422cc20f13129137487907081acd2ca59878dd3",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc/Run/Run.aseprite",
+    "bytes": 6303,
+    "sha256": "df0c5b07d4b98fd707752593b65d386c091adcb83ceea88ba0c08c17f6c02503",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc - Rogue/Death/Death-Sheet.png",
+    "bytes": 3430,
+    "sha256": "7fdac9ecb55be523564d727a6325007008d9dd54ce97d6a7294ae5323c38cd68",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc - Rogue/Death/Death.aseprite",
+    "bytes": 3037,
+    "sha256": "8d95470f1e37374d048b50a65c5ace475d4453b2a2b8f1edb68bd5ad7c93e3fa",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc - Rogue/Idle/Idle-Sheet.png",
+    "bytes": 1614,
+    "sha256": "fed341ee7a3f2fa185f2fb998303e9df7defe298c48032c1feaa6319dde28b70",
+    "size": [
+      128,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc - Rogue/Idle/Idle.aseprite",
+    "bytes": 2406,
+    "sha256": "ba1ac8e75c439972aedb09722c9dac3534103541c3e4acedd7387d037c624a01",
+    "frames": 4,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc - Rogue/Run/Run-Sheet.png",
+    "bytes": 2520,
+    "sha256": "4d0c94c52c9840e548c2ff4918e2e90fc4120637aaa399910139f545c7842db9",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc - Rogue/Run/Run.aseprite",
+    "bytes": 8397,
+    "sha256": "b10591cce3c19ca50f0c10d62794c8c6a4e64277622db8bdeb07d0daceca69a0",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 6",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc - Shaman/Death/Death-Sheet.png",
+    "bytes": 2777,
+    "sha256": "de22b0c829dbe0f6da932205a3ef080c00861a9507e2a8fd724cbe975a9380ad",
+    "size": [
+      448,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc - Shaman/Death/Death.aseprite",
+    "bytes": 3306,
+    "sha256": "3434b511f0d0387df39f70189bf2dd3560076844ad90236a1292ea6629fe0601",
+    "frames": 7,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc - Shaman/Idle/Idle-Sheet.png",
+    "bytes": 1713,
+    "sha256": "0a4adf1fad9dc9afcf47f3bb1f1fb6d93a8884d66d1d09ff84f718d72c8d89c4",
+    "size": [
+      128,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc - Shaman/Idle/Idle.aseprite",
+    "bytes": 2448,
+    "sha256": "6c2b51966da2eea785b018f0704aa519ee5e281cb80f1937b187c3347298d6e6",
+    "frames": 4,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc - Shaman/Run/Run-Sheet.png",
+    "bytes": 2852,
+    "sha256": "d5fbce66718ae02a28a618ce129a35498901eb57cc7a815bdd6908e9410ba13b",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc - Shaman/Run/Run.aseprite",
+    "bytes": 7381,
+    "sha256": "686776661b32f6338d122175870b33a604817841728722fd617f5fa5793d6c28",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc - Warrior/Death/Death-Sheet.png",
+    "bytes": 4416,
+    "sha256": "765bc50015cc7c4d5ee096c542e8546acb398bc6f8e66bdc1fe42d25bf004d26",
+    "size": [
+      576,
+      80
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc - Warrior/Death/Death.aseprite",
+    "bytes": 4131,
+    "sha256": "76652555ed71b428c54b278fc594bd6407ebfd6b14c46403ac0dc239374d044e",
+    "frames": 6,
+    "frameSize": [
+      96,
+      80
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc - Warrior/Idle/Idle-Sheet.png",
+    "bytes": 2075,
+    "sha256": "ddb52a59d59b31a3eeb77ba006f0a24ad5a476ec6b9c518c53071e8a142aad58",
+    "size": [
+      128,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc - Warrior/Idle/Idle.aseprite",
+    "bytes": 2722,
+    "sha256": "1842a9f82cb756a09156565d13c0c4f37782bf2ba5fe3089984f95f9bcf815d5",
+    "frames": 4,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc - Warrior/Run/Run-Sheet.png",
+    "bytes": 3248,
+    "sha256": "4cf436632103fe22fc00029d9fea37bbf787ad30b7a318a57658b9ea8fa857d5",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Orc Crew/Orc - Warrior/Run/Run.aseprite",
+    "bytes": 8738,
+    "sha256": "b7313b6ca9df73f7492310db90d4014e41cfd62611f9f75d62d4e8b3ca4b60e5",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 6",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Base/Death/Death-Sheet.png",
+    "bytes": 3388,
+    "sha256": "9d2064967afe286bc5bcad352512ee0c15af4bce00129b354b4a282e18e02b87",
+    "size": [
+      768,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Base/Death/Death.aseprite",
+    "bytes": 3060,
+    "sha256": "959f7b39c44abd81116d2a263ea0202ee6ee5583249acb49a17a12ec9a23cc44",
+    "frames": 8,
+    "frameSize": [
+      96,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Base/Idle/Idle-Sheet.png",
+    "bytes": 1248,
+    "sha256": "d81861bd80ba4786bd397dfa5798fda4d2e853dfe55cbf345546f71def4d69a0",
+    "size": [
+      128,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Base/Idle/Idle.aseprite",
+    "bytes": 1939,
+    "sha256": "eec7ad64dd898d79a7630cccad6aabc15105ea896298abd03eb075408743be8e",
+    "frames": 4,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Base/Run/Run-Sheet.png",
+    "bytes": 1936,
+    "sha256": "6be9ced53078c9efdba1f7145072416dd1d3bcd231911472b82b0ab1e3f52cc8",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Base/Run/Run.aseprite",
+    "bytes": 5786,
+    "sha256": "db770028cf5332d011ced409bec1066b021c1d51d7810b8e121c4479cf999bba",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Mage/Death/Death-Sheet.png",
+    "bytes": 2881,
+    "sha256": "501a33ff05ee1cd4af92a8e424ec8f80ce7c76c8f80e1492ffc41b8bab2e0f8d",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Mage/Death/Death.aseprite",
+    "bytes": 2699,
+    "sha256": "b249dd699b007d6ee763a9ac4ce1fef324b02a384b382098ed62fdeedccb7e87",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Mage/Idle/Idle-Sheet.png",
+    "bytes": 1453,
+    "sha256": "50f64dd4c60c9bd2ed616b0f416ac92f6e10110143e673a09450aa1525411e1b",
+    "size": [
+      128,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Mage/Idle/Idle.aseprite",
+    "bytes": 2310,
+    "sha256": "c7a5f6a68696c76abdaf967d1410965cdc89cb9901338e1d49e84afef9711328",
+    "frames": 4,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Mage/Run/Run-Sheet.png",
+    "bytes": 2218,
+    "sha256": "f656931af1da1607df79d8c4d5ad5ebc82cda046be6791dd5555bf53274ab8e2",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Mage/Run/Run.aseprite",
+    "bytes": 5116,
+    "sha256": "0df1df8b23b8aea74ddab9609a4a5dd64866f6555835edf416af437a22025f16",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": false
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Rogue/Death/Death-Sheet.png",
+    "bytes": 2962,
+    "sha256": "31ef4b1da473e1075e414898aa2979ff4c5b1ece799e4a163db8c8fd7e7b5b46",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Rogue/Death/Death.aseprite",
+    "bytes": 2838,
+    "sha256": "8dc5b2c82562b606c56c48d43f4ad5f279baa99ae1e62d3563eb28642745baca",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Rogue/Idle/Idle-Sheet.png",
+    "bytes": 1432,
+    "sha256": "3189e401a294f757e4c83e3d637f81291dc201cc4af3d7260d0845996c1bf3ab",
+    "size": [
+      128,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Rogue/Idle/Idle.aseprite",
+    "bytes": 2151,
+    "sha256": "ab6c7be98ea716656c713a5580eb7c95310868069d768df861f3d19ce4e38331",
+    "frames": 4,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Rogue/Run/Run-Sheet.png",
+    "bytes": 2314,
+    "sha256": "f8535f3be3ad9d4f5d08eb9c9c2313f2807deb3cb0d428ca23476080aa5d7b37",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Rogue/Run/Run.aseprite",
+    "bytes": 9123,
+    "sha256": "afa0cf6dc264bc4aee313d51e6196af1cf6dc758692184a46f96265024b3baf4",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 6",
+        "visible": false
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": false
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Warrior/Death/Death-Sheet.png",
+    "bytes": 2908,
+    "sha256": "2ef39a9cc16c05748b9699f48a5d1549f99a68dc3ca49de28a57dd86363b9332",
+    "size": [
+      384,
+      48
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Warrior/Death/Death.aseprite",
+    "bytes": 2947,
+    "sha256": "b3691e67a124aaaf565b919b77207aac681749d341c7ff433cab6078dc37c63d",
+    "frames": 6,
+    "frameSize": [
+      64,
+      48
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Warrior/Idle/Idle-Sheet.png",
+    "bytes": 1506,
+    "sha256": "a47028c03f59c2be2ed5f044b53dff725ce4e4202e53b4d287ce295f78161bc3",
+    "size": [
+      128,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Warrior/Idle/Idle.aseprite",
+    "bytes": 2271,
+    "sha256": "0432e6758d481186b798a9db49bf437a180fee71f401e88afe8761560e520266",
+    "frames": 4,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Warrior/Run/Run-Sheet.png",
+    "bytes": 2495,
+    "sha256": "c36297d02153e71d84685d08eafe7c226305d868099708c43a310865efedd0ee",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Mobs/Skeleton Crew/Skeleton - Warrior/Run/Run.aseprite",
+    "bytes": 7309,
+    "sha256": "aa2f5a36f396bb88f24e5665ceb7f9a50f0466547ca63543e54d5b64cd236686",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 6",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Layer 7",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Npc's/Citizen_F/Citizen_A/Idle.aseprite",
+    "bytes": 2318,
+    "sha256": "57b6d02259372017227fac579b59948c31f855e0898ff1ddb01168a7d5e86a50",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": false
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Npc's/Citizen_F/Citizen_A/Walk.aseprite",
+    "bytes": 3205,
+    "sha256": "ca7c9b57c9def01ecd5377da99abf74c152a8112ab707c8a259b20cec850e913",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Legs",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Npc's/Citizen_F/Peasant_A/Idle/Idle-Sheet.png",
+    "bytes": 1706,
+    "sha256": "df55b00ca7cf6f1464f524eeb4f9e15dbfd7be1327f4608849aff73494ecbb5f",
+    "size": [
+      256,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Npc's/Citizen_F/Peasant_A/Idle/Idle.aseprite",
+    "bytes": 3993,
+    "sha256": "39eddeaadd9630630ce5758e1fb69c24a0d319a5e3fac2679aa5e5366c3f2c94",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": false
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Npc's/Citizen_F/Peasant_A/Walk/Walk-Sheet.png",
+    "bytes": 2351,
+    "sha256": "9c3e4afe77d0a6c8f5f29fda1997b58484970d58464420e0774efc92876e6ea9",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Npc's/Citizen_F/Peasant_A/Walk/Walk.aseprite",
+    "bytes": 6936,
+    "sha256": "005b9e57943eb57c94329baaf3e333f41802362341b02733e64e71977179dab0",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": false
+      },
+      {
+        "name": "Layer 8",
+        "visible": true
+      },
+      {
+        "name": "Legs",
+        "visible": true
+      },
+      {
+        "name": "Layer 7",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 6",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Npc's/Citizen_F/Tavern_A/Idle/Idle_Side-Sheet.png",
+    "bytes": 1537,
+    "sha256": "720785215a8c7b9f9c48c177b26068f8cb86acc9f5870eabca431fce8a48c9e3",
+    "size": [
+      256,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Npc's/Citizen_F/Tavern_A/Idle/Idle_Side.aseprite",
+    "bytes": 2857,
+    "sha256": "913f426a7350dca69fbfbf4c9533471c1d2829495a35b1b0172dc5315a1fb3c4",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Npc's/Citizen_F/Tavern_A/Idle_Hold/Idle_Side-Sheet.png",
+    "bytes": 1437,
+    "sha256": "1821f680012feef856e32703dfa2aca870e4bd390aeb8702dc65f222753cdcc4",
+    "size": [
+      256,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Npc's/Citizen_F/Tavern_A/Idle_Hold/Idle_Side.aseprite",
+    "bytes": 3468,
+    "sha256": "1849fc25b7402271e10e9b2f5c807c5124568ebab605f49999ebabb7cb5d1905",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": false
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Npc's/Citizen_F/Tavern_A/Walk/Walk_Side-Sheet.png",
+    "bytes": 2089,
+    "sha256": "ae57488bc64fff3769504a3d4d00a2585cbfb85d2faaad94a60185de907eb895",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Npc's/Citizen_F/Tavern_A/Walk/Walk_Side.aseprite",
+    "bytes": 5947,
+    "sha256": "60787bd4b7a002243658605e67f01eedc5526865fc5c9d8496bd8aa7ad42d22e",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 4",
+        "visible": false
+      },
+      {
+        "name": "Layer 1",
+        "visible": false
+      },
+      {
+        "name": "Layer 2",
+        "visible": false
+      },
+      {
+        "name": "Layer 3",
+        "visible": false
+      },
+      {
+        "name": "Legs",
+        "visible": true
+      },
+      {
+        "name": "Chest",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Head",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Npc's/Citizen_F/Tavern_A/Walk_Hold/Walk_Side-Sheet.png",
+    "bytes": 1852,
+    "sha256": "696b702c01c939da5f991831b5756b86cdc020dc8842843c3984f6ce4e48513c",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Npc's/Citizen_F/Tavern_A/Walk_Hold/Walk_Side.aseprite",
+    "bytes": 6911,
+    "sha256": "0f2dd311e5da4d257e676ef8a1b47aedc990d504890d37980adba0d15cbc7ef0",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 4",
+        "visible": false
+      },
+      {
+        "name": "Layer 1",
+        "visible": false
+      },
+      {
+        "name": "Layer 2",
+        "visible": false
+      },
+      {
+        "name": "Layer 3",
+        "visible": false
+      },
+      {
+        "name": "Legs",
+        "visible": true
+      },
+      {
+        "name": "Chest",
+        "visible": true
+      },
+      {
+        "name": "Hands",
+        "visible": false
+      },
+      {
+        "name": "Layer 6",
+        "visible": true
+      },
+      {
+        "name": "Head",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Npc's/Citizen_F/Tavern_B/Idle/Idle_Side-Sheet.png",
+    "bytes": 1537,
+    "sha256": "720785215a8c7b9f9c48c177b26068f8cb86acc9f5870eabca431fce8a48c9e3",
+    "size": [
+      256,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Npc's/Citizen_F/Tavern_B/Idle/Idle_Side.aseprite",
+    "bytes": 2663,
+    "sha256": "61a8c8bf7f3f8f19ed743850a05a26ff1de397335997d6c326ad7e1723db2e53",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": false
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Npc's/Citizen_F/Tavern_B/Idle_Hold/Idle_Side-Sheet.png",
+    "bytes": 1437,
+    "sha256": "1821f680012feef856e32703dfa2aca870e4bd390aeb8702dc65f222753cdcc4",
+    "size": [
+      256,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Npc's/Citizen_F/Tavern_B/Idle_Hold/Idle_Side.aseprite",
+    "bytes": 3302,
+    "sha256": "7c0b7dca79c80ab81f844f82247692cddd7e5d6c076678bdc4305ff2329b21a1",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": false
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Npc's/Citizen_F/Tavern_B/Walk/Walk_Side-Sheet.png",
+    "bytes": 2089,
+    "sha256": "ae57488bc64fff3769504a3d4d00a2585cbfb85d2faaad94a60185de907eb895",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Npc's/Citizen_F/Tavern_B/Walk/Walk_Side.aseprite",
+    "bytes": 6824,
+    "sha256": "880bf0b6f93a4e2edcd9367e4e154fd7fb680f863108021189a20cc79cad8672",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 4",
+        "visible": false
+      },
+      {
+        "name": "Layer 1",
+        "visible": false
+      },
+      {
+        "name": "Layer 2",
+        "visible": false
+      },
+      {
+        "name": "Layer 3",
+        "visible": false
+      },
+      {
+        "name": "Legs",
+        "visible": true
+      },
+      {
+        "name": "Chest",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": false
+      },
+      {
+        "name": "Head",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": false
+      }
+    ]
+  },
+  {
+    "source": "Entities/Npc's/Citizen_F/Tavern_B/Walk_Hold/Walk_Side-Sheet.png",
+    "bytes": 1852,
+    "sha256": "696b702c01c939da5f991831b5756b86cdc020dc8842843c3984f6ce4e48513c",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Npc's/Citizen_F/Tavern_B/Walk_Hold/Walk_Side.aseprite",
+    "bytes": 6824,
+    "sha256": "42f9df8eccc07290d2655d7a100e582c0e1e8e4e006b25e844cbe11f6e18b093",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 4",
+        "visible": false
+      },
+      {
+        "name": "Layer 1",
+        "visible": false
+      },
+      {
+        "name": "Layer 2",
+        "visible": false
+      },
+      {
+        "name": "Layer 3",
+        "visible": false
+      },
+      {
+        "name": "Legs",
+        "visible": true
+      },
+      {
+        "name": "Chest",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": false
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Head",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Npc's/Knight/Death/Death-Sheet.png",
+    "bytes": 1943,
+    "sha256": "17d701834117e083002909612e8fe9c933be3d6b16211b028594e0b5db9f4ee0",
+    "size": [
+      288,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Npc's/Knight/Death/Death.aseprite",
+    "bytes": 2555,
+    "sha256": "70d18b74cf54b7fc15ff0567c64ac084efac45f720a895b4922d0fa9ebf2be2c",
+    "frames": 6,
+    "frameSize": [
+      48,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Npc's/Knight/Idle/Idle-Sheet.png",
+    "bytes": 1102,
+    "sha256": "f9a41df5ad7dcbb796724e0bc043bf39944bfe5fbc66f0bab6906acf60696fae",
+    "size": [
+      128,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Npc's/Knight/Idle/Idle.aseprite",
+    "bytes": 1994,
+    "sha256": "ac94b33e6dd903da513aa420f55d6b9422681572db5790d99c213f4b1c4f0c74",
+    "frames": 4,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Npc's/Knight/Run/Run-Sheet.png",
+    "bytes": 1933,
+    "sha256": "1df87c85fe61b46fad01414e4d435c55a3fc626f8bc02b3f7b45dae0e696f29e",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Npc's/Knight/Run/Run.aseprite",
+    "bytes": 2681,
+    "sha256": "ba6d12e13e78d8b7426e5a9fe76aed81d22da3c8608a55580b767650670ca7e1",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 5",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Npc's/Rogue/Death/Death-Sheet.png",
+    "bytes": 2650,
+    "sha256": "6b927d19990b24ea7ae2a66260582c57e407229dda6d5418f3d345d806766611",
+    "size": [
+      384,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Npc's/Rogue/Death/Death.aseprite",
+    "bytes": 2773,
+    "sha256": "60f726a5d84e76e249d29cf755667e275d6b2a3a0df4543137e21694dca5d0b2",
+    "frames": 6,
+    "frameSize": [
+      64,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Npc's/Rogue/Idle/Idle-Sheet.png",
+    "bytes": 1342,
+    "sha256": "33aa30ab075aae0e1687713b5ec873986025fd362c4f6b538ce48eb4541ce551",
+    "size": [
+      128,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Npc's/Rogue/Idle/Idle.aseprite",
+    "bytes": 2324,
+    "sha256": "4ec1453655be40dc653ad481d4284d3fa3dabfde255593e626c5e059765cf256",
+    "frames": 4,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Npc's/Rogue/Run/Run-Sheet.png",
+    "bytes": 2435,
+    "sha256": "d307595821d61a0e67717ad074efa0e34c64904868c49f07bc1a36ac4c93427c",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Npc's/Rogue/Run/Run.aseprite",
+    "bytes": 7110,
+    "sha256": "9f05ae331981be73cd8d9797a7478f358b7220671692fab060092403e343229d",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 7",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 6",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Npc's/Wizzard/Death/Death-Sheet.png",
+    "bytes": 3465,
+    "sha256": "67f1380e73933d902e738da28d8e679321d0d2d1ac2cb8abc692c54efb4b3d36",
+    "size": [
+      384,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Npc's/Wizzard/Death/Death.aseprite",
+    "bytes": 3102,
+    "sha256": "5cb8ec3ddd0b092a1487c9c9e2551b6c29d4225b3cb65d3f64baf4939e0e7182",
+    "frames": 6,
+    "frameSize": [
+      64,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Npc's/Wizzard/Idle/Idle-Sheet.png",
+    "bytes": 1507,
+    "sha256": "36364a201200b4ef29d982d736b97db668eaca5eb41eadf40e1867cf5e09175d",
+    "size": [
+      128,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Npc's/Wizzard/Idle/Idle.aseprite",
+    "bytes": 2407,
+    "sha256": "d3953a12903a25ec4d5aff21d0dc79584b348d5502afc3811c3aca21a6e532e7",
+    "frames": 4,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Entities/Npc's/Wizzard/Run/Run-Sheet.png",
+    "bytes": 2547,
+    "sha256": "c4bd31327e7f38ea25916789d8282fd33fd5fc0eec3eb7c0d0f0937a8c2234f7",
+    "size": [
+      384,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Entities/Npc's/Wizzard/Run/Run.aseprite",
+    "bytes": 6198,
+    "sha256": "331b9e9b343757c9347eb39d3321f86d997469dab74e7ee10ca0fa61e55a0241",
+    "frames": 6,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 5",
+        "visible": false
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": false
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Animated/Pan_01-Sheet.png",
+    "bytes": 761,
+    "sha256": "050cf00074167fbe20e36d4819638b4f53c35b976a50c93e40743ccad30f0910",
+    "size": [
+      128,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Animated/Pan_01.aseprite",
+    "bytes": 1542,
+    "sha256": "df9d5ed599b7675cd793444592038f95236167c683bcc206564fa6eadc961356",
+    "frames": 4,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Animated/Pan_02-Sheet.png",
+    "bytes": 634,
+    "sha256": "9e502c3ad56b589909de9b0187a9b6e057c6164c95e9604b5f6e385fda21f7ce",
+    "size": [
+      64,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Animated/Pan_02.aseprite",
+    "bytes": 1564,
+    "sha256": "55b9ff1b08f580a5192cd262bb543e9f653b4976c1b8aef7905784f02d9e601a",
+    "frames": 4,
+    "frameSize": [
+      16,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Animated/Pan_03-Sheet.png",
+    "bytes": 1670,
+    "sha256": "ca83d30c1d05a447666471f71ca886d4cc68a2294e22ef9df3305bc835420e14",
+    "size": [
+      384,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Animated/Pan_03.aseprite",
+    "bytes": 4206,
+    "sha256": "e04c268c05ab0e8211fdc41b29f715d9985fdafe8dd7e6312ba696b17377c43b",
+    "frames": 12,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Animated/Pan_04-Sheet.png",
+    "bytes": 838,
+    "sha256": "ed25cbe229c03b2e65ac51102930cd11091498b830543d3e6e9c7a46e07b652b",
+    "size": [
+      128,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Animated/Pan_04.aseprite",
+    "bytes": 1512,
+    "sha256": "55cf5da3d38a4aa7035139f0e95c91477fe680ca071e0073b985fcd165d3fd7b",
+    "frames": 4,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Animated/Pan_05-Sheet.png",
+    "bytes": 1624,
+    "sha256": "c2fe5f0249cbc3904e5a18743686528d314cb4c8851437be2c73ed5fd9c19aa1",
+    "size": [
+      256,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Animated/Pan_05.aseprite",
+    "bytes": 2348,
+    "sha256": "0918040a3ec8cad4df3b43e0c45bc24ddc527503978411a1561429e3167ca217",
+    "frames": 8,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Dungeon_Props.aseprite",
+    "bytes": 2381,
+    "sha256": "9dc2dedb9f2f9ecdc3c2230045b685fddcd744465f8a441b3141cd68a90a23d3",
+    "frames": 1,
+    "frameSize": [
+      400,
+      400
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Dungeon_Props.png",
+    "bytes": 4213,
+    "sha256": "19f43283d200d00b42d198efaf759856d499b5e91be41c918944f4f3f2b09311",
+    "size": [
+      400,
+      400
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Esoteric.aseprite",
+    "bytes": 2679,
+    "sha256": "386490445c6dc004c9e3649f0518e864934cd2dd0ae062712f22d02882b31914",
+    "frames": 1,
+    "frameSize": [
+      400,
+      400
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Esoteric.png",
+    "bytes": 4885,
+    "sha256": "a45dfec687b0030f0c7c556b4ee5b78972bf43f17144d337b4ed25a1c3b260b6",
+    "size": [
+      400,
+      400
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Farm.aseprite",
+    "bytes": 11972,
+    "sha256": "83075275a1966e8ea6121df7cf2b503a37f40da05b2062a80fe67303906e1152",
+    "frames": 1,
+    "frameSize": [
+      400,
+      400
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Farm.png",
+    "bytes": 22698,
+    "sha256": "02540c850be500e1294779a9ec35a7f283fb27ea195c1c0ca0b266a8f4be3749",
+    "size": [
+      400,
+      400
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Furniture.aseprite",
+    "bytes": 21418,
+    "sha256": "59580720dac10da9a7370ac6e38b13b7e17beed1fa3f923ff071c6a0e1ce66e0",
+    "frames": 1,
+    "frameSize": [
+      800,
+      864
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Furniture.png",
+    "bytes": 29445,
+    "sha256": "a9455be5f7d67a63ddf78b6126a63b9a8ac410d725d5cb8f9c4fb289956af5bd",
+    "size": [
+      800,
+      864
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Meat.aseprite",
+    "bytes": 3178,
+    "sha256": "8525745527c4f92f0df7b89eadf8fb2f4b01fbcf92baa6509888545620c32701",
+    "frames": 1,
+    "frameSize": [
+      192,
+      144
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Meat.png",
+    "bytes": 5397,
+    "sha256": "b5b2aeb69e7bb40786dbe4140605dc193d8497c9c25a51d37365584b8254c1be",
+    "size": [
+      192,
+      144
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Pan.aseprite",
+    "bytes": 3649,
+    "sha256": "113a75dd47ca202cb4265892ec89ed46dabcad8602131a9ebbb6e8284f591d56",
+    "frames": 1,
+    "frameSize": [
+      160,
+      192
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Pan.png",
+    "bytes": 6799,
+    "sha256": "4ae4324e057f1f3829dfae025da8b2a4ffcf19c3276bd7ff84f38c21f607d879",
+    "size": [
+      160,
+      176
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Resources.aseprite",
+    "bytes": 2532,
+    "sha256": "10fe905563c6312d3d591fdb4d70b7acdda5a64d535e8715cf02b2e4a0a8302e",
+    "frames": 1,
+    "frameSize": [
+      400,
+      400
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Resources.png",
+    "bytes": 4487,
+    "sha256": "46cb1578decf9bd9e4f682686d824ce650540981f4abd6489ea9a35bbc7bc1ac",
+    "size": [
+      400,
+      400
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Rocks.aseprite",
+    "bytes": 6029,
+    "sha256": "eab17e2204fb2142e889517694d8d4429a834a2c31e96aeb87d7abfa16021f9b",
+    "frames": 1,
+    "frameSize": [
+      208,
+      304
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Rocks.png",
+    "bytes": 8436,
+    "sha256": "37b0e1bd023f945099f30cf79d37a8098a5acbb5c616a4c2482bc0cb3c923464",
+    "size": [
+      208,
+      304
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Shadows.aseprite",
+    "bytes": 2587,
+    "sha256": "a9d4cf5757bc90672784e3f12f5b50a7241ca3d04a3d1d9a34211fded75850f5",
+    "frames": 1,
+    "frameSize": [
+      400,
+      400
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Shadows.png",
+    "bytes": 3965,
+    "sha256": "a4ef23544feda3230580e9c0fcb1adcd6fee01c0f109ab0445aa95d34b7973b2",
+    "size": [
+      400,
+      400
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Tools.aseprite",
+    "bytes": 7416,
+    "sha256": "7ed455306df20179e8cf3467515b3ef77e761abe67c666c48e905f677031aa76",
+    "frames": 1,
+    "frameSize": [
+      400,
+      400
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Tools.png",
+    "bytes": 13491,
+    "sha256": "d41612f8611cb7a8a71ddff79c8084bca0526cf49d3df84f306adc910e3f937a",
+    "size": [
+      400,
+      400
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_01/Size_02.aseprite",
+    "bytes": 6851,
+    "sha256": "ccad7e48b764c7c680fa94ee650b59547228db13da912832b2c9c86c13abe51e",
+    "frames": 1,
+    "frameSize": [
+      256,
+      128
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_01/Size_02.png",
+    "bytes": 10604,
+    "sha256": "81267c215f04b3bed0a0a28b9530472ffbf78bb20f3be349c676d933367d893f",
+    "size": [
+      256,
+      128
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_01/Size_03.aseprite",
+    "bytes": 11782,
+    "sha256": "013c633307b92a7a71c96bd0168dcbc870226cda2f8c6af9eab627cee448f888",
+    "frames": 1,
+    "frameSize": [
+      208,
+      192
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_01/Size_03.png",
+    "bytes": 19583,
+    "sha256": "d03005dd4ef7a6bbbf44108269440d3d8cbfc00e89b1af3c41a77ab724a79d38",
+    "size": [
+      208,
+      192
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_01/Size_04.aseprite",
+    "bytes": 27909,
+    "sha256": "b8f6cde9cc19d6d4ecb582a00830d8b19c6bba0a15b588528b6a7b7b8fecd6fc",
+    "frames": 1,
+    "frameSize": [
+      368,
+      256
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_01/Size_04.png",
+    "bytes": 47337,
+    "sha256": "7a2439152dfd93672e196d594b9875133c2f064e151b957a2efed1dd411c8065",
+    "size": [
+      368,
+      256
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_01/Size_05.aseprite",
+    "bytes": 31960,
+    "sha256": "88588b7f02a67ee9a353b212bfaae2d82d7b1e3bee010d6fb47dd819630a469b",
+    "frames": 1,
+    "frameSize": [
+      448,
+      368
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_01/Size_05.png",
+    "bytes": 50559,
+    "sha256": "dfe0cb0f29a9860b10bf8da71b4bb1ae44da8b9ab1c5e13d3cccc3d953abb4b1",
+    "size": [
+      448,
+      368
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_02/Size_02.aseprite",
+    "bytes": 3235,
+    "sha256": "7fe9c3c474b3bff99427ba900fb6007f8f5ffaf7e4eb1901125056e6ce18e07e",
+    "frames": 1,
+    "frameSize": [
+      128,
+      96
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_02/Size_02.png",
+    "bytes": 4945,
+    "sha256": "0000ffc51444db1a9eeee30b5e11c943a8274c42f871ac6fd1940a1a06d0d7e5",
+    "size": [
+      128,
+      96
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_02/Size_03.aseprite",
+    "bytes": 5302,
+    "sha256": "98bfd6ad99b9f447f44a5aada276507c6898059c91cf84ef5a795b2651dcf5e4",
+    "frames": 1,
+    "frameSize": [
+      144,
+      160
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_02/Size_03.png",
+    "bytes": 8168,
+    "sha256": "28cae60c572f54565fcceaa423d886e3ad1b74d92c7349e56c8036790d63ce5c",
+    "size": [
+      144,
+      160
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_02/Size_04.aseprite",
+    "bytes": 8374,
+    "sha256": "fe3945a320c84947cd1cc50b165e83ec167e4f7acd2c70d6738c701e65b36a05",
+    "frames": 1,
+    "frameSize": [
+      192,
+      224
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_02/Size_04.png",
+    "bytes": 12805,
+    "sha256": "851ef18c379751fe6be65e6f411d32ec4f84190a77a37a1fd25b867ccbcd770c",
+    "size": [
+      192,
+      224
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_02/Size_05.aseprite",
+    "bytes": 18887,
+    "sha256": "966dbd8ebbd2a13464925bfcec3e7db9601b42d4a099926ecbfff35b2cf2f4b7",
+    "frames": 1,
+    "frameSize": [
+      288,
+      320
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_02/Size_05.png",
+    "bytes": 28032,
+    "sha256": "75f49cd2055e9c1f9c355fe422263eabe9b46b53dba492fc6f566b0358ac90dc",
+    "size": [
+      288,
+      320
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_03/Size_02.aseprite",
+    "bytes": 3997,
+    "sha256": "f120d69b4deb1976c75ccfd920818092d33482cfb50bb50705423a2f902b9138",
+    "frames": 1,
+    "frameSize": [
+      128,
+      160
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_03/Size_02.png",
+    "bytes": 5922,
+    "sha256": "8703808050a23228f5e5ec618a506feca5993a36125251f8f18059a549d3a93c",
+    "size": [
+      128,
+      160
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_03/Size_03-export.png",
+    "bytes": 15338,
+    "sha256": "4f5d4f63aedffc7432f47bfbf2acf8d4d7b555731a6123446927a851ce7581bd",
+    "size": [
+      192,
+      288
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_03/Size_03.aseprite",
+    "bytes": 10122,
+    "sha256": "5a7457daf5c347624fd8cdb65eb4d2cade813f7855ceff84c760833cf2901d25",
+    "frames": 1,
+    "frameSize": [
+      192,
+      288
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_03/Size_03.png",
+    "bytes": 15338,
+    "sha256": "4f5d4f63aedffc7432f47bfbf2acf8d4d7b555731a6123446927a851ce7581bd",
+    "size": [
+      192,
+      288
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_03/Size_04-export-export.png",
+    "bytes": 30240,
+    "sha256": "36f5f4dea705e4763b9dab5f7c94dbe8f770d47a2a2a498fe35057b3d190774d",
+    "size": [
+      288,
+      416
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_03/Size_04-export.png",
+    "bytes": 30240,
+    "sha256": "36f5f4dea705e4763b9dab5f7c94dbe8f770d47a2a2a498fe35057b3d190774d",
+    "size": [
+      288,
+      416
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_03/Size_04.aseprite",
+    "bytes": 19906,
+    "sha256": "57bbd004081d86e9ca3763503e08adba054b92a2a03de19046e22e5fe8670198",
+    "frames": 1,
+    "frameSize": [
+      400,
+      416
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_03/Size_04.png",
+    "bytes": 31102,
+    "sha256": "6ae5e3236ad3bccfed5a850aef9c316003298fd81d27673f9399c7bc6c89e33f",
+    "size": [
+      400,
+      416
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_03/Size_05.aseprite",
+    "bytes": 28068,
+    "sha256": "626a2fef8a33cb088845deadc185c7c141d72c240d67fc7a37ca2efbda6d221f",
+    "frames": 1,
+    "frameSize": [
+      384,
+      512
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Trees/Model_03/Size_05.png",
+    "bytes": 41673,
+    "sha256": "99ee966591f19113d2f1a203f853fef4028d5746d88195921ccb1c237f2bf083",
+    "size": [
+      384,
+      512
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Props/Static/Vegetation.aseprite",
+    "bytes": 19929,
+    "sha256": "d202f4569955133fadba3ce38503d60ec2196be8a0ac3f65fd841a420be59b45",
+    "frames": 1,
+    "frameSize": [
+      400,
+      432
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Props/Static/Vegetation.png",
+    "bytes": 32871,
+    "sha256": "1a3bdf11e56148a2971e08174f80108eb568ac222db2cb495121da8680de519d",
+    "size": [
+      400,
+      432
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Buildings/Interior/Interior_Props_01.aseprite",
+    "bytes": 28129,
+    "sha256": "553d3bff501585f8367b296d7f0b2a3b47f3348cbfcbe6a88071ad488c5ea084",
+    "frames": 1,
+    "frameSize": [
+      608,
+      384
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Buildings/Interior/Interior_Props_01.png",
+    "bytes": 40173,
+    "sha256": "e6ce1e2bbc3006e4ee4d3337d800a057e8cc25f531df9dfde2854f1ead522051",
+    "size": [
+      608,
+      384
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Buildings/Interior/Interior_Walls_01.png",
+    "bytes": 26542,
+    "sha256": "361e1ac256583775a35bdf04d1d297da4847bf8774fcabdb352ba4e86203a693",
+    "size": [
+      656,
+      400
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Buildings/Interior/Walls.aseprite",
+    "bytes": 16575,
+    "sha256": "6e12eab7fb4fc7186d83c9c3ff3b16d27e298e9acacf2e96c21e4628fe3b171c",
+    "frames": 1,
+    "frameSize": [
+      656,
+      400
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Buildings/Props.aseprite",
+    "bytes": 4455,
+    "sha256": "31f1d2e583b8303b8d755f82b68b2867bb804bfe1fda7776bbabeccde6c1fb52",
+    "frames": 1,
+    "frameSize": [
+      400,
+      400
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Buildings/Props.png",
+    "bytes": 8364,
+    "sha256": "d8dacb0e07d83f74ae4ccbcc70f7a61aad57042ffa17fde55df8d3a2f5dc0e2a",
+    "size": [
+      400,
+      400
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Buildings/Roofs.aseprite",
+    "bytes": 11410,
+    "sha256": "f1dd48d9990c06495a55a570ce76df800aa9b47cfc1bdf9d6681f7f1adc36cda",
+    "frames": 1,
+    "frameSize": [
+      400,
+      400
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Buildings/Roofs.png",
+    "bytes": 11073,
+    "sha256": "2e1ab98c501a4d711ae998933d05f586f72444abb790377cab7d268caea63b07",
+    "size": [
+      400,
+      400
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Buildings/Shadows.aseprite",
+    "bytes": 910,
+    "sha256": "98971a76706194ef33660242edf8593dcff01bdf651a03820c86aef04b75467d",
+    "frames": 1,
+    "frameSize": [
+      400,
+      400
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Buildings/Shadows.png",
+    "bytes": 1634,
+    "sha256": "38fc6615b67e85ea167c3375ee84bb7559a091a37f307f0e191dd7670ee033c0",
+    "size": [
+      400,
+      400
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Buildings/Walls.aseprite",
+    "bytes": 22866,
+    "sha256": "6920ef6382d4ffed4a7b3f7549a027fe39df90a1cd4081d9c4093ca5b14d5699",
+    "frames": 1,
+    "frameSize": [
+      672,
+      800
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Buildings/Walls.png",
+    "bytes": 22524,
+    "sha256": "e4af432e12f09226b8acaaa3f5b0230790a2f6c156a598c03b157a8f5d92b1a9",
+    "size": [
+      672,
+      800
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Alchemy/Alchemy.aseprite",
+    "bytes": 5656,
+    "sha256": "477c33a8cfa9f35536a09973627b9f25fd6a567e41e9ddfa7e6ba832521eb12c",
+    "frames": 1,
+    "frameSize": [
+      192,
+      160
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Alchemy/Alchemy_Table_01-Sheet.png",
+    "bytes": 13701,
+    "sha256": "8607f4d7ae32ad19c1498d9b5cb1e2c54d6f0a0c33bb86f440db8f060a62e662",
+    "size": [
+      192,
+      704
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Alchemy/Alchemy_Table_01.aseprite",
+    "bytes": 43799,
+    "sha256": "d9dee435dfd256328cb742163e369ee18e184737fb86c16769359f91b86c6126",
+    "frames": 63,
+    "frameSize": [
+      32,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Layer 6",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Alchemy/Alchemy_Table_02-Sheet.png",
+    "bytes": 16055,
+    "sha256": "ccf68b5088f26cf2b865bf404e15f9ebc5df861f83b6fd8dba3c9552b85787b5",
+    "size": [
+      528,
+      320
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Alchemy/Alchemy_Table_02.aseprite",
+    "bytes": 73077,
+    "sha256": "48c3b2428584fd335866fe969a1d46ddc62a7331f4ca57872c7634238c67a07f",
+    "frames": 51,
+    "frameSize": [
+      48,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Taça",
+        "visible": true
+      },
+      {
+        "name": "Livro",
+        "visible": true
+      },
+      {
+        "name": "Fogo",
+        "visible": true
+      },
+      {
+        "name": "Pote",
+        "visible": true
+      },
+      {
+        "name": "Folha",
+        "visible": true
+      },
+      {
+        "name": "Copo",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Alchemy/Alchemy_Table_03-Sheet.png",
+    "bytes": 24639,
+    "sha256": "075768af84dc5a7ed3e77b7ee2767ed0f11001c223b4ed7d47c1722a116a4f8c",
+    "size": [
+      400,
+      400
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Alchemy/Alchemy_Table_03.aseprite",
+    "bytes": 54879,
+    "sha256": "a77114e3244395bdd984a9b822e42a124c708f30c3adbb8773cb39edafaf1fd1",
+    "frames": 22,
+    "frameSize": [
+      80,
+      80
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 6",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Anvil/Anvil.aseprite",
+    "bytes": 6815,
+    "sha256": "6ab433109fd85b8d1929fff99e327179a0fe7d21ea2cd67d3239a2a03927dcb2",
+    "frames": 1,
+    "frameSize": [
+      272,
+      160
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Anvil/Anvil.png",
+    "bytes": 7961,
+    "sha256": "61b218c54d725cf1f5fd661df04022eff6b898fbb7cfcbb6253cb2a59d4da713",
+    "size": [
+      272,
+      160
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Anvil/Anvil_01-Sheet.png",
+    "bytes": 14014,
+    "sha256": "eab117283c2fee0fb32321a7403e6125236b316bc0886af87084e733b9d5c72e",
+    "size": [
+      512,
+      400
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Anvil/Anvil_01.aseprite",
+    "bytes": 42493,
+    "sha256": "b6e0a328812380cdb608e7710519fc8d74dcba47678e4771fdb223f76ff587a7",
+    "frames": 35,
+    "frameSize": [
+      64,
+      80
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Table",
+        "visible": true
+      },
+      {
+        "name": "Anvil",
+        "visible": true
+      },
+      {
+        "name": "Props",
+        "visible": true
+      },
+      {
+        "name": "Sword",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Martelo",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Anvil/Anvil_02-Sheet.png",
+    "bytes": 27126,
+    "sha256": "58c44f5900329871faf6bf9e1563e103479734e5ce1a923c38cd5345cbaeafdb",
+    "size": [
+      480,
+      480
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Anvil/Anvil_02.aseprite",
+    "bytes": 73318,
+    "sha256": "d7348db748e6c3f557609a5a7f86e7216c8b1a92499ea19c2cad8b2b5e45334a",
+    "frames": 35,
+    "frameSize": [
+      80,
+      80
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Layer 6",
+        "visible": true
+      },
+      {
+        "name": "Layer 7",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Martelo",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Anvil/Anvil_03-Sheet.png",
+    "bytes": 39876,
+    "sha256": "56e3438c70ce78bf4d07666e1518e5a2ea60ab2a169a99a47ea8d9f6fab8e278",
+    "size": [
+      768,
+      560
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Anvil/Anvil_03.aseprite",
+    "bytes": 102587,
+    "sha256": "1f250774558b03a468a393b3bd0799c1f1520cc9d52b2bf458c74589011af340",
+    "frames": 35,
+    "frameSize": [
+      96,
+      112
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 8",
+        "visible": true
+      },
+      {
+        "name": "Layer 9",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Martelo",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Layer 6",
+        "visible": true
+      },
+      {
+        "name": "Layer 7",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Bonfire.aseprite",
+    "bytes": 4136,
+    "sha256": "68a80456c207c9889a97afeb2f3e16783034d3afe68b8a8fc2011c719405585c",
+    "frames": 1,
+    "frameSize": [
+      80,
+      560
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Flattened",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Bonfire.png",
+    "bytes": 3919,
+    "sha256": "ff0ef3d972004c9a078a9cbb1ac218d748eaf85211aad63e022657eda605efcf",
+    "size": [
+      64,
+      384
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Bonfire_01-Sheet.png",
+    "bytes": 1049,
+    "sha256": "5971b4838758184a0dce04207630c88b1d1190fe4b6d37a686181841b4cfd427",
+    "size": [
+      128,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Bonfire_01.aseprite",
+    "bytes": 1640,
+    "sha256": "600ea66a041eb9e70a3d73d062ec06380273e677cfc4b1cff7a6f253f2008715",
+    "frames": 4,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Bonfire_02-Sheet.png",
+    "bytes": 1169,
+    "sha256": "64ad6461416b6d40a61d582215ab50661537b4aaf81788b1e37dbbd15c8a0b13",
+    "size": [
+      128,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Bonfire_02.aseprite",
+    "bytes": 1745,
+    "sha256": "aff32d9dd7a4076903b6e7f85c74b00d19b2bee20447435ef505116f6dda0414",
+    "frames": 4,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Bonfire_03-Sheet.png",
+    "bytes": 714,
+    "sha256": "21bc1d9102e43e6f3131e5abc6ebd2c93b6c1f0fbe50f9f2d5fa05779eb78438",
+    "size": [
+      128,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Bonfire_03.aseprite",
+    "bytes": 1085,
+    "sha256": "34f51c77edf56e9263fd524c1c3b6ec051779443da3800b30796502d1962085d",
+    "frames": 4,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Bonfire_04-Sheet.png",
+    "bytes": 689,
+    "sha256": "37b580fe07e0b7d6eb1d89632dc7f36d4946f995d566f8e0e245ad8ad56e7d92",
+    "size": [
+      128,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Bonfire_04.aseprite",
+    "bytes": 1141,
+    "sha256": "ab86414ab5ba3b0cb5e204bd90d04b4434e2ed786d654d3523f0138414be7971",
+    "frames": 4,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Bonfire_05-Sheet.png",
+    "bytes": 725,
+    "sha256": "1b211569dac7a1342707f0f54b312c7450811c366be98fc689cc587076e31277",
+    "size": [
+      128,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Bonfire_05.aseprite",
+    "bytes": 1005,
+    "sha256": "e2162dc0838197dbd9e9ba4c0481004249cb8ade829899170a46c18b34cec026",
+    "frames": 4,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Bonfire_06-Sheet.png",
+    "bytes": 353,
+    "sha256": "5ba1c7847cc5e5238197dd4b7a2e85572c365ada2c2f805bd554f0771ce3c00c",
+    "size": [
+      128,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Bonfire_06.aseprite",
+    "bytes": 634,
+    "sha256": "53c2b5baced003346888b19459d92abe738aa206c4efed77229c0bdd88c84193",
+    "frames": 4,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Bonfire_07-Sheet.png",
+    "bytes": 692,
+    "sha256": "b461266ea176fa42c3042392d99f67e12d47c4089dff19b57826f2b618e5e9fe",
+    "size": [
+      128,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Bonfire_07.aseprite",
+    "bytes": 1137,
+    "sha256": "f3e9f11a7dd1a66fb6fd3c6dfe76fa5043d0f4998b28c6afadd4d2583420f6c4",
+    "frames": 4,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Bonfire_08-Sheet.png",
+    "bytes": 651,
+    "sha256": "3dd8e86b195445e7986a0c3a6ce979047b1984dbd75befb0e9a79e1135af908f",
+    "size": [
+      128,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Bonfire_08.aseprite",
+    "bytes": 966,
+    "sha256": "df57f704f2ade1662f46659b3db3ed0248a9a653e4dfc7ffe6ee740832f5402b",
+    "frames": 4,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Bonfire_09-Sheet.png",
+    "bytes": 1809,
+    "sha256": "5a4f49c77bc4b1892c7435894e93cb808d119b5963212173ca08c858271138a9",
+    "size": [
+      320,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Bonfire_09.aseprite",
+    "bytes": 2699,
+    "sha256": "89cd2be6f7445cdd8def49e93e0bd9e834a1ed63e4532e2d3f79a097cc2057c0",
+    "frames": 4,
+    "frameSize": [
+      80,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Bonfire_10-Sheet.png",
+    "bytes": 1179,
+    "sha256": "03df8db75ffc6a5248577ee5679025abfa3f4817f1509fead6a2735e0e50bf44",
+    "size": [
+      192,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Bonfire_10.aseprite",
+    "bytes": 1908,
+    "sha256": "64d3ed946ed121feec1e84a694d9400c4f010170a9bf92ad25d62aedac4c5181",
+    "frames": 4,
+    "frameSize": [
+      48,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Fire_01-Sheet.png",
+    "bytes": 1417,
+    "sha256": "1712667a4dcfe620d41793a0d043a45b845298ce8f8a0a418a68763775ca80b2",
+    "size": [
+      128,
+      48
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Fire_01.aseprite",
+    "bytes": 1309,
+    "sha256": "9bad441ce1fde61ded57a9461d8ab3cb8e1e7ee38bc8784a67f9282800d801c6",
+    "frames": 4,
+    "frameSize": [
+      32,
+      48
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Flattened",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Fire_02-Sheet.png",
+    "bytes": 797,
+    "sha256": "cf7ab0f82046f0ea1478a72d503cb7dd82b2582823b1467a1baed3b687d0d218",
+    "size": [
+      128,
+      48
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Fire_02.aseprite",
+    "bytes": 891,
+    "sha256": "be736af7960e66d2238b2bdc4f1be49147d941c7cac2f7b19e46da5e8c53e06a",
+    "frames": 4,
+    "frameSize": [
+      32,
+      48
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 5",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Smoke-Sheet.png",
+    "bytes": 554,
+    "sha256": "0fc2cd5182ee6ffde7913ca3f609081edfd164389cd3dbe3715f94093b2893c5",
+    "size": [
+      128,
+      48
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Bonfire/Smoke.aseprite",
+    "bytes": 2191,
+    "sha256": "f74a2c9f0ad55d5b4ebdb3f79fb440c68d2fc3670476f6662058326592ce9914",
+    "frames": 4,
+    "frameSize": [
+      32,
+      48
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": false
+      },
+      {
+        "name": "Layer 3",
+        "visible": false
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Butchery/Butchery_01-Sheet.png",
+    "bytes": 752,
+    "sha256": "e4b80f2d0cc5d2b54be3ec406a1e4c38e34ac871a38cea195c70d9af65b60625",
+    "size": [
+      64,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Butchery/Butchery_01.aseprite",
+    "bytes": 753,
+    "sha256": "570bb87664ebd6570f2579940a0a61495bf2e952834fb38b45832af8f1d49cf6",
+    "frames": 1,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Butchery/Butchery_02.aseprite",
+    "bytes": 1035,
+    "sha256": "75fbbfc5d3db90dfc6c68a6ba1a2002946bbfbdaaa221c65496a8a9d9657933b",
+    "frames": 1,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Butchery/Butchery_02.png",
+    "bytes": 1150,
+    "sha256": "2422f864e14a3170b73f76d2c24bf9f2e3f43d1799e302db0ea5c02e135bce24",
+    "size": [
+      64,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Butchery/Butchery_03.aseprite",
+    "bytes": 1738,
+    "sha256": "29ed7694615b5b1ab6cffa28738843f904a444f7630fa7bc794096f788ee2dd4",
+    "frames": 1,
+    "frameSize": [
+      80,
+      80
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Butchery/Butchery_03.png",
+    "bytes": 2233,
+    "sha256": "b067ca2212df669b67b05c4ba76fbab0f7e859c57f42de706591feb5e0f599d6",
+    "size": [
+      80,
+      80
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Butchery/Butchery_04.aseprite",
+    "bytes": 2320,
+    "sha256": "07a82bdb19f24a3b4e8cb93077ba802970e3aaaa1d5e2411e34af5a4de449dbf",
+    "frames": 1,
+    "frameSize": [
+      80,
+      80
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Butchery/Butchery_04.png",
+    "bytes": 3020,
+    "sha256": "aa7185e94c877c0f7a10e9a00ed656a2ec9e83355855394b2cbf3fd52d81507f",
+    "size": [
+      80,
+      80
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Cooker/Cooker_01.aseprite",
+    "bytes": 543,
+    "sha256": "b8385eb08a14aa75d840eac8d3521b9df9869363bd3956980bc9a33a41a09c11",
+    "frames": 1,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Cooker/Cooker_01.png",
+    "bytes": 508,
+    "sha256": "12c996bd28f18e4df951bd7c3905d13fce655de3493370f23e9905f9d8bab000",
+    "size": [
+      64,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Cooker/Cooker_02.aseprite",
+    "bytes": 386,
+    "sha256": "99d0706de7b0a74a3f4b7b9123e999b063e6b3a1784e225c2e1728a3c9fe4ec7",
+    "frames": 1,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Cooker/Cooker_02.png",
+    "bytes": 336,
+    "sha256": "4334718decb36ce9a46bd5607af0c853e7c2dbe1f9b2b48296c5af940cdb3688",
+    "size": [
+      64,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Cooker/Cooker_03-Sheet.png",
+    "bytes": 909,
+    "sha256": "32e82b3145f1a7d1718d42294c4eff6239aaff8cf759e4820ac2db78e245cdc6",
+    "size": [
+      192,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Cooker/Cooker_03.aseprite",
+    "bytes": 1605,
+    "sha256": "807e135b1a2dc8d9d9a06b811b4d4d5d1216bda1aae2e0249fc1245b24ad9a8f",
+    "frames": 4,
+    "frameSize": [
+      48,
+      32
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Cooker/Cooker_04-Sheet.png",
+    "bytes": 2897,
+    "sha256": "3d3266ac5dd604b5b885a9e454f868c5d518159ffae72e070591ab56ee5136dd",
+    "size": [
+      320,
+      80
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Cooker/Cooker_04.aseprite",
+    "bytes": 5056,
+    "sha256": "4dbd08082239e7e73dc7167451e6d0453a912c848b7aefb97ffb702f4024f7d3",
+    "frames": 4,
+    "frameSize": [
+      80,
+      80
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Cooking Station.aseprite",
+    "bytes": 11310,
+    "sha256": "4c28d3c4f35b8d3e2261ee8073e2034e7771bfbf53f0d07b466f4e0503da277c",
+    "frames": 1,
+    "frameSize": [
+      288,
+      224
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Layer 7",
+        "visible": true
+      },
+      {
+        "name": "Layer 6",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Cooking Station.png",
+    "bytes": 16528,
+    "sha256": "3c0577515681fdb01d8ab5c9ca8364dda39ba4691e7f4485373a01136a5b7c8d",
+    "size": [
+      288,
+      224
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Estructure.png",
+    "bytes": 6314,
+    "sha256": "1b3d8b8e9fd472bdb998faf728cc01dc51f5376d4e0b1285df6e5d2282a2af2c",
+    "size": [
+      288,
+      224
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Grill/Grill_01-Sheet.png",
+    "bytes": 1564,
+    "sha256": "4586a08d4e9a69f66854d1b8dda391778d269eb676fc1721dddca98eee415a05",
+    "size": [
+      256,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Grill/Grill_01.aseprite",
+    "bytes": 3171,
+    "sha256": "1a48bdd5f7ee61b267733f4952d7873fd9525ccfea9e2a3c121950708b307c9f",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Grill/Grill_02-Sheet.png",
+    "bytes": 1708,
+    "sha256": "5f6d204c449c2b2bb65fe35044a96d75593027d901c5d16fabd3036fef68a67e",
+    "size": [
+      256,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Grill/Grill_02.aseprite",
+    "bytes": 3573,
+    "sha256": "6b3e56f4a305a22a5a94ae7bed1cd7ddbcb97a97e65603d22e6b38cb7ed66a94",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      },
+      {
+        "name": "Layer 6",
+        "visible": true
+      },
+      {
+        "name": "Layer 7",
+        "visible": true
+      },
+      {
+        "name": "Layer 8",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Grill/Grill_03-Sheet.png",
+    "bytes": 2249,
+    "sha256": "e74a7c80001d5891d8b02fb8551e4145b032801fc083837ab4afaec02a61446b",
+    "size": [
+      256,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Grill/Grill_03.aseprite",
+    "bytes": 4218,
+    "sha256": "a518dcb7fb53038674a7eb495c0a30853c77089898b4c118b2155b4343af9967",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Grill/Grill_04-Sheet.png",
+    "bytes": 2787,
+    "sha256": "722aa5041d13f1aba51079d48b422c684598247a86ad7750ee8b5024cf0eac29",
+    "size": [
+      320,
+      64
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Cooking Station/Grill/Grill_04.aseprite",
+    "bytes": 4408,
+    "sha256": "a719ca0fe05989cf9b5073f87cdeb26e4b0c1fc4117c5fe7832e335d2d3becdc",
+    "frames": 4,
+    "frameSize": [
+      80,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 5",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Furnace/Bricks_01-Sheet.png",
+    "bytes": 1680,
+    "sha256": "ed483caaef889de0c85998e50ab0818694f063122e3e625784ab5c32892851b6",
+    "size": [
+      64,
+      96
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Furnace/Bricks_01.aseprite",
+    "bytes": 2645,
+    "sha256": "e55e05c232bd21601f32d90a6bac9029f0ba3bf2645a1293f31de78852b86fa1",
+    "frames": 4,
+    "frameSize": [
+      32,
+      48
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Furnace/Bricks_02-Sheet.png",
+    "bytes": 2440,
+    "sha256": "3850c1a079eb170a5f6f42624f5b7d87b68a28acde6a54474d2206b82a309f7c",
+    "size": [
+      96,
+      128
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Furnace/Bricks_02.aseprite",
+    "bytes": 3610,
+    "sha256": "50cd2f5d4e418f7b12368efa78e2eb789f3301f068e6d9c1e71ad2862e16bce8",
+    "frames": 4,
+    "frameSize": [
+      48,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Furnace/Bricks_03-Sheet.png",
+    "bytes": 2439,
+    "sha256": "c8ffed30ad649702d64269bdb51d04fc77a86fc54e1f813a49e8d49a41aefdf8",
+    "size": [
+      96,
+      128
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Furnace/Bricks_03.aseprite",
+    "bytes": 4537,
+    "sha256": "5d53dd787a82eff5823649a849db67325ba323935afebe505f679e9a0a1c947b",
+    "frames": 4,
+    "frameSize": [
+      48,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Furnace/Furnace.aseprite",
+    "bytes": 13505,
+    "sha256": "68a72080e20c1b728ddfbd1fa6849a512141bae23cee081eec30cb92659d8dd0",
+    "frames": 1,
+    "frameSize": [
+      192,
+      384
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Furnace/Furnace.png",
+    "bytes": 18229,
+    "sha256": "a5814ce312cd41caac0e3a273a47fbc8909bd84425e093612db49116877ac158",
+    "size": [
+      192,
+      384
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Furnace/Iron_01-Sheet.png",
+    "bytes": 1550,
+    "sha256": "b0ab13632cadc610d87d8f30c8d7090ef57276462dc2253300949468b6d86093",
+    "size": [
+      64,
+      96
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Furnace/Iron_01.aseprite",
+    "bytes": 3146,
+    "sha256": "a2c1e8b2fea146b34acbbfd8ea7cbc51e0a86373fd40fd34b169f9bb22fa53c8",
+    "frames": 4,
+    "frameSize": [
+      32,
+      48
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Furnace/Iron_02-Sheet.png",
+    "bytes": 2283,
+    "sha256": "c6aad128faf2ac7bf251238da4fd8c2a53f3fa6f442de02916959e0cb22c5057",
+    "size": [
+      96,
+      128
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Furnace/Iron_02.aseprite",
+    "bytes": 4062,
+    "sha256": "55bac545453dc498efac9be812b3ffd389e9b6e2157382906db051cd22c2b026",
+    "frames": 4,
+    "frameSize": [
+      48,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Furnace/Iron_03-Sheet.png",
+    "bytes": 3160,
+    "sha256": "ffcef8d5e9dc8b67d126f4073290272ff25b2dc09540b7bc67ca7d7ee4bbad55",
+    "size": [
+      96,
+      128
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Furnace/Iron_03.aseprite",
+    "bytes": 5252,
+    "sha256": "3d844e418a7320b3190cf41e1a7c69ae5d1003747595e7db5cece5df337a876c",
+    "frames": 4,
+    "frameSize": [
+      48,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Furnace/Stone_01-Sheet.png",
+    "bytes": 1560,
+    "sha256": "c9be1bf73ff53c84e480bdb326481385a182cd7241eeb4d8b0bf84dd7c3e7a73",
+    "size": [
+      64,
+      96
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Furnace/Stone_01.aseprite",
+    "bytes": 2566,
+    "sha256": "91e70de21c28d05bab9dbad22ad76d4c8926dfec003f2491479d854ffff1269d",
+    "frames": 4,
+    "frameSize": [
+      32,
+      48
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Furnace/Stone_02-Sheet.png",
+    "bytes": 1807,
+    "sha256": "bc565e9e65c8752e4831ea571d6d2e1ded00526dd92edcf2b82208231c94c75b",
+    "size": [
+      96,
+      128
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Furnace/Stone_02.aseprite",
+    "bytes": 8251,
+    "sha256": "5d45cac788be5db7b27e1dd48b185aff772ad970b2e9651af5b96ffbe4dfb610",
+    "frames": 4,
+    "frameSize": [
+      48,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Furnace/Stone_03-Sheet.png",
+    "bytes": 2331,
+    "sha256": "4f6327a1a2d78656af8f4c07cd80b5cfe1af32c4a9b19d42ef8093a26901c749",
+    "size": [
+      96,
+      128
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Furnace/Stone_03.aseprite",
+    "bytes": 3675,
+    "sha256": "e0569311231a5148c1daa9777cb1db63b9146b2b355329f99599747d19cb7971",
+    "frames": 4,
+    "frameSize": [
+      48,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Sawmill/Base.aseprite",
+    "bytes": 5525,
+    "sha256": "7adcd3631ccf4c7af7ac5fdac97247431b63f67991cfa37b0761aa44695ffd0d",
+    "frames": 1,
+    "frameSize": [
+      256,
+      144
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Sawmill/Base.png",
+    "bytes": 7334,
+    "sha256": "b49c43161a6adb0e9be719f6dec96d9143901963b58ec95efc5b3619cfa99986",
+    "size": [
+      256,
+      144
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Sawmill/Level_1.aseprite",
+    "bytes": 548,
+    "sha256": "ca927b74b0b7854952feabc8f9a4da2dfc7a37a30cc2a00bc32eeeae3d3065f0",
+    "frames": 1,
+    "frameSize": [
+      32,
+      32
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Sawmill/Level_1.png",
+    "bytes": 614,
+    "sha256": "1cb3c3b18dd4c57cb2e4b3ef48d2683dfee96b26eca33b2ba6786c659b76cbe4",
+    "size": [
+      32,
+      32
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Sawmill/Level_2-Sheet.png",
+    "bytes": 31563,
+    "sha256": "23f6db8567b5fad30976a61966999b411fe2419dd2d0442e8fabda6145e0a554",
+    "size": [
+      640,
+      512
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Sawmill/Level_2.aseprite",
+    "bytes": 77849,
+    "sha256": "0717cde39166528ba5179d42774e6541b34121ece84d73dec685e47eb1b68095",
+    "frames": 60,
+    "frameSize": [
+      80,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      },
+      {
+        "name": "Layer 4",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Sawmill/Level_3-Sheet.png",
+    "bytes": 50055,
+    "sha256": "b4e20337f91aed1814885ac0391de22a2bd4a8725931d9bd660018eae05f86d9",
+    "size": [
+      896,
+      640
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Structures/Stations/Sawmill/Level_3.aseprite",
+    "bytes": 108107,
+    "sha256": "5aaa6e4bdf7cd7d3fcf5c351ea038de0b0b0daf00e5ca9d893a87593523d572c",
+    "frames": 60,
+    "frameSize": [
+      112,
+      80
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Workbench/Workbench.aseprite",
+    "bytes": 10800,
+    "sha256": "0e3dea9d1af0748c9b2973871ef302d70c4f1a692f5419cbaa48ea37e7630c39",
+    "frames": 1,
+    "frameSize": [
+      192,
+      352
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Structures/Stations/Workbench/Workbench.png",
+    "bytes": 13731,
+    "sha256": "06f07c65de001d914192f0b7816d9bc2f76f5e914986fdb1efccae5f3e4a3f1b",
+    "size": [
+      192,
+      352
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Tilesets/Dungeon_Tiles.aseprite",
+    "bytes": 14007,
+    "sha256": "7b7c850533ddaa7c78743bc12be63e0d2a32203c153ae3bf7e0c8be04528a04e",
+    "frames": 1,
+    "frameSize": [
+      400,
+      400
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Tilesets/Dungeon_Tiles.png",
+    "bytes": 21113,
+    "sha256": "11ae371cc3fc62e5f9ea7132931d268cfe8e536a186dc08cb16f44de09d33771",
+    "size": [
+      400,
+      400
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Tilesets/Floors_Tiles.aseprite",
+    "bytes": 16280,
+    "sha256": "a5c00986b39804564c881b116be225f69611c149799fc14e482d7f0aa615ed80",
+    "frames": 1,
+    "frameSize": [
+      400,
+      416
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Tilesets/Floors_Tiles.png",
+    "bytes": 21966,
+    "sha256": "9c30bb02ff1f776ed6a036270af63d9ad2e369c37c68440f28b1a87ad0d44891",
+    "size": [
+      400,
+      416
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Tilesets/New_Tiles(WIP).aseprite",
+    "bytes": 842,
+    "sha256": "0ee82e5f19d5ddd925763cfc5a0a4154a2766dadcb21be81e86ebc41ee4026ed",
+    "frames": 1,
+    "frameSize": [
+      400,
+      400
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Tilesets/Wall_Tiles.aseprite",
+    "bytes": 26629,
+    "sha256": "4641a564f2b9c51382aa37b56c1ef3e1b062534e4d91566834a40b521209aad0",
+    "frames": 1,
+    "frameSize": [
+      400,
+      400
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 5",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Tilesets/Wall_Tiles.png",
+    "bytes": 41057,
+    "sha256": "21ddee9775168e0785727fc006e750b957fd37ae3912a388e205186c591f76f7",
+    "size": [
+      400,
+      400
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Tilesets/Wall_Variations.aseprite",
+    "bytes": 24573,
+    "sha256": "76086de95236ae602c54629320dd76b7dc853138833b49c63642553007eb73b6",
+    "frames": 1,
+    "frameSize": [
+      256,
+      480
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Tilesets/Wall_Variations.png",
+    "bytes": 36550,
+    "sha256": "1ce831798c90f4be6d9cd563cee6c4242e3f62fab125e07a717cc24c55401937",
+    "size": [
+      256,
+      480
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Environment/Tilesets/Water.aseprite",
+    "bytes": 8806,
+    "sha256": "c30d6f0df079fd22c3e5a9456a1e821ed277e3410ad52b6d088caa96d87edd47",
+    "frames": 4,
+    "frameSize": [
+      96,
+      80
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Flattened",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Tilesets/Water_tiles.aseprite",
+    "bytes": 9047,
+    "sha256": "7a1b662f554b9bd75cbf09d0961e88ae37d960ba0fab8a4e555f4465983c73cf",
+    "frames": 1,
+    "frameSize": [
+      400,
+      400
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Environment/Tilesets/Water_tiles.png",
+    "bytes": 12937,
+    "sha256": "d7d193f4abfbd0e9c8b420fe6436d90b1fbb1fcb8166ec29577dc10528713673",
+    "size": [
+      400,
+      400
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Icons/Resources.aseprite",
+    "bytes": 3298,
+    "sha256": "ede031ebcf33390ee0f4846f2ffedccbde35520d207ee7c835a7d6726129b394",
+    "frames": 1,
+    "frameSize": [
+      400,
+      400
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "MockUps/Castle_Entrance.aseprite",
+    "bytes": 40560,
+    "sha256": "d20485922c38d47dfaba245fbfc68f4c2b8b6f1c2f13d37b9648b90fe1431d20",
+    "frames": 1,
+    "frameSize": [
+      640,
+      640
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "MockUps/Tavern.aseprite",
+    "bytes": 110927,
+    "sha256": "8ccb4b2439522403fefe53d1fdf18758b1d00eddeda24f8fa866f29ff661ca99",
+    "frames": 1,
+    "frameSize": [
+      640,
+      640
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "BG",
+        "visible": true
+      },
+      {
+        "name": "Ground",
+        "visible": true
+      },
+      {
+        "name": "Ground_Decor",
+        "visible": true
+      },
+      {
+        "name": "C_Shadow",
+        "visible": true
+      },
+      {
+        "name": "Light",
+        "visible": true
+      },
+      {
+        "name": "Walls",
+        "visible": true
+      },
+      {
+        "name": "Wall_Props",
+        "visible": true
+      },
+      {
+        "name": "Props_01",
+        "visible": true
+      },
+      {
+        "name": "Props_02",
+        "visible": true
+      },
+      {
+        "name": "Table_Tops",
+        "visible": true
+      },
+      {
+        "name": "Npc",
+        "visible": true
+      },
+      {
+        "name": "Npc_Props",
+        "visible": true
+      },
+      {
+        "name": "Roof",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "MockUps/Tavern.png",
+    "bytes": 151950,
+    "sha256": "a14702a9b668ecad76fa5ee8319f035623a3b2af545fe6c62d289598ceca0de3",
+    "size": [
+      1280,
+      1280
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Terms.txt",
+    "bytes": 1290,
+    "sha256": "1d3e08e2ded4b14b716d8fdd60270ce653deac35e8e3231c7b15d46d4a1822b0"
+  },
+  {
+    "source": "Weapons/Bone/Bone.aseprite",
+    "bytes": 4481,
+    "sha256": "915ac2eaffb0301fc8fa2139f9a551b5222beb05dcb26b7994a6b3d730e0e661",
+    "frames": 1,
+    "frameSize": [
+      224,
+      144
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Weapons/Bone/Bone.png",
+    "bytes": 7285,
+    "sha256": "bda3b1ebcbbb586cdb2d4b46308ad26a42f8b766f55c4c1159a3b6cb72e6be83",
+    "size": [
+      224,
+      144
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Weapons/Hands/Hands.aseprite",
+    "bytes": 1938,
+    "sha256": "7c068c622b4b9a432f31fe56431e43b1a33087b7b8ccc9bf8464fcc632e2bda9",
+    "frames": 1,
+    "frameSize": [
+      400,
+      400
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Weapons/Hands/Hands.png",
+    "bytes": 1273,
+    "sha256": "d135496bc99b0288234fd85606eb4550026d882d280994239ce74b5cb80a5f51",
+    "size": [
+      32,
+      96
+    ],
+    "mode": "RGBA"
+  },
+  {
+    "source": "Weapons/Wood/Wood.aseprite",
+    "bytes": 4295,
+    "sha256": "52606d04d61442abaf25a22797dbcac8860131e75dcc165e0dfc90d6140b3db9",
+    "frames": 1,
+    "frameSize": [
+      192,
+      112
+    ],
+    "durationsMs": [
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ]
+  },
+  {
+    "source": "Weapons/Wood/Wood.png",
+    "bytes": 6479,
+    "sha256": "980e01456adf39f54c0f637dacceac4b1cb33f008fe213d3b29be0734d7be30c",
+    "size": [
+      192,
+      112
+    ],
+    "mode": "RGBA"
+  }
+]
