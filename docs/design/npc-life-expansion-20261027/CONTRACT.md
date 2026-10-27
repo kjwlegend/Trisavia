@@ -1,6 +1,8 @@
 # 三位新镇民 · 素材消费合同
 
-入口 `manifest.json`；空间只读 `spatial-addon-v1.json`。本包是新 NPC 成品素材和附加站位，尚未接入正式业务，不表示用户已完成审美验收。TD 仅取 manifest 指向的 PNG、附加 spatial、条款；不要复制本分支旧 renderer 或覆盖 080 地图。
+[打开状态预览](http://127.0.0.1:59197/docs/design/npc-life-expansion-20261027/)。
+
+入口 `manifest.json`（1.0.1）；空间只读 `spatial-addon-v1.json`。本包是新 NPC 成品素材和附加站位，尚未接入正式业务，不表示用户已完成审美验收。TD 仅取 manifest 指向的 PNG、附加 spatial、条款；不要复制本分支旧 renderer 或覆盖 080 地图。
 
 三人均使用 32×32 帧、脚底 `[16,24]`，默认原生 1 倍绘制，站立可见 16px；闻溪移动／展开图纸最大 17px，坐姿与低身动作更矮。右向为成品，左向围绕脚底镜像；上下移动保持最后水平朝向，首次默认右向。不是四向素材。头顶气泡锚点相对脚底 `[0,-18]`，气泡与姓名／其他界面保留原 12px 屏幕间距。所有角色与道具按真实脚底 Y 排序。
 
@@ -15,3 +17,5 @@
 已从本地 18893 实读两份 080 map6 原件，字节 SHA 与 main 相同。附加文件不增删可走格、阻挡格、原 34 个站位或旧 NPC；29 个新坐标核对合法，原席位、候位、新身体占用同时阻挡时，新接近点、四个导览点和原站位接近点仍可达。这里只验证静态拓扑，预约、权限、结算由 A/B/D 实现和验证。
 
 业务数值与正文归 WS03 §10／§10.1；`reference/npc-life-content-v1.draft.json` 是原件快照，未代改正文、未作为运行目录发布。Pixel Crawler 作者 Anokolisa、原选材清单及 Terms 均随包保留；新增姿态由内置 image_gen 制作，原图与完整提示词见 `reference/*-generated.png`、`prompts.json`。复现技术切片依次运行 build-assets.py → build-tool.py → build-contract.py → build-manifest.py。
+
+1.0.1 的唯一空间文件增量是表现映射：浇水 active 的地面保留原土帧，水流取参与者的 shared-water-fx，避免两股水流；坐标、碰撞、容量全部不变。场景结果区另展示带水流的原图集备选帧。

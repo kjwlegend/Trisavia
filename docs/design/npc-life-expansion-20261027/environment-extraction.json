@@ -13,7 +13,7 @@
     ],
     "framesMeaning": [
       "neutral",
-      "active",
+      "active-with-stream-alternate",
       "committed-completed",
       "unused-alternate"
     ],
@@ -89,10 +89,10 @@
       24
     ],
     "framesMeaning": [
-      "neutral",
+      "real-scattered-material",
       "active",
-      "committed-completed",
-      "unused-alternate"
+      "unused-cleared",
+      "committed-collected"
     ],
     "extraction": [
       {

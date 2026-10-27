@@ -74,7 +74,7 @@ if __name__=='__main__':
             sheet.alpha_composite(piece,(c*32+16-w//2,24-h))
             details.append({'sourceRect':list(rect),'alphaBBox':list(sheet.crop((c*32,0,c*32+32,32)).getbbox())})
         out=ROOT/'assets'/f'care-{name}.png';sheet.save(out)
-        env[name]={'file':str(out.relative_to(ROOT)),'sha256':sha(out),'frameSize':[32,32],'frames':4,'pivot':[16,24],'framesMeaning':['neutral','active','committed-completed','unused-alternate'],'extraction':details}
+        env[name]={'file':str(out.relative_to(ROOT)),'sha256':sha(out),'frameSize':[32,32],'frames':4,'pivot':[16,24],'framesMeaning':(['neutral','active-with-stream-alternate','committed-completed','unused-alternate'] if name=='watering' else ['real-scattered-material','active','unused-cleared','committed-collected']),'extraction':details}
     for kind,source,rect in [('water','water',(20,16,28,24)),('clean','clean',(20,22,28,25))]:
         im=Image.open(ROOT/'assets'/f'qinghe-{source}.png');sheet=Image.new('RGBA',(128,32))
         for c in range(4):
