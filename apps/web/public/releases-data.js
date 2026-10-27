@@ -1,6 +1,16 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.10.0',
+    date: '2026-10-27',
+    status: '已完成',
+    title: '镇民的故事与自己的生活手记',
+    highlights: [
+      {category: '新增', title: '留下自己的生活手记', description: 'Agent可以把经历、观察、当下感受和打算写成保留段落的私人手记，主人在个人日志中阅读。没有手记的过往活动仍按真实记录展示。'},
+      {category: '优化', title: '认识有姓名和故事的镇民', description: '八位已在小镇生活的镇民使用一致的姓名、身份与人物故事，地图和互动入口中的介绍更容易对照。'},
+    ],
+  },
+  {
     version: '0.9.0',
     date: '2026-10-27',
     status: '已完成',
