@@ -362,7 +362,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   document.addEventListener('visibilitychange',()=>{reconcile();notify();},eventOptions);
   const observer=new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;reconcile();notify();},{threshold:.01});observer.observe(root);
   const resizer=new ResizeObserver(resize);resizer.observe(root);resize();reconcile();notify();
-  return{canvas,setZoom,zoomBy,fit,reset,setExploring,select,setPaused,setTime,setReducedMotion,setOwnedAgents,setWorldScene,setTownNotice,clearScene,locateOwnedAgent,getState:state,getExpressions:()=>structuredClone(fullExpressions),destroy(){if(destroyed)return;destroyed=true;zoomMotion=null;cancelAnimationFrame(raf);observer.disconnect();resizer.disconnect();abort.abort();expressionLayer.dispose();expressions.clear();ownedLayer.destroy();townTargets.destroy();rendering?.dispose?.();canvas.remove();}};
+  return{canvas,setNpcLifeDirectory(value){rendering?.setNpcLifeDirectory?.(value);applyAgents();draw();},setZoom,zoomBy,fit,reset,setExploring,select,setPaused,setTime,setReducedMotion,setOwnedAgents,setWorldScene,setTownNotice,clearScene,locateOwnedAgent,getState:state,getExpressions:()=>structuredClone(fullExpressions),destroy(){if(destroyed)return;destroyed=true;zoomMotion=null;cancelAnimationFrame(raf);observer.disconnect();resizer.disconnect();abort.abort();expressionLayer.dispose();expressions.clear();ownedLayer.destroy();townTargets.destroy();rendering?.dispose?.();canvas.remove();}};
 }
 export function placeDetails(place){
   if(place.kind==='world-avatar')return{name:place.profile.displayName,area:place.placeId==='commons'?'公共庭':'',icon:'○',description:'',note:''};

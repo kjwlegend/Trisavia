@@ -6,16 +6,17 @@ import {publicLifeLabel} from './life-public-state.js';
 import {createLifeCPlace} from './life-c-place.js';
 import {createLifeBPlace} from './life-b-place.js';
 import {icon} from './icons.js';
+import {createNpcLifePlace,npcLifePlace} from './npc-life-place.js';
 const supportedBuildings=['h-warehouse','h-tavern','g-pavilion','e-stall','g-lodge','n-blue'];
-export const lifeBuilding=place=>place?.kind==='life-place'||supportedBuildings.includes(place?.buildingId||place?.npc?.buildingId||place?.serviceNpc?.buildingId||place?.id);
+export const lifeBuilding=place=>npcLifePlace(place)||place?.kind==='life-place'||supportedBuildings.includes(place?.buildingId||place?.npc?.buildingId||place?.serviceNpc?.buildingId||place?.id);
 const reasonNames={body_occupied:'正在进行其他身体活动',energy_insufficient:'可用体力不足',energy_full:'体力已满',work_quota_reached:'今日班次额度已用完',station_full:'当前名额已满',participation_unavailable:'当前参与状态不允许开始',world_action_not_allowed:'当前行动权限受限',autonomous_not_allowed:'当前行动权限受限',observation_only:'当前仅可观察'};
 const time=value=>new Date(value).toLocaleString('zh-CN',{hour12:false});
 const duration=seconds=>seconds%60===0?`${seconds/60} 分钟`:`${seconds} 秒`;
 const control=(label,run)=>{const node=el('button','',label);node.type='button';node.addEventListener('click',run);return node;};
 const selected=context=>context?.authenticated&&['ready','refreshing'].includes(context.phase)?context.agents.find(agent=>agent.agentId===context.selectedAgentId):null;
 function facts(rows){const node=el('dl','life-facts');for(const [name,value]of rows)node.append(el('dt','',name),el('dd','',value));return node;}
-export function createLifePlaceCard(session,{getWorldState,chooseAgent=()=>{}}={}){
- const node=el('section','life-place-card'),reader=createLifeActionsReader({getRules:()=>getWorldState()?.rules}),bPlace=createLifeBPlace(session,{chooseAgent}),cPlace=createLifeCPlace(session,{chooseAgent,getScrollHost:()=>node.closest('.world-detail-body')});let active=false,target=null,state=reader.snapshot(),context=session.snapshot(),optionRows=[],offerKey='',message='',copied='',npcStale=false,worldStale=false;
+export function createLifePlaceCard(session,{getWorldState,chooseAgent=()=>{},npcLifeDirectory}={}){
+ const node=el('section','life-place-card'),reader=createLifeActionsReader({getRules:()=>getWorldState()?.rules}),bPlace=createLifeBPlace(session,{chooseAgent}),cPlace=createLifeCPlace(session,{chooseAgent,getScrollHost:()=>node.closest('.world-detail-body')}),npcPlace=createNpcLifePlace(session,{directoryReader:npcLifeDirectory,getRules:()=>getWorldState()?.rules,chooseAgent});let active=false,target=null,state=reader.snapshot(),context=session.snapshot(),optionRows=[],offerKey='',message='',copied='',npcStale=false,worldStale=false;
  function clearOptions(){for(const row of optionRows){row.stop();row.reader.dispose();}optionRows=[];offerKey='';}
  function match(){return state.data?.places.find(place=>target?.placeId?place.placeId===target.placeId:place.anchorBuildingId===target?.buildingId);}
  function prepare(){
@@ -32,7 +33,7 @@ export function createLifePlaceCard(session,{getWorldState,chooseAgent=()=>{}}={
   render();
  }
  function render(){
-  const focus=document.activeElement?.dataset?.lifeBField,scrollHost=node.closest('.world-detail-body'),scrollTop=scrollHost?.scrollTop;node.replaceChildren();node.hidden=!active;if(!active)return;node.dataset.lifePhase=state.phase;
+  const focus=document.activeElement?.dataset?.lifeBField,scrollHost=node.closest('.world-detail-body'),scrollTop=scrollHost?.scrollTop;node.replaceChildren();node.hidden=!active;if(!active)return;if(target.npcLife){node.append(npcPlace.node);return;}node.dataset.lifePhase=state.phase;
   if(worldStale)node.append(el('p','life-status','上次世界画面已过期，位置与动作冻结；恢复后再核对当前条件。'));
   if(target.npc){const info=el('section','life-npc-summary');info.append(el('h3','',target.npc.name),el('p','paper-stable-id',publicIdLabel(target.npc.publicId,'N')),el('p','',publicLifeLabel(target.npc.activity)),el('p','hud-muted','小镇规则角色，不是真实外部 Agent。'));if(npcStale)info.append(el('p','life-status','上次确认的镇民状态已过期，位置与动作冻结。'));node.append(info);}
   const status=el('p','life-status');status.setAttribute('role','status');status.textContent=state.stale?'上次读取的活动条款已过期，请重新确认。':state.phase==='loading'?'正在读取场所活动…':state.phase==='refreshing'?'正在更新活动条款…':['error','changed','forbidden'].includes(state.phase)?'场所活动暂时无法读取，请重试。':'';status.hidden=!status.textContent;node.append(status);
@@ -55,5 +56,5 @@ export function createLifePlaceCard(session,{getWorldState,chooseAgent=()=>{}}={
  }
  const stop=reader.subscribe(value=>{state=value;if(value.data)prepare();else clearOptions();render();});
  const stopSession=session.subscribe(value=>{const changed=context.observationRevision!==value.observationRevision;context=value;if(changed){message=copied='';for(const row of optionRows)row.state={...row.state,data:null,phase:'loading',stale:false};render();}});
- return{node,open(value){target={placeId:value.placeId||null,buildingId:value.buildingId||value.npc?.buildingId||value.serviceNpc?.buildingId||value.id,npc:value.npc||value.serviceNpc||null};active=true;npcStale=false;worldStale=getWorldState()?.worldScene?.stale===true;message=copied='';reader.setActive(true);render();},observeWorld(value){if(!active)return;const next=value.stale===true||value.phase==='paused';if(next!==worldStale){worldStale=next;render();}},observeNpc(npc,{stale=false}={}){if(!active||target.npc?.npcId!==npc.npcId)return;const changed=JSON.stringify([target.npc.activity,npcStale])!==JSON.stringify([npc.activity,stale]);target.npc=npc;npcStale=stale;if(changed)render();},close(){active=false;reader.setActive(false);bPlace.close();cPlace.close();clearOptions();target=null;copied=message='';render();},dispose(){active=false;stop();stopSession();bPlace.dispose();cPlace.dispose();clearOptions();reader.dispose();}};
+ return{node,open(value){target={npcLife:npcLifePlace(value),placeId:value.placeId||null,buildingId:value.buildingId||value.npc?.buildingId||value.serviceNpc?.buildingId||value.id,npc:value.npc||value.serviceNpc||null};active=true;npcStale=false;worldStale=getWorldState()?.worldScene?.stale===true;message=copied='';if(target.npcLife){bPlace.close();cPlace.close();clearOptions();reader.setActive(false);npcPlace.open();}else{npcPlace.close();reader.setActive(true);}render();},observeWorld(value){if(!active)return;npcPlace.observeWorld(value);const next=value.stale===true||value.phase==='paused';if(next!==worldStale){worldStale=next;render();}},observeNpc(npc,{stale=false}={}){if(!active||target.npc?.npcId!==npc.npcId)return;const changed=JSON.stringify([target.npc.activity,npcStale])!==JSON.stringify([npc.activity,stale]);target.npc=npc;npcStale=stale;if(changed)render();},close(){active=false;reader.setActive(false);npcPlace.close();bPlace.close();cPlace.close();clearOptions();target=null;copied=message='';render();},dispose(){active=false;stop();stopSession();npcPlace.dispose();bPlace.dispose();cPlace.dispose();clearOptions();reader.dispose();}};
 }

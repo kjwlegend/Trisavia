@@ -54,3 +54,8 @@
 .world-home.paper-hud .world-detail .life-c-place .life-card p{color:var(--paper-ink,#263f36)}
 .world-home.paper-hud .world-detail .life-c-place .life-card .hud-muted{color:var(--paper-muted,#68746e)}
 .world-home.paper-hud .world-detail .life-c-place .life-card :is(.life-condition,.life-status){color:#614b39}
+
+.npc-care-points{display:grid;gap:12px}.npc-care-guide-body{white-space:pre-wrap;overflow-wrap:anywhere}.npc-life-place .life-card{color:#263f36}.npc-life-place .life-copy-guide pre{white-space:pre-wrap;overflow-wrap:anywhere}
+.world-home.paper-hud .world-detail .npc-life-place p{color:var(--paper-ink,#263f36)}
+.world-home.paper-hud .world-detail .npc-life-place .hud-muted{color:var(--paper-muted,#68746e)}
+.world-home.paper-hud .world-detail .npc-life-place :is(.life-condition,.life-status){color:#614b39}

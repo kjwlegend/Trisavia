@@ -1,0 +1,36 @@
+// Finite, reviewed NPC art. No external URL, Agent look substitution or local
+// completion is accepted through this presentation adapter.
+export const NPC_LIFE_MANIFEST='/assets/npc-life-v1/manifest.json';
+export const NPC_LIFE_MANIFEST_SHA='2c6070d6c36d335194f31633c5a30237297ea8a779434b75f2c2469560acfdb4';
+export const NPC_LIFE_SPATIAL='/assets/npc-life-v1/spatial-addon-v1.json';
+export const NPC_LIFE_SPATIAL_SHA='97d513507efc44cb991a3887f9d82c78227bd10d1fe37fdf4247cadc3e4a912a';
+const identities=new Map([['npc-gardener','pixel-crawler-qinghe-v1'],['npc-tea-companion','pixel-crawler-xiaoman-v1'],['npc-trail-guide','pixel-crawler-wenxi-v1']]);
+export const NPC_LIFE_GEOMETRY=Object.freeze({width:32,height:32,anchor:{x:16,y:24},hitBox:{left:-8,right:8,top:-18,bottom:0},minHit:{width:32,height:38},hitPadding:{width:8,height:8}});
+export function readNpcSprite(value,npcId){
+ if(!value||Object.keys(value).sort().join(',')!=='assetId,digest,kind,manifestUrl,version'||value.kind!=='npc_sprite'||value.version!==1||value.assetId!==identities.get(npcId)||value.manifestUrl!==NPC_LIFE_MANIFEST||value.digest!==NPC_LIFE_MANIFEST_SHA)throw Error('npc_sprite_invalid');return{...value};
+}
+const sameCell=(point,cell)=>point?.x===cell[0]&&point?.y===cell[1];
+export function careVisual(point,station,serverTime,{stale=false}={}){
+ if(stale||point?.careKind!=='water'||station?.careKind!=='watering'||!sameCell(point.cell,station.station.cell)||!Number.isSafeInteger(point.lastCareAt)||!Number.isSafeInteger(point.nextEligibleAt)||point.lastCareAt>serverTime||point.nextEligibleAt<=serverTime)return null;
+ return{frame:station.visualFrames.completed[0],anchor:station.target.source};
+}
+export function createNpcLifeArt({request=fetch,decode=bytes=>createImageBitmap(new Blob([bytes],{type:'image/png'}))}={}){
+ const abort=new AbortController(),images=new Map(),pending=new Map();let metadata=null,loading=null,failed=false,disposed=false,directory=null;
+ const digest=async bytes=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(v=>v.toString(16).padStart(2,'0')).join('');
+ async function verified(url,hash){const response=await request(url,{credentials:'omit',cache:'no-cache',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(15000)])});if(!response.ok)throw Error('npc_art_unavailable');const bytes=await response.arrayBuffer();if(await digest(bytes)!==hash||disposed)throw Error('npc_art_hash_mismatch');return bytes;}
+ function prepare(){if(loading||metadata||failed||disposed)return;loading=Promise.all([verified(NPC_LIFE_MANIFEST,NPC_LIFE_MANIFEST_SHA),verified(NPC_LIFE_SPATIAL,NPC_LIFE_SPATIAL_SHA)]).then(([a,b])=>{const manifest=JSON.parse(new TextDecoder().decode(a)),spatial=JSON.parse(new TextDecoder().decode(b));metadata={manifest,spatial};}).catch(()=>{failed=true;}).finally(()=>loading=null);}
+ function image(ref){if(!ref)return null;const loaded=images.get(ref.file);if(loaded)return loaded;if(!pending.has(ref.file)&&!failed&&!disposed){const job=verified('/assets/npc-life-v1/'+ref.file,ref.sha256).then(decode).then(value=>{const size=ref.frameSize;if(disposed||value.width!==size[0]*ref.frames||value.height!==size[1]){value.close?.();throw Error('npc_art_size_mismatch');}images.set(ref.file,value);}).catch(()=>{failed=true;}).finally(()=>pending.delete(ref.file));pending.set(ref.file,job);}return null;}
+ function strip(ctx,ref,{x,y,index=0,left=false}={}){const source=image(ref);if(!source)return false;const [w,h]=ref.frameSize,[px,py]=ref.feetPivot||ref.pivot;ctx.save();ctx.imageSmoothingEnabled=false;ctx.translate(Math.round(x),Math.round(y));ctx.scale(left?-1:1,1);ctx.drawImage(source,index*w,0,w,h,-px,-py,w,h);ctx.restore();return true;}
+ function frameIndex(entry,ref,frame,key){if(!frame.stale&&!frame.paused){let t=Math.max(0,frame.elapsed)%(ref.durationsMs.reduce((n,v)=>n+v,0)),index=0;for(let i=0;i<ref.frames;i++){if(t<ref.durationsMs[i]){index=i;break;}t-=ref.durationsMs[i];}entry[key]=index;}return frame.reducedMotion?0:entry[key]||0;}
+ function matching(entry){const activity=entry.fact?.activity;if(activity?.state!=='active'||activity.actionId!=='care.perform'||entry.walking||!metadata||!directory)return null;return metadata.spatial.careStations.find(s=>s.careKind==='watering'&&sameCell(entry.fact.position,s.station.cell)&&directory.carePoints.some(p=>p.placeId===activity.placeId&&p.careKind==='water'&&sameCell(p.cell,s.station.cell)));}
+ return{
+  setDirectory(value){directory=value?.data&&!value.stale&&['ready','refreshing'].includes(value.phase)?value.data:null;if(directory){if(directory.spatialRef.url!==NPC_LIFE_SPATIAL||directory.spatialRef.revision!==2||directory.spatialRef.sha256!==NPC_LIFE_SPATIAL_SHA){directory=null;return;}prepare();}},
+  targets(){if(!metadata||!directory)return[];const station=metadata.spatial.careStations.find(s=>s.careKind==='watering');if(!station||!directory.carePoints.some(p=>sameCell(p.cell,station.station.cell)))return[];const [x,y]=metadata.spatial.coordinateSystem.origin.map((v,i)=>v+station.careBoard.anchorCell[i]*metadata.spatial.coordinateSystem.tileSize);return[{kind:'npc-care-point',id:'npc-care-board',name:'青禾 · 园务牌',area:'松荫漫步园',x,y,w:18,h:22,anchor:{x:9,y:20},description:'读取当前园务说明与真实照料状态。'}];},
+  drawNpc(ctx,entry,frame){const appearance=entry.fact?.profile.appearance;if(appearance?.kind!=='npc_sprite')return false;prepare();const character=metadata?.manifest.characters.find(c=>c.lookId===appearance.assetId),action=entry.walking?'walk':'idle',ref=character?.actions[action];if(!ref||!strip(ctx,ref,{x:entry.x,y:entry.y,index:frameIndex(entry,ref,frame,'npcLifeFrame'),left:entry.facing==='left'})){ctx.save();ctx.fillStyle='#536553';ctx.fillRect(Math.round(entry.x)-3,Math.round(entry.y)-8,6,8);ctx.restore();}return true;},
+  prepareParticipant(entry,frame){if(!frame.stale){const station=matching(entry);if(station)entry.facing=station.facing;}},
+  drawParticipant(ctx,entry,frame){if(frame.stale)return;const station=matching(entry);if(!station)return;const ref=metadata.manifest.environment['shared-water'];entry.facing=station.facing;strip(ctx,ref,{x:entry.x,y:entry.y,index:frameIndex(entry,ref,frame,'careWaterFrame'),left:station.facing==='left'});},
+  drawGround(ctx,frame){if(frame.stale||!metadata||!directory)return;for(const station of metadata.spatial.careStations){const point=directory.carePoints.find(p=>sameCell(p.cell,station.station.cell));if(point?.careKind!=='water')continue;const visual=careVisual(point,station,frame.serverTime),active=frame.avatars.some(entry=>matching(entry)===station);strip(ctx,metadata.manifest.environment.watering,{x:station.target.source[0],y:station.target.source[1],index:visual?.frame??(active?station.visualFrames.active[0]:station.visualFrames.neutral[0])});}for(const target of this.targets()){ctx.save();ctx.fillStyle='#f7f2e7';ctx.strokeStyle='#78846d';ctx.fillRect(target.x-9,target.y-18,18,16);ctx.strokeRect(target.x-9,target.y-18,18,16);ctx.fillStyle='#394d3d';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText('园',target.x,target.y-6);ctx.restore();}},
+  snapshot(){return{ready:Boolean(metadata),failed,images:[...images.keys()],targets:this.targets()};},
+  dispose(){disposed=true;abort.abort();for(const value of images.values())value.close?.();images.clear();pending.clear();metadata=directory=null;}
+ };
+}
