@@ -1,0 +1,23 @@
+import{identifier}from'../interaction/rules.ts';
+import{createHash}from'node:crypto';
+import{key}from'../perception/protocol.ts';
+import{fail,object,version}from'../common/errors.ts';
+import{NPC_LIFE_RULES as R,type CarePoint,type CarePointDefinition,type CareFact,type CareIntroduction,type CareSnapshot,type NpcLifeDefinition}from'./types.ts';
+import type{LifeActivity,LifePlan,LifeQualification}from'../life/types.ts';
+import type{WorldRuleset}from'../world/types.ts';import{assertCell}from'../world/rules.ts';
+export function validateNpcLifeDefinition(d:NpcLifeDefinition,w:WorldRuleset){
+ if(d.version!==1||d.map.mapId!=='pixel-town-v2'||w.version!==6||w.topologyVersion!==6||d.map.geometryDigest!==w.mapManifest?.geometryDigest||d.npcs.length!==1||d.npcs[0]?.npcId!=='npc-gardener'||d.carePoints.length!==2||new Set(d.carePoints.map(p=>p.pointId)).size!==2||!['water','clear'].every(k=>d.carePoints.some(p=>p.careKind===k)))fail('npc_life_definition_invalid',400,'Use the exact active map and two reviewed care points');
+ const used=new Set<string>();for(const p of d.carePoints){identifier(p.pointId,'pointId');identifier(p.placeId,'placeId');assertCell(w,p.cell);if(used.has(p.cell.x+','+p.cell.y)||!p.approachCells.length)fail('npc_life_definition_invalid',400,'Care points require distinct single seats and real approaches');used.add(p.cell.x+','+p.cell.y);for(const c of p.approachCells){assertCell(w,c);if(Math.abs(c.x-p.cell.x)+Math.abs(c.y-p.cell.y)!==1)fail('npc_life_definition_invalid',400,'A care approach must be a legal adjacent cell');}const g=d.guides.find(g=>g.id===p.guideRef.id&&g.version===p.guideRef.version&&g.digest===p.guideRef.digest);if(p.enabled&&(!g?.body.trim()||Buffer.byteLength(g.body)>16384||g.digest!==createHash('sha256').update(g.body).digest('hex'))||p.careKind==='clear'&&p.enabled&&!p.initialMaterialAvailable)fail('npc_life_definition_invalid',400,'Enable only reviewed nonempty instructions and actual clearing material');}
+ for(const n of d.npcs){assertCell(w,n.initialPosition);if(!n.receptionCells.length||!n.receptionApproachCells.length||n.appearance.kind!=='npc_sprite'||n.appearance.version!==1||!/^\/assets\/[a-zA-Z0-9_./-]+\.json$/.test(n.appearance.manifestUrl)||!/^([a-f0-9]{64})$/.test(n.appearance.digest))fail('npc_life_definition_invalid',400,'A reviewed finite NPC sprite and real reception cells are required');for(const p of [...n.receptionCells,...n.receptionApproachCells])assertCell(w,p);}
+}
+export function pointEligibility(p:CarePoint,d:CarePointDefinition,now:number,last?:CareFact){
+ const nextEligibleAt=Math.max(p.nextEligibleAt??0,last?last.completedAt+R.actorPointCooldownMs:0)||null;
+ const reason=!d.enabled?'care_not_enabled':p.activeActivityId?'care_point_busy':d.careKind==='clear'&&!p.materialAvailable?'care_material_unavailable':p.nextEligibleAt!==null&&now<p.nextEligibleAt?'care_point_cooldown':last&&now<last.completedAt+R.actorPointCooldownMs?'care_personal_cooldown':null;
+ return{available:reason===null,reason,nextEligibleAt};
+}
+export function careInput(raw:unknown){const p=object(raw,['pointId','expectedPointVersion','introductionId','expectedIntroductionVersion']);return{pointId:identifier(p.pointId,'pointId'),expectedPointVersion:version(p.expectedPointVersion),introductionId:identifier(p.introductionId,'introductionId'),expectedIntroductionVersion:version(p.expectedIntroductionVersion)};}
+export function assertCareIntroduction(ref:CareIntroduction,plan:LifePlan,point:CarePoint,definition:CarePointDefinition,q:LifeQualification,now:number){
+ if(ref.agentId!==plan.actorId||plan.actorKind!=='agent'||ref.planId!==plan.id||!['running','queued'].includes(plan.state)||ref.pointId!==point.pointId||ref.careKind!==definition.careKind||ref.definitionVersion!==1||ref.pointVersion!==point.version||ref.consumedByActivityId!==null||now>=ref.expiresAt||now>=plan.deadlineAt||now+R.durationMs>plan.deadlineAt||key(ref.guideRef)!==key(definition.guideRef)||key(ref.qualification)!==key(q))fail('care_introduction_unavailable',409,'Use an unused current introduction from this same live plan');
+}
+export function careSnapshot(ref:CareIntroduction):CareSnapshot{return {definitionVersion:1,pointId:ref.pointId,pointVersion:ref.pointVersion,careKind:ref.careKind,introductionId:ref.introductionId,guideRef:ref.guideRef};}
+export function assertCareSource(v:LifeActivity){if(v.actionId!=='care.perform'||v.actorKind!=='agent'||!v.planId||!v.care||v.reservedEnergy!==R.energyCost||v.scheduledEndAt-v.startedAt!==R.durationMs||v.rewardAmount!==0||v.energyGain!==0)fail('care_source_invalid',409,'The real bounded care activity source is required');return v.care;}
