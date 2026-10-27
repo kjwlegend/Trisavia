@@ -79,3 +79,16 @@ test('startup accepts only the explicitly versioned approved catalog without cha
  await assert.rejects(verifyLifeGuideCatalogForStartup(store('catalog-approved-agent-templates-1'),1));
  const app=await readFile(new URL('../../apps/platform/app.ts',import.meta.url),'utf8');assert(app.includes("runtimeRulesEnabled=['catalog-agent-runtime-1','catalog-approved-agent-templates-1'].includes(String(activeCatalog))"));assert(app.includes("expressionsEnabled=lifeCEnabled&&['catalog-world-expressions-1','catalog-agent-runtime-1','catalog-approved-agent-templates-1'].includes(String(activeCatalog))"));
 });
+
+test('published G22 human variants and an already-correct hourly block are exact, exclusive predecessors',()=>{
+ const human=APPROVED_TEMPLATE_REPLACEMENTS.find(row=>row.id==='human-voice-v1')!,hourly=APPROVED_TEMPLATE_REPLACEMENTS.find(row=>row.id==='legacy-hourly-default')!,profile=APPROVED_TEMPLATE_REPLACEMENTS[0]!,publishedHuman=human.beforeVariants[3]!;
+ // Whole-block digest independently captured from all seven real G22 guides.
+ assert.equal(sha(publishedHuman),'f352f0304da2d0243161f463a7084b8bf0a49b093179507cbb82fcab16d60f4f');
+ assert.equal(sha(hourly.after),'2e08ab75f8e0170a3dcf3a1d78d27298d7bfa4af3f61fedfb1878d4f7b1fcbdb');
+ assert(Object.isFrozen(human));assert(Object.isFrozen(human.beforeVariants));assert.equal(human.beforeVariants.length,4);assert.equal(hourly.allowAlreadyCorrect,true);
+ const source=(voice:string,schedule:string)=>'untouched prefix\n'+APPROVED_TEMPLATE_REPLACEMENTS.map(row=>row===human?voice:row===hourly?schedule:row.before).join('\nuntouched separator\n')+'\nuntouched suffix';
+ const expected='untouched prefix\n'+APPROVED_TEMPLATE_REPLACEMENTS.map(row=>row.after).join('\nuntouched separator\n')+'\nuntouched suffix';
+ for(const voice of human.beforeVariants)for(const schedule of [hourly.before,hourly.after])assert.equal(rewriteApprovedAgentTemplateText(source(voice,schedule)),expected);
+ const actual=source(publishedHuman,hourly.after),next=rewriteApprovedAgentTemplateText(actual);assert(next.includes('已经来到 Trisavia。如果你想管理我的资料和权限'));assert.equal(next.split(hourly.after).length-1,1);
+ for(const bad of [source('',hourly.after),source(publishedHuman+'\n'+publishedHuman,hourly.after),source(publishedHuman+'\n'+human.beforeVariants[0],hourly.after),source(publishedHuman,hourly.before+'\n'+hourly.after),source(publishedHuman,hourly.after+'\n'+hourly.after),source(publishedHuman,''),source(publishedHuman.replace('已经来到 Trisavia','已经来到 Unrecognized'),hourly.after),actual+'\n'+human.after,actual+'\n'+profile.after])assert.throws(()=>rewriteApprovedAgentTemplateText(bad));
+});
