@@ -1,0 +1,10 @@
+{
+  "id":"town-expansion-bubble-design-v1",
+  "policyRevision":2,
+  "authority":"TD/A policy2 is the runtime source; this is its agreed design mapping",
+  "server":{"agentSayMinIntervalSeconds":30,"agentSayWindowSeconds":300,"agentSayWindowMax":4,"objectiveStatusMinIntervalSeconds":20,"statusTtlMs":12000,"ambientTtlMs":12000,"npcEligibleNewActivityProbability":1,"npcMinIntervalSeconds":60,"npcSameLineMinIntervalSeconds":300,"supportsExistingTtlMs":6000,"maxCurrentExpressions":16,"maxBatchBytes":8192},
+  "display":{"standard":4,"quiet":2,"off":0,"smallAvailableMap":{"minWidth":900,"minHeight":520,"standard":2},"perActor":1,"minNewAppearanceIntervalMs":1500,"speechVisualMaxMs":6800,"otherVisualMaxMs":6000,"ttlPolicy":"min(remaining source TTL, visual maximum); no renewal","maxActiveAndPending":16,"pendingPolicy":"only not-yet-shown IDs, currently authorized in this scene and still inside original TTL","clearOn":["withdrawal","departure","actor change","stale scene"],"noReplay":true},
+  "typography":{"bodyPx":13,"bodyLineHeightPx":19,"namePx":10,"nameLineHeightPx":14,"minWidthPx":112,"maxWidthPx":200,"paddingPx":[8,11],"maxLines":2,"labels":false,"screenPixels":true,"lowScaleThreshold":0.75,"lowScaleBadgePx":30},
+  "placement":{"gapPx":12,"avoid":["HUD","other bubble","character head","character name"],"candidates":["above","above left","above right"],"pointerEvents":"none"},
+  "contentPolicy":"actual permitted speech, emote, active action/movement status or eligible NPC rule line only; no inferred Agent subjective voice, no invented progress"
+}

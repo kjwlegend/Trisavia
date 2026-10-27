@@ -1,0 +1,193 @@
+{
+  "id": "town-expansion-v1",
+  "status": "design candidate, browser preview and offline topology checked; not production",
+  "baseCommit": "6a8f8bd566f6fef3ebe206f3a5db404eb0f53955",
+  "mapId": "pixel-town-v2",
+  "layoutId": "town-expansion-layout-v1",
+  "mapVersion": 6,
+  "sourceSize": [
+    2048,
+    1536
+  ],
+  "bounds": {
+    "minX": -28,
+    "minY": -28,
+    "maxX": 91,
+    "maxY": 59
+  },
+  "tileSize": 16,
+  "origin": [
+    520,
+    520
+  ],
+  "counts": {
+    "oldWalkable": 1222,
+    "newWalkable": 1966,
+    "addedWalkable": 744,
+    "oldPhysicalPreserved": 1622,
+    "physical": 2093,
+    "unopened": 6501,
+    "newProps": 106,
+    "oldBuildings": 31,
+    "oldStations": 34,
+    "newPublicTargets": 12
+  },
+  "dependencies": [
+    {
+      "path": "../m3-life-c-20261025/world-map-life-c-v1.json",
+      "sha256": "c025fbdce5cd5fba4a33c1013fb6a49847be55a68c7c12edcdaa0a37524d7b08"
+    },
+    {
+      "path": "../m3-life-c-20261025/spatial-manifest.json",
+      "sha256": "e30e46f7a6d66315b11af0eb7896908e84e5a70af0a0bfe72006fbbb8199152a"
+    },
+    {
+      "path": "/apps/web/public/world-pixel/asset-kit.js",
+      "purpose": "same native images and loader, no new atlas"
+    },
+    {
+      "path": "../life-journal-bubbles-20261026/assets/actors/",
+      "purpose": "preview-only native character fixtures"
+    },
+    {
+      "path": "../m3-life-c-20261025/assets/fixtures/",
+      "purpose": "preview-only existing canopies"
+    }
+  ],
+  "productionLoadPolicy": "Consume layout and spatial; geometry delta/coast/reference PNG/renderer snapshot/validation paths are optional design evidence, not automatic startup assets. Keep live native rendering and object occlusion.",
+  "files": [
+    {
+      "path": "BOUNDARY.md",
+      "bytes": 1709,
+      "gzipBytes": 1176,
+      "sha256": "669a7eb78973244b24b99bb73ee3483566f1c615be0814e1fc3d7849fe7b9ef7",
+      "use": "design-reference"
+    },
+    {
+      "path": "CONTRACT.md",
+      "bytes": 5786,
+      "gzipBytes": 3623,
+      "sha256": "722caf97c0ed00c2930550dfcdfae933e8711e330b3170ae6f435f249ee75d3a",
+      "use": "design-reference"
+    },
+    {
+      "path": "assets/native-renderer.js",
+      "bytes": 22954,
+      "gzipBytes": 7720,
+      "sha256": "e5bf2d103894a5b387b07bafe567e2e0f5a05d0ee4a348b53bbb989b8a6b3421",
+      "use": "design-reference"
+    },
+    {
+      "path": "assets/town-expanded.png",
+      "bytes": 670041,
+      "gzipBytes": 618823,
+      "sha256": "0c0713c189910b33def81462f7b2553cc5531c032236b332cfe2ed8e2cbb12e6",
+      "use": "design-reference"
+    },
+    {
+      "path": "bubble-tuning.json",
+      "bytes": 1569,
+      "gzipBytes": 869,
+      "sha256": "74a423f8692ec814467022cf1dbafd7ffcf96c44dd9b20ba217f4e6361d99a9f",
+      "use": "design-reference"
+    },
+    {
+      "path": "build-map.py",
+      "bytes": 12738,
+      "gzipBytes": 5661,
+      "sha256": "e8268107bc82604dd85aac405cf2786bb92e875b2c339399fbb22db0e3c7e71d",
+      "use": "design-reference"
+    },
+    {
+      "path": "coastline.json",
+      "bytes": 39053,
+      "gzipBytes": 1796,
+      "sha256": "131ad9e739379af55fe6142da4b804b7e114d74960cb6d6a7d1a708dd1aefaba",
+      "use": "design-reference"
+    },
+    {
+      "path": "geometry-delta.json",
+      "bytes": 58436,
+      "gzipBytes": 4595,
+      "sha256": "2b8e785c1f8923cc4ee12e69d9115a66ceff51c0245909bab2906680b3fa99d8",
+      "use": "design-reference"
+    },
+    {
+      "path": "index.html",
+      "bytes": 2729,
+      "gzipBytes": 1453,
+      "sha256": "390b4428c5d323e8f57c126848e77127d9d039843914bb0974508cf5930f0786",
+      "use": "design-reference"
+    },
+    {
+      "path": "preview.css",
+      "bytes": 6225,
+      "gzipBytes": 2143,
+      "sha256": "c0fabe2eafeb15bbbb48acdd164640c7e97e358360491ba21153c6c320d0040b",
+      "use": "design-reference"
+    },
+    {
+      "path": "preview.js",
+      "bytes": 9256,
+      "gzipBytes": 3927,
+      "sha256": "3a4544f93670adcc855cc4d5496e0927ec623a9b219cf7baa75a053d0a3ad273",
+      "use": "design-reference"
+    },
+    {
+      "path": "reference/browser-check.json",
+      "bytes": 1485,
+      "gzipBytes": 274,
+      "sha256": "0f4ee773858893db61b726a11fae93afa0af5bddeac09692e3845bb35e359a8f",
+      "use": "design-reference"
+    },
+    {
+      "path": "reference/desktop-overview.png",
+      "bytes": 432590,
+      "gzipBytes": 427614,
+      "sha256": "ecd011c794bb4cf6ce4307ba67bec9c622fec8532ff7af13bd5a69ac6dbe21b3",
+      "use": "design-reference"
+    },
+    {
+      "path": "reference/east-street-bubbles.png",
+      "bytes": 232451,
+      "gzipBytes": 226451,
+      "sha256": "146ffe1e1397b5c0fd2f4f60be4401c6d8252cc0e5193fefe03cad19cd23e524",
+      "use": "design-reference"
+    },
+    {
+      "path": "reference/pine-walk.png",
+      "bytes": 196982,
+      "gzipBytes": 191010,
+      "sha256": "3d24d3cb0f7497283fdd5aab0b4c45d65d50d103299531f2e7f9a11e523f45db",
+      "use": "design-reference"
+    },
+    {
+      "path": "reference/river-walk.png",
+      "bytes": 203594,
+      "gzipBytes": 196711,
+      "sha256": "f5080472dbfddd87636eecba2615d543046c57caff9a7060318c8a12b93df254",
+      "use": "design-reference"
+    },
+    {
+      "path": "spatial-manifest.json",
+      "bytes": 55802,
+      "gzipBytes": 6126,
+      "sha256": "861fef772675ad2ec01fa57d7a49e5eeb5e3482d43ae9f370fb48fe2b6d866c4",
+      "use": "runtime-data"
+    },
+    {
+      "path": "validation.json",
+      "bytes": 50996,
+      "gzipBytes": 2074,
+      "sha256": "6eab017e564b78b047a036929418b44922d7b319dd854993deb7a4b5ad23d0d2",
+      "use": "design-reference"
+    },
+    {
+      "path": "world-map-expansion-v1.json",
+      "bytes": 949860,
+      "gzipBytes": 47149,
+      "sha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f",
+      "use": "runtime-data"
+    }
+  ]
+}
