@@ -1,3 +1,4 @@
+import {quoteWorldGuide} from './application/agent-quote-communication-guide.ts';
 import {readAgentRuntimeGuide,type AgentRuntimeGuideProvider} from './application/agent-runtime-guide.ts';
 import {runtimeWorldGuide} from './application/agent-runtime-publication.ts';
 import {registerAgentRuntimeRoute} from './transport/http/agent-runtime-routes.ts';
@@ -138,8 +139,8 @@ export async function buildApp(options:BuildAppOptions):Promise<FastifyInstance>
    }
    const avatarAssets=createAvatarAssetService(identity,localAvatarStore(options.avatarAssetRoot??avatarStorageRoot(options.instanceId)));
    registerAvatarAssetRoutes(app,runtime,identity,avatarAssets,options.clock??Date.now);operations.push(...avatarAssetGatewayOperations());guides.push(avatarAssetGatewayGuide);
-   if(runtimeRulesEnabled){runtimeGuideProvider=options.agentRuntimeGuide??readAgentRuntimeGuide;guides[0]=runtimeWorldGuide;registerAgentRuntimeRoute(app,runtimeGuideProvider,store.instanceId);}
-   const gateway=createAgentGateway({store:runtime,identity,operations,publicReads,guides,...(runtimeGuideProvider?{runtimeGuide:runtimeGuideProvider,retainedGuides:[worldExpressionGuide]}:{})});
+   if(runtimeRulesEnabled){runtimeGuideProvider=options.agentRuntimeGuide??readAgentRuntimeGuide;guides[0]=quoteWorldGuide;registerAgentRuntimeRoute(app,runtimeGuideProvider,store.instanceId);}
+   const gateway=createAgentGateway({store:runtime,identity,operations,publicReads,guides,...(runtimeGuideProvider?{runtimeGuide:runtimeGuideProvider,retainedGuides:[worldExpressionGuide,runtimeWorldGuide]}:{})});
    gatewayCapabilities=async()=>({...await gateway.currentCapabilities(),worldSimulation:{enabled:true,actionAdvancement:'deterministic-rule-tasks',movementPolicyVersion:1,stepIntervalMs:1000,pollIntervalMs:1000,idleLife:{enabled:true,policyVersion:IDLE_LIFE_POLICY_V1.version,stepIntervalMs:IDLE_LIFE_POLICY_V1.stepIntervalMs,maxPathLength:IDLE_LIFE_POLICY_V1.maxPathLength,minRestMs:IDLE_LIFE_POLICY_V1.minRestMs,restJitterMs:IDLE_LIFE_POLICY_V1.restJitterMs},externalAgentExecution:false}});
    const gatewayHttp=registerAgentGatewayRoutes(app,gateway,{instanceId:store.instanceId,now:options.clock??Date.now});registerWorldObservationRoutes(gateway,gatewayHttp);if(behaviorLogs)registerBehaviorLogRoutes(gateway,gatewayHttp);
    if(life)registerLifeObservationRoutes(gateway,gatewayHttp,lifeRevision);if(town)registerTownObservationRoutes(gateway,gatewayHttp);registerPublicIdentifierRoutes(gateway,gatewayHttp);

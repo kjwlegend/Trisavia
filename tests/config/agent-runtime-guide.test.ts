@@ -14,7 +14,7 @@ function revision(text:string,ruleVersion:number){return text.replace(/^.*\n/,`<
 
 test('runtime document retains all three approved sections and hashes the original complete UTF-8 bytes',async()=>{
  const raw=await source(),guide=await readAgentRuntimeGuide();
- assert.equal(guide.path,AGENT_RUNTIME_RULES_PATH);assert.equal(guide.ruleVersion,1);assert(Object.isFrozen(guide));
+ assert.equal(guide.path,AGENT_RUNTIME_RULES_PATH);assert.equal(guide.ruleVersion,2);assert(Object.isFrozen(guide));
  assert.equal(guide.bytes,raw.length);assert.equal(guide.text,raw.toString('utf8'));assert.equal(guide.digestAlgorithm,'sha256-utf8-hex');assert.equal(guide.digest,createHash('sha256').update(raw).digest('hex'));assert(raw.length<AGENT_RUNTIME_MAX_BYTES);
  const approved=await readFile(new URL('docs/design/agent-runtime-update-20261026.md',root),'utf8');
  const sections=approved.slice(approved.indexOf('### 1. 每次唤醒\n'),approved.indexOf('\n## 主人一次性迁移提示'));
@@ -26,12 +26,12 @@ test('same provider freshly discovers a rule-only update and never serves old or
  const dir=await mkdtemp(join(tmpdir(),'trisavia-runtime-guide-')),file=join(dir,'runtime.md');
  try{
   const original=await source();await writeFile(file,original);const provider=createAgentRuntimeGuideProvider(file),first=await provider();
-  const next=revision(first.text,2);await writeFile(file,next);const updated=await provider();
-  assert.equal(updated.path,first.path);assert.equal(updated.ruleVersion,2);assert.notEqual(updated.digest,first.digest);assert.equal(updated.text,next);assert.equal(first.text,original.toString('utf8'));
+  const next=revision(first.text,3);await writeFile(file,next);const updated=await provider();
+  assert.equal(updated.path,first.path);assert.equal(updated.ruleVersion,3);assert.notEqual(updated.digest,first.digest);assert.equal(updated.text,next);assert.equal(first.text,original.toString('utf8'));
   await writeFile(file,next.slice(0,-end.length));await assert.rejects(provider,code('runtime_rules_invalid'));
   // The caller can retain its immutable last complete snapshot; failure returns no adoptable new snapshot.
-  assert.equal(updated.text,next);assert.equal(updated.ruleVersion,2);
-  await writeFile(file,revision(first.text,3));assert.equal((await provider()).ruleVersion,3);
+  assert.equal(updated.text,next);assert.equal(updated.ruleVersion,3);
+  await writeFile(file,revision(first.text,4));assert.equal((await provider()).ruleVersion,4);
   await rm(file);await assert.rejects(provider,code('runtime_rules_unavailable'));await assert.rejects(readAgentRuntimeGuide(dir),code('runtime_rules_unavailable'));
  }finally{await rm(dir,{recursive:true,force:true});}
 });
@@ -41,7 +41,7 @@ test('incomplete, malformed and unbounded runtime documents fail as whole docume
  const malformed=[
   '',text.slice(0,-1),text.replace(end,''),text+end,text.replace('### 2. 选择行动','### 缺失'),
   text.replace('### 2. 选择行动','### 1. 每次唤醒'),text.replaceAll('\n','\r\n'),'\uFEFF'+text,text+'\0',
-  text.replace('"ruleVersion":1','"ruleVersion":0'),text.replace('"ruleVersion":1','"ruleVersion":1,"ruleVersion":2'),
+  text.replace('"ruleVersion":2','"ruleVersion":0'),text.replace('"ruleVersion":2','"ruleVersion":2,"ruleVersion":3'),
   text.replace(header,header.replace(/"updatedAt":"[^"]+"/,'"updatedAt":"2026-02-30T00:00:00.000Z"')),
   text.replace('"changeSummary":','"extra":true,"changeSummary":'),text.replace(/"changeSummary":"[^"]+"/,'"changeSummary":""'),
  ];
