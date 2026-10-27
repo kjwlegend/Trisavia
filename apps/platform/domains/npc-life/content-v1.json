@@ -1,0 +1,63 @@
+{
+  "id": "npc-life-water-content@1",
+  "version": 1,
+  "sourceContentSet": "npc-life-content@1",
+  "sourceSha256": "04af3c07424fc97ebada542612467a4192284d0764288fb2b2339c9565cdd5dd",
+  "enabledRefs": [
+    "npc-life/garden/water@1",
+    "npc-life/gardener/open@1",
+    "npc-life/system/water-done@1",
+    "npc-life/system/care-stopped@1",
+    "npc-life/system/gardener-away@1"
+  ],
+  "entries": [
+    {
+      "ref": "npc-life/garden/water@1",
+      "kind": "instruction",
+      "audience": "public",
+      "title": "给花圃浇水",
+      "text": "把水浇在花圃的土面上，花留在原处。用完的水壶也留在照料点，下一位来的人还能用。做完这一轮，土面会留下水迹，园务牌也会记下这次照料。想歇一歇的话，可以再去花径凉亭找空着的长椅。",
+      "when": "浇水点、固定工具、真实活动与提交后水迹表现均已启用，可作静态说明预览；仅阅读不执行care.introduce、不产接待引用、不开始照料或恢复体力。",
+      "digest": "ca0264574060e1ede285aed9c0566d61fe4f414d3f78e7f501c8a77e43188938"
+    },
+    {
+      "ref": "npc-life/gardener/open@1",
+      "speaker": "npc-gardener",
+      "audience": "public",
+      "text": "想动动手吗？先看看园务牌，挑一处现在能照料的地方。",
+      "when": "同一有限计划内care.introduce在合法接待点真实结算成功，青禾当时在场且空闲，产生绑定本人、选中点和本次plan的介绍结果。计划accepted、移动到场、静态阅读、失败或回执重放均不触发；只对应这次真实介绍。",
+      "digest": "221d504b1e8b5dbd16e85caafb1cf61f60331c066017df9089db576e122a28fd"
+    },
+    {
+      "ref": "npc-life/system/water-done@1",
+      "speaker": "system",
+      "audience": "participant",
+      "text": "这轮浇水已完成，土面留下了水迹。",
+      "when": "本次care.perform已提交完成且同次照料结果支持水迹。介绍成功、introductionFrom解析成功、占点/预留体力/消费引用、active、动画播完或仅到期均不是完成。NPC缺席仍可给真实结果，不冒充NPC发言；回执重放不重新播气泡。",
+      "digest": "db2978b22ceff629f006acf93ef2b4c2eb2f2b1ca8488d74c5abe57c7f82d053"
+    },
+    {
+      "ref": "npc-life/system/care-stopped@1",
+      "speaker": "system",
+      "audience": "participant",
+      "text": "这次照料没有完成。",
+      "when": "本次care.perform真实开始后已取消或中断；在本人结果另列真实原因、已花体力与释放量。不统一声称没有消耗；若只是介绍失败/过期、移动失败或照料开始前拒绝，沿原失败原因反馈，不虚构已经劳动。",
+      "digest": "7b9377218754f08d0325005ec56f01e6302160941b61fcc3470132bc3675e801"
+    },
+    {
+      "ref": "npc-life/system/gardener-away@1",
+      "speaker": "system",
+      "audience": "public",
+      "text": "青禾不在接待点。可以先看看园务牌。",
+      "when": "当前权威位置确认青禾不在接待点；已有有效介绍引用不因此失效。",
+      "digest": "45a463462613e71fc0aa8c966575a337493ae1c34588755cf650a92a5c4f0c2c"
+    }
+  ],
+  "inactiveRefs": [
+    {
+      "id": "npc-life/garden/clear@1",
+      "version": 1,
+      "digest": "790b30847cbfa5d5e780ef66b3c9a55d4d8e8f8b20e8df9b94ee67c55ba99cde"
+    }
+  ]
+}

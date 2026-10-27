@@ -1,3 +1,4 @@
+import {NPC_LIFE_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/npc-life-migration.ts';
 import {WORLD_EXPRESSIONS_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/world-expressions-migration.ts';
 import {LIFE_C_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/life-c-migration.ts';
 import {RELATIONSHIP_GIFT_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/relationships-gifts-migration.ts';
@@ -18,7 +19,7 @@ import { applicationSchemas } from './postgresql/permissions.ts';
 import { checkedWorldDatabase } from './world-core-database.ts';
 import { migratePostgres, POSTGRES_SCHEMA_SIGNATURE } from '../apps/platform/infrastructure/postgresql/migrations.ts';
 
-export const worldCoreSchemas=[...applicationSchemas,'runtime','world','interaction','decision','behavior','town_services','public_identifiers','life','avatar_assets'] as const;
+export const worldCoreSchemas=[...applicationSchemas,'runtime','world','interaction','decision','behavior','town_services','public_identifiers','life','avatar_assets','npc_life'] as const;
 /** Maintenance entry only. The application role cannot migrate or alter identity/write gates. */
 export async function grantWorldCorePermissions(config:RuntimeConfig,database:string):Promise<void>{
  checkedWorldDatabase(database);const old=applicationSchemas.join(','),added='runtime,world,interaction,decision,behavior';
@@ -44,6 +45,7 @@ ${LIFE_C_PERMISSIONS_SQL}
 ${RELATIONSHIP_GIFT_PERMISSIONS_SQL}
 ${LIFE_C_COMMERCE_PERMISSIONS_SQL}
 ${WORLD_EXPRESSIONS_PERMISSIONS_SQL}
+${NPC_LIFE_PERMISSIONS_SQL}
  COMMIT;`;
  await docker(['exec','-i',`${config.project}-server`,'psql','-X','-v','ON_ERROR_STOP=1','-U','postgres','-d',database],{input:sql});
 }

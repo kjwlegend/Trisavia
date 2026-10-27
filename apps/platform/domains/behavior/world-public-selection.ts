@@ -11,7 +11,7 @@ interface WorldPublicRule {
 }
 export const WORLD_LOG_PUBLIC_RULES:readonly WorldPublicRule[]=Object.freeze(([
  {sourceDomain:'life',sourceType:'life_activity',subject:'agent',nodes:Object.freeze([
-  'life.work.completed','life.rest.completed','life.fishing.finished',
+  'life.care.completed','life.work.completed','life.rest.completed','life.fishing.finished',
   'life.meal.completed','life.reading.completed','life.visit.completed',
  ] satisfies BehaviorNode[])},
  {sourceDomain:'town_services',sourceType:'town_service',subject:'agent',nodes:Object.freeze(['town_services.service.completed'] satisfies BehaviorNode[])},

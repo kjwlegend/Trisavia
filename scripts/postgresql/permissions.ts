@@ -1,3 +1,4 @@
+import {NPC_LIFE_PERMISSIONS_SQL} from '../../apps/platform/infrastructure/postgresql/npc-life-migration.ts';
 import {WORLD_EXPRESSIONS_PERMISSIONS_SQL} from '../../apps/platform/infrastructure/postgresql/world-expressions-migration.ts';
 import {LIFE_C_PERMISSIONS_SQL} from '../../apps/platform/infrastructure/postgresql/life-c-migration.ts';
 import {RELATIONSHIP_GIFT_PERMISSIONS_SQL} from '../../apps/platform/infrastructure/postgresql/relationships-gifts-migration.ts';
@@ -23,7 +24,8 @@ ${LIFE_COMMERCE_PERMISSIONS_SQL}
 ${LIFE_C_PERMISSIONS_SQL}
 ${RELATIONSHIP_GIFT_PERMISSIONS_SQL}
 ${LIFE_C_COMMERCE_PERMISSIONS_SQL}
-${WORLD_EXPRESSIONS_PERMISSIONS_SQL}\nCOMMIT;\n`;
+${WORLD_EXPRESSIONS_PERMISSIONS_SQL}
+${NPC_LIFE_PERMISSIONS_SQL}\nCOMMIT;\n`;
   await docker(['exec', '-i', `${config.project}-server`, 'psql', '-X', '-v', 'ON_ERROR_STOP=1', '-U', 'postgres', '-d', database], { input: sql });
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
