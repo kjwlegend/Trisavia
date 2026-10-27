@@ -1,11 +1,29 @@
 import {el} from '../common.js';
 import {icon} from './icons.js';
 import {browserLogTimeZone,logDateTime} from './behavior-log-reader.js';
-import {groupLogItems,logFact,logOutcomes} from './behavior-log-presentation.js';
+import {groupLogItems,logFact,logOutcomes,ownerLogText,ownerLogTitle} from './behavior-log-presentation.js';
 const control=(label,run)=>{const node=el('button','',label);node.type='button';node.addEventListener('click',run);return node;};
 const duration=value=>{const hours=Math.floor(value/3600000),minutes=Math.floor(value%3600000/60000),seconds=value%60000/1000;return[hours?`${hours}小时`:'',minutes?`${minutes}分`:'',seconds||!hours&&!minutes?`${seconds}秒`:''].filter(Boolean).join('');};
 const detailTime=(value,timeZone)=>new Intl.DateTimeFormat('zh-CN',{timeZone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).format(value);
-function recordDetail(item,timeZone){
+function ownerDate(item){const [year,month,day]=item.date.split('-').map(Number);return`${year===new Date().getFullYear()?'':year+'年'}${month}月${day}日`;}
+function ownerRecordDetail(item){
+ const node=el('article','behavior-log-detail behavior-owner-note'),details=item.details,authored=item.authored?.kind==='agent_life_statement';
+ node.append(el('p','behavior-owner-date',`${item.agent.displayName||'当前角色'} · ${ownerDate(item)} ${item.time}`),el('h3','',ownerLogTitle(item)),el('p','behavior-owner-origin',authored?'Agent 自述':'事件记录'),el('p','behavior-owner-text',ownerLogText(item)));
+ const rows=[],journal=details?.journal,life=details?.life,roles={bought:'买到',sold:'卖出',caught:'钓到',consumed:'消耗',created:'得到',released:'解除预留',sent:'送出',received:'收到'};
+ if(journal){
+  for(const row of journal.items)rows.push([roles[row.role],`${row.name} × ${row.quantity}`]);
+  for(const[label,value]of [['星币变化',journal.moneyDelta?`${journal.moneyDelta>0?'+':''}${journal.moneyDelta}`:null],['消耗体力',journal.energySpent||null],['恢复体力',journal.energyRestored||null]])if(value!==null)rows.push([label,String(value)]);
+ }else for(const fact of logOutcomes(item,{mode:'owner'}))rows.push(['结果',fact]);
+ if(life?.c?.book)rows.push(['阅读',`《${life.c.book.title}》 · ${life.c.book.authorDisplay}`]);
+ if(life?.fishing){const f=life.fishing;rows.push(['钓鱼结果',`完成 ${f.completedCasts} / ${f.requestedCasts} 竿 · 空竿 ${f.noCatchCount} 竿`],['鱼饵结算',`实际消耗 ${f.actualCosts.bait} 份 · 退回 ${f.refundedCosts.bait} 份`]);}
+ if(rows.length){const facts=el('dl','behavior-log-facts');for(const[label,value]of rows)facts.append(el('dt','',label),el('dd','',value));const source=el('details','behavior-owner-facts');source.append(el('summary','','相关事实'),facts);node.append(source);}
+ if(details?.service?.response)node.append(el('p','',details.service.response));
+ if(journal?.quotaRefunded)node.append(el('p','hud-muted','本次额度已退回。'));
+ if(details?.completeness==='partial'||details?.gaps?.length)node.append(el('p','hud-muted',details.gaps.join(' ')||'这条记录只保留了部分细节。'));
+ if(item.source.label)node.append(el('p','behavior-owner-source',item.source.label));return node;
+}
+function recordDetail(item,timeZone,{mode}={}){
+ if(mode==='owner')return ownerRecordDetail(item);
  const node=el('article','behavior-log-detail'),details=item.details;node.append(el('h3','',item.title),el('p','hud-muted',`${item.agent.displayName||'一位角色'} · 记录于 ${item.date} ${item.time}`),el('p','behavior-log-result',details?.summary||item.result));
  if(details?.summary&&item.result&&![details.summary,item.title].includes(item.result))node.append(el('p','',item.result));
  if(!details){node.append(el('p','hud-muted','该记录未保存更多细节'));return node;}
@@ -35,27 +53,29 @@ export function createBehaviorLogView(reader,{mode,chooseAgent=()=>{},openSource
  const node=el('section',`behavior-logs behavior-logs-${mode}`),heading=el('h3'),subtitle=el('p','hud-muted'),toolbar=el('div','behavior-log-tools'),status=el('p','behavior-log-status'),coverage=el('details','behavior-log-coverage'),coverageText=el('p'),detailTools=el('div','behavior-log-detail-tools'),list=el('div','behavior-log-list'),footer=el('div','behavior-log-footer'),refresh=control('刷新',()=>reader.refresh()),previous=control('上一页',()=>reader.previous()),next=control('下一页',()=>reader.next()),retry=control('重试',()=>reader.retry()),choose=control('选择 Agent',chooseAgent),zones=el('select'),zoneName=el('span','hud-muted');
  coverage.append(el('summary','','记录范围'),coverageText);node.append(heading,subtitle,toolbar,status,detailTools,list,coverage,footer);detailTools.hidden=true;status.setAttribute('role','status');list.tabIndex=-1;list.setAttribute('aria-label',mode==='world'?'世界日志记录':mode==='owner'?'个人日志记录':'角色最近记录');let value=reader.snapshot(),selected=null,savedScroll=0;const expanded=new Set();
  const from=el('input'),to=el('input');from.type=to.type='date';from.setAttribute('aria-label','起始日期');to.setAttribute('aria-label','结束日期');zones.setAttribute('aria-label','日志显示时区');for(const zone of [...new Set([browserLogTimeZone(),'Asia/Shanghai','UTC'])]){const option=el('option','',zone);option.value=zone;zones.append(option);}zones.value=value.filters.timeZone;zones.addEventListener('change',()=>reader.configure({timeZone:zones.value}));from.addEventListener('change',()=>reader.configure({fromDate:from.value}));to.addEventListener('change',()=>reader.configure({toDate:to.value}));
- if(mode==='owner'){for(const [label,input]of [['从',from],['至',to],['时区',zones]]){const field=el('label');field.append(el('span','',label),input);toolbar.append(field);}}else if(mode==='world')toolbar.append(zones);else toolbar.append(zoneName);toolbar.append(refresh);if(mode==='owner')footer.append(previous,next);footer.append(retry,choose);
+ if(mode==='owner'){const filters=el('details','behavior-owner-filters');filters.append(el('summary','','筛选'));for(const [label,input]of [['从',from],['至',to],['时区',zones]]){const field=el('label');field.append(el('span','',label),input);filters.append(field);}toolbar.append(filters);}else if(mode==='world')toolbar.append(zones);else toolbar.append(zoneName);toolbar.append(refresh);if(mode==='owner')footer.append(previous,next);footer.append(retry,choose);
  function showDetail(item){selected=item;savedScroll=list.scrollTop;renderList();list.scrollTop=0;list.focus({preventScroll:true});}
  function returnToList(){const id=selected?.id;selected=null;renderList();list.scrollTop=savedScroll;if(id)list.querySelector(`[data-log-id="${CSS.escape(id)}"]`)?.focus({preventScroll:true});}
  function recordParts(item,{groupCount=0}={}){
   const picture=el('span','behavior-log-avatar');picture.setAttribute('aria-hidden','true');picture.append(icon('profile'));
-  const copy=el('span','behavior-log-copy'),story=el('span','behavior-log-story'),name=el('strong','',item.agent.displayName||'一位角色');story.append(name,document.createTextNode(' '),el('span','',logFact(item)));copy.append(story);
+  const copy=el('span','behavior-log-copy'),story=el('span','behavior-log-story'),name=el('strong','',item.agent.displayName||'一位角色');
+  if(mode==='owner'){story.append(el('span','',ownerLogText(item)));copy.append(el('span','behavior-owner-title',ownerLogTitle(item)));}
+  else story.append(name,document.createTextNode(' '),el('span','',logFact(item)));copy.append(story);
   const outcomes=logOutcomes(item,{mode});if(outcomes.length)copy.append(el('small','behavior-log-outcomes',outcomes.join(' · ')));
   if(groupCount){copy.append(el('small','behavior-log-group-note',`相邻 ${groupCount} 条 · 同一镇民、地点和活动`),el('span','behavior-log-hint',`展开这 ${groupCount} 条记录`));}
-  else copy.append(el('span','behavior-log-hint','查看详情'));
-  const time=el('time','',item.time);time.dateTime=new Date(item.occurredAt).toISOString();return[picture,copy,time];
+  else if(mode!=='owner')copy.append(el('span','behavior-log-hint','查看详情'));
+  const time=el('time','',item.time);time.dateTime=new Date(item.occurredAt).toISOString();return mode==='owner'?[copy,time]:[picture,copy,time];
  }
  function recordRow(item){const row=control('',()=>showDetail(item));row.className='behavior-log-row';row.dataset.logId=item.id;row.append(...recordParts(item));return row;}
  function renderList(){
-  list.replaceChildren();detailTools.replaceChildren();detailTools.hidden=!selected;coverage.hidden=!value.data||Boolean(selected);if(selected){const back=control('返回日志',returnToList);back.className='behavior-log-detail-back';detailTools.append(back);list.append(recordDetail(selected,value.data.timeZone));if(openSource&&selected.source.detail)list.append(control('查看相关记录',()=>openSource(selected.source.detail)));return;}
-  let date='';for(const group of groupLogItems(value.data?.items||[],{mode})){const item=group.items[0];if(item.date!==date){date=item.date;list.append(el('h4','behavior-log-date',date));}if(group.items.length===1){list.append(recordRow(item));continue;}
+  list.replaceChildren();detailTools.replaceChildren();detailTools.hidden=!selected;coverage.hidden=!value.data||Boolean(selected);if(selected){const back=control('返回日志',returnToList);back.className='behavior-log-detail-back';detailTools.append(back);list.append(recordDetail(selected,value.data.timeZone,{mode}));if(openSource&&selected.source.detail)list.append(control('查看相关记录',()=>openSource(selected.source.detail)));return;}
+  let date='';for(const group of groupLogItems(value.data?.items||[],{mode})){const item=group.items[0];if(item.date!==date){date=item.date;list.append(el('h4','behavior-log-date',mode==='owner'?ownerDate(item):date));}if(group.items.length===1){list.append(recordRow(item));continue;}
    const fold=el('details','behavior-log-group'),summary=el('summary','behavior-log-row'),rows=el('div','behavior-log-group-rows');fold.dataset.logGroup=group.id;summary.append(...recordParts(item,{groupCount:group.items.length}));rows.append(...group.items.map(recordRow));fold.append(summary,rows);fold.open=expanded.has(group.id);fold.addEventListener('toggle',()=>{if(!fold.isConnected)return;if(fold.open)expanded.add(group.id);else expanded.delete(group.id);});list.append(fold);
   }
  }
  function render(){
-  const ready=value.phase==='ready',data=value.data;node.dataset.logPhase=value.phase;heading.textContent=mode==='world'?'世界日志':mode==='owner'?`${value.agentName||'当前角色'}的个人日志`:'最近记录';subtitle.textContent=mode==='world'?'最近公开活动':mode==='owner'?'你可查看的历史记录':'当前获准公开的最近记录，最多 10 条。';zoneName.textContent=value.filters.timeZone;from.value=value.filters.fromDate;to.value=value.filters.toDate;zones.value=value.filters.timeZone;refresh.disabled=value.phase==='loading';previous.disabled=!value.canPrevious||value.phase==='loading';next.disabled=!value.canNext||value.phase==='loading';retry.hidden=value.phase!=='error'&&value.phase!=='changed';choose.hidden=!['session','no_agent'].includes(value.phase);choose.textContent=value.phase==='session'?'登录账号':'选择 Agent';
-  status.textContent=value.phase==='loading'?`正在读取${mode==='world'?'世界日志':mode==='owner'?'个人日志':'最近记录'}…`:value.phase==='session'?'登录后可查看你所管理 Agent 的日志。':value.phase==='no_agent'?'请选择要查看日志的 Agent。':value.phase==='forbidden'?'当前无法查看这些记录。':value.phase==='changed'?'查看范围已更新，请刷新。':value.phase==='invalid'?'请检查日期范围与显示时区。':value.phase==='error'?'日志暂时无法读取，请稍后重试。':ready&&data.partial?mode==='owner'?'当前只显示部分记录，请稍后刷新。':'当前只显示部分公开活动，请稍后刷新。':ready&&!data.items.length?mode==='world'?'暂时没有可查看的公开活动。':mode==='owner'?'这段时间没有可查看的记录。':'暂时没有可查看的公开经历。':'';
+  const ready=value.phase==='ready',data=value.data;node.dataset.logPhase=value.phase;heading.textContent=mode==='world'?'世界日志':mode==='owner'?`${value.agentName||'当前角色'}的生活手记`:'最近记录';subtitle.textContent=mode==='world'?'最近公开活动':mode==='owner'?'你可查看的历史记录':'当前获准公开的最近记录，最多 10 条。';zoneName.textContent=value.filters.timeZone;from.value=value.filters.fromDate;to.value=value.filters.toDate;zones.value=value.filters.timeZone;refresh.disabled=value.phase==='loading';previous.disabled=!value.canPrevious||value.phase==='loading';next.disabled=!value.canNext||value.phase==='loading';retry.hidden=value.phase!=='error'&&value.phase!=='changed';choose.hidden=!['session','no_agent'].includes(value.phase);choose.textContent=value.phase==='session'?'登录账号':'选择 Agent';
+  status.textContent=value.phase==='loading'?`正在读取${mode==='world'?'世界日志':mode==='owner'?'个人日志':'最近记录'}…`:value.phase==='session'?'登录后可查看你所管理 Agent 的日志。':value.phase==='no_agent'?'请选择要查看日志的 Agent。':value.phase==='forbidden'?'当前无法查看这些记录。':value.phase==='changed'?'查看范围已更新，请刷新。':value.phase==='invalid'?'请检查日期范围与显示时区。':value.phase==='error'?'日志暂时无法读取，请稍后重试。':ready&&data.partial?mode==='owner'?'当前只显示部分记录，请稍后刷新。':'当前只显示部分公开活动，请稍后刷新。':ready&&!data.items.length?mode==='world'?'暂时没有可查看的公开活动。':mode==='owner'?'这段时间还没有生活记录。':'暂时没有可查看的公开经历。':'';
   coverage.hidden=!data;coverageText.textContent='';if(data){const c=data.historyCoverage;coverageText.textContent=(c.from===null?'更早记录的覆盖范围暂未确认。':`可查记录始于 ${logDateTime(c.from,data.timeZone)}。`)+(!c.complete?'更早的记录不完整。':'')+(c.gaps.length?c.gaps.join(' ')+' ':'');}
   if(!data||!data.items.some(item=>item.id===selected?.id))selected=null;renderList();
  }

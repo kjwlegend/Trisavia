@@ -78,3 +78,21 @@
 .world-home.paper-hud .town-relationships>button{margin:12px 8px 0 0}
 .hud-friends .town-relationships{flex:1;overflow:auto;overscroll-behavior:contain;min-height:0}
 @media(max-width:759px){.world-home.paper-hud .world-detail.is-town-service{right:12px;top:136px;width:calc(100vw - 24px);height:calc(100dvh - 160px)}.town-agent-relation{gap:12px}.town-current-agent{flex-basis:144px}.town-npc-picture{width:88px;height:96px;flex-basis:88px}.world-home.paper-hud .town-npc-picture .avatar{width:88px;height:88px}}
+
+/* One real person header, followed by the existing permitted interactions. */
+.world-home.paper-hud .world-detail.is-npc-person .world-detail-body{color:var(--paper-ink);font-size:14px;line-height:22px}
+.world-detail.is-npc-person :is(#world-detail-icon,#world-detail-description,#world-detail-note,#world-detail-area){display:none}
+.npc-person-card{display:grid;grid-template-columns:80px minmax(0,1fr);align-items:start;gap:12px 16px;margin:0 0 18px;padding:0 0 16px;border-bottom:1px solid var(--paper-border,#ded7c9);color:var(--paper-ink,#263f36)}
+.npc-person-card[hidden]{display:none}.npc-person-picture{display:grid;place-items:center;width:80px;height:80px;background:#e9e5d9;border-radius:7px;overflow:hidden}
+.npc-person-picture .avatar{width:80px;height:80px;object-fit:contain;image-rendering:pixelated;background:transparent;border:0;border-radius:0}
+.npc-person-copy{min-width:0;flex:1}.npc-person-name{font-size:20px;line-height:28px;margin:0 0 3px}.npc-person-role{font-size:13px;line-height:20px;color:#68746e;margin:0}.npc-person-story{grid-column:1/-1;font-size:14px;line-height:24px;margin:0;white-space:pre-wrap}.npc-person-state{grid-column:1/-1;font-size:12px;line-height:18px;color:#785a38;margin:6px 0 0}
+.world-home.paper-hud .town-service-card{min-height:0}
+.town-agent-context{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin:0 0 12px;font-size:12px;line-height:20px;color:var(--paper-muted,#68746e)}
+.town-agent-context>button{min-height:30px;padding:3px 8px;font-size:12px;line-height:20px}
+.world-home.paper-hud .town-service-card .town-service-description{font-size:13px;line-height:21px;margin:0 0 8px}
+.world-home.paper-hud .town-action-guide+.town-card-footer{margin-top:14px}
+body.world-home.paper-hud .world-detail.is-npc-person{width:min(460px,calc(100vw - 48px));height:auto;max-height:min(760px,calc(100dvh - 160px))}body.world-home.paper-hud .world-detail.is-npc-person .world-detail-body{padding:20px}@media(max-width:759px){.world-home.paper-hud .world-detail.is-npc-person{left:12px;right:12px;width:auto}body.world-home.paper-hud .world-detail.is-npc-person .world-detail-body{padding:16px}.npc-person-card{gap:12px}}
+body.world-home.paper-hud #world-detail.is-npc-person{width:min(460px,calc(100vw - 48px));max-width:none;height:auto;max-height:min(760px,calc(100dvh - 160px))}
+body.world-home.paper-hud #world-detail.is-npc-person .npc-person-role{color:var(--paper-muted,#68746e);font-size:13px;line-height:20px}
+body.world-home.paper-hud #world-detail.is-npc-person .npc-person-story{color:var(--paper-ink,#263f36);font-size:14px;line-height:24px}
+@media(max-width:759px){body.world-home.paper-hud #world-detail.is-npc-person{left:12px;right:12px;width:calc(100vw - 24px)}}

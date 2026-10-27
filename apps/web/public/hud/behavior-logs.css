@@ -36,3 +36,16 @@
 .paper-hud .behavior-log-date{display:flex;align-items:center;gap:12px;border:0}
 .paper-hud .behavior-log-date:after{content:'';height:1px;flex:1;background:var(--paper-border,#ded7c9)}
 @media(max-width:759px){.behavior-logs .behavior-log-tools{gap:6px}.behavior-log-group-rows{margin-left:10px;padding-left:10px}.paper-hud :is(.hud-root,.world-detail,.resident-log-host) .behavior-logs .behavior-log-row{grid-template-columns:28px minmax(0,1fr) 38px;gap:8px}.behavior-log-copy>.behavior-log-story{font-size:13px;line-height:21px}.behavior-log-avatar{width:28px;height:28px}}
+
+/* Owner pages keep authored words separate from verified outcomes. */
+.behavior-logs-owner .behavior-log-row,.paper-hud :is(.hud-root,.world-detail,.resident-log-host) .behavior-logs-owner .behavior-log-row{grid-template-columns:minmax(0,1fr) 42px;padding:16px 0;gap:12px}
+.behavior-logs-owner .behavior-log-story{white-space:pre-wrap;line-height:25px;font-size:15px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.behavior-logs-owner .behavior-log-copy>.behavior-owner-origin,.behavior-owner-origin{font-size:11px;line-height:18px;color:#7d6a4e;margin:0 0 5px}
+.behavior-owner-note{padding:4px 0 12px;max-width:640px}.behavior-owner-date{font-size:12px;color:var(--paper-muted,#68746e);margin:0 0 6px}.behavior-owner-text{font-size:16px;line-height:28px;margin:12px 0 20px;white-space:pre-wrap;overflow-wrap:anywhere}
+.behavior-owner-facts{font-size:13px;line-height:22px;border-top:1px solid var(--paper-border,#ded7c9);padding-top:12px}.behavior-owner-facts>summary{cursor:pointer;margin-bottom:10px}.behavior-owner-source{font-size:12px;line-height:20px;color:var(--paper-muted,#68746e)}
+
+.behavior-logs-owner .behavior-owner-title{font-size:16px;line-height:24px;font-weight:600;margin:0 0 4px}.behavior-owner-filters{font-size:12px;line-height:20px}.behavior-owner-filters>summary{cursor:pointer;min-height:34px;display:flex;align-items:center}.behavior-owner-filters[open]{display:flex;flex-wrap:wrap;gap:8px}.behavior-owner-note>h3{font-size:22px;line-height:30px}
+body.world-home.paper-hud .behavior-logs-owner .behavior-owner-text{font-size:16px;line-height:28px;color:var(--paper-ink,#263f36)}
+body.world-home.paper-hud .behavior-logs-owner .behavior-owner-note>h3{font-size:22px;line-height:30px}
+body.world-home.paper-hud .behavior-logs-owner .behavior-owner-title{font-size:16px;line-height:24px}
+body.world-home.paper-hud .behavior-logs-owner .behavior-log-story{font-size:14px;line-height:22px}

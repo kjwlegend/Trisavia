@@ -28,7 +28,7 @@ export function createNpcLifePlace(session,{directoryReader,getRules,chooseAgent
   const card=el('article','life-card npc-care-point'),title=el('h4'),publicStatus=el('p','life-condition'),publicFacts=el('dl','life-facts'),personal=el('p','hud-muted'),intro=el('p','hud-muted'),guide=el('details'),guideTitle=el('summary'),guideBody=el('p','npc-care-guide-body'),button=control('复制照料意图给 Agent',()=>void copy(point.pointId));card.dataset.pointId=point.pointId;guide.append(guideTitle,guideBody);card.append(title,publicStatus,publicFacts,personal,intro,guide,button);view={card,title,publicStatus,publicFacts,personal,intro,guideTitle,guideBody,button};cards.set(point.pointId,view);return view;
  }
  function render(){
-  node.hidden=!active;if(!active)return;const data=publicState.data,agent=selected(),npc=data?.npcs.find(n=>n.npcId==='npc-gardener');heading.textContent=npc?`${npc.name} · 园务牌`:'园务牌';
+  node.hidden=!active;if(!active)return;const data=publicState.data,agent=selected(),npc=data?.npcs.find(n=>n.npcId==='npc-gardener');heading.textContent='园务互动';
   presence.hidden=!npc;presence.textContent=npc?`${npc.present?npc.busy?'青禾正在接待。':'青禾在接待处，可按当前规则了解照料方法。':'青禾暂时不在接待处；园务说明仍可阅读。'}${data?`（确认于 ${when(data.asOf)}）`:''}`:'';
   status.textContent=worldStale||publicState.stale?'上次园务状态已过期，不能据此开始照料。':['idle','loading'].includes(publicState.phase)?'正在读取真实园务状态…':publicState.phase==='refreshing'?'正在更新园务状态…':!data?publicState.errorStatus===404?'园务照料当前尚未启用。':'园务来源暂时无法读取，请重试。':'';status.hidden=!status.textContent;
   empty.hidden=Boolean(data?.carePoints.length)||!data;empty.textContent='当前目录没有已启用的照料点。';choose.hidden=Boolean(agent)||!data;choose.textContent=context.authenticated?'选择自己的 Agent':'登录／注册';

@@ -2,6 +2,10 @@
 export function logFact(item){
  return item.details?.summary||[...new Set([item.title,item.result].filter(Boolean))].join('，')||item.action;
 }
+// A statement stays distinct from authoritative results. Old entries are never
+// rewritten in the Agent's voice, and public modes do not call this presenter.
+export function ownerLogText(item){return item.authored?.kind==='agent_life_statement'?item.authored.text:item.source.node==='interaction.feedback.submitted'?'留下一条回复记录。':logFact(item);}
+export function ownerLogTitle(item){return item.authored?.kind==='agent_life_statement'?item.authored.title||'生活记录':item.source.node==='interaction.feedback.submitted'?'回复记录':item.title;}
 function repeatKey(item){
  const details=item.details,location=details?.location,life=details?.life;
  if(item.agent.actorKind!=='npc'||!item.agent.npcId||item.source.domain!=='life'||details?.completeness!=='recorded'||!life?.actionId||!location?.from||!location.to||location.via?.length)return null;

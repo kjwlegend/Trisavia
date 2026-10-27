@@ -3,7 +3,6 @@ import {api,el} from '../common.js';
 import {iconBodies} from '../paper-ui/icons.js';
 import {avatar} from '../scene.js';
 import {PIXEL_LAYOUT_SHA256,PIXEL_GEOMETRY_DIGEST,PIXEL_MAP} from '../world-pixel/map.js';
-import {publicLifeLabel} from './life-public-state.js';
 import {readWorldNpcs} from './world-scene-projection.js';
 const invalid=()=>Object.assign(new Error('town_response_invalid'),{code:'town_response_invalid'});
 const integer=value=>Number.isSafeInteger(value)&&value>=0;
@@ -58,7 +57,6 @@ const townPaths={
  check:'m4 12 5 5L20 6',
 };
 function townIcon(name){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','2');svg.setAttribute('stroke-linecap','round');svg.setAttribute('stroke-linejoin','round');svg.setAttribute('aria-hidden','true');svg.classList.add('town-icon');const body=iconBodies[({greet:'speech',cancel:'close'})[name]||name];if(body){svg.setAttribute('stroke','none');svg.innerHTML=body;return svg;}const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',townPaths[name]||townPaths.info);svg.append(path);return svg;}
-function sectionTitle(number,label){const title=el('h3','town-section-title'),badge=el('span','town-section-number',number);badge.setAttribute('aria-hidden','true');title.append(badge,document.createTextNode(label));return title;}
 function familiarity(value){const box=el('div','town-familiarity'),meter=el('progress');meter.max=100;meter.value=value;meter.setAttribute('aria-label',`熟悉度 ${value} / 100`);box.append(el('span','',`熟悉度 ${value} / 100`),meter);return box;}
 function factLine(label,kind='info'){const line=el('p','town-fact');line.append(townIcon(kind),document.createTextNode(label));return line;}
 function portrait(fields,className){const picture=el('span',className);avatar(picture,fields);return picture;}
@@ -78,29 +76,14 @@ export function createTownServiceCard(session,{chooseAgent=()=>{},getWorldState=
   if(messageNode)messageNode.textContent=message;
  }
  function actionRow(label,iconName,run,{disabled=false,reason='',ariaLabel=`复制${label}指令`}={}){
-  const row=el('div','town-action-row'),title=el('span','town-action-label'),button=control('复制指令',run);title.append(townIcon(iconName),document.createTextNode(label));button.setAttribute('aria-label',ariaLabel);button.disabled=disabled||worldStale;if(reason)button.title=reason;row.classList.toggle('is-disabled',disabled);row.append(title,button);return row;
+  const row=el('div','town-action-row'),title=el('span','town-action-label'),button=control('复制指引',run);title.append(townIcon(iconName),document.createTextNode(label));button.setAttribute('aria-label',ariaLabel);button.disabled=disabled||worldStale;if(reason)button.title=reason;row.classList.toggle('is-disabled',disabled);row.append(title,button);return row;
  }
- function arrival(agent,facility){
-  const world=getWorldState()?.worldScene,row=world?.avatars?.find(row=>row.fact.agentId===agent.agentId)?.fact;
-  const fresh=!world?.stale&&world?.complete&&['ready','refreshing'].includes(world.phase)&&Date.now()-world.lastSuccessAt<=5000;
-  return fresh&&row?facility.approachCells.some(cell=>cell.x===row.position.x&&cell.y===row.position.y)?'已到服务附近。':'尚未到服务附近。':'当前位置尚未确认。';
- }
- function currentAgentSection(){
-  const box=el('section','town-section town-personal-state'),agent=selected(context);box.append(sectionTitle('2',agent?`与${agent.name}的关系`:'与当前 Agent 的关系'));
-  if(!agent){box.append(el('p','hud-muted',context.authenticated?'选择一位自己的 Agent，可查看它的券和服务进度。':context.phase==='expired'?'登录已失效，请重新登录后查看。':'登录后，可观察自己 Agent 的券和服务进度。'),control(context.authenticated?'选择 Agent':'登录／注册',chooseAgent));return box;}
-  const row=el('div','town-agent-relation'),identity=el('div','town-current-agent'),identityText=el('div','town-agent-identity');
-  identityText.append(el('strong','',agent.name),el('span','paper-stable-id',publicIdLabel(agent.publicId)),control('切换 Agent',chooseAgent));identity.append(portrait({appearance:agent.appearance??agent.avatar,displayName:agent.name},'town-agent-picture'),identityText);row.append(identity);
-  const facts=el('div','town-relation-facts');
-  if(privatePhase==='ready'){
-   const relation=privateData.relationships.relationships.find(row=>row.npcId===publicData.npc.npcId);
-   const line=el('div','town-relationship-fact');line.append(factLine(relation?'已结识':privateData.relationships.complete?'尚未结识':'结识情况尚未全部读取',relation?'check':'info'));if(relation)line.append(familiarity(relation.familiarity));facts.append(line);
-  }else facts.append(el('p','hud-muted',privatePhase==='loading'?'正在读取关系…':'关系暂未取得。'));
-  const participation=el('div','town-participation-facts');participation.append(factLine(arrival(agent,publicData.facility),'location'));
-  if(privatePhase==='ready'&&privateData.progress.activeRest?.npcId===publicData.npc.npcId)participation.append(factLine('正在休息','rest'));facts.append(participation);
-  if(agent.ownerPaused)facts.append(el('p','hud-muted','主人已暂停参与。'));else if(agent.platformRestricted)facts.append(el('p','hud-muted','当前参与受到限制。'));
-  row.append(facts);box.append(row);return box;
+ function agentContext(){
+  const row=el('div','town-agent-context'),agent=selected(context);row.append(el('span','',agent?`当前 Agent：${agent.name}`:context.authenticated?'尚未选择 Agent':'登录后可查看自己 Agent 的当前条件'),control(agent?'切换 Agent':context.authenticated?'选择 Agent':'登录／注册',chooseAgent));
+  if(agent?.ownerPaused)row.append(el('span','hud-muted','主人已暂停参与。'));else if(agent?.platformRestricted)row.append(el('span','hud-muted','当前参与受到限制。'));return row;
  }
  function statusBox(service){
+  if(!selected(context))return null;const current=privateData?.progress.activeRest,operation=privateData?.operation;if(privatePhase==='ready'&&current?.npcId!==publicData.npc.npcId&&!['completed','cancelled'].includes(operation?.state))return null;
   const box=el('div','town-service-status');box.setAttribute('role','status');const content=el('div','town-status-copy');box.append(townIcon('info'),content);
   if(!selected(context))content.append(el('p','','登录并选择 Agent 后，可查看实际状态。'));
   else if(privatePhase==='loading')content.append(el('p','','正在读取当前情况…'));
@@ -118,8 +101,8 @@ export function createTownServiceCard(session,{chooseAgent=()=>{},getWorldState=
   return box;
  }
  function guideSection(service,npc){
-  const box=el('section','town-section town-action-guide');box.append(sectionTitle('3','行动指引'));
-  const plan=el('div','town-service-plan'),offer=el('div','town-service-offer'),offerText=el('div');offer.append(townIcon(service.serviceId==='welcome.claim'?'gift':service.serviceId==='inn.rest'?'rest':'tea'));offerText.append(el('h4','',service.name));
+  const box=el('section','town-section town-action-guide');box.append(el('h3','town-section-title','互动'));
+  const plan=el('div','town-service-plan'),offer=el('div','town-service-offer'),offerText=el('div');offer.append(townIcon(service.serviceId==='welcome.claim'?'gift':service.serviceId==='inn.rest'?'rest':'tea'));offerText.append(el('h4','',service.name),el('p','town-service-description',service.description));
   let condition=service.itemCost?`需要 1 张${names[service.itemCost]}`:'每位 Agent 限领一次，无需用券';
   if(service.durationMs)condition+=` · 约 ${service.durationMs/1000} 秒`;
   if(service.itemCost&&privatePhase==='ready'){
@@ -135,7 +118,7 @@ export function createTownServiceCard(session,{chooseAgent=()=>{},getWorldState=
    else plan.append(actionRow(service.serviceId==='inn.rest'?'开始休息':'领取新邻居礼包',service.serviceId==='inn.rest'?'rest':'gift',()=>void copy(service),{disabled:Boolean(resting||claimed||unknownState),reason:resting?'正在休息，请等待实际结果或复制取消指令。':claimed?'本期礼包已经领取。':unknownState?'请先取得当前服务状态。':'',ariaLabel:service.serviceId==='inn.rest'?'复制开始休息指令':'复制领取新邻居礼包指令'}));
   }
   if(service.serviceId==='inn.rest'&&npc.actions.includes('town_services.inn.rest.cancel'))plan.append(actionRow('取消休息','cancel',()=>void copy(service,null,'cancel'),{disabled:!resting,reason:resting?'':'当前没有获准取消的进行中休息。',ariaLabel:'复制取消休息指令'}));
-  plan.append(statusBox(service));box.append(plan);return box;
+  const state=statusBox(service);if(state)plan.append(state);box.append(plan);return box;
  }
  function render(){
   node.replaceChildren();messageNode=null;if(!active)return;node.dataset.townKind=target?.notice&&phase!=='ready'?'notice':'npc';node.setAttribute('aria-busy',String(phase==='loading'));
@@ -148,11 +131,7 @@ export function createTownServiceCard(session,{chooseAgent=()=>{},getWorldState=
   }
   if(!publicData)return;
   if(worldStale)node.append(el('p','life-status','上次镇民状态已过期，位置与动作冻结；恢复连接后重新确认服务。'));
-  const {npc,service}=publicData,intro=el('section','town-section town-introduction'),heading=el('div','town-service-heading'),identity=el('div','town-npc-identity');intro.append(sectionTitle('1','NPC 介绍'));
-  identity.append(el('h4','town-npc-name',npc.name),el('p','paper-stable-id',publicIdLabel(npc.publicId,'N')),el('p','hud-muted',npc.role),el('p','town-npc-description',service.description),el('p','town-npc-activity',publicLifeLabel(npc.activity)));
-  const building=getWorldState()?.rules?.mapManifest?.buildings.find(row=>row.id===npc.buildingId);identity.append(factLine(building?`服务设施：${building.name}附近；镇民位置以地图当前读取为准。`:'地点说明暂未取得。','location'));
-  heading.append(portrait({appearance:npc.appearance,displayName:npc.name},'town-npc-picture'),identity);intro.append(heading);
-  node.append(intro,currentAgentSection(),guideSection(service,npc),footer());
+  const {npc,service}=publicData;node.append(agentContext(),guideSection(service,npc),footer());
  }
  async function load(){
   if(!active||!target)return;cancel();const turn=generation,controller=new AbortController();abort=controller;phase='loading';privatePhase='idle';publicData=null;privateData=null;message='';render();
@@ -165,13 +144,13 @@ export function createTownServiceCard(session,{chooseAgent=()=>{},getWorldState=
    if(turn!==generation||!active)return;render();if(target.notice||!selected(context))return;
    const agentId=context.selectedAgentId;privatePhase='loading';render();
    try{
-    const [progress,inventory,relationships]=await Promise.all(['progress','inventory','relationships'].map(operation=>readTownOwner(session,operation,{}, {signal:controller.signal})));if(turn!==generation||agentId!==context.selectedAgentId||!active)return;
+    const [progress,inventory]=await Promise.all(['progress','inventory'].map(operation=>readTownOwner(session,operation,{}, {signal:controller.signal})));if(turn!==generation||agentId!==context.selectedAgentId||!active)return;
     let operation=progress.activeRest?.npcId===response.npc.npcId?progress.activeRest:progress.claim?.npcId===response.npc.npcId?progress.claim:null;
     const latest=progress.completedServices.filter(row=>row.npcId===response.npc.npcId&&row.serviceId===response.service.serviceId).sort((a,b)=>b.completedAt-a.completedAt)[0];
     if(!operation&&latest)operation=(await readTownOwner(session,'operation',{operationId:latest.operationId},{signal:controller.signal})).operation;
     if(turn!==generation||agentId!==context.selectedAgentId||!active)return;
     if(operation&&(operation.npcId!==response.npc.npcId||operation.serviceId!==response.service.serviceId))throw invalid();
-    privateData={progress,inventory,relationships,operation};privatePhase='ready';
+    privateData={progress,inventory,operation};privatePhase='ready';
    }catch(error){if(turn!==generation||controller.signal.aborted)return;privateData=null;privatePhase=[401,403,404].includes(error.status)?'forbidden':'error';}
    render();
   }catch(error){if(turn!==generation||controller.signal.aborted)return;publicData=null;privateData=null;phase='error';render();}

@@ -2,7 +2,6 @@ import {el} from '../common.js';
 import {publicIdLabel} from '../public-id.js';
 import {createLifeActionsReader,createLifeOptionsReader} from './life-readers.js';
 import {buildWorkRestIntent,buildBenchRestIntent} from './life-intent.js';
-import {publicLifeLabel} from './life-public-state.js';
 import {createLifeCPlace} from './life-c-place.js';
 import {createLifeBPlace} from './life-b-place.js';
 import {icon} from './icons.js';
@@ -35,7 +34,7 @@ export function createLifePlaceCard(session,{getWorldState,chooseAgent=()=>{},np
  function render(){
   const focus=document.activeElement?.dataset?.lifeBField,scrollHost=node.closest('.world-detail-body'),scrollTop=scrollHost?.scrollTop;node.replaceChildren();node.hidden=!active;if(!active)return;if(target.npcLife){node.append(npcPlace.node);return;}node.dataset.lifePhase=state.phase;
   if(worldStale)node.append(el('p','life-status','上次世界画面已过期，位置与动作冻结；恢复后再核对当前条件。'));
-  if(target.npc){const info=el('section','life-npc-summary');info.append(el('h3','',target.npc.name),el('p','paper-stable-id',publicIdLabel(target.npc.publicId,'N')),el('p','',publicLifeLabel(target.npc.activity)),el('p','hud-muted','小镇规则角色，不是真实外部 Agent。'));if(npcStale)info.append(el('p','life-status','上次确认的镇民状态已过期，位置与动作冻结。'));node.append(info);}
+  if(npcStale)node.append(el('p','life-status','上次确认的镇民状态已过期，请重新读取。'));
   const status=el('p','life-status');status.setAttribute('role','status');status.textContent=state.stale?'上次读取的活动条款已过期，请重新确认。':state.phase==='loading'?'正在读取场所活动…':state.phase==='refreshing'?'正在更新活动条款…':['error','changed','forbidden'].includes(state.phase)?'场所活动暂时无法读取，请重试。':'';status.hidden=!status.textContent;node.append(status);
   const place=match();if(state.data&&place){const heading=el('div','life-place-heading'),aPlace=['harbor_work','harbor_tavern','garden_bench'].includes(place.placeId),image=aPlace?el('img'):icon('location');if(aPlace){image.src=`/assets/world-life/assets/place-${place.placeId}.svg`;image.alt='';image.width=32;image.height=32;}heading.append(image,el('h3','',`${place.name} · 场所活动`));node.append(heading,el('p','hud-muted','先查看条件，复制给 Agent 不会在浏览器中开始活动或交易。'));
    if(['fisher_shop','harbor_shore','harbor_pier'].includes(place.placeId)){bPlace.update({catalog:state.data,place,worldStale:worldStale||npcStale||state.stale});node.append(bPlace.node);}else bPlace.close();if(state.data.catalogRevision===3&&state.data.actions.some(a=>a.placeId===place.placeId&&['meal.prepare','meal.eat','rest.inn','book.read','visit.place'].includes(a.actionId))){cPlace.update({catalog:state.data,place,worldStale:worldStale||npcStale||state.stale});node.append(cPlace.node);}else cPlace.close();
