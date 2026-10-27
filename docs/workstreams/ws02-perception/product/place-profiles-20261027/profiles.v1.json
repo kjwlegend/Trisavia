@@ -1,0 +1,1501 @@
+{
+  "contentSetRef": "ws02-place-profiles@1",
+  "version": 1,
+  "status": "content_ready_pending_engineering_integration",
+  "baseline": {
+    "appVersion": "0.9.0",
+    "commit": "4d29b9beae27a80bc7dfec2d1bde196e3ca22f6d",
+    "worldId": "default",
+    "mapId": "pixel-town-v2",
+    "layoutId": "town-expansion-layout-v1",
+    "mapManifestVersion": 6,
+    "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f",
+    "checkedDate": "2026-10-27",
+    "menuTargets": 47,
+    "additionalMapObjects": 1
+  },
+  "npcNamesSource": {
+    "path": "docs/workstreams/ws03-interaction/life-actions-v1/npc-personas-v1.draft.json",
+    "contentSetRef": "npc-personas@1",
+    "sha256": "dfd9398deb8542564b6dcd74d0bd6ddc663ca9e6691e94c0c268479cda815580",
+    "runtimeRule": "Resolve owner/provider labels from the current identity source by stable npcId; do not create a second name table."
+  },
+  "images": {
+    "town-expanded": {
+      "path": "docs/design/town-expansion-20261027/assets/town-expanded.png",
+      "sha256": "0c0713c189910b33def81462f7b2553cc5531c032236b332cfe2ed8e2cbb12e6",
+      "dimensions": [
+        2048,
+        1536
+      ],
+      "cropCoordinates": "original-image-pixels",
+      "fit": "contain",
+      "pixelated": true
+    },
+    "care-watering": {
+      "path": "docs/design/npc-life-expansion-20261027/assets/care-watering.png",
+      "sha256": "61bfd7f62dd70bfbb22e2314b3e4d2fc50442c4db4f184defc97c30fdc709518",
+      "dimensions": [
+        128,
+        32
+      ],
+      "cropCoordinates": "original-image-pixels",
+      "fit": "contain",
+      "pixelated": true
+    }
+  },
+  "profiles": [
+    {
+      "profileId": "n-cottage",
+      "target": {
+        "kind": "world-place",
+        "id": "n-cottage",
+        "buildingId": "n-cottage"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "栗子小屋",
+      "area": "北侧居住巷",
+      "description": "栗色瓦顶的小屋守着北侧巷子的一角，木阶从门前接向石路。屋檐、烟囱和小小前院挤在一起，适合在认路时记作一处温暖的路标。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          328,
+          376,
+          80,
+          102
+        ],
+        "alt": "栗子小屋的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "n-attic",
+      "target": {
+        "kind": "world-place",
+        "id": "n-attic",
+        "buildingId": "n-attic"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "苔顶阁楼",
+      "area": "北侧居住巷",
+      "description": "苔色尖顶高过窄巷，阁楼的轮廓从围栏后探出来。沿着屋前石路绕一绕，便能看见北侧街屋错落的高低，和两栋房子之间留下的短巷。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          408,
+          328,
+          96,
+          118
+        ],
+        "alt": "苔顶阁楼的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "n-long",
+      "target": {
+        "kind": "world-place",
+        "id": "n-long",
+        "buildingId": "n-long"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "红瓦长屋",
+      "area": "北侧居住巷",
+      "description": "红瓦长屋沿北侧街面铺开，两扇窗和门廊把长长的屋身分成几段。走过这里，连续的屋檐让这条居住巷显得格外整齐，也很容易辨认。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          536,
+          376,
+          128,
+          102
+        ],
+        "alt": "红瓦长屋的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "n-tower",
+      "target": {
+        "kind": "world-place",
+        "id": "n-tower",
+        "buildingId": "n-tower"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "钟巷门楼",
+      "area": "北侧居住巷",
+      "description": "钟巷门楼在北侧街屋间拔起细高的轮廓，石阶接着高门。它是巷子里醒目的地标；从塔脚望回去，低低的瓦屋与道路都换了一个角度。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          664,
+          328,
+          80,
+          134
+        ],
+        "alt": "钟巷门楼的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "n-blue",
+      "target": {
+        "kind": "world-place",
+        "id": "n-blue",
+        "buildingId": "n-blue"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [
+        "blue_library"
+      ],
+      "name": "蓝檐书屋",
+      "area": "北侧居住巷",
+      "description": "蓝色屋檐点亮了北侧街角，书屋旁留着一小片绿意。阅读设在北侧外廊，免费馆藏和可购买的手册各有入口，适合把散步的脚步放慢一些。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          792,
+          360,
+          96,
+          118
+        ],
+        "alt": "蓝檐书屋的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [
+        "npc-librarian"
+      ],
+      "currentServices": [
+        "免费馆藏／自有手册阅读",
+        "购买港湾生活手册"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "n-kiosk",
+      "target": {
+        "kind": "world-place",
+        "id": "n-kiosk",
+        "buildingId": "n-kiosk"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "河口小亭",
+      "area": "北侧居住巷",
+      "description": "河口小亭紧靠北岸道路，窄小的屋身和门前招牌很容易让人记住。沿着亭前走到河边，可以看见街巷在这里收住，石路接向开阔的水岸。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          920,
+          408,
+          64,
+          86
+        ],
+        "alt": "河口小亭的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "w-workshop",
+      "target": {
+        "kind": "world-place",
+        "id": "w-workshop",
+        "buildingId": "w-workshop"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "木作工坊",
+      "area": "工坊小街",
+      "description": "木作工坊用低长的屋身占住工坊街一角，前场留着箱件与出入的余地。烟囱和木檐是这里的记号，适合从街边看看这片朴实的建筑。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          280,
+          504,
+          128,
+          102
+        ],
+        "alt": "木作工坊的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "w-studio",
+      "target": {
+        "kind": "world-place",
+        "id": "w-studio",
+        "buildingId": "w-studio"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "针线小间",
+      "area": "工坊小街",
+      "description": "针线小间比邻近的工坊小一圈，短檐和窗旁花盆把门口收得很紧凑。走到这里，不妨看看矮屋与长工作间之间的小路，转角自有一点趣味。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          392,
+          488,
+          80,
+          86
+        ],
+        "alt": "针线小间的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "w-bakery",
+      "target": {
+        "kind": "world-place",
+        "id": "w-bakery",
+        "buildingId": "w-bakery"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "麦香炉屋",
+      "area": "工坊小街",
+      "description": "麦香炉屋的尖顶与烟囱在工坊街上十分醒目，木桶靠在屋边。石路从门前经过，再通向林间；如今可以在外面辨认它温暖的瓦色与屋形。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          264,
+          616,
+          96,
+          118
+        ],
+        "alt": "麦香炉屋的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "w-annex",
+      "target": {
+        "kind": "world-place",
+        "id": "w-annex",
+        "buildingId": "w-annex"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "藤院小舍",
+      "area": "工坊小街",
+      "description": "藤院小舍藏在工坊街的短巷旁，小院与围栏围出一块安静角落。它没有高大的屋身，却让宽路旁多了一处细小转折，适合慢慢认路。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          408,
+          616,
+          64,
+          86
+        ],
+        "alt": "藤院小舍的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "e-market",
+      "target": {
+        "kind": "world-place",
+        "id": "e-market",
+        "buildingId": "e-market"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "河岸杂货铺",
+      "area": "河岸市集",
+      "description": "河岸杂货铺以长屋和遮棚面向街道，门前的箱堆留下市集的模样。这里是辨认东侧街区的好路标，沿着屋前走，可以继续找到旅舍和河岸。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          808,
+          504,
+          128,
+          86
+        ],
+        "alt": "河岸杂货铺的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "e-inn",
+      "target": {
+        "kind": "world-place",
+        "id": "e-inn",
+        "buildingId": "e-inn"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [
+        "stone_inn"
+      ],
+      "name": "石岸旅舍",
+      "area": "河岸市集",
+      "description": "石岸旅舍立在河岸市集一侧，石阶托起尖顶小楼。现有休息安排在西侧可见的休憩廊，既可查看用券说明，也可按当前条件选择短憩。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          920,
+          536,
+          96,
+          118
+        ],
+        "alt": "石岸旅舍的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [
+        "npc-innkeeper"
+      ],
+      "currentServices": [
+        "原券休息",
+        "付费短憩"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "e-linked",
+      "target": {
+        "kind": "world-place",
+        "id": "e-linked",
+        "buildingId": "e-linked"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "滨河双屋",
+      "area": "河岸市集",
+      "description": "滨河双屋把主屋和侧翼连在一起，门廊与花盆让两段屋身彼此照应。走过河岸市集时，这组错落的屋顶很容易辨认，屋外还有继续向南的小路。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          792,
+          616,
+          128,
+          118
+        ],
+        "alt": "滨河双屋的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "e-stall",
+      "target": {
+        "kind": "world-place",
+        "id": "e-stall",
+        "buildingId": "e-stall"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [
+        "fisher_shop"
+      ],
+      "name": "渔人小铺",
+      "area": "河岸市集",
+      "description": "渔人小铺挨着河岸街道，矮檐下摆着木桶。这里可以查看鱼竿、鱼饵与收鱼说明；带什么出门、把哪条鱼留下，都由来访的居民自己决定。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          920,
+          712,
+          64,
+          86
+        ],
+        "alt": "渔人小铺的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [
+        "npc-fishing-clerk"
+      ],
+      "currentServices": [
+        "渔具／鱼饵购买",
+        "自有鱼出售"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "s-green",
+      "target": {
+        "kind": "world-place",
+        "id": "s-green",
+        "buildingId": "s-green"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "园丁之家",
+      "area": "花园与林缘",
+      "description": "绿瓦屋顶坐在花园与林缘之间，围栏把门前的小片绿地轻轻围住。园丁之家是南侧街区的一处路标，沿屋外小径走，还能看见邻近的长房和高屋。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          488,
+          776,
+          96,
+          118
+        ],
+        "alt": "园丁之家的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "s-glass",
+      "target": {
+        "kind": "world-place",
+        "id": "s-glass",
+        "buildingId": "s-glass"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "种子长房",
+      "area": "花园与林缘",
+      "description": "种子长房把宽宽的屋檐铺在南侧石路旁，双窗和门廊面向街道。花盆点缀着低长的屋身；这里可以在屋外停步看看，种植与售种尚未开放。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          616,
+          776,
+          128,
+          102
+        ],
+        "alt": "种子长房的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "s-observer",
+      "target": {
+        "kind": "world-place",
+        "id": "s-observer",
+        "buildingId": "s-observer"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "林缘望屋",
+      "area": "花园与林缘",
+      "description": "林缘望屋比旁边的瓦屋高出一截，细长屋身和石阶十分醒目。它立在花园通向林缘的位置，走到门前，能辨认南侧几条道路的不同去向。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          776,
+          776,
+          80,
+          134
+        ],
+        "alt": "林缘望屋的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "s-cottage",
+      "target": {
+        "kind": "world-place",
+        "id": "s-cottage",
+        "buildingId": "s-cottage"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "山桃小屋",
+      "area": "花园与林缘",
+      "description": "山桃小屋靠着南侧林缘，红色屋顶和小院落在绿树旁。沿路经过时，可以把它和邻近的高屋一同记住，下一次从花园回来就不容易认错路。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          840,
+          792,
+          80,
+          102
+        ],
+        "alt": "山桃小屋的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "p-hall",
+      "target": {
+        "kind": "world-place",
+        "id": "p-hall",
+        "buildingId": "p-hall"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [
+        "town_hall"
+      ],
+      "name": "山台会馆",
+      "area": "北侧台地公共区",
+      "description": "山台会馆坐在北侧台地，宽阔门廊正对公共石路。市政厅的迎新服务设在这里，居民可按现有条件前来办理；台阶之外，也留着从容经过的空间。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          448,
+          120,
+          208,
+          134
+        ],
+        "alt": "山台会馆的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [
+        "npc-mayor"
+      ],
+      "currentServices": [
+        "迎新领取（原唯一权益）"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "p-arcade",
+      "target": {
+        "kind": "world-place",
+        "id": "p-arcade",
+        "buildingId": "p-arcade"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "石阶长廊",
+      "area": "北侧台地公共区",
+      "description": "石阶长廊以一排矮柱撑起长檐，贴着北侧台地的道路展开。走过会馆前，不妨留意这里层层相接的石阶与栏边，台地的高低因此更分明。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          320,
+          168,
+          112,
+          86
+        ],
+        "alt": "石阶长廊的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "p-observatory",
+      "target": {
+        "kind": "world-place",
+        "id": "p-observatory",
+        "buildingId": "p-observatory"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [
+        "lookout"
+      ],
+      "name": "穹顶观测台",
+      "area": "北侧台地公共区",
+      "description": "穹顶观测台立在台地较高处，层层收起的屋顶与别处瓦屋不同。现在可以到外侧停留看景，沿着石阶认一认北侧道路，不必为到访准备器具。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          760,
+          40,
+          96,
+          118
+        ],
+        "alt": "穹顶观测台的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [
+        "外侧具名到访"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "p-welcome",
+      "target": {
+        "kind": "world-place",
+        "id": "p-welcome",
+        "buildingId": "p-welcome"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "迎新驿站",
+      "area": "北侧台地公共区",
+      "description": "迎新驿站的小亭立在北侧台地入口一带，门前标牌朝向来路。它适合当作认路的起点：顺着开放石路，可以继续走向长廊、会馆和台地上的看台。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          280,
+          56,
+          96,
+          86
+        ],
+        "alt": "迎新驿站的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "p-stand",
+      "target": {
+        "kind": "world-place",
+        "id": "p-stand",
+        "buildingId": "p-stand"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "风台看台",
+      "area": "北侧台地公共区",
+      "description": "风台看台用层叠的台阶和矮栏面向开阔处，屋顶之外的天空显得更宽。它连着北侧公共石路，适合散步经过时停一停，看看台地边缘的景致。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          848,
+          168,
+          112,
+          86
+        ],
+        "alt": "风台看台的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "h-warehouse",
+      "target": {
+        "kind": "world-place",
+        "id": "h-warehouse",
+        "buildingId": "h-warehouse"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [
+        "harbor_work",
+        "harbor_shore"
+      ],
+      "name": "盐风仓棚",
+      "area": "东岸港湾",
+      "description": "盐风仓棚以宽阔的低屋和箱件前场守着港湾道路。码头短工的工作区就在附近，来访者可以先看岗位与空位，再决定是否为今天安排一班工作。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          1240,
+          456,
+          160,
+          102
+        ],
+        "alt": "盐风仓棚的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [
+        "npc-harbor-hand"
+      ],
+      "currentServices": [
+        "码头短工（外侧）",
+        "近岸钓鱼（临水点另选）"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "h-tavern",
+      "target": {
+        "kind": "world-place",
+        "id": "h-tavern",
+        "buildingId": "h-tavern"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [
+        "harbor_tavern"
+      ],
+      "name": "港湾酒馆",
+      "area": "东岸港湾",
+      "description": "港湾酒馆的长檐向外场伸展，门前有帮工、餐位和餐食服务。忙过一阵可以带自己的食物来坐坐，也可以先看看酒保是否在场，再选择迎新招待。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          1320,
+          632,
+          144,
+          86
+        ],
+        "alt": "港湾酒馆的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [
+        "npc-tavern"
+      ],
+      "currentServices": [
+        "酒馆帮工",
+        "购买餐食",
+        "自有鱼加工",
+        "自有餐食用餐",
+        "酒保在场时迎新招待"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "h-beacon",
+      "target": {
+        "kind": "world-place",
+        "id": "h-beacon",
+        "buildingId": "h-beacon"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "系舟小塔",
+      "area": "东岸港湾",
+      "description": "系舟小塔立在港湾道路旁，细长塔身和灯具让它在低矮仓棚间格外醒目。沿塔边走，可以继续辨认水岸与棚屋；这里没有登塔或出航入口。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          1256,
+          728,
+          64,
+          134
+        ],
+        "alt": "系舟小塔的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "h-boatshed",
+      "target": {
+        "kind": "world-place",
+        "id": "h-boatshed",
+        "buildingId": "h-boatshed"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "船匠棚屋",
+      "area": "东岸港湾",
+      "description": "船匠棚屋靠近港湾南侧，宽门与低檐朝着前场，绳索和作业空间留下朴实的轮廓。如今可沿外侧道路经过，修船、造船与租船尚未开放。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          1368,
+          888,
+          128,
+          86
+        ],
+        "alt": "船匠棚屋的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "g-glass",
+      "target": {
+        "kind": "world-place",
+        "id": "g-glass",
+        "buildingId": "g-glass"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "林隙温室",
+      "area": "西南林间花园",
+      "description": "林隙温室藏在西南花园的树木之间，透亮的屋面与邻近木屋很不一样。花盆围着外缘排开，适合从小路看看这片绿色角落，温室内部尚未开放。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          160,
+          696,
+          112,
+          102
+        ],
+        "alt": "林隙温室的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "g-pavilion",
+      "target": {
+        "kind": "world-place",
+        "id": "g-pavilion",
+        "buildingId": "g-pavilion"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [
+        "garden_bench"
+      ],
+      "name": "花径凉亭",
+      "area": "西南林间花园",
+      "description": "花径凉亭以矮檐接住西南花园的小路，长椅与桌边休息位散在周围。这里可以免费休息，也能在合适餐位吃自己的食物，给下一段散步留些余裕。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          104,
+          872,
+          96,
+          86
+        ],
+        "alt": "花径凉亭的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [
+        "免费长椅休息",
+        "自有餐食用餐",
+        "具名到访"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "g-linked",
+      "target": {
+        "kind": "world-place",
+        "id": "g-linked",
+        "buildingId": "g-linked"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "橡叶连屋",
+      "area": "西南林间花园",
+      "description": "橡叶连屋把几段高低不一的屋顶接在一起，木檐廊顺着林边展开。门前花盆和转折的小路让这一带很有层次，适合从外侧慢慢看过。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          344,
+          936,
+          144,
+          102
+        ],
+        "alt": "橡叶连屋的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "g-lodge",
+      "target": {
+        "kind": "world-place",
+        "id": "g-lodge",
+        "buildingId": "g-lodge"
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "茶花小院",
+      "area": "西南林间花园",
+      "description": "茶花小院在西南林缘留出一块偏静的角落，小屋、院子与花园挨得很近。沿着附近木道与石路经过，可以看看这里与热闹街区不同的屋前尺度。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          168,
+          936,
+          80,
+          102
+        ],
+        "alt": "茶花小院的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "commons",
+      "target": {
+        "kind": "world-place",
+        "id": "commons",
+        "buildingId": null
+      },
+      "placeId": "commons",
+      "relatedPlaceIds": [
+        "commons"
+      ],
+      "name": "公共庭",
+      "area": "小镇",
+      "description": "公共庭位于小镇中央，石路绕着中心图案向几处街区展开。刚来时可以在这里认认方向，再决定去河岸、工坊街还是北侧居住巷，路不必一次走完。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          496,
+          496,
+          288,
+          288
+        ],
+        "alt": "公共庭的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [
+        "公共通行／散步"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "region:harbour",
+      "target": {
+        "kind": "world-region",
+        "id": "region:harbour",
+        "buildingId": null
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "A · 东岸港湾",
+      "area": "公共漫步区",
+      "description": "东岸港湾把仓棚、酒馆和临水道路连在一起，箱件与栈桥组成鲜明的轮廓。工作、钓鱼和餐食各在自己的活动点，沿公共道路散步也能看看这一带。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          1080,
+          432,
+          512,
+          600
+        ],
+        "alt": "A · 东岸港湾的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [
+        "公共通行／散步"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "region:plateau",
+      "target": {
+        "kind": "world-region",
+        "id": "region:plateau",
+        "buildingId": null
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "B · 北侧台地公共区",
+      "area": "公共漫步区",
+      "description": "北侧台地的石阶把会馆、长廊和看台接起来，建筑之间留着宽阔空地。这里适合沿路辨认高低与转折，观测台的外侧也有已开放的停留地点。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          264,
+          32,
+          736,
+          296
+        ],
+        "alt": "B · 北侧台地公共区的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [
+        "公共通行／散步"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "region:woodland",
+      "target": {
+        "kind": "world-region",
+        "id": "region:woodland",
+        "buildingId": null
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "C · 西南林间花园",
+      "area": "公共漫步区",
+      "description": "西南林间花园让木道、矮屋与树丛交错在一起，温室和凉亭各有自己的角落。可以循着开放小路散步，再按需要选择长椅休息或已有的用餐位。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          80,
+          680,
+          432,
+          416
+        ],
+        "alt": "C · 西南林间花园的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [
+        "公共通行／散步"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "region:pine-walk",
+      "target": {
+        "kind": "world-region",
+        "id": "region:pine-walk",
+        "buildingId": null
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "松荫漫步园",
+      "area": "公共漫步区",
+      "description": "松荫漫步园用回环小路串起树木与花圃，转过弯还会回到熟悉的路段。园务牌上能看到当前照料事项；想帮忙时，先看看青禾是否在接待处。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          152,
+          1136,
+          432,
+          304
+        ],
+        "alt": "松荫漫步园的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [
+        "公共通行／散步",
+        "园务牌与已启用浇水点（另选）"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "region:river-walk",
+      "target": {
+        "kind": "world-region",
+        "id": "region:river-walk",
+        "buildingId": null
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "南汊河湾步道",
+      "area": "公共漫步区",
+      "description": "南汊河湾步道沿水岸向南铺开，一段木道贴近河边，另一侧留着树木和草地。这里适合沿开放道路慢慢走，暂没有钓鱼、采集或导览任务。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          776,
+          1040,
+          272,
+          376
+        ],
+        "alt": "南汊河湾步道的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [
+        "公共通行／散步"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "region:east-street",
+      "target": {
+        "kind": "world-region",
+        "id": "region:east-street",
+        "buildingId": null
+      },
+      "placeId": null,
+      "relatedPlaceIds": [],
+      "name": "东岸外街",
+      "area": "公共漫步区",
+      "description": "东岸外街把方整石路与小广场排在港湾更东边，长椅、箱件和灯柱散在街旁。可以从酒馆一带继续走来看看，沿街的新接待与路线活动尚未开放。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          1512,
+          616,
+          376,
+          424
+        ],
+        "alt": "东岸外街的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [
+        "公共通行／散步"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "life:harbor_work",
+      "target": {
+        "kind": "life-place",
+        "id": "life-place:harbor_work",
+        "buildingId": "h-warehouse"
+      },
+      "placeId": "harbor_work",
+      "relatedPlaceIds": [
+        "harbor_work"
+      ],
+      "name": "港湾码头",
+      "area": "小镇外场",
+      "description": "港湾码头的工作点设在盐风仓棚旁，箱件与道路分开，来往的人仍可经过。想做一班短工，可以先看当前岗位条件与空位，完成后再安排自己的去处。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          1152,
+          448,
+          264,
+          152
+        ],
+        "alt": "港湾码头的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [
+        "npc-harbor-hand"
+      ],
+      "currentServices": [
+        "码头短工"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "life:harbor_tavern",
+      "target": {
+        "kind": "life-place",
+        "id": "life-place:harbor_tavern",
+        "buildingId": "h-tavern"
+      },
+      "placeId": "harbor_tavern",
+      "relatedPlaceIds": [
+        "harbor_tavern"
+      ],
+      "name": "港湾酒馆",
+      "area": "小镇外场",
+      "description": "酒馆外场把帮工、餐位与厨房服务点分开安排，热闹都发生在看得见的地方。可以工作、购买餐食，或处理自己选中的鱼；吃饭还要另选合适餐位。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          1256,
+          624,
+          240,
+          216
+        ],
+        "alt": "港湾酒馆的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [
+        "npc-tavern"
+      ],
+      "currentServices": [
+        "酒馆帮工",
+        "购买餐食",
+        "自有鱼加工",
+        "自有餐食用餐"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "life:garden_bench",
+      "target": {
+        "kind": "life-place",
+        "id": "life-place:garden_bench",
+        "buildingId": "g-pavilion"
+      },
+      "placeId": "garden_bench",
+      "relatedPlaceIds": [
+        "garden_bench"
+      ],
+      "name": "花园凉亭",
+      "area": "小镇外场",
+      "description": "花园凉亭周围留着几处长椅与桌边位置，林间小路从旁边经过。这里的免费休息不要求先购物；带了自己的餐食，也可以按当前空位选择用餐。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          96,
+          864,
+          128,
+          176
+        ],
+        "alt": "花园凉亭的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [
+        "免费长椅休息",
+        "自有餐食用餐",
+        "具名到访"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "life:harbor_shore",
+      "target": {
+        "kind": "life-place",
+        "id": "life-place:harbor_shore",
+        "buildingId": "h-warehouse"
+      },
+      "placeId": "harbor_shore",
+      "relatedPlaceIds": [
+        "harbor_shore"
+      ],
+      "name": "港区近岸",
+      "area": "小镇外场",
+      "description": "港区近岸的钓位在陆地边缘，面向水面，旁边保留通行的小路。带上自己的鱼竿和鱼饵再查看条件；一趟垂钓的收获，仍要等实际结果慢慢揭晓。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          1136,
+          584,
+          144,
+          168
+        ],
+        "alt": "港区近岸的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [
+        "近岸钓鱼",
+        "具名到访"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "life:harbor_pier",
+      "target": {
+        "kind": "life-place",
+        "id": "life-place:harbor_pier",
+        "buildingId": null
+      },
+      "placeId": "harbor_pier",
+      "relatedPlaceIds": [
+        "harbor_pier"
+      ],
+      "name": "港湾木栈台",
+      "area": "小镇外场",
+      "description": "港湾木栈台向水边伸出一小段，钓位与经过的步道各留余地。这里提供另一处垂钓选择，也能按已开放规则停留到访，脚下仍是小镇的木道。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          1144,
+          640,
+          144,
+          104
+        ],
+        "alt": "港湾木栈台的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [
+        "栈台钓鱼",
+        "具名到访"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "life:fisher_shop",
+      "target": {
+        "kind": "life-place",
+        "id": "life-place:fisher_shop",
+        "buildingId": "e-stall"
+      },
+      "placeId": "fisher_shop",
+      "relatedPlaceIds": [
+        "fisher_shop"
+      ],
+      "name": "渔人小铺",
+      "area": "小镇外场",
+      "description": "渔人小铺的交易点在门前，鱼竿、鱼饵与收鱼说明都可以先查看。带着自己的鱼获来时，可以挑好想出售的那几条；店员外出不影响已开放的自助服务。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          912,
+          704,
+          80,
+          112
+        ],
+        "alt": "渔人小铺的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [
+        "npc-fishing-clerk"
+      ],
+      "currentServices": [
+        "渔具／鱼饵购买",
+        "自有鱼出售"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "life:stone_inn",
+      "target": {
+        "kind": "life-place",
+        "id": "life-place:stone_inn",
+        "buildingId": "e-inn"
+      },
+      "placeId": "stone_inn",
+      "relatedPlaceIds": [
+        "stone_inn"
+      ],
+      "name": "石岸旅舍·西侧休憩廊",
+      "area": "小镇外场",
+      "description": "旅舍西侧的休憩廊有遮蔽，也能从外面看见休息的位置。用券休息与付费短憩共享这里的容量，适合在一段忙碌后查看空位，给自己留一会儿安静。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          824,
+          528,
+          200,
+          128
+        ],
+        "alt": "石岸旅舍·西侧休憩廊的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [
+        "npc-innkeeper"
+      ],
+      "currentServices": [
+        "原券休息（原设施入口）",
+        "付费短憩"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "life:blue_library",
+      "target": {
+        "kind": "life-place",
+        "id": "life-place:blue_library",
+        "buildingId": "n-blue"
+      },
+      "placeId": "blue_library",
+      "relatedPlaceIds": [
+        "blue_library"
+      ],
+      "name": "蓝檐书屋·北侧阅读廊",
+      "area": "小镇外场",
+      "description": "书屋北侧的阅读廊沿屋外展开，座位与购书入口各有位置。这里能读免费馆藏，也能翻阅自己持有的手册；安静坐下一段时间，让文字伴着这次停留。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          784,
+          320,
+          112,
+          160
+        ],
+        "alt": "蓝檐书屋·北侧阅读廊的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [
+        "npc-librarian"
+      ],
+      "currentServices": [
+        "免费馆藏／自有手册阅读",
+        "购买港湾生活手册"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "life:lookout",
+      "target": {
+        "kind": "life-place",
+        "id": "life-place:lookout",
+        "buildingId": "p-observatory"
+      },
+      "placeId": "lookout",
+      "relatedPlaceIds": [
+        "lookout"
+      ],
+      "name": "穹顶观测台外侧",
+      "area": "小镇外场",
+      "description": "穹顶观测台外侧连接台地石路，是一处已开放的具名到访点。可以在这里完成一次停留，看看周围屋顶与道路的层次，不需要购买门票或领取器具。",
+      "image": {
+        "sourceId": "town-expanded",
+        "sourceRect": [
+          752,
+          32,
+          112,
+          128
+        ],
+        "alt": "穹顶观测台外侧的现有建筑或场景"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [],
+      "currentServices": [
+        "具名到访"
+      ],
+      "interiorOpen": false
+    },
+    {
+      "profileId": "npc-care-board",
+      "target": {
+        "kind": "npc-care-point",
+        "id": "npc-care-board",
+        "buildingId": null
+      },
+      "placeId": "pine-care-water-01",
+      "relatedPlaceIds": [
+        "pine-care-water-01",
+        "pine-gardener-reception"
+      ],
+      "name": "青禾 · 园务牌",
+      "area": "松荫漫步园",
+      "description": "园务牌立在松荫漫步园的照料区旁，写着当前事项与上一次完成的记录。眼下开放花圃浇水；想亲手照料时，先到接待处看看青禾是否有空。",
+      "image": {
+        "sourceId": "care-watering",
+        "sourceRect": [
+          0,
+          0,
+          32,
+          32
+        ],
+        "alt": "园务牌对应花圃的现有浇水素材，使用静态初始帧"
+      },
+      "ownerNpcId": null,
+      "providerNpcIds": [
+        "npc-gardener"
+      ],
+      "currentServices": [
+        "公开园务牌读取",
+        "青禾在场介绍后花圃浇水"
+      ],
+      "interiorOpen": false
+    }
+  ],
+  "proposedOwnership": [
+    {
+      "profileId": "s-green",
+      "ownerNpcId": null,
+      "candidateOwnerNpcId": "npc-gardener",
+      "status": "proposal_unconfirmed",
+      "requires": "M03与TD确认明确的场所归属数据后方可落实；园丁之家名称、青禾职业与路过位置均不构成产权依据。"
+    }
+  ],
+  "excludedTargets": [
+    {
+      "kind": "town-notice",
+      "id": "notice",
+      "reason": "公告牌沿用原公告卡，本批不替换。"
+    },
+    {
+      "kind": "npc",
+      "reason": "动态人物沿用独立NPC人物卡，不属于场所介绍。"
+    }
+  ]
+}
