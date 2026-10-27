@@ -5,7 +5,7 @@ export const AGENT_RUNTIME_RULES_PATH='/agent/runtime.md';
 export const AGENT_RUNTIME_MAX_BYTES=16384;
 const file=new URL('../../../docs/access/v1/runtime.md',import.meta.url);
 const start='<!-- connet:runtime-rule ',end='<!-- connet:runtime-rule:end -->';
-const headings=['### 1. 每次唤醒','### 2. 选择行动','### 3. 向主人分享'];
+export const AGENT_RUNTIME_SECTION_HEADINGS=Object.freeze(['## 1. 授权与调度','## 2. 获取规则与续接','## 3. 了解世界','## 4. 选择与执行','## 5. 角色、事实与感受','## 6. 自然表达','## 7. 通知、投递与记录']);
 export interface AgentRuntimeGuide {
  readonly path:typeof AGENT_RUNTIME_RULES_PATH;
  readonly ruleVersion:number;
@@ -28,13 +28,13 @@ export function parseAgentRuntimeGuide(raw:Uint8Array):AgentRuntimeGuide {
  let text:string;try{text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes);}catch{invalid();}
  if(text!.startsWith('\uFEFF')||text!.includes('\r')||text!.includes('\0')||!text!.endsWith(end+'\n'))invalid();
  const lines=text!.split('\n'),header=lines[0]!;
- if(!header.startsWith(start)||!header.endsWith(' -->')||lines.filter(line=>line.startsWith(start)).length!==1||lines.filter(line=>line===end).length!==1)invalid();
+ if(!header.startsWith(start)||!header.endsWith(' -->')||text!.split(start).length!==2||text!.split(end).length!==2||lines.filter(line=>line===end).length!==1)invalid();
  let metadata:unknown;try{metadata=JSON.parse(header.slice(start.length,-4));}catch{invalid();}
  if(!metadata||typeof metadata!=='object'||Array.isArray(metadata))invalid();
  const m=metadata as Record<string,unknown>;
  if(Object.keys(m).join(',')!=='ruleVersion,updatedAt,changeSummary'||header!==start+JSON.stringify(m)+' -->'||!Number.isSafeInteger(m.ruleVersion)||Number(m.ruleVersion)<1||typeof m.updatedAt!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(m.updatedAt)||!Number.isFinite(Date.parse(m.updatedAt))||new Date(m.updatedAt).toISOString()!==m.updatedAt||typeof m.changeSummary!=='string'||!m.changeSummary.trim()||m.changeSummary!==m.changeSummary.trim()||[...m.changeSummary].length>240||/[\p{Cc}\p{Cf}<>]/u.test(m.changeSummary))invalid();
- const positions=headings.map(heading=>{const matches=lines.flatMap((line,index)=>line===heading?[index]:[]);if(matches.length!==1)invalid();return matches[0]!;});
- if(positions[0]!>=positions[1]!||positions[1]!>=positions[2]!)invalid();
+ const actualHeadings=lines.filter(line=>/^#{2,3}\s/u.test(line));if(actualHeadings.length!==AGENT_RUNTIME_SECTION_HEADINGS.length||actualHeadings.some((line,index)=>line!==AGENT_RUNTIME_SECTION_HEADINGS[index]))invalid();
+ const positions=AGENT_RUNTIME_SECTION_HEADINGS.map(heading=>lines.indexOf(heading));
  for(let i=0;i<positions.length;i++)if(!lines.slice(positions[i]!+1,positions[i+1]??lines.length-2).join('\n').trim())invalid();
  return Object.freeze({path:AGENT_RUNTIME_RULES_PATH,ruleVersion:m.ruleVersion as number,updatedAt:m.updatedAt as string,changeSummary:m.changeSummary as string,digestAlgorithm:'sha256-utf8-hex',digest:createHash('sha256').update(bytes).digest('hex'),bytes:bytes.length,text:text!});
 }
