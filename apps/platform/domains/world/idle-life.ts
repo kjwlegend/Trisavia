@@ -54,16 +54,16 @@ export function idlePath(rules: WorldRuleset, from: GridPoint, occupied: GridPoi
  * No map coordinates, user choices, station claims, events or random read-time decisions are created.
  */
 export function roamingPath(rules:WorldRuleset,from:GridPoint,occupied:GridPoint[],seed:number):GridPoint[]{
- const blocked=new Set(occupied.map(cellKey)),seen=new Map<string,{cell:GridPoint;parent:string|null}>(),queue=[from];
+ const blocked=new Set([...occupied,...rules.blocked,...rules.unopened??[]].map(cellKey)),bounds=worldBounds(rules),closed=rules.places.filter(p=>p.access==='closed'),seen=new Map<string,{cell:GridPoint;parent:string|null}>(),queue=[from];
  seen.set(cellKey(from),{cell:from,parent:null});
  const directions=[{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0,y:-1}];
  for(let i=0;i<queue.length&&seen.size<16384;i++)for(let n=0;n<4;n++){
   const d=directions[(n+seed%4)%4]!,cell={x:queue[i]!.x+d.x,y:queue[i]!.y+d.y},key=cellKey(cell);
-  if(seen.has(key)||blocked.has(key)||!isWalkable(rules,cell))continue;
+  if(seen.has(key)||blocked.has(key)||cell.x<bounds.minX||cell.x>bounds.maxX||cell.y<bounds.minY||cell.y>bounds.maxY||closed.some(p=>cell.x>=p.bounds.left&&cell.x<=p.bounds.right&&cell.y>=p.bounds.top&&cell.y<=p.bounds.bottom))continue;
   seen.set(key,{cell,parent:cellKey(queue[i]!)});queue.push(cell);
  }
  const path=(end:GridPoint)=>{const result:GridPoint[]=[];let key:string|null=cellKey(end);while(key){const v:{cell:GridPoint;parent:string|null}=seen.get(key)!;if(v.parent===null)break;result.push(v.cell);key=v.parent;}return result.reverse();};
- const targets=(rules.mapManifest?.buildings??[]).map(b=>b.entrance).filter(c=>seen.has(cellKey(c))&&distance(c,from)>=4);
+ const targets=[...(rules.mapManifest?.walkingRegions??[]).flatMap(r=>r.roamTargets),...(rules.mapManifest?.buildings??[]).map(b=>b.entrance)].filter(c=>seen.has(cellKey(c))&&distance(c,from)>=4);
  const fallback=queue.filter(c=>distance(c,from)>=4),destination=targets.length?targets[seed%targets.length]!:fallback[seed%Math.max(1,fallback.length)];
  if(!destination)return idlePath(rules,from,occupied,seed);
  return path(destination).slice(0,Math.min(rules.maxPathLength,CURRENT_IDLE_LIFE_POLICY.maxPathLength));

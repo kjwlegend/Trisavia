@@ -20,6 +20,8 @@ export async function buildWeb({root=defaultRoot}={}){
   await source(resolve(publicRoot,'world-map-life-v1.json'));
   await source(resolve(publicRoot,'world-life/world-map-life-b-v1.json'));
   await source(resolve(publicRoot,'world-life/world-map-life-c-v1.json'));
+  await source(resolve(publicRoot,'world-life/world-map-expansion-v1.json'));
+  await source(resolve(publicRoot,'world-life/spatial-manifest-expansion-v1.json'));
   await source(resolve(publicRoot,'world-life/spatial-manifest-c-v1.json'));
   const pkg=JSON.parse(await source(resolve(root,'package.json')));await source(resolve(root,'package-lock.json'));await source(resolve(root,'scripts/build-web.mjs'));for(const path of await filesIn(resolve(root,'scripts/web-build')))await source(path);
   const brandDir=resolve(publicRoot,'brand/trisavia-02'),exports=JSON.parse(await source(resolve(brandDir,'performance-exports.json')));if(exports.version!==1||exports.exports.length!==2)throw new Error('Exact approved brand performance exports required');let brandBytes=0;

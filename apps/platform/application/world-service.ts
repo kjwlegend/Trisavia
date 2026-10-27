@@ -1,3 +1,4 @@
+import {TOWN_EXPANSION_GEOMETRY_DIGEST} from '../domains/world/town-expansion-v1.ts';
 import {behaviorSourceEvent,storedBehaviorDetails,worldBehaviorDetails} from '../domains/behavior/details.ts';
 import type {BehaviorDetails,BehaviorObservationAccess,BehaviorRecord} from '../domains/behavior/types.ts';
 import {assertWorldActionAllowed} from '../domains/access/world-action-policy.ts';
@@ -182,6 +183,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
   }
   function currentPlanRules(movement:WorldMovement,rules:WorldRuleset):boolean {
     if(movement.rulesetVersion===rules.version&&movement.topologyVersion===rules.topologyVersion)return true;
+    if(rules.version===6&&rules.topologyVersion===6&&rules.mapManifest?.geometryDigest===TOWN_EXPANSION_GEOMETRY_DIGEST&&movement.rulesetVersion===movement.topologyVersion&&[1,2,3,4,5].includes(movement.rulesetVersion)){try{for(const cell of movement.path.slice(movement.nextStep))assertCell(rules,cell);return true;}catch{return false;}}
     if(rules.version===3&&rules.topologyVersion===3&&rules.mapManifest?.mapId==='pixel-town-v2'&&[1,2].includes(movement.rulesetVersion)){try{for(const cell of movement.path.slice(movement.nextStep))assertCell(rules,cell);return true;}catch{return false;}}
     return movement.rulesetVersion===1&&movement.topologyVersion===1&&rules.version===2&&rules.topologyVersion===2&&rules.mapManifest?.mapId==='pixel-town-v2'
       &&movement.path.slice(movement.nextStep).every(cell=>cell.x>=0&&cell.x<=15&&cell.y>=0&&cell.y<=15);

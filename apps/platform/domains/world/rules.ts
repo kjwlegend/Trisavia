@@ -14,7 +14,7 @@ export function point(input: unknown): GridPoint {
 export function containingPlace(rules: WorldRuleset, position: GridPoint): WorldPlace | undefined {
   return rules.places.find(({ bounds }) => position.x >= bounds.left && position.x <= bounds.right && position.y >= bounds.top && position.y <= bounds.bottom);
 }
-export const MAX_WORLD_CELLS=16384,MAX_NONWALKABLE_CELLS=8192,MAX_WORLD_COORDINATE=100000;
+export const MAX_WORLD_CELLS=16384,MAX_NONWALKABLE_CELLS=12288,MAX_WORLD_COORDINATE=100000;
 export function worldBounds(rules:WorldRuleset):WorldBounds {return rules.bounds??{minX:0,minY:0,maxX:rules.width-1,maxY:rules.height-1};}
 export function assertCell(rules: WorldRuleset, position: GridPoint): void {
   const bounds=worldBounds(rules);

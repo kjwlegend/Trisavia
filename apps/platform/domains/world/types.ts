@@ -75,6 +75,8 @@ export interface WorldBounds { minX:number; minY:number; maxX:number; maxY:numbe
 export interface WorldNpc { npcId:string;name:string;role:string;position:GridPoint;approachCells:GridPoint[];appearance:{lookId:string;catalogVersion:string};serverManaged:true;readOnly:true;actions:never[];status:'service_unavailable';countsAsAgent:false }
 export interface WorldMapManifest {
  mapId:string;version:number;layoutUrl:string;layoutSha256:string;geometryDigest:string;
+ layoutId?:string;
+ walkingRegions?:{id:string;name:string;description:string;roamTargets:GridPoint[]}[];
  source:{width:number;height:number};tileSize:number;origin:GridPoint;bounds:WorldBounds;
  counts:{walkable:number;physicalBlocked:number;unopened:number};singleSurface:true;visualElevationOnly:true;
  buildings:{id:string;name:string;entrance:GridPoint;interior:false}[];
