@@ -1,6 +1,14 @@
 import {el} from '../common.js';
 import {worldOverlayRects,overlaps,freeAreas} from '../world-safe-area.js';
 import {expressionPolicy as policy,expressionActorKey,expressionPreview} from './world-expression-reader.js';
+import {readPublicLifeActivity,publicLifeLabel} from './life-public-state.js';
+// A current fact is a quiet indicator, never an authored expression/event. It
+// receives no expression ID/TTL and never enters the speech/full-text lifecycle.
+export function currentActivityText(actor,serverTime){
+ if(!Number.isFinite(serverTime)||serverTime<0||['suspended','left'].includes(actor?.status))return null;let activity;try{activity=readPublicLifeActivity(actor?.activity);}catch{return null;}
+ if(activity?.state!=='active'||activity.startedAt>serverTime)return null;
+ return serverTime>=activity.scheduledEndAt?'活动结果待确认':publicLifeLabel(activity);
+}
 export function expressionBudget(bounds,blocked=[],density='standard'){
  const max=policy.limits.visibleBubblesPerViewport[density]??0;if(density!=='standard')return max;
  const room=freeAreas({left:0,right:bounds.width,top:0,bottom:bounds.height},blocked).some(r=>r.right-r.left>=900&&r.bottom-r.top>=520);return room?max:Math.min(2,max);
@@ -22,13 +30,13 @@ function createExpressionArt(redraw){
  return{get,dispose(){disposed=true;controller.abort();for(const url of loaded.values())URL.revokeObjectURL(url);loaded.clear();pending.clear();}};
 }
 export function createExpressionLayer(root,lifecycle,{redraw=()=>{},onActive=()=>{},now=()=>performance.now()}={}){
- const node=el('div','world-expression-layer');root.append(node);const art=createExpressionArt(redraw),nodes=new Map();let lastFull='',density='standard',setId='gestures',lastEnteredAt=-Infinity;
- function clear(){for(const child of nodes.values())child.remove();nodes.clear();}
+ const node=el('div','world-expression-layer');root.append(node);const art=createExpressionArt(redraw),nodes=new Map(),indicators=new Map();let lastFull='',density='standard',setId='gestures',lastEnteredAt=-Infinity,lastIndicatorAt=-Infinity;
+ function clear(){for(const collection of[nodes,indicators]){for(const child of collection.values())child.remove();collection.clear();}}
  function tick({actors,scale,active,reducedMotion,error=null}={}){
   node.dataset.protocolError=error||'';
   const full=active?lifecycle.full():[],key=JSON.stringify(full);if(key!==lastFull){lastFull=key;onActive(full);}
   if(!active){lifecycle.suspend();clear();return;}
-  const candidates=lifecycle.candidates();if(density==='off'||!candidates.length){lifecycle.admit([],{discardPending:density==='off'});clear();return;}
+  const candidates=lifecycle.candidates();if(density==='off'){lifecycle.admit([],{discardPending:true});clear();return;}
   const locations=typeof actors==='function'?actors():actors,bounds=root.getBoundingClientRect(),blocked=worldOverlayRects(root,0),admitted=[],seen=new Set(),actorIds=new Set(),low=scale<.75,set=policy.sets.find(s=>s.id===setId);
   for(const element of document.querySelectorAll('#world-owned-tooltip,#world-town-tooltip,dialog[open]'))if(!element.hidden&&element.getClientRects().length){const b=element.getBoundingClientRect();blocked.push({left:b.left-bounds.left,right:b.right-bounds.left,top:b.top-bounds.top,bottom:b.bottom-bounds.top});}
   const max=expressionBudget(bounds,blocked,density),actorRects=[...locations.values()].map(actor=>actor.rect);
@@ -46,6 +54,18 @@ export function createExpressionLayer(root,lifecycle,{redraw=()=>{},onActive=()=
    const enter=!record.static&&!record.entered&&!reducedMotion;if(enter)bubble.classList.add('is-entering');if(record.static||reducedMotion)bubble.classList.remove('is-entering');bubble.style.opacity=reducedMotion?'1':String(Math.max(0,Math.min(1,lifecycle.remaining(record)/140)));bubble.dataset.static=String(record.static||reducedMotion);if(!record.entered)lastEnteredAt=now();blocked.push(position.box);admitted.push(row.expressionId);seen.add(row.expressionId);actorIds.add(actorId);
   }
   lifecycle.admit(admitted);for(const[id,bubble]of nodes)if(!seen.has(id)){bubble.remove();nodes.delete(id);}
+  const current=new Set();
+  for(const[actorId,actor]of locations){
+   if(actorIds.size>=max)break;const rect=actor.rect;if(actorIds.has(actorId)||rect.left<0||rect.right>bounds.width||rect.top<0||rect.bottom>bounds.height)continue;
+   const content=currentActivityText(actor,lifecycle.serverNow());if(!content)continue;
+   // Quiet fact admissions never delay a newly received genuine expression.
+   const activityId=actor.activity.activityId,key=actorId+':'+activityId;let bubble=indicators.get(key);if(!bubble&&now()-Math.max(lastEnteredAt,lastIndicatorAt)<policy.limits.entryGapMs)continue;
+   const entering=!bubble;if(!bubble){bubble=el('div','world-expression status activity-indicator');bubble.dataset.activityId=activityId;bubble.setAttribute('role','img');node.append(bubble);indicators.set(key,bubble);}
+   const signature=JSON.stringify([actor.name,content,low]);if(bubble.dataset.content!==signature){bubble.dataset.content=signature;bubble.className='world-expression status activity-indicator'+(low?' is-dot':'');bubble.setAttribute('aria-label',`${actor.name}：${content}`);bubble.replaceChildren();if(!low)bubble.append(el('div','world-expression-meta',actor.name));const body=el('div','world-expression-body');body.append(el('span','',low?'·':expressionPreview(content)));bubble.append(body);}
+   bubble.hidden=false;const size=bubble.getBoundingClientRect(),position=placeExpression(actor.rect,size,bounds,blocked,12,actorRects);if(!position){bubble.hidden=true;continue;}
+   bubble.style.left=position.left+'px';bubble.style.top=position.top+'px';bubble.style.setProperty('--expression-tail',position.tail+'px');blocked.push(position.box);actorIds.add(actorId);current.add(key);if(entering)lastIndicatorAt=now();
+  }
+  for(const[key,bubble]of indicators)if(!current.has(key)){bubble.remove();indicators.delete(key);}
  }
  return{node,tick,settings(value){if(value.density in policy.limits.visibleBubblesPerViewport)density=value.density;if(policy.sets.some(s=>s.id===value.setId))setId=value.setId;for(const bubble of nodes.values())delete bubble.dataset.content;redraw();},dispose(){art.dispose();clear();node.remove();onActive([]);}};
 }
