@@ -28,3 +28,29 @@ test('point competition fails atomically and current revocation cancels only the
  await f.store.transaction(async ctx=>{const n=(await f.repo.getNpc('npc-gardener'))!;await f.repo.saveNpc({...n,version:n.version+1,nextDecisionAt:ctx.now(),currentGoal:null},n.version);await f.service.lifeExtension.advanceNpc(ctx,'npc-gardener');});const npc=(await f.repo.getNpc('npc-gardener'))!;assert(npc.motion);assert.equal(npc.motion.arriveAt-npc.motion.startedAt,500);assert.equal((await f.repo.getActor({kind:'npc',id:'npc-gardener'}))!.body,null);
  assert.equal((await f.repo.getPlan((ra.result.plan as any).planId))!.state,'partially_completed');
 });
+
+test('care options suppress a stale introduction during a real two-plan point-version race without consuming it or weakening start',async()=>{
+ const f=await npcLifeFixture(),a=await f.add('options-a'),b=await f.add('options-b');
+ const first=await f.invoke(a,'life.plans.submit',await f.input());assert.equal(first.outcome,'committed');
+ await f.until(async()=>f.extra.introductions.size===1);
+ const second=await f.invoke(b,'life.plans.submit',await f.input());assert.equal(second.outcome,'committed');
+ const planId=(second.result.plan as any).planId;
+ await f.until(async()=>f.extra.introductions.size===2);
+ const original=[...f.extra.introductions.values()].find(ref=>ref.agentId==='options-b')!;
+ const {readNpcCareOptions}=await import(new URL('../../apps/web/public/hud/npc-life-reader.js',import.meta.url).href);
+ const query=()=>f.service.query(f.context,b,'npc_life.care.options',{});
+ const decode=(data:unknown)=>readNpcCareOptions({protocolVersion:1,instanceId:f.context.instanceId,data},'options-b');
+ const before=decode(await query());assert.equal(before.data.points.find((point:any)=>point.pointId===original.pointId).introduction.introductionId,original.introductionId);
+ await f.until(async()=>[...f.state.activities.values()].some(v=>v.actorId==='options-a'&&v.actionId==='care.perform'&&v.state==='active'));
+ const point=(await f.npcRepo.getPoint(original.pointId))!,plan=(await f.repo.getPlan(planId))!;
+ assert.equal(plan.state,'running');assert.equal(plan.currentActivityId,null);assert(point.version>original.pointVersion);
+ const current=decode(await query()).data.points.find((p:any)=>p.pointId===point.pointId);
+ assert.equal(current.version,point.version);assert.equal(current.available,false);assert.equal(current.reason,'care_point_busy');assert.equal(current.introduction,null);
+ assert.deepEqual(await f.npcRepo.getIntroduction(original.introductionId),original);
+ // Even substituting the new point version cannot turn the old same-plan reference into current start authority.
+ await assert.rejects(f.store.transaction(ctx=>f.service.lifeExtension.careTerms(ctx,{kind:'agent',id:'options-b'},{placeId:f.d.carePoints[0]!.placeId,planId,params:{pointId:point.pointId,expectedPointVersion:point.version,introductionId:original.introductionId,expectedIntroductionVersion:original.version}},plan.qualification)),{code:'care_introduction_unavailable'});
+ await f.until(async()=>!['running','queued'].includes((await f.repo.getPlan(planId))!.state));
+ assert.equal((await f.repo.getPlan(planId))!.stopCode,'version_conflict');assert.equal((await f.repo.getActor({kind:'agent',id:'options-b'}))!.reservedEnergy,0);
+ assert.equal([...f.state.activities.values()].filter(v=>v.actorId==='options-b'&&v.actionId==='care.perform').length,0);
+ assert.deepEqual(await f.npcRepo.getIntroduction(original.introductionId),original);
+});
