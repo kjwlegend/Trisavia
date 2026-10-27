@@ -1,0 +1,1112 @@
+{
+  "id": "npc-life-expansion-v1",
+  "version": "1.0.0",
+  "catalogVersion": "2026-10-27.npc-life-v1",
+  "status": "design-ready; not production activation or human final aesthetic acceptance",
+  "spatial": {
+    "file": "spatial-addon-v1.json",
+    "sha256": "6a734e85bf24a7af32c47c024837917aeba70ca7fe291655319478597424f79c"
+  },
+  "baseMap": {
+    "mapId": "pixel-town-v2",
+    "mapManifestVersion": 6,
+    "rulesetVersion": 6,
+    "topologyVersion": 6,
+    "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f",
+    "spatialSha256": "861fef772675ad2ec01fa57d7a49e5eeb5e3482d43ae9f370fb48fe2b6d866c4",
+    "verifiedLiveURL": "http://127.0.0.1:18893/assets/world-life/",
+    "verifiedLiveAppVersion": "0.8.0"
+  },
+  "characters": [
+    {
+      "npcId": "npc-gardener",
+      "name": "青禾",
+      "lookId": "pixel-crawler-qinghe-v1",
+      "catalogVersion": "2026-10-27.npc-life-v1",
+      "selectionId": "peasant",
+      "artType": "AI adapted finished clothed sprite, based on selected Pixel Crawler identity; not Body_A or New_Version rig",
+      "render": {
+        "nativeScale": 1,
+        "visibleStandingHeight": 16,
+        "maxVisibleMotionHeight": 17,
+        "frameSize": [
+          32,
+          32
+        ],
+        "feetPivot": [
+          16,
+          24
+        ],
+        "bubbleAnchor": [
+          16,
+          6
+        ],
+        "bubbleAnchorRelativeToFeet": [
+          0,
+          -18
+        ],
+        "nameAnchorRelativeToFeet": [
+          0,
+          -20
+        ],
+        "bubbleScreenClearance": 12,
+        "imageSmoothingEnabled": false,
+        "bodyCollision": "use authority cell, never image rectangle",
+        "occlusion": "sort with world objects at authoritative feet Y; tools stay in same actor group"
+      },
+      "directions": {
+        "right": "authored",
+        "left": "mirror right about feet X=16",
+        "up": "last horizontal facing; initial fallback right",
+        "down": "last horizontal facing; initial fallback right",
+        "fourDirectionalArt": false
+      },
+      "actions": {
+        "idle": {
+          "file": "assets/qinghe-idle.png",
+          "sha256": "f613ad07d77ae8d5d340ae63c2f7c94d2843d7b1ceb2c9c2efdb8e5411b9b3ba",
+          "frames": 4,
+          "frameSize": [
+            32,
+            32
+          ],
+          "durationsMs": [
+            240,
+            240,
+            240,
+            240
+          ],
+          "feetPivot": [
+            16,
+            24
+          ],
+          "alphaBoundsPerFrame": [
+            [
+              10,
+              8,
+              21,
+              24
+            ],
+            [
+              10,
+              8,
+              21,
+              24
+            ],
+            [
+              10,
+              8,
+              21,
+              24
+            ],
+            [
+              11,
+              8,
+              22,
+              24
+            ]
+          ]
+        },
+        "walk": {
+          "file": "assets/qinghe-walk.png",
+          "sha256": "cf444541a2cc31eaff1bf9f38d2509bd19245d2964f2606c9cb253a691b69338",
+          "frames": 4,
+          "frameSize": [
+            32,
+            32
+          ],
+          "durationsMs": [
+            180,
+            180,
+            180,
+            180
+          ],
+          "feetPivot": [
+            16,
+            24
+          ],
+          "alphaBoundsPerFrame": [
+            [
+              10,
+              8,
+              21,
+              24
+            ],
+            [
+              11,
+              8,
+              22,
+              24
+            ],
+            [
+              11,
+              8,
+              22,
+              24
+            ],
+            [
+              11,
+              8,
+              22,
+              24
+            ]
+          ]
+        },
+        "point": {
+          "file": "assets/qinghe-point.png",
+          "sha256": "a71cdd8ad393d201a07affb87dae028b0f9f49c16354b217a49be71257aa3852",
+          "frames": 4,
+          "frameSize": [
+            32,
+            32
+          ],
+          "durationsMs": [
+            240,
+            240,
+            240,
+            240
+          ],
+          "feetPivot": [
+            16,
+            24
+          ],
+          "alphaBoundsPerFrame": [
+            [
+              10,
+              8,
+              22,
+              24
+            ],
+            [
+              10,
+              8,
+              22,
+              24
+            ],
+            [
+              10,
+              8,
+              23,
+              24
+            ],
+            [
+              11,
+              8,
+              23,
+              24
+            ]
+          ]
+        },
+        "water": {
+          "file": "assets/qinghe-water.png",
+          "sha256": "eb04e6a196b56e535b2360fa7d7431fb016f0fdbb65c28652991a27b639e8768",
+          "frames": 4,
+          "frameSize": [
+            32,
+            32
+          ],
+          "durationsMs": [
+            240,
+            240,
+            240,
+            240
+          ],
+          "feetPivot": [
+            16,
+            24
+          ],
+          "alphaBoundsPerFrame": [
+            [
+              10,
+              8,
+              24,
+              24
+            ],
+            [
+              10,
+              8,
+              23,
+              24
+            ],
+            [
+              9,
+              8,
+              27,
+              24
+            ],
+            [
+              10,
+              8,
+              26,
+              24
+            ]
+          ]
+        },
+        "clean": {
+          "file": "assets/qinghe-clean.png",
+          "sha256": "370d3af1a6ec855491ca2d2a4ff611531c7b9531dcca50129486b9c0f5a0c81a",
+          "frames": 4,
+          "frameSize": [
+            32,
+            32
+          ],
+          "durationsMs": [
+            240,
+            240,
+            240,
+            240
+          ],
+          "feetPivot": [
+            16,
+            24
+          ],
+          "alphaBoundsPerFrame": [
+            [
+              11,
+              10,
+              23,
+              23
+            ],
+            [
+              11,
+              10,
+              23,
+              23
+            ],
+            [
+              11,
+              10,
+              25,
+              24
+            ],
+            [
+              11,
+              10,
+              25,
+              24
+            ]
+          ]
+        }
+      },
+      "fallback": "unknown/inactive/cancelled -> idle; reduced motion -> frame0; no extrapolated activity",
+      "visibility": "Only draw at actual authoritative location. No phantom NPC at duty point while away.",
+      "activityBinding": {
+        "idle": "idle",
+        "authoritativeMovement": "walk",
+        "actualIntroduction": "point",
+        "selfActiveWatering": "water",
+        "selfActiveCleaning": "clean",
+        "agentCare": "keep Agent own sprite + shared tool FX; Qinghe does not accompany or double the participant"
+      }
+    },
+    {
+      "npcId": "npc-tea-companion",
+      "name": "小满",
+      "lookId": "pixel-crawler-xiaoman-v1",
+      "catalogVersion": "2026-10-27.npc-life-v1",
+      "selectionId": "tavern-a",
+      "artType": "AI adapted finished clothed sprite, based on selected Pixel Crawler identity; not Body_A or New_Version rig",
+      "render": {
+        "nativeScale": 1,
+        "visibleStandingHeight": 16,
+        "maxVisibleMotionHeight": 17,
+        "frameSize": [
+          32,
+          32
+        ],
+        "feetPivot": [
+          16,
+          24
+        ],
+        "bubbleAnchor": [
+          16,
+          6
+        ],
+        "bubbleAnchorRelativeToFeet": [
+          0,
+          -18
+        ],
+        "nameAnchorRelativeToFeet": [
+          0,
+          -20
+        ],
+        "bubbleScreenClearance": 12,
+        "imageSmoothingEnabled": false,
+        "bodyCollision": "use authority cell, never image rectangle",
+        "occlusion": "sort with world objects at authoritative feet Y; tools stay in same actor group"
+      },
+      "directions": {
+        "right": "authored",
+        "left": "mirror right about feet X=16",
+        "up": "last horizontal facing; initial fallback right",
+        "down": "last horizontal facing; initial fallback right",
+        "fourDirectionalArt": false
+      },
+      "actions": {
+        "idle": {
+          "file": "assets/xiaoman-idle.png",
+          "sha256": "f5037c1248a30dda9776bea5f3c1216ff0140b6db28132178d1810788fbbaff6",
+          "frames": 4,
+          "frameSize": [
+            32,
+            32
+          ],
+          "durationsMs": [
+            240,
+            240,
+            240,
+            240
+          ],
+          "feetPivot": [
+            16,
+            24
+          ],
+          "alphaBoundsPerFrame": [
+            [
+              12,
+              8,
+              21,
+              24
+            ],
+            [
+              12,
+              9,
+              21,
+              24
+            ],
+            [
+              12,
+              8,
+              21,
+              24
+            ],
+            [
+              12,
+              8,
+              21,
+              24
+            ]
+          ]
+        },
+        "walk": {
+          "file": "assets/xiaoman-walk.png",
+          "sha256": "5baffc05cdf7c737b79f76d849aea0b774ce447069eb79d6dcb86a5ff6d83e4a",
+          "frames": 4,
+          "frameSize": [
+            32,
+            32
+          ],
+          "durationsMs": [
+            180,
+            180,
+            180,
+            180
+          ],
+          "feetPivot": [
+            16,
+            24
+          ],
+          "alphaBoundsPerFrame": [
+            [
+              11,
+              8,
+              20,
+              24
+            ],
+            [
+              13,
+              8,
+              23,
+              24
+            ],
+            [
+              11,
+              8,
+              21,
+              24
+            ],
+            [
+              11,
+              8,
+              21,
+              24
+            ]
+          ]
+        },
+        "tray": {
+          "file": "assets/xiaoman-tray.png",
+          "sha256": "b8f306db5e1642c94024dc6d1af0677820705dbb87c5e714ca1b457ff09d9513",
+          "frames": 4,
+          "frameSize": [
+            32,
+            32
+          ],
+          "durationsMs": [
+            240,
+            240,
+            240,
+            240
+          ],
+          "feetPivot": [
+            16,
+            24
+          ],
+          "alphaBoundsPerFrame": [
+            [
+              11,
+              8,
+              22,
+              24
+            ],
+            [
+              11,
+              8,
+              24,
+              24
+            ],
+            [
+              10,
+              8,
+              24,
+              24
+            ],
+            [
+              11,
+              8,
+              22,
+              24
+            ]
+          ]
+        },
+        "sit-quiet": {
+          "file": "assets/xiaoman-sit-quiet.png",
+          "sha256": "e0ba03a8e67e3b55e7557afa64cb5007b0e3299c8afc729df552e54ef549ebd8",
+          "frames": 4,
+          "frameSize": [
+            32,
+            32
+          ],
+          "durationsMs": [
+            240,
+            240,
+            240,
+            240
+          ],
+          "feetPivot": [
+            16,
+            24
+          ],
+          "alphaBoundsPerFrame": [
+            [
+              12,
+              10,
+              22,
+              24
+            ],
+            [
+              12,
+              9,
+              22,
+              24
+            ],
+            [
+              10,
+              9,
+              20,
+              24
+            ],
+            [
+              10,
+              10,
+              20,
+              24
+            ]
+          ]
+        },
+        "sit-talk": {
+          "file": "assets/xiaoman-sit-talk.png",
+          "sha256": "0feee989ec20e090d6184b657127c6b808235b54564d89d494545fafa9341ea6",
+          "frames": 4,
+          "frameSize": [
+            32,
+            32
+          ],
+          "durationsMs": [
+            240,
+            240,
+            240,
+            240
+          ],
+          "feetPivot": [
+            16,
+            24
+          ],
+          "alphaBoundsPerFrame": [
+            [
+              11,
+              9,
+              21,
+              24
+            ],
+            [
+              11,
+              9,
+              22,
+              24
+            ],
+            [
+              10,
+              9,
+              21,
+              24
+            ],
+            [
+              10,
+              10,
+              20,
+              24
+            ]
+          ]
+        }
+      },
+      "fallback": "unknown/inactive/cancelled -> idle; reduced motion -> frame0; no extrapolated activity",
+      "visibility": "Only draw at actual authoritative location. No phantom NPC at duty point while away.",
+      "activityBinding": {
+        "idle": "idle",
+        "authoritativeMovement": "walk",
+        "trueFoodServing": "tray",
+        "quietCompanionship": "sit-quiet",
+        "selectedTopicPhase": "sit-talk",
+        "unknownMealOrCancelled": "remove tray; use actual current phase",
+        "seatFurniture": "sprites contain no chair; original world meal-chair only"
+      }
+    },
+    {
+      "npcId": "npc-trail-guide",
+      "name": "闻溪",
+      "lookId": "pixel-crawler-wenxi-v1",
+      "catalogVersion": "2026-10-27.npc-life-v1",
+      "selectionId": "rogue",
+      "artType": "AI adapted finished clothed sprite, based on selected Pixel Crawler identity; not Body_A or New_Version rig",
+      "render": {
+        "nativeScale": 1,
+        "visibleStandingHeight": 16,
+        "maxVisibleMotionHeight": 17,
+        "frameSize": [
+          32,
+          32
+        ],
+        "feetPivot": [
+          16,
+          24
+        ],
+        "bubbleAnchor": [
+          16,
+          6
+        ],
+        "bubbleAnchorRelativeToFeet": [
+          0,
+          -18
+        ],
+        "nameAnchorRelativeToFeet": [
+          0,
+          -20
+        ],
+        "bubbleScreenClearance": 12,
+        "imageSmoothingEnabled": false,
+        "bodyCollision": "use authority cell, never image rectangle",
+        "occlusion": "sort with world objects at authoritative feet Y; tools stay in same actor group"
+      },
+      "directions": {
+        "right": "authored",
+        "left": "mirror right about feet X=16",
+        "up": "last horizontal facing; initial fallback right",
+        "down": "last horizontal facing; initial fallback right",
+        "fourDirectionalArt": false
+      },
+      "actions": {
+        "idle": {
+          "file": "assets/wenxi-idle.png",
+          "sha256": "da84eabf5355b23b197fc880ec61611fb3899937a4a6cd5470afa3e289cc29d8",
+          "frames": 4,
+          "frameSize": [
+            32,
+            32
+          ],
+          "durationsMs": [
+            240,
+            240,
+            240,
+            240
+          ],
+          "feetPivot": [
+            16,
+            24
+          ],
+          "alphaBoundsPerFrame": [
+            [
+              10,
+              8,
+              21,
+              24
+            ],
+            [
+              10,
+              8,
+              21,
+              24
+            ],
+            [
+              10,
+              8,
+              21,
+              24
+            ],
+            [
+              10,
+              8,
+              21,
+              24
+            ]
+          ]
+        },
+        "walk": {
+          "file": "assets/wenxi-walk.png",
+          "sha256": "f2d35fdb054443c36a60f065be51ff53f0ee69541a06b49d29166045a705187d",
+          "frames": 4,
+          "frameSize": [
+            32,
+            32
+          ],
+          "durationsMs": [
+            180,
+            180,
+            180,
+            180
+          ],
+          "feetPivot": [
+            16,
+            24
+          ],
+          "alphaBoundsPerFrame": [
+            [
+              10,
+              7,
+              21,
+              24
+            ],
+            [
+              9,
+              7,
+              21,
+              24
+            ],
+            [
+              10,
+              7,
+              22,
+              24
+            ],
+            [
+              9,
+              7,
+              21,
+              24
+            ]
+          ]
+        },
+        "point": {
+          "file": "assets/wenxi-point.png",
+          "sha256": "8088f9e62d03d6e457e6ffe1a0be7a9207ff8124aab822c830de15bd604afbba",
+          "frames": 4,
+          "frameSize": [
+            32,
+            32
+          ],
+          "durationsMs": [
+            240,
+            240,
+            240,
+            240
+          ],
+          "feetPivot": [
+            16,
+            24
+          ],
+          "alphaBoundsPerFrame": [
+            [
+              10,
+              8,
+              22,
+              24
+            ],
+            [
+              9,
+              8,
+              23,
+              24
+            ],
+            [
+              10,
+              8,
+              25,
+              24
+            ],
+            [
+              9,
+              8,
+              25,
+              24
+            ]
+          ]
+        },
+        "listen": {
+          "file": "assets/wenxi-listen.png",
+          "sha256": "4470bf73bde06f52dd4a6f6a8fb642234e257e9da1ba1ac438f7078c85bac332",
+          "frames": 4,
+          "frameSize": [
+            32,
+            32
+          ],
+          "durationsMs": [
+            240,
+            240,
+            240,
+            240
+          ],
+          "feetPivot": [
+            16,
+            24
+          ],
+          "alphaBoundsPerFrame": [
+            [
+              10,
+              8,
+              21,
+              24
+            ],
+            [
+              10,
+              8,
+              22,
+              24
+            ],
+            [
+              10,
+              9,
+              22,
+              24
+            ],
+            [
+              10,
+              8,
+              22,
+              24
+            ]
+          ]
+        },
+        "map": {
+          "file": "assets/wenxi-map.png",
+          "sha256": "ca9cf9b8f47fd654793e57b1d304904fe57d7412bd24e85a97f07c8d80e1d58d",
+          "frames": 4,
+          "frameSize": [
+            32,
+            32
+          ],
+          "durationsMs": [
+            240,
+            240,
+            240,
+            240
+          ],
+          "feetPivot": [
+            16,
+            24
+          ],
+          "alphaBoundsPerFrame": [
+            [
+              10,
+              8,
+              23,
+              24
+            ],
+            [
+              10,
+              8,
+              25,
+              24
+            ],
+            [
+              10,
+              7,
+              24,
+              24
+            ],
+            [
+              10,
+              7,
+              27,
+              24
+            ]
+          ]
+        }
+      },
+      "fallback": "unknown/inactive/cancelled -> idle; reduced motion -> frame0; no extrapolated activity",
+      "visibility": "Only draw at actual authoritative location. No phantom NPC at duty point while away.",
+      "activityBinding": {
+        "idle": "idle",
+        "authoritativeMovement": "walk",
+        "actualRouteIntroduction": "map",
+        "pointingToStop": "point",
+        "actualReturnConversation": "listen",
+        "travellerOnRoute": "NPC remains at own authoritative location; never animate following"
+      }
+    }
+  ],
+  "environment": {
+    "watering": {
+      "file": "assets/care-watering.png",
+      "sha256": "61bfd7f62dd70bfbb22e2314b3e4d2fc50442c4db4f184defc97c30fdc709518",
+      "frameSize": [
+        32,
+        32
+      ],
+      "frames": 4,
+      "pivot": [
+        16,
+        24
+      ],
+      "framesMeaning": [
+        "neutral",
+        "active",
+        "committed-completed",
+        "unused-alternate"
+      ],
+      "extraction": [
+        {
+          "sourceRect": [
+            34,
+            140,
+            410,
+            397
+          ],
+          "alphaBBox": [
+            4,
+            8,
+            28,
+            24
+          ]
+        },
+        {
+          "sourceRect": [
+            478,
+            98,
+            853,
+            397
+          ],
+          "alphaBBox": [
+            4,
+            5,
+            28,
+            24
+          ]
+        },
+        {
+          "sourceRect": [
+            921,
+            140,
+            1297,
+            397
+          ],
+          "alphaBBox": [
+            4,
+            8,
+            28,
+            24
+          ]
+        },
+        {
+          "sourceRect": [
+            1365,
+            139,
+            1740,
+            397
+          ],
+          "alphaBBox": [
+            4,
+            8,
+            28,
+            24
+          ]
+        }
+      ]
+    },
+    "cleaning": {
+      "file": "assets/care-cleaning.png",
+      "sha256": "8ba925d1f847b58a3e8f121a3d033abf20c5e80b6cef5c0e91a375ad6ce54610",
+      "frameSize": [
+        32,
+        32
+      ],
+      "frames": 4,
+      "pivot": [
+        16,
+        24
+      ],
+      "framesMeaning": [
+        "neutral",
+        "active",
+        "committed-completed",
+        "unused-alternate"
+      ],
+      "extraction": [
+        {
+          "sourceRect": [
+            39,
+            554,
+            403,
+            807
+          ],
+          "alphaBBox": [
+            4,
+            7,
+            28,
+            24
+          ]
+        },
+        {
+          "sourceRect": [
+            478,
+            554,
+            854,
+            807
+          ],
+          "alphaBBox": [
+            4,
+            7,
+            29,
+            24
+          ]
+        },
+        {
+          "sourceRect": [
+            923,
+            554,
+            1290,
+            807
+          ],
+          "alphaBBox": [
+            4,
+            7,
+            28,
+            24
+          ]
+        },
+        {
+          "sourceRect": [
+            1366,
+            554,
+            1741,
+            807
+          ],
+          "alphaBBox": [
+            4,
+            7,
+            29,
+            24
+          ]
+        }
+      ]
+    },
+    "shared-water": {
+      "file": "assets/shared-water-fx.png",
+      "sha256": "aa076b70d3a6f4217314c7435661939d05aece3f08ad3da6aa497d2fe69b79fa",
+      "frameSize": [
+        32,
+        32
+      ],
+      "frames": 4,
+      "durationsMs": [
+        220,
+        220,
+        220,
+        220
+      ],
+      "pivot": [
+        16,
+        24
+      ],
+      "source": "reference/watering-can-generated.png",
+      "sourceRects": [
+        [
+          77,
+          135,
+          667,
+          472
+        ],
+        [
+          769,
+          121,
+          1397,
+          480
+        ],
+        [
+          50,
+          632,
+          687,
+          1018
+        ],
+        [
+          779,
+          644,
+          1397,
+          984
+        ]
+      ],
+      "sourceScale": 0.013559322033898305,
+      "applyTo": "same participant actor group while matching active watering; never replace participant body",
+      "parkedFrame": 0,
+      "toolOwnership": "fixed at care point; not inventory reward",
+      "parkedAnchorOffsetFromTarget": [
+        8,
+        4
+      ]
+    },
+    "shared-clean": {
+      "file": "assets/shared-clean-fx.png",
+      "sha256": "a3d0dd611d746eb1468f6c593eb4f6a2d84ddc5127d7682619ab2a1ca7fb39be",
+      "frameSize": [
+        32,
+        32
+      ],
+      "frames": 4,
+      "pivot": [
+        16,
+        24
+      ],
+      "source": "technical extraction from Qinghe generated action; only tool/water or loose leaves, never head/body",
+      "sourceRectPerFrame": [
+        20,
+        22,
+        28,
+        25
+      ],
+      "applyTo": "authoritative active participant; preserve original appearance"
+    }
+  },
+  "attribution": {
+    "sourceAuthor": "Anokolisa",
+    "sourcePack": "Pixel Crawler",
+    "termsFile": "Terms.txt",
+    "termsSha256": "3fa8c299d541b3e53c83c66e8c2e46038b73b362a7aaa6a2a12da45776d651d2",
+    "selectionFile": "reference/selection-source.json",
+    "selectionSha256": "ab677342611f678e055dedd9dd3ed0107faea1dd7d4b3d6a00d5873a214a7b83",
+    "selectedSourceCommits": [
+      "8ff794dd08349f0073db129a99420dc7ecb412a9",
+      "e66dd6b54239adbf7826fcf1d5b50fb4966fcd6b"
+    ],
+    "adaptation": "OpenAI built-in image_gen, five generated atlases; exact prompts and generated sources retained",
+    "promptsFile": "prompts.json"
+  },
+  "integration": "Copy only listed assets/manifest/spatial add-on/Terms. Do not copy old renderer, map or business rules from this branch. Existing 080 map6 files unchanged."
+}

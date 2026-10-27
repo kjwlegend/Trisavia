@@ -1,0 +1,1198 @@
+{
+  "id": "pixel-crawler-selection-v1",
+  "sourceRoot": "pixel-crawler-assets",
+  "author": "Anokolisa",
+  "scope": "curated native asset review and scale experiments; no production changes",
+  "inventoryCounts": {
+    "files": 372,
+    "png": 181,
+    "aseprite": 190,
+    "terms": 1
+  },
+  "selectedCharacters": 5,
+  "fantasyReserve": 2,
+  "selectedProps": 18,
+  "duplicates": [
+    {
+      "paths": [
+        "Entities/Npc's/Citizen_F/Tavern_A",
+        "Entities/Npc's/Citizen_F/Tavern_B"
+      ],
+      "verified": "Idle, Walk, Idle_Hold, Walk_Hold exported PNG RGBA pixels identical",
+      "decision": "count once as one finished appearance"
+    }
+  ],
+  "originalFilesUnmodified": true,
+  "characterPolicy": "existing finished NPCs are side-view sets; Body_A is an unfinished base and New_Version is a color-coded rig, not finished avatars; check walking directional completeness before avatar adoption",
+  "records": [
+    {
+      "id": "peasant",
+      "title": "绿发平民",
+      "kind": "character",
+      "group": "居民形象",
+      "priority": "优先",
+      "source": "Entities/Npc's/Citizen_F/Peasant_A/Idle/Idle-Sheet.png",
+      "sourceSha256": "df55b00ca7cf6f1464f524eeb4f9e15dbfd7be1327f4608849aff73494ecbb5f",
+      "file": "assets/peasant.png",
+      "fileSha256": "df55b00ca7cf6f1464f524eeb4f9e15dbfd7be1327f4608849aff73494ecbb5f",
+      "frameSize": [
+        64,
+        64
+      ],
+      "frames": 4,
+      "durationsMs": [
+        100,
+        100,
+        100,
+        100
+      ],
+      "firstFrameBBox": [
+        24,
+        18,
+        40,
+        48
+      ],
+      "visibleHeight": 30,
+      "feetPivot": [
+        32.0,
+        48
+      ],
+      "note": "草地、外街的普通居民；已有待机与走路，侧向角色。",
+      "motionId": "peasant-walk"
+    },
+    {
+      "id": "peasant-walk",
+      "title": "绿发平民 · 行走",
+      "kind": "character",
+      "group": "动作配套",
+      "priority": "优先",
+      "source": "Entities/Npc's/Citizen_F/Peasant_A/Walk/Walk-Sheet.png",
+      "sourceSha256": "9c3e4afe77d0a6c8f5f29fda1997b58484970d58464420e0774efc92876e6ea9",
+      "file": "assets/peasant-walk.png",
+      "fileSha256": "9c3e4afe77d0a6c8f5f29fda1997b58484970d58464420e0774efc92876e6ea9",
+      "frameSize": [
+        64,
+        64
+      ],
+      "frames": 6,
+      "durationsMs": [
+        100,
+        100,
+        100,
+        100,
+        100,
+        100
+      ],
+      "firstFrameBBox": [
+        24,
+        18,
+        40,
+        48
+      ],
+      "visibleHeight": 30,
+      "feetPivot": [
+        32.0,
+        48
+      ],
+      "note": "已读原生 Aseprite 帧尺寸与时长；侧向，非四方向。"
+    },
+    {
+      "id": "tavern-a",
+      "title": "酒馆女侍 A",
+      "kind": "character",
+      "group": "居民形象",
+      "priority": "优先",
+      "source": "Entities/Npc's/Citizen_F/Tavern_A/Idle/Idle_Side-Sheet.png",
+      "sourceSha256": "720785215a8c7b9f9c48c177b26068f8cb86acc9f5870eabca431fce8a48c9e3",
+      "file": "assets/tavern-a.png",
+      "fileSha256": "720785215a8c7b9f9c48c177b26068f8cb86acc9f5870eabca431fce8a48c9e3",
+      "frameSize": [
+        64,
+        64
+      ],
+      "frames": 4,
+      "durationsMs": [
+        100,
+        100,
+        100,
+        100
+      ],
+      "firstFrameBBox": [
+        24,
+        18,
+        40,
+        48
+      ],
+      "visibleHeight": 30,
+      "feetPivot": [
+        32.0,
+        48
+      ],
+      "note": "酒馆服务人物；另有端盘待机与端盘行走。",
+      "motionId": "tavern-a-walk"
+    },
+    {
+      "id": "tavern-a-walk",
+      "title": "酒馆女侍 A · 行走",
+      "kind": "character",
+      "group": "动作配套",
+      "priority": "优先",
+      "source": "Entities/Npc's/Citizen_F/Tavern_A/Walk/Walk_Side-Sheet.png",
+      "sourceSha256": "ae57488bc64fff3769504a3d4d00a2585cbfb85d2faaad94a60185de907eb895",
+      "file": "assets/tavern-a-walk.png",
+      "fileSha256": "ae57488bc64fff3769504a3d4d00a2585cbfb85d2faaad94a60185de907eb895",
+      "frameSize": [
+        64,
+        64
+      ],
+      "frames": 6,
+      "durationsMs": [
+        100,
+        100,
+        100,
+        100,
+        100,
+        100
+      ],
+      "firstFrameBBox": [
+        24,
+        18,
+        40,
+        48
+      ],
+      "visibleHeight": 30,
+      "feetPivot": [
+        32.0,
+        48
+      ],
+      "note": "已读原生 Aseprite 帧尺寸与时长；侧向，非四方向。"
+    },
+    {
+      "id": "rogue",
+      "title": "兜帽旅人",
+      "kind": "character",
+      "group": "居民形象",
+      "priority": "候选",
+      "source": "Entities/Npc's/Rogue/Idle/Idle-Sheet.png",
+      "sourceSha256": "33aa30ab075aae0e1687713b5ec873986025fd362c4f6b538ce48eb4541ce551",
+      "file": "assets/rogue.png",
+      "fileSha256": "33aa30ab075aae0e1687713b5ec873986025fd362c4f6b538ce48eb4541ce551",
+      "frameSize": [
+        32,
+        32
+      ],
+      "frames": 4,
+      "durationsMs": [
+        100,
+        100,
+        100,
+        100
+      ],
+      "firstFrameBBox": [
+        7,
+        2,
+        26,
+        32
+      ],
+      "visibleHeight": 30,
+      "feetPivot": [
+        16.5,
+        32
+      ],
+      "note": "外形适合作为旅行者或居民服装；动作名 Run，不自动等同当前步行。",
+      "motionId": "rogue-walk"
+    },
+    {
+      "id": "rogue-walk",
+      "title": "兜帽旅人 · 行走",
+      "kind": "character",
+      "group": "动作配套",
+      "priority": "候选",
+      "source": "Entities/Npc's/Rogue/Run/Run-Sheet.png",
+      "sourceSha256": "d307595821d61a0e67717ad074efa0e34c64904868c49f07bc1a36ac4c93427c",
+      "file": "assets/rogue-walk.png",
+      "fileSha256": "d307595821d61a0e67717ad074efa0e34c64904868c49f07bc1a36ac4c93427c",
+      "frameSize": [
+        64,
+        64
+      ],
+      "frames": 6,
+      "durationsMs": [
+        100,
+        100,
+        100,
+        100,
+        100,
+        100
+      ],
+      "firstFrameBBox": [
+        21,
+        34,
+        45,
+        64
+      ],
+      "visibleHeight": 30,
+      "feetPivot": [
+        33.0,
+        64
+      ],
+      "note": "已读原生 Aseprite 帧尺寸与时长；侧向，非四方向。"
+    },
+    {
+      "id": "knight",
+      "title": "铠甲人物",
+      "kind": "character",
+      "group": "居民形象",
+      "priority": "候选",
+      "source": "Entities/Npc's/Knight/Idle/Idle-Sheet.png",
+      "sourceSha256": "f9a41df5ad7dcbb796724e0bc043bf39944bfe5fbc66f0bab6906acf60696fae",
+      "file": "assets/knight.png",
+      "fileSha256": "f9a41df5ad7dcbb796724e0bc043bf39944bfe5fbc66f0bab6906acf60696fae",
+      "frameSize": [
+        32,
+        32
+      ],
+      "frames": 4,
+      "durationsMs": [
+        100,
+        100,
+        100,
+        100
+      ],
+      "firstFrameBBox": [
+        5,
+        3,
+        24,
+        32
+      ],
+      "visibleHeight": 29,
+      "feetPivot": [
+        14.5,
+        32
+      ],
+      "note": "辨识度高，适合特殊外观；会带来较明确的奇幻气质。",
+      "motionId": "knight-walk"
+    },
+    {
+      "id": "knight-walk",
+      "title": "铠甲人物 · 行走",
+      "kind": "character",
+      "group": "动作配套",
+      "priority": "候选",
+      "source": "Entities/Npc's/Knight/Run/Run-Sheet.png",
+      "sourceSha256": "1df87c85fe61b46fad01414e4d435c55a3fc626f8bc02b3f7b45dae0e696f29e",
+      "file": "assets/knight-walk.png",
+      "fileSha256": "1df87c85fe61b46fad01414e4d435c55a3fc626f8bc02b3f7b45dae0e696f29e",
+      "frameSize": [
+        64,
+        64
+      ],
+      "frames": 6,
+      "durationsMs": [
+        100,
+        100,
+        100,
+        100,
+        100,
+        100
+      ],
+      "firstFrameBBox": [
+        21,
+        35,
+        45,
+        64
+      ],
+      "visibleHeight": 29,
+      "feetPivot": [
+        33.0,
+        64
+      ],
+      "note": "已读原生 Aseprite 帧尺寸与时长；侧向，非四方向。"
+    },
+    {
+      "id": "wizard",
+      "title": "法袍人物",
+      "kind": "character",
+      "group": "居民形象",
+      "priority": "候选",
+      "source": "Entities/Npc's/Wizzard/Idle/Idle-Sheet.png",
+      "sourceSha256": "36364a201200b4ef29d982d736b97db668eaca5eb41eadf40e1867cf5e09175d",
+      "file": "assets/wizard.png",
+      "fileSha256": "36364a201200b4ef29d982d736b97db668eaca5eb41eadf40e1867cf5e09175d",
+      "frameSize": [
+        32,
+        32
+      ],
+      "frames": 4,
+      "durationsMs": [
+        100,
+        100,
+        100,
+        100
+      ],
+      "firstFrameBBox": [
+        4,
+        0,
+        29,
+        32
+      ],
+      "visibleHeight": 32,
+      "feetPivot": [
+        16.5,
+        32
+      ],
+      "note": "完整法袍轮廓；可作特殊外观，不由美术新增职业或法术。",
+      "motionId": "wizard-walk"
+    },
+    {
+      "id": "wizard-walk",
+      "title": "法袍人物 · 行走",
+      "kind": "character",
+      "group": "动作配套",
+      "priority": "候选",
+      "source": "Entities/Npc's/Wizzard/Run/Run-Sheet.png",
+      "sourceSha256": "c4bd31327e7f38ea25916789d8282fd33fd5fc0eec3eb7c0d0f0937a8c2234f7",
+      "file": "assets/wizard-walk.png",
+      "fileSha256": "c4bd31327e7f38ea25916789d8282fd33fd5fc0eec3eb7c0d0f0937a8c2234f7",
+      "frameSize": [
+        64,
+        64
+      ],
+      "frames": 6,
+      "durationsMs": [
+        100,
+        100,
+        100,
+        100,
+        100,
+        100
+      ],
+      "firstFrameBBox": [
+        19,
+        30,
+        45,
+        64
+      ],
+      "visibleHeight": 34,
+      "feetPivot": [
+        32.0,
+        64
+      ],
+      "note": "已读原生 Aseprite 帧尺寸与时长；侧向，非四方向。"
+    },
+    {
+      "id": "tavern-a-idle_hold",
+      "title": "端盘待机",
+      "kind": "character",
+      "group": "动作配套",
+      "priority": "优先",
+      "source": "Entities/Npc's/Citizen_F/Tavern_A/Idle_Hold/Idle_Side-Sheet.png",
+      "sourceSha256": "1821f680012feef856e32703dfa2aca870e4bd390aeb8702dc65f222753cdcc4",
+      "file": "assets/tavern-a-idle_hold.png",
+      "fileSha256": "1821f680012feef856e32703dfa2aca870e4bd390aeb8702dc65f222753cdcc4",
+      "frameSize": [
+        64,
+        64
+      ],
+      "frames": 4,
+      "durationsMs": [
+        100,
+        100,
+        100,
+        100
+      ],
+      "firstFrameBBox": [
+        17,
+        18,
+        40,
+        48
+      ],
+      "visibleHeight": 30,
+      "feetPivot": [
+        28.5,
+        48
+      ],
+      "note": "端盘内容必须对应真实活动；普通漫步不能一直端盘。"
+    },
+    {
+      "id": "tavern-a-walk_hold",
+      "title": "端盘行走",
+      "kind": "character",
+      "group": "动作配套",
+      "priority": "优先",
+      "source": "Entities/Npc's/Citizen_F/Tavern_A/Walk_Hold/Walk_Side-Sheet.png",
+      "sourceSha256": "696b702c01c939da5f991831b5756b86cdc020dc8842843c3984f6ce4e48513c",
+      "file": "assets/tavern-a-walk_hold.png",
+      "fileSha256": "696b702c01c939da5f991831b5756b86cdc020dc8842843c3984f6ce4e48513c",
+      "frameSize": [
+        64,
+        64
+      ],
+      "frames": 6,
+      "durationsMs": [
+        100,
+        100,
+        100,
+        100,
+        100,
+        100
+      ],
+      "firstFrameBBox": [
+        17,
+        18,
+        40,
+        48
+      ],
+      "visibleHeight": 30,
+      "feetPivot": [
+        28.5,
+        48
+      ],
+      "note": "端盘内容必须对应真实活动；普通漫步不能一直端盘。"
+    },
+    {
+      "id": "orc",
+      "title": "兽人居民",
+      "kind": "character",
+      "group": "奇幻储备",
+      "priority": "储备",
+      "source": "Entities/Mobs/Orc Crew/Orc/Idle/Idle-Sheet.png",
+      "sourceSha256": "9585cdedf513595614956f6e08c89b06c4587909ad4ea6f27eb5e8e3d71cf412",
+      "file": "assets/orc.png",
+      "fileSha256": "9585cdedf513595614956f6e08c89b06c4587909ad4ea6f27eb5e8e3d71cf412",
+      "frameSize": [
+        32,
+        32
+      ],
+      "frames": 4,
+      "durationsMs": [
+        100,
+        100,
+        100,
+        100
+      ],
+      "firstFrameBBox": [
+        5,
+        2,
+        25,
+        32
+      ],
+      "visibleHeight": 30,
+      "feetPivot": [
+        15.0,
+        32
+      ],
+      "note": "只作风格储备；不是本轮新增敌人/战斗系统。"
+    },
+    {
+      "id": "orc-shaman",
+      "title": "兽人长者",
+      "kind": "character",
+      "group": "奇幻储备",
+      "priority": "储备",
+      "source": "Entities/Mobs/Orc Crew/Orc - Shaman/Idle/Idle-Sheet.png",
+      "sourceSha256": "0a4adf1fad9dc9afcf47f3bb1f1fb6d93a8884d66d1d09ff84f718d72c8d89c4",
+      "file": "assets/orc-shaman.png",
+      "fileSha256": "0a4adf1fad9dc9afcf47f3bb1f1fb6d93a8884d66d1d09ff84f718d72c8d89c4",
+      "frameSize": [
+        32,
+        32
+      ],
+      "frames": 4,
+      "durationsMs": [
+        100,
+        100,
+        100,
+        100
+      ],
+      "firstFrameBBox": [
+        7,
+        7,
+        30,
+        32
+      ],
+      "visibleHeight": 25,
+      "feetPivot": [
+        18.5,
+        32
+      ],
+      "note": "只作风格储备；不是本轮新增敌人/战斗系统。"
+    },
+    {
+      "id": "bush-green",
+      "title": "绿色灌木",
+      "kind": "prop",
+      "source": "Environment/Props/Static/Vegetation.png",
+      "sourceSha256": "1a3bdf11e56148a2971e08174f80108eb568ac222db2cb495121da8680de519d",
+      "rect": [
+        0,
+        0,
+        32,
+        32
+      ],
+      "file": "assets/bush-green.png",
+      "fileSha256": "035f4974f100aec2705075b382fe544cd45b787f373bee0277e0e46aaf2d474d",
+      "size": [
+        32,
+        32
+      ],
+      "alphaBBox": [
+        2,
+        5,
+        31,
+        32
+      ],
+      "group": "林园与河岸",
+      "adaptation": "低",
+      "note": "用于空地边缘；比现有素材轮廓深。",
+      "method": "exact crop; no recolor or redraw",
+      "sourceRects": [
+        [
+          0,
+          0,
+          32,
+          32
+        ]
+      ]
+    },
+    {
+      "id": "bush-gold",
+      "title": "金色灌木",
+      "kind": "prop",
+      "source": "Environment/Props/Static/Vegetation.png",
+      "sourceSha256": "1a3bdf11e56148a2971e08174f80108eb568ac222db2cb495121da8680de519d",
+      "rect": [
+        96,
+        0,
+        32,
+        32
+      ],
+      "file": "assets/bush-gold.png",
+      "fileSha256": "67c31d20bfab413d0318874a778f56af61ae373aaa2e85cdd31326cae49a6c64",
+      "size": [
+        32,
+        32
+      ],
+      "alphaBBox": [
+        2,
+        5,
+        31,
+        32
+      ],
+      "group": "林园与河岸",
+      "adaptation": "低",
+      "note": "可建立少量秋色，避免整图混用所有季节。",
+      "method": "exact crop; no recolor or redraw",
+      "sourceRects": [
+        [
+          96,
+          0,
+          32,
+          32
+        ]
+      ]
+    },
+    {
+      "id": "bush-rust",
+      "title": "秋色灌木",
+      "kind": "prop",
+      "source": "Environment/Props/Static/Vegetation.png",
+      "sourceSha256": "1a3bdf11e56148a2971e08174f80108eb568ac222db2cb495121da8680de519d",
+      "rect": [
+        144,
+        0,
+        32,
+        32
+      ],
+      "file": "assets/bush-rust.png",
+      "fileSha256": "776ce8cf57b8b70c4dcc37acb58a73363470edfc2ac90c1770e950e7408848fc",
+      "size": [
+        32,
+        32
+      ],
+      "alphaBBox": [
+        2,
+        5,
+        31,
+        32
+      ],
+      "group": "林园与河岸",
+      "adaptation": "低",
+      "note": "作为步道和花圃的颜色点缀。",
+      "method": "exact crop; no recolor or redraw",
+      "sourceRects": [
+        [
+          144,
+          0,
+          32,
+          32
+        ]
+      ]
+    },
+    {
+      "id": "flower-pink",
+      "title": "粉色花丛",
+      "kind": "prop",
+      "source": "Environment/Props/Static/Vegetation.png",
+      "sourceSha256": "1a3bdf11e56148a2971e08174f80108eb568ac222db2cb495121da8680de519d",
+      "rect": [
+        192,
+        160,
+        16,
+        32
+      ],
+      "file": "assets/flower-pink.png",
+      "fileSha256": "e476a8325c7831f760d47ccda05cc384eb9bce10b61e06d2e591bdfe31bc8b1b",
+      "size": [
+        16,
+        32
+      ],
+      "alphaBBox": [
+        3,
+        1,
+        14,
+        32
+      ],
+      "group": "林园与河岸",
+      "adaptation": "低",
+      "note": "花圃/小路边；无碰撞或按根部小碰撞。",
+      "method": "exact crop; no recolor or redraw",
+      "sourceRects": [
+        [
+          192,
+          160,
+          16,
+          32
+        ]
+      ]
+    },
+    {
+      "id": "flower-purple",
+      "title": "紫色花丛",
+      "kind": "prop",
+      "source": "Environment/Props/Static/Vegetation.png",
+      "sourceSha256": "1a3bdf11e56148a2971e08174f80108eb568ac222db2cb495121da8680de519d",
+      "rect": [
+        208,
+        160,
+        16,
+        32
+      ],
+      "file": "assets/flower-purple.png",
+      "fileSha256": "bae8d612e9093809848edcd82598fdea1cb2cbcf0741d654824b1154e8b50856",
+      "size": [
+        16,
+        32
+      ],
+      "alphaBBox": [
+        4,
+        5,
+        13,
+        32
+      ],
+      "group": "林园与河岸",
+      "adaptation": "低",
+      "note": "适合河湾入口和阅读廊边缘。",
+      "method": "exact crop; no recolor or redraw",
+      "sourceRects": [
+        [
+          208,
+          160,
+          16,
+          32
+        ]
+      ]
+    },
+    {
+      "id": "tree-summer",
+      "title": "夏季乔木",
+      "kind": "prop",
+      "source": "Environment/Props/Static/Trees/Model_01/Size_03.png",
+      "sourceSha256": "d03005dd4ef7a6bbbf44108269440d3d8cbfc00e89b1af3c41a77ab724a79d38",
+      "rect": [
+        0,
+        0,
+        48,
+        96
+      ],
+      "file": "assets/tree-summer.png",
+      "fileSha256": "06f89c6fb8b79fe004597894369917699f738cf9fa005311017e7e31ddd013f6",
+      "size": [
+        48,
+        96
+      ],
+      "alphaBBox": [
+        0,
+        0,
+        48,
+        96
+      ],
+      "group": "林园与河岸",
+      "adaptation": "中",
+      "note": "树冠更高；先在边缘小片种植，根部碰撞与冠层遮挡分开。",
+      "method": "exact crop; no recolor or redraw",
+      "sourceRects": [
+        [
+          0,
+          0,
+          48,
+          96
+        ]
+      ]
+    },
+    {
+      "id": "rock-small",
+      "title": "灰色岩块",
+      "kind": "prop",
+      "source": "Environment/Props/Static/Rocks.png",
+      "sourceSha256": "37b0e1bd023f945099f30cf79d37a8098a5acbb5c616a4c2482bc0cb3c923464",
+      "rect": [
+        128,
+        16,
+        32,
+        32
+      ],
+      "file": "assets/rock-small.png",
+      "fileSha256": "bcc7927a1859a5ee8758e525eacee708aec7c71acf79b9df134f17164ba482eb",
+      "size": [
+        32,
+        32
+      ],
+      "alphaBBox": [
+        3,
+        3,
+        29,
+        30
+      ],
+      "group": "林园与河岸",
+      "adaptation": "低",
+      "note": "用于河岸自然过渡，不阻挡通路。",
+      "method": "exact crop; no recolor or redraw",
+      "sourceRects": [
+        [
+          128,
+          16,
+          32,
+          32
+        ]
+      ]
+    },
+    {
+      "id": "boardwalk",
+      "title": "木栈道拼块",
+      "kind": "prop",
+      "source": "Environment/Props/Static/Furniture.png",
+      "sourceSha256": "a9455be5f7d67a63ddf78b6126a63b9a8ac410d725d5cb8f9c4fb289956af5bd",
+      "rect": [
+        8,
+        560,
+        64,
+        64
+      ],
+      "file": "assets/boardwalk.png",
+      "fileSha256": "eec5cf2237fb7be9d40ce0a0d5684d99bee5c0ff203f23d4c05d2bece151b0dd",
+      "size": [
+        64,
+        64
+      ],
+      "alphaBBox": [
+        0,
+        0,
+        61,
+        64
+      ],
+      "group": "外街与工坊",
+      "adaptation": "中",
+      "note": "这是拼装部件，仍需按现有水岸与合法格重组。",
+      "method": "exact crop; no recolor or redraw",
+      "sourceRects": [
+        [
+          8,
+          560,
+          64,
+          64
+        ]
+      ]
+    },
+    {
+      "id": "hanging-lamp",
+      "title": "悬挂路灯",
+      "kind": "prop",
+      "source": "Environment/Props/Static/Furniture.png",
+      "sourceSha256": "a9455be5f7d67a63ddf78b6126a63b9a8ac410d725d5cb8f9c4fb289956af5bd",
+      "rect": [
+        144,
+        448,
+        48,
+        48
+      ],
+      "file": "assets/hanging-lamp.png",
+      "fileSha256": "6b4ebb375152dc376864dcc2a2c84ffef3684c35a14e5b7424fd6299afd809fc",
+      "size": [
+        48,
+        48
+      ],
+      "alphaBBox": [
+        3,
+        0,
+        46,
+        46
+      ],
+      "group": "外街与工坊",
+      "adaptation": "中",
+      "note": "可丰富外街立面；灯光缓存复用现有机制。",
+      "method": "exact atlas extraction; remove adjacent spare lantern outside lamp silhouette; no repaint",
+      "sourceRects": [
+        [
+          144,
+          448,
+          48,
+          34
+        ],
+        [
+          144,
+          482,
+          16,
+          14
+        ]
+      ]
+    },
+    {
+      "id": "workbench",
+      "title": "木工作台",
+      "kind": "prop",
+      "source": "Environment/Structures/Stations/Workbench/Workbench.png",
+      "sourceSha256": "06f07c65de001d914192f0b7816d9bc2f76f5e914986fdb1efccae5f3e4a3f1b",
+      "rect": [
+        48,
+        272,
+        48,
+        16
+      ],
+      "file": "assets/workbench.png",
+      "fileSha256": "c1b1ce6f3922d370db57665e1719d850f688a0477584a7ee97bd3d565e392006",
+      "size": [
+        48,
+        16
+      ],
+      "alphaBBox": [
+        0,
+        0,
+        48,
+        16
+      ],
+      "group": "外街与工坊",
+      "adaptation": "中",
+      "note": "先作场景陈设；美术不自动开启制造行为。",
+      "method": "exact crop; no recolor or redraw",
+      "sourceRects": [
+        [
+          48,
+          272,
+          48,
+          16
+        ]
+      ]
+    },
+    {
+      "id": "long-table",
+      "title": "长餐桌",
+      "kind": "prop",
+      "source": "Environment/Structures/Buildings/Interior/Interior_Props_01.png",
+      "sourceSha256": "e6ce1e2bbc3006e4ee4d3337d800a057e8cc25f531df9dfde2854f1ead522051",
+      "rect": [
+        0,
+        0,
+        64,
+        32
+      ],
+      "file": "assets/long-table.png",
+      "fileSha256": "be9b385e63ea3a1762fef85d4ed1563b38765f21dac3958433867421cc918f4f",
+      "size": [
+        64,
+        32
+      ],
+      "alphaBBox": [
+        0,
+        0,
+        64,
+        26
+      ],
+      "group": "酒馆与旅舍",
+      "adaptation": "中",
+      "note": "适合餐饮空间，座位由现有业务另行映射。",
+      "method": "exact crop; no recolor or redraw",
+      "sourceRects": [
+        [
+          0,
+          0,
+          64,
+          32
+        ]
+      ]
+    },
+    {
+      "id": "bench",
+      "title": "木长椅",
+      "kind": "prop",
+      "source": "Environment/Structures/Buildings/Interior/Interior_Props_01.png",
+      "sourceSha256": "e6ce1e2bbc3006e4ee4d3337d800a057e8cc25f531df9dfde2854f1ead522051",
+      "rect": [
+        0,
+        96,
+        48,
+        16
+      ],
+      "file": "assets/bench.png",
+      "fileSha256": "360366a3772fe720eccb51924df10b8d4986686c2d1b2fa1e5c6071ee597a935",
+      "size": [
+        48,
+        16
+      ],
+      "alphaBBox": [
+        7,
+        3,
+        41,
+        16
+      ],
+      "group": "酒馆与旅舍",
+      "adaptation": "低",
+      "note": "可试用于步道或室内；脚底锚点要实测。",
+      "method": "exact crop; no recolor or redraw",
+      "sourceRects": [
+        [
+          0,
+          96,
+          48,
+          16
+        ]
+      ]
+    },
+    {
+      "id": "bed",
+      "title": "蓝色床铺",
+      "kind": "prop",
+      "source": "Environment/Structures/Buildings/Interior/Interior_Props_01.png",
+      "sourceSha256": "e6ce1e2bbc3006e4ee4d3337d800a057e8cc25f531df9dfde2854f1ead522051",
+      "rect": [
+        0,
+        288,
+        32,
+        64
+      ],
+      "file": "assets/bed.png",
+      "fileSha256": "baa7947f2986e343c3f634a7c8193cb17fe317ab51758b5d634c8af0acaa546d",
+      "size": [
+        32,
+        64
+      ],
+      "alphaBBox": [
+        1,
+        5,
+        31,
+        59
+      ],
+      "group": "酒馆与旅舍",
+      "adaptation": "中",
+      "note": "旅舍内部备选；不由图片承诺室内场景已经开放。",
+      "method": "exact crop; no recolor or redraw",
+      "sourceRects": [
+        [
+          0,
+          288,
+          32,
+          64
+        ]
+      ]
+    },
+    {
+      "id": "bookshelf",
+      "title": "柜架",
+      "kind": "prop",
+      "source": "Environment/Structures/Buildings/Interior/Interior_Props_01.png",
+      "sourceSha256": "e6ce1e2bbc3006e4ee4d3337d800a057e8cc25f531df9dfde2854f1ead522051",
+      "rect": [
+        192,
+        176,
+        32,
+        48
+      ],
+      "file": "assets/bookshelf.png",
+      "fileSha256": "5b6a7c36966e60a31c24f00f7d248f0fdbc95bd0dc2a9c8446d51d391e6d04dd",
+      "size": [
+        32,
+        48
+      ],
+      "alphaBBox": [
+        0,
+        2,
+        28,
+        48
+      ],
+      "group": "酒馆与旅舍",
+      "adaptation": "中",
+      "note": "补充书屋/室内墙面细节。",
+      "method": "exact crop; no recolor or redraw",
+      "sourceRects": [
+        [
+          192,
+          176,
+          32,
+          48
+        ]
+      ]
+    },
+    {
+      "id": "rug",
+      "title": "绿色地毯",
+      "kind": "prop",
+      "source": "Environment/Structures/Buildings/Interior/Interior_Props_01.png",
+      "sourceSha256": "e6ce1e2bbc3006e4ee4d3337d800a057e8cc25f531df9dfde2854f1ead522051",
+      "rect": [
+        336,
+        336,
+        48,
+        48
+      ],
+      "file": "assets/rug.png",
+      "fileSha256": "86ac970ae8bc865ead702bf3777ef4a07a9300553f9da2a24fc136e572e85ebd",
+      "size": [
+        48,
+        48
+      ],
+      "alphaBBox": [
+        0,
+        0,
+        48,
+        48
+      ],
+      "group": "酒馆与旅舍",
+      "adaptation": "低",
+      "note": "平面地饰，不增加物理碰撞。",
+      "method": "exact crop; no recolor or redraw",
+      "sourceRects": [
+        [
+          336,
+          336,
+          48,
+          48
+        ]
+      ]
+    },
+    {
+      "id": "window",
+      "title": "蓝色窗户",
+      "kind": "prop",
+      "source": "Environment/Structures/Buildings/Interior/Interior_Props_01.png",
+      "sourceSha256": "e6ce1e2bbc3006e4ee4d3337d800a057e8cc25f531df9dfde2854f1ead522051",
+      "rect": [
+        64,
+        176,
+        32,
+        32
+      ],
+      "file": "assets/window.png",
+      "fileSha256": "37decb759e4715e04f0ea2b8d5202b3c67df23b398d7eec03805612d48b65d8f",
+      "size": [
+        32,
+        32
+      ],
+      "alphaBBox": [
+        4,
+        0,
+        28,
+        32
+      ],
+      "group": "酒馆与旅舍",
+      "adaptation": "中",
+      "note": "室内墙面组件，需与墙体成套使用。",
+      "method": "exact crop; no recolor or redraw",
+      "sourceRects": [
+        [
+          64,
+          176,
+          32,
+          32
+        ]
+      ]
+    },
+    {
+      "id": "campfire",
+      "title": "小营火",
+      "kind": "animated-prop",
+      "group": "动态陈设",
+      "priority": "候选",
+      "source": "Environment/Structures/Stations/Bonfire/Bonfire_01-Sheet.png",
+      "sourceSha256": "5971b4838758184a0dce04207630c88b1d1190fe4b6d37a686181841b4cfd427",
+      "file": "assets/campfire.png",
+      "fileSha256": "5971b4838758184a0dce04207630c88b1d1190fe4b6d37a686181841b4cfd427",
+      "frameSize": [
+        32,
+        32
+      ],
+      "frames": 4,
+      "durationsMs": [
+        100,
+        100,
+        100,
+        100
+      ],
+      "firstFrameBBox": [
+        2,
+        5,
+        30,
+        32
+      ],
+      "visibleHeight": 27,
+      "feetPivot": [
+        16.0,
+        32
+      ],
+      "note": "小循环可复用现有动画预算；不新增互动服务。"
+    },
+    {
+      "id": "grill",
+      "title": "烤架",
+      "kind": "animated-prop",
+      "group": "动态陈设",
+      "priority": "候选",
+      "source": "Environment/Structures/Stations/Cooking Station/Grill/Grill_01-Sheet.png",
+      "sourceSha256": "4586a08d4e9a69f66854d1b8dda391778d269eb676fc1721dddca98eee415a05",
+      "file": "assets/grill.png",
+      "fileSha256": "4586a08d4e9a69f66854d1b8dda391778d269eb676fc1721dddca98eee415a05",
+      "frameSize": [
+        64,
+        64
+      ],
+      "frames": 4,
+      "durationsMs": [
+        100,
+        100,
+        100,
+        100
+      ],
+      "firstFrameBBox": [
+        1,
+        9,
+        62,
+        61
+      ],
+      "visibleHeight": 52,
+      "feetPivot": [
+        31.5,
+        61
+      ],
+      "note": "小循环可复用现有动画预算；不新增互动服务。"
+    },
+    {
+      "id": "author-tavern",
+      "kind": "reference",
+      "title": "素材作者原始酒馆示范",
+      "source": "MockUps/Tavern.png",
+      "sourceSha256": "a14702a9b668ecad76fa5ee8319f035623a3b2af545fe6c62d289598ceca0de3",
+      "file": "assets/author-tavern-reference.png",
+      "fileSha256": "a14702a9b668ecad76fa5ee8319f035623a3b2af545fe6c62d289598ceca0de3",
+      "note": "作者随包原始参考，非本次原创设计，非已实现功能。"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "baseMapLiveBytesMatch": true,
+  "walkableCells": 1966,
+  "oldStations": 34,
+  "newEndpointCoordinatesChecked": 29,
+  "allOnMap6Walkable": true,
+  "newBodiesDisjointOldStationsWaitingDuty": true,
+  "fullOccupancyScenario": {
+    "blockedCells": 56,
+    "reachableFreeCells": 1909,
+    "allNewApproachesReachable": true,
+    "allFourRouteStopsHaveReachableArrival": true,
+    "newBodiesHaveFreeAdjacentAccess": true,
+    "oldStationApproachesReachable": true
+  },
+  "map6GeometryModified": false,
+  "spatialAddonSha256": "6a734e85bf24a7af32c47c024837917aeba70ca7fe291655319478597424f79c",
+  "scope": "static topology and declared simultaneous occupancy; production reservation/permissions/timeouts not tested"
+}

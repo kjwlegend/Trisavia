@@ -1,0 +1,222 @@
+{
+  "contentSetRef": "npc-life-content@1",
+  "format": "ws03-content-draft-v1",
+  "status": "draft_not_runtime",
+  "locale": "zh-CN",
+  "author": "WS03",
+  "note": "业务源格式固定为ws03-content-draft-v1，由TD映射正式内容目录；ref不是接口，when是必须映射的业务条件。首片只接真浇水：清理、小满、闻溪及需要额外结束接待的NPC完成短句均不随文件导入自动启用。四步计划accepted不代表介绍或劳动完成，具体启用项由运行能力明确选择。数值只取01-behaviors.md §10及原目录。",
+  "audiences": {
+    "public": "可公开的静态说明或不含私人选择的短句；NPC短句仍须满足真实在场、接待与活动条件，不因读取或重放回执重复冒泡。",
+    "participant": "参与Agent按原权限读取；Owner仅观察发生时与当前均获准的最小业务结果，不获得所选私密话题、交流正文或私有感受。不新增主人权限，不放进公共气泡或公众日志。"
+  },
+  "entries": [
+    {
+      "ref": "npc-life/garden/water@1",
+      "kind": "instruction",
+      "audience": "public",
+      "title": "给花圃浇水",
+      "text": "把水浇在花圃的土面上，花留在原处。用完的水壶也留在照料点，下一位来的人还能用。做完这一轮，土面会留下水迹，园务牌也会记下这次照料。想歇一歇的话，可以再去花径凉亭找空着的长椅。",
+      "when": "浇水点、固定工具、真实活动与提交后水迹表现均已启用，可作静态说明预览；仅阅读不执行care.introduce、不产接待引用、不开始照料或恢复体力。"
+    },
+    {
+      "ref": "npc-life/garden/clear@1",
+      "kind": "instruction",
+      "audience": "public",
+      "title": "收拾小径边",
+      "text": "把这处小径边的碎叶收拢到整理区，露出原来的路边。碎叶和工具都留在这里，不装进背包。做完后，园务牌会留下本轮清理记录；这一处已经整齐，就换个地方走走。",
+      "when": "首片disabled；后继只有该点确有可清理物且散落到收拢的状态表现已启用才可使用，冷却结束不自动制造新的碎叶。"
+    },
+    {
+      "ref": "npc-life/company/food@1",
+      "kind": "topic",
+      "audience": "participant",
+      "title": "留一条鱼吃",
+      "text": "我偏爱把鱼留一条做饭。不过，三种鱼做成鱼餐的恢复效果一样，不用专挑最值钱的那条。卖掉、留着吃，或者送给朋友，各有各的用处。今天吃哪一份，还是你挑。",
+      "when": "本能力启用后，本人明确选择当地饮食话题且小满本次陪坐实际进入话题阶段；如有meal前段，必须先有其完成回执。只是固定角色偏好，不证明小满刚钓鱼、做饭或吃过东西；正文可获取不等于陪坐完成或Agent已读。"
+    },
+    {
+      "ref": "npc-life/company/walk@1",
+      "kind": "topic",
+      "audience": "participant",
+      "title": "换条路走",
+      "text": "我喜欢在街边走走，走到岔路再挑方向。想走树旁，可以去松荫漫步园；想沿水边走，那边接着南汊河湾步道。也可以就在东岸外街转一小段，不必每次都走满一圈。",
+      "when": "本能力启用后，本人明确选择路上见闻话题且小满本次陪坐实际进入话题阶段；如有meal前段，必须先有其完成回执。所述道路已启用，不当作小满本轮走过这些地点的经历；正文可获取不等于陪坐完成或Agent已读。"
+    },
+    {
+      "ref": "npc-life/company/quiet@1",
+      "kind": "option_description",
+      "audience": "participant",
+      "title": "安静坐一会儿",
+      "text": "坐一会儿就好，不必找话题。想提前离开也可以。",
+      "when": "陪坐选项可预览；选择安静后不自动接入两类话题，不生成谈话完成或主观感受。"
+    },
+    {
+      "ref": "npc-life/route/shade-river@1",
+      "kind": "guide",
+      "audience": "public",
+      "title": "树荫到河湾",
+      "text": "先去松荫漫步园，再沿相连的路到南汊河湾步道。两个地方都停一会儿，看看自己更想在哪儿多待片刻。路线走完就可以离开；想回来聊聊，再找闻溪。",
+      "stops": [
+        {
+          "order": 1,
+          "place": "松荫漫步园",
+          "text": "这一段从原镇向南接出，在草地和树旁绕行。按已开放的小路走，挑指定停留点歇脚看看；这次停留本身不恢复体力。"
+        },
+        {
+          "order": 2,
+          "place": "南汊河湾步道",
+          "text": "从漫步园接到河湾步道，视线转向水边。沿陆地步道走就好；这一段开放的是散步，没有新的钓位，也不用下水。"
+        }
+      ],
+      "when": "路线与两处合法停留区已经绑定正式地图；静态正文可预览，路线完成必须另有本次有序到访回执。"
+    },
+    {
+      "ref": "npc-life/route/east-tavern@1",
+      "kind": "guide",
+      "audience": "public",
+      "title": "街边慢走",
+      "text": "先在东岸外街停一会儿，再回到港湾酒馆外场的公共停留点。这条路线不需要点餐；走到酒馆后，可以离开，也可以另选那里已经开放的活动。",
+      "stops": [
+        {
+          "order": 1,
+          "place": "东岸外街",
+          "text": "外街从旧镇向东延伸，和原来的街道连在一起。先沿路走到停留点，不必寻找传送门，也不用进入建筑。"
+        },
+        {
+          "order": 2,
+          "place": "港湾酒馆外场公共停留点",
+          "text": "这一站在酒馆外场，留出餐位和厨房服务点。只是到这里看看，不代表已经点餐、坐下或吃过东西；这些都可以之后自己再选。"
+        }
+      ],
+      "when": "路线与两处合法停留区已经绑定正式地图；酒馆停留区不占用餐位或厨房容量。"
+    }
+  ],
+  "lines": [
+    {
+      "ref": "npc-life/gardener/open@1",
+      "speaker": "npc-gardener",
+      "audience": "public",
+      "text": "想动动手吗？先看看园务牌，挑一处现在能照料的地方。",
+      "when": "同一有限计划内care.introduce在合法接待点真实结算成功，青禾当时在场且空闲，产生绑定本人、选中点和本次plan的介绍结果。计划accepted、移动到场、静态阅读、失败或回执重放均不触发；只对应这次真实介绍。"
+    },
+    {
+      "ref": "npc-life/gardener/water-done@1",
+      "speaker": "npc-gardener",
+      "audience": "public",
+      "text": "这片浇好了，谢啦。水壶留在这儿就好。",
+      "when": "首片四步计划不含结束接待，因此本句不启用。后继需本人本次care.perform已提交完成，青禾当前在合法交互范围且另有真实结束接待，才可使用；青禾离开或没有该接待时只用系统结果。"
+    },
+    {
+      "ref": "npc-life/gardener/clear-done@1",
+      "speaker": "npc-gardener",
+      "audience": "public",
+      "text": "这一小段收拾好了，谢啦。",
+      "when": "首片disabled；后继需本人本次清理已提交完成、碎叶状态已改变，且青禾当前在场进行真实结束接待才可使用。"
+    },
+    {
+      "ref": "npc-life/gardener/busy@1",
+      "speaker": "npc-gardener",
+      "audience": "public",
+      "text": "我这边还没忙完，稍后再来吧。",
+      "when": "接待尝试确认青禾在场但正被另一真实活动占用；不是点冷却、体力不足或本人正忙的替代原因。"
+    },
+    {
+      "ref": "npc-life/company/open@1",
+      "speaker": "npc-tea-companion",
+      "audience": "public",
+      "text": "坐吧，我在这儿陪你一会儿。",
+      "when": "双方身体和两席已成功取得，小满与本人确已入座；未开始时不说坐吧。"
+    },
+    {
+      "ref": "npc-life/company/quiet-start@1",
+      "speaker": "npc-tea-companion",
+      "audience": "participant",
+      "text": "好，我陪你坐一会儿。",
+      "when": "本人已明确选择安静且进入陪坐阶段；只说一次，随后不自动插入话题或感受。"
+    },
+    {
+      "ref": "npc-life/company/done@1",
+      "speaker": "npc-tea-companion",
+      "audience": "public",
+      "text": "那就回头见。",
+      "when": "本次陪坐阶段确已完成，小满仍在场；不用于仅吃饭完成、取消或系统中断。"
+    },
+    {
+      "ref": "npc-life/company/busy@1",
+      "speaker": "npc-tea-companion",
+      "audience": "public",
+      "text": "这桌还没结束，晚点再来坐吧。",
+      "when": "小满当前确在另一组陪坐会话中；单纯餐位满或小满外出须显示各自真实原因。"
+    },
+    {
+      "ref": "npc-life/guide/open@1",
+      "speaker": "npc-trail-guide",
+      "audience": "public",
+      "text": "想走树旁，还是沿街？挑一条，我把停留的地方指给你。",
+      "when": "闻溪在场进行本次真实路线介绍，且两条路线均已启用；只启用一条时展示该条正文，不套用两选一句。"
+    },
+    {
+      "ref": "npc-life/guide/return@1",
+      "speaker": "npc-trail-guide",
+      "audience": "participant",
+      "text": "两处都走到了。你更想聊哪一处？",
+      "when": "本人本次路线有两处有序完成回执，且本人明确回访、闻溪在场接待；不编造本人回答。"
+    },
+    {
+      "ref": "npc-life/guide/busy@1",
+      "speaker": "npc-trail-guide",
+      "audience": "public",
+      "text": "我这边还没说完，稍等一下。",
+      "when": "闻溪确正处于另一即时介绍的互斥接待中；不能拿此句掩盖地图失效或内容未启用。"
+    },
+    {
+      "ref": "npc-life/system/gardener-away@1",
+      "speaker": "system",
+      "audience": "public",
+      "text": "青禾不在接待点。可以先看看园务牌。",
+      "when": "当前权威位置确认青禾不在接待点；已有有效介绍引用不因此失效。"
+    },
+    {
+      "ref": "npc-life/system/water-done@1",
+      "speaker": "system",
+      "audience": "participant",
+      "text": "这轮浇水已完成，土面留下了水迹。",
+      "when": "本次care.perform已提交完成且同次照料结果支持水迹。介绍成功、introductionFrom解析成功、占点/预留体力/消费引用、active、动画播完或仅到期均不是完成。NPC缺席仍可给真实结果，不冒充NPC发言；回执重放不重新播气泡。"
+    },
+    {
+      "ref": "npc-life/system/clear-done@1",
+      "speaker": "system",
+      "audience": "participant",
+      "text": "这处碎叶已收拢，本轮清理完成。",
+      "when": "本次清理及碎叶状态改变已同次提交；中断或零效果不使用此句。"
+    },
+    {
+      "ref": "npc-life/system/care-stopped@1",
+      "speaker": "system",
+      "audience": "participant",
+      "text": "这次照料没有完成。",
+      "when": "本次care.perform真实开始后已取消或中断；在本人结果另列真实原因、已花体力与释放量。不统一声称没有消耗；若只是介绍失败/过期、移动失败或照料开始前拒绝，沿原失败原因反馈，不虚构已经劳动。"
+    },
+    {
+      "ref": "npc-life/system/meal-only@1",
+      "speaker": "system",
+      "audience": "participant",
+      "text": "餐食已用完，陪坐还没有完成。",
+      "when": "meal已完成，后续陪坐已取消或中断；保留原消费与恢复，不记谈话完成。"
+    },
+    {
+      "ref": "npc-life/system/route-done@1",
+      "speaker": "system",
+      "audience": "participant",
+      "text": "这条路线的两处停留都已完成。想聊聊的话，可以再去找闻溪。",
+      "when": "本人本次有序路线已提交完成；不要求回访，不表示闻溪此刻在接待点。"
+    },
+    {
+      "ref": "npc-life/system/guide-away@1",
+      "speaker": "system",
+      "audience": "participant",
+      "text": "路线已经走完。闻溪目前不在接待点，这次还没有交流。",
+      "when": "本人路线确已完成且本次回访未能接待，当前权威位置确认闻溪缺席。"
+    }
+  ]
+}

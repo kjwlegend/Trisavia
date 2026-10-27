@@ -1,0 +1,598 @@
+{
+  "id": "npc-life-spatial-v1",
+  "schemaVersion": 1,
+  "revision": 1,
+  "appendOnlyToMap6": true,
+  "baseMap": {
+    "mapId": "pixel-town-v2",
+    "mapManifestVersion": 6,
+    "rulesetVersion": 6,
+    "topologyVersion": 6,
+    "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f",
+    "spatialSha256": "861fef772675ad2ec01fa57d7a49e5eeb5e3482d43ae9f370fb48fe2b6d866c4",
+    "verifiedLiveURL": "http://127.0.0.1:18893/assets/world-life/",
+    "verifiedLiveAppVersion": "0.8.0"
+  },
+  "coordinateSystem": {
+    "tileSize": 16,
+    "origin": [
+      520,
+      520
+    ],
+    "sourceCentreFormula": "520 + cell * 16"
+  },
+  "geometryDelta": {
+    "walkableCellsAdded": [],
+    "walkableCellsRemoved": [],
+    "physicalBlockedCellsAdded": [],
+    "physicalBlockedCellsRemoved": [],
+    "existingStationsModified": []
+  },
+  "npcs": [
+    {
+      "npcId": "npc-gardener",
+      "name": "青禾",
+      "dutyRegionId": "pine-walk",
+      "duty": {
+        "cell": [
+          -17,
+          46
+        ],
+        "source": [
+          248,
+          1256
+        ]
+      },
+      "approach": {
+        "cell": [
+          -16,
+          46
+        ],
+        "source": [
+          264,
+          1256
+        ]
+      },
+      "waiting": {
+        "cell": [
+          -17,
+          45
+        ],
+        "source": [
+          248,
+          1240
+        ]
+      },
+      "receptionCapacity": 1,
+      "waitingCapacity": 1,
+      "waitingMaxSeconds": 120,
+      "receptionDistance": "Manhattan <= 1 to current authoritative NPC cell; no remote reception",
+      "lookId": "pixel-crawler-qinghe-v1",
+      "catalogVersion": "2026-10-27.npc-life-v1",
+      "permanentPhysicalCollision": false,
+      "activeBodyCollision": "existing authoritative body occupancy only",
+      "movement": "duty is an availability anchor, never a permanent current position"
+    },
+    {
+      "npcId": "npc-tea-companion",
+      "name": "小满",
+      "dutyRegionId": "harbor_tavern",
+      "duty": {
+        "cell": [
+          56,
+          17
+        ],
+        "source": [
+          1416,
+          792
+        ]
+      },
+      "approach": {
+        "cell": [
+          55,
+          17
+        ],
+        "source": [
+          1400,
+          792
+        ]
+      },
+      "waiting": {
+        "cell": [
+          56,
+          18
+        ],
+        "source": [
+          1416,
+          808
+        ]
+      },
+      "receptionCapacity": 1,
+      "waitingCapacity": 1,
+      "waitingMaxSeconds": 120,
+      "receptionDistance": "Manhattan <= 1 to current authoritative NPC cell; no remote reception",
+      "lookId": "pixel-crawler-xiaoman-v1",
+      "catalogVersion": "2026-10-27.npc-life-v1",
+      "permanentPhysicalCollision": false,
+      "activeBodyCollision": "existing authoritative body occupancy only",
+      "movement": "duty is an availability anchor, never a permanent current position"
+    },
+    {
+      "npcId": "npc-trail-guide",
+      "name": "闻溪",
+      "dutyRegionId": "east-street",
+      "duty": {
+        "cell": [
+          74,
+          21
+        ],
+        "source": [
+          1704,
+          856
+        ]
+      },
+      "approach": {
+        "cell": [
+          73,
+          21
+        ],
+        "source": [
+          1688,
+          856
+        ]
+      },
+      "waiting": {
+        "cell": [
+          75,
+          21
+        ],
+        "source": [
+          1720,
+          856
+        ]
+      },
+      "receptionCapacity": 1,
+      "waitingCapacity": 1,
+      "waitingMaxSeconds": 120,
+      "receptionDistance": "Manhattan <= 1 to current authoritative NPC cell; no remote reception",
+      "lookId": "pixel-crawler-wenxi-v1",
+      "catalogVersion": "2026-10-27.npc-life-v1",
+      "permanentPhysicalCollision": false,
+      "activeBodyCollision": "existing authoritative body occupancy only",
+      "movement": "duty is an availability anchor, never a permanent current position"
+    }
+  ],
+  "careStations": [
+    {
+      "stationId": "pine-care-water-01",
+      "careKind": "watering",
+      "regionId": "pine-walk",
+      "capacity": 1,
+      "station": {
+        "cell": [
+          -12,
+          44
+        ],
+        "source": [
+          328,
+          1224
+        ]
+      },
+      "approach": {
+        "cell": [
+          -13,
+          44
+        ],
+        "source": [
+          312,
+          1224
+        ]
+      },
+      "waiting": {
+        "cell": [
+          -13,
+          45
+        ],
+        "source": [
+          312,
+          1240
+        ]
+      },
+      "waitingCapacity": 1,
+      "waitingMaxSeconds": 120,
+      "target": {
+        "cell": [
+          -11,
+          44
+        ],
+        "source": [
+          344,
+          1224
+        ]
+      },
+      "facing": "right",
+      "physicalCollision": false,
+      "occupancy": "only active actor and explicitly accepted waiting; no static blocked cells",
+      "groundOverlay": {
+        "file": "assets/care-watering.png",
+        "frameSize": [
+          32,
+          32
+        ],
+        "pivot": [
+          16,
+          24
+        ],
+        "anchorSource": [
+          344,
+          1224
+        ],
+        "layer": "ground, before all bodies and existing occluders",
+        "boundsRelativeToAnchor": [
+          -16,
+          -24,
+          32,
+          32
+        ]
+      },
+      "activeActorOverlayBounds": [
+        -16,
+        -24,
+        32,
+        32
+      ],
+      "stateBinding": {
+        "neutral": "No committed care result; never infer weather or urgency",
+        "active": "matching current authoritative careKind + active activity at station",
+        "completed": "matching committed care record; lastCareAt + actorId + careKind; never local timer",
+        "cancelled": "remove active FX and retain last committed result",
+        "cooldownEnded": "watering: remove wet glints at authoritative care cooldown end, retain lastCareAt record; cleaning: retain collected leaves and keep unavailable until actual new cleanable material exists"
+      },
+      "visualFrames": {
+        "neutral": [
+          0
+        ],
+        "active": [
+          1
+        ],
+        "completed": [
+          2
+        ]
+      },
+      "availabilityGate": "watering requires usable fixed tool and active/result visuals; cleaning requires actual cleanable material state and collected result visuals, otherwise disabled",
+      "careBoard": {
+        "type": "anchored interaction label, no physical furniture",
+        "anchorCell": [
+          -15,
+          43
+        ],
+        "collision": false,
+        "fields": [
+          "careKind",
+          "available",
+          "activeActorDisplayName if public",
+          "lastCareAt",
+          "lastActorDisplayName if public",
+          "nextEligibleAt"
+        ],
+        "fallback": "unavailable when state is unknown; never invent completion"
+      },
+      "actorPolicy": "Keep the actual participant appearance. Qinghe water/clean pose is only for Qinghe herself; do not replace an Agent with the NPC. Shared tool/FX atlas is composited over original participant."
+    },
+    {
+      "stationId": "pine-care-clean-01",
+      "careKind": "cleaning",
+      "regionId": "pine-walk",
+      "capacity": 1,
+      "station": {
+        "cell": [
+          -7,
+          47
+        ],
+        "source": [
+          408,
+          1272
+        ]
+      },
+      "approach": {
+        "cell": [
+          -8,
+          47
+        ],
+        "source": [
+          392,
+          1272
+        ]
+      },
+      "waiting": {
+        "cell": [
+          -8,
+          48
+        ],
+        "source": [
+          392,
+          1288
+        ]
+      },
+      "waitingCapacity": 1,
+      "waitingMaxSeconds": 120,
+      "target": {
+        "cell": [
+          -6,
+          47
+        ],
+        "source": [
+          424,
+          1272
+        ]
+      },
+      "facing": "right",
+      "physicalCollision": false,
+      "occupancy": "only active actor and explicitly accepted waiting; no static blocked cells",
+      "groundOverlay": {
+        "file": "assets/care-cleaning.png",
+        "frameSize": [
+          32,
+          32
+        ],
+        "pivot": [
+          16,
+          24
+        ],
+        "anchorSource": [
+          424,
+          1272
+        ],
+        "layer": "ground, before all bodies and existing occluders",
+        "boundsRelativeToAnchor": [
+          -16,
+          -24,
+          32,
+          32
+        ]
+      },
+      "activeActorOverlayBounds": [
+        -16,
+        -24,
+        32,
+        32
+      ],
+      "stateBinding": {
+        "neutral": "No committed care result; never infer weather or urgency",
+        "active": "matching current authoritative careKind + active activity at station",
+        "completed": "matching committed care record; lastCareAt + actorId + careKind; never local timer",
+        "cancelled": "remove active FX and retain last committed result",
+        "cooldownEnded": "watering: remove wet glints at authoritative care cooldown end, retain lastCareAt record; cleaning: retain collected leaves and keep unavailable until actual new cleanable material exists"
+      },
+      "visualFrames": {
+        "neutral": [
+          0
+        ],
+        "active": [
+          1
+        ],
+        "completed": [
+          3
+        ]
+      },
+      "availabilityGate": "watering requires usable fixed tool and active/result visuals; cleaning requires actual cleanable material state and collected result visuals, otherwise disabled",
+      "careBoard": {
+        "type": "anchored interaction label, no physical furniture",
+        "anchorCell": [
+          -15,
+          43
+        ],
+        "collision": false,
+        "fields": [
+          "careKind",
+          "available",
+          "activeActorDisplayName if public",
+          "lastCareAt",
+          "lastActorDisplayName if public",
+          "nextEligibleAt"
+        ],
+        "fallback": "unavailable when state is unknown; never invent completion"
+      },
+      "actorPolicy": "Keep the actual participant appearance. Qinghe water/clean pose is only for Qinghe herself; do not replace an Agent with the NPC. Shared tool/FX atlas is composited over original participant."
+    }
+  ],
+  "companionDining": {
+    "id": "tavern-companion-pair-01",
+    "placeId": "harbor_tavern",
+    "maxGroups": 1,
+    "reservation": "Atomic original two stations + both bodies; no new capacity or meal double-reservation",
+    "agent": {
+      "stationId": "harbor_tavern-dining-01",
+      "cell": [
+        52,
+        16
+      ],
+      "source": [
+        1352,
+        776
+      ],
+      "approachCell": [
+        53,
+        16
+      ],
+      "facing": "right"
+    },
+    "npc": {
+      "stationId": "harbor_tavern-dining-02",
+      "cell": [
+        54,
+        16
+      ],
+      "source": [
+        1384,
+        776
+      ],
+      "approachCell": [
+        55,
+        16
+      ],
+      "facing": "right"
+    },
+    "remainingDiningStationIds": [
+      "harbor_tavern-dining-03",
+      "harbor_tavern-dining-04"
+    ],
+    "originalTotalDiningCapacity": 4,
+    "newDiningCapacity": 0,
+    "newFurnitureCollision": false,
+    "furniture": "Reuse the original meal-chair at each station. Do not add a table across public aisle. Pose sprites contain no chair.",
+    "quiet": "sit-quiet; no cup or tray",
+    "topic": "sit-talk only in actual selected topic phase",
+    "meal": "tray only during a true self-owned food serving phase; remove after consumption/cancellation",
+    "trayBoundsRelativeToNpcFeet": [
+      -16,
+      -24,
+      32,
+      32
+    ]
+  },
+  "routes": [
+    {
+      "routeId": "shade-to-river",
+      "name": "树荫到河湾",
+      "version": 1,
+      "stops": [
+        {
+          "stopId": "pine-shade",
+          "name": "松荫漫步园",
+          "anchor": {
+            "cell": [
+              -14,
+              50
+            ],
+            "source": [
+              296,
+              1320
+            ]
+          },
+          "arrivalCells": [
+            [
+              -14,
+              50
+            ],
+            [
+              -13,
+              50
+            ],
+            [
+              -14,
+              49
+            ]
+          ],
+          "guideRef": "WS03 supplies versioned content"
+        },
+        {
+          "stopId": "river-boardwalk",
+          "name": "南汊河湾步道",
+          "anchor": {
+            "cell": [
+              28,
+              46
+            ],
+            "source": [
+              968,
+              1256
+            ]
+          },
+          "arrivalCells": [
+            [
+              28,
+              46
+            ],
+            [
+              27,
+              46
+            ],
+            [
+              28,
+              45
+            ]
+          ],
+          "guideRef": "WS03 supplies versioned content"
+        }
+      ],
+      "stopSeconds": 30,
+      "physicalCollision": false,
+      "seatReservation": false,
+      "routeIsNotFollowActivity": true,
+      "renderPolicy": "optional navigation pins only when selected; no new permanent sign/furniture"
+    },
+    {
+      "routeId": "street-stroll",
+      "name": "街边慢走",
+      "version": 1,
+      "stops": [
+        {
+          "stopId": "east-square",
+          "name": "东岸外街",
+          "anchor": {
+            "cell": [
+              76,
+              18
+            ],
+            "source": [
+              1736,
+              808
+            ]
+          },
+          "arrivalCells": [
+            [
+              76,
+              18
+            ],
+            [
+              75,
+              18
+            ],
+            [
+              76,
+              19
+            ]
+          ],
+          "guideRef": "WS03 supplies versioned content"
+        },
+        {
+          "stopId": "tavern-public-edge",
+          "name": "港湾酒馆外场",
+          "anchor": {
+            "cell": [
+              56,
+              14
+            ],
+            "source": [
+              1416,
+              744
+            ]
+          },
+          "arrivalCells": [
+            [
+              56,
+              14
+            ],
+            [
+              55,
+              14
+            ],
+            [
+              56,
+              15
+            ]
+          ],
+          "guideRef": "WS03 supplies versioned content"
+        }
+      ],
+      "stopSeconds": 30,
+      "physicalCollision": false,
+      "seatReservation": false,
+      "routeIsNotFollowActivity": true,
+      "renderPolicy": "optional navigation pins only when selected; no new permanent sign/furniture"
+    }
+  ],
+  "rulesOwner": "WS03 01-behaviors.md section 10; numbers copied for reference, server remains authoritative",
+  "activation": "design payload only; TD must explicitly activate identities/services/content with its new domain catalog; map6 byte files stay frozen"
+}

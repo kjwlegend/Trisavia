@@ -1,0 +1,231 @@
+{
+  "watering": {
+    "file": "assets/care-watering.png",
+    "sha256": "61bfd7f62dd70bfbb22e2314b3e4d2fc50442c4db4f184defc97c30fdc709518",
+    "frameSize": [
+      32,
+      32
+    ],
+    "frames": 4,
+    "pivot": [
+      16,
+      24
+    ],
+    "framesMeaning": [
+      "neutral",
+      "active",
+      "committed-completed",
+      "unused-alternate"
+    ],
+    "extraction": [
+      {
+        "sourceRect": [
+          34,
+          140,
+          410,
+          397
+        ],
+        "alphaBBox": [
+          4,
+          8,
+          28,
+          24
+        ]
+      },
+      {
+        "sourceRect": [
+          478,
+          98,
+          853,
+          397
+        ],
+        "alphaBBox": [
+          4,
+          5,
+          28,
+          24
+        ]
+      },
+      {
+        "sourceRect": [
+          921,
+          140,
+          1297,
+          397
+        ],
+        "alphaBBox": [
+          4,
+          8,
+          28,
+          24
+        ]
+      },
+      {
+        "sourceRect": [
+          1365,
+          139,
+          1740,
+          397
+        ],
+        "alphaBBox": [
+          4,
+          8,
+          28,
+          24
+        ]
+      }
+    ]
+  },
+  "cleaning": {
+    "file": "assets/care-cleaning.png",
+    "sha256": "8ba925d1f847b58a3e8f121a3d033abf20c5e80b6cef5c0e91a375ad6ce54610",
+    "frameSize": [
+      32,
+      32
+    ],
+    "frames": 4,
+    "pivot": [
+      16,
+      24
+    ],
+    "framesMeaning": [
+      "neutral",
+      "active",
+      "committed-completed",
+      "unused-alternate"
+    ],
+    "extraction": [
+      {
+        "sourceRect": [
+          39,
+          554,
+          403,
+          807
+        ],
+        "alphaBBox": [
+          4,
+          7,
+          28,
+          24
+        ]
+      },
+      {
+        "sourceRect": [
+          478,
+          554,
+          854,
+          807
+        ],
+        "alphaBBox": [
+          4,
+          7,
+          29,
+          24
+        ]
+      },
+      {
+        "sourceRect": [
+          923,
+          554,
+          1290,
+          807
+        ],
+        "alphaBBox": [
+          4,
+          7,
+          28,
+          24
+        ]
+      },
+      {
+        "sourceRect": [
+          1366,
+          554,
+          1741,
+          807
+        ],
+        "alphaBBox": [
+          4,
+          7,
+          29,
+          24
+        ]
+      }
+    ]
+  },
+  "shared-water": {
+    "file": "assets/shared-water-fx.png",
+    "sha256": "aa076b70d3a6f4217314c7435661939d05aece3f08ad3da6aa497d2fe69b79fa",
+    "frameSize": [
+      32,
+      32
+    ],
+    "frames": 4,
+    "durationsMs": [
+      220,
+      220,
+      220,
+      220
+    ],
+    "pivot": [
+      16,
+      24
+    ],
+    "source": "reference/watering-can-generated.png",
+    "sourceRects": [
+      [
+        77,
+        135,
+        667,
+        472
+      ],
+      [
+        769,
+        121,
+        1397,
+        480
+      ],
+      [
+        50,
+        632,
+        687,
+        1018
+      ],
+      [
+        779,
+        644,
+        1397,
+        984
+      ]
+    ],
+    "sourceScale": 0.013559322033898305,
+    "applyTo": "same participant actor group while matching active watering; never replace participant body",
+    "parkedFrame": 0,
+    "toolOwnership": "fixed at care point; not inventory reward",
+    "parkedAnchorOffsetFromTarget": [
+      8,
+      4
+    ]
+  },
+  "shared-clean": {
+    "file": "assets/shared-clean-fx.png",
+    "sha256": "a3d0dd611d746eb1468f6c593eb4f6a2d84ddc5127d7682619ab2a1ca7fb39be",
+    "frameSize": [
+      32,
+      32
+    ],
+    "frames": 4,
+    "pivot": [
+      16,
+      24
+    ],
+    "source": "technical extraction from Qinghe generated action; only tool/water or loose leaves, never head/body",
+    "sourceRectPerFrame": [
+      20,
+      22,
+      28,
+      25
+    ],
+    "applyTo": "authoritative active participant; preserve original appearance"
+  }
+}
