@@ -1,0 +1,90 @@
+{
+  "contentSetRef": "npc-personas@1",
+  "format": "ws03-npc-personas-v1",
+  "status": "authored_ready_not_runtime",
+  "locale": "zh-CN",
+  "author": "WS03",
+  "baseline": {
+    "applicationVersion": "0.9.0",
+    "checkedDate": "2026-10-27",
+    "publicCatalog": "http://127.0.0.1:18893/v1/world/npcs?worldId=default",
+    "activeNpcCount": 8
+  },
+  "policy": "姓名、身份、故事以稳定npcId关联为同一当前资料源，供地图详情、好友中的镇民列表、Agent发现资料共用。故事属于新写入的角色背景设定，不是运行事件、背包物品、关系或能力凭据；不得据此生成历史日志或启用新服务。现有专名青禾保留，岗位留在身份字段。历史正文不批量改名或重写；原结构化身份、编号、关系数据和已提交回执保留。",
+  "profiles": [
+    {
+      "npcId": "npc-mayor",
+      "contentRef": "npc-personas/npc-mayor@1",
+      "previousDisplayName": "镇长",
+      "name": "周望",
+      "role": "镇长",
+      "biography": "周望年轻时替街坊誊过许多家书，后来留在小镇做事。说话不快，遇见争执总先听人把话说完。桌上那本旧册子翻得起了毛边，里面夹着几张画歪的屋顶草图，是闲下来随手画的。"
+    },
+    {
+      "npcId": "npc-tavern",
+      "contentRef": "npc-personas/npc-tavern@1",
+      "previousDisplayName": "港湾酒馆·酒保",
+      "name": "许舟",
+      "role": "港湾酒馆酒保",
+      "biography": "许舟跟着长辈在港边长大，记住一张脸常比记住一个名字快。平日爱接话，也懂得让沉默的人安静坐着。收拾桌面时总把杯柄朝同一个方向，自己却常把随身的铅笔忘在耳后。"
+    },
+    {
+      "npcId": "npc-innkeeper",
+      "contentRef": "npc-personas/npc-innkeeper@1",
+      "previousDisplayName": "石岸旅舍·老板",
+      "name": "林素",
+      "role": "石岸旅舍主人",
+      "biography": "林素年轻时在外住过不少小旅舍，最记得的是有人替晚归的客人留一盏灯。后来安顿下来，做事仍不声不响，却很在意别人能否睡得踏实。闲时喜欢把旧布缝成小方垫，针脚不算齐整，总要拆一段再来。"
+    },
+    {
+      "npcId": "npc-harbor-hand",
+      "contentRef": "npc-personas/npc-harbor-hand@1",
+      "previousDisplayName": "码头熟手",
+      "name": "陈大川",
+      "role": "码头熟手",
+      "biography": "陈大川刚到码头时常认错箱上的记号，挨过几回笑，便养成了动手前多看一眼的习惯。如今做事利落，搬不动也会直说，从不硬撑。口袋里常揣着一块磨圆的木片，等人的时候就在掌心来回翻。"
+    },
+    {
+      "npcId": "npc-fishing-clerk",
+      "contentRef": "npc-personas/npc-fishing-clerk@1",
+      "previousDisplayName": "渔具店员",
+      "name": "唐越",
+      "role": "渔人小铺店员",
+      "biography": "唐越小时候钓鱼，总忍不住提前收线。后来陪长辈在岸边坐久了，才慢慢学会等。性子依旧爽快，说起没钓着的那几回也不遮掩。喜欢把用旧的线轴排在窗边，大小高低不齐，却舍不得扔掉任何一个。"
+    },
+    {
+      "npcId": "npc-librarian",
+      "contentRef": "npc-personas/npc-librarian@1",
+      "previousDisplayName": "书屋管理员",
+      "name": "顾宁",
+      "role": "蓝檐书屋管理员",
+      "biography": "顾宁最早喜欢的那本书缺了末页，于是自己写了三个结尾，至今也没选出最满意的一个。平日说话轻，聊到故事却很认真，不爱替别人下结论。书里常夹着窄窄的废纸条，上面除了页码，偶尔还有一只画坏的鸟。"
+    },
+    {
+      "npcId": "npc-neighbor",
+      "contentRef": "npc-personas/npc-neighbor@1",
+      "previousDisplayName": "自由镇民",
+      "name": "阿迟",
+      "role": "小镇居民",
+      "biography": "阿迟的名字是自己叫出来的。过去做什么都赶，搬来小镇后才肯慢一点，走到岔路也不急着决定方向。对新鲜事好奇，却常在热闹中途溜去安静处。随身有本薄册子，记着些零碎念头，空白页比写满的还多。"
+    },
+    {
+      "npcId": "npc-gardener",
+      "contentRef": "npc-personas/npc-gardener@1",
+      "previousDisplayName": "青禾",
+      "name": "青禾",
+      "role": "松荫漫步园园务员",
+      "biography": "青禾小时候跟外婆照看一排旧花盆，起初只记得浇水，后来才学会蹲下来看看土。说话简短，做事却肯反复琢磨，不喜欢催别人快些。最舍不得换的是一只旧水壶，壶把修过两回，握着正好合手。"
+    }
+  ],
+  "reservedNames": [
+    {"npcId": "npc-tea-companion", "name": "小满", "status": "planned_not_enabled"},
+    {"npcId": "npc-trail-guide", "name": "闻溪", "status": "planned_not_enabled"}
+  ],
+  "npcDetailPresentation": {
+    "order": ["实际人物形象", "姓名", "身份", "完整人物故事", "当前真实可执行互动"],
+    "remove": ["1 NPC介绍等数字编号与介绍标题", "与所选Agent的关系整个区块"],
+    "retainData": "不删除稳定身份、显示编号、关系和熟悉度原数据，不按故事增减关系或能力。",
+    "interactionSource": "从当前能力和在场、权限、名额等真实条件取动作；服务不存在就不创造按钮，岗位或身世不能冒充可执行服务。"
+  }
+}
