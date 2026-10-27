@@ -4,6 +4,8 @@ import {npcLifeGatewayGuide} from './application/npc-life-guide.ts';
 import {withNpcCareLifeOperations,withNpcCareLifeReads,npcCareLifeGuide,npcCareWorldGuide,NPC_CARE_CHANGED_LIFE_IDS,NPC_CARE_CHANGED_WORLD_IDS} from './application/agent-gateway-npc-care-life.ts';
 import {withNpcCareWorldOperations,withNpcCareWorldReads} from './application/agent-gateway-npc-care-world.ts';
 import {withNpcCareBehaviorOperations,withNpcCareBehaviorReads,npcCareBehaviorGuide} from './application/agent-gateway-npc-care-behavior.ts';
+import {residentJournalGatewayOperations,residentJournalGatewayGuide,withResidentJournalHistory} from './application/agent-gateway-resident-journal.ts';
+import {NPC_IDENTITY_CHANGED_IDS,withNpcIdentityOperations,withNpcIdentityReads,residentWorldGuide,residentTownGuide,residentNpcLifeGuide} from './application/agent-gateway-npc-identities.ts';
 import {effectiveLifeCatalogForWorld} from './domains/life/current-spatial.ts';
 import {withTownExpansionOperations,withTownExpansionPublicReads} from './application/agent-gateway-world-expansion.ts';
 import {autonomousWorldGuide,autonomousLifeGuide} from './application/agent-autonomous-life-guide.ts';
@@ -166,6 +168,16 @@ export async function buildApp(options:BuildAppOptions):Promise<FastifyInstance>
     retainedGuides.push(autonomousWorldGuide,autonomousLifeGuide,journalGatewayGuide);guides.splice(guides.findIndex(g=>g.moduleId==='world'),1,npcCareWorldGuide);guides.splice(guides.findIndex(g=>g.moduleId==='life'),1,npcCareLifeGuide);guides.splice(guides.findIndex(g=>g.moduleId==='behavior'),1,npcCareBehaviorGuide);
     operations.push(...npcLifeGatewayOperations(npcLife));publicReads.push(...npcLifePublicReads(npcLife));guides.push(npcLifeGatewayGuide);
    }
+   if(behaviorLogs){
+    const previous=operations.find(operation=>operation.id==='behavior.owner_history')!;
+    retainedSchemas.push(...gatewayOperationSchemas(previous));
+    const [current]=withResidentJournalHistory([previous]);operations.splice(operations.indexOf(previous),1,current!);
+    const guideIndex=guides.findIndex(guide=>guide.moduleId==='behavior');retainedGuides.push(guides[guideIndex]!);guides.splice(guideIndex,1,residentJournalGatewayGuide);
+    operations.push(...residentJournalGatewayOperations(behaviorLogs,current!));
+   }
+   retainedSchemas.push(...operations.filter(operation=>NPC_IDENTITY_CHANGED_IDS.has(operation.id)).flatMap(gatewayOperationSchemas),...publicReads.filter(read=>NPC_IDENTITY_CHANGED_IDS.has(read.id)).flatMap(gatewayPublicReadSchemas));
+   operations.splice(0,operations.length,...withNpcIdentityOperations(operations));publicReads.splice(0,publicReads.length,...withNpcIdentityReads(publicReads));
+   for(const guide of [residentWorldGuide,residentTownGuide,residentNpcLifeGuide]){const index=guides.findIndex(previous=>previous.moduleId===guide.moduleId);if(index>=0){retainedGuides.push(guides[index]!);guides.splice(index,1,guide);}}
    const gateway=createAgentGateway({store:runtime,identity,operations,publicReads,guides,retainedSchemas,...(runtimeGuideProvider?{runtimeGuide:runtimeGuideProvider,retainedGuides}:{})});
    gatewayCapabilities=async()=>({...await gateway.currentCapabilities(),worldSimulation:{enabled:true,actionAdvancement:'deterministic-rule-tasks',movementPolicyVersion:CURRENT_MOVEMENT_POLICY.version,stepIntervalMs:CURRENT_MOVEMENT_POLICY.stepIntervalMs,pollIntervalMs:1000,idleLife:{enabled:true,policyVersion:CURRENT_IDLE_LIFE_POLICY.version,stepIntervalMs:CURRENT_IDLE_LIFE_POLICY.stepIntervalMs,maxPathLength:CURRENT_IDLE_LIFE_POLICY.maxPathLength,minRestMs:CURRENT_IDLE_LIFE_POLICY.minRestMs,restJitterMs:CURRENT_IDLE_LIFE_POLICY.restJitterMs},externalAgentExecution:false}});
    const gatewayHttp=registerAgentGatewayRoutes(app,gateway,{instanceId:store.instanceId,now:options.clock??Date.now});registerWorldObservationRoutes(gateway,gatewayHttp);if(behaviorLogs)registerBehaviorLogRoutes(gateway,gatewayHttp);

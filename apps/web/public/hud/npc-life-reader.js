@@ -1,3 +1,4 @@
+import {readNpcIdentity} from './npc-identity-reader.js';
 import {api,ApiError} from '../common.js';
 import {createLifeReadState} from './life-read-state.js';
 
@@ -30,10 +31,10 @@ export function readNpcLifeDirectory(raw,rules){
   return{...p,cell:coordinate(p.cell,rules),approachCells:list(p.approachCells,16,c=>coordinate(c,rules)),guideRef,nextEligibleAt:nullable(p.nextEligibleAt,time),lastCareAt:nullable(p.lastCareAt,time),...(Object.hasOwn(p,'actorId')?{actorId:nullable(p.actorId,identifier)}:{})};
  }), 'pointId');
  const npcs=unique(list(v.npcs,1,n=>{
-  object(n,['npcId','version','name','role','position','motion','appearance','present','busy']);object(n.appearance,['kind','version','assetId','manifestUrl','digest']);
+  object(n,['npcId','version','name','role','position','motion','appearance','present','busy','identity'],['npcId','version','name','role','position','motion','appearance','present','busy']);object(n.appearance,['kind','version','assetId','manifestUrl','digest']);
   if(n.npcId!=='npc-gardener'||!positive(n.version)||!text(n.name)||!text(n.role)||typeof n.present!=='boolean'||typeof n.busy!=='boolean'||n.appearance.kind!=='npc_sprite'||n.appearance.version!==1||!id(n.appearance.assetId)||n.appearance.manifestUrl!=='/assets/npc-life-v1/manifest.json'||n.appearance.digest!=='2c6070d6c36d335194f31633c5a30237297ea8a779434b75f2c2469560acfdb4')invalid();
   const position=coordinate(n.position,rules);let motion=null;if(n.motion!==null){const m=n.motion;object(m,['segmentId','movementId','source','from','to','startedAt','arriveAt','rulesetVersion','topologyVersion','status']);const from=coordinate(m.from,rules),to=coordinate(m.to,rules);if(!id(m.segmentId)||m.movementId!==null&&!id(m.movementId)||!['explicit','idle'].includes(m.source)||m.status!=='committed'||m.rulesetVersion!==6||m.topologyVersion!==6||!integer(m.startedAt)||!integer(m.arriveAt)||![500,1000].includes(m.arriveAt-m.startedAt)||Math.abs(from.x-to.x)+Math.abs(from.y-to.y)!==1||position.x!==to.x||position.y!==to.y)invalid();motion={...m,from,to};}
-  return{...n,position,motion,appearance:structuredClone(n.appearance)};
+  return{...n,position,motion,appearance:structuredClone(n.appearance),...(n.identity===undefined?{}:{identity:readNpcIdentity(n.identity,{name:n.name,role:n.role})})};
  }), 'npcId');
  return{instanceId:raw.instanceId,data:{...v,map:{...v.map},spatialRef:{...v.spatialRef},rules:limits,npcs,carePoints,guides}};
 }

@@ -15,7 +15,7 @@ function revision(text:string,ruleVersion:number){return text.replace(/^.*\n/,`<
 
 test('current autonomous runtime keeps complete sections and exact current guide text',async()=>{
  const raw=await source(),guide=await readAgentRuntimeGuide();
- assert.equal(guide.path,AGENT_RUNTIME_RULES_PATH);assert.equal(guide.ruleVersion,3);assert(Object.isFrozen(guide));
+ assert.equal(guide.path,AGENT_RUNTIME_RULES_PATH);assert.equal(guide.ruleVersion,4);assert(Object.isFrozen(guide));
  assert.equal(guide.bytes,raw.length);assert.equal(guide.text,raw.toString('utf8'));assert.equal(guide.digestAlgorithm,'sha256-utf8-hex');assert.equal(guide.digest,createHash('sha256').update(raw).digest('hex'));assert(raw.length<AGENT_RUNTIME_MAX_BYTES);
  assert(guide.text.includes(AUTONOMOUS_LIFE_MEMORY_GUIDE));assert(guide.text.includes(AUTONOMOUS_LIFE_HUMAN_GUIDE));
  assert.match(guide.text,/即使没有新增活动/);assert.match(guide.text,/本轮实际可读上下文/);

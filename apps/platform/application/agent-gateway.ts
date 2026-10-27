@@ -46,9 +46,9 @@ export function createAgentGateway(options:{store:RuntimeStore;identity:Identity
   for(const {id,version,document}of gatewayPublicReadSchemas(read))documents.set(id,{version,document});
  }
  const retainedSchemas=new Map<string,{version:number;document:JsonObject}>();
- if((options.retainedSchemas?.length??0)>48)throw new Error('Too many retained exact schemas');
+ if((options.retainedSchemas?.length??0)>74)throw new Error('Too many retained exact schemas');
  let retainedSchemaBytes=0;
- for(const row of options.retainedSchemas??[]){const current=documents.get(row.id),key=row.id+':'+row.version;if(!current||!validVersion(row.version)||row.version>=current.version||row.document.$id!==`gateway.${row.id}@${row.version}`||retainedSchemas.has(key))throw new Error('Invalid retained exact schema');retainedSchemaBytes+=Buffer.byteLength(canonicalGatewayDocument(row.document),'utf8');if(retainedSchemaBytes>256*1024)throw new Error('Retained exact schemas exceed the UTF-8 byte budget');retainedSchemas.set(key,{version:row.version,document:structuredClone(row.document)});}
+ for(const row of options.retainedSchemas??[]){const current=documents.get(row.id),key=row.id+':'+row.version;if(!current||!validVersion(row.version)||row.version>=current.version||row.document.$id!==`gateway.${row.id}@${row.version}`||retainedSchemas.has(key))throw new Error('Invalid retained exact schema');retainedSchemaBytes+=Buffer.byteLength(canonicalGatewayDocument(row.document),'utf8');if(retainedSchemaBytes>384*1024)throw new Error('Retained exact schemas exceed the UTF-8 byte budget');retainedSchemas.set(key,{version:row.version,document:structuredClone(row.document)});}
  const retainedGuides=new Map<string,GatewayGuide>();
  const all=[...options.operations,...options.publicReads??[]];
  for(const guide of options.guides){if(guides.has(guide.moduleId)||!validVersion(guide.version)||!moduleId(guide.moduleId)||guide.document.version!==guide.version||!all.some(op=>op.moduleId===guide.moduleId))throw new Error('Invalid Gateway guide registration');guides.set(guide.moduleId,structuredClone(guide));}
