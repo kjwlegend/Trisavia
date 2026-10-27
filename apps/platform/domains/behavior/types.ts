@@ -12,6 +12,7 @@ export const BEHAVIOR_NODES=[
  'town_services.greeted','town_services.service.started','town_services.service.completed','town_services.service.cancelled',
  'relationships.gift.offered','relationships.gift.received','relationships.gift.accepted','relationships.gift.declined','relationships.gift.withdrawn','relationships.gift.expired','relationships.gift.unavailable',
  'life.meal.prepared','life.meal.completed','life.reading.completed','life.visit.completed',
+ 'life.journal.authored',
  'life.care.introduced','life.care.completed',
  'life.work.completed','life.rest.completed','life.activity.interrupted','life.fishing.finished','life.purchase.completed','life.sale.completed',
 ] as const;
@@ -24,7 +25,7 @@ export interface BehaviorCoverage {scope:BehaviorScope;fromAt:number;policyVersi
 export interface BehaviorPublicProjection {policyVersion:1;worldId:string;sharingGeneration:number;placeId:string|null;placeName:string|null}
 export interface BehaviorRecordDraft {
  scope:BehaviorScope;sourceDomain:OwnerObservationDomain;sourceEventId:string;
- sourceRef:{type:'movement'|'avatar'|'friendship_invitation'|'interaction_invitation'|'interaction_activity'|'town_service'|'resident_gift'|'life_activity'|'relationship_gift';id:string;version:number};
+ sourceRef:{type:'movement'|'avatar'|'friendship_invitation'|'interaction_invitation'|'interaction_activity'|'town_service'|'resident_gift'|'life_activity'|'relationship_gift'|'life_journal';id:string;version:number};
  node:BehaviorNode;agentId:string|null;npcId?:string;occurredAt:number;recordedAt:number;causationId:string;correlationId:string;
  initiator:RuntimeActor;executor:RuntimeActor;origin:RuntimeSource;
  ownerAudience:OwnerAudienceProof|null;publicProjection:BehaviorPublicProjection|null;
@@ -44,5 +45,5 @@ export interface BehaviorDetails {
  gift?:{giftId:string;state:string;direction:'sent'|'received';items:{itemInstanceId:string;itemId:string;name:string}[]};
  life?:{care?:Omit<import('../npc-life/types.ts').CareResult,'message'>|null;activityId:string;actionId:string;jobId:string|null;resultId:string;scheduledEndAt:number;energySpent:number|null;energyRestored:number|null;coinReward:number|null;fishing?:import('../life/b-types.ts').LifeFishingResult&{unstartedCasts:number}|null;trade?:{moneyDelta:number;quantity:number}|null;c?:{book:{bookId:string;version:number;title:string;authorDisplay:string;digest:string}|null;visit:{first:boolean;recorded:boolean}|null;moneyDelta:number|null;consumedItems:number|null;createdItems:number|null}|null};
 }
-export interface BehaviorListInput {agentId?:string;publicOnly?:boolean;userLogOnly?:true;worldPublicOnly?:true;maxSequence:number;fromAt?:number;toAt?:number;after?:{occurredAt:number;id:string};limit:number}
+export interface BehaviorListInput {authoredOnly?:true;agentId?:string;publicOnly?:boolean;userLogOnly?:true;worldPublicOnly?:true;maxSequence:number;fromAt?:number;toAt?:number;after?:{occurredAt:number;id:string};limit:number}
 export const IDLE_BEHAVIOR_INTERVAL_MS=300000;

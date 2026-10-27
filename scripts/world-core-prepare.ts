@@ -1,3 +1,4 @@
+import {BEHAVIOR_JOURNAL_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/behavior-journal-migration.ts';
 import {NPC_LIFE_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/npc-life-migration.ts';
 import {WORLD_EXPRESSIONS_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/world-expressions-migration.ts';
 import {LIFE_C_PERMISSIONS_SQL} from '../apps/platform/infrastructure/postgresql/life-c-migration.ts';
@@ -46,6 +47,7 @@ ${RELATIONSHIP_GIFT_PERMISSIONS_SQL}
 ${LIFE_C_COMMERCE_PERMISSIONS_SQL}
 ${WORLD_EXPRESSIONS_PERMISSIONS_SQL}
 ${NPC_LIFE_PERMISSIONS_SQL}
+${BEHAVIOR_JOURNAL_PERMISSIONS_SQL}
  COMMIT;`;
  await docker(['exec','-i',`${config.project}-server`,'psql','-X','-v','ON_ERROR_STOP=1','-U','postgres','-d',database],{input:sql});
 }

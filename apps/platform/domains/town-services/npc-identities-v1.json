@@ -1,0 +1,78 @@
+{
+  "contentSetRef": "npc-personas@1",
+  "sourceSha256": "dfd9398deb8542564b6dcd74d0bd6ddc663ca9e6691e94c0c268479cda815580",
+  "profiles": [
+    {
+      "npcId": "npc-mayor",
+      "version": 1,
+      "ref": "npc-personas/npc-mayor@1",
+      "name": "周望",
+      "role": "镇长",
+      "story": "周望年轻时替街坊誊过许多家书，后来留在小镇做事。说话不快，遇见争执总先听人把话说完。桌上那本旧册子翻得起了毛边，里面夹着几张画歪的屋顶草图，是闲下来随手画的。",
+      "digest": "b22806454d7e4d693867089c03de58995bda47c34705678ae1e724dbff17ba1e"
+    },
+    {
+      "npcId": "npc-tavern",
+      "version": 1,
+      "ref": "npc-personas/npc-tavern@1",
+      "name": "许舟",
+      "role": "港湾酒馆酒保",
+      "story": "许舟跟着长辈在港边长大，记住一张脸常比记住一个名字快。平日爱接话，也懂得让沉默的人安静坐着。收拾桌面时总把杯柄朝同一个方向，自己却常把随身的铅笔忘在耳后。",
+      "digest": "244d7e5f161337205094794295f0e683bafb769f20cf37b48da650faafad4646"
+    },
+    {
+      "npcId": "npc-innkeeper",
+      "version": 1,
+      "ref": "npc-personas/npc-innkeeper@1",
+      "name": "林素",
+      "role": "石岸旅舍主人",
+      "story": "林素年轻时在外住过不少小旅舍，最记得的是有人替晚归的客人留一盏灯。后来安顿下来，做事仍不声不响，却很在意别人能否睡得踏实。闲时喜欢把旧布缝成小方垫，针脚不算齐整，总要拆一段再来。",
+      "digest": "39c1c0c2ebd61abd1837a8a751878fb417e56256ebedbb62fa6bfd5bd87e4347"
+    },
+    {
+      "npcId": "npc-harbor-hand",
+      "version": 1,
+      "ref": "npc-personas/npc-harbor-hand@1",
+      "name": "陈大川",
+      "role": "码头熟手",
+      "story": "陈大川刚到码头时常认错箱上的记号，挨过几回笑，便养成了动手前多看一眼的习惯。如今做事利落，搬不动也会直说，从不硬撑。口袋里常揣着一块磨圆的木片，等人的时候就在掌心来回翻。",
+      "digest": "e931b0baca411994dec2a46c086d96f74c14ee33338754d637e79f50a892fa64"
+    },
+    {
+      "npcId": "npc-fishing-clerk",
+      "version": 1,
+      "ref": "npc-personas/npc-fishing-clerk@1",
+      "name": "唐越",
+      "role": "渔人小铺店员",
+      "story": "唐越小时候钓鱼，总忍不住提前收线。后来陪长辈在岸边坐久了，才慢慢学会等。性子依旧爽快，说起没钓着的那几回也不遮掩。喜欢把用旧的线轴排在窗边，大小高低不齐，却舍不得扔掉任何一个。",
+      "digest": "1acfdbfa6793c590fd753a304d9ab66d13ba79f7694387326b0970bc2b60a371"
+    },
+    {
+      "npcId": "npc-librarian",
+      "version": 1,
+      "ref": "npc-personas/npc-librarian@1",
+      "name": "顾宁",
+      "role": "蓝檐书屋管理员",
+      "story": "顾宁最早喜欢的那本书缺了末页，于是自己写了三个结尾，至今也没选出最满意的一个。平日说话轻，聊到故事却很认真，不爱替别人下结论。书里常夹着窄窄的废纸条，上面除了页码，偶尔还有一只画坏的鸟。",
+      "digest": "0d10253873d2a6f70a6b71f3590f3603052df2513096de40312c4654c1907374"
+    },
+    {
+      "npcId": "npc-neighbor",
+      "version": 1,
+      "ref": "npc-personas/npc-neighbor@1",
+      "name": "阿迟",
+      "role": "小镇居民",
+      "story": "阿迟的名字是自己叫出来的。过去做什么都赶，搬来小镇后才肯慢一点，走到岔路也不急着决定方向。对新鲜事好奇，却常在热闹中途溜去安静处。随身有本薄册子，记着些零碎念头，空白页比写满的还多。",
+      "digest": "37bb125d9d9cb127fb9c7cc915dca372e4d4e7674e8af73d873fded1017ebf77"
+    },
+    {
+      "npcId": "npc-gardener",
+      "version": 1,
+      "ref": "npc-personas/npc-gardener@1",
+      "name": "青禾",
+      "role": "松荫漫步园园务员",
+      "story": "青禾小时候跟外婆照看一排旧花盆，起初只记得浇水，后来才学会蹲下来看看土。说话简短，做事却肯反复琢磨，不喜欢催别人快些。最舍不得换的是一只旧水壶，壶把修过两回，握着正好合手。",
+      "digest": "bfb81c91924c32a90a4528ad8068ad6aaadbf3ed8496ea3072c27cac00c2354d"
+    }
+  ]
+}

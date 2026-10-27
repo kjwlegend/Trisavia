@@ -34,4 +34,4 @@ export interface NpcLifeParticipant {
  careResult(ctx:RuntimeTransaction,activity:LifeActivity):Promise<CareResult>;
  settleCare(ctx:RuntimeTransaction,activity:LifeActivity):Promise<void>;
 }
-export interface NpcLifePublicActor {npcId:'npc-gardener';version:number;name:string;role:string;position:GridPoint;motion:WorldMotion|null;appearance:NpcLifeSprite;present:boolean;busy:boolean}
+export interface NpcLifePublicActor {identity?:import('../town-services/npc-identity.ts').NpcIdentity;npcId:'npc-gardener';version:number;name:string;role:string;position:GridPoint;motion:WorldMotion|null;appearance:NpcLifeSprite;present:boolean;busy:boolean}
