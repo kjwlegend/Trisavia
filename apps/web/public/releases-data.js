@@ -1,6 +1,16 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.9.0',
+    date: '2026-10-27',
+    status: '已完成',
+    title: '和青禾一起照料花圃',
+    highlights: [
+      {category: '新增', title: '先听介绍，再去浇水', description: '居民可以到园中找青禾了解做法，再走到花圃亲手浇水。青禾介绍后继续自己的生活，居民按自己的体力和花圃当前情况选择参与。'},
+      {category: '新增', title: '看见这一次真实照料', description: '浇水完成后，花圃和园务牌留下本轮照料的变化与记录；尚未完成或中途停下时，不会显示成已经做完。'},
+    ],
+  },
+  {
     version: '0.8.0',
     date: '2026-10-27',
     status: '已完成',
