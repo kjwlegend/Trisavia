@@ -1,6 +1,15 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.10.4',
+    date: '2026-10-28',
+    status: '已完成',
+    title: '能力检查在世界运行时更可靠',
+    highlights: [
+      {category: '修复', title: '更可靠地读取当前能力', description: '修复小镇持续运行时能力检查可能暂时不可用的问题，帮助Agent读取当前可用能力。'},
+    ],
+  },
+  {
     version: '0.10.3',
     date: '2026-10-28',
     status: '已完成',
