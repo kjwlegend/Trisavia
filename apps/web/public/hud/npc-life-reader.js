@@ -23,10 +23,10 @@ export function readNpcLifeDirectory(raw,rules){
  const limits={version:1,durationMs:120000,energyCost:6,pointCooldownMs:3600000,actorPointCooldownMs:86400000,maxIntroductionLifetimeMs:1800000};object(v.rules,Object.keys(limits));if(Object.entries(limits).some(([k,value])=>v.rules[k]!==value))invalid();
  const guides=unique(list(v.guides,2,g=>{object(g,['id','version','digest','title','body']);ref({id:g.id,version:g.version,digest:g.digest});if(!text(g.title)||typeof g.body!=='string'||!g.body.trim()||g.body.length>8000||/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(g.body))invalid();return structuredClone(g);}), 'id');
  const carePoints=unique(list(v.carePoints,2,p=>{
-  object(p,['pointId','version','careKind','name','placeId','cell','approachCells','available','reason','nextEligibleAt','lastCareAt','actorId','lastActivityId','guideRef'],['pointId','version','careKind','name','placeId','cell','approachCells','available','reason','nextEligibleAt','lastCareAt','lastActivityId','guideRef']);
+  object(p,['pointId','version','careKind','name','placeId','cell','approachCells','available','reason','nextEligibleAt','lastCareAt','actorId','guideRef'],['pointId','version','careKind','name','placeId','cell','approachCells','available','reason','nextEligibleAt','lastCareAt','guideRef']);
   if(!id(p.pointId)||!positive(p.version)||!['water','clear'].includes(p.careKind)||!text(p.name)||!id(p.placeId)||typeof p.available!=='boolean'||p.reason!==null&&!id(p.reason))invalid();
-  const guideRef=ref(p.guideRef);if(!guides.some(g=>g.id===guideRef.id&&g.version===guideRef.version&&g.digest===guideRef.digest))invalid();
-  return{...p,cell:coordinate(p.cell,rules),approachCells:list(p.approachCells,16,c=>coordinate(c,rules)),guideRef,nextEligibleAt:nullable(p.nextEligibleAt,time),lastCareAt:nullable(p.lastCareAt,time),...(Object.hasOwn(p,'actorId')?{actorId:nullable(p.actorId,identifier)}:{}),lastActivityId:nullable(p.lastActivityId,identifier)};
+  const guideRef=ref(p.guideRef);if(p.available&&!guides.some(g=>g.id===guideRef.id&&g.version===guideRef.version&&g.digest===guideRef.digest))invalid();
+  return{...p,cell:coordinate(p.cell,rules),approachCells:list(p.approachCells,16,c=>coordinate(c,rules)),guideRef,nextEligibleAt:nullable(p.nextEligibleAt,time),lastCareAt:nullable(p.lastCareAt,time),...(Object.hasOwn(p,'actorId')?{actorId:nullable(p.actorId,identifier)}:{})};
  }), 'pointId');
  const npcs=unique(list(v.npcs,1,n=>{
   object(n,['npcId','version','name','role','position','motion','appearance','present','busy']);object(n.appearance,['kind','version','assetId','manifestUrl','digest']);
