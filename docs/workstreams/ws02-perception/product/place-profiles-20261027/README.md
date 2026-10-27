@@ -1,6 +1,6 @@
 # 场所介绍唯一内容包 v1
 
-供 TD／C／D 接入 0.10.1。唯一正文为 [profiles.v1.json](profiles.v1.json)，当前是内容交付，尚不表示工程或页面验收完成。
+供 TD／C／D 接入 0.10.2。唯一正文为 [profiles.v1.json](profiles.v1.json)，当前是内容交付，尚不表示工程或页面验收完成。
 
 - 读取基线：本地 0.9.0，`4d29b9beae27a80bc7dfec2d1bde196e3ca22f6d`，地图 `pixel-town-v2`／layout `town-expansion-layout-v1`／版本 6。
 - 覆盖 48 个既有目标：公共庭 1、建筑 31、漫步区域 6、Life 外场 9、园务牌 1。前 47 个来自当前场所菜单；园务牌按当前目录可用性显示。公告牌及动态 NPC 沿用原卡。
