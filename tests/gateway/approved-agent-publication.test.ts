@@ -5,26 +5,26 @@ import {M1_TABLES,type M1Table,type M1Transaction,type StoredRow,type JsonObject
 import {key} from '../../apps/platform/domains/perception/protocol.ts';
 import {rememberCatalogRevision,catalogData} from '../../apps/platform/application/perception-catalog.ts';
 import {APPROVED_TEMPLATE_REPLACEMENTS,rewriteApprovedAgentTemplateText} from '../../apps/platform/application/agent-approved-template-text.ts';
-import {AGENT_RUNTIME_MIGRATION_GUIDE,readAgentRuntimeGuide} from '../../apps/platform/application/agent-runtime-guide.ts';
+import {AGENT_RUNTIME_MIGRATION_GUIDE,readAgentRuntimeGuide,parseAgentRuntimeGuide} from '../../apps/platform/application/agent-runtime-guide.ts';
 import {publishApprovedAgentTemplates,readApprovedAgentTemplatePublication,APPROVED_AGENT_TEMPLATE_MODULES,APPROVED_AGENT_TEMPLATE_CATALOG} from '../../apps/platform/application/agent-template-publication.ts';
 
 const sha=(text:string)=>createHash('sha256').update(text).digest('hex');
-async function fixture(){
+async function fixture(guideVersion=22){
  const tables=new Map<M1Table,Map<string,StoredRow>>(M1_TABLES.map(table=>[table,new Map()]));
  const tx={async count(table:M1Table,filter:Record<string,unknown>,limit:number){return Math.min(limit,[...tables.get(table)!.values()].filter(row=>Object.entries(filter).every(([name,value])=>row.data[name]===value)).length);},async get(table:M1Table,id:string){return structuredClone(tables.get(table)!.get(id));},async insert(table:M1Table,row:StoredRow){assert(!tables.get(table)!.has(row.id));tables.get(table)!.set(row.id,structuredClone(row));},async update(table:M1Table,row:StoredRow,expected:number){assert.equal(tables.get(table)!.get(row.id)?.version,expected);tables.get(table)!.set(row.id,structuredClone(row));return true;}} as unknown as M1Transaction;
- const current={schemaVersion:8,guideVersion:22,catalogRevision:'catalog-agent-runtime-1',skillCatalogRevision:'skills-catalog-agent-runtime-1',sourceStates:{'npc-service-items':'enabled',untouched:'not_enabled'},seedObjectIds:['preserved-seed-ref']};
+ const current={schemaVersion:8,guideVersion,catalogRevision:'catalog-agent-runtime-1',skillCatalogRevision:'skills-catalog-agent-runtime-1',sourceStates:{'npc-service-items':'enabled',untouched:'not_enabled'},seedObjectIds:['preserved-seed-ref']};
  const source='unchanged source and permissions\n'+APPROVED_TEMPLATE_REPLACEMENTS.map(row=>row.before).join('\nunchanged protocol block\n')+'\n'+AGENT_RUNTIME_MIGRATION_GUIDE+'\nunchanged recovery';
  await tx.insert('perception_catalog',{id:'current',version:9,data:current});
- for(const moduleId of APPROVED_AGENT_TEMPLATE_MODULES){const document={moduleId,version:22,text:source,execution:'host',automaticExecution:false,unrelated:{scope:'preserved'}};await tx.insert('perception_catalog',{id:`guide:${moduleId}:22`,version:1,data:{document,digest:key(document)}});}
+ for(const moduleId of APPROVED_AGENT_TEMPLATE_MODULES){const document={moduleId,version:guideVersion,text:source,execution:'host',automaticExecution:false,unrelated:{scope:'preserved'}};await tx.insert('perception_catalog',{id:`guide:${moduleId}:${guideVersion}`,version:1,data:{document,digest:key(document)}});}
  await rememberCatalogRevision(tx,current);
- await tx.insert('perception_catalog',{id:'admin-agent-runtime:retained-original-receipt',version:1,data:{kind:'administrative_receipt',payloadHash:'0'.repeat(64),result:{guideVersion:22,immutable:'original 071 payload and result'}}});
- const options={instanceId:'fixture-template-instance',recoveryEpoch:'fixture-template-epoch',operator:'test:approved-agent',operationId:'approved-agent-original-operation',expectedGuideVersion:22};
+ await tx.insert('perception_catalog',{id:'admin-agent-runtime:retained-original-receipt',version:1,data:{kind:'administrative_receipt',payloadHash:'0'.repeat(64),result:{guideVersion,immutable:'original 071 payload and result'}}});
+ const options={instanceId:'fixture-template-instance',recoveryEpoch:'fixture-template-epoch',operator:'test:approved-agent',operationId:'approved-agent-original-operation',expectedGuideVersion:guideVersion};
  return{tables,tx,current,source,options};
 }
 
 test('approved seven-guide publication appends a distinct declaration and changes only the four approved text blocks',async()=>{
  const f=await fixture(),before=structuredClone(f.tables);assert.equal(await readApprovedAgentTemplatePublication(f.tx,f.options),undefined);
- const result=await publishApprovedAgentTemplates(f.tx,f.options);assert.equal(result.guideVersion,23);assert.equal(result.newGuideDocuments,7);assert.equal(result.newSchemaDocuments,0);assert.equal((result.initialRuntimeRules as JsonObject).ruleVersion,5);
+ const result=await publishApprovedAgentTemplates(f.tx,f.options);assert.equal(result.guideVersion,23);assert.equal(result.newGuideDocuments,7);assert.equal(result.newSchemaDocuments,0);assert.equal((result.initialRuntimeRules as JsonObject).ruleVersion,(await readAgentRuntimeGuide()).ruleVersion);
  for(const[id,row]of before.get('perception_catalog')!)if(id!=='current')assert.deepEqual(await f.tx.get('perception_catalog',id),row);
  assert.deepEqual((await f.tx.get('perception_catalog','current'))!,{id:'current',version:10,data:{...f.current,guideVersion:23,catalogRevision:APPROVED_AGENT_TEMPLATE_CATALOG,skillCatalogRevision:'skills-'+APPROVED_AGENT_TEMPLATE_CATALOG}});
  const digests=result.guideDigests as JsonObject[];assert.equal(digests.length,7);
@@ -49,7 +49,7 @@ test('original publication and receipt replay use frozen payload and result even
  const newKey={...f.options,operationId:'another-original-operation'};await assert.rejects(publishApprovedAgentTemplates(f.tx,newKey),{code:'version_conflict'});
 });
 
-test('a first publication requires the complete approved current runtime5 snapshot without advancing old source metadata',async()=>{
+test('a first publication rejects an unapproved runtime without advancing old source metadata',async()=>{
  const f=await fixture(),before=structuredClone(f.tables),snapshot=await readAgentRuntimeGuide();await assert.rejects(publishApprovedAgentTemplates(f.tx,f.options,async()=>({...snapshot,ruleVersion:4})),{code:'version_conflict'});assert.deepEqual(f.tables,before);
 });
 
@@ -69,4 +69,15 @@ test('publication receipt pins every allowed exact predecessor and the already-c
   await f.tx.update('perception_catalog',{...receipt,data:{...receipt.data,payloadHash:key(changed)}},receipt.version);
   await assert.rejects(readApprovedAgentTemplatePublication(f.tx,f.options),{code:'operation_id_conflict'});
  }
+});
+
+
+test('approved runtime6 can first-publish retained G15 to G16, preserve the original replay and reject unknown runtime versions',async()=>{
+ const snapshot=await readAgentRuntimeGuide(),provider=(ruleVersion:number)=>async()=>parseAgentRuntimeGuide(Buffer.from(snapshot.text.replace(/"ruleVersion":\d+/u,'"ruleVersion":'+ruleVersion)));
+ const f=await fixture(15),first=await publishApprovedAgentTemplates(f.tx,f.options,provider(6));
+ assert.equal(first.guideVersion,16);assert.equal((first.initialRuntimeRules as JsonObject).ruleVersion,6);
+ assert.deepEqual((await f.tx.get('perception_catalog','current'))!.data.sourceStates,f.current.sourceStates);
+ assert(await f.tx.get('perception_catalog','guide:world:15'));assert(await f.tx.get('perception_catalog','guide:world:16'));
+ const after=structuredClone(f.tables);assert.deepEqual(await publishApprovedAgentTemplates(f.tx,f.options,async()=>{throw Error('Unknown current rules must not be consulted during original replay');}),first);assert.deepEqual(await readApprovedAgentTemplatePublication(f.tx,f.options),first);assert.deepEqual(f.tables,after);
+ for(const version of [7]){const unknown=await fixture(15),before=structuredClone(unknown.tables);await assert.rejects(publishApprovedAgentTemplates(unknown.tx,unknown.options,provider(version)),{code:'version_conflict'});assert.deepEqual(unknown.tables,before);}
 });

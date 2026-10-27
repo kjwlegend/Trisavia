@@ -33,7 +33,7 @@ export async function publishApprovedAgentTemplates(tx:M1Transaction,o:ApprovedA
  const declaration=plain(oldRelease?.data.declaration);
  if(!current||current.data.schemaVersion!==8||current.data.catalogRevision!=='catalog-agent-runtime-1'||current.data.skillCatalogRevision!=='skills-catalog-agent-runtime-1'||current.data.guideVersion!==o.expectedGuideVersion||!oldRelease||oldRelease.data.digest!==key(declaration)||declaration.guideVersion!==o.expectedGuideVersion||declaration.schemaVersion!==8)fail('version_conflict',409,'The exact retained schema8 runtime catalog and predecessor guide are required');
  if(await repo.get('catalog-revision:'+key(APPROVED_AGENT_TEMPLATE_CATALOG)))fail('version_conflict',409,'The approved-template release already has another publication');
- const snapshot=await currentAgentRuntime(provider);if(snapshot.ruleVersion!==5)fail('version_conflict',409,'The approved complete runtime rule5 source is required for this publication');
+ const snapshot=await currentAgentRuntime(provider);if(snapshot.ruleVersion!==5&&snapshot.ruleVersion!==6)fail('version_conflict',409,'An approved complete runtime rule5 or rule6 source is required for this publication');
  const version=o.expectedGuideVersion+1,documents:JsonObject[]=[],guideDigests:JsonObject[]=[];
  // Validate every module and exact block before the first write.
  for(const moduleId of APPROVED_AGENT_TEMPLATE_MODULES){
