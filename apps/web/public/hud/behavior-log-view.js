@@ -20,7 +20,7 @@ function ownerRecordDetail(item){
  if(details?.service?.response)node.append(el('p','',details.service.response));
  if(journal?.quotaRefunded)node.append(el('p','hud-muted','本次额度已退回。'));
  if(details?.completeness==='partial'||details?.gaps?.length)node.append(el('p','hud-muted',details.gaps.join(' ')||'这条记录只保留了部分细节。'));
- if(item.source.label)node.append(el('p','behavior-owner-source',item.source.label));return node;
+ if(!authored&&item.source.label)node.append(el('p','behavior-owner-source',item.source.label));return node;
 }
 function recordDetail(item,timeZone,{mode}={}){
  if(mode==='owner')return ownerRecordDetail(item);
