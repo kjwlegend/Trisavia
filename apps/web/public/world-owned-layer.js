@@ -2,7 +2,7 @@ import {el} from './common.js';
 import {avatarSprite} from './scene.js';
 import {createOwnedAgentMotion} from './world-owned-motion.js';
 import {overlaps,freeAreas,worldOverlayRects} from './world-safe-area.js';
-import {humanHitSize,receivePosition,advancePosition} from './world-pixel/human.js';
+import {humanHitSize,receivePosition,advancePosition,resetPosition} from './world-pixel/human.js';
 function nearestRect(areas,width,height,desired){return areas.filter(a=>a.right-a.left>=width&&a.bottom-a.top>=height).map(area=>{
   const left=Math.max(area.left,Math.min(area.right-width,desired.left)),top=Math.max(area.top,Math.min(area.bottom-height,desired.top));
   return{left,right:left+width,top,bottom:top+height,distance:Math.hypot(left-desired.left,top-desired.top)};
@@ -17,7 +17,7 @@ export function createOwnedAgentLayer(root,graph,{blockedRects=[],onSelect=()=>{
   const labels=el('div','world-owned-labels');labels.setAttribute('aria-label','我的 Agent 地图操作');root.append(labels);
   const tooltip=el('div','world-owned-tooltip');tooltip.id='world-owned-tooltip';tooltip.setAttribute('role','tooltip');tooltip.hidden=true;labels.append(tooltip);
   const motion=createOwnedAgentMotion(graph,{blockedRects}),entries=new Map();
-  let selectedId='',hoveredId='',focusedId='',lastProjection=null,destroyed=false,geometry=null,authoritative=false,frozen=false,lastHitId='';
+  let selectedId='',hoveredId='',focusedId='',lastProjection=null,destroyed=false,geometry=null,authoritative=false,frozen=false,lastHitId='',instanceId=null;
   const shape=entry=>renderer?.avatarGeometry(entry)||{width:32,height:40,anchor:{x:16,y:36},hitBox:{left:-16,right:16,top:-36,bottom:4}};
   function copyPositions(){for(const entry of entries.values()){const position=motion.read(entry.agentId);if(position)Object.assign(entry,position);}}
   function layout(project=lastProjection){
@@ -50,7 +50,7 @@ export function createOwnedAgentLayer(root,graph,{blockedRects=[],onSelect=()=>{
   const layoutRoot=document.querySelector('#world-layout');if(layoutRoot)observer.observe(layoutRoot,{attributes:true,attributeFilter:['style']});
   for(const selector of ['header','#hud-dock','#hud-agent','#hud-locate-agent','#hud-window','#world-detail','#world-status-hud']){const node=document.querySelector(selector);if(node)resizer.observe(node);}
   function set(projection){
-    if(destroyed)return;authoritative=projection.source==='server';frozen=authoritative&&projection.stale===true;selectedId=projection.selectedAgentId;const ids=new Set(projection.agents.map(agent=>agent.agentId));motion.sync(authoritative?[]:[...ids]);
+    if(destroyed)return;authoritative=projection.source==='server';if(authoritative&&projection.instanceId!==instanceId){for(const entry of entries.values())resetPosition(entry,{newInstance:true});instanceId=projection.instanceId;}frozen=authoritative&&projection.stale===true;selectedId=projection.selectedAgentId;const ids=new Set(projection.agents.map(agent=>agent.agentId));motion.sync(authoritative?[]:[...ids]);
     labels.setAttribute('aria-label',authoritative?'服务器公开角色地图操作':'我的 Agent 地图操作');
     for(const [id,entry]of entries)if(!ids.has(id)){entry.button.remove();entries.delete(id);}
     if(!ids.has(focusedId))focusedId='';if(!ids.has(hoveredId))hoveredId='';
@@ -65,7 +65,7 @@ export function createOwnedAgentLayer(root,graph,{blockedRects=[],onSelect=()=>{
       }
       const spriteKey=JSON.stringify(agent.avatar);if(entry.spriteKey!==spriteKey){entry.sprites.clear();entry.spriteKey=spriteKey;}entry.avatar=agent.avatar;entry.nameValue=agent.name;
       entry.owned=authoritative?agent.owned:true;
-      if(authoritative){if(frozen){entry.x??=agent.x;entry.y??=agent.y;entry.renderPosition={x:entry.x,y:entry.y};entry.walking=false;}else if(renderer)receivePosition(entry,agent,{now,serverTime:projection.serverTime??now});else Object.assign(entry,{x:agent.x,y:agent.y,walking:false,frame:0,direction:'down'});entry.projectionVersion=agent.projectionVersion;}
+      if(authoritative){if(frozen||agent.fact?.status==='suspended'){resetPosition(entry);entry.target={x:agent.x,y:agent.y};entry.x??=agent.x;entry.y??=agent.y;entry.renderPosition={x:entry.x,y:entry.y};entry.walking=false;}else if(renderer)receivePosition(entry,agent,{now,serverTime:projection.serverTime??now});else Object.assign(entry,{x:agent.x,y:agent.y,walking:false,frame:0,direction:'down'});entry.projectionVersion=agent.projectionVersion;}
       entry.fact=authoritative?agent.fact:null;
       entry.button.dataset.agentId=entry.agentId;entry.button.dataset.worldSource=authoritative?'server':'demo';
       entry.button.setAttribute('aria-label',authoritative?`${agent.name}，服务器角色，${agent.fact.placeId==='commons'?'公共庭，':''}${agent.fact.status==='suspended'?'已暂停':'已加入'}${entry.owned?'，我的 Agent，选择并管理':'，查看公开事实'}`:`${agent.name}，${agent.agentId===selectedId?'当前 Agent':'我的 Agent'}，选择并管理`);entry.button.setAttribute('aria-pressed',String(agent.agentId===selectedId));
@@ -74,7 +74,7 @@ export function createOwnedAgentLayer(root,graph,{blockedRects=[],onSelect=()=>{
   }
   return{
     node:labels,set,actors:()=>[...entries.values()],
-    step(dt,options={}){if(authoritative){if(renderer&&!frozen)for(const entry of entries.values())advancePosition(entry,options.now??performance.now(),options);return;}motion.step(dt,{...options,heldIds:[focusedId,hoveredId]});copyPositions();},
+    step(dt,options={}){if(authoritative){if(renderer)for(const entry of entries.values()){if(frozen||options.visible===false||entry.fact?.status==='suspended')resetPosition(entry);else advancePosition(entry,options.now??performance.now(),options);}return;}motion.step(dt,{...options,heldIds:[focusedId,hoveredId]});copyPositions();},
     draw(ctx,entry,scale,frame={}){
       if(entry.agentId===selectedId){if(renderer)renderer.drawSelection(ctx,entry,scale,frame);else{const rx=Math.max(24,12/scale),ry=Math.max(9,5/scale);ctx.fillStyle='#C7E8DC';ctx.globalAlpha=.24;ctx.beginPath();ctx.ellipse(entry.x,entry.y+2,rx,ry,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;ctx.lineWidth=2;ctx.strokeStyle='#397E80';ctx.stroke();}}
       if(renderer){renderer.drawAvatar(ctx,entry,frame);return;}
@@ -85,7 +85,7 @@ export function createOwnedAgentLayer(root,graph,{blockedRects=[],onSelect=()=>{
     layout,hover(id){if(hoveredId===id)return;hoveredId=entries.has(id)?id:'';layout();},
     hit(point,scale,cycle=false){const selected=findAvatarHit([...entries.values()],point,scale,shape,cycle?lastHitId:undefined);if(cycle&&selected)lastHitId=selected.agentId;return selected;},
     geometry(id){const entry=entries.get(id);return entry?structuredClone(shape(entry)):null;},
-    point(id){const position=authoritative?entries.get(id):motion.read(id);return position?{x:position.x,y:position.y}:null;},
+    point(id,{authority=false}={}){const entry=entries.get(id),position=authoritative?(authority?(entry?.target??entry):entry):motion.read(id);return position?{x:position.x,y:position.y}:null;},
     destroy(){destroyed=true;observer.disconnect();resizer.disconnect();motion.clear();entries.clear();labels.remove();const note=document.querySelector('#world-owned-note');if(note)note.hidden=true;},
   };
 }

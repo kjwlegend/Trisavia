@@ -1,3 +1,4 @@
+import {observeCommittedEdge,clearObservedMotion} from './observed-motion.js';
 import {createClipPlayer} from './clip-player.js';
 import {customAppearanceState,drawCustomAppearance,drawCustomUnavailable} from './custom-appearance.js';
 import {resolveLook,drawLook} from './look.js';
@@ -20,7 +21,7 @@ export function drawHumanFoot(ctx,entry,selected=false,theme='day'){
 }
 // Only committed server edges enter this presentation queue. Integer authority
 // stays in entry.fact; every visual layer uses the same continuous footpoint.
-export function receivePosition(entry,agent,{now=performance.now(),serverTime=now}={}){
+function receiveLegacyPosition(entry,agent,{now=performance.now(),serverTime=now}={}){
  const previous=entry.fact,motion=agent.renderMotion,target={x:agent.x,y:agent.y};
  if(previous)advancePosition(entry,now,{serverTime});
  entry.target=target;entry.renderPosition??={...target};entry.segments??=[];
@@ -42,12 +43,21 @@ export function receivePosition(entry,agent,{now=performance.now(),serverTime=no
  }
  advancePosition(entry,now,{serverTime});
 }
+export function resetPosition(entry,{newInstance=false}={}){entry.observedMotion=clearObservedMotion(newInstance?null:entry.observedMotion);entry.segments=[];entry.segmentId=null;entry.walking=false;}
+export function receivePosition(entry,agent,{now=performance.now(),serverTime=now}={}){
+ const motion=agent.renderMotion,legacy=motion?.arriveAt-motion?.startedAt===4000||entry.segments?.some(edge=>edge.arriveAt-edge.startedAt===4000);
+ if(legacy){entry.observedMotion=clearObservedMotion(entry.observedMotion);receiveLegacyPosition(entry,agent,{now,serverTime});return;}
+ advancePosition(entry,now,{serverTime});entry.target={x:agent.x,y:agent.y};
+ const next=observeCommittedEdge(entry.observedMotion,motion,{serverTime,target:entry.target,segments:entry.segments||[]});entry.observedMotion=next.state;entry.segments=next.segments;entry.segmentId=motion?.segmentId??entry.segmentId;
+ if(next.relocate){entry.x=next.relocate.x;entry.y=next.relocate.y;entry.renderPosition={x:entry.x,y:entry.y};}
+ advancePosition(entry,now,{serverTime});
+}
 export function advancePosition(entry,now=performance.now(),{serverTime=now}={}){
  const segments=entry.segments;if(!segments?.length){entry.walking=false;return;}
- while(segments.length){const segment=segments[0],t=Math.max(0,Math.min(1,(serverTime-segment.startedAt)/(segment.arriveAt-segment.startedAt)));
+ while(segments.length){const segment=segments[0],start=segment.displayStartedAt??segment.startedAt,end=segment.displayArriveAt??segment.arriveAt,t=Math.max(0,Math.min(1,(serverTime-start)/(end-start)));
   entry.x=segment.from.x+(segment.to.x-segment.from.x)*t;entry.y=segment.from.y+(segment.to.y-segment.from.y)*t;entry.renderPosition={x:entry.x,y:entry.y};
   if(segment.to.x!==segment.from.x)entry.facing=segment.to.x<segment.from.x?'left':'right';
-  if(t<1){entry.walking=true;return;}segments.shift();
+  if(t<1){entry.walking=segment.displayStartedAt===undefined||serverTime>=start;return;}segments.shift();
  }
  entry.walking=false;
 }

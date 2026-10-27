@@ -192,9 +192,9 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   function expressionPreferences(){expressionLayer.settings({density:document.querySelector('#world-expression-density')?.value||'standard',setId:document.querySelector('#world-expression-style')?.value||'gestures'});}
   document.addEventListener('change',event=>{if(event.target.matches?.('#world-expression-density,#world-expression-style'))expressionPreferences();},eventOptions);expressionPreferences();
   function expressionBoxes(point,scale){
-    const result=new Map(),add=(kind,id,name,x,y,appearance,activity,geometry)=>{const g=geometry||{width:32,height:40,anchor:{x:16,y:36},hitBox:{left:-16,right:16,top:-36,bottom:4}},b=appearance?.kind==='custom'?{left:-g.anchor.x,right:g.width-g.anchor.x,top:-g.anchor.y,bottom:g.height-g.anchor.y}:g.hitBox,p=point(x,y);result.set(kind+':'+id,{name,activity,rect:{left:p.x+b.left*scale,right:p.x+b.right*scale,top:p.y+b.top*scale,bottom:p.y+b.bottom*scale}});};
-    for(const entry of ownedLayer.actors())if(entry.fact)add('agent',entry.agentId,entry.nameValue,entry.x,entry.y,entry.fact.profile.appearance,entry.fact.activity,ownedLayer.geometry(entry.agentId));
-    for(const target of rendering?.npcs||[])add('npc',target.id,target.name,target.x,target.y,target.npc.appearance,target.npc.activity,rendering.avatarGeometry(target));return result;
+    const result=new Map(),add=(kind,id,name,x,y,appearance,activity,geometry,status)=>{const g=geometry||{width:32,height:40,anchor:{x:16,y:36},hitBox:{left:-16,right:16,top:-36,bottom:4}},b=appearance?.kind==='custom'?{left:-g.anchor.x,right:g.width-g.anchor.x,top:-g.anchor.y,bottom:g.height-g.anchor.y}:g.hitBox,p=point(x,y);result.set(kind+':'+id,{name,activity,status,rect:{left:p.x+b.left*scale,right:p.x+b.right*scale,top:p.y+b.top*scale,bottom:p.y+b.bottom*scale}});};
+    for(const entry of ownedLayer.actors())if(entry.fact)add('agent',entry.agentId,entry.nameValue,entry.x,entry.y,entry.fact.profile.appearance,entry.fact.activity,ownedLayer.geometry(entry.agentId),entry.fact.status);
+    for(const target of rendering?.npcs||[])add('npc',target.id,target.name,target.x,target.y,target.npc.appearance,target.npc.activity,rendering.avatarGeometry(target),target.npc.status==='available'?'idle':'suspended');return result;
   }
   const state=()=>({mode,exploring,minZoom:overviewScale()/camera.base,zoom:camera.zoom,paused,pauseReason,theme:light.period,lighting:structuredClone(currentLight()),reducedMotion:reduced.matches||reduceOverride,visible:visible&&!document.hidden,actorCount:actorLimit,quality,frames,...metrics,camera:{x:camera.x,y:camera.y,scale:camera.base*camera.zoom,width:camera.width,height:camera.height,sourceWidth:W,sourceHeight:H,coordinateSpace:rendering?'source-pixel':'legacy-town-pixel'},actors:actors.slice(0,actorLimit).map(a=>({id:a.id,x:a.x,y:a.y,pause:a.pause})),selectedId:selected?.id??null,
     rendering:rendering?{backend:'pixel-town',mapVersion:rendering.mapSpec.version,assetVersion:rendering.sourceVersion,imageCount:rendering.imageCount}:null,
@@ -254,7 +254,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
     }
     if(running())raf=requestAnimationFrame(frame);
   }
-  function reconcile(){cancelAnimationFrame(raf);raf=0;lastTime=null;lastDraw=0;if(running())raf=requestAnimationFrame(frame);else{ownedLayer.step(0,{serverTime:clock.now(),paused:true,visible:false});draw();}}
+  function reconcile(){cancelAnimationFrame(raf);raf=0;lastTime=null;lastDraw=0;if(running())raf=requestAnimationFrame(frame);else{rendering?.resetMotion?.();ownedLayer.step(0,{serverTime:clock.now(),paused:true,visible:false});draw();}}
   function resize(){
     stopZoom();
     const box=root.getBoundingClientRect(),oldScale=camera.base*camera.zoom;camera.width=box.width;camera.height=box.height;camera.dpr=Math.min(devicePixelRatio||1,2);camera.base=rendering?1:Math.max(.01,Math.max(box.width/W,box.height/H));
@@ -275,11 +275,12 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
   function setTime(value){if(!Number.isFinite(value)||value<0||value>8.64e15)return;sceneTime=value;light=daylightAt(value);stillLight=daylightAt(value,{reducedMotion:true});draw();}
   function setReducedMotion(value){reduceOverride=Boolean(value);if(reduceOverride&&zoomMotion)advanceZoom(Infinity);reconcile();notify();}
   function applyAgents(){
-    rendering?.setNpcs?.(worldView.complete?worldView.npcs||[]:[],worldView.rules,{stale:worldView.stale===true||worldView.phase==='paused',serverTime:worldView.serverTime??clock.now()});
+    const frozen=worldView.stale===true||worldView.phase==='paused'||!visible||document.hidden;
+    rendering?.setNpcs?.(worldView.complete?worldView.npcs||[]:[],worldView.rules,{instanceId:worldView.instanceId,stale:frozen,serverTime:worldView.serverTime??clock.now()});
     rendering?.setNotice?.(worldView.complete&&townNotice?.catalogVersion===worldView.npcCatalogVersion?townNotice:null,worldView.rules);
     townTargets.set([...(rendering?.npcs||[]),...(rendering?.serviceTargets||[]),...(rendering?.lifeTargets||[]),...stagePlaces.filter(place=>place.serviceNpc)]);
     if(!rendering&&worldView.phase==='demo')ownedLayer.set(ownedProjection);
-    else{const ids=new Set(ownedProjection.agents.map(row=>row.agentId)),project=rendering?rendering.projectAvatars:projectWorldAvatars;ownedLayer.set({source:'server',stale:worldView.stale===true,serverTime:clock.now(),selectedAgentId:ownedProjection.selectedAgentId,agents:worldView.rules?project(worldView.avatars,worldView.rules,WORLD_SIZE).map(row=>({...row,owned:ids.has(row.agentId)})):[]});}
+    else{const ids=new Set(ownedProjection.agents.map(row=>row.agentId)),project=rendering?rendering.projectAvatars:projectWorldAvatars;ownedLayer.set({source:'server',instanceId:worldView.instanceId,stale:frozen,serverTime:clock.now(),selectedAgentId:ownedProjection.selectedAgentId,agents:worldView.rules?project(worldView.avatars,worldView.rules,WORLD_SIZE).map(row=>({...row,owned:ids.has(row.agentId)})):[]});}
   }
   function setTownNotice(value){townNotice=value;applyAgents();draw();}
   function setOwnedAgents(projection){if(destroyed)return;ownedProjection=structuredClone(projection);applyAgents();draw();}
@@ -289,7 +290,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
     worldView=structuredClone(value);if(rendering&&!value.complete){worldView.avatars=[];worldView.npcs=[];}expressions.observe(worldView);actorLimit=!rendering&&value.phase==='demo'?(quality>=2?(mobile?8:10):actors.length):0;canvas.dataset.worldSource=!rendering&&value.phase==='demo'?'demo':'server';canvas.setAttribute('aria-label',rendering?'像素小镇世界画布。角色位置来自服务器；沿开放街巷与公共庭显示真实角色，不代表在线。':value.phase==='demo'?'清昼小镇演示地图。人物与环境为演示。':'清昼小镇世界画布。角色来自服务器逻辑坐标投影；背景场所为演示，不代表在线。');applyAgents();draw();notify();return{accepted:true};}
   function selectAgent(agentId,origin){const entry=ownedLayer.actors().find(row=>row.agentId===agentId);if(!entry)return;if(entry.owned)onOwnedSelect(agentId,origin);else if(entry.fact)onSelect({...structuredClone(entry.fact),kind:'world-avatar',projectionVersion:entry.projectionVersion,x:entry.x,y:entry.y},origin);}
   function locateOwnedAgent(agentId){
-    const point=ownedLayer.point(agentId);if(!point||destroyed||broken)return false;
+    const point=ownedLayer.point(agentId,{authority:true});if(!point||destroyed||broken)return false;
     stopZoom();
     const scale=camera.base*camera.zoom,bounds=root.getBoundingClientRect();
     // Explicit location uses the normal full-stage projection. Compute the
