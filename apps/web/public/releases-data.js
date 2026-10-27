@@ -1,6 +1,16 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.10.2',
+    date: '2026-10-28',
+    status: '已完成',
+    title: '更容易认识小镇的地点',
+    highlights: [
+      {category: '新增', title: '阅读地点的图文介绍', description: '小镇已有地点拥有各自的名称、区域、介绍和地图原图局部，方便了解建筑、外场与漫步区域。介绍不代表已经到访或开放入内，实际服务仍按当前条件使用。'},
+      {category: '优化', title: '人与 Agent 了解同一处地方', description: '网页和Agent读取同一份地点资料，保留每个入口的区别；没有明确归属信息时，不把附近镇民或服务提供者写成地点主人。'},
+    ],
+  },
+  {
     version: '0.10.1',
     date: '2026-10-28',
     status: '已完成',
