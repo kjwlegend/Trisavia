@@ -6,10 +6,12 @@ import {MOVEMENT_POLICY_V2} from '../domains/world/movement-policy.ts';
 import {IDLE_LIFE_POLICY_V2} from '../domains/world/idle-life.ts';
 import {MOVEMENT_POLICY_V1} from '../domains/world/types.ts';
 import {EXPRESSION_POLICY_V2} from '../domains/world/expression-current-policy.ts';
+import {EXPRESSION_POLICY} from '../domains/world/expressions.ts';
 
 function currentText(value:unknown,old:string,next:string):string{const text=String(value);if(text.split(old).length!==2)throw new Error('Exact retained guide passage required');return text.replace(old,next);}
 const expressions=EXPRESSION_POLICY_V2,ttl=expressions.expressionKinds,limits=expressions.limits;
-const currentExpressionText=currentText(currentText(currentText(quoteWorldGuide.document.expressions,'speech的服务端有效期是12秒，其余emote／status／ambient是6秒',`speech的服务端有效期是${ttl.speech.ttlMs/1000}秒，emote为${ttl.emote.ttlMs/1000}秒，status／ambient为${ttl.status.ttlMs/1000}／${ttl.ambient.ttlMs/1000}秒`),'status仅新活动开始时出现一次且同actor至少60秒',`status仅新活动开始时出现一次且同actor至少${limits.statusActorMinIntervalSeconds}秒`),'NPC只在获准现有事件点、每actor至少180秒／同句1800秒并按固定事件25%选择',`NPC只在获准现有事件点、每actor至少${limits.npcActorMinIntervalSeconds}秒／同句${limits.npcSameLineMinIntervalSeconds}秒并按固定事件${limits.npcEligibilityProbability*100}%选择`);
+const expressionTimingText=currentText(currentText(currentText(quoteWorldGuide.document.expressions,'speech的服务端有效期是12秒，其余emote／status／ambient是6秒',`speech的服务端有效期是${ttl.speech.ttlMs/1000}秒，emote为${ttl.emote.ttlMs/1000}秒，新status／ambient为${ttl.status.ttlMs/1000}／${ttl.ambient.ttlMs/1000}秒；已经存在的旧status／ambient仍按原${EXPRESSION_POLICY.expressionKinds.status.ttlMs/1000}秒和expiresAt结束，不回填延寿`),'status仅新活动开始时出现一次且同actor至少60秒',`status仅新活动开始时出现一次且同actor至少${limits.statusActorMinIntervalSeconds}秒`),'NPC只在获准现有事件点、每actor至少180秒／同句1800秒并按固定事件25%选择',`NPC只在获准现有事件点、每actor至少${limits.npcActorMinIntervalSeconds}秒／同句${limits.npcSameLineMinIntervalSeconds}秒并按固定事件${limits.npcEligibilityProbability*100}%选择`);
+const currentExpressionText=currentText(expressionTimingText,'标准／安静／关闭的视口上限为2／1／0',`标准／安静／关闭的视口上限为${limits.visibleBubblesPerViewport.standard}／${limits.visibleBubblesPerViewport.quiet}／${limits.visibleBubblesPerViewport.off}`);
 export const CURRENT_WORLD_NAVIGATION_GUIDE=`本轮从原可信origin、实例读取当前capabilities、world.rules和world.map_manifest，核对当前rules／topology／geometryDigest及layoutUrl的实际字节摘要，再规划真实可走路线；不把任何旧版本的固定格数、建筑清单或像素坐标当当前权威。物理阻挡和未开放范围均不能穿越，桥和台阶仍按当前单层逻辑地图判断。场所存在、门口可达或看见NPC不代表服务完成、认识对方或发生交谈。
 world.avatar.move仍提交从本人当前实际位置出发的正交path，每个command最多64格，不是目标点自动导航。保存原commandId和完整输入，确认该段真实结果后重读实际位置和当前地图再规划下一段；pending不算抵达，坐标或规则变化不得盲接旧路线。Life有限move.to按当前公开场所和真实可达路线行走，席位在实际到场时裁决，不在导航时预占。
 新接受的显式移动采用policy${MOVEMENT_POLICY_V2.version}/${MOVEMENT_POLICY_V2.stepIntervalMs}ms，已经持久化的policy${MOVEMENT_POLICY_V1.version}/${MOVEMENT_POLICY_V1.stepIntervalMs}ms路径保持原节奏。当前空闲漫游policy${IDLE_LIFE_POLICY_V2.version}每格${IDLE_LIFE_POLICY_V2.stepIntervalMs}ms，每段最多${IDLE_LIFE_POLICY_V2.maxPathLength}格、停留${IDLE_LIFE_POLICY_V2.minRestMs}至${IDLE_LIFE_POLICY_V2.minRestMs+IDLE_LIFE_POLICY_V2.restJitterMs}ms，真实显式任务与身体占用优先。motion仅最后一条已提交边的显示插值，position是已提交位置；重复读取不重置segmentId或arriveAt，不暴露未来路径、不代表新的Agent决定。暂停／限制继续按服务端真实守卫处理。`;
@@ -37,7 +39,7 @@ export const AUTONOMOUS_LIFE_HUMAN_GUIDE=`用居民第一人称分享此刻想�
 export const autonomousWorldGuide:GatewayGuide={...quoteWorldGuide,version:21,document:{...quoteWorldGuide.document,version:21,
  map:CURRENT_WORLD_NAVIGATION_GUIDE,
  worldRuleAdvancement:{...(quoteWorldGuide.document.worldRuleAdvancement as JsonObject),policyVersion:MOVEMENT_POLICY_V2.version,stepIntervalMs:MOVEMENT_POLICY_V2.stepIntervalMs,idleLife:{...IDLE_LIFE_POLICY_V2},retainedMovementPolicy:{...MOVEMENT_POLICY_V1}},
- expressions:currentExpressionText,expressionPolicy:structuredClone(EXPRESSION_POLICY_V2) as unknown as JsonObject,
+ expressions:currentExpressionText,expressionPolicy:structuredClone({revision:expressions.revision,expressionKinds:expressions.expressionKinds,limits:expressions.limits,emotes:expressions.emotes}) as unknown as JsonObject,
  runtimeRules:String(quoteWorldGuide.document.runtimeRules)+'\n\n'+AUTONOMOUS_LIFE_GUIDE,
  humanCommunication:{...(quoteWorldGuide.document.humanCommunication as JsonObject),instruction:AUTONOMOUS_LIFE_HUMAN_GUIDE,continuity:AUTONOMOUS_LIFE_MEMORY_GUIDE},
  life:{...(quoteWorldGuide.document.life as JsonObject),map:'Read the actual current life.actions map and world.rules/map_manifest together. Match rulesetVersion, topologyVersion and geometryDigest; retained old geometry is historical, never authority for new navigation.',autonomousParticipation:AUTONOMOUS_LIFE_GUIDE},
