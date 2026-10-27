@@ -20,6 +20,12 @@ import {registerAgentRuntimeRoute} from '../../apps/platform/transport/http/agen
 import {CURRENT_MOVEMENT_POLICY} from '../../apps/platform/domains/world/movement-policy.ts';
 import {CURRENT_IDLE_LIFE_POLICY} from '../../apps/platform/domains/world/idle-life.ts';
 import {CURRENT_EXPRESSION_POLICY} from '../../apps/platform/domains/world/expression-current-policy.ts';
+import {readFile} from 'node:fs/promises';
+import {Ajv} from 'ajv';
+import {townExpansionRules,TOWN_EXPANSION_LAYOUT_SHA256,TOWN_EXPANSION_SPATIAL_REF} from '../../apps/platform/domains/world/town-expansion-v1.ts';
+import {lifeUiFixture} from '../fixtures/life-ui.ts';
+import {lifeCActionDirectory} from '../../apps/platform/application/life-c-read-model.ts';
+import type {JsonObject} from '../../apps/platform/contracts/store.ts';
 // @ts-expect-error Browser DTO reader, no HTTP request or authenticated session.
 import {readLifeActions} from '../../apps/web/public/hud/life-readers.js';
 // @ts-expect-error Pure browser intent generator.
@@ -66,4 +72,17 @@ test('current World21 uses current policy exports and fixed rule3 while exact Wo
   for(const row of retained){assert.deepEqual(gateway.schema(row.id,'2').document,row.document);assert.equal(gateway.schema(row.id,'3').version,3);}
   assert(discovery.operations.every((operation:any)=>operation.usageGuide.version===21));
  }finally{await app.close();}
+});
+
+test('current Life4 accepts only paired retained map5/spatial3 or exact expansion map6/spatial4',async()=>{
+ const sample=await lifeCUiFixture(),a=await lifeUiFixture(),load=async(file:string)=>JSON.parse(await readFile(new URL('../../apps/web/public/world-life/'+file,import.meta.url),'utf8')),layout=await load('world-map-expansion-v1.json'),spatial=await load('spatial-manifest-expansion-v1.json'),rules=townExpansionRules(layout,TOWN_EXPANSION_LAYOUT_SHA256,spatial),f=coreFixture();
+ // Synthetic source observation: current publicActions adds the fixed map6 ref after the unchanged C directory producer.
+ let data:JsonObject={...lifeCActionDirectory({...a.catalog.data,catalogRevision:3,map:{mapId:'pixel-town-v2',rulesetVersion:6,topologyVersion:6,geometryDigest:rules.mapManifest!.geometryDigest},places:sample.catalog.data.places} as any),spatialManifestRef:{...TOWN_EXPANSION_SPATIAL_REF}};
+ const life={query:async()=>data} as any,read=withAutonomousLifeReads(lifeCPublicReads(life)).find(r=>r.id==='life.public_actions')!,projected=await read.read(f.context,{}),properties=read.output.properties as JsonObject;
+ // Validate the new spatial contract. The UI fixture omits unrelated legacy action fields; it is not a full authenticated service response.
+ const check=new Ajv({strict:false}).compile({type:'object',properties:{map:properties.map,spatialManifestRef:properties.spatialManifestRef},required:['map','spatialManifestRef'],allOf:read.output.allOf});
+ assert(check(projected),JSON.stringify(check.errors));assert.deepEqual(projected.spatialManifestRef,TOWN_EXPANSION_SPATIAL_REF);assert.equal(readLifeActions({...sample.catalog,data:projected},rules).data.actions[0].guideRef.version,4);
+ const wrong=structuredClone(projected);wrong.spatialManifestRef=sample.catalog.data.spatialManifestRef!;assert.equal(check(wrong),false);assert.throws(()=>readLifeActions({...sample.catalog,data:wrong},rules));
+ data={...data,spatialManifestRef:sample.catalog.data.spatialManifestRef!};await assert.rejects(read.read(f.context,{}),{code:'source_unavailable'});
+ const unknown=structuredClone(projected);(unknown.map as any).rulesetVersion=7;assert.equal(check(unknown),false);assert.throws(()=>readLifeActions({...sample.catalog,data:unknown},rules));
 });
