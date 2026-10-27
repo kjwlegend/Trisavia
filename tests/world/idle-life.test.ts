@@ -3,7 +3,7 @@ import test from 'node:test';
 import { bootstrapWorld, createWorldService } from '../../apps/platform/application/world-service.ts';
 import { createDeterministicScheduler } from '../../apps/platform/infrastructure/scheduling/deterministic-scheduler.ts';
 import { DEFAULT_WORLD_RULES, assertCell } from '../../apps/platform/domains/world/rules.ts';
-import { IDLE_LIFE_POLICY_V1 } from '../../apps/platform/domains/world/idle-life.ts';
+import { CURRENT_IDLE_LIFE_POLICY } from '../../apps/platform/domains/world/idle-life.ts';
 import type { GridPoint, WorldRuleset } from '../../apps/platform/domains/world/types.ts';
 import { coreFixture } from './runtime-fixture.ts';
 
@@ -53,11 +53,11 @@ test('no browser or Agent reads drive idle rules: one authoritative cell per due
   let foundRest = false;
   for (let index = 0; index < 100; index++) {
     const before = structuredClone(avatar());
-    if (idle().dueAt - f.now >= IDLE_LIFE_POLICY_V1.minRestMs) {
+    if (idle().dueAt - f.now >= CURRENT_IDLE_LIFE_POLICY.minRestMs) {
       foundRest = true; f.now = idle().dueAt - 1; assert.equal((await scheduler.runDue()).claimed, 0); assert.deepEqual(avatar(), before);
     }
     await tick(); assert.equal(distance(avatar().position, before.position), 1); assert.equal(avatar().version, before.version + 1);
-    assert.ok(idle().dueAt >= f.now + IDLE_LIFE_POLICY_V1.stepIntervalMs);
+    assert.ok(idle().dueAt >= f.now + CURRENT_IDLE_LIFE_POLICY.stepIntervalMs);
   }
   assert.ok(foundRest); assert.equal(f.state.tasks.size, 1); assert.equal(f.state.movements.size, 0); assert.equal(f.state.events.length, events); assert.equal(f.state.outbox.size, outbox);
   assert.equal(idle().state, 'pending'); assert.equal(idle().attempts, 0); await scheduler.close();
@@ -73,10 +73,10 @@ test('explicit movement wins over an in-flight idle route, and explicit arrival 
     if (stop) {
       const stopped = await f.store.transaction(ctx => service.execute(ctx, a, f.key(a, 'world.movement.stop'), { worldId: 'default', movementId, expectedVersion: 1 }));
       assert.equal(stopped.result.state, 'stopped');
-    } else { f.now += 1000; await scheduler.runDue(); assert.deepEqual(avatar().position, next); }
+    } else { f.now = Math.max(f.now,f.state.movements.get(movementId)!.nextDueAt!); await scheduler.runDue(); assert.deepEqual(avatar().position, next); }
     const explicit = f.state.movements.get(movementId)!, endPosition = structuredClone(avatar().position);
-    while (idle().dueAt < explicit.updatedAt + IDLE_LIFE_POLICY_V1.minRestMs) { await tick(); assert.deepEqual(avatar().position, endPosition); }
-    f.now = explicit.updatedAt + IDLE_LIFE_POLICY_V1.minRestMs - 1; await scheduler.runDue(); assert.deepEqual(avatar().position, endPosition);
+    while (idle().dueAt < explicit.updatedAt + CURRENT_IDLE_LIFE_POLICY.minRestMs) { await tick(); assert.deepEqual(avatar().position, endPosition); }
+    f.now = explicit.updatedAt + CURRENT_IDLE_LIFE_POLICY.minRestMs - 1; await scheduler.runDue(); assert.deepEqual(avatar().position, endPosition);
     let resumed = false;
     for (let index = 0; index < 4; index++) { await tick(); if (distance(avatar().position, endPosition) > 0) { resumed = true; break; } }
     assert.ok(resumed); await scheduler.close();

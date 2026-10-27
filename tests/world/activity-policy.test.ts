@@ -7,6 +7,8 @@ import {MOVEMENT_POLICY_V1,type WorldRuleset} from '../../apps/platform/domains/
 import {CURRENT_MOVEMENT_POLICY} from '../../apps/platform/domains/world/movement-policy.ts';
 import {IDLE_LIFE_POLICY_V1,CURRENT_IDLE_LIFE_POLICY,roamingPath} from '../../apps/platform/domains/world/idle-life.ts';
 import {validatePath} from '../../apps/platform/domains/world/rules.ts';
+import {createRuntimeRepositories} from '../../apps/platform/infrastructure/postgresql/runtime-repositories.ts';
+import type {RuntimeSql} from '../../apps/platform/infrastructure/postgresql/runtime-sql.ts';
 const rules:WorldRuleset={worldId:'default',version:1,topologyVersion:1,width:40,height:6,spawn:{x:1,y:1},blocked:[],places:[],maxPathLength:64};
 async function worldFixture(){const f=coreFixture(),busy=new Set<string>(),service=createWorldService(f.identity,{activities:{async isOccupied(_ctx,_w,id){return busy.has(id);},async interrupt(){}}});await f.store.transaction(ctx=>bootstrapWorld(ctx,rules));const add=async(id:string)=>{const p=f.addAgent(id);assert(p.kind==='agent');await f.store.transaction(ctx=>service.execute(ctx,p,f.key(p,'world.avatar.create'),{worldId:'default',expectedRulesetVersion:1}));return p;};const scheduler=createDeterministicScheduler({store:f.store,workerId:'policy-080',batchLimit:20,handlers:[{kind:'world.movement.step',version:1,run:service.handleTask},{kind:'world.idle.step',version:1,run:service.handleIdleTask}]});return{f,service,add,scheduler,busy};}
 
@@ -46,4 +48,11 @@ test('Life navigation uses actual 500ms committed segments, waits legacy motion 
 
 test('current movement schema accepts only valid V1/V2 pairs without changing exact legacy schemas',async()=>{
  const x=await worldFixture();try{const legacy=worldGatewayLegacyOperations(x.service),bytes=JSON.stringify(legacy.map(o=>[o.id,o.input,o.output])),current=worldGatewayOperations(x.service),old=legacy.find(o=>o.id==='world.movement')!,now=current.find(o=>o.id==='world.movement')!;assert.equal(old.schemaVersion,2);assert.equal(now.schemaVersion,3);const properties=(now.output.properties as any),base=Object.fromEntries(Object.entries(properties).map(([k,v]:any)=>[k,v.anyOf?null:v.enum?v.enum[0]:v.type==='string'?'x':1]));const valid=new Ajv().compile(now.output);for(const[policyVersion,stepIntervalMs]of[[1,1000],[2,500]])assert(valid({...base,policyVersion,stepIntervalMs}),JSON.stringify(valid.errors));for(const[policyVersion,stepIntervalMs]of[[1,500],[2,1000],[3,250]])assert(!valid({...base,policyVersion,stepIntervalMs}));assert.equal(JSON.stringify(legacy.map(o=>[o.id,o.input,o.output])),bytes);assert.equal(CURRENT_MOVEMENT_POLICY.stepIntervalMs,500);assert.equal(CURRENT_IDLE_LIFE_POLICY.maxPathLength,24);}finally{await x.scheduler.close();}
+});
+
+test('actual runtime recurrence adapter lowers only the named Life tick bound and keeps generation/fence checks',async()=>{
+ for(const domain of ['life','world']){const at=100000,updates:unknown[][]=[],checks:(()=>Promise<void>)[]=[],row={domain,kind:domain==='life'?'life.actor.tick':'world.idle.step',target_type:domain==='life'?'agent':'avatar',handler_version:1,payload_version:1,state:'leased',due_at:at-1,lease_token:'token',lease_worker:'worker',lease_expires_at:at+10000,fence:2,generation:1};
+  const sql={now:()=>at,writable(){},query:async()=>[{generation:1}],mutate:async(statement:string,values:unknown[])=>{if(statement.startsWith('SELECT *'))return[row];updates.push(values);return[];},scope:{beforeCommit(check:()=>Promise<void>){checks.push(check);}}} as unknown as RuntimeSql;
+  const repo=createRuntimeRepositories(sql,'epoch').tasks,lease={id:'task',token:'token',workerId:'worker',fence:2,generation:1,expiresAt:at+10000};await repo.recurIdle(lease,{now:at,dueAt:at+1,payload:{}});assert.equal(updates[0]![1],at+(domain==='life'?500:1000));await checks[0]!();await assert.rejects(repo.recurIdle({...lease,fence:1},{now:at,dueAt:at+500,payload:{}}),{code:'lease_lost'});assert.equal(updates.length,1);
+ }
 });

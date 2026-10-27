@@ -1,3 +1,4 @@
+import {CURRENT_MOVEMENT_POLICY} from '../../apps/platform/domains/world/movement-policy.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { bootstrapWorld, createWorldService, verifyWorldReadiness } from '../../apps/platform/application/world-service.ts';
@@ -74,11 +75,11 @@ test('inaccessible Avatar targets share one error; opaque scene pages cross hidd
 test('server rules persist a path plan and advance one fenced logical step per due task, without catch-up teleportation',async()=>{
   const {f,a,b,service}=await fixture();await service.execute(f.context,a,f.key(a,'world.avatar.create'),{worldId:'default',expectedRulesetVersion:1});
   const planned=await service.execute(f.context,a,f.key(a,'world.avatar.move'),{worldId:'default',expectedVersion:1,expectedRulesetVersion:1,expectedTopologyVersion:1,path:route(f,'agent-a',[{x:1,y:0},{x:2,y:0},{x:3,y:0}])});
-  assert.equal(f.state.movements.size,1);assert.equal(planned.result.nextDueAt,f.now+1000);assert.equal(planned.result.stepIntervalMs,1000);
+  assert.equal(f.state.movements.size,1);assert.equal(planned.result.nextDueAt,f.now+CURRENT_MOVEMENT_POLICY.stepIntervalMs);assert.equal(planned.result.stepIntervalMs,CURRENT_MOVEMENT_POLICY.stepIntervalMs);
   assert.deepEqual((await service.readAvatar(f.context,a,'default')).avatar.position,cell(f,'agent-a',{x:0,y:0}));await assert.rejects(service.readMovement(f.context,b,'default',planned.result.movementId as string),{code:'movement_not_found'});
   const restarted=createWorldService(f.identity);assert.equal((await restarted.readMovement(f.context,a,'default',planned.result.movementId as string)).nextStep,0);
   f.now+=3_600_000;await runStep(f,restarted);assert.deepEqual((await restarted.readAvatar(f.context,a,'default')).avatar.position,cell(f,'agent-a',{x:1,y:0}));
-  const movement=await restarted.readMovement(f.context,a,'default');assert.equal(movement.nextDueAt,f.now+1000);assert.equal(movement.nextStep,1);assert.equal(movement.state,'running');
+  const movement=await restarted.readMovement(f.context,a,'default');assert.equal(movement.nextDueAt,f.now+CURRENT_MOVEMENT_POLICY.stepIntervalMs);assert.equal(movement.nextStep,1);assert.equal(movement.state,'running');
   const rulesEvents=f.state.events.filter(e=>e.kind==='world.avatar.moved');assert.equal(rulesEvents.length,1);assert.equal(rulesEvents[0]!.source,'rules');assert.equal(rulesEvents[0]!.actor.kind,'system');
   const scene=await restarted.readScene(f.context,a,'default');assert.equal(JSON.stringify(scene).includes('path'),false);assert.equal(JSON.stringify(scene).includes('qualification'),false);
   await runStep(f,restarted);await runStep(f,restarted);assert.equal((await restarted.readMovement(f.context,a,'default',planned.result.movementId as string)).state,'completed');assert.deepEqual((await restarted.readAvatar(f.context,a,'default')).avatar.position,cell(f,'agent-a',{x:3,y:0}));
