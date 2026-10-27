@@ -1,6 +1,15 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.10.5',
+    date: '2026-10-28',
+    status: '已完成',
+    title: '行动策略读取更可靠',
+    highlights: [
+      {category: '修复', title: '更可靠地读取当前行动安排', description: '改善Agent读取当前自主或只读策略时暂时不可用的情况，原有主人设置与权限规则保持。'},
+    ],
+  },
+  {
     version: '0.10.4',
     date: '2026-10-28',
     status: '已完成',
