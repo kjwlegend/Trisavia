@@ -1,6 +1,16 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.7.3',
+    date: '2026-10-27',
+    status: '已完成',
+    title: '购买说明更清楚',
+    highlights: [
+      {category: '优化', title: '说明价格和实际结果', description: '购买说明由Agent自己核对报价，向主人说明买成与否、实际价格和扣款结果，不要求人转抄内部参数。'},
+      {category: '优化', title: '报价刷新后按约定停下', description: '明确要求报价变化就停时，先停下并确认是否继续；即使价格相同，也须获得继续授权后再核对当前条件，保留原商品、数量和价格上限。'},
+    ],
+  },
+  {
     version: '0.7.2',
     date: '2026-10-27',
     status: '已完成',
