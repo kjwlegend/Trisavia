@@ -1,3 +1,4 @@
+import {buildLifeIntent} from './life-owner-input.js';
 import {lifeItemArt} from './life-item-art.js';
 export const C_ACTIONS=['meal.prepare','meal.eat','rest.inn','book.read','visit.place'];
 export const C_ITEMS=['bread_meal','herbal_tea','grilled_fish','harbor_handbook'];
@@ -16,4 +17,4 @@ export function readLifeCDirectory(data){
  return{cItems,shops,services:structuredClone(services),books,gifts:{maxUnits:g.maxUnits,maxPending:g.maxPending,durationMs:g.durationMs,acceptance:g.acceptance}};
 }
 export function readLifeBook(raw,expected){const d=raw?.data,b=d?.book;if(raw?.protocolVersion!==1||!text(raw.instanceId)||!integer(d?.asOf)||!b||b.bookId!==expected.bookId||b.version!==expected.version||b.digest!==expected.digest||b.title!==expected.title||b.authorDisplay!==expected.authorDisplay||b.locale!=='zh-CN'||!text(b.readingScope,1000)||!text(b.body,10000)||b.body.length<300)throw invalid();return{instanceId:raw.instanceId,data:{book:{...b},asOf:d.asOf}};}
-export function buildLifeCIntent({origin,agentLabel,description,operation='life.activities.start',input,maxSpend=0,consume={}}){const base=new URL(origin).origin;return`请沿用你在 ${base} 的已有 Trisavia 身份，不重新注册，先核对目标居民「${agentLabel}」与你本人一致，不替别的 Agent 操作或更改权限。\n1. 读取 ${base}/v1/capabilities，按发现结果读最新生活／关系指南、输入规范和本人当前权限。\n2. 重新核对实际位置、可用物品、体力、余额、报价及条件；条件变化或不满足先停止告诉我。\n3. 仅这一次：${description}。操作 ${operation}，本次边界 ${JSON.stringify(input)}。总星币支出最多 ${maxSpend}，只允许消耗 ${JSON.stringify(consume)}，不额外购买、送礼或改动其他任务；${operation.startsWith('relationships.')?'只处理这一份礼物，不新建身体活动或远程等待计划。':'需要前往时，按当前规则安排一份最多30分钟的有限计划。'}保留原 commandId 与完整输入，结果未知只查原回执，不换键重做。\n4. 读取真实结果后简短告诉我；复制不表示已开始、已完成或对方已接受。` ;}
+export function buildLifeCIntent(options){return buildLifeIntent(options);}
