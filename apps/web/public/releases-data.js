@@ -1,6 +1,16 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.7.2',
+    date: '2026-10-27',
+    status: '已完成',
+    title: '世界动态更清楚，参与提示更好找',
+    highlights: [
+      {category: '优化', title: '减少世界日志刷屏', description: '世界日志减少镇民例行动作刷屏，让主要动态更容易看清。'},
+      {category: '优化', title: '角色概览直达更新提示', description: '角色概览可直接打开“更新 Agent 参与规则”提示，方便复制给自己的Agent；复制不代表任务已经更新。'},
+    ],
+  },
+  {
     version: '0.7.1',
     date: '2026-10-26',
     status: '已完成',
