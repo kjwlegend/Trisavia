@@ -1,3 +1,8 @@
+import {placeProfileWorldGuide} from '../../apps/platform/application/agent-gateway-place-profile-guide.ts';
+import {placeProfileGatewayOperations,placeProfilePublicReads} from '../../apps/platform/application/agent-gateway-place-profiles.ts';
+import {createPublishedWorldPlaceProfilesService} from '../../apps/platform/application/world-place-profiles-source.ts';
+import {createWorldService} from '../../apps/platform/application/world-service.ts';
+import {currentNpcIdentity} from '../../apps/platform/domains/town-services/npc-identity.ts';
 import {approvedWorldGuide,approvedLifeGuide,APPROVED_LIFE_ACTION_IDS,withApprovedLifeOperations,withApprovedLifeReads} from '../../apps/platform/application/agent-approved-current-guides.ts';
 import {runtimeWorldGuide} from '../../apps/platform/application/agent-runtime-publication.ts';
 import {writeFileSync} from 'node:fs';
@@ -74,4 +79,16 @@ test('approved World24/Life6 preserve old exact documents and retain current act
  assert(!canonicalGatewayDocument(approvedWorldGuide.document).includes('通常1–3句'));assert(!canonicalGatewayDocument(approvedLifeGuide.document).includes('通常1–3句'));
  assert.equal(withApprovedLifeOperations(base.operations).find(o=>o.id==='life.actions')!.schemaVersion,6);
  console.log(JSON.stringify({approvedTemplateRetainedCount:retained.length,approvedTemplateRetainedUtf8Bytes:bytes,limitCount:74,limitUtf8Bytes:425984}));
+});
+
+
+test('place profiles add only eight new current schema1 documents and retain all 74 prior exact schemas',()=>{
+ const base=residentDescriptorFixture(),retained=[...base.retained,...base.operations.filter(o=>APPROVED_LIFE_ACTION_IDS.has(o.id)).flatMap(gatewayOperationSchemas),...base.reads.filter(r=>APPROVED_LIFE_ACTION_IDS.has(r.id)).flatMap(gatewayPublicReadSchemas)],f=coreFixture(),profiles=createPublishedWorldPlaceProfilesService(createWorldService(f.identity),currentNpcIdentity),placeOps=placeProfileGatewayOperations(profiles),placeReads=placeProfilePublicReads(profiles),newDocs=[...placeOps.flatMap(gatewayOperationSchemas),...placeReads.flatMap(gatewayPublicReadSchemas)];
+ const operations=[...withApprovedLifeOperations(base.operations),...placeOps],publicReads=[...withApprovedLifeReads(base.reads),...placeReads],currentDocs=[...operations.flatMap(gatewayOperationSchemas),...publicReads.flatMap(gatewayPublicReadSchemas)];
+ assert.equal(retained.length,74);assert.equal(retained.reduce((n,d)=>n+Buffer.byteLength(canonicalGatewayDocument(d.document)),0),401868);assert.equal(newDocs.length,8);assert(newDocs.every(doc=>doc.version===1));assert.equal(new Set(newDocs.map(doc=>doc.id)).size,8);
+ const gateway=createAgentGateway({store:f.store,identity:f.identity,operations,publicReads,guides:[placeProfileWorldGuide,approvedLifeGuide,residentJournalGatewayGuide,residentTownGuide,residentNpcLifeGuide],retainedGuides:[approvedWorldGuide,residentWorldGuide,npcCareLifeGuide,runtimeWorldGuide],retainedSchemas:retained});
+ for(const doc of retained)assert.equal(gateway.schema(doc.id,String(doc.version)).canonicalDocument,canonicalGatewayDocument(doc.document));
+ for(const doc of newDocs)assert.equal(gateway.schema(doc.id,'1').canonicalDocument,canonicalGatewayDocument(doc.document));
+ assert.equal(gateway.guide('world','24').canonicalDocument,canonicalGatewayDocument(approvedWorldGuide.document));assert.equal(gateway.guide('world','25').document.version,25);
+ console.log(JSON.stringify({placeProfileNewCurrentSchemaCount:newDocs.length,placeProfileNewCurrentSchemaUtf8Bytes:newDocs.reduce((n,d)=>n+Buffer.byteLength(canonicalGatewayDocument(d.document)),0),allCurrentCount:currentDocs.length,allCurrentUtf8Bytes:currentDocs.reduce((n,d)=>n+Buffer.byteLength(canonicalGatewayDocument(d.document)),0),retainedCount:74,retainedUtf8Bytes:401868,countLimit:74,byteLimit:425984}));
 });

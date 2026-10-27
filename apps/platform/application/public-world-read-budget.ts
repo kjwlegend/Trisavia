@@ -1,7 +1,7 @@
 import {performance} from 'node:perf_hooks';
 import {M1Error} from '../domains/common/errors.ts';
 
-export const PUBLIC_WORLD_PATHS=new Set(['/v1/world/startup','/v1/world/rules','/v1/world/scene']);
+export const PUBLIC_WORLD_PATHS=new Set(['/v1/world/startup','/v1/world/rules','/v1/world/scene','/v1/world/place-profiles','/v1/world/place-profile']);
 export class PublicWorldLimitError extends M1Error {
  readonly retryAfterSeconds:number;
  constructor(seconds=1){super('rate_limited',429,'Public observation capacity is in use');this.retryAfterSeconds=Math.min(60,Math.max(1,Math.ceil(seconds)));}
