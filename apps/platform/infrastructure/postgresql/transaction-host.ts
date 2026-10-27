@@ -47,9 +47,11 @@ export async function openPostgresTransactionHost(options:OpenPostgresStoreOptio
         const connection=await pool.connect().catch(error=>{throw storageError(error);});let usable=true,commitSent=false,destroy=false;
         const connectionError=()=>{destroy=true;};connection.on('error',connectionError);
         try{
-          await connection.query('BEGIN ISOLATION LEVEL REPEATABLE READ');
-          // This must be the first read: waiting on an updated row causes RR/40001,
-          // so no callback is allowed to authorize against the preceding snapshot.
+          await connection.query(`BEGIN ISOLATION LEVEL ${write?'REPEATABLE READ':'READ COMMITTED'}`);
+          // Keep this the first read and hold the deployment fence until COMMIT.
+          // A reader sees the latest guard after waiting; its SHARE lock then
+          // prevents guarded writes from changing authorization or source rows.
+          // Writers retain RR and retry rather than use a preceding snapshot.
           const result=await connection.query(`SELECT instance_id,recovery_epoch,writes_enabled FROM platform.instance_state WHERE singleton=1 FOR ${write?'UPDATE':'SHARE'}`);
           const guard=result.rows[0];if(!guard||guard.instance_id!==options.instanceId||guard.recovery_epoch!==options.recoveryEpoch)throw new StorageError('conflict','PostgreSQL deployment identity changed; reopen the store');
           if(write){if(!guard.writes_enabled)throw new StorageError('unavailable','Business writes are closed');await connection.query('UPDATE platform.instance_state SET write_generation=write_generation+1 WHERE singleton=1');}
