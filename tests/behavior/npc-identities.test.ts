@@ -12,3 +12,12 @@ test('actual current gardener directory and Life identity read share the persona
  const f=await npcLifeFixture(),before=structuredClone(f.d),n=(await f.service.query(f.context,null,'npc_life.directory',{})).npcs as any[],life=await f.engine.readNpcIdentity(f.context,'npc-gardener'),current=(await f.service.currentNpcs(f.context))[0]!;
  assert.equal(n[0].name,'青禾');assert.equal(n[0].role,'松荫漫步园园务员');assert.deepEqual(n[0].identity,currentNpcIdentity('npc-gardener'));assert.equal(life!.name,n[0].name);assert.deepEqual(current.identity,n[0].identity);assert.deepEqual(f.d,before);assert.deepEqual(n[0].position,before.npcs[0]!.initialPosition);assert.deepEqual(n[0].appearance,before.npcs[0]!.appearance);
 });
+
+test('Town directory enumerates its activated current NPC provider instead of losing an extension absent from the immutable catalog',async()=>{
+ const f=await npcLifeFixture(),{readFile}=await import('node:fs/promises'),{townV2Rules,TOWN_V2_LAYOUT_SHA256}=await import('../../apps/platform/domains/world/town-v2.ts'),{residentWelcomeTownCatalog}=await import('../../apps/platform/domains/town-services/catalog.ts'),{TOWN_REPOSITORY}=await import('../../apps/platform/domains/town-services/repository.ts'),{createTownService}=await import('../../apps/platform/application/town-services.ts');
+ const base=residentWelcomeTownCatalog(townV2Rules(JSON.parse(await readFile(new URL('../../apps/web/public/world-map-v2.json',import.meta.url),'utf8')),TOWN_V2_LAYOUT_SHA256),f.now),raw={...base,version:6,map:{...base.map,layoutSha256:f.rules.mapManifest!.layoutSha256,geometryDigest:f.rules.mapManifest!.geometryDigest,rulesetVersion:6,topologyVersion:6}};
+ await f.store.transaction(ctx=>ctx.repository(TOWN_REPOSITORY).activateCatalog(raw));const before=await f.store.read(ctx=>ctx.repository(TOWN_REPOSITORY).getCatalog());
+ // This fixture explicitly activates only the extension actor. The provider, not a fabricated catalog entry, is authoritative.
+ const service=createTownService(f.identity,{currentNpcs:async ctx=>({catalogVersion:6,npcs:await f.service.currentNpcs(ctx)})}),directory=await service.query(f.context,null,'town_services.npcs',{}),rows=directory.npcs as any[];
+ assert.equal(rows.length,1);assert.equal(rows[0].npcId,'npc-gardener');assert.equal(rows[0].name,'青禾');assert.deepEqual(rows[0].identity,currentNpcIdentity('npc-gardener'));assert.deepEqual(await f.store.read(ctx=>ctx.repository(TOWN_REPOSITORY).getCatalog()),before);
+});
