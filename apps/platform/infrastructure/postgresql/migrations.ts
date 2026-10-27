@@ -1,4 +1,5 @@
 import {WORLD_EXPRESSIONS_MIGRATION} from './world-expressions-migration.ts';
+import {WORLD_MOVEMENT_POLICY_MIGRATION} from './world-movement-policy-migration.ts';
 import {LIFE_C_MIGRATION} from './life-c-migration.ts';
 import {RELATIONSHIP_GIFT_MIGRATION} from './relationships-gifts-migration.ts';
 import {LIFE_C_COMMERCE_MIGRATION} from './life-c-commerce-migration.ts';
@@ -147,6 +148,7 @@ POSTGRES_MIGRATIONS.push({moduleId:'iam',version:6,name:'owner_world_action_poli
  ALTER TABLE iam.agents ADD CONSTRAINT agents__present_check CHECK(_present <@ ARRAY[${[...actionPolicyAllowed].map(quote).join(',')}]::text[]);`,dependencies:['iam']});
 POSTGRES_MIGRATIONS.push(WORLD_TOPOLOGY_MIGRATION);
 POSTGRES_MIGRATIONS.push(WORLD_EXPRESSIONS_MIGRATION);
+POSTGRES_MIGRATIONS.push(WORLD_MOVEMENT_POLICY_MIGRATION);
 POSTGRES_MIGRATIONS.push(BEHAVIOR_MIGRATION);
 POSTGRES_MIGRATIONS.push(TOWN_SERVICES_MIGRATION,TOWN_BEHAVIOR_MIGRATION);
 // Existing rows deliberately remain unknown; only a new authoritative first join writes this fact.
