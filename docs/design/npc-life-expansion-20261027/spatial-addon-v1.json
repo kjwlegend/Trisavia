@@ -1,7 +1,7 @@
 {
   "id": "npc-life-spatial-v1",
   "schemaVersion": 1,
-  "revision": 1,
+  "revision": 2,
   "appendOnlyToMap6": true,
   "baseMap": {
     "mapId": "pixel-town-v2",
@@ -253,7 +253,7 @@
           0
         ],
         "active": [
-          1
+          0
         ],
         "completed": [
           2

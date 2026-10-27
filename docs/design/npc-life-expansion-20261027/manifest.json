@@ -1,11 +1,11 @@
 {
   "id": "npc-life-expansion-v1",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "catalogVersion": "2026-10-27.npc-life-v1",
   "status": "design-ready; not production activation or human final aesthetic acceptance",
   "spatial": {
     "file": "spatial-addon-v1.json",
-    "sha256": "6a734e85bf24a7af32c47c024837917aeba70ca7fe291655319478597424f79c"
+    "sha256": "97d513507efc44cb991a3887f9d82c78227bd10d1fe37fdf4247cadc3e4a912a"
   },
   "baseMap": {
     "mapId": "pixel-town-v2",
@@ -878,7 +878,7 @@
       ],
       "framesMeaning": [
         "neutral",
-        "active",
+        "active-with-stream-alternate",
         "committed-completed",
         "unused-alternate"
       ],
@@ -954,10 +954,10 @@
         24
       ],
       "framesMeaning": [
-        "neutral",
+        "real-scattered-material",
         "active",
-        "committed-completed",
-        "unused-alternate"
+        "unused-cleared",
+        "committed-collected"
       ],
       "extraction": [
         {

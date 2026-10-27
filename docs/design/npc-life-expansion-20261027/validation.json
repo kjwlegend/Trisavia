@@ -1,0 +1,36 @@
+{
+  "manifestVersion": "1.0.1",
+  "assetCount": 19,
+  "assetBytes": 38389,
+  "hashesDimensionsAlpha": "passed",
+  "browser": {
+    "desktop": [
+      1440,
+      1120
+    ],
+    "mobile": [
+      390,
+      844
+    ],
+    "mobileHorizontalOverflow": false,
+    "observedStates": [
+      "gardener introduction",
+      "gardener watering",
+      "gardener completed wet state label",
+      "companion quiet sit",
+      "guide shade-to-river route"
+    ],
+    "labels": "name labels separate after spacing repair",
+    "existingSeatedSprite": "96x64 frame crop, no duplicate actor",
+    "routePathLengths": [
+      170,
+      34
+    ]
+  },
+  "notCovered": [
+    "production integration",
+    "real permissions and reservations",
+    "server care state mutations",
+    "human final aesthetic acceptance"
+  ]
+}
