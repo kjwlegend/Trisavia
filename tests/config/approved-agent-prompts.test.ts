@@ -1,3 +1,7 @@
+import {runtimeRuleMetadata,runtimeCatalogRevision} from '../../apps/platform/application/agent-runtime-publication.ts';
+import {canonicalGatewayDocument} from '../../apps/platform/application/agent-gateway.ts';
+import {placeProfileWorldGuide} from '../../apps/platform/application/agent-gateway-place-profile-guide.ts';
+import {approvedWorldGuide,approvedLifeGuide} from '../../apps/platform/application/agent-approved-current-guides.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {createHash} from 'node:crypto';
@@ -12,6 +16,9 @@ import {APPROVED_REGISTRATION_PROMPT,APPROVED_TASK_UPDATE_PROMPT,APPROVED_RECURR
 import {APPROVED_TEMPLATE_REPLACEMENTS,rewriteApprovedAgentTemplateText} from '../../apps/platform/application/agent-approved-template-text.ts';
 import {AGENT_RUNTIME_SECTION_HEADINGS,parseAgentRuntimeGuide,readAgentRuntimeGuide} from '../../apps/platform/application/agent-runtime-guide.ts';
 const sha=(text:string)=>createHash('sha256').update(text).digest('hex');
+const socialRuntimeAdditions=["在活动转换、到访相关场所或收到真实回应时，留意与自己兴趣、疑问或未完事项有关的人物线索。按当前权限有界了解一个相关对象的公开资料、实际表达或可用服务，分清自己注意到什么、为何想接触以及此刻是否合适；也可以选择独处。若持续遇到相关人物却从未进一步了解，在下一次选择活动时查清原因，不机械绕开人物，也不按轮次或人数指标交友。", "有具体接触理由且条件允许时，选择当前真正支持的招呼、话题、服务、文字交流或好友申请。说明真实意图，给对方拒绝或不回应的空间；没有自由聊天能力时，不用气泡或作品反馈伪装闲聊。依据实际回应续接人物印象与后续打算，有持续联系意愿时再按规则建立好友；先前交流是常见契机，不是硬性前置。看见、阅读资料、发出邀请、收到回应和确认关系分别记录；未回应不冻结其他生活，拒绝或条件不合适不反复追问，不为关系数值刷活动。", "重要的停顿、转向或接触意愿，要让人明白当前的具体原因；原因尚未查明就保留未知，不用“下次继续”“现场变化”代替解释。只讲影响当前选择的理由，不增加固定句式或强造感受。"];
+function withoutSocialAdditions(text:string){for(const paragraph of socialRuntimeAdditions){assert.equal(text.split(paragraph).length,2);text=text.replace("- "+paragraph+"\n","");}return text;}
+
 
 test('approved 01–04 keep every literal character except the trusted-origin placeholder',()=>{
  const originals={registration:APPROVED_REGISTRATION_PROMPT,update:APPROVED_TASK_UPDATE_PROMPT,recurring:APPROVED_RECURRING_JOB_BOOTSTRAP,profile:APPROVED_PROFILE_RULES};
@@ -19,8 +26,8 @@ test('approved 01–04 keep every literal character except the trusted-origin pl
 });
 
 test('seven-group current runtime retains approved 05 and the complete 0100 journal/NPC block',async()=>{
- const runtime=await readAgentRuntimeGuide();assert.equal(runtime.ruleVersion,5);assert(runtime.bytes<=16384);assert.equal(runtime.digest,sha(runtime.text));
- const body=runtime.text.slice(runtime.text.indexOf('\n\n')+2),marker='个人日志能力实际启用后，',approved=body.slice(0,body.indexOf(marker)).trimEnd()+'\n\n<!-- connet:runtime-rule:end -->\n\n';
+ const runtime=await readAgentRuntimeGuide();assert.equal(runtime.ruleVersion,6);assert(runtime.bytes<=16384);assert.equal(runtime.digest,sha(runtime.text));
+ const body=withoutSocialAdditions(runtime.text.slice(runtime.text.indexOf('\n\n')+2)),marker='个人日志能力实际启用后，',approved=body.slice(0,body.indexOf(marker)).trimEnd()+'\n\n<!-- connet:runtime-rule:end -->\n\n';
  assert.equal(sha(approved),APPROVED_PROMPT_SOURCE_DIGESTS.runtime);
  const oldBlock=body.slice(body.indexOf(marker),body.indexOf('\n\n当前个人日志的纯文本正文'));
  assert.equal(sha(oldBlock),'1112496eced9e2ee6cdac47fa2239f28939ca6b87215e8e137dda09e8bd3afef');
@@ -67,7 +74,7 @@ test('legacy rule1–4 and approved rule5 each require their own complete exact 
  const current=await readAgentRuntimeGuide(),legacyBody='# Synthetic legacy rules\n\n### 1. 每次唤醒\n原规则一。\n### 2. 选择行动\n原规则二。\n### 3. 向主人分享\n原规则三。\n\n<!-- connet:runtime-rule:end -->\n';
  const legacy=(version:number)=>'<!-- connet:runtime-rule '+JSON.stringify({ruleVersion:version,updatedAt:'2026-10-27T00:00:00.000Z',changeSummary:'隔离旧格式'})+' -->\n\n'+legacyBody;
  for(const version of [1,2,3,4])assert.equal(parseAgentRuntimeGuide(Buffer.from(legacy(version))).ruleVersion,version);
- assert.throws(()=>parseAgentRuntimeGuide(Buffer.from(legacy(5))));assert.throws(()=>parseAgentRuntimeGuide(Buffer.from(current.text.replace('"ruleVersion":5','"ruleVersion":4'))));
+ assert.throws(()=>parseAgentRuntimeGuide(Buffer.from(legacy(5))));assert.throws(()=>parseAgentRuntimeGuide(Buffer.from(current.text.replace('"ruleVersion":6','"ruleVersion":4'))));
  for(const bad of [legacy(4).replace('### 2. 选择行动','### 缺失'),legacy(4).replace('### 2. 选择行动','### 1. 每次唤醒'),legacy(4).replace('原规则二。',''),legacy(4).replace('### 3. 向主人分享','## 3. 向主人分享')])assert.throws(()=>parseAgentRuntimeGuide(Buffer.from(bad)));
 });
 
@@ -91,4 +98,14 @@ test('published G22 human variants and an already-correct hourly block are exact
  for(const voice of human.beforeVariants)for(const schedule of [hourly.before,hourly.after])assert.equal(rewriteApprovedAgentTemplateText(source(voice,schedule)),expected);
  const actual=source(publishedHuman,hourly.after),next=rewriteApprovedAgentTemplateText(actual);assert(next.includes('已经来到 Trisavia。如果你想管理我的资料和权限'));assert.equal(next.split(hourly.after).length-1,1);
  for(const bad of [source('',hourly.after),source(publishedHuman+'\n'+publishedHuman,hourly.after),source(publishedHuman+'\n'+human.beforeVariants[0],hourly.after),source(publishedHuman,hourly.before+'\n'+hourly.after),source(publishedHuman,hourly.after+'\n'+hourly.after),source(publishedHuman,''),source(publishedHuman.replace('已经来到 Trisavia','已经来到 Unrecognized'),hourly.after),actual+'\n'+human.after,actual+'\n'+profile.after])assert.throws(()=>rewriteApprovedAgentTemplateText(bad));
+});
+
+
+test('runtime6 adds only the three approved social paragraphs in groups3/4/6 and changes the current stamp',async()=>{
+ const runtime=await readAgentRuntimeGuide();assert.equal(runtime.ruleVersion,6);
+ for(const [index,group]of [3,4,6].entries()){const start=runtime.text.indexOf(AGENT_RUNTIME_SECTION_HEADINGS[group-1]!),finish=runtime.text.indexOf(AGENT_RUNTIME_SECTION_HEADINGS[group]!,start);assert(runtime.text.slice(start,finish).includes(socialRuntimeAdditions[index]!));}
+ const previousHeader='<!-- connet:runtime-rule {"ruleVersion":5,"updatedAt":"2026-10-27T16:23:12.000Z","changeSummary":"采用七组完整运行规则与已审角色、周期提示，保留私人生活手记及同源NPC发现。"} -->';
+ const previous=previousHeader+'\n\n'+withoutSocialAdditions(runtime.text.slice(runtime.text.indexOf('\n\n')+2));assert.equal(sha(previous),'bf4f9a3e591ac92401f46f425394b9216655d37d9c2b6246a59d3c646a592544');
+ const old=parseAgentRuntimeGuide(Buffer.from(previous)),metadata=runtimeRuleMetadata(runtime);assert.equal(metadata.ruleVersion,6);assert.equal(metadata.digest,sha(runtime.text));assert.equal(metadata.bytes,Buffer.byteLength(runtime.text));assert.notEqual(runtimeCatalogRevision('unchanged-api',metadata),runtimeCatalogRevision('unchanged-api',runtimeRuleMetadata(old)));
+ for(const [guide,digest]of [[placeProfileWorldGuide,'81e3ed2b23b5a8e5826ef00a03d3e4263b3cf33b318f6cf7350bfeb8fe5072e6'],[approvedWorldGuide,'0510f1ab9cb12730819f2515bfea467a201dd050ca6c5b61485a2b99891bd0b1'],[approvedLifeGuide,'8e54cbcfce4c21476b052cc2d9f4c9eac1651d916b28f591e129c605fac0d077']] as const)assert.equal(sha(canonicalGatewayDocument(guide.document)),digest);
 });

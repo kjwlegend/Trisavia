@@ -15,7 +15,7 @@ function revision(text:string,ruleVersion:number){return text.replace(/^.*\n/,`<
 
 test('current autonomous runtime keeps complete sections and exact current guide text',async()=>{
  const raw=await source(),guide=await readAgentRuntimeGuide();
- assert.equal(guide.path,AGENT_RUNTIME_RULES_PATH);assert.equal(guide.ruleVersion,5);assert(Object.isFrozen(guide));
+ assert.equal(guide.path,AGENT_RUNTIME_RULES_PATH);assert.equal(guide.ruleVersion,6);assert(Object.isFrozen(guide));
  assert.equal(guide.bytes,raw.length);assert.equal(guide.text,raw.toString('utf8'));assert.equal(guide.digestAlgorithm,'sha256-utf8-hex');assert.equal(guide.digest,createHash('sha256').update(raw).digest('hex'));assert(raw.length<AGENT_RUNTIME_MAX_BYTES);
  assert.match(guide.text,/## 1. 授权与调度/);assert.match(guide.text,/## 7. 通知、投递与记录/);assert.match(guide.text,/长度随内容，不强压成一至三句/);
 
