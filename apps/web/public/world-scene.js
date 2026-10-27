@@ -154,7 +154,7 @@ function drawActor(ctx,a,images) {
 
 export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{},onChange=()=>{},onError=()=>{},signal,worldSource='demo',rendering=null,initialTime=Date.now(),clock={now:()=>Date.now()}}={}){
   const W=rendering?.mapSpec.width??WORLD_SIZE.width,H=rendering?.mapSpec.height??WORLD_SIZE.height;
-  const stagePlaces=rendering?rendering.places:places;
+  const stagePlaces=rendering?rendering.places.filter(place=>!place.menuOnly):places;
   const images=rendering?null:await loadAssets();
   if(signal?.aborted)throw new DOMException('Scene loading cancelled','AbortError');
   const canvas=document.createElement('canvas');canvas.id='world-canvas';canvas.dataset.worldWidth=String(W);canvas.dataset.worldHeight=String(H);canvas.dataset.buildingCount=String(rendering?.buildingCount??11);canvas.className='world-canvas';canvas.dataset.rendering=rendering?'pixel-town':'legacy';canvas.tabIndex=0;canvas.setAttribute('role','img');canvas.setAttribute('aria-label',rendering?'像素小镇世界画布。角色沿已开放街巷和公共庭活动。可用方向键平移，加减号缩放，Home 全景。':'清昼小镇演示地图。可用场所列表查看说明；聚焦后方向键平移，加减号缩放，Home 恢复全景。');
@@ -259,7 +259,7 @@ export async function createWorldScene(root,{onSelect=()=>{},onOwnedSelect=()=>{
     stopZoom();
     const box=root.getBoundingClientRect(),oldScale=camera.base*camera.zoom;camera.width=box.width;camera.height=box.height;camera.dpr=Math.min(devicePixelRatio||1,2);camera.base=rendering?1:Math.max(.01,Math.max(box.width/W,box.height/H));
     canvas.width=Math.max(1,Math.round(box.width*camera.dpr));canvas.height=Math.max(1,Math.round(box.height*camera.dpr));
-    if(mode==='initial'){camera.zoom=1;camera.x=!rendering&&box.width<760&&box.height>box.width?960:W/2;camera.y=H/2;}
+    if(mode==='initial'){camera.zoom=1;camera.x=rendering?.mapSpec.initialCamera?.x??(!rendering&&box.width<760&&box.height>box.width?960:W/2);camera.y=rendering?.mapSpec.initialCamera?.y??H/2;}
     else if(mode==='overview'){camera.zoom=overviewScale()/camera.base;camera.x=W/2;camera.y=H/2;}
     else camera.zoom=Math.max(overviewScale()/camera.base,Math.min(3,oldScale/camera.base));
     clampCamera();draw();notify();
