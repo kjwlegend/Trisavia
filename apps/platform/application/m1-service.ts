@@ -370,6 +370,14 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
             return await wallet.query(raw, token);
         if (perception.handles(action))
             return await perception.invoke(action as PerceptionAction, raw, token);
+        if (action === "readWorldActionPolicy") {
+            return await store.read(async tx => {
+                const asOf=now(),input=object(raw,['agentId']);
+                const actor=await authenticate(tx,token,['runtime','owner_session']);
+                const agent=await target(tx,actor,text(input.agentId,'agentId',8,100));
+                return worldActionPolicyView(agent,asOf);
+            });
+        }
         return await store.transaction(async (tx) => {
             // This is the server's state-read time, never evidence that a local Agent is online.
             const asOf = now();
@@ -726,11 +734,10 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     return { agentId, runtimeVersion, runtimeActive: action === "replaceRuntime" };
                 });
             }
-            if (action === "readWorldActionPolicy" || action === "saveWorldActionPolicy") {
-                const input=object(raw,action==='readWorldActionPolicy'?['agentId']:['operationId','agentId','expectedVersion','mode']);
-                const actor=await authenticate(tx,token,action==='readWorldActionPolicy'?['runtime','owner_session']:['owner_session']);
+            if (action === "saveWorldActionPolicy") {
+                const input=object(raw,['operationId','agentId','expectedVersion','mode']);
+                const actor=await authenticate(tx,token,['owner_session']);
                 const agentId=text(input.agentId,'agentId',8,100),agent=await target(tx,actor,agentId),current=worldActionPolicy(agent);
-                if(action==='readWorldActionPolicy')return worldActionPolicyView(agent,asOf);
                 return await command(tx,`owner:${actor.data.ownerId!}`,action,input,async()=>{
                     if(!Number.isSafeInteger(input.expectedVersion)||Number(input.expectedVersion)<0)fail('invalid_request',400,'Expected a nonnegative policy version');
                     if(input.expectedVersion!==current.version)fail('version_conflict',409,'World action policy changed',{version:current.version});
