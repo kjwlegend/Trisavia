@@ -8,7 +8,7 @@ export function createExpressionLifecycle({now=()=>performance.now()}={}){
   actors=expressionActors(state.avatars,state.npcs);if(!state.complete||state.stale||!['ready','refreshing'].includes(state.phase)||!Number.isSafeInteger(state.serverTime)){suspend();initial=true;return;}
   const at=now(),observed=Number.isFinite(state.expressionObservedAtMono)?Math.max(0,at-state.expressionObservedAtMono):0,server=(state.expressionServerTime??state.serverTime)+observed;anchor={server,at};const current=new Set();
   for(const row of state.expressions||[]){if(!expressionMatches(row,actors))continue;current.add(row.expressionId);const previous=seen.get(row.expressionId),key=JSON.stringify(row);if(previous){previous.authorized=previous.key===key;if(!previous.authorized)previous.dropped=true;continue;}
-   const remaining=Math.max(0,row.expiresAt-serverNow()),valid=remaining>0&&row.createdAt<=serverNow();seen.set(row.expressionId,{row,key,authorized:valid,static:initial,at,expires:at+remaining,visual:at+Math.min(remaining,row.kind==='speech'?policy.limits.speechVisualMaxMs:row.expiresAt-row.createdAt),dropped:!valid,entered:false});
+   const remaining=Math.max(0,row.expiresAt-serverNow()),valid=remaining>0&&row.createdAt<=serverNow();seen.set(row.expressionId,{row,key,authorized:valid,static:initial,at,expires:at+remaining,visual:at+Math.min(remaining,row.kind==='speech'?policy.limits.speechVisualMaxMs:policy.limits.otherVisualMaxMs),dropped:!valid,entered:false});
   }
   for(const [id,record]of seen){if(!current.has(id)){record.authorized=false;record.dropped=true;}if(at-record.at>60000&&at>=record.expires)seen.delete(id);}while(seen.size>1024)seen.delete(seen.keys().next().value);initial=false;
  }
