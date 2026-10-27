@@ -1,0 +1,28 @@
+{
+  "scope": "selection/export/preview only; no production testing",
+  "sourceInventory": 372,
+  "selectedRecordsVerified": 33,
+  "characterAppearances": 5,
+  "fantasyReserve": 2,
+  "props": 18,
+  "tavernABIdenticalPngAnimations": 4,
+  "sourceUnmodified": true,
+  "preview": {
+    "desktop1440x1120": {
+      "horizontalOverflow": false,
+      "characters": 5,
+      "props": 18
+    },
+    "mobile390x844": {
+      "horizontalOverflow": false
+    },
+    "walkIdleToggle": true,
+    "sceneOverlayToggle": true,
+    "plantFilterCount": 7
+  },
+  "limits": [
+    "No four-direction appearance integration",
+    "No collision/station coordinates accepted for scene arrangements",
+    "No full gameplay or production checks"
+  ]
+}

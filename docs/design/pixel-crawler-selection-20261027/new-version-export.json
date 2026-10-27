@@ -1,0 +1,338 @@
+[
+  {
+    "source": "Entities/Characters/New_Version/Idle/Idle_Down.aseprite",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ],
+    "export": "new-idle-idle_down.png",
+    "frameBboxes": [
+      [
+        25,
+        19,
+        39,
+        48
+      ],
+      [
+        24,
+        20,
+        40,
+        48
+      ],
+      [
+        24,
+        21,
+        40,
+        48
+      ],
+      [
+        25,
+        20,
+        39,
+        48
+      ]
+    ]
+  },
+  {
+    "source": "Entities/Characters/New_Version/Idle/Idle_Side.aseprite",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ],
+    "export": "new-idle-idle_side.png",
+    "frameBboxes": [
+      [
+        26,
+        19,
+        39,
+        48
+      ],
+      [
+        26,
+        20,
+        39,
+        48
+      ],
+      [
+        26,
+        21,
+        39,
+        48
+      ],
+      [
+        26,
+        20,
+        39,
+        48
+      ]
+    ]
+  },
+  {
+    "source": "Entities/Characters/New_Version/Idle/Idle_Up.aseprite",
+    "frames": 4,
+    "frameSize": [
+      64,
+      64
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ],
+    "export": "new-idle-idle_up.png",
+    "frameBboxes": [
+      [
+        25,
+        19,
+        39,
+        48
+      ],
+      [
+        24,
+        20,
+        40,
+        48
+      ],
+      [
+        24,
+        21,
+        40,
+        48
+      ],
+      [
+        25,
+        20,
+        39,
+        48
+      ]
+    ]
+  },
+  {
+    "source": "Entities/Characters/New_Version/Walk/Down.aseprite",
+    "frames": 6,
+    "frameSize": [
+      48,
+      48
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ],
+    "export": "new-walk-down.png",
+    "frameBboxes": [
+      [
+        17,
+        19,
+        31,
+        48
+      ],
+      [
+        17,
+        20,
+        31,
+        47
+      ],
+      [
+        17,
+        19,
+        31,
+        48
+      ],
+      [
+        17,
+        19,
+        31,
+        48
+      ],
+      [
+        17,
+        20,
+        31,
+        47
+      ],
+      [
+        17,
+        19,
+        31,
+        48
+      ]
+    ]
+  },
+  {
+    "source": "Entities/Characters/New_Version/Walk/Up.aseprite",
+    "frames": 6,
+    "frameSize": [
+      48,
+      48
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 1",
+        "visible": true
+      }
+    ],
+    "export": "new-walk-up.png",
+    "frameBboxes": [
+      [
+        17,
+        19,
+        31,
+        47
+      ],
+      [
+        17,
+        20,
+        31,
+        46
+      ],
+      [
+        17,
+        19,
+        31,
+        48
+      ],
+      [
+        17,
+        19,
+        31,
+        47
+      ],
+      [
+        17,
+        20,
+        31,
+        46
+      ],
+      [
+        17,
+        19,
+        31,
+        48
+      ]
+    ]
+  },
+  {
+    "source": "Entities/Characters/New_Version/Walk/Walk_Side.aseprite",
+    "frames": 6,
+    "frameSize": [
+      48,
+      48
+    ],
+    "durationsMs": [
+      100,
+      100,
+      100,
+      100,
+      100,
+      100
+    ],
+    "layers": [
+      {
+        "name": "Layer 4",
+        "visible": true
+      },
+      {
+        "name": "Layer 1",
+        "visible": true
+      },
+      {
+        "name": "Layer 2",
+        "visible": true
+      },
+      {
+        "name": "Layer 3",
+        "visible": true
+      }
+    ],
+    "export": "new-walk-walk_side.png",
+    "frameBboxes": [
+      [
+        18,
+        20,
+        32,
+        48
+      ],
+      [
+        18,
+        20,
+        30,
+        48
+      ],
+      [
+        18,
+        19,
+        31,
+        48
+      ],
+      [
+        18,
+        20,
+        32,
+        48
+      ],
+      [
+        18,
+        20,
+        31,
+        48
+      ],
+      [
+        18,
+        19,
+        30,
+        48
+      ]
+    ]
+  }
+]
