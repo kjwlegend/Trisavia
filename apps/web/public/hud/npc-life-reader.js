@@ -7,19 +7,20 @@ function object(v,names,required=names){if(!v||typeof v!=='object'||Array.isArra
 function list(v,max,read){if(!Array.isArray(v)||v.length>max)invalid();return v.map(read);}
 function unique(rows,key){if(new Set(rows.map(v=>v[key])).size!==rows.length)invalid();return rows;}
 function envelope(raw){if(raw?.protocolVersion!==1||!text(raw.instanceId,180)||!integer(raw.data?.asOf))invalid();return raw.data;}
-function ref(v){object(v,['id','version','digest']);if(!id(v.id)||!positive(v.version)||!hash(v.digest))invalid();return structuredClone(v);}
+const contentId=v=>id(v)||typeof v==='string'&&/^npc-life\/[a-z0-9/-]+@[1-9][0-9]{0,6}$/.test(v);
+function ref(v){object(v,['id','version','digest']);if(!contentId(v.id)||!positive(v.version)||!hash(v.digest))invalid();return structuredClone(v);}
 function nullable(v,read){return v===null?null:read(v);}
 const time=v=>{if(!integer(v))invalid();return v;},identifier=v=>{if(!id(v))invalid();return v;};
 function coordinate(v,rules){object(v,['x','y']);if(!Number.isSafeInteger(v.x)||!Number.isSafeInteger(v.y)||!rules?.bounds||v.x<rules.bounds.minX||v.x>rules.bounds.maxX||v.y<rules.bounds.minY||v.y>rules.bounds.maxY)invalid();return{x:v.x,y:v.y};}
 function introduction(v,agentId){
- object(v,['introductionId','version','npcId','agentId','planId','careKind','pointId','pointVersion','guideRef','createdAt','expiresAt','consumedByActivityId']);
+ object(v,['introductionId','version','npcId','agentId','planId','careKind','pointId','pointVersion','guideRef','createdAt','expiresAt','consumedByActivityId','message']);
  if(!id(v.introductionId)||!positive(v.version)||v.npcId!=='npc-gardener'||v.agentId!==agentId||!id(v.planId)||!['water','clear'].includes(v.careKind)||!id(v.pointId)||!positive(v.pointVersion)||!integer(v.createdAt)||!integer(v.expiresAt)||v.expiresAt<=v.createdAt||v.expiresAt-v.createdAt>1800000)invalid();
- return{...v,guideRef:ref(v.guideRef),consumedByActivityId:nullable(v.consumedByActivityId,identifier)};
+ const message=readNpcCareMessage(v.message);if(message.ref!=='npc-life/gardener/open@1'||message.speaker!=='npc-gardener'||message.audience!=='public')invalid();return{...v,message,guideRef:ref(v.guideRef),consumedByActivityId:nullable(v.consumedByActivityId,identifier)};
 }
 export function readNpcLifeDirectory(raw,rules){
  const v=envelope(raw);object(v,['worldId','definitionVersion','ruleVersion','map','spatialRef','npcs','carePoints','guides','rules','asOf']);
  object(v.map,['mapId','rulesetVersion','topologyVersion','geometryDigest']);object(v.spatialRef,['url','revision','sha256']);
- if(v.worldId!=='default'||v.definitionVersion!==1||v.ruleVersion!==1||v.map.mapId!=='pixel-town-v2'||v.map.rulesetVersion!==6||v.map.topologyVersion!==6||rules?.version!==6||rules.topologyVersion!==6||v.map.mapId!==rules.mapManifest?.mapId||v.map.geometryDigest!==rules.mapManifest?.geometryDigest||!hash(v.map.geometryDigest)||!text(v.spatialRef.url,500)||!v.spatialRef.url.startsWith('/assets/')||!positive(v.spatialRef.revision)||!hash(v.spatialRef.sha256))invalid();
+ if(v.worldId!=='default'||v.definitionVersion!==1||v.ruleVersion!==1||v.map.mapId!=='pixel-town-v2'||v.map.rulesetVersion!==6||v.map.topologyVersion!==6||rules?.version!==6||rules.topologyVersion!==6||v.map.mapId!==rules.mapManifest?.mapId||v.map.geometryDigest!==rules.mapManifest?.geometryDigest||!hash(v.map.geometryDigest)||v.spatialRef.url!=='/assets/npc-life-v1/spatial-addon-v1.json'||v.spatialRef.revision!==2||v.spatialRef.sha256!=='97d513507efc44cb991a3887f9d82c78227bd10d1fe37fdf4247cadc3e4a912a')invalid();
  const limits={version:1,durationMs:120000,energyCost:6,pointCooldownMs:3600000,actorPointCooldownMs:86400000,maxIntroductionLifetimeMs:1800000};object(v.rules,Object.keys(limits));if(Object.entries(limits).some(([k,value])=>v.rules[k]!==value))invalid();
  const guides=unique(list(v.guides,2,g=>{object(g,['id','version','digest','title','body']);ref({id:g.id,version:g.version,digest:g.digest});if(!text(g.title)||typeof g.body!=='string'||!g.body.trim()||g.body.length>8000||/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(g.body))invalid();return structuredClone(g);}), 'id');
  const carePoints=unique(list(v.carePoints,2,p=>{
@@ -30,7 +31,7 @@ export function readNpcLifeDirectory(raw,rules){
  }), 'pointId');
  const npcs=unique(list(v.npcs,1,n=>{
   object(n,['npcId','version','name','role','position','motion','appearance','present','busy']);object(n.appearance,['kind','version','assetId','manifestUrl','digest']);
-  if(n.npcId!=='npc-gardener'||!positive(n.version)||!text(n.name)||!text(n.role)||typeof n.present!=='boolean'||typeof n.busy!=='boolean'||n.appearance.kind!=='npc_sprite'||n.appearance.version!==1||!id(n.appearance.assetId)||!text(n.appearance.manifestUrl,500)||!n.appearance.manifestUrl.startsWith('/assets/')||!hash(n.appearance.digest))invalid();
+  if(n.npcId!=='npc-gardener'||!positive(n.version)||!text(n.name)||!text(n.role)||typeof n.present!=='boolean'||typeof n.busy!=='boolean'||n.appearance.kind!=='npc_sprite'||n.appearance.version!==1||!id(n.appearance.assetId)||n.appearance.manifestUrl!=='/assets/npc-life-v1/manifest.json'||n.appearance.digest!=='2c6070d6c36d335194f31633c5a30237297ea8a779434b75f2c2469560acfdb4')invalid();
   const position=coordinate(n.position,rules);let motion=null;if(n.motion!==null){const m=n.motion;object(m,['segmentId','movementId','source','from','to','startedAt','arriveAt','rulesetVersion','topologyVersion','status']);const from=coordinate(m.from,rules),to=coordinate(m.to,rules);if(!id(m.segmentId)||m.movementId!==null&&!id(m.movementId)||!['explicit','idle'].includes(m.source)||m.status!=='committed'||m.rulesetVersion!==6||m.topologyVersion!==6||!integer(m.startedAt)||!integer(m.arriveAt)||![500,1000].includes(m.arriveAt-m.startedAt)||Math.abs(from.x-to.x)+Math.abs(from.y-to.y)!==1||position.x!==to.x||position.y!==to.y)invalid();motion={...m,from,to};}
   return{...n,position,motion,appearance:structuredClone(n.appearance)};
  }), 'npcId');
@@ -63,3 +64,17 @@ export function buildNpcCareIntent({origin,agentLabel='',directory,point,options
 本目标0星币、0背包物品，照料120秒、最多6体力；开始只预留，完成才写本轮照料事实。介绍后释放青禾，不声称她全程陪同。点冷却、本人24小时限制、暂停或失权、无人接待或当前不可开始时自行选择延期或其他已获准生活，不盲试或请主人解除限制；不把冷却结束当作植物生长、缺水或又有落叶。
 保存原commandId和完整输入，未知先查同次回执与活动；已经提交的计划不换版本或载荷，不重复预留和结算。按真实结果简短说明做成与否和自主调整，未完成不编完成；本人的感受可以自然表达，无值得分享的新内容可静默。复制不代表已经开始、完成、发币或赠送工具。`;
 }
+
+export function readNpcCareSnapshot(v){
+ object(v,['definitionVersion','pointId','pointVersion','careKind','introductionId','guideRef']);if(v.definitionVersion!==1||!id(v.pointId)||!positive(v.pointVersion)||!['water','clear'].includes(v.careKind)||!id(v.introductionId))invalid();return{...v,guideRef:ref(v.guideRef)};
+}
+export function readNpcCareResult(v){
+ object(v,['pointId','careKind','completed','pointVersion','lastCareAt','nextEligibleAt','message']);if(!id(v.pointId)||!['water','clear'].includes(v.careKind)||typeof v.completed!=='boolean'||v.pointVersion!==null&&!positive(v.pointVersion))invalid();const message=readNpcCareMessage(v.message);if(message.speaker!=='system'||message.audience!=='participant'||message.ref!==(v.completed?'npc-life/system/water-done@1':'npc-life/system/care-stopped@1'))invalid();return{...v,message,lastCareAt:nullable(v.lastCareAt,time),nextEligibleAt:nullable(v.nextEligibleAt,time)};
+}
+export function readNpcCareIntroduction(v,agentId=v?.agentId){return introduction(v,agentId);}
+export function readNpcCareAction(v){
+ const perform=v?.actionId==='care.perform';if(!perform&&v?.actionId!=='care.introduce'||v.jobId!==null||!id(v.placeId)||!text(v.name,180)||v.ruleVersion!==1||v.enabled!==true||v.durationSeconds!==(perform?120:0)||v.duration?.seconds!==v.durationSeconds||v.bodyOccupancy!=='exclusive'||v.costs?.star_coin!==0||v.costs.energy!==(perform?6:0)||!v.reward||Object.entries(v.reward).some(([k,n])=>!['star_coin','energy'].includes(k)||n!==0)||v.guideRef?.moduleId!=='npc_life'||v.guideRef.version!==1||v.inputSchemaRef?.operation!=='life.plans.submit'||v.inputSchemaRef.version!==4||v.resultSchemaRef?.operation!=='life.activities.get'||v.resultSchemaRef.version!==4||!Array.isArray(v.supportedActorKinds)||v.supportedActorKinds.length!==1||v.supportedActorKinds[0]!=='agent'||!Array.isArray(v.requiredItems)||v.requiredItems.length||!Array.isArray(v.authorizationScopes)||v.authorizationScopes.length>4||!v.authorizationScopes.every(id)||!Array.isArray(v.operationRefs)||!v.operationRefs.includes('npc_life.care.options')||!v.operationRefs.every(id)||!text(v.cancellation,2000))invalid();
+ return{actionId:v.actionId,jobId:null,placeId:v.placeId,name:v.name,durationSeconds:v.durationSeconds,costs:{star_coin:0,energy:v.costs.energy},reward:{...v.reward},guideRef:{...v.guideRef},cancellation:v.cancellation,workStartsPerUtcDay:null};
+}
+
+export function readNpcCareMessage(v){object(v,['ref','version','speaker','audience','text','digest']);if(!contentId(v.ref)||v.version!==1||!['npc-gardener','system'].includes(v.speaker)||!['public','participant'].includes(v.audience)||!text(v.text,2000)||!hash(v.digest))invalid();return{...v};}

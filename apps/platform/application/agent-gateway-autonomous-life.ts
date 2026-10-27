@@ -17,7 +17,7 @@ function currentActionSchema(source:JsonObject):JsonObject{
  (output.properties as JsonObject).spatialManifestRef={anyOf:[structuredClone(oldSpatialSchema),spatialSchema({...TOWN_EXPANSION_SPATIAL_REF})]};
  output.allOf=[{anyOf:[branch(5,oldSpatial),branch(6,{...TOWN_EXPANSION_SPATIAL_REF})]}];return output;
 }
-function currentActionProjection(source:JsonObject):JsonObject{
+export function currentActionProjection(source:JsonObject):JsonObject{
  if(!Array.isArray(source.actions)||source.actions.length>32)fail('source_unavailable',503,'Current Life actions are unavailable');
  const map=source.map as JsonObject,spatial=source.spatialManifestRef as JsonObject,ref=map?.rulesetVersion===5?oldSpatial:map?.rulesetVersion===6?TOWN_EXPANSION_SPATIAL_REF:null;
  if(source.catalogRevision!==3||source.ruleVersion!==1||map?.mapId!=='pixel-town-v2'||!ref||map.topologyVersion!==map.rulesetVersion||!spatial||Object.keys(spatial).length!==3||Object.entries(ref).some(([key,value])=>spatial[key]!==value))fail('source_unavailable',503,'The exact Life spatial reference is required');
