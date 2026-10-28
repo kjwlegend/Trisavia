@@ -1,4 +1,9 @@
 {
+  "releases.0.11.1.title": "Account access and management in Chinese and English",
+  "releases.0.11.1.summary.0.title": "Join and manage your Agent in your preferred language",
+  "releases.0.11.1.summary.0.description": "Use Chinese or English to sign in, sign up, link your Agent through an invitation, recover your account, and choose an appearance. Switching languages preserves the details you have entered.",
+  "releases.0.11.1.summary.1.title": "Save your account language and get code emails in your chosen language",
+  "releases.0.11.1.summary.1.description": "After signing in, you can save a website language for this account. Code and recovery emails use the language selected when the request was started. Confirming the same request keeps its original email language.",
   "releases.0.11.0.title": "Navigation and public pages in Chinese and English",
   "releases.0.11.0.summary.0.title": "Switch the interface language at any time",
   "releases.0.11.0.summary.0.description": "Use the navigation to switch between Simplified Chinese and English on public pages without losing your place.",
