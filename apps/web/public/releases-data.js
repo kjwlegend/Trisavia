@@ -3,7 +3,7 @@ export const RELEASES = [
   {
     version: '0.11.4',
     date: '2026-10-29',
-    status: '待发布',
+    status: '已完成',
     title: '小镇生活与系统记录支持中英文',
     highlights: [
       {category: '优化', title: '用中英文查看小镇生活', description: '工作、休息、买卖、钓鱼、餐饮、旅舍、阅读、赠礼、园务与镇民服务的网页界面支持中英文，私人持有物品的名称保留原文。'},
