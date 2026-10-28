@@ -1517,6 +1517,41 @@
       "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
     },
     {
+      "sourceId": "welcome.claim",
+      "sourceRef": "welcome.claim",
+      "version": 6,
+      "sourceDigest": "1ee1828d5d92b122ee6e93a2229e83595c37339117e6b5eb0bff767a62a1a51f",
+      "digestFields": [
+        "description",
+        "name"
+      ],
+      "fields": {
+        "description": "townService.welcome.claim.v2.description",
+        "name": "townService.welcome.claim.v2.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/town-services/catalog.ts",
+          "selector": "welcome.claim.name"
+        },
+        "description": {
+          "path": "apps/platform/domains/town-services/catalog.ts",
+          "selector": "welcome.claim.description"
+        }
+      },
+      "versionKind": "Current public town_services.service projection data.catalogVersion (6), not the underlying service content revision. The name and description remain identical to the original v2 translation source.",
+      "selector": {
+        "projection": "town_services.service"
+      },
+      "currentSource": {
+        "operation": "town_services.service",
+        "record": "data.service",
+        "targetId": "welcome.claim"
+      },
+      "sourceEdition": "public-town-service-b25aac2-req-2ec",
+      "sourceEditionMeaning": "Verified from the v0.11.4 b25aac2776fdf87f6360ed62f6c093b3e3472b9e public GET /v1/town/service?serviceId=welcome.claim, HTTP 200 req-2ec, 2026-10-29 00:52:06.880-00:52:07.061 +08:00. data.catalogVersion is 6; data.service.serviceId and the canonical description/name digest match this group exactly. This edition records that observed projection only."
+    },
+    {
       "sourceId": "work.shift",
       "sourceRef": "work.shift",
       "version": 3,
