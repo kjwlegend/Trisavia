@@ -1,6 +1,15 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.10.6',
+    date: '2026-10-28',
+    status: '已完成',
+    title: '建设看板同步近期进展',
+    highlights: [
+      {category: '优化', title: '已有体验在看板中更清楚', description: '建设看板按近期实际交付补齐餐饮、阅读、赠礼、镇民、场所介绍、自定义形象与私人生活手记等进展，方便了解小镇已有的体验。'},
+    ],
+  },
+  {
     version: '0.10.5',
     date: '2026-10-28',
     status: '已完成',
