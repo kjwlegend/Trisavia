@@ -70,6 +70,17 @@ test('actual common errorKey and explicit dynamic prefixes do not become fake co
  await writeFile(resolve(f.pub,'entry.js'),entry+'globalThis.invalid=t("common:missingComplete");');await assert.rejects(()=>buildWeb({root:f.root}),/Declared i18n message.*common:missingComplete/);
 });
 
+test('official content indices are required only for their namespace and changing an index invalidates the production source',async t=>{
+ const f=await fixture(t),index='i18n/content-sources/world-content.json',root=resolve(f.root,'dist/web');
+ const before=await buildWeb({root:f.root});assert(!before.sources.some(source=>source.file.includes('/content-sources/')));
+ await cp(resolve(checkout,'apps/web/public/locales/world-content'),resolve(f.pub,'locales/world-content'),{recursive:true});
+ const original=await readFile(resolve(f.pub,index)),first=await buildWeb({root:f.root});assert(first.sources.some(source=>source.file==='apps/web/public/'+index));assert(!first.sources.some(source=>source.file.endsWith('/content-sources/life-content.json')));assert.doesNotThrow(()=>loadProductionWebAssets(f.root,root));
+ const changed=JSON.parse(original);changed.files[0].meaning+=' Updated audit note.';await writeFile(resolve(f.pub,index),JSON.stringify(changed));assert.throws(()=>loadProductionWebAssets(f.root,root),/Production web assets/);
+ const next=await buildWeb({root:f.root});assert.notDeepEqual(next.sources,first.sources);assert.deepEqual(next.assets,first.assets,'the source index is not copied into a JS or all-language payload');
+ await rm(resolve(f.pub,index));await assert.rejects(()=>buildWeb({root:f.root}));await writeFile(resolve(f.pub,index),original);
+ const malformed=JSON.parse(original);malformed.namespace='life-content';await writeFile(resolve(f.pub,index),JSON.stringify(malformed));await assert.rejects(()=>buildWeb({root:f.root}),/Invalid official content source index/);
+});
+
 test('actual fixed WS07 public dictionaries parse with FormatJS and have identical named parameters in both languages',async t=>{
  const root=await mkdtemp(join(tmpdir(),'trisavia-ws07-dictionaries-'));t.after(()=>rm(root,{recursive:true,force:true}));await mkdir(resolve(root,'locales'));
  const namespaces=['common','shell','public','releases','kanban','help'],expectedKeys=new Set(),expectedFiles=new Map(),compiledFiles=new Map();

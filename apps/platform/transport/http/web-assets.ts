@@ -107,6 +107,7 @@ export function loadProductionWebAssets(repoRoot:string,buildRoot:string):Produc
    for(const required of ['apps/web/public/i18n/vendor/formatjs.js','apps/web/public/i18n/vendor/provenance.json','apps/web/public/i18n/vendor/LICENSES.txt','scripts/web-build/i18n-vendor.mjs','scripts/web-build/i18n-resources.mjs'])if(!sources.has(required))throw new Error('Required reviewed locale build input is absent');
    for(const [namespace,value]of Object.entries(namespaces)){
     const languages=record(value);if(!/^[a-z][a-z0-9-]{0,47}$/.test(namespace)||Object.keys(languages).sort().join(',')!=='en,zh-CN')throw new Error('Invalid public locale identity');
+    if(['world-content','life-content'].includes(namespace)&&!sources.has(`apps/web/public/i18n/content-sources/${namespace}.json`))throw new Error('Required official content source index is absent');
     for(const locale of ['zh-CN','en']){const entry=record(languages[locale]),asset=assets.get(String(entry.url));if(!asset||!asset.file.endsWith('.json')||entry.sha256!==asset.sha256||entry.bytes!==asset.bytes||asset.bytes>262144||!sources.has(`apps/web/public/locales/${namespace}/${locale}.json`))throw new Error('Invalid public locale asset');}
    }
   }
