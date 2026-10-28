@@ -2,8 +2,8 @@ import {ensureNamespaces,t,bindText,clearBinding,getLocale,onLocaleChange} from 
 
 // These are translation-source indices, not world facts or permission caches.
 const indices={
- 'world-content':'d894e876fb554f9f7d5575d8ee7678014237e945f8355c01522679d1e27b8a8c',
- 'life-content':'405482a1885280231f117675a9af41d4d0003e780e40128e5c4f2865e8817119',
+ 'world-content':'ac87844584fdf548d4e9f7351dc114944fe07a2da25bfe43d705b45fda80bca5',
+ 'life-content':'343d4d95a480f3db5471bc185ab2a8a0bd4d200da069df96a258714e2183f793',
 };
 const pending=new Map();
 const hash=async bytes=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(v=>v.toString(16).padStart(2,'0')).join('');
@@ -28,7 +28,8 @@ export async function readOfficialPresentation(namespace,spec){
   if(groups.length!==1)return fallback('changed');const group=groups[0];
   if(!Object.entries(group.stateGuards??{}).every(([key,value])=>spec.state?.[key]===value)||group.nativeStoryDigest&&group.nativeStoryDigest!==spec.nativeDigest)return fallback('changed');
   const fields=Object.fromEntries([...group.digestFields].sort().map(field=>[field,at(original,field)]));
-  if(Object.values(fields).some(value=>typeof value!=='string')||await hash(new TextEncoder().encode(JSON.stringify(fields)))!==group.sourceDigest)return fallback('changed');
+  if(Object.values(fields).some(value=>typeof value!=='string'))return fallback('unavailable');
+  if(await hash(new TextEncoder().encode(JSON.stringify(fields)))!==group.sourceDigest)return fallback('changed');
   return{status:'matched',key:field=>group.fields[field]?`${namespace}:${group.fields[field]}`:null,text:field=>group.fields[field]?t(`${namespace}:${group.fields[field]}`):at(original,field)??''};
  }catch{return fallback('unavailable');}
 }

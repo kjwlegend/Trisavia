@@ -1,3 +1,5 @@
+import {msg,t,bindAttribute,getLocale} from '../../i18n/core.js';
+import {bindOfficialFields} from '../official-content.js';
 import {icon} from '../icons.js';
 import {avatar} from '../../scene.js';
 import {createOwnerExchanges} from './owner-interactions.js';
@@ -8,7 +10,7 @@ import {readLifeItems} from '../life-items-reader.js';
 
 const keyOf=record=>JSON.stringify([record?.ref?.moduleId,record?.ref?.type,record?.ref?.id]);
 const same=(a,b)=>keyOf(a)===keyOf(b)&&a?.version===b?.version;
-const titleOf=record=>record?.summary?.title||'内容详情';
+const titleOf=record=>record?.summary?.title||t('public:content.details');
 const contentTitle=detail=>typeof detail?.content?.title==='string'&&detail.content.title.trim()?detail.content.title:'';
 export function projectSavedInventorySelection(view,source,records){
   const chosen=records.find(record=>keyOf(record)===view.selected)||null;
@@ -26,16 +28,11 @@ export function readSavedMailNavigation(raw){
 const relatedKind=ref=>ref?.type==='items.item@1'?'物品':ref?.type==='world.announcement@1'?'公告':'事件';
 function senderText(value,detail=false){const sender=value?.summary?.sender||value?.content?.sender;if(typeof sender?.displayName!=='string'||!sender.displayName.trim())return '发件人不可显示';const kind=sender.kind==='agent'?'Agent':sender.kind==='human'?'人类':'';return detail?`发件人：${sender.displayName}${kind?'（'+kind+'）':''}`:`来自：${sender.displayName}${kind?' · '+kind:''}`;}
 function messageTime(value){const content=value?.summary||value?.content||{};const sent=time(content.sentAt),received=time(content.receivedAt);return sent?`发送于 ${sent}`:received?`接收于 ${received}`:'消息时间未提供';}
-const dataLabel=(record,holding=false)=>['town_service_definition','npc_service_item'].includes(record?.summary?.source?.kind||record?.content?.source?.kind)?holding?'实际持有':'小镇服务券':record?.summary?.dataMode==='demo'||record?.content?.dataMode==='demo'?holding?'演示持有记录':'演示内容':record?.summary?.source?.kind==='administrative_publication'||record?.content?.source?.kind==='administrative_publication'?'平台发布':'平台内容';
-const time=value=>typeof value==='number'&&Number.isFinite(value)?new Date(value).toLocaleString('zh-CN',{hour12:false}):'';
-function sourceText(value){
-  const source=value?.summary?.source||value?.content?.source;
-  if(['life_item_definition','life_item_balance'].includes(source?.kind))return '来源：小镇生活';
-  if(['town_service_definition','npc_service_item'].includes(source?.kind))return '来源：小镇服务';
-  if(source?.kind==='demo_seed')return '来源：平台演示内容';
-  if(source?.kind==='demo_holding')return '来源：平台演示持有记录';
-  if(source?.kind==='administrative_publication')return `来源：平台内容发布${typeof source.administrator==='string'?' · '+source.administrator:''}`;
-  return '来源说明暂不可用';
+const dataLabel=(record,holding=false)=>msg(['town_service_definition','npc_service_item'].includes(record?.summary?.source?.kind||record?.content?.source?.kind)?holding?'public:content.badge.held':'public:content.badge.voucher':record?.summary?.dataMode==='demo'||record?.content?.dataMode==='demo'?holding?'public:content.badge.demoHeld':'public:content.badge.demo':record?.summary?.source?.kind==='administrative_publication'||record?.content?.source?.kind==='administrative_publication'?'public:content.badge.published':'public:content.badge.platform');
+const time=value=>typeof value==='number'&&Number.isFinite(value)?new Date(value).toLocaleString(getLocale(),{hour12:false}):'';
+function sourceText(value,{prefix=true}={}){
+ const source=value?.summary?.source||value?.content?.source,key=['life_item_definition','life_item_balance'].includes(source?.kind)?'public:content.source.life':['town_service_definition','npc_service_item'].includes(source?.kind)?'public:content.source.town':source?.kind==='demo_seed'?'public:content.source.demo':source?.kind==='demo_holding'?'public:content.source.demoHolding':source?.kind==='administrative_publication'?'public:content.source.publication':'public:content.source.unknown',params={administrator:typeof source?.administrator==='string'?' · '+source.administrator:''};
+ return prefix?msg('public:content.sourceLabel',()=>({source:t(key,params)})):msg(key,params);
 }
 function badge(record,holding=false){return el('span','hud-data-badge',dataLabel(record,holding));}
 function eventLabel(record){const kind=record?.summary?.eventKind;if(kind==='plan')return record.summary.dataMode==='demo'?'演示计划':'计划';if(kind==='occurrence')return record.summary.dataMode==='demo'?'演示发生记录':'发生记录';return '事件 · 类型暂未确认';}
@@ -48,31 +45,36 @@ function eventTime(record,detail){
   return '';
 }
 function statusText(record){return({demo_planned:'演示计划，尚无发生结果',demo_occurred:'演示发生记录',committed:'内容已发布'})[record?.summary?.status]||'';}
-function agentBar(state,chooseAgent){const bar=el('div','hud-platform-agent'),agent=selectedAgent(state),picture=el('div','hud-platform-agent-picture');if(agent)avatar(picture,{avatar:agent.avatar},agent.agentId);else picture.append(icon('profile'));bar.append(picture,el('strong','',agent?.name||'尚未选择 Agent'),button(state.authenticated?'切换 Agent':'登录账号',chooseAgent));return bar;}
+function agentBar(state,chooseAgent){const bar=el('div','hud-platform-agent'),agent=selectedAgent(state),picture=el('div','hud-platform-agent-picture');if(agent)avatar(picture,{avatar:agent.avatar},agent.agentId);else picture.append(icon('profile'));bar.append(picture,el('strong','',agent?.name||msg('public:content.agent.none')),button(msg(state.authenticated?'public:content.agent.change':'shell:nav.login'),chooseAgent));return bar;}
 function tabs(options,current,select){const bar=el('div','hud-filters');for(const [key,label]of options){const control=button(label,()=>select(key));control.dataset.platformTab=key;control.setAttribute('aria-pressed',String(key===current));bar.append(control);}return bar;}
 const emptyText={holdings:'背包里还没有物品。',items:'当前没有可查看的物品。',messages:'还没有收到消息。',notifications:'暂无通知。',announcements:'暂无公告。',events:'暂无事件记录。'};
 function accessState(state,kind,chooseAgent){
-  if(state.authenticated&&selectedAgent(state))return null;
-  const box=el('section','hud-access-state'),expired=state.phase==='expired';box.append(icon(kind==='背包'?'inventory':'mail'),el('h3','',state.authenticated?'选择一位 Agent':expired?'重新登录，继续查看':'和你的 Agent 一起探索小镇'),el('p','hud-muted',state.authenticated?`请选择要查看${kind}的 Agent。`:expired?'登录已失效，请重新登录后继续。':`登录后，可以查看你所管理 Agent 的${kind}。`),button(state.authenticated?'选择 Agent':expired?'重新登录':'登录／注册',chooseAgent));return box;
+ if(state.authenticated&&selectedAgent(state))return null;
+ const box=el('section','hud-access-state'),expired=state.phase==='expired',kindKey=kind==='背包'?'shell:hud.inventory':'shell:hud.mail';box.append(icon(kind==='背包'?'inventory':'mail'),el('h3','',msg(state.authenticated?'public:content.chooseAgent':expired?'public:content.loginExpiredTitle':'public:content.loginTitle')),el('p','hud-muted',state.authenticated?msg('public:content.chooseToRead',()=>({kind:t(kindKey)})):expired?msg('public:content.loginExpired'):msg('public:content.loginToRead',()=>({kind:t(kindKey)}))),button(msg(state.authenticated?'shell:agent.choose':expired?'shell:nav.login':'shell:nav.account'),chooseAgent));return box;
 }
 function feedback(state,key,retry,chooseAgent){
-  const box=el('div','hud-feedback');box.setAttribute('role','status');
-  let message=['idle','pending'].includes(state.phase)?'正在确认可查看的内容……':state.phase==='loading'?'正在载入内容……':state.phase==='no_agent'?'请选择要查看的 Agent。':state.phase==='session'?'登录状态已失效或尚未登录，请登录后查看。':state.phase==='denied'?'当前账号无权查看这类内容。':state.phase==='resync'?'内容已变化，请重新载入当前列表。':state.phase==='not_enabled'?key==='holdings'?'主人查看背包的入口尚未开放。':key==='messages'?'消息读取暂未开放。':key==='notifications'?'主人查看这类通知的入口尚未开放。':key==='events'?'事件读取暂未开放。':'这类内容的读取暂未开放。':state.phase==='unavailable'?'内容来源暂不可用，请稍后重试。':state.phase==='partial'?'后续内容暂时无法载入。已显示部分内容，尚未全部载入。':state.phase==='ready'&&state.complete?emptyText[key]:'暂时无法载入，请稍后重试。';
-  box.append(el('p','',message));
-  if(state.phase==='no_agent'||state.phase==='session')box.append(button(state.phase==='no_agent'?'选择 Agent':'登录账号',chooseAgent));
-  else if(['error','unavailable','partial','resync'].includes(state.phase))box.append(button(state.phase==='resync'?'重新载入':'重试',retry));
-  return box;
+ const box=el('div','hud-feedback');box.setAttribute('role','status');
+ const message=['idle','pending'].includes(state.phase)?'public:content.confirming':state.phase==='loading'?'public:content.loading':state.phase==='no_agent'?'public:content.noAgent':state.phase==='session'?'public:content.session':state.phase==='denied'?'public:content.denied':state.phase==='resync'?'public:content.resync':state.phase==='not_enabled'?['holdings','messages','notifications','events'].includes(key)?'public:content.notEnabled.'+key:'public:content.notEnabled':state.phase==='unavailable'?'public:content.readUnavailable':state.phase==='partial'?'public:content.partial':state.phase==='ready'&&state.complete?'public:content.empty.'+key:'common:error.readUnavailable';
+ box.append(el('p','',msg(message)));
+ if(state.phase==='no_agent'||state.phase==='session')box.append(button(msg(state.phase==='no_agent'?'shell:agent.choose':'shell:nav.login'),chooseAgent));
+ else if(['error','unavailable','partial','resync'].includes(state.phase))box.append(button(msg(state.phase==='resync'?'common:action.reload':'common:action.retry'),retry));return box;
 }
-function pageFoot(state,key,provider){const node=el('div','hud-page-state');node.setAttribute('role','status');if(state.phase==='loading')node.append(el('p','hud-muted','正在继续载入……'));else if(state.phase==='partial')node.append(feedback(state,key,()=>provider.load(key,{more:Boolean(state.nextPageToken)}),()=>{}));else if(state.phase==='ready'){node.append(el('p','hud-muted',state.complete?`当前可查看范围已完整载入 · ${state.records.length} 条`:`已载入 ${state.records.length} 条，尚未全部载入。`));if(!state.complete)node.append(button('继续载入',()=>provider.load(key,{more:true})));}return node;}
-export function contentBody(record,detail,{badges=true}={}){
+function pageFoot(state,key,provider){const node=el('div','hud-page-state');node.setAttribute('role','status');if(state.phase==='loading')node.append(el('p','hud-muted',msg('public:content.continueLoading')));else if(state.phase==='partial')node.append(feedback(state,key,()=>provider.load(key,{more:Boolean(state.nextPageToken)}),()=>{}));else if(state.phase==='ready'){node.append(el('p','hud-muted',msg(state.complete?'public:content.loadedComplete':'public:content.loadedPartial',{count:state.records.length})));if(!state.complete)node.append(button(msg('common:action.showMore'),()=>provider.load(key,{more:true})));}return node;}
+function bindDefinition(detail,nodes,note){
+ const content=detail?.content,ref=detail?.ref;if(detail?.contentComplete!==true||ref?.moduleId!=='items'||ref.type!=='items.item@1')return()=>{};
+ if(content.source?.kind==='life_item_definition'&&ref.id.startsWith('life.'))return bindOfficialFields(nodes,'life-content',{id:ref.id,ref:ref.id,version:detail.version,selector:{projection:'detail'},values:{title:content.title,body:content.text}},{note});
+ if(content.source?.kind==='town_service_definition'&&['town-inn-voucher','town-tavern-voucher','town-resident-card'].includes(ref.id)){const fields={...nodes};if(fields.body){fields.text=fields.body;delete fields.body;}return bindOfficialFields(fields,'life-content',{id:ref.id,ref:ref.id,version:detail.version,values:{title:content.title,text:content.text}},{note});}
+ return()=>{};
+}
+export function contentBody(record,detail,{badges=true,onOfficialBinding=null,titleNode=null}={}){
   const body=el('section','hud-platform-body');if(badges)body.append(badge(detail,record?.ref?.type==='inventory.holding@1'));body.append(el('p','hud-muted',sourceText(detail)));
-  const published=time(detail?.content?.source?.publishedAt);if(published)body.append(el('p','hud-muted',`发布时间：${published}`));
+  const published=time(detail?.content?.source?.publishedAt);if(published)body.append(el('p','hud-muted',msg('public:content.publishedAt',()=>({time:time(detail?.content?.source?.publishedAt)}))));
   if(record?.summary?.eventKind){body.append(el('p','hud-muted',eventLabel(record)),el('p','hud-muted',eventTime(record,detail)));const status=statusText(record);if(status)body.append(el('p','hud-muted',status));}
-  body.append(el('p','hud-message-body',detail.content.text));
-  if(Array.isArray(detail.attachments)&&detail.attachments.length){const note=el('section');note.append(el('h3','','附件说明'));for(const attachment of detail.attachments){if(typeof attachment?.name==='string'||typeof attachment?.description==='string')note.append(el('p','',`${attachment.name||'附件'}${attachment.description?' · '+attachment.description:''}`));}body.append(note);}
+  const paragraph=el('p','hud-message-body',detail.content.text);body.append(paragraph);if(onOfficialBinding){const note=el('p','hud-muted');note.hidden=true;body.append(note);onOfficialBinding(bindDefinition(detail,{body:paragraph,...(titleNode?{title:titleNode}:{})},note));}
+  if(Array.isArray(detail.attachments)&&detail.attachments.length){const note=el('section');note.append(el('h3','',msg('public:content.attachments')));for(const attachment of detail.attachments){if(typeof attachment?.name==='string'||typeof attachment?.description==='string')note.append(el('p','',`${attachment.name||'附件'}${attachment.description?' · '+attachment.description:''}`));}body.append(note);}
   return body;
 }
-export function detailFeedback(error,retry){const box=el('section');const phase=readPhase(error);box.append(el('p','hud-feedback',phase==='session'?'登录状态已失效，请重新登录。':['denied','not_enabled'].includes(phase)?'这条内容目前不可查看。':'暂时无法载入完整内容。'));if(!['session','denied','not_enabled'].includes(phase))box.append(button('重试',retry));return box;}
+export function detailFeedback(error,retry){const box=el('section');const phase=readPhase(error);box.append(el('p','hud-feedback',msg(phase==='session'?'public:content.detailSession':['denied','not_enabled'].includes(phase)?'public:content.detailDenied':'public:content.detailUnavailable')));if(!['session','denied','not_enabled'].includes(phase))box.append(button(msg('common:action.retry'),retry));return box;}
 
 // Example features retain their original isolated local storage and interactions.
 export function createContentSwitcher(example,platform,{session,onEnterDemo=()=>{},id}={}){
@@ -94,8 +96,8 @@ function inventoryIcon(record){
   const marks=document.createElementNS(svg.namespaceURI,'path');marks.setAttribute('d','M12 12v3m0 3v4m0 3v3m9-12h7v8h-7z');marks.setAttribute('fill','none');marks.setAttribute('stroke','#536451');marks.setAttribute('stroke-width','1.5');svg.append(path,marks);return svg;
 }
 export function createPlatformInventory(provider,{session,context,walletProvider,detailHost,chooseAgent=()=>{}}={}){
-  const node=el('section','hud-inventory hud-platform-content'),results=el('div','hud-inventory-grid-scroll'),details=el('section','hud-item-detail');results.id='hud-platform-item-results';details.id='hud-platform-item-detail';details.setAttribute('aria-label','物品详情');
-  const key='holdings';let state=session.snapshot(),active=false,disposed=false,selected=null,detail=null,detailError=null,detailRequest=null,detailRevision=0,preview=false,refreshInventory=false,pendingRestore=false,fillFrame=0;
+  const node=el('section','hud-inventory hud-platform-content'),results=el('div','hud-inventory-grid-scroll'),details=el('section','hud-item-detail');results.id='hud-platform-item-results';details.id='hud-platform-item-detail';bindAttribute(details,'aria-label','public:inventory.details');
+  const key='holdings';let state=session.snapshot(),active=false,disposed=false,selected=null,detail=null,detailError=null,detailRequest=null,detailRevision=0,preview=false,refreshInventory=false,pendingRestore=false,fillFrame=0,stopItemContent=()=>{},stopPreviewContent=()=>{};
   const views={holdings:{selected:'',top:0,detailTop:0,query:'',category:'all'}};let inventoryScope='';
   function inventoryStorageKey(){const scope=context?.snapshot().scope,identity=session.hudContext?.();return scope?.kind==='owner'&&identity?.kind==='owner'&&scope.ownerId===identity.ownerId&&scope.agentId===identity.agentId?`connet.hud.platform.inventory-view.v1:${JSON.stringify([scope.origin,scope.instanceId,scope.ownerId,scope.agentId])}`:'';}
   function saveInventory(){const scope=inventoryStorageKey();if(!scope)return;inventoryScope=scope;try{sessionStorage.setItem(scope,JSON.stringify(inventoryNavigationFields(views.holdings)));}catch{/* Navigation can remain in memory; never persist source content. */}}
@@ -104,8 +106,8 @@ export function createPlatformInventory(provider,{session,context,walletProvider
   results.addEventListener('scroll',()=>{if(!pendingRestore&&node.getClientRects().length){views.holdings.top=results.scrollTop;saveInventory();}fillViewport();},{passive:true});
   details.addEventListener('scroll',()=>{if(detail&&node.getClientRects().length){views.holdings.detailTop=details.scrollTop;saveInventory();}},{passive:true});
   function cancel(){detailRevision++;detailRequest?.abort();detailRequest=null;}
-  function closePreview(){if(preview){preview=false;detailHost?.close(false);if(detailHost?.node)delete detailHost.node.dataset.inventoryContent;}}
-  function clear(){cancel();closePreview();refreshInventory=false;selected=null;detail=null;detailError=null;details.replaceChildren();}
+  function closePreview(){stopPreviewContent();stopPreviewContent=()=>{};if(preview){preview=false;detailHost?.close(false);if(detailHost?.node)delete detailHost.node.dataset.inventoryContent;}}
+  function clear(){stopItemContent();cancel();closePreview();refreshInventory=false;selected=null;detail=null;detailError=null;details.replaceChildren();}
   async function read(record){
     clear();selected=record;const generation=detailRevision,request=new AbortController();detailRequest=request;renderDetail();
     try{
@@ -119,28 +121,28 @@ export function createPlatformInventory(provider,{session,context,walletProvider
   }
   async function openContent(){
     if(!selected||!detail?.own||!detailHost)return;
-    const record=selected,generation=detailRevision,itemRef=detail.item?(detail.item.ref||detail.own.content.itemRef):null,readKey=itemRef?'items':key,target=itemRef?{ref:itemRef}:record;
-    preview=true;detailHost.node.dataset.inventoryContent='';detailHost.open(titleOf(record),el('p','hud-feedback','正在读取完整内容…'),restore=>{preview=false;delete detailHost.node.dataset.inventoryContent;if(refreshInventory){refreshInventory=false;if(restore&&active&&generation===detailRevision)void provider.load(key);}else if(restore&&active)focusNode(details.querySelector('.paper-item-content'));});detailHost.setBack?.('返回物品详情');
-    try{const value=await provider.detail(readKey,target,{signal:detailRequest?.signal});if(generation!==detailRevision||disposed||!preview||selected!==record)return;detailHost.update(contentTitle(value)||titleOf(record),contentBody(record,value,{badges:false}));}
+    stopPreviewContent();stopPreviewContent=()=>{};const record=selected,generation=detailRevision,itemRef=detail.item?(detail.item.ref||detail.own.content.itemRef):null,readKey=itemRef?'items':key,target=itemRef?{ref:itemRef}:record;
+    preview=true;detailHost.node.dataset.inventoryContent='';detailHost.open(titleOf(record),el('p','hud-feedback',msg('public:inventory.loadingContent')),restore=>{stopPreviewContent();stopPreviewContent=()=>{};preview=false;delete detailHost.node.dataset.inventoryContent;if(refreshInventory){refreshInventory=false;if(restore&&active&&generation===detailRevision)void provider.load(key);}else if(restore&&active)focusNode(details.querySelector('.paper-item-content'));});detailHost.setBack?.(msg('public:inventory.returnDetails'));
+    try{const value=await provider.detail(readKey,target,{signal:detailRequest?.signal});if(generation!==detailRevision||disposed||!preview||selected!==record)return;detailHost.update(contentTitle(value)||titleOf(record),contentBody(record,value,{badges:false,onOfficialBinding:off=>{stopPreviewContent=off;},titleNode:detailHost.node.querySelector('#hud-detail-title')}));}
     // Item revocation also invalidates the cached holding projection; re-read the collection on return.
-    catch(error){if(generation!==detailRevision||disposed||!preview||error.name==='AbortError')return;if(error.status===404||readPhase(error)==='denied'){refreshInventory=true;detail=null;detailError={code:'target_not_accessible'};renderResults();}detailHost.update(refreshInventory?'内容目前不可查看':titleOf(record),detailFeedback(detailError||error,()=>void openContent()));}
+    catch(error){if(generation!==detailRevision||disposed||!preview||error.name==='AbortError')return;if(error.status===404||readPhase(error)==='denied'){refreshInventory=true;detail=null;detailError={code:'target_not_accessible'};renderResults();}detailHost.update(refreshInventory?msg('public:content.notViewable'):titleOf(record),detailFeedback(detailError||error,()=>void openContent()));}
   }
   function renderDetail(){
-    const top=details.scrollTop;details.replaceChildren();if(!selected){details.append(el('h3','','物品详情'),el('p','hud-muted','选择一件物品，查看它的详情。'));return;}
-    const heading=el('div','paper-item-heading'),picture=el('span','paper-item-picture');picture.append(refreshInventory?icon('inventory'):inventoryIcon(selected));heading.append(picture,el('h3','',refreshInventory?'持有记录':titleOf(selected)));details.append(heading);
+    const top=details.scrollTop;stopItemContent();details.replaceChildren();if(!selected){details.append(el('h3','',msg('public:inventory.details')),el('p','hud-muted',msg('public:inventory.selectItem')));return;}
+    const heading=el('div','paper-item-heading'),picture=el('span','paper-item-picture');picture.append(refreshInventory?icon('inventory'):inventoryIcon(selected));const itemTitle=el('h3','',refreshInventory?msg('public:inventory.holdingRecord'):titleOf(selected));heading.append(picture,itemTitle);details.append(heading);
     if(detailError){details.append(detailFeedback(detailError,()=>void read(selected)));return;}
-    if(!detail){details.append(el('p','hud-feedback','正在读取完整内容…'));return;}
-    if(detail.summaryOnly){details.append(el('p','hud-muted','当前仅可查看摘要。'));return;}
+    if(!detail){details.append(el('p','hud-feedback',msg('public:inventory.loadingContent')));return;}
+    if(detail.summaryOnly){details.append(el('p','hud-muted',msg('public:inventory.summaryOnly')));return;}
     const content=detail.item?.content||detail.own.content,body=typeof content.text==='string'?content.text:'';
-    if(body){const snippet=Array.from(body);details.append(el('p','paper-item-description',snippet.length>220?snippet.slice(0,220).join('')+'…':body));}
-    if(detail.itemError)details.append(el('p','hud-muted','引用物品目前不可查看。'));
+    if(body){const snippet=Array.from(body),description=el('p','paper-item-description',snippet.length>220?snippet.slice(0,220).join('')+'…':body),note=el('p','hud-muted');note.hidden=true;details.append(description,note);stopItemContent=bindDefinition(detail.item||detail.own,{title:itemTitle,body:description},note);}
+    if(detail.itemError)details.append(el('p','hud-muted',msg('public:inventory.referenceUnavailable')));
     const quantity=detail.own.content.quantity??selected.summary.quantity,status=detail.own.content.status??selected.summary.status;
-    const labels={available:'可用',reserved:'已保留，尚未消耗',consumed:'已消耗',active:'有效'};
-    const facts=el('dl','paper-item-facts');for(const [label,value]of [['数量',Number.isSafeInteger(quantity)&&quantity>=0?String(quantity):'暂未提供'],['状态',labels[status]||'暂未提供'],['来源',sourceText(detail.item||detail.own).replace(/^来源：/,'')]]){facts.append(el('dt','',label),el('dd',label==='状态'?'paper-item-status':'',value));}details.append(facts);
-    if(detail.life){const source=detail.life,total=source.totals[0],live=el('section','life-item-instances');live.append(el('h4','','实际可用与预留'),el('p','',`可用 ${total.available} · 已预留 ${total.reserved}`),el('p','hud-muted',`实例确认于 ${time(source.asOf)}；预留中的物品不可再次使用或出售。`));if(!source.complete)live.append(el('p','hud-muted','当前实例尚未全部读取，数量以完整聚合为准。'));for(const item of source.items){const row=el('details');row.append(el('summary','',`${item.state==='available'?'可用':'已预留'}${item.fish?` · ${item.fish.weightGrams} 克`:''}`),el('p','hud-muted',`取得于 ${time(item.issuedAt)}`));if(item.fish)row.append(el('p','',`${item.fish.spotId==='shore_spot'?'港区近岸':'外侧栈桥'} · 钓获于 ${time(item.fish.caughtAt)}`));const audit=el('details');audit.append(el('summary','','来源记录'),el('p','mono',item.sourceId),el('p','mono',item.id));row.append(audit);live.append(row);}details.append(live);}
-    else if(detail.lifeError)details.append(el('p','hud-muted','实际可用数量、预留与鱼实例暂时无法核对，不按零处理。'),button('重试实例读取',()=>void read(selected)));
+    const labels={available:'public:inventory.state.available',reserved:'public:inventory.state.reserved',consumed:'public:inventory.state.consumed',active:'public:inventory.state.active'};
+    const facts=el('dl','paper-item-facts');for(const [label,value,className]of [['public:inventory.quantity',Number.isSafeInteger(quantity)&&quantity>=0?String(quantity):msg('public:inventory.notProvided'),''],['public:inventory.status',msg(labels[status]||'public:inventory.notProvided'),'paper-item-status'],['public:inventory.source',sourceText(detail.item||detail.own,{prefix:false}),'']])facts.append(el('dt','',msg(label)),el('dd',className,value));details.append(facts);
+    if(detail.life){const source=detail.life,total=source.totals[0],live=el('section','life-item-instances');live.append(el('h4','',msg('public:inventory.actualAvailability')),el('p','',msg('public:inventory.counts',{available:total.available,reserved:total.reserved})),el('p','hud-muted',msg('public:inventory.instancesAsOf',()=>({time:time(source.asOf)}))));if(!source.complete)live.append(el('p','hud-muted',msg('public:inventory.instancesIncomplete')));for(const item of source.items){const row=el('details');row.append(el('summary','',msg(item.state==='available'?'public:inventory.instance.available':'public:inventory.instance.reserved',()=>({weight:item.fish?t('public:inventory.fishWeight',{grams:item.fish.weightGrams}):''}))),el('p','hud-muted',msg('public:inventory.obtainedAt',()=>({time:time(item.issuedAt)}))));if(item.fish)row.append(el('p','',msg('public:inventory.caughtAt',()=>({place:t(item.fish.spotId==='shore_spot'?'public:inventory.shore':'public:inventory.pier'),time:time(item.fish.caughtAt)}))));const audit=el('details');audit.append(el('summary','',msg('public:inventory.sourceRecord')),el('p','mono',item.sourceId),el('p','mono',item.id));row.append(audit);live.append(row);}details.append(live);}
+    else if(detail.lifeError)details.append(el('p','hud-muted',msg('public:inventory.instancesUnavailable')),button(msg('public:inventory.retryInstances'),()=>void read(selected)));
     if(typeof detail.own.content.text==='string'&&detail.own.content.text&&detail.item)details.append(el('p','paper-item-holding-note',detail.own.content.text));
-    if(detailHost){const link=button(detail.item?'查看内容':'查看持有说明',()=>void openContent(),'paper-item-content');link.prepend(icon('document'));details.append(link);}
+    if(detailHost){const link=button(msg(detail.item?'common:action.viewContent':'public:inventory.viewHolding'),()=>void openContent(),'paper-item-content');link.prepend(icon('document'));details.append(link);}
     details.scrollTop=top||views.holdings.detailTop;
   }
   function fillViewport(){
@@ -149,33 +151,33 @@ export function createPlatformInventory(provider,{session,context,walletProvider
   function renderResults(){
     const source=provider.snapshot(key),view=views.holdings;results.replaceChildren();
     if(!state.authenticated||!selectedAgent(state)){clear();results.append(feedback({...source,phase:state.authenticated?'no_agent':'session'},key,()=>provider.load(key),chooseAgent));return;}
-    if(refreshInventory){results.append(el('p','hud-feedback','内容已变化，返回后重新确认持有记录。'));renderDetail();return;}
+    if(refreshInventory){results.append(el('p','hud-feedback',msg('public:inventory.changed')));renderDetail();return;}
     const records=source.records.filter(record=>titleOf(record).toLocaleLowerCase().includes(view.query.trim().toLocaleLowerCase()));
     const previous=view.selected,{chosen,pending}=projectSavedInventorySelection(view,source,records);pendingRestore=pending;if(previous!==view.selected)saveInventory();
     if(!source.records.length){clear();renderDetail();results.append(feedback(source,key,()=>provider.load(key),chooseAgent));return;}
-    if(!records.length){clear();renderDetail();results.append(el('p','hud-feedback',source.complete?'没有符合条件的物品。':'当前读取范围中没有匹配物品。'),button('清除搜索',()=>{view.query='';view.selected='';saveInventory();render();}));}
+    if(!records.length){clear();renderDetail();results.append(el('p','hud-feedback',msg(source.complete?'public:inventory.noMatching':'public:inventory.noMatchingPartial')),button(msg('public:inventory.clearSearch'),()=>{view.query='';view.selected='';saveInventory();render();}));}
     else{
-      const grid=el('div','hud-items');grid.setAttribute('aria-label','背包物品');
+      const grid=el('div','hud-items');bindAttribute(grid,'aria-label','public:inventory.items');
       for(const record of records){const control=button('',()=>{remember();pendingRestore=false;view.top=results.scrollTop;view.selected=keyOf(record);view.detailTop=0;saveInventory();renderResults();focusNode([...results.querySelectorAll('button')].find(value=>value.dataset.platformItem===record.ref.id));});control.dataset.platformItem=record.ref.id;control.title=titleOf(record);control.setAttribute('aria-label',titleOf(record));control.setAttribute('aria-pressed',String(same(record,chosen)));const slot=el('span','hud-item-slot');slot.append(inventoryIcon(record));control.append(slot,el('span','hud-item-name',titleOf(record)));if(Number.isSafeInteger(record.summary.quantity)&&record.summary.quantity>=0)control.append(el('span','paper-item-quantity',String(record.summary.quantity)));grid.append(control);}results.append(grid);results.scrollTop=view.top;
-      if(pending){clear();details.append(el('p','hud-muted','先前选择的物品尚未读取到。'));}else if(!same(selected,chosen)){if(active&&chosen)void read(chosen);else details.replaceChildren();}else renderDetail();
+      if(pending){clear();details.append(el('p','hud-muted',msg('public:inventory.selectionPending')));}else if(!same(selected,chosen)){if(active&&chosen)void read(chosen);else details.replaceChildren();}else renderDetail();
     }
     if(source.phase==='partial')results.append(feedback(source,key,()=>provider.load(key,{more:Boolean(source.nextPageToken)}),chooseAgent));
-    else if(view.query&&!source.complete)results.append(button('继续查找',()=>provider.load(key,{more:true}),'paper-inventory-more'));
+    else if(view.query&&!source.complete)results.append(button(msg('public:inventory.continueSearch'),()=>provider.load(key,{more:true}),'paper-inventory-more'));
     fillViewport();
   }
   function walletStatus(){
     const value=walletProvider.snapshot(),status=el('div','hud-wallet-status');status.id='hud-wallet-status';status.dataset.phase=value.phase;status.setAttribute('role','status');
-    const label=value.phase==='ready'?`${value.data.currency.displayName} ${value.data.balance}`:value.phase==='loading'?'星币 · 正在读取…':value.phase==='denied'?'当前账号无权查看余额。':value.phase==='not_enabled'?'余额查看暂未开放。':value.phase==='no_agent'?'星币 · 请选择 Agent':value.phase==='session'?'星币 · 请登录后查看':value.phase==='not_initialized'||value.phase==='idle'?'星币 · 暂未取得余额':'星币 · 暂时无法读取';status.append(el('span','',label));
-    if(['error','unavailable','not_initialized','idle','resync'].includes(value.phase))status.append(button('重试',()=>walletProvider.load(),'hud-wallet-retry'));return status;
+    const label=value.phase==='ready'?msg('public:inventory.balance',()=>({currency:value.data.currency.code==='star_coin'?t('public:inventory.starCoins'):value.data.currency.displayName,balance:value.data.balance})):msg(value.phase==='loading'?'public:inventory.wallet.loading':value.phase==='denied'?'public:inventory.wallet.denied':value.phase==='not_enabled'?'public:inventory.wallet.notEnabled':value.phase==='no_agent'?'public:inventory.wallet.noAgent':value.phase==='session'?'public:inventory.wallet.session':value.phase==='not_initialized'||value.phase==='idle'?'public:inventory.wallet.notInitialized':'public:inventory.wallet.unavailable');status.append(el('span','',label));
+    if(['error','unavailable','not_initialized','idle','resync'].includes(value.phase))status.append(button(msg('common:action.retry'),()=>walletProvider.load(),'hud-wallet-retry'));return status;
   }
   function render(){
     if(disposed)return;node.replaceChildren();const access=accessState(state,'背包',chooseAgent);if(access){clear();node.append(access);return;}
     const info=agentBar(state,chooseAgent);info.classList.add('hud-inventory-context');info.append(walletStatus());node.append(info);
-    const columns=el('div','hud-inventory-layout'),browser=el('div','hud-inventory-browser'),label=el('label','hud-search'),search=el('input');search.type='search';search.value=views.holdings.query;search.maxLength=100;search.id='hud-platform-item-search';search.placeholder='搜索物品';search.setAttribute('aria-label','搜索当前已载入物品');search.addEventListener('input',()=>{remember();Object.assign(views.holdings,{query:search.value,top:0,selected:'',detailTop:0});saveInventory();renderResults();});label.append(search);browser.append(label,results);columns.append(browser,details);node.append(columns);renderResults();
+    const columns=el('div','hud-inventory-layout'),browser=el('div','hud-inventory-browser'),label=el('label','hud-search'),search=el('input');search.type='search';search.value=views.holdings.query;search.maxLength=100;search.id='hud-platform-item-search';bindAttribute(search,'placeholder','public:inventory.search');bindAttribute(search,'aria-label','public:inventory.searchLoaded');search.addEventListener('input',()=>{remember();Object.assign(views.holdings,{query:search.value,top:0,selected:'',detailTop:0});saveInventory();renderResults();});label.append(search);browser.append(label,results);columns.append(browser,details);node.append(columns);renderResults();
   }
   const stop=provider.subscribe(changed=>{if(changed!==key)return;const source=provider.snapshot(key);if(['denied','session','resync'].includes(source.phase)){Object.assign(views.holdings,{selected:'',top:0,detailTop:0,query:'',category:'all'});saveInventory();}if(!source.records.length)clear();render();});
   const stopWallet=walletProvider.subscribe(()=>render()),stopNavigation=context?.subscribe(()=>{restoreInventory();render();});restoreInventory();render();
-  return{node,activate(){active=true;restoreInventory();void provider.load(key);void walletProvider.load();fillViewport();},deactivate(){remember();active=false;provider.cancel(key);walletProvider.cancel();cancel();closePreview();cancelAnimationFrame(fillFrame);fillFrame=0;if(!detail)selected=null;},setContext(next){if(state.observationRevision!==next.observationRevision){clear();Object.assign(views.holdings,{selected:'',top:0,detailTop:0,query:'',category:'all'});state=next;restoreInventory(true);}else state=next;render();},back(){if(!preview)return false;closePreview();return true;},dispose(){disposed=true;closePreview();cancel();cancelAnimationFrame(fillFrame);stop();stopWallet();stopNavigation?.();}};
+  return{node,activate(){active=true;restoreInventory();void provider.load(key);void walletProvider.load();fillViewport();},deactivate(){remember();active=false;provider.cancel(key);walletProvider.cancel();cancel();closePreview();cancelAnimationFrame(fillFrame);fillFrame=0;if(!detail)selected=null;},setContext(next){if(state.observationRevision!==next.observationRevision){clear();Object.assign(views.holdings,{selected:'',top:0,detailTop:0,query:'',category:'all'});state=next;restoreInventory(true);}else state=next;render();},back(){if(!preview)return false;closePreview();return true;},dispose(){disposed=true;stopItemContent();closePreview();cancel();cancelAnimationFrame(fillFrame);stop();stopWallet();stopNavigation?.();}};
 }
 
 export function createPlatformMail(provider,{session,context,detailHost,chooseAgent=()=>{}}={}){
@@ -206,7 +208,7 @@ export function createPlatformMail(provider,{session,context,detailHost,chooseAg
     if(related){const kind=relatedKind(related);if(relatedDetail){body.append(el('p','hud-muted',kind),contentBody(null,relatedDetail));}else if(relatedError)body.append(detailFeedback(relatedError,()=>readRelated(related)));else body.append(el('p','hud-feedback',`正在载入关联${kind}…`));return body;}
     body.append(badge(opened));
     if(key==='messages'){const sender=el('p','hud-muted',senderText(detail||opened,true));sender.dataset.senderName='';body.append(sender,el('p','hud-muted',`收件对象：${selectedAgent(state)?.name||'当前 Agent'}`),el('p','hud-muted',messageTime(detail||opened)));}
-    if(opened?.detailAvailable===false){body.append(el('p','hud-muted','当前仅可查看摘要。'));return body;}
+    if(opened?.detailAvailable===false){body.append(el('p','hud-muted',msg('public:inventory.summaryOnly')));return body;}
     if(detailError){body.append(detailFeedback(detailError,()=>read(opened)));return body;}
     if(!detail){body.append(el('p','hud-feedback','正在读取完整内容……'));return body;}
     body.append(contentBody(opened,detail));
