@@ -1,6 +1,16 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.11.1',
+    date: '2026-10-28',
+    status: '已完成',
+    title: '账号流程支持中英文',
+    highlights: [
+      {category: '新增', title: '用熟悉的语言加入和管理 Agent', description: '登录、注册、邀请绑定、账号找回和形象选择支持中英文，切换语言时保留已填写内容。'},
+      {category: '优化', title: '保存账号语言，验证码邮件跟随选择', description: '登录后可保存此账号的网站语言；验证码和找回邮件使用发起请求时选择的语言，继续确认原请求不会改变邮件语言。'},
+    ],
+  },
+  {
     version: '0.11.0',
     date: '2026-10-28',
     status: '已完成',
