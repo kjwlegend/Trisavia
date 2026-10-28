@@ -3134,6 +3134,2145 @@
         "requireCompleteRecord": true,
         "completion": "Use the complete, version-consistent content.text returned by worldProvider.detail after all segments are validated. Never hash a single partial segment or use list summary fields."
       }
+    },
+    {
+      "sourceId": "commons",
+      "sourceRef": "COMMONS_PLACE",
+      "version": null,
+      "sourceDigest": "cb2c9ff4a8c96ecef4b21acfecc233312be89154658fc613d8eac7b5c18418af",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.commons.v1.area",
+        "name": "places.commons.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-pixel/town.js",
+          "selector": "COMMONS_PLACE.area"
+        },
+        "name": {
+          "path": "apps/web/public/world-pixel/town.js",
+          "selector": "COMMONS_PLACE.name"
+        }
+      },
+      "versionKind": "No original content version for inline COMMONS_PLACE",
+      "selector": {
+        "projection": "pixel-town.commons"
+      },
+      "stateGuards": {
+        "kind": "world-place"
+      },
+      "currentSource": {
+        "bundle": "commons",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "n-cottage",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "099e549bb4263c44949ae133a67dcc647c49edbfe39f1587ca1641ce547c86ba",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.n-cottage.v1.area",
+        "name": "places.n-cottage.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/1/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/0/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "n-attic",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "46402110af26757604bc0dc397636a95c3c0dccde03c966b405c205058b802f3",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.n-attic.v1.area",
+        "name": "places.n-attic.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/1/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/1/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "n-long",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "8288ae3b3e0e3fbdb87e0a9a3f02e4ab8546efc59bbf4eadf4fb8f16523a1852",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.n-long.v1.area",
+        "name": "places.n-long.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/1/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/2/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "n-tower",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "80fcb5c2725da6c68b387f66c7cef4c1ea88aa89a6b072d5e54bee326fafd55e",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.n-tower.v1.area",
+        "name": "places.n-tower.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/1/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/3/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "n-blue",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "3ebb5e6b45ab2e0272bf11d231701ebb62dd997a85c6063ad240d1f1b7a7e497",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.n-blue.v1.area",
+        "name": "places.n-blue.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/1/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/4/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "n-kiosk",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "ad742a6abfdabb36d02b1b0cfd09826af9189a53d9adb628cd28783fa4fea234",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.n-kiosk.v1.area",
+        "name": "places.n-kiosk.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/1/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/5/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "w-workshop",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "92e7cd75596ad84061d80cab08e01599772a1b1e4397e60472afbb930388dd8a",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.w-workshop.v1.area",
+        "name": "places.w-workshop.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/2/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/6/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "w-studio",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "009a44ee3446813a56a3d6e29218f90c7d40b1c602edda3827bf13c029aa7b9b",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.w-studio.v1.area",
+        "name": "places.w-studio.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/2/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/7/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "w-bakery",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "53508fc57d344efd31c4371515af97c04c3b62e6bb68224cc5f0b50eb9a04d0b",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.w-bakery.v1.area",
+        "name": "places.w-bakery.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/2/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/8/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "w-annex",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "60264723f62c114a257bb6a3cc2ff40a888a016067cdb1363f0da78b4b1e91f9",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.w-annex.v1.area",
+        "name": "places.w-annex.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/2/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/9/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "e-market",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "dcf7acc52d675bf0a53b82256c2c874317ece2ca6c7cc4fb9a9aeff1693d4e3d",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.e-market.v1.area",
+        "name": "places.e-market.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/3/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/10/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "e-inn",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "8fbf2df2f8ef10eaa76b8d41304e787ff19423277bd5b5ccaea0685b5695b257",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.e-inn.v1.area",
+        "name": "places.e-inn.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/3/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/11/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "e-linked",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "dc6f3c58e5fdbfda0b7a8c949572dbc74d486ed94636bef69e81fdc43d221850",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.e-linked.v1.area",
+        "name": "places.e-linked.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/3/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/12/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "e-stall",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "a03b72d6104f814003aaf812da1f7b15a0172babdc3b4b768f6781746181795a",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.e-stall.v1.area",
+        "name": "places.e-stall.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/3/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/13/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "s-green",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "0432c5671a65fe4fd29a374926e5dd009663f6528cf387f9a04e6342c01eb47a",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.s-green.v1.area",
+        "name": "places.s-green.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/4/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/14/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "s-glass",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "6dd2edb7e17a7dc2f7526fdf4a455d6426b65eac63721778ed897fa5ffc9cd2b",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.s-glass.v1.area",
+        "name": "places.s-glass.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/4/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/15/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "s-observer",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "a95be657c3caac3b3d5539d28b24fee75c4272c89333cb6819905ddeb383a45a",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.s-observer.v1.area",
+        "name": "places.s-observer.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/4/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/16/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "s-cottage",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "4f7bca53a82ec651a1897710ac658a5992fe78d6cbaa97914803213caa89d47d",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.s-cottage.v1.area",
+        "name": "places.s-cottage.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/4/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/17/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "p-hall",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "5dfae0b8f426b7897c3574867d8a78c20879bba86a47798428ca59d6885a37de",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.p-hall.v1.area",
+        "name": "places.p-hall.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/6/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/18/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "p-arcade",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "b1b72740331b23dc1730d1dd876c2937433e356aebe6c946e3e1350d5886531d",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.p-arcade.v1.area",
+        "name": "places.p-arcade.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/6/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/19/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "p-observatory",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "b0555471fa87841eb5d047b2902c854e68db868166d29db0197aad8712843e59",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.p-observatory.v1.area",
+        "name": "places.p-observatory.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/6/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/20/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "p-welcome",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "338cf77d5889ae301c9c68252a7764f6579c3b6ff4007b8160c1fcbebfeed897",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.p-welcome.v1.area",
+        "name": "places.p-welcome.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/6/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/21/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "p-stand",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "0590c88ce381424678b4b463e8e087c2d9464019ed667f50d4bad39d7edad7f7",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.p-stand.v1.area",
+        "name": "places.p-stand.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/6/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/22/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "h-warehouse",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "a10ff8a704d31b20349cf8f7bad747fd2c5535f7b85b9802b5d95b967edda14f",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.h-warehouse.v1.area",
+        "name": "places.h-warehouse.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/5/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/23/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "h-tavern",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "c95fa81105503623b9ba1a56dc89462ef8a5c9b8fb348ad4cf05f50c2714744e",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.h-tavern.v1.area",
+        "name": "places.h-tavern.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/5/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/24/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "h-beacon",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "b01933e7ff3d3646698300739ba41dd40233325126b7e459770c9643e680b733",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.h-beacon.v1.area",
+        "name": "places.h-beacon.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/5/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/25/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "h-boatshed",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "9fb785b868c8a9e645d04611efdf87b2805ca0f7c665c3b3f9a824b6fe0ddfe5",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.h-boatshed.v1.area",
+        "name": "places.h-boatshed.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/5/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/26/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "g-glass",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "f23d384f0a3529aabc08fbc308140c3a8ad22d091b23c96a516d171d8f69f3fd",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.g-glass.v1.area",
+        "name": "places.g-glass.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/7/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/27/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "g-pavilion",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "46a10fb96ad70bf79ccbad63cda53a8f26724111356e843e043b32d8ce1a6543",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.g-pavilion.v1.area",
+        "name": "places.g-pavilion.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/7/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/28/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "g-linked",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "943f535595fbc3825838d74fcab9831ceb29f57bb2980e8964d8cab348052e10",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.g-linked.v1.area",
+        "name": "places.g-linked.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/7/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/29/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "g-lodge",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "7cafc5036bb854b6211b8a69d5a6f52dcd7e95854dfad53fdb1f19df31454151",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.g-lodge.v1.area",
+        "name": "places.g-lodge.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/7/name",
+          "transform": "Remove the exact leading /^[ABC] · / as createPixelTown does; otherwise preserve the full original string."
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/buildings/30/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-place",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "region:harbour",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "2f2284bf4b8e522adbb61e7b2a189414d75fc1db53f26fffab6132999559dd32",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.region:harbour.v1.area",
+        "name": "places.region:harbour.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-pixel/town.js",
+          "selector": "createPixelTown newRegion.area",
+          "literal": "公共漫步区"
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/5/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-region",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "region:plateau",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "f7a6419713ad922af29ac0513d59ca0a096993d025a2a55d4af4b68cf47df10d",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.region:plateau.v1.area",
+        "name": "places.region:plateau.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-pixel/town.js",
+          "selector": "createPixelTown newRegion.area",
+          "literal": "公共漫步区"
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/6/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-region",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "region:woodland",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "dfc184c7cf2b5e1e544bd2a7bcfa66e39d7b704b69ef1ecbd9d63597d805d88c",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.region:woodland.v1.area",
+        "name": "places.region:woodland.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-pixel/town.js",
+          "selector": "createPixelTown newRegion.area",
+          "literal": "公共漫步区"
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/7/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-region",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "region:pine-walk",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "dea84ecc71b1bb519bcdaf381475c6414df815820d98878bd0deb42e62084d00",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.region:pine-walk.v1.area",
+        "name": "places.region:pine-walk.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-pixel/town.js",
+          "selector": "createPixelTown newRegion.area",
+          "literal": "公共漫步区"
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/8/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-region",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "region:river-walk",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "760aaf7e0a8730a2c66415b47467a6b30ec84597115ce51d56d092619f1ef82f",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.region:river-walk.v1.area",
+        "name": "places.region:river-walk.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-pixel/town.js",
+          "selector": "createPixelTown newRegion.area",
+          "literal": "公共漫步区"
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/9/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-region",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "region:east-street",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "sourceDigest": "1f38d00b66a0c2b98b66290053dc11ef36cdd7559ce251691aa8040533df9bf5",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.region:east-street.v1.area",
+        "name": "places.region:east-street.v1.name"
+      },
+      "locations": {
+        "area": {
+          "path": "apps/web/public/world-pixel/town.js",
+          "selector": "createPixelTown newRegion.area",
+          "literal": "公共漫步区"
+        },
+        "name": {
+          "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+          "pointer": "/districts/10/name"
+        }
+      },
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "selector": {
+        "projection": "pixel-town.places"
+      },
+      "stateGuards": {
+        "kind": "world-region",
+        "mapId": "pixel-town-v2",
+        "rulesetVersion": 6,
+        "topologyVersion": 6,
+        "layoutSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f"
+      },
+      "currentSource": {
+        "bundle": "pixelTownLayout",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "life-place:harbor_work",
+      "sourceRef": "m3-life-c-semantic-v1",
+      "version": 3,
+      "sourceDigest": "086e27f98cfe1f1723cb776de976ee28f772bd600f3970d6e75ed7b204018c77",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.life:harbor_work.v1.area",
+        "name": "places.life:harbor_work.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-life/spatial-manifest-c-v1.json",
+          "pointer": "/places/0/name"
+        },
+        "area": {
+          "path": "apps/web/public/world-pixel/life-art.js",
+          "selector": "lifePlaceTargets.area",
+          "literal": "小镇外场"
+        }
+      },
+      "versionKind": "Exact whole spatial.revision 3; no per-place content version exists.",
+      "selector": {
+        "projection": "lifePlaceTargets"
+      },
+      "stateGuards": {
+        "kind": "life-place",
+        "placeId": "harbor_work",
+        "spatialCanonicalSha256": "2076d33e64f9d9c287c03f651a85668d0c4ba00a834fd7bffa6efb0ad7061679"
+      },
+      "currentSource": {
+        "bundle": "lifeSpatialTargets",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "life-place:harbor_tavern",
+      "sourceRef": "m3-life-c-semantic-v1",
+      "version": 3,
+      "sourceDigest": "98c96f30dd34bcea268fa553614622c2ff3e7d6a0f6a704eb194be69598f9f3b",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.life:harbor_tavern.v1.area",
+        "name": "places.life:harbor_tavern.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-life/spatial-manifest-c-v1.json",
+          "pointer": "/places/1/name"
+        },
+        "area": {
+          "path": "apps/web/public/world-pixel/life-art.js",
+          "selector": "lifePlaceTargets.area",
+          "literal": "小镇外场"
+        }
+      },
+      "versionKind": "Exact whole spatial.revision 3; no per-place content version exists.",
+      "selector": {
+        "projection": "lifePlaceTargets"
+      },
+      "stateGuards": {
+        "kind": "life-place",
+        "placeId": "harbor_tavern",
+        "spatialCanonicalSha256": "2076d33e64f9d9c287c03f651a85668d0c4ba00a834fd7bffa6efb0ad7061679"
+      },
+      "currentSource": {
+        "bundle": "lifeSpatialTargets",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "life-place:garden_bench",
+      "sourceRef": "m3-life-c-semantic-v1",
+      "version": 3,
+      "sourceDigest": "110d45189f5a3e538dbe13b895852bec55e4ec33d435df7c78d514ad9048d73c",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.life:garden_bench.v1.area",
+        "name": "places.life:garden_bench.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-life/spatial-manifest-c-v1.json",
+          "pointer": "/places/2/name"
+        },
+        "area": {
+          "path": "apps/web/public/world-pixel/life-art.js",
+          "selector": "lifePlaceTargets.area",
+          "literal": "小镇外场"
+        }
+      },
+      "versionKind": "Exact whole spatial.revision 3; no per-place content version exists.",
+      "selector": {
+        "projection": "lifePlaceTargets"
+      },
+      "stateGuards": {
+        "kind": "life-place",
+        "placeId": "garden_bench",
+        "spatialCanonicalSha256": "2076d33e64f9d9c287c03f651a85668d0c4ba00a834fd7bffa6efb0ad7061679"
+      },
+      "currentSource": {
+        "bundle": "lifeSpatialTargets",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "life-place:harbor_shore",
+      "sourceRef": "m3-life-c-semantic-v1",
+      "version": 3,
+      "sourceDigest": "c04e9d9fdfdacf1de0c6d6f208d51f1da1aaba782016ba669de3870d5477aa2d",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.life:harbor_shore.v1.area",
+        "name": "places.life:harbor_shore.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-life/spatial-manifest-c-v1.json",
+          "pointer": "/places/3/name"
+        },
+        "area": {
+          "path": "apps/web/public/world-pixel/life-art.js",
+          "selector": "lifePlaceTargets.area",
+          "literal": "小镇外场"
+        }
+      },
+      "versionKind": "Exact whole spatial.revision 3; no per-place content version exists.",
+      "selector": {
+        "projection": "lifePlaceTargets"
+      },
+      "stateGuards": {
+        "kind": "life-place",
+        "placeId": "harbor_shore",
+        "spatialCanonicalSha256": "2076d33e64f9d9c287c03f651a85668d0c4ba00a834fd7bffa6efb0ad7061679"
+      },
+      "currentSource": {
+        "bundle": "lifeSpatialTargets",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "life-place:harbor_pier",
+      "sourceRef": "m3-life-c-semantic-v1",
+      "version": 3,
+      "sourceDigest": "495d87f600f3784a13380b1f031c98b3e5c0477b0970c0fd14d8c3cc29ff754e",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.life:harbor_pier.v1.area",
+        "name": "places.life:harbor_pier.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-life/spatial-manifest-c-v1.json",
+          "pointer": "/places/4/name"
+        },
+        "area": {
+          "path": "apps/web/public/world-pixel/life-art.js",
+          "selector": "lifePlaceTargets.area",
+          "literal": "小镇外场"
+        }
+      },
+      "versionKind": "Exact whole spatial.revision 3; no per-place content version exists.",
+      "selector": {
+        "projection": "lifePlaceTargets"
+      },
+      "stateGuards": {
+        "kind": "life-place",
+        "placeId": "harbor_pier",
+        "spatialCanonicalSha256": "2076d33e64f9d9c287c03f651a85668d0c4ba00a834fd7bffa6efb0ad7061679"
+      },
+      "currentSource": {
+        "bundle": "lifeSpatialTargets",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "life-place:fisher_shop",
+      "sourceRef": "m3-life-c-semantic-v1",
+      "version": 3,
+      "sourceDigest": "bfdb0fd1f071ee236abfd23efbef224ee2e3dfeb6ac6de88e2cadc08d82f3436",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.life:fisher_shop.v1.area",
+        "name": "places.life:fisher_shop.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-life/spatial-manifest-c-v1.json",
+          "pointer": "/places/5/name"
+        },
+        "area": {
+          "path": "apps/web/public/world-pixel/life-art.js",
+          "selector": "lifePlaceTargets.area",
+          "literal": "小镇外场"
+        }
+      },
+      "versionKind": "Exact whole spatial.revision 3; no per-place content version exists.",
+      "selector": {
+        "projection": "lifePlaceTargets"
+      },
+      "stateGuards": {
+        "kind": "life-place",
+        "placeId": "fisher_shop",
+        "spatialCanonicalSha256": "2076d33e64f9d9c287c03f651a85668d0c4ba00a834fd7bffa6efb0ad7061679"
+      },
+      "currentSource": {
+        "bundle": "lifeSpatialTargets",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "life-place:stone_inn",
+      "sourceRef": "m3-life-c-semantic-v1",
+      "version": 3,
+      "sourceDigest": "a145bbf897901e1d9b6689f2d756bc468fcb4212049c6304c8f3ef37f36c0166",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.life:stone_inn.v1.area",
+        "name": "places.life:stone_inn.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-life/spatial-manifest-c-v1.json",
+          "pointer": "/places/6/name"
+        },
+        "area": {
+          "path": "apps/web/public/world-pixel/life-art.js",
+          "selector": "lifePlaceTargets.area",
+          "literal": "小镇外场"
+        }
+      },
+      "versionKind": "Exact whole spatial.revision 3; no per-place content version exists.",
+      "selector": {
+        "projection": "lifePlaceTargets"
+      },
+      "stateGuards": {
+        "kind": "life-place",
+        "placeId": "stone_inn",
+        "spatialCanonicalSha256": "2076d33e64f9d9c287c03f651a85668d0c4ba00a834fd7bffa6efb0ad7061679"
+      },
+      "currentSource": {
+        "bundle": "lifeSpatialTargets",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "life-place:blue_library",
+      "sourceRef": "m3-life-c-semantic-v1",
+      "version": 3,
+      "sourceDigest": "811d6ce31f9ee9a995bb292d05b4282f59609681d2b6f687c5e9d662198e168c",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.life:blue_library.v1.area",
+        "name": "places.life:blue_library.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-life/spatial-manifest-c-v1.json",
+          "pointer": "/places/7/name"
+        },
+        "area": {
+          "path": "apps/web/public/world-pixel/life-art.js",
+          "selector": "lifePlaceTargets.area",
+          "literal": "小镇外场"
+        }
+      },
+      "versionKind": "Exact whole spatial.revision 3; no per-place content version exists.",
+      "selector": {
+        "projection": "lifePlaceTargets"
+      },
+      "stateGuards": {
+        "kind": "life-place",
+        "placeId": "blue_library",
+        "spatialCanonicalSha256": "2076d33e64f9d9c287c03f651a85668d0c4ba00a834fd7bffa6efb0ad7061679"
+      },
+      "currentSource": {
+        "bundle": "lifeSpatialTargets",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
+    },
+    {
+      "sourceId": "life-place:lookout",
+      "sourceRef": "m3-life-c-semantic-v1",
+      "version": 3,
+      "sourceDigest": "13b29054fcaec7c867068f16f16a8a385be674bf4de4b59b7428288a638640b3",
+      "digestFields": [
+        "area",
+        "name"
+      ],
+      "fields": {
+        "area": "places.life:lookout.v1.area",
+        "name": "places.life:lookout.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-life/spatial-manifest-c-v1.json",
+          "pointer": "/places/8/name"
+        },
+        "area": {
+          "path": "apps/web/public/world-pixel/life-art.js",
+          "selector": "lifePlaceTargets.area",
+          "literal": "小镇外场"
+        }
+      },
+      "versionKind": "Exact whole spatial.revision 3; no per-place content version exists.",
+      "selector": {
+        "projection": "lifePlaceTargets"
+      },
+      "stateGuards": {
+        "kind": "life-place",
+        "placeId": "lookout",
+        "spatialCanonicalSha256": "2076d33e64f9d9c287c03f651a85668d0c4ba00a834fd7bffa6efb0ad7061679"
+      },
+      "currentSource": {
+        "bundle": "lifeSpatialTargets",
+        "recordIdField": "id",
+        "fields": {
+          "area": "area",
+          "name": "name"
+        },
+        "requireCompleteRecord": true,
+        "meaning": "Static place-list projection only. Not a place profile, permission grant, availability claim or instruction to load profile details."
+      }
     }
   ],
   "files": [
@@ -3168,9 +5307,56 @@
       "meaning": "Fixed source-file audit evidence; runtime matching uses the record digest, stable ID and version above."
     },
     {
+      "path": "apps/web/public/world-life/spatial-manifest-c-v1.json",
+      "sha256": "e30e46f7a6d66315b11af0eb7896908e84e5a70af0a0bfe72006fbbb8199152a",
+      "meaning": "Fixed source-file audit evidence. Runtime list matching uses the record digest and the explicit listSourceBundles verification contract; JavaScript file hashes are not runtime content versions."
+    },
+    {
+      "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+      "sha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f",
+      "meaning": "Fixed source-file audit evidence. Runtime list matching uses the record digest and the explicit listSourceBundles verification contract; JavaScript file hashes are not runtime content versions."
+    },
+    {
+      "path": "apps/web/public/world-pixel/life-art.js",
+      "sha256": "a13f336dcea8cc2a2d79bf34499945cf78a2c394e5319e4f977bbd21dc14f4ad",
+      "meaning": "Fixed source-file audit evidence. Runtime list matching uses the record digest and the explicit listSourceBundles verification contract; JavaScript file hashes are not runtime content versions."
+    },
+    {
+      "path": "apps/web/public/world-pixel/town.js",
+      "sha256": "80af6549c938564f8f3b7387ca534102fa007f7e50f5bb4e3e9a9455824b021b",
+      "meaning": "Fixed source-file audit evidence. Runtime list matching uses the record digest and the explicit listSourceBundles verification contract; JavaScript file hashes are not runtime content versions."
+    },
+    {
       "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
       "sha256": "aab0cfbb3276f6226b6feb653fce36973b6747b03f9c4c2c36aeb827e8239d9d",
       "meaning": "Fixed source-file audit evidence; runtime matching uses the record digest, stable ID and version above."
     }
-  ]
+  ],
+  "listSourceBundles": {
+    "pixelTownLayout": {
+      "path": "apps/web/public/world-life/world-map-expansion-v1.json",
+      "sourceRef": "town-expansion-layout-v1",
+      "version": "town-expansion-layout-v1",
+      "versionKind": "Exact layout.version string; rulesetVersion/topologyVersion 6 are separate map guards, not per-place content versions.",
+      "byteSha256": "6c7424d586209179299f57439c9df8e4eb6bc63df23e57c69422d5c53ff8955f",
+      "verification": "Use only the layout whose original bytes passed the existing loadPixelTown SHA-256 check and validatePixelLayout. Pass that verified layout context; a copied expected hash constant without successful loading is not evidence."
+    },
+    "lifeSpatialTargets": {
+      "path": "apps/web/public/world-life/spatial-manifest-c-v1.json",
+      "sourceRef": "m3-life-c-semantic-v1",
+      "version": 3,
+      "versionKind": "Exact whole spatial.revision 3; no per-place content version exists.",
+      "byteSha256": "e30e46f7a6d66315b11af0eb7896908e84e5a70af0a0bfe72006fbbb8199152a",
+      "canonicalSha256": "2076d33e64f9d9c287c03f651a85668d0c4ba00a834fd7bffa6efb0ad7061679",
+      "canonicalization": "SHA-256 of UTF-8 JSON.stringify of the complete already imported spatial object after recursively sorting object keys by Unicode code point; retain array order, original scalar values, no normalization or trailing newline.",
+      "verification": "Validate spatial.id/revision and canonicalSha256 once on the same already imported object used by lifePlaceTargets. Do not fetch profiles or a second business API, and do not substitute the current map6 ruleset for this spatial revision."
+    },
+    "commons": {
+      "path": "apps/web/public/world-pixel/town.js",
+      "symbol": "COMMONS_PLACE",
+      "sourceRef": "COMMONS_PLACE",
+      "version": null,
+      "verification": "This inline constant has no source content version. Bind only the actual COMMONS_PLACE identity/kind and exact name/area digest; never borrow profile version1 or map version6."
+    }
+  }
 }
