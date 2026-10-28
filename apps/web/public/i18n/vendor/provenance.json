@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "generator": "scripts/web-build/i18n-vendor.mjs",
+  "file": "formatjs.js",
+  "sha256": "7de250eb1432a78eb477e1adfd83e343a1eac9cb898a2e0e836f0d72d49b58cd",
+  "bytes": 33473,
+  "packages": [
+    {
+      "name": "intl-messageformat",
+      "version": "12.1.4",
+      "license": "BSD-3-Clause",
+      "licenseSha256": "cc4143615b27c66eafbe913f132a9e41ac14c1e2ec6b2df24dafeaa97f028850"
+    },
+    {
+      "name": "@formatjs/icu-messageformat-parser",
+      "version": "3.5.22",
+      "license": "MIT",
+      "licenseSha256": "b1cc980e28e9e48f377db191578a9361494ca7117185b69dd66cabaf5b460fb7"
+    },
+    {
+      "name": "@formatjs/fast-memoize",
+      "version": "3.1.7",
+      "license": "MIT",
+      "licenseSha256": "b1cc980e28e9e48f377db191578a9361494ca7117185b69dd66cabaf5b460fb7"
+    },
+    {
+      "name": "@formatjs/icu-skeleton-parser",
+      "version": "2.1.12",
+      "license": "MIT",
+      "licenseSha256": "b1cc980e28e9e48f377db191578a9361494ca7117185b69dd66cabaf5b460fb7"
+    }
+  ],
+  "licensesSha256": "b56b1f32792cefdad5f7a3baab261f90aa3f27146cf4f35105037adf2355fa13"
+}

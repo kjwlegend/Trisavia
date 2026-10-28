@@ -3,7 +3,8 @@ export const $$ = (selector, root = document) => [...root.querySelectorAll(selec
 export function el(tag, className, value) {
   const node = document.createElement(tag);
   if (className) node.className = className;
-  if (value !== undefined) node.textContent = String(value);
+  if (isMessage(value)) bindText(node,value.key,value.params);
+  else if (value !== undefined) node.textContent = String(value);
   return node;
 }
 export const stamp = (value) => typeof value === 'number' ? new Date(value).toLocaleString('zh-CN', {hour12: false}) : '尚无记录';
@@ -74,7 +75,11 @@ export function errorText(error) {
   return messages[error.code] || '操作未完成。请保留当前输入，稍后重试或重新读取状态。';
 }
 export function isUnknown(error) { return !error.status || error.status >= 500 || ['commit_result_unknown','retry_same_operation','response_unknown','network_unknown','request_timeout'].includes(error.code); }
-export function notice(node, message, tone = '') { node.textContent = message; node.className = `notice ${tone}`; node.hidden = !message; }
+export function notice(node, message, tone = '') {
+  clearBinding(node);
+  if(isMessage(message))bindText(node,message.key,message.params);else node.textContent=message??'';
+  node.className = `notice ${tone}`; node.hidden = !message;
+}
 export function downloadPrivate(name, data) {
   const url = URL.createObjectURL(new Blob([`${JSON.stringify(data, null, 2)}\n`], {type: 'application/json'}));
   const link = document.createElement('a'); link.href = url; link.download = name; link.rel = 'noreferrer'; link.click();
@@ -85,3 +90,4 @@ export function brandHeader(active = '') {
   header.innerHTML = '<div class="nav-wrap"><a class="brand" href="/" aria-label="connet.ai 首页"><span class="brand-mark" aria-hidden="true">c</span>connet<span>.ai</span></a><nav aria-label="主导航"><a href="/agent/entry.md">接入说明 <span aria-hidden="true">↗</span></a><a href="/owner" class="nav-owner">主人入口</a></nav></div>';
   if (active === 'owner') $('.nav-owner', header).setAttribute('aria-current', 'page');
 }
+import {isMessage,bindText,clearBinding} from './i18n/core.js';
