@@ -1,3 +1,4 @@
+import {t} from '../i18n/core.js';
 const invalid=()=>Object.assign(Error('life_public_state_invalid'),{code:'life_public_state_invalid'});
 const text=(value,max)=>typeof value==='string'&&value.trim().length>0&&value.length<=max;
 const integer=value=>Number.isSafeInteger(value)&&value>=0;
@@ -9,7 +10,7 @@ export function readPublicLifeActivity(value){
  return{activityId:value.activityId,actionId:value.actionId,state:value.state,placeId:value.placeId,placeName:value.placeName,startedAt:value.startedAt,scheduledEndAt:value.scheduledEndAt,...(fishing?{fishing}:{})};
 }
 export function publicLifeLabel(activity){
- if(!activity)return'当前活动尚未提供';
- const names={'work.shift':'工作','rest.bench':'休息','rest.voucher':'休息券休憩','npc.duty':'值守','fish.session':'钓鱼','meal.prepare':'加工鱼餐','meal.eat':'用餐','rest.inn':'旅舍休息','book.read':'阅读','visit.place':'到访','care.perform':'照料园务'};
- return activity.state==='active'?`正在${names[activity.actionId]} · ${activity.placeName}`:activity.state==='completed'?`已完成${names[activity.actionId]} · ${activity.placeName}`:'活动状态已更新';
+ if(!activity)return t('public:activity.unavailable');
+ const names={'work.shift':'work','rest.bench':'restBench','rest.voucher':'restVoucher','npc.duty':'duty','fish.session':'fishing','meal.prepare':'prepareMeal','meal.eat':'meal','rest.inn':'inn','book.read':'reading','visit.place':'visit','care.perform':'care'};
+ return activity.state==='active'||activity.state==='completed'?t(activity.state==='active'?'public:activity.active':'public:activity.completed',{activity:t('public:life.activity.'+names[activity.actionId]),place:activity.placeName}):t('public:activity.updated');
 }
