@@ -3,7 +3,7 @@ import {ensureNamespaces,t,bindText,clearBinding,getLocale,onLocaleChange} from 
 // These are translation-source indices, not world facts or permission caches.
 const indices={
  'world-content':'37dcb422c2ddbcf3a0914efee5c28a82d325e01faf66e39f4ddad6fefe567082',
- 'life-content':'343d4d95a480f3db5471bc185ab2a8a0bd4d200da069df96a258714e2183f793',
+ 'life-content':'59ca14a61a3db07b6052f0eba86a1cc44265958bddd999ef706f673e8c80edb3',
 };
 const pending=new Map();
 const hash=async bytes=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(v=>v.toString(16).padStart(2,'0')).join('');
