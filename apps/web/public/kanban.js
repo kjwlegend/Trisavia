@@ -21,6 +21,7 @@ introduction.after(element('p', 'product-note board-scope', WORLD_INTRODUCTION.s
 const board = document.querySelector('#map-board');
 for (const column of BOARD_COLUMNS) {
   const cards = [...MAP_CARDS, ...LIFE_CARDS].filter(card => card.column === column.id);
+  if (column.id === 'completed') cards.sort((a, b) => b.completedVersion.localeCompare(a.completedVersion, undefined, {numeric: true}));
   const section = element('section', 'board-column');
   section.dataset.column = column.id;
   const head = element('div', 'board-heading');
