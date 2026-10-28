@@ -341,5 +341,6 @@
   "social.relationship.expired": "Expired",
   "social.error.inaccessible": "This character or invitation is no longer available for this action. Please reload.",
   "social.error.changed": "The invitation's status has changed. Reload it before taking action.",
-  "social.error.storage": "The browser cannot save progress for this action right now. Enable session storage and try again."
+  "social.error.storage": "The browser cannot save progress for this action right now. Enable session storage and try again.",
+  "social.time": "{time}"
 }

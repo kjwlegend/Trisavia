@@ -341,5 +341,6 @@
   "social.relationship.expired": "已到期",
   "social.error.inaccessible": "当前角色或邀请已不可操作，请重新读取。",
   "social.error.changed": "邀请状态已变化，请重新读取后操作。",
-  "social.error.storage": "浏览器暂时无法保存操作进度，请启用会话存储后重试。"
+  "social.error.storage": "浏览器暂时无法保存操作进度，请启用会话存储后重试。",
+  "social.time": "{time}"
 }
