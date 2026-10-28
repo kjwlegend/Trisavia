@@ -31,7 +31,8 @@ export function gatewayOperationSchemas(operation:GatewayOperation):GatewaySchem
  return[{id:`${operation.id}.input`,version:operation.schemaVersion,document:{$id:`gateway.${operation.id}.input@${operation.schemaVersion}`,...request}},{id:`${operation.id}.output`,version:operation.schemaVersion,document:{$id:`gateway.${operation.id}.output@${operation.schemaVersion}`,...gatewayEnvelope(operation.output)}}];
 }
 export function gatewayPublicReadSchemas(read:GatewayPublicRead):GatewaySchemaDocument[]{return[{id:`${read.id}.input`,version:read.schemaVersion,document:{$id:`gateway.${read.id}.input@${read.schemaVersion}`,...read.input}},{id:`${read.id}.output`,version:read.schemaVersion,document:{$id:`gateway.${read.id}.output@${read.schemaVersion}`,...gatewayEnvelope(read.output)}}];}
-export function createAgentGateway(options:{store:RuntimeStore;identity:IdentityAccess<RuntimeReadContext>;operations:GatewayOperation[];guides:GatewayGuide[];publicReads?:GatewayPublicRead[];runtimeGuide?:AgentRuntimeGuideProvider;retainedGuides?:GatewayGuide[];retainedSchemas?:GatewaySchemaDocument[]}){
+export interface GatewayHumanBehaviorReaders {world(ctx:RuntimeReadContext,input:JsonObject):Promise<JsonObject>;recent(ctx:RuntimeReadContext,input:JsonObject):Promise<JsonObject>;owner(ctx:RuntimeReadContext,p:Principal,input:JsonObject):Promise<JsonObject>}
+export function createAgentGateway(options:{store:RuntimeStore;identity:IdentityAccess<RuntimeReadContext>;operations:GatewayOperation[];guides:GatewayGuide[];publicReads?:GatewayPublicRead[];humanBehavior?:GatewayHumanBehaviorReaders;runtimeGuide?:AgentRuntimeGuideProvider;retainedGuides?:GatewayGuide[];retainedSchemas?:GatewaySchemaDocument[]}){
  const operations=new Map<string,GatewayOperation>(),publicReads=new Map<string,GatewayPublicRead>(),documents=new Map<string,{version:number;document:JsonObject}>(),guides=new Map<string,GatewayGuide>();
  const validVersion=(value:number)=>Number.isSafeInteger(value)&&value>=1&&value<=1000000;
  const moduleId=(id:string)=>/^[a-z][a-z0-9_.-]{0,95}$/.test(id);
@@ -88,6 +89,18 @@ export function createAgentGateway(options:{store:RuntimeStore;identity:Identity
    if(worldReader&&(id==='world.public_scene'||id==='world.public_rules')&&publicReads.has('world.public_scene')&&publicReads.has('world.public_rules')){const payload=input as JsonObject,requests=id==='world.public_scene'?sceneRequests(payload):[{id,input:{worldId:payload.worldId!}}];return(await worldReader.read(requests,signal)).results[id]!;}
    if(worldReader&&['world.public_place_profiles','world.public_place_profile'].includes(id))return(await worldReader.read([{id,input:input as JsonObject}],signal)).results[id]!;
    return await options.store.read(ctx=>read.read(ctx,input as JsonObject));},
+  /** Human-only representation. It reuses the registered input/auth contract but
+   * is deliberately absent from machine descriptors, schema documents and hashes. */
+  async humanBehaviorRead(mode:'world'|'recent'|'owner',raw:unknown,validate:GatewayValidator,bearer?:unknown){
+   const human=options.humanBehavior;if(!human)fail('capability_not_available',404,'Human behavior reads are not available');
+   if(mode==='owner'){
+    const body=object(raw,['protocolVersion','consumerId','purpose','input']);if(body.protocolVersion!==1)fail('unsupported_protocol',400,'Gateway protocol version is not supported');text(body.consumerId,'consumerId',1,100);if(body.purpose!=='human-inspect')fail('insufficient_scope',403,'Human inspection is required');
+    const operation=definition('behavior.owner_history','query');if(!validate(operation.input,body.input))fail('invalid_request',400,'Input does not match the current exact operation schema');
+    return options.store.read(async ctx=>human.owner(ctx,await authenticate(ctx,bearer,operation,'human-inspect'),body.input as JsonObject));
+   }
+   const read=publicReads.get(mode==='world'?'behavior.public_world':'behavior.public_recent');if(!read)fail('capability_not_available',404,'Public behavior reads are not available');if(!validate(read.input,raw))fail('invalid_request',400,'Query does not match the current public read schema');
+   return options.store.read(ctx=>human[mode](ctx,raw as JsonObject));
+  },
   /** Internal composition only: registered public handlers share one read context; no arbitrary batch HTTP endpoint. */
   async publicReadBundle(requests:readonly {id:string;input:JsonObject}[],validate:GatewayValidator,signal?:AbortSignal){
    if(requests.length<1||requests.length>4||new Set(requests.map(r=>r.id)).size!==requests.length)fail('invalid_request',400,'Use a bounded set of distinct public reads');

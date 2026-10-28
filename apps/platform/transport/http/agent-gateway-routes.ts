@@ -40,14 +40,14 @@ export function registerAgentGatewayRoutes(app:FastifyInstance,gateway:AgentGate
   if(error instanceof GatewayRateLimitError||error instanceof PublicWorldLimitError)reply.header('Retry-After',String(error.retryAfterSeconds)).header('Cache-Control','no-store');
   return reply.code(status).send({protocolVersion:1,requestId:String(request.id),error:{code,message}});
  }
- function route(method:'GET'|'POST',url:string,handler:(request:FastifyRequest)=>unknown|Promise<unknown>){
+ function route(method:'GET'|'POST',url:string,handler:(request:FastifyRequest)=>unknown|Promise<unknown>,format?:(envelope:JsonObject)=>JsonObject){
   const observedRoute:GatewayQuotaRoute={method,route:url,requestClass:method==='GET'?'public_read':'gateway_operation'};
   app.route({method,url,bodyLimit:32768,errorHandler:error,handler:async(request,reply)=>{
    const started=performance.now();reply.header('Cache-Control','no-store').header('X-Request-Id',String(request.id));
    const publicWorld=method==='GET'&&PUBLIC_WORLD_PATHS.has(url),controller=new AbortController();
    const aborted=()=>controller.abort(),closed=()=>{if(!reply.raw.writableEnded)controller.abort();};
    if(publicWorld){signals.set(request,controller);request.raw.once('aborted',aborted);reply.raw.once('close',closed);}
-   try{if(publicWorld)publicBudget.take(request.ip);else quota(request,observedRoute);return {protocolVersion:1,requestId:String(request.id||randomUUID()),instanceId:identity.instanceId,serverTime:identity.now(),data:await handler(request)};}
+   try{if(publicWorld)publicBudget.take(request.ip);else quota(request,observedRoute);const envelope:JsonObject={protocolVersion:1,requestId:String(request.id||randomUUID()),instanceId:identity.instanceId,serverTime:identity.now(),data:await handler(request) as JsonObject};return format?format(envelope):envelope;}
    finally{request.raw.removeListener('aborted',aborted);reply.raw.removeListener('close',closed);const publicMs=publicDurations.get(request);reply.header('Server-Timing',`app;dur=${(performance.now()-started).toFixed(2)};desc="Gateway handler"`+(publicMs===undefined?'':`, public_read;dur=${publicMs.toFixed(2)};desc="Public read including store"`));}
   }});
  }

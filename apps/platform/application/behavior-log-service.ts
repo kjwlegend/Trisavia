@@ -1,3 +1,4 @@
+import {collectHumanBehaviorItem,humanBehaviorResult,type HumanPresentationCollector} from './behavior-human-presentation.ts';
 import {createBehaviorJournal} from './behavior-journal.ts';
 import {journalAudienceRef} from '../domains/behavior/journal.ts';
 import type {AuthoredJournalView} from '../domains/behavior/journal.ts';
@@ -107,14 +108,14 @@ export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadCont
   return true;
  }
  const authored=createBehaviorJournal(identity,async(ctx,p,row)=>p.kind==='agent'&&row.agentId===p.agentId&&row.sourceRef.type!=='life_journal'&&await visible(ctx,row,'agent',p));
- async function item(ctx:RuntimeReadContext,row:BehaviorRecord,timeZone:string,owner?:Principal,profiles=new Map<string,Promise<PublicAgentView|null>>(),worldOnly=false):Promise<JsonObject>{
+ async function item(ctx:RuntimeReadContext,row:BehaviorRecord,timeZone:string,owner?:Principal,profiles=new Map<string,Promise<PublicAgentView|null>>(),worldOnly=false,collector?:HumanPresentationCollector):Promise<JsonObject>{
   const publicProfile=(id:string)=>{let v=profiles.get(id);if(!v){v=identity.readPublicAgent(ctx,id);profiles.set(id,v);}return v;};
   const profile=row.agentId===null?null:await publicProfile(row.agentId),[originalTitle,action,originalResult]=natural[row.node];let title=originalTitle,result=originalResult;const npcIdentity=row.npcId?await sources[row.sourceDomain]?.readNpcIdentity?.(ctx,row.npcId):null;
   if(row.node==='life.journal.authored'&&row.sourceRef.type==='life_journal'){
    if(!owner)return absent();const entry=await ctx.repository(BEHAVIOR_REPOSITORY).getJournal(row.sourceRef.id);if(!entry||entry.agentId!==row.agentId||entry.sourceEventId!==row.sourceEventId)fail('journal_source_unavailable',503,'The authored source is unavailable');const sourceRefs=[];
    for(const ref of entry.sourceRefs){const original=await ctx.repository(BEHAVIOR_REPOSITORY).get(ref.recordId);if(!original)fail('journal_source_unavailable',503,'The referenced source is missing');sourceRefs.push(ref);}
    const statement:AuthoredJournalView={kind:'agent_life_statement',version:1,clientEntryId:entry.clientEntryId,title:entry.title,text:entry.text,sourceRefs,submittedAt:entry.submittedAt};
-   return {id:row.id,agent:{agentId:row.agentId,displayName:profile?.displayName??null,...(journalEnabled?{publicId:profile?.publicId??null,publishedVersion:profile?.publishedVersion??null,appearance:profile?.appearance?JSON.parse(JSON.stringify(profile.appearance)):null}:{})},title:entry.title??'生活记录',action:'记录最终自述',result:'这是角色本人提交的陈述',occurredAt:row.occurredAt,date:localDate(row.occurredAt,timeZone),time:new Intl.DateTimeFormat('en-GB',{timeZone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(row.occurredAt),details:null,source:{domain:'life',node:row.node,detail:null,...(journalEnabled?{label:'角色自述'}:{})},authored:JSON.parse(JSON.stringify(statement))};
+   return collectHumanBehaviorItem(collector,{id:row.id,agent:{agentId:row.agentId,displayName:profile?.displayName??null,...(journalEnabled?{publicId:profile?.publicId??null,publishedVersion:profile?.publishedVersion??null,appearance:profile?.appearance?JSON.parse(JSON.stringify(profile.appearance)):null}:{})},title:entry.title??'生活记录',action:'记录最终自述',result:'这是角色本人提交的陈述',occurredAt:row.occurredAt,date:localDate(row.occurredAt,timeZone),time:new Intl.DateTimeFormat('en-GB',{timeZone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(row.occurredAt),details:null,source:{domain:'life',node:row.node,detail:null,...(journalEnabled?{label:'角色自述'}:{})},authored:JSON.parse(JSON.stringify(statement))},row,null,'owner',journalEnabled);
   }
   const place=row.publicProjection?.placeName;
   if(place&&row.node==='world.movement.started')result='从'+place+'出发';
@@ -171,16 +172,16 @@ export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadCont
    details={version:1,completeness:described?.completeness??'partial',phase:'npc_service',phaseLabel:phaseLabels.npc_service,summary:result,timeRange:{startedAt:null,endedAt:null,durationMs:null},location:place?{from:null,to:{...place},via:[]}:null,journey:null,participants:[],initiator:null,executor:null,service:null,gaps:[]};
   }
   const time=new Intl.DateTimeFormat('en-GB',{timeZone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(row.occurredAt);
-  return {id:row.id,agent:{agentId:row.agentId,displayName:profile?.displayName??npcIdentity?.name??null,...(journalEnabled?{publicId:profile?.publicId??npcIdentity?.publicId??null,publishedVersion:profile?.publishedVersion??npcIdentity?.publishedVersion??null,appearance:JSON.parse(JSON.stringify(profile?.appearance??npcIdentity?.appearance??null))}:{}),...(row.npcId?{npcId:row.npcId,actorKind:'npc'}:{})},title,action,result,occurredAt:row.occurredAt,date:localDate(row.occurredAt,timeZone),time,details,...(owner?{authored:null}:{}),source:{domain:row.sourceDomain,node:row.node,detail,...(journalEnabled?{label:({world:'世界活动',relationships:'居民交往',interaction:'文字交流',town_services:'镇民服务',life:'生活经历'})[row.sourceDomain]}:{})}};
+  return collectHumanBehaviorItem(collector,{id:row.id,agent:{agentId:row.agentId,displayName:profile?.displayName??npcIdentity?.name??null,...(journalEnabled?{publicId:profile?.publicId??npcIdentity?.publicId??null,publishedVersion:profile?.publishedVersion??npcIdentity?.publishedVersion??null,appearance:JSON.parse(JSON.stringify(profile?.appearance??npcIdentity?.appearance??null))}:{}),...(row.npcId?{npcId:row.npcId,actorKind:'npc'}:{})},title,action,result,occurredAt:row.occurredAt,date:localDate(row.occurredAt,timeZone),time,details,...(owner?{authored:null}:{}),source:{domain:row.sourceDomain,node:row.node,detail,...(journalEnabled?{label:({world:'世界活动',relationships:'居民交往',interaction:'文字交流',town_services:'镇民服务',life:'生活经历'})[row.sourceDomain]}:{})}},row,described,owner?'owner':worldOnly?'world':'recent',journalEnabled);
  }
  function base(agentId:string|null,timeZone:string,items:JsonObject[],historyCoverage:JsonObject,partial:boolean,nextPageToken:string|null,asOf:number){return {worldId:'default',agentId,timeZone,items,historyCoverage,partial,nextPageToken,asOf};}
- async function publicRead(ctx:RuntimeReadContext,input:JsonObject,agentId:string|null){
+ async function publicRead(ctx:RuntimeReadContext,input:JsonObject,agentId:string|null,collector?:HumanPresentationCollector){
   object(input,agentId===null?['worldId','timeZone']:['agentId','timeZone']);if(input.worldId!==undefined&&input.worldId!=='default')absent();
   const timeZone=timeZoneOf(input.timeZone);if(agentId!==null&&!await identity.readPublicAgent(ctx,agentId))absent();
   const repo=ctx.repository(BEHAVIOR_REPOSITORY),cut=await repo.cut(),historyCoverage=await coverage(ctx,cut.asOf),items:JsonObject[]=[],counts=new Map<string,number>(),cap=agentId===null?30:10,profiles=new Map<string,Promise<PublicAgentView|null>>();
   let after:{occurredAt:number;id:string}|undefined,scanned=0,complete=false;
   while(scanned<500&&items.length<cap&&!complete){const size=Math.min(50,500-scanned),rows=await repo.list({maxSequence:cut.maxSequence,userLogOnly:true,publicOnly:true,toAt:cut.asOf+1,...(agentId===null?{worldPublicOnly:true}:{agentId}),...(after?{after}:{}),limit:size});if(!rows.length){complete=true;break;}
-   for(const row of rows){scanned++;after={occurredAt:row.occurredAt,id:row.id};if(agentId===null&&!eligibleForPublicWorldLog(row))continue;if((counts.get(row.agentId??row.npcId!)??0)>=10)continue;if(!await visible(ctx,row,'public'))continue;counts.set(row.agentId??row.npcId!,(counts.get(row.agentId??row.npcId!)??0)+1);items.push(await item(ctx,row,timeZone,undefined,profiles,agentId===null));if(items.length===cap)break;}
+   for(const row of rows){scanned++;after={occurredAt:row.occurredAt,id:row.id};if(agentId===null&&!eligibleForPublicWorldLog(row))continue;if((counts.get(row.agentId??row.npcId!)??0)>=10)continue;if(!await visible(ctx,row,'public'))continue;counts.set(row.agentId??row.npcId!,(counts.get(row.agentId??row.npcId!)??0)+1);items.push(await item(ctx,row,timeZone,undefined,profiles,agentId===null,collector));if(items.length===cap)break;}
    if(rows.length<size)complete=true;
   }
   return base(agentId,timeZone,items,historyCoverage,!complete&&items.length<cap,null,cut.asOf);
@@ -194,10 +195,10 @@ export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadCont
    for(const row of rows){scanned++;if(await visible(ctx,row,'agent',p)){if(items.length===limit){hasMore=true;break;}const projected=await item(ctx,row,timeZone,p,profiles),size=Buffer.byteLength(JSON.stringify(projected));if(bytes+size>60000){budgetHit=true;break;}items.push(projected);bytes+=size;}after={occurredAt:row.occurredAt,id:row.id};}if(!budgetHit&&!hasMore&&rows.length<size)complete=true;
   }return {...base(agentId,timeZone,items,historyCoverage,!complete&&(scanned>=500||budgetHit),!complete&&after?cursors.encode(JSON.stringify({cut,after}),scope,ctx.now()):null,cut.asOf),submissionContext:{expectedAudienceRef:journalAudienceRef(agentId,proof)}};
  }
- return {submitJournal:authored.submitJournal,authorizeJournalReceipt:authored.authorizeJournalReceipt,journalHistory,
+ const service={submitJournal:authored.submitJournal,authorizeJournalReceipt:authored.authorizeJournalReceipt,journalHistory,
   publicWorld:(ctx:RuntimeReadContext,input:JsonObject)=>publicRead(ctx,input,null),
   publicRecent:(ctx:RuntimeReadContext,input:JsonObject)=>publicRead(ctx,input,text(input.agentId,'agentId',1,100)),
-  async ownerHistory(ctx:RuntimeReadContext,p:Principal,input:JsonObject){
+  async ownerHistory(ctx:RuntimeReadContext,p:Principal,input:JsonObject,collector?:HumanPresentationCollector){
    object(input,['agentId','timeZone','fromDate','toDate','limit','pageToken']);if(p.kind!=='owner')fail('owner_identity_required',403,'Owner history requires the current Owner session');
    const agentId=text(input.agentId,'agentId',1,100),authority=await identity.authorizeAgent(ctx,p,agentId),participation=await identity.readParticipation(ctx,agentId),proof=await identity.captureOwnerObservation?.(ctx,agentId,'world');
    if(!proof||proof.ownerId!==p.ownerId||!authority.binding)absent();
@@ -206,10 +207,15 @@ export function createBehaviorLogService(identity:IdentityAccess<RuntimeReadCont
    const profiles=new Map<string,Promise<PublicAgentView|null>>();let anchor:Anchor|undefined;if(input.pageToken!==undefined){try{anchor=JSON.parse(cursors.decode(text(input.pageToken,'pageToken',1,2048),scope,ctx.now())) as Anchor;if(!Number.isSafeInteger(anchor.cut.maxSequence)||anchor.cut.maxSequence<0||!Number.isSafeInteger(anchor.cut.asOf)||anchor.cut.asOf>ctx.now()||!Number.isSafeInteger(anchor.after.occurredAt)||typeof anchor.after.id!=='string')throw new Error('Invalid anchor');}catch{fail('invalid_cursor',409,'Restart the current history query');}}
    const cut=anchor?.cut??await repo.cut(),historyCoverage=await coverage(ctx,cut.asOf),items:JsonObject[]=[];let after=anchor?.after,scanned=0,complete=false,byteBudget=0,budgetHit=false,hasMore=false;
    while(scanned<500&&!complete&&!budgetHit&&!hasMore){const size=Math.min(50,500-scanned),rows=await repo.list({agentId,userLogOnly:true,maxSequence:cut.maxSequence,...(range.fromAt===undefined?{}:{fromAt:Math.max(0,range.fromAt)}),toAt:Math.max(0,Math.min(range.toAt??cut.asOf+1,cut.asOf+1)),...(after?{after}:{}),limit:size});if(!rows.length){complete=true;break;}
-    for(let i=0;i<rows.length;i++){const row=rows[i]!;scanned++;if(await visible(ctx,row,'owner',p)){if(items.length===limit){hasMore=true;break;}const projected=await item(ctx,row,timeZone,p,profiles),bytes=Buffer.byteLength(JSON.stringify(projected));if(byteBudget+bytes>60000){budgetHit=true;break;}items.push(projected);byteBudget+=bytes;}after={occurredAt:row.occurredAt,id:row.id};}
+    for(let i=0;i<rows.length;i++){const row=rows[i]!;scanned++;if(await visible(ctx,row,'owner',p)){if(items.length===limit){hasMore=true;break;}const projected=await item(ctx,row,timeZone,p,profiles,false,collector),bytes=Buffer.byteLength(JSON.stringify(projected));if(byteBudget+bytes>60000){budgetHit=true;break;}items.push(projected);byteBudget+=bytes;}after={occurredAt:row.occurredAt,id:row.id};}
     if(!budgetHit&&!hasMore&&rows.length<size)complete=true;
    }
    return base(agentId,timeZone,items,historyCoverage,!complete&&(scanned>=500||budgetHit),!complete&&after?cursors.encode(JSON.stringify({cut,after}),scope,ctx.now()):null,cut.asOf);
   },
+ };
+ return {...service,
+  async humanPublicWorld(ctx:RuntimeReadContext,input:JsonObject){const collector:HumanPresentationCollector=new Map();return humanBehaviorResult(await publicRead(ctx,input,null,collector),collector);},
+  async humanPublicRecent(ctx:RuntimeReadContext,input:JsonObject){const collector:HumanPresentationCollector=new Map();return humanBehaviorResult(await publicRead(ctx,input,text(input.agentId,'agentId',1,100),collector),collector);},
+  async humanOwnerHistory(ctx:RuntimeReadContext,p:Principal,input:JsonObject){const collector:HumanPresentationCollector=new Map();return humanBehaviorResult(await service.ownerHistory(ctx,p,input,collector),collector);},
  };
 }
