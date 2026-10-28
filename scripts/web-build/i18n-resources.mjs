@@ -3,7 +3,7 @@ import {resolve} from 'node:path';
 import {createHash} from 'node:crypto';
 import {parse} from '../../apps/web/public/i18n/vendor/formatjs.js';
 
-const locales=['zh-CN','en'],namespacePattern=/^[a-z][a-z0-9-]{0,47}$/,keyPattern=/^[A-Za-z0-9_.:-]{1,200}$/;
+const locales=['zh-CN','en'],namespacePattern=/^[a-z][a-z0-9-]{0,47}$/,keyPattern=/^[A-Za-z0-9_.:\/-]{1,200}$/;
 const officialNamespaces=new Set(['world-content','life-content']),digest=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
 const record=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 const string=(value,max=2048)=>typeof value==='string'&&value.length>0&&value.length<=max&&!value.includes('\0');

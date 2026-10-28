@@ -81,6 +81,16 @@ test('official content indices are required only for their namespace and changin
  const malformed=JSON.parse(original);malformed.namespace='life-content';await writeFile(resolve(f.pub,index),JSON.stringify(malformed));await assert.rejects(()=>buildWeb({root:f.root}),/Invalid official content source index/);
 });
 
+test('fixed life-content slash keys compile and load through source and production while missing complete slash keys still fail',async t=>{
+ const f=await fixture(t),keys=['npcLifeMessage.npc-life/gardener/open.v1.text','npcLifeMessage.npc-life/system/gardener-away.v1.text'];await cp(resolve(checkout,'apps/web/public/locales/life-content'),resolve(f.pub,'locales/life-content'),{recursive:true});
+ const entry='import {t} from "./i18n/core.js";globalThis.words=['+keys.map(key=>'t('+JSON.stringify('life-content:'+key)+')').join(',')+'];';await writeFile(resolve(f.pub,'entry.js'),entry);await buildWeb({root:f.root});
+ const expected=JSON.parse(await readFile(resolve(f.pub,'locales/life-content/en.json'),'utf8'));
+ for(const mode of ['source','production']){
+  const app=Fastify({logger:false});t.after(()=>app.close());registerSiteRoutes(app,{repoRoot:f.root,webRoot:f.pub,assetMode:mode});const runtime=createI18n({navigator:{languages:['en']},fetch:async url=>{const r=await app.inject(url);return new Response(r.rawPayload,{status:r.statusCode,headers:r.headers});}});await runtime.initI18n({namespaces:['life-content']});for(const key of keys)assert.equal(runtime.t('life-content:'+key),expected[key]);
+ }
+ await writeFile(resolve(f.pub,'entry.js'),entry+'globalThis.invalid=t("life-content:npcLifeMessage.npc-life/missing.v1.text");');await assert.rejects(()=>buildWeb({root:f.root}),/Declared i18n message.*npc-life\/missing/);
+});
+
 test('actual fixed WS07 public dictionaries parse with FormatJS and have identical named parameters in both languages',async t=>{
  const root=await mkdtemp(join(tmpdir(),'trisavia-ws07-dictionaries-'));t.after(()=>rm(root,{recursive:true,force:true}));await mkdir(resolve(root,'locales'));
  const namespaces=['common','shell','public','releases','kanban','help'],expectedKeys=new Set(),expectedFiles=new Map(),compiledFiles=new Map();

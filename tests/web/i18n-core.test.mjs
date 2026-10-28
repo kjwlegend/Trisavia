@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {createHash} from 'node:crypto';
+import {readFile} from 'node:fs/promises';
 import {createI18n,msg,isMessage,stripLocalePath} from '../../apps/web/public/i18n/core.js';
 import {errorText,errorMessage,stamp} from '../../apps/web/public/common.js';
 
@@ -16,7 +17,7 @@ function fixture({pathname='/',device=null,language='en',dictionary={},hold}={})
  const document={documentElement:{lang:''},querySelectorAll:()=>[]},location={pathname,search:'?view=one',hash:'#handoff=synthetic-private-only'},updates=[],stored=new Map(device?[['trisavia.locale',device]]:[]),storage={getItem:key=>stored.get(key),setItem:(key,value)=>stored.set(key,value)};
  const window={location,history:{state:{selection:'A001'},replaceState(state,_,url){updates.push({state,url});const u=new URL(url,'https://example.test');Object.assign(location,{pathname:u.pathname,search:u.search,hash:u.hash});}}};
  const bodies=new Map(),manifest={version:1,format:'icu-message-v1',namespaces:{}};
- for(const ns of ['common','shell']){manifest.namespaces[ns]={};for(const locale of ['zh-CN','en']){const url=`/assets/locales/${ns}/${locale}.json`,body=JSON.stringify(dictionary[ns]?.[locale]??(locale==='en'?{'label':'Hello {name}','count':'{count, plural, one {# resident} other {# residents}}'}:{'label':'你好，{name}','count':'{count, plural, other {#位居民}}'}));bodies.set(url,body);manifest.namespaces[ns][locale]={url,sha256:sha(body),bytes:Buffer.byteLength(body)};}}
+ for(const ns of new Set(['common','shell',...Object.keys(dictionary)])){manifest.namespaces[ns]={};for(const locale of ['zh-CN','en']){const url=`/assets/locales/${ns}/${locale}.json`,body=JSON.stringify(dictionary[ns]?.[locale]??(locale==='en'?{'label':'Hello {name}','count':'{count, plural, one {# resident} other {# residents}}'}:{'label':'你好，{name}','count':'{count, plural, other {#位居民}}'}));bodies.set(url,body);manifest.namespaces[ns][locale]={url,sha256:sha(body),bytes:Buffer.byteLength(body)};}}
  const requests=[],fetch=async(url,options)=>{requests.push({url,options});await hold?.(url);return url==='/assets/i18n/manifest.json'?Response.json(manifest):new Response(bodies.get(url),{status:bodies.has(url)?200:404});};
  const i18n=createI18n({window,document,navigator:{languages:[language]},storage,fetch});return {i18n,document,location,updates,requests,stored,bodies,manifest};
 }
@@ -64,6 +65,16 @@ test('shared error descriptors retain existing classification and never expose u
  assert(!errorText({code:'any-private-code',status:400,details:'synthetic-private-detail'}).includes('synthetic-private-detail'));
  const now=1793188800000;assert.equal(stamp(now),new Date(now).toLocaleString('en',{hour12:false}));
 });
+
+test('the two fixed WS02 NPC message keys preserve stable slashes through ICU and explicit bindings',async()=>{
+ const keys=['npcLifeMessage.npc-life/gardener/open.v1.text','npcLifeMessage.npc-life/system/gardener-away.v1.text'],messages={};
+ for(const locale of ['en','zh-CN']){const source=JSON.parse(await readFile(new URL('../../apps/web/public/locales/life-content/'+locale+'.json',import.meta.url),'utf8'));messages[locale]=Object.fromEntries(keys.map(key=>[key,source[key]]));}
+ const f=fixture({dictionary:{'life-content':messages}});await f.i18n.initI18n({namespaces:['life-content']});const nodes=keys.map(()=>new Node());
+ for(const [index,key]of keys.entries()){f.i18n.bindText(nodes[index],'life-content:'+key);assert.equal(nodes[index].textContent,messages.en[key]);}
+ assert.equal(await f.i18n.setLocale('zh-CN'),true);for(const [index,key]of keys.entries())assert.equal(nodes[index].textContent,messages['zh-CN'][key]);
+ assert.throws(()=>msg('life/content:'+keys[0]),/namespace/);assert.equal(f.i18n.localePath('/agent/runtime.md'),'/agent/runtime.md');
+});
+
 
 test('an explicitly deferred account subtree is not registered or fetched until its owner activates it',async()=>{
  const f=fixture({dictionary:{shell:{en:{label:'Account UI'},'zh-CN':{label:'账户'}}}});await f.i18n.initI18n();

@@ -21,9 +21,9 @@ export async function buildWeb({root=defaultRoot}={}){
  const references=new Set(),quotedKeys=new Set();
  const source=async path=>{const full=resolve(path),name=posix(relative(root,full));if(name.startsWith('../')||name==='..'||(await lstat(full)).isSymbolicLink())throw new Error('Build input must be a regular checkout file');const bytes=await readFile(full);sources.set(name,sha(bytes));
   if(name.startsWith('apps/web/public/')&&/\.(?:html|js)$/.test(name)){
-   const text=bytes.toString('utf8');for(const match of text.matchAll(/\b(?:t|msg)\(\s*(['"])([a-z][a-z0-9-]{0,47}:[A-Za-z0-9_.:-]{1,200})\1/g))if(completeMessageLiteral(text,match))references.add(match[2]);
-   for(const match of text.matchAll(/data-i18n(?:-(?:placeholder|title|aria-label))?\s*=\s*(['"])([a-z][a-z0-9-]{0,47}:[A-Za-z0-9_.:-]{1,200})\1/g))references.add(match[2]);
-   for(const match of text.matchAll(/(['"])([a-z][a-z0-9-]{0,47}:[A-Za-z0-9_.:-]{1,200})\1/g))if(completeMessageLiteral(text,match))quotedKeys.add(match[2]);
+   const text=bytes.toString('utf8');for(const match of text.matchAll(/\b(?:t|msg)\(\s*(['"])([a-z][a-z0-9-]{0,47}:[A-Za-z0-9_.:\/-]{1,200})\1/g))if(completeMessageLiteral(text,match))references.add(match[2]);
+   for(const match of text.matchAll(/data-i18n(?:-(?:placeholder|title|aria-label))?\s*=\s*(['"])([a-z][a-z0-9-]{0,47}:[A-Za-z0-9_.:\/-]{1,200})\1/g))references.add(match[2]);
+   for(const match of text.matchAll(/(['"])([a-z][a-z0-9-]{0,47}:[A-Za-z0-9_.:\/-]{1,200})\1/g))if(completeMessageLiteral(text,match))quotedKeys.add(match[2]);
   }
   return bytes;};
  const publicFile=url=>{if(!url.startsWith('/assets/')||/[?#\u0000-\u0020]/u.test(url))throw new Error('Expected an exact source /assets/ path');const full=resolve(publicRoot,url.slice('/assets/'.length));if(!full.startsWith(publicRoot+sep))throw new Error('Asset path escapes public root');return full;};

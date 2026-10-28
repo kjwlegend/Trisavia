@@ -56,7 +56,7 @@ export function loadSourceLocaleManifest(webRoot:string):Buffer{
   const languages:Record<string,unknown>={};
   for(const locale of ['zh-CN','en']){
    const file=`locales/${name}/${locale}.json`,bytes=readFileSync(productionPath(webRoot,file)),value=record(JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes)));
-   if(bytes.length>262144||!Object.keys(value).length||Object.keys(value).length>4000||Object.entries(value).some(([key,message])=>!/^[A-Za-z0-9_.:-]{1,200}$/.test(key)||['__proto__','constructor','prototype'].includes(key)||typeof message!=='string'))throw new Error('Invalid public locale dictionary');
+   if(bytes.length>262144||!Object.keys(value).length||Object.keys(value).length>4000||Object.entries(value).some(([key,message])=>!/^[A-Za-z0-9_.:\/-]{1,200}$/.test(key)||['__proto__','constructor','prototype'].includes(key)||typeof message!=='string'))throw new Error('Invalid public locale dictionary');
    languages[locale]={url:'/assets/'+file,sha256:webSha256(bytes),bytes:bytes.length};
   }
   namespaces[name]=languages;

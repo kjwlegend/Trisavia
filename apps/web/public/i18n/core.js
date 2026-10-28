@@ -1,7 +1,7 @@
 import {IntlMessageFormat} from './vendor/formatjs.js';
 
 export const SUPPORTED_LOCALES=Object.freeze(['zh-CN','en']);
-const namespacePattern=/^[a-z][a-z0-9-]{0,47}$/,keyPattern=/^[A-Za-z0-9_.:-]{1,200}$/,descriptorTag=Symbol('i18n.message');
+const namespacePattern=/^[a-z][a-z0-9-]{0,47}$/,keyPattern=/^[A-Za-z0-9_.:\/-]{1,200}$/,descriptorTag=Symbol('i18n.message');
 const localeRanks={fallback:0,browser:1,account:2,device:3,explicit:4};
 const validLocale=value=>SUPPORTED_LOCALES.includes(value);
 function splitKey(key){const i=typeof key==='string'?key.indexOf(':'):-1,namespace=key?.slice(0,i),name=key?.slice(i+1);if(i<1||!namespacePattern.test(namespace)||!keyPattern.test(name)||['__proto__','constructor','prototype'].includes(name))throw new TypeError('An explicit namespace:message key is required');return [namespace,name];}
