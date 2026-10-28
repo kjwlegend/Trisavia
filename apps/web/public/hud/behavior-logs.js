@@ -1,4 +1,4 @@
-import {createBehaviorLogReader} from './behavior-log-reader.js';
+import {createHumanBehaviorLogReader as createBehaviorLogReader} from './behavior-log-reader.js';
 import {createBehaviorLogView} from './behavior-log-view.js';
 export function createWorldLogFeature(session){
  const reader=createBehaviorLogReader({mode:'world',session}),view=createBehaviorLogView(reader,{mode:'world'});view.node.id='hud-feature-logs';

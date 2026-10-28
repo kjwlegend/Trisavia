@@ -3,7 +3,7 @@ import {$,el,api} from './common.js';
 import {avatar} from './scene.js';
 import {nativeFrame} from './world-pixel/native-ui.js';
 import {readPublicCharacter} from './hud/public-character-reader.js';
-import {createBehaviorLogReader} from './hud/behavior-log-reader.js';
+import {createHumanBehaviorLogReader as createBehaviorLogReader} from './hud/behavior-log-reader.js';
 import {createBehaviorLogView} from './hud/behavior-log-view.js';
 import {mountPublicNavigation} from './public-navigation.js';
 import {getLocale,t,onLocaleChange,stripLocalePath,localePath} from './i18n/core.js';

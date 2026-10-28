@@ -4,6 +4,7 @@ import {readFishingSummary} from './life-b-contract.js';
 import {readPublicId} from '../public-id.js';
 import {readAppearance} from './world-scene-projection.js';
 import {readNpcSprite} from '../world-pixel/npc-life-art.js';
+import {BEHAVIOR_HUMAN_SCHEMA,BEHAVIOR_HUMAN_VERSION,validateBehaviorTemplateLeaf} from './behavior-human-contract.js';
 const invalid=()=>Object.assign(new Error('log_response_invalid'),{code:'log_response_invalid'});
 /** Private final prose is never interpreted as a settlement or a public statement. */
 export function readAuthoredJournal(value){
@@ -36,18 +37,42 @@ export function readBehaviorLogs(envelope,{mode,agentId,timeZone}){
  const ids=new Set();for(const item of data.items){if(Object.hasOwn(item,'authored')){if(mode!=='owner')throw invalid();if(item.authored!==null){readAuthoredJournal(item.authored);if(item.source?.domain!=='life'||item.source.node!=='life.journal.authored'||item.authored.submittedAt!==item.occurredAt)throw invalid();}}if(item.source?.node==='life.journal.authored'&&(mode!=='owner'||!item.authored||item.details!==null))throw invalid();const actor=item.agent,npc=actor?.actorKind==='npc';if(actor?.publicId!==undefined&&actor.publicId!==null&&!readPublicId(actor.publicId,npc?'N':'A')||actor?.publishedVersion!==undefined&&actor.publishedVersion!==null&&(!integer(actor.publishedVersion)||actor.publishedVersion<1)||item.source?.label!==undefined&&(!text(item.source.label,240)||!item.source.label))throw invalid();if(actor?.appearance!==undefined&&actor.appearance!==null){try{actor.appearance.kind==='npc_sprite'&&npc?readNpcSprite(actor.appearance,actor.npcId):readAppearance(actor.appearance);}catch{throw invalid();}}if(npc&&(item.source?.domain!=='life'||Object.keys(actor).some(key=>!['agentId','npcId','actorKind','displayName','publicId','publishedVersion','appearance'].includes(key))||!actor.displayName))throw invalid();if(npc?(mode!=='world'||actor.agentId!==null||!text(actor.npcId,180)||!actor.npcId):!text(actor?.agentId,180)||!actor.agentId||actor.actorKind!==undefined&&actor.actorKind!=='agent')throw invalid();if(!text(item?.id,200)||!item.id||ids.has(item.id)||!(item.agent.displayName===null||text(item.agent.displayName,60))||mode!=='world'&&item.agent.agentId!==agentId||!text(item.title)||!text(item.action)||!text(item.result)||!integer(item.occurredAt)||!date(item.date)||!/^\d{2}:\d{2}$/.test(item.time)||!['world','relationships','interaction','town_services','life'].includes(item.source?.domain)||!text(item.source.node,180)||item.source.domain==='life'&&(!lifeNodes.includes(item.source.node)||mode!=='owner'&&['life.activity.interrupted','life.purchase.completed','life.sale.completed','life.care.introduced','life.journal.authored'].includes(item.source.node))||item.source.node.startsWith('relationships.gift.')&&(item.source.domain!=='relationships'||mode!=='owner'||!giftNodes.includes(item.source.node))||!(item.source.detail===null||typeof item.source.detail?.operation==='string'&&item.source.detail.input&&typeof item.source.detail.input==='object'&&!Array.isArray(item.source.detail.input)))throw invalid();readBehaviorDetails(item.details,{mode});ids.add(item.id);}
  return structuredClone(data);
 }
+const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).length===keys.length&&keys.every(key=>Object.hasOwn(value,key));
+const bytes=value=>{try{return new TextEncoder().encode(JSON.stringify(value)).byteLength;}catch{throw invalid();}};
+/** A separate human envelope composes, rather than relaxes, the old decoder. */
+export function readHumanBehaviorLogs(value,options){
+ if(!exact(value,['schema','version','original','presentations'])||value.schema!==BEHAVIOR_HUMAN_SCHEMA||value.version!==BEHAVIOR_HUMAN_VERSION||bytes(value)>524288)throw invalid();
+ const data=readBehaviorLogs(value.original,options);
+ if(!Array.isArray(value.presentations)||value.presentations.length!==data.items.length)throw invalid();
+ for(let i=0;i<data.items.length;i++){
+  const item=data.items[i],row=value.presentations[i];
+  if(!exact(row,['recordId','basis','sourceRefs','fields'])||row.recordId!==item.id||row.basis!=='authorized-read-projection'||!Array.isArray(row.sourceRefs)||row.sourceRefs.length!==1||!exact(row.sourceRefs[0],['recordId'])||row.sourceRefs[0].recordId!==item.id||!exact(row.fields,['title','action','result','summary'])||bytes(row)>8192)throw invalid();
+  for(const field of ['title','action','result','summary']){
+   const leaf=row.fields[field];if(field==='summary'&&item.details===null){if(leaf!==null)throw invalid();continue;}
+   if(leaf?.kind==='template'){
+    let accepted;try{accepted=validateBehaviorTemplateLeaf(leaf);}catch{throw invalid();}
+    if(accepted.known&&accepted.definition.field!==field)throw invalid();
+   }else if(leaf?.kind==='original'){
+    if(!exact(leaf,['kind','sourceLocale','reason'])||leaf.sourceLocale!=='zh-CN'||!['insufficient-source','unsupported-template'].includes(leaf.reason))throw invalid();
+   }else if(!exact(leaf,['kind'])||leaf.kind!=='verbatim')throw invalid();
+   if(field==='title'&&item.authored?.title&&leaf.kind!=='verbatim')throw invalid();
+  }
+ }
+ return{data,presentations:structuredClone(value.presentations)};
+}
+
 // Only explicit open/refresh/range/page actions read. A scene poll never calls it.
-export function createBehaviorLogReader({mode,session,request=api,timeZone=browserLogTimeZone(),eventTarget=globalThis.document}={}){
+function createLogReader({mode,session,request=api,timeZone=browserLogTimeZone(),eventTarget=globalThis.document}={},human=false){
  let active=false,disposed=false,revision=0,abort=null,agentId='',identity='',context=session?.snapshot(),tokens=[null],page=0,filters={timeZone,fromDate:'',toDate:''};const listeners=new Set();
- let state={phase:'idle',data:null,errorStatus:null,page:0,canPrevious:false,canNext:false,filters:{...filters},agentName:'',retryPage:null};
+ let state={phase:'idle',data:null,errorStatus:null,page:0,canPrevious:false,canNext:false,filters:{...filters},agentName:'',retryPage:null,...(human?{presentations:[]}:{} )};
  const snapshot=()=>structuredClone(state),emit=patch=>{state={...state,...patch};for(const listener of listeners)listener(snapshot());},available=()=>!disposed&&active&&!eventTarget?.hidden;
- function clear(phase='idle'){revision++;abort?.abort();abort=null;tokens=[null];page=0;emit({phase,data:null,errorStatus:null,page:0,canPrevious:false,canNext:false,filters:{...filters},retryPage:null});}
+ function clear(phase='idle'){revision++;abort?.abort();abort=null;tokens=[null];page=0;emit({phase,data:null,errorStatus:null,page:0,canPrevious:false,canNext:false,filters:{...filters},retryPage:null,...(human?{presentations:[]}:{} )});}
  function allowed(){if(mode!=='owner')return mode==='world'||Boolean(agentId);return context?.authenticated&&['ready','refreshing'].includes(context.phase)&&context.agents?.some(agent=>agent.agentId===agentId);}
  async function load(index=0,{refresh=false}={}){
   if(!available())return;if(!allowed()){clear(mode==='owner'?(context?.authenticated?'no_agent':'session'):'idle');return;}
   try{new Intl.DateTimeFormat('en',{timeZone:filters.timeZone});if(filters.fromDate&&!date(filters.fromDate)||filters.toDate&&!date(filters.toDate)||filters.fromDate&&filters.toDate&&filters.fromDate>filters.toDate)throw invalid();}catch{clear('invalid');return;}
-  const previous=refresh?null:state.data,target=agentId,turn=++revision,controller=new AbortController(),input={timeZone:filters.timeZone,...(mode==='owner'?{...(filters.fromDate?{fromDate:filters.fromDate}:{}),...(filters.toDate?{toDate:filters.toDate}:{}),limit:20,...(tokens[index]?{pageToken:tokens[index]}:{})}:{})};abort?.abort();abort=controller;emit({phase:'loading',data:previous,errorStatus:null,retryPage:null});
-  try{const result=mode==='owner'?await session.readBehaviorHistory(input,{signal:controller.signal}):await request(`/world/${mode==='world'?'logs':'agent-logs'}?${new URLSearchParams({...input,...(mode==='world'?{worldId:'default'}:{agentId:target})})}`,{signal:controller.signal});if(!available()||turn!==revision||controller.signal.aborted)return;const data=readBehaviorLogs(result,{mode,agentId:target,timeZone:filters.timeZone});if(index===0)tokens=[null];tokens=tokens.slice(0,index+1);if(data.nextPageToken)tokens[index+1]=data.nextPageToken;page=index;emit({phase:'ready',data,agentName:mode==='owner'?context?.agents?.find(agent=>agent.agentId===target)?.name||'':'',errorStatus:null,page,canPrevious:mode==='owner'&&page>0,canNext:mode==='owner'&&Boolean(data.nextPageToken),retryPage:null});}
+  const previous=refresh?null:state.data,target=agentId,turn=++revision,controller=new AbortController(),input={timeZone:filters.timeZone,...(mode==='owner'?{...(filters.fromDate?{fromDate:filters.fromDate}:{}),...(filters.toDate?{toDate:filters.toDate}:{}),limit:20,...(tokens[index]?{pageToken:tokens[index]}:{})}:{})};abort?.abort();abort=controller;emit({phase:'loading',data:previous,errorStatus:null,retryPage:null,...(human?{presentations:previous?state.presentations:[]}:{} )});
+  try{const result=mode==='owner'?await session[human?'readHumanBehaviorHistory':'readBehaviorHistory'](input,{signal:controller.signal}):await request(`${human?'/human/behavior/'+(mode==='world'?'world':'recent'):'/world/'+(mode==='world'?'logs':'agent-logs')}?${new URLSearchParams({...input,...(mode==='world'?{worldId:'default'}:{agentId:target})})}`,{signal:controller.signal});if(!available()||turn!==revision||controller.signal.aborted)return;const accepted=human?readHumanBehaviorLogs(result,{mode,agentId:target,timeZone:filters.timeZone}):{data:readBehaviorLogs(result,{mode,agentId:target,timeZone:filters.timeZone})},data=accepted.data;if(index===0)tokens=[null];tokens=tokens.slice(0,index+1);if(data.nextPageToken)tokens[index+1]=data.nextPageToken;page=index;emit({phase:'ready',data,agentName:mode==='owner'?context?.agents?.find(agent=>agent.agentId===target)?.name||'':'',errorStatus:null,page,canPrevious:mode==='owner'&&page>0,canNext:mode==='owner'&&Boolean(data.nextPageToken),retryPage:null,...(human?{presentations:accepted.presentations}:{} )});}
   catch(error){if(!available()||turn!==revision||controller.signal.aborted||error.name==='AbortError')return;const lost=[401,403,404,409].includes(error.status);if(lost){clear(error.status===409?'changed':'forbidden');emit({errorStatus:error.status,agentName:''});}else emit({phase:'error',data:previous,errorStatus:error.status||null,retryPage:index});}
   finally{if(abort===controller)abort=null;}
  }
@@ -61,3 +86,7 @@ export function createBehaviorLogReader({mode,session,request=api,timeZone=brows
   dispose(){if(disposed)return;disposed=true;active=false;clear();stop?.();eventTarget?.removeEventListener('visibilitychange',visibility);listeners.clear();},
  };
 }
+
+// Existing callers may still choose the exact legacy transport/decoder.
+export function createBehaviorLogReader(options){return createLogReader(options);}
+export function createHumanBehaviorLogReader(options){return createLogReader(options,true);}
