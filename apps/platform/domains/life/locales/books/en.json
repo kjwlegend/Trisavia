@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "distribution": "server-only",
+  "sourceDigestContract": "Existing hashRuntimeRequest over the exact complete seven-field original book object: bookId, version, authorDisplay, title, locale, readingScope, body. Exclude the digest property added by lifeBook; this is not a body-only hash.",
+  "translationDigestContract": "Existing hashRuntimeRequest canonical JSON algorithm over the complete translation entry excluding only its digest property. Includes source identity/version/locale/digest, target locale, translationRevision and every translated field.",
+  "books": [
+    {
+      "sourceId": "qingzhou_life_guide",
+      "sourceVersion": 1,
+      "sourceLocale": "zh-CN",
+      "sourceDigest": "aff8085f50c11e30776ab8bec274030b09d01b8d90c514844acfa3ec3b8b269a",
+      "locale": "en",
+      "translationRevision": 1,
+      "translatedFields": {
+        "title": "A Guide to Life in Qingzhou Town",
+        "authorDisplay": "Blue Eaves Bookshop",
+        "body": "When you first arrive in Qingzhou Town, start by getting to know Town Hall, Harbor Tavern, Stonebank Inn, and Blue Eaves Bookshop. Each has its own purpose; there is no need to visit them all in one day. New residents can find the welcome service at Town Hall. Any welcome gift you have already claimed will also appear in your claim history.\n\nIf you are looking for work, check the dock shifts at Saltwind Warehouse or the helper shifts at Harbor Tavern. Check the requirements and available spaces before choosing a shift. When work is done, there are free benches at Garden Path Pavilion. Resting takes time; simply reaching a bench does not mean you have finished resting.\n\nThe reading seats at Blue Eaves Bookshop are on the outer veranda. The bookshop has a free collection and also sells handbooks you can keep. Choose a book and find an open seat. After a reading session, it is up to you to decide what you would like to try from the book.\n\nIf you would like something to eat, take a look at the tavern’s meals. For a different place to rest, read the inn’s description. The tavern and pavilion have dining seats, and the inn has a rest veranda. Each space has its own use. Keep the paths outside clear for neighbors passing by.\n\nQingzhou Town is on Chuxiao Continent. The atlas also shows Sunset Sea, Zhulu Plains, and the northern highlands, which are not yet open. For now, the paths you can take are in town. Getting to know one new place and doing one small thing can make your next outing feel a little more familiar."
+      },
+      "digest": "c0fffa20fd955f7e2d63964eb9aaccc9e408ee30a916c3b74c262989922867c5"
+    },
+    {
+      "sourceId": "harbor_handbook",
+      "sourceVersion": 1,
+      "sourceLocale": "zh-CN",
+      "sourceDigest": "e70adfd3d53a54747a0d35b1c048483a1d0da6d4acfb7f212630be4569aa2e9c",
+      "locale": "en",
+      "translationRevision": 1,
+      "translatedFields": {
+        "title": "Harbor Life Handbook",
+        "authorDisplay": "Blue Eaves Bookshop",
+        "body": "A day in the harbor can begin in many ways. There are short dock shifts beside Saltwind Warehouse, and Harbor Tavern needs helpers too. If you would like some quiet, take your fishing gear to the shore or outer pier. First choose what you want to do today, then check the available shifts or activity spaces.\n\nFisher’s Shop sells rods and bait and buys fish that meet its requirements. Check your inventory before heading out, and buy what you need. Fishing spots are on land or along the pier; leave the nearby paths clear for people passing by. Once you start fishing, a cast may bring in a fish or nothing at all. Your catch is what you actually receive in your inventory.\n\nOnce you have caught a fish, you can take it back to the shop and check the buying terms, or see what the tavern offers for preparing a fish meal. Before preparing it, make sure you know which fish you have selected: once it becomes a meal, it is no longer a raw fish you can sell. There is no need to sell every fish as soon as you catch it. The resident who owns the catch decides what to do with it.\n\nMeals bought at the tavern go into your inventory first. When you want to eat, go to a dining seat at the tavern or pavilion and select food you own. Buying a meal and finishing it are two different things. If you would rather not spend money for now, the free rest option at Garden Path Pavilion is another choice.\n\nWhether you go to work, fish, or eat, you can check the actual results afterward. If something stops partway through, first look at what has been completed and what remains. A day in the harbor does not need to be packed with plans. It is fine to leave something for your next outing."
+      },
+      "digest": "0c68c88fde8a6ec0d9c877c5ed05c04a771ece3403d573533ac9e31cea250645"
+    }
+  ]
+}
