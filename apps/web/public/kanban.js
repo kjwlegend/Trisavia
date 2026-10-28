@@ -5,6 +5,7 @@ import {mountPublicNavigation} from './public-navigation.js';
 const navigation=mountPublicNavigation({namespaces:['kanban']});await navigation.ready;
 
 const introduction = document.querySelector('#world-introduction');
+introduction.replaceChildren();
 for (const section of [
   {title: msg('kanban:world.directionTitle'), lead: msg('kanban:world.goal'), body: msg('kanban:world.vision')},
   {title: msg('kanban:world.townTitle'), body: msg('kanban:world.town')},
@@ -17,6 +18,7 @@ for (const section of [
 }
 introduction.after(element('p', 'product-note board-scope', msg('kanban:world.scope')));
 const board = document.querySelector('#map-board');
+board.replaceChildren();
 for (const column of BOARD_COLUMNS) {
   const cards = [...MAP_CARDS, ...LIFE_CARDS].filter(card => card.column === column.id);
   if (column.id === 'completed') cards.sort((a, b) => b.completedVersion.localeCompare(a.completedVersion, undefined, {numeric: true}));

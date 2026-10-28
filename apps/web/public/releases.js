@@ -4,6 +4,7 @@ import {msg} from './i18n/core.js';
 import {mountPublicNavigation} from './public-navigation.js';
 const navigation=mountPublicNavigation({namespaces:['releases']});await navigation.ready;
 const list = document.querySelector('#release-list');
+list.replaceChildren();
 const note = element('p', 'product-note', msg('public:releases.note'));
 list.before(note);
 for (const release of RELEASES) {
