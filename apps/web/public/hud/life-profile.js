@@ -3,7 +3,7 @@ import {el} from '../common.js';
 import {msg,t} from '../i18n/core.js';
 import {createLifePresentation,lifeNameSource,lifeTime} from './life-presentation.js';
 import {createLifeStateReader} from './life-readers.js';
-import {createBehaviorLogReader} from './behavior-log-reader.js';
+import {createHumanBehaviorLogReader as createBehaviorLogReader} from './behavior-log-reader.js';
 import {createBehaviorLogView} from './behavior-log-view.js';
 import {lifeItemImage,lifeItemArt} from './life-item-art.js';
 import {createFishingResultStage} from '../world-pixel/fishing-art.js';

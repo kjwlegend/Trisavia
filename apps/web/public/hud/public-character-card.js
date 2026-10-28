@@ -4,7 +4,7 @@ import {el} from '../common.js';
 import {msg,t,isMessage,bindText,clearBinding} from '../i18n/core.js';
 import {avatar} from '../scene.js';
 import {createCharacterFriendship} from './friendship-ui.js';
-import {createBehaviorLogReader} from './behavior-log-reader.js';
+import {createHumanBehaviorLogReader as createBehaviorLogReader} from './behavior-log-reader.js';
 import {createBehaviorLogView} from './behavior-log-view.js';
 import {expressionPolicy} from './world-expression-reader.js';
 const m=(key,params)=>msg('public:character.'+key,params);
