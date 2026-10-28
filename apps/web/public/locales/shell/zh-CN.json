@@ -302,5 +302,6 @@
   "lifeC.cancel.terms": "取消、失权或中断不产生部分恢复；预留释放与实际成本以服务器结果为准。",
   "lifeC.copy.agent": "复制给 Agent",
   "lifeC.stock.partial": "这里只使用当前已读取实例；聚合数量仍以背包为准，不选择未读取的物品。",
-  "lifeC.copy.full": "给 Agent 的完整指引"
+  "lifeC.copy.full": "给 Agent 的完整指引",
+  "logs.originalZhCN": "原文（简体中文）"
 }

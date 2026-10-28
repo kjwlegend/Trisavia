@@ -302,5 +302,6 @@
   "lifeC.cancel.terms": "There is no partial Energy recovery if the activity is cancelled or interrupted, or permission is lost. The server result determines which reservations are released and what the actual costs are.",
   "lifeC.copy.agent": "Copy for Agent",
   "lifeC.stock.partial": "Only individual items already loaded are used here. Refer to the Inventory for total quantities; items that have not been loaded will not be selected.",
-  "lifeC.copy.full": "Complete instructions for the Agent"
+  "lifeC.copy.full": "Complete instructions for the Agent",
+  "logs.originalZhCN": "Original (Simplified Chinese)"
 }
