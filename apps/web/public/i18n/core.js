@@ -91,7 +91,7 @@ export function createI18n({window:win=globalThis.window,document:doc=globalThis
  function clearBinding(node,attribute=null){bindings.get(node)?.delete(attribute??'text');}
  function applyI18n(root=doc){
   if(!root)return;const declared=[...(root.matches?.('[data-i18n], [data-i18n-placeholder], [data-i18n-title], [data-i18n-aria-label]')?[root]:[]),...root.querySelectorAll('[data-i18n], [data-i18n-placeholder], [data-i18n-title], [data-i18n-aria-label]')];
-  for(const node of declared){const key=node.getAttribute('data-i18n');if(key)bindText(node,key);for(const attr of ['placeholder','title','aria-label']){const key=node.getAttribute('data-i18n-'+attr);if(key)bindAttribute(node,attr,key);}}
+  for(const node of declared){if(node.closest?.('[data-i18n-deferred]'))continue;const key=node.getAttribute('data-i18n');if(key)bindText(node,key);for(const attr of ['placeholder','title','aria-label']){const key=node.getAttribute('data-i18n-'+attr);if(key)bindAttribute(node,attr,key);}}
  }
  function onLocaleChange(callback){listeners.add(callback);return ()=>listeners.delete(callback);}
  async function setLocale(next,{source:nextSource='explicit',persist=nextSource==='explicit'}={}){

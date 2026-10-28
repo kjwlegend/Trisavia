@@ -64,3 +64,10 @@ test('shared error descriptors retain existing classification and never expose u
  assert(!errorText({code:'any-private-code',status:400,details:'synthetic-private-detail'}).includes('synthetic-private-detail'));
  const now=1793188800000;assert.equal(stamp(now),new Date(now).toLocaleString('en',{hour12:false}));
 });
+
+test('an explicitly deferred account subtree is not registered or fetched until its owner activates it',async()=>{
+ const f=fixture({dictionary:{shell:{en:{label:'Account UI'},'zh-CN':{label:'账户'}}}});await f.i18n.initI18n();
+ const root=new Node(),account=new Node();account.textContent='账户原文';account.setAttribute('data-i18n','shell:label');account.closest=()=>root;root.children=[account];
+ f.i18n.applyI18n(root);assert.equal(account.textContent,'账户原文');assert.equal(f.requests.some(r=>r.url.includes('/shell/')),false);
+ account.closest=()=>null;f.i18n.applyI18n(root);await f.i18n.ensureNamespaces(['shell']);assert.equal(account.textContent,'Account UI');assert.equal(f.requests.filter(r=>r.url.includes('/shell/en.json')).length,1);
+});
