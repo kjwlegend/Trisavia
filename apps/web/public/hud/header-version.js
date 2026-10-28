@@ -1,5 +1,6 @@
 // The existing health response reads package.json through APP_VERSION.
 // A failed read leaves the optional label absent; this read never polls.
+import {bindAttribute} from '../i18n/core.js';
 export async function showHeaderVersion(node){
  node.hidden=true;
  try{
@@ -7,6 +8,6 @@ export async function showHeaderVersion(node){
   if(!response.ok)return;
   const value=await response.json();
   if(value.status!=='ok'||typeof value.appVersion!=='string'||!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(value.appVersion))return;
-  node.textContent=`v${value.appVersion}`;node.setAttribute('aria-label',`应用版本 ${node.textContent}`);node.hidden=false;
+  node.textContent=`v${value.appVersion}`;bindAttribute(node,'aria-label','shell:version.label',{version:node.textContent});node.hidden=false;
  }catch{/* Version is optional and never guessed from another source. */}
 }

@@ -1,5 +1,14 @@
 /* Approved 02 neighbour-bridge lockup. The full square illustration stays in
    the design pack; compact product surfaces use the supplied 210 x 36 asset. */
+.site-language-switch{display:inline-flex;align-items:center;flex:none;gap:4px;margin-left:8px;color:#526259;font-size:12px;line-height:18px}
+.site-language-switch select{font:inherit;color:#394d41;background:#f7f3e8;border:1px solid #c7c7b7;border-radius:6px;min-height:34px;max-width:106px;padding:4px 6px;cursor:pointer}
+.site-language-switch select:focus-visible{outline:2px solid #3f6150;outline-offset:2px}
+.site-language-label{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.site-language-status:empty{display:none}.site-language-status{position:absolute;right:16px;top:52px;z-index:20;max-width:min(320px,calc(100vw - 32px));padding:8px 12px;border:1px solid #c7c7b7;border-radius:6px;color:#394d41;background:#f7f3e8;font-size:12px;line-height:18px;white-space:normal}
+.paper-hud header .world-audio{flex:none}.paper-hud header .world-audio-button{white-space:nowrap}
+.paper-hud:lang(en) .hud-dock{width:min(416px,calc(100vw - 24px))}.paper-hud:lang(en) .hud-dock-label{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(min-width:601px) and (max-width:1100px){.paper-hud:lang(en) header nav{gap:4px}.paper-hud:lang(en) header .hud-account{flex:none;max-width:210px}}
+@media(max-width:600px){.site-language-switch{margin-left:4px}.site-language-switch select{max-width:88px;padding-inline:4px}.product-header nav{flex-wrap:wrap;justify-content:flex-end}}
 .paper-hud .brand.trisavia-brand-link {
   display:flex;
   align-items:center;
@@ -18,7 +27,7 @@
   object-fit:contain;
 }
 .paper-hud .brand .trisavia-nav-picture {display:block;height:36px}
-@media(max-width:600px) {
+@media(max-width:960px) {
   .paper-hud .brand.trisavia-brand-link {width:36px;flex-basis:36px}
   .paper-hud .brand .trisavia-nav-logo {width:36px;max-width:100%}
   /* Keep the existing sound action in the same compact header row. */
