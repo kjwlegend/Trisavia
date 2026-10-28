@@ -1,4 +1,4 @@
-import {msg,t,bindText,bindAttribute,onLocaleChange,stripLocalePath} from '../i18n/core.js';
+import {msg,t,bindText,bindAttribute,clearBinding,onLocaleChange,stripLocalePath} from '../i18n/core.js';
 import {publicIdLabel} from '../public-id.js';
 import {$,el} from '../common.js';
 import {avatar} from '../scene.js';
@@ -69,8 +69,8 @@ export function createHud({session,accountNode,onOpenAccount=()=>{},onLocateAgen
   accountButton.setAttribute('aria-expanded','false');entry.setAttribute('aria-controls','hud-window');selector.setAttribute('aria-controls','hud-window');
   accountButton.addEventListener('click',()=>openAccount(session.snapshot().accountIntent==='resume'?'resume':'account','',accountButton));entry.addEventListener('click',()=>openAccount('entry','',entry));
   let labelState=session.snapshot();function sessionLabels(state){const ready=['ready','refreshing'].includes(state.phase),agent=state.agents.find(item=>item.agentId===state.selectedAgentId);
-    select.textContent=(agent?`${agent.name} · ${publicIdLabel(agent.publicId)}`:'')||(ready?(state.agents.length?t('shell:agent.choose'):t('shell:agent.none')):t('shell:agent.unselected'));
-    const accountLabel=state.continuation?`${ready?state.username+' · ':''}${state.continuation}`:ready?state.username:t('shell:nav.account');accountButton.replaceChildren(navNumber('2'),icon('profile'),el('span','',accountLabel));accountButton.setAttribute('aria-label',accountLabel);accountButton.title=ready?t('shell:account.label',{name:state.username}):t('shell:nav.account');}
+    if(agent){clearBinding(select);select.textContent=`${agent.name} · ${publicIdLabel(agent.publicId)}`;}else{select.textContent='尚未选择 Agent';bindText(select,ready?(state.agents.length?'shell:agent.choose':'shell:agent.none'):'shell:agent.unselected');}
+    const accountLabel=state.continuation?`${ready?state.username+' · ':''}${state.continuation}`:ready?state.username:null,label=el('span','',accountLabel??'登录 / 注册');accountButton.replaceChildren(navNumber('2'),icon('profile'),label);if(accountLabel===null){accountButton.setAttribute('aria-label','登录 / 注册');bindText(label,'shell:nav.account');bindAttribute(accountButton,'aria-label','shell:nav.account');}else{clearBinding(accountButton,'aria-label');accountButton.setAttribute('aria-label',accountLabel);}accountButton.title=ready?'账户：'+state.username:'登录 / 注册';bindAttribute(accountButton,'title',ready?'shell:account.label':'shell:nav.account',ready?{name:state.username}:undefined);}
   session.subscribe(state=>{const ready=['ready','refreshing'].includes(state.phase),agent=state.agents.find(item=>item.agentId===state.selectedAgentId);for(const feature of Object.values(features))feature.setContext(state);
     labelState=state;sessionLabels(state);picture.replaceChildren();if(agent)avatar(picture,{avatar:agent.avatar},agent.agentId);else picture.append(icon('profile'));locate.hidden=!state.authenticated||!ready||!agent;locate.disabled=!mapAvailable||!state.authenticated||!ready||!agent;
     selector.dataset.phase=state.phase;

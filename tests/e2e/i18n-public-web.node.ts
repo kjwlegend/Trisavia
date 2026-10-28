@@ -40,3 +40,12 @@ test('header switch preserves selected identity, focus and draft with a single r
  f.failEnglish();const failed=await f.context.newPage();await failed.goto(f.origin+'/zh-CN/releases');await expect(failed.locator('h1')).toHaveText('更新日志');await expect(failed.locator('.release-card')).toHaveCount(RELEASES.length);await failed.locator('#site-language').selectOption('en');await expect(failed.locator('#site-language')).toBeEnabled();await expect(failed.locator('h1')).toHaveText('更新日志');await expect(failed.locator('html')).toHaveAttribute('lang','zh-CN');await expect(failed.locator('body')).not.toContainText('[missing ');
  assert.deepEqual(f.errors,[]);await writeFile(resolve(out,'header-results.json'),JSON.stringify({scope:'Synthetic selected Owner state, no credentials/business writes; real core/dictionaries',selectedPreserved:true,draftPreserved:true,focusPreserved:true,versionReads:1,requests:f.requests,errors:f.errors},null,2));
 });
+test('actual anonymous home cold start refreshes initial session labels after a delayed shell dictionary',async t=>{
+ const f=await fixture(t),page=await f.context.newPage();let release!:()=>void;const gate=new Promise<void>(resolve=>{release=resolve;});t.after(()=>release());
+ await page.route('**/assets/locales/shell/en.json',async route=>{await gate;await route.continue();});
+ await page.goto(f.origin+'/en/',{waitUntil:'domcontentloaded'});await expect(page.locator('#site-language')).toBeVisible();
+ await expect(page.locator('#hud-account')).not.toContainText('[missing ');await expect(page.locator('#hud-agent-select')).not.toContainText('[missing ');await expect(page.locator('#hud-account')).not.toHaveAttribute('aria-label',/missing/);
+ release();await expect(page.locator('#hud-account')).toContainText('Sign in / Sign up');await expect(page.locator('#hud-agent-select')).toHaveText('No Agent selected');await expect(page.locator('#hud-account')).toHaveAttribute('aria-label','Sign in / Sign up');
+ await page.screenshot({path:resolve(out,'home-cold-delayed-shell.png')});assert.equal(f.requests.filter(r=>r.path==='/health').length,1);
+ await writeFile(resolve(out,'home-cold-results.json'),JSON.stringify({scope:'Actual source home boot, anonymous synthetic public endpoints; shell dictionary deliberately delayed',requests:f.requests,labels:{account:await page.locator('#hud-account').innerText(),selection:await page.locator('#hud-agent-select').innerText()},errors:f.errors},null,2));
+});
