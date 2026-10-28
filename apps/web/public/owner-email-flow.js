@@ -1,3 +1,4 @@
+import {getLocale} from './i18n/core.js';
 import {accountNotice as notice,accountMessage,accountText} from './owner-i18n.js';
 import {$ as query,api,ApiError,errorMessage,isUnknown,credential,id,tokenId,stamp,downloadPrivate} from './common.js';
 import {accountFields} from './owner-account.js';
@@ -160,12 +161,12 @@ export function createOwnerEmailFlow(hooks){
   }
   const basePath=()=>registration()?`/owner/registration-attempts/${encodeURIComponent(progress.attemptId)}`:`/owner/email-recovery-attempts/${encodeURIComponent(progress.attemptId)}`;
   function payload(action){
-    const p=progress,operationId=p.pending.operationId;
+    const p=progress,operationId=p.pending.operationId,display=p.pending.uiLocale===undefined?{}:{uiLocale:p.pending.uiLocale};
     if(action==='startRegistration')return{operationId,attemptId:p.attemptId,browserToken:p.browserToken,username:p.username,email:p.email,...(p.target?{agentId:p.target.agentId,expectedGeneration:p.target.generation,...(p.target.handoffToken?{handoffToken:p.target.handoffToken}:{setupToken:p.target.setupToken})}:{})};
     if(action==='startEmailRecovery')return{operationId,browserToken:p.browserToken};
     if(['verifyRegistrationEmail','verifyRecoveryEmail'].includes(action))return{operationId,code:$('#email-code').value.trim(),...(p.pending.challengeBound?{sendOperationId:p.pending.challengeOperationId}:{})};
-    if(finalActions.includes(action))return{operationId,...(registration()?{attemptId:p.attemptId}:{}),password:$('#email-password').value,sessionToken:p.sessionToken,...(p.recoveryToken?{recoveryToken:p.recoveryToken}:{}),...(p.target?(p.target.handoffToken?{handoffToken:p.target.handoffToken}:{setupToken:p.target.setupToken}):{})};
-    return{operationId};
+    if(finalActions.includes(action))return{operationId,...(action==='recoverByEmail'?display:{}),...(registration()?{attemptId:p.attemptId}:{}),password:$('#email-password').value,sessionToken:p.sessionToken,...(p.recoveryToken?{recoveryToken:p.recoveryToken}:{}),...(p.target?(p.target.handoffToken?{handoffToken:p.target.handoffToken}:{setupToken:p.target.setupToken}):{})};
+    return{operationId,...(['sendRegistrationCode','sendRecoveryCode'].includes(action)?display:{})};
   }
   function path(action){return{startRegistration:'/owner/registration-attempts',startEmailRecovery:'/owner/recovery-assistance/email-attempts',sendRegistrationCode:`${basePath()}/email-challenges`,sendRecoveryCode:`${basePath()}/email-challenges`,verifyRegistrationEmail:`${basePath()}/email-verifications`,verifyRecoveryEmail:`${basePath()}/email-verifications`,cancelRegistration:`${basePath()}/cancel`,registerOwner:'/owner/accounts',completeSetup:'/owner/setup/complete',recoverByEmail:`${basePath()}/complete`}[action];}
   function authorization(action){return action==='startRegistration'?undefined:action==='startEmailRecovery'?progress.assistanceToken:progress.browserToken;}
@@ -176,11 +177,11 @@ export function createOwnerEmailFlow(hooks){
     if(finalActions.includes(action)){progress.sessionToken??=credential('session');}
     if(action.startsWith('start'))progress.startOperationId??=id();
     const sending=['sendRegistrationCode','sendRecoveryCode'].includes(action);
-    if(sending&&(canRenewChallenge()||!['queued','unknown'].includes(currentView?.deliveryStatus)))progress.sendOperationId=id();
+    if(sending&&(canRenewChallenge()||!['queued','unknown'].includes(currentView?.deliveryStatus))){progress.sendOperationId=id();progress.sendUiLocale=getLocale();}
     if(sending&&!progress.sendOperationId)throw new ApiError('email_progress_invalid',400);
     const verifying=action.startsWith('verify');
     if(verifying&&(!viewFromRead||!currentView?.sendOperationId||progress.sendOperationId!==currentView.sendOperationId))throw new ApiError('email_progress_invalid',400);
-    progress.pending={action,scope:emailScope(progress),operationId:action.startsWith('start')?progress.startOperationId:sending?progress.sendOperationId:id(),...(verifying?{challengeOperationId:progress.sendOperationId,challengeBound:true}:{})};save();await submit();
+    progress.pending={action,scope:emailScope(progress),operationId:action.startsWith('start')?progress.startOperationId:sending?progress.sendOperationId:id(),...(sending?(progress.sendUiLocale===undefined?{}:{uiLocale:progress.sendUiLocale}):action==='recoverByEmail'?{uiLocale:getLocale()}:{}),...(verifying?{challengeOperationId:progress.sendOperationId,challengeBound:true}:{})};save();await submit();
   }
   async function accept(result,command){
     assertReceipt(result,command);
@@ -211,7 +212,7 @@ export function createOwnerEmailFlow(hooks){
     else if(['sendRegistrationCode','sendRecoveryCode'].includes(command.action)){await read();inform(modeMismatch()?mismatchMessage():copy[currentView.deliveryStatus]||accountMessage("email.progress.saved"));}
     else inform(copy[result.deliveryStatus]||accountMessage("email.progress.saved"));render();
   }
-  async function read(){const result=await api(basePath(),{token:progress.browserToken});assertView(result);currentView=result;retainMode(result);viewFromRead=true;progress.started=true;if(!progress.pending&&result.sendOperationId)progress.sendOperationId=result.sendOperationId;if(!pending()&&!registration()&&result.status==='completed')progress.completed=true;save();render();return result;}
+  async function read(){const result=await api(basePath(),{token:progress.browserToken});assertView(result);currentView=result;retainMode(result);viewFromRead=true;progress.started=true;if(!progress.pending&&result.sendOperationId){if(progress.sendOperationId!==result.sendOperationId)delete progress.sendUiLocale;progress.sendOperationId=result.sendOperationId;}if(!pending()&&!registration()&&result.status==='completed')progress.completed=true;save();render();return result;}
   async function originalReceipt(){const p=progress.pending;return api(`/operations/${encodeURIComponent(p.operationId)}?scope=${encodeURIComponent(p.scope)}&action=${encodeURIComponent(p.action)}`,{token:progress.browserToken});}
   async function acceptOriginalReceipt(result,command){
     try{await accept(result,command);}

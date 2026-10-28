@@ -1,3 +1,5 @@
+import {getLocale} from './i18n/core.js';
+import {mountOwnerLocalePreferences} from './owner-ui-preferences.js';
 import {accountNotice as notice,accountElement as el,accountMessage,accountLabel,accountText,accountAttribute} from './owner-i18n.js';
 import {lifeReadInput,giftReadInput} from './hud/life-owner-input.js';
 import {npcLifeReadInput} from './hud/npc-life-reader.js';
@@ -31,7 +33,7 @@ function authTaskVisible(){return !$('#auth-view').hidden&&(!$('#forgot-view').h
 function accountIntent(){return hasPending()||unfinishedTask()||authTaskVisible()?'resume':'account';}
 function summary(){const ready=authenticatedOwner();const identity=[ready,vault,ready?vault.sessionToken:'',ready?selectedId:''];if(!observationIdentity||identity.some((value,index)=>value!==observationIdentity[index])){observationIdentity=identity;observationRevision++;}return{authenticated:ready,observationRevision,phase:busy&&ready?'refreshing':ready?(sessionPhase==='error'?'error':'ready'):sessionPhase,username:ready?account.username:'',agents:ready?agents.map(agent=>{const profile=agent.profile.published||agent.profile.draft||{};return{agentId:agent.agentId,publicId:agent.publicId,name:profile.displayName||accountLabel("state.agent.unnamed"),bio:profile.bio||'',interests:profile.interests||[],avatar:agent.profile.publishedAppearance??agent.profile.published?.avatar??{},profileSource:agent.profile.published?'published':'draft',membership:agent.membership.state,ownerPaused:agent.membership.ownerPaused,platformRestricted:agent.membership.platformRestricted,asOf:agent.asOf};}):[],selectedAgentId:ready?selectedId:'',accountIntent:accountIntent(),interactionLocked:busy||Boolean(vault.pendingOperation)||Boolean(emailFlow?.pending)||Boolean(presentation?.confirming),continuation:unfinishedTask()||authTaskVisible()||entryStore?.pending?accountLabel("common:action.continue"):''};}
 function safeTarget(){const context=emailFlow?.target||assistance.snapshot()||vault.claimContext;if(!context?.agentId)return null;const owned=agents.find(agent=>agent.agentId===context.agentId);return{agentId:context.agentId,publicId:owned?.publicId||context.publicId||(context.agentId===setupInfo?.agentId?setupInfo.publicId:undefined),name:context.agentId===setupInfo?.agentId?vault.setupAgentName||'':owned?.profile.published?.displayName||owned?.profile.draft?.displayName||'',avatar:context.agentId===setupInfo?.agentId?setupAvatar:owned?.profile.publishedAppearance??owned?.profile.published?.avatar,recovery:Boolean(context.recovery||assistance.token)};}
-function emitState(){inviteUI?.syncSession();presentation?.account(account);presentation?.target(safeTarget());const state=summary();presentation?.state(state);for(const listener of subscribers)listener(structuredClone(state));onState(state);presentation?.sync();onView();}
+function emitState(){uiPreferences?.syncContext();inviteUI?.syncSession();presentation?.account(account);presentation?.target(safeTarget());const state=summary();presentation?.state(state);for(const listener of subscribers)listener(structuredClone(state));onState(state);presentation?.sync();onView();}
 const storageKey='connet.owner.v2';
 const freshAudioOperations=new Set();
 let vault={format:'connet-owner-v2',origin:location.origin};
@@ -42,7 +44,7 @@ let setupInfo=null,setupPrepared=false,recoveryPrepared=null,runtimePrepared=nul
 let setupAvatar=null;let setupPublicGeneration=0,setupPublicAbort=null;
 let pendingPayload=null,view='auth',readAbort=null,authExitPrepared=null;
 let recoveryIntent=false,sessionOnlyBackup=null,focusRequested=null,recoveryOwnerId='',recoverySourceProof='';
-let account=null,accountSession='',existingClaimIntent=false,assistanceSession=null,emailFlow=null,backupPrepared=null;
+let account=null,accountSession='',existingClaimIntent=false,assistanceSession=null,emailFlow=null,backupPrepared=null,uiPreferences=null;
 const assistance=createRecoveryAssistance(()=>controls(),root);
 const globalNotice=$('#global-notice');let feedbackGeneration=0;
 
@@ -504,9 +506,9 @@ function prepareRecovery(){
   }
   if(vault.pendingOperation)return;const ownerId=recoveryOwnerId.trim(),oldToken=recoverySourceProof.trim();
   if(!ownerId||!validToken(oldToken)){message(accountMessage("error.backup.selectValid"),'error');return;}
-  try{recoveryPrepared??={ownerId,oldToken,recoveryToken:credential('recovery'),sessionToken:credential('session'),operationId:id()};
+  try{recoveryPrepared??={uiLocale:getLocale(),ownerId,oldToken,recoveryToken:credential('recovery'),sessionToken:credential('session'),operationId:id()};
     if(recoveryPrepared.ownerId!==ownerId||recoveryPrepared.oldToken!==oldToken){recoveryPrepared=null;prepareRecovery();return;}
-    const file={format:'connet-owner-v2',origin:location.origin,ownerId,recoveryToken:recoveryPrepared.recoveryToken,sessionToken:recoveryPrepared.sessionToken,sourceRecoveryToken:recoveryPrepared.oldToken,...(vault.assistanceContext?{assistanceContext:vault.assistanceContext}:{}),pendingOperation:{operationId:recoveryPrepared.operationId,scope:`owner:${ownerId}`,action:'recover',kind:'recovery'}};
+    const file={format:'connet-owner-v2',origin:location.origin,ownerId,recoveryToken:recoveryPrepared.recoveryToken,sessionToken:recoveryPrepared.sessionToken,sourceRecoveryToken:recoveryPrepared.oldToken,...(vault.assistanceContext?{assistanceContext:vault.assistanceContext}:{}),pendingOperation:{operationId:recoveryPrepared.operationId,scope:`owner:${ownerId}`,action:'recover',kind:'recovery',input:{uiLocale:recoveryPrepared.uiLocale}}};
     downloadPrivate('connet-owner-recovery.private.json',file);$('#recovery-saved').disabled=false;message(accountMessage("state.recovery.saveNewBackup"));controls();
   }catch(error){fail(error);}
 }
@@ -517,12 +519,12 @@ async function recover(event){event.preventDefault();
     const oldToken=recoverySourceProof.trim(),password=$('#recovery-password').value;
     if(!validToken(oldToken)||password.length<12){message(accountMessage("state.recovery.resumeWithPreviousBackup"),'pending');return;}
     const pending=vault.pendingOperation;recoveryIntent=false;
-    pendingPayload={token:oldToken,body:{operationId:pending.operationId,password,recoveryToken:vault.recoveryToken,sessionToken:vault.sessionToken,credentialsSaved:true,...(vault.assistanceContext?{assistanceToken:vault.assistanceContext.assistanceToken}:{})}};
+    pendingPayload={token:oldToken,body:{operationId:pending.operationId,password,recoveryToken:vault.recoveryToken,sessionToken:vault.sessionToken,credentialsSaved:true,...(pending.input?.uiLocale===undefined?{}:{uiLocale:pending.input.uiLocale}),...(vault.assistanceContext?{assistanceToken:vault.assistanceContext.assistanceToken}:{})}};
     await executePending({...pending,path:'/owner/recoveries',method:'POST'});return;
   }
   if(!recoveryPrepared)return;
   if(recoveryPrepared.ownerId!==recoveryOwnerId.trim()||recoveryPrepared.oldToken!==recoverySourceProof.trim()){recoveryPrepared=null;$('#recovery-saved').checked=false;controls();message(accountMessage("error.recovery.identityChanged"),'error');return;}
-  try{const next=recoveryPrepared;vault.ownerId=next.ownerId;vault.sessionToken=next.sessionToken;vault.recoveryToken=next.recoveryToken;vault.sourceRecoveryToken=next.oldToken;vault.stage='recovery_prepared';recoveryIntent=false;save();await command({action:'recover',path:'/owner/recoveries',targetId:null,token:next.oldToken,operationId:next.operationId,kind:'recovery',fields:{password:$('#recovery-password').value,recoveryToken:next.recoveryToken,sessionToken:next.sessionToken,credentialsSaved:true,...(vault.assistanceContext?{assistanceToken:vault.assistanceContext.assistanceToken}:{})}});}catch(error){fail(error);}
+  try{const next=recoveryPrepared;vault.ownerId=next.ownerId;vault.sessionToken=next.sessionToken;vault.recoveryToken=next.recoveryToken;vault.sourceRecoveryToken=next.oldToken;vault.stage='recovery_prepared';recoveryIntent=false;save();await command({action:'recover',path:'/owner/recoveries',targetId:null,token:next.oldToken,operationId:next.operationId,kind:'recovery',fields:{uiLocale:next.uiLocale,password:$('#recovery-password').value,recoveryToken:next.recoveryToken,sessionToken:next.sessionToken,credentialsSaved:true,...(vault.assistanceContext?{assistanceToken:vault.assistanceContext.assistanceToken}:{})}});}catch(error){fail(error);}
 }
 
 async function loadAgents({resetProfile=true}={}){
@@ -792,6 +794,7 @@ async function resume(){
 // Account forms share the original receipt, pre-saved proof and backup machinery.
 function pendingInput(action,body){
   if(managerActions.has(action))return managerInput(action,body);
+  if(action==='recover'&&body.uiLocale!==undefined)return{uiLocale:body.uiLocale};
   if(action==='login'&&body.identifier)return{identifier:body.identifier};
   if(action==='registerOwner')return{attemptId:body.attemptId,username:body.username,email:body.email};
   if(action==='completeSetup'&&body.username!==undefined)return{username:body.username,email:body.email};
@@ -1184,10 +1187,11 @@ async function readOwnerWorldSummary(operation,input={}, {signal}={}){
   catch(error){if(current()&&error.status===401)expireAuthenticatedSession(source,session,generation);throw error;}
 }
 inviteUI=createOwnerAgentInvite(root,{context:()=>({ownerId:vault.ownerId,sessionToken:vault.sessionToken,authenticated:authenticatedOwner()}),setBusy,fail});
+uiPreferences=mountOwnerLocalePreferences($('#owner-language-preferences'),{request:api,context:()=>({authenticated:authenticatedOwner(),ownerId:vault.ownerId,sessionToken:vault.sessionToken,source:vault,generation:readGeneration}),onExpired:({source,sessionToken,generation})=>expireAuthenticatedSession(source,sessionToken,generation)});
 const worldActionSettings=mountWorldActionPolicy($('#world-autonomy-form'),{session:{snapshot:()=>structuredClone(summary()),readWorldActionPolicy,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}},changed:controls,dirty:()=>presentation?.dirty('world-autonomy-form'),remember:()=>presentation?.rememberForm('world-autonomy-form'),onSave:({agentId,expectedVersion,mode})=>{if(agentId!==selectedId||hasPending())return;return command({action:'saveWorldActionPolicy',path:`/owner/agents/${encodeURIComponent(agentId)}/world-action-policy`,method:'PUT',targetId:agentId,fields:{expectedVersion,mode}});}});
 const behaviorLogs=mountOwnerBehaviorLogs($('#owner-behavior-logs'),{snapshot:()=>structuredClone(summary()),readBehaviorHistory,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}});
 const worldSummary=mountOwnerWorldSummary($('#owner-world-summary'),{read:readOwnerWorldSummary,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}});
-window.addEventListener('pagehide',event=>{if(!event.persisted){behaviorLogs.dispose();worldSummary.dispose();worldActionSettings.dispose();}});
+window.addEventListener('pagehide',event=>{if(!event.persisted){uiPreferences.dispose();behaviorLogs.dispose();worldSummary.dispose();worldActionSettings.dispose();}});
 return{start,open,select:selectAgent,refresh:refreshSummary,readPerception,readWallet,readFriends,readInteraction,readFriendship,readMailbox,readTownService,readLife,readNpcLife,readGifts,readBehaviorHistory,commandFriendship,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
   hudContext(){if(authenticatedOwner()&&['ready','refreshing'].includes(summary().phase))return{kind:'owner',ownerId:account.ownerId,agentId:agents.some(agent=>agent.agentId===selectedId)?selectedId:''};return sessionPhase==='anonymous'&&!vault.sessionToken?{kind:'guest',ownerId:'',agentId:''}:null;},
   attachPresentation(value){presentation=value;value.setNavigator(navigateManager);value.connectAvatarStudio({request:avatarAssetRequest,context:()=>{const ctx=friendshipContext(),agent=current();return{ownerId:ctx.ownerId,agentId:ctx.target,profileVersion:agent.profile.version,policyVersion:agent.profile.policyVersion};},refresh:async()=>{await loadAgents({resetProfile:false});presentation?.resetAppearance();}});},

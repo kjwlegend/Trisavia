@@ -22,7 +22,7 @@ export function createOwnerPresentation(root,{setTitle=()=>{},close=()=>{},onCha
   move('agents',['agent-select','account-name','agent-list','empty-agents','add-agent']);move('profile',['profile-panel']);move('participation',['membership-panel']);move('policy',['policy-panel']);move('runtime',['runtime-panel']);move('invite',['invites-panel']);
   runtimePanel.open=true;
   for(const node of [...security.children])if(node.tagName!=='SUMMARY')sections.security.append(node);security.remove();sections.security.append(sessionActions);
-  const facts=el('p','account-facts');facts.id='account-security-facts';sections.security.prepend(facts);agentSelect.hidden=true;
+  const facts=el('p','account-facts');facts.id='account-security-facts';sections.security.prepend(facts);const preferences=el('section','manager-soft');preferences.id='owner-language-preferences';sections.security.append(preferences);agentSelect.hidden=true;
   // Attach all moved sections before looking up their controls again.
   manage.replaceChildren(pages);summary.hidden=true;sections.overview.append(summary);
   const missingAppearance=el('section','notice error');missingAppearance.id='profile-appearance-needed';missingAppearance.hidden=true;missingAppearance.append(el('p','',accountMessage("manager.chooseAppearanceHint")));const chooseAppearance=el('button','',accountMessage("manager.chooseCharacter"));chooseAppearance.type='button';chooseAppearance.dataset.managerGo='repair-appearance';missingAppearance.append(chooseAppearance);$('#profile-form').before(missingAppearance);

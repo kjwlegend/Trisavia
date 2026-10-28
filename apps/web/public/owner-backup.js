@@ -53,6 +53,7 @@ export function parseOwnerBackup(text,origin){
       }else if(loginOnly)invalid();
       else if(p.action==='recover'){
         if(p.scope!==`owner:${next.ownerId}`||!next.sessionToken||!next.recoveryToken||!next.sourceRecoveryToken)invalid();
+        if(input?.uiLocale!==undefined){if(!['zh-CN','en'].includes(input.uiLocale)||Object.keys(input).length!==1)invalid();clean={uiLocale:input.uiLocale};}
       }else if(p.action==='completeSetup'){
         if(!next.setupToken||!next.sessionToken||!next.recoveryToken||p.scope!==`setup:${tokenId(next.setupToken)}`)invalid();
         clean=readAccountInput(input);

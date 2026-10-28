@@ -31,9 +31,12 @@ export function readEmailProgress(){
   if(saved.completed===true&&saved.kind==='recovery'&&!saved.pending)next.completed=true;
   if(saved.startOperationId!==undefined){if(typeof saved.startOperationId!=='string'||saved.startOperationId.length<8||saved.startOperationId.length>100)invalid();next.startOperationId=saved.startOperationId;}
   if(saved.sendOperationId!==undefined){if(typeof saved.sendOperationId!=='string'||saved.sendOperationId.length<8||saved.sendOperationId.length>100)invalid();next.sendOperationId=saved.sendOperationId;}
+  if(saved.sendUiLocale!==undefined){if(!saved.sendOperationId||!['zh-CN','en'].includes(saved.sendUiLocale))invalid();next.sendUiLocale=saved.sendUiLocale;}
   if(saved.pending){const p=saved.pending;if(typeof p.operationId!=='string'||p.operationId.length<8||p.operationId.length>100||!actions[next.kind].includes(p.action)||p.scope!==emailScope(next))invalid();
     if((p.action==='completeSetup'&&!next.target)||(p.action==='registerOwner'&&next.target)||(['registerOwner','completeSetup','recoverByEmail'].includes(p.action)&&!next.sessionToken))invalid();
     next.pending={operationId:p.operationId,scope:p.scope,action:p.action,uncertain:true};
+    if(p.uiLocale!==undefined){if(!['sendRegistrationCode','sendRecoveryCode','recoverByEmail'].includes(p.action)||!['zh-CN','en'].includes(p.uiLocale))invalid();next.pending.uiLocale=p.uiLocale;}
+    if(['sendRegistrationCode','sendRecoveryCode'].includes(p.action)&&saved.sendUiLocale!==undefined&&p.uiLocale!==saved.sendUiLocale)invalid();
     if(p.action.startsWith('verify')){const challengeOperationId=p.challengeOperationId||next.sendOperationId;if(typeof challengeOperationId!=='string'||challengeOperationId.length<8||challengeOperationId.length>100)invalid();next.pending.challengeOperationId=challengeOperationId;if(p.challengeBound!==undefined&&p.challengeBound!==true)invalid();if(p.challengeBound===true)next.pending.challengeBound=true;}
   }
   return next;
