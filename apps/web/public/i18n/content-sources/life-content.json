@@ -16,11 +16,11 @@
   },
   "resources": {
     "zh-CN": {
-      "path": "zh-CN.json",
+      "path": "../../locales/life-content/zh-CN.json",
       "sha256": "14256100c7cfb30c12306b9c421177c5f856a26b0c80728566d6922b6aa1210c"
     },
     "en": {
-      "path": "en.json",
+      "path": "../../locales/life-content/en.json",
       "sha256": "1d65f2b3925c3cf36b5a8807d6473706448362c1f6c5582dcdf7a6549fcfdc96"
     }
   },
