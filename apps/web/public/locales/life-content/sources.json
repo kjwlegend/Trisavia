@@ -1,0 +1,1639 @@
+{
+  "schemaVersion": 1,
+  "namespace": "life-content",
+  "sourceBaseline": {
+    "commit": "a14c59017a4b8f29812f439bc92523df6c741abc",
+    "appVersion": "0.10.6",
+    "checkedDate": "2026-10-28"
+  },
+  "digestContract": {
+    "algorithm": "sha256",
+    "encoding": "UTF-8",
+    "canonicalization": "Build an object mapping each source field in fields to its exact current original string. Sort field names by Unicode code point; serialize as compact JSON with no ASCII escaping, whitespace, normalization or trailing newline; hash the UTF-8 bytes. Field names are ASCII in this edition, so JS lexicographic sorting is equivalent.",
+    "coverage": "Only the original display fields listed in fields. Versions, stable IDs, selectors, native digests and stateGuards must also match independently. This is a translation-source digest, never a replacement for a machine/identity digest.",
+    "mismatch": "Do not use this translation group. Render the current permitted original text with an explicit source-changed/unavailable indicator; never restore a withdrawn or inaccessible source from this public dictionary.",
+    "missingVersion": "A null version means the original has no content version; compare the field digest and source identity rather than inventing a version."
+  },
+  "resources": {
+    "zh-CN": {
+      "path": "zh-CN.json",
+      "sha256": "14256100c7cfb30c12306b9c421177c5f856a26b0c80728566d6922b6aa1210c"
+    },
+    "en": {
+      "path": "en.json",
+      "sha256": "1d65f2b3925c3cf36b5a8807d6473706448362c1f6c5582dcdf7a6549fcfdc96"
+    }
+  },
+  "groups": [
+    {
+      "sourceId": "bait",
+      "sourceRef": "bait",
+      "version": 3,
+      "sourceDigest": "c6ec888977edbd831f16d6bc2a11a30d568cea0864ab736e04ad1274ef58e186",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeItem.bait.v3.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/life/b-catalog.ts",
+          "selector": "bait.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "basic_rod",
+      "sourceRef": "basic_rod",
+      "version": 3,
+      "sourceDigest": "acb5ad3dbf0aef0ed91799b512f2b8612ce57ba79e4ba6288c3bf1f67c6e333f",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeItem.basic_rod.v3.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/life/b-catalog.ts",
+          "selector": "basic_rod.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "blue_library",
+      "sourceRef": "blue_library",
+      "version": 3,
+      "sourceDigest": "91cc86dbdb150396c5a4114c7de585ed8da98136d5e05644d688b4dd7a21b2e1",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifePlace.blue_library.v3.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-life/spatial-manifest-c-v1.json",
+          "selector": "blue_library.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "book.read",
+      "sourceRef": "book.read",
+      "version": 3,
+      "sourceDigest": "8993d5b9172ceff02c0804e22a834f16f7296d9135e1b7567f9a70a23d5145a3",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeAction.book.read.v3.blue_library.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/application/life-c-read-model.ts",
+          "selector": "book.read.name",
+          "context": {
+            "placeId": "blue_library"
+          }
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision",
+      "selector": {
+        "placeId": "blue_library"
+      }
+    },
+    {
+      "sourceId": "bread_meal",
+      "sourceRef": "bread_meal",
+      "version": 3,
+      "sourceDigest": "a050f5f9261993159c1d7d4cc863edb455912859087dc789db9e0dcdac888a72",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeItem.bread_meal.v3.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/life/c-values.ts",
+          "selector": "bread_meal.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "care.introduce",
+      "sourceRef": "care.introduce",
+      "version": 1,
+      "sourceDigest": "830e3cd13380d052f7383665fcc018b8a5b53b20d8fee5f6695d6ad72ceae1a8",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeAction.care.introduce.v1.pine-gardener-reception.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/application/npc-life-service.ts",
+          "selector": "care.introduce.name",
+          "context": {
+            "placeId": "pine-gardener-reception"
+          }
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision",
+      "selector": {
+        "placeId": "pine-gardener-reception"
+      }
+    },
+    {
+      "sourceId": "care.perform",
+      "sourceRef": "care.perform",
+      "version": 1,
+      "sourceDigest": "9af9894832f4a62df2fc206f47d00ba2084a9270bfe42176634e6d0e5a16d9e5",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeAction.care.perform.v1.pine-care-water-01.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/application/npc-life-service.ts",
+          "selector": "care.perform.name",
+          "context": {
+            "placeId": "pine-care-water-01"
+          }
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision",
+      "selector": {
+        "placeId": "pine-care-water-01"
+      }
+    },
+    {
+      "sourceId": "fish.session",
+      "sourceRef": "fish.session",
+      "version": 3,
+      "sourceDigest": "67b6446165ad05fe65446f1afdf562f717e97cebad7e9622becc675a5698a56a",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeAction.fish.session.v3.pier_spot.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/application/life-b-read-model.ts",
+          "selector": "fish.session.name",
+          "context": {
+            "spotId": "pier_spot"
+          }
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision",
+      "selector": {
+        "spotId": "pier_spot"
+      }
+    },
+    {
+      "sourceId": "fish.session",
+      "sourceRef": "fish.session",
+      "version": 3,
+      "sourceDigest": "1fc92cae0a2b79e87beb6b365345e462238f456a04db6d0680b4033fa0f00de4",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeAction.fish.session.v3.shore_spot.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/application/life-b-read-model.ts",
+          "selector": "fish.session.name",
+          "context": {
+            "spotId": "shore_spot"
+          }
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision",
+      "selector": {
+        "spotId": "shore_spot"
+      }
+    },
+    {
+      "sourceId": "fisher_shop",
+      "sourceRef": "fisher_shop",
+      "version": 3,
+      "sourceDigest": "4ef97977b7bd8d391f728a232a67595d498ff1c8754c749cf9dd98aa2814499b",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifePlace.fisher_shop.v3.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-life/spatial-manifest-c-v1.json",
+          "selector": "fisher_shop.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "garden_bench",
+      "sourceRef": "garden_bench",
+      "version": 3,
+      "sourceDigest": "ec9440ec527bfe09f9ea5d16ba231a3fbbd593864d80b3d5ad8ee821cd496529",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifePlace.garden_bench.v3.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-life/spatial-manifest-c-v1.json",
+          "selector": "garden_bench.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "grilled_fish",
+      "sourceRef": "grilled_fish",
+      "version": 3,
+      "sourceDigest": "4935cea7a050415433e704e2a1ecd1275d09fdc4fb2a5fd40bcbb65d0e91cb44",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeItem.grilled_fish.v3.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/life/c-values.ts",
+          "selector": "grilled_fish.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "harbor_handbook",
+      "sourceRef": "harbor_handbook",
+      "version": 1,
+      "sourceDigest": "803e3486e0629e96d6306a33a7813f5cd40e331ef42a8f7226033e76839935ca",
+      "digestFields": [
+        "authorDisplay",
+        "title"
+      ],
+      "fields": {
+        "authorDisplay": "lifeBook.harbor_handbook.v1.authorDisplay",
+        "title": "lifeBook.harbor_handbook.v1.title"
+      },
+      "locations": {
+        "title": {
+          "path": "apps/platform/domains/life/c-books.ts",
+          "selector": "harbor_handbook.title"
+        },
+        "authorDisplay": {
+          "path": "apps/platform/domains/life/c-books.ts",
+          "selector": "harbor_handbook.authorDisplay"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "harbor_handbook",
+      "sourceRef": "harbor_handbook",
+      "version": 3,
+      "sourceDigest": "f0917bb8af499b3caf8fc5992412435cf3d5ccf10e577a8bb5855255a94083a7",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeItem.harbor_handbook.v3.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/life/c-values.ts",
+          "selector": "harbor_handbook.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "harbor_pier",
+      "sourceRef": "harbor_pier",
+      "version": 3,
+      "sourceDigest": "2ac476ebdd07a3929f82ce78a46d1defba76b6606100fefe0f80e5a2b256f750",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifePlace.harbor_pier.v3.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-life/spatial-manifest-c-v1.json",
+          "selector": "harbor_pier.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "harbor_shift",
+      "sourceRef": "harbor_shift",
+      "version": 1,
+      "sourceDigest": "6f4de44bc5ba94a5a2ed29aa1b0341676688edbd3460c339c041358dc681374e",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeJob.harbor_shift.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/life/catalog.ts",
+          "selector": "harbor_shift.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "harbor_shore",
+      "sourceRef": "harbor_shore",
+      "version": 3,
+      "sourceDigest": "9d04ff35729ef788c02f8f00380928db280a6d0cf9b15bd5135e8df65986654f",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifePlace.harbor_shore.v3.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-life/spatial-manifest-c-v1.json",
+          "selector": "harbor_shore.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "harbor_tavern",
+      "sourceRef": "harbor_tavern",
+      "version": 3,
+      "sourceDigest": "a4cef4a3d24462d58caa8f7303d7e64df35fba48a6cdddcae4d3d2cb6a6b6a54",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifePlace.harbor_tavern.v3.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-life/spatial-manifest-c-v1.json",
+          "selector": "harbor_tavern.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "harbor_work",
+      "sourceRef": "harbor_work",
+      "version": 3,
+      "sourceDigest": "48578fee46262061fb054cdc237cf4730399e932d5e5f522e7331f61f4dcf264",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifePlace.harbor_work.v3.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-life/spatial-manifest-c-v1.json",
+          "selector": "harbor_work.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "herbal_tea",
+      "sourceRef": "herbal_tea",
+      "version": 3,
+      "sourceDigest": "316709bb65e600fbe208e0ee75381e0bba32c681cbf0c2379c0edd535dd357d5",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeItem.herbal_tea.v3.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/life/c-values.ts",
+          "selector": "herbal_tea.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "inn.rest",
+      "sourceRef": "inn.rest",
+      "version": 2,
+      "sourceDigest": "d659e471bc7c984d902417c085ae69afcebda2743c54f1aff683419a13700489",
+      "digestFields": [
+        "description",
+        "name"
+      ],
+      "fields": {
+        "description": "townService.inn.rest.v2.description",
+        "name": "townService.inn.rest.v2.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/town-services/catalog.ts",
+          "selector": "inn.rest.name"
+        },
+        "description": {
+          "path": "apps/platform/domains/town-services/catalog.ts",
+          "selector": "inn.rest.description"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "life.bait",
+      "sourceRef": "life.bait",
+      "version": 1,
+      "sourceDigest": "10f649b464b99d09d1235d2b486efbf985acbe736878b17810841ca4518fff6f",
+      "digestFields": [
+        "author",
+        "body"
+      ],
+      "fields": {
+        "author": "lifeItem.bait.v1.author",
+        "body": "lifeItem.bait.v1.summary"
+      },
+      "locations": {
+        "body": {
+          "path": "apps/platform/infrastructure/postgresql/life-commerce-repository.ts",
+          "selector": "life.bait.body"
+        },
+        "author": {
+          "path": "apps/platform/infrastructure/postgresql/life-commerce-repository.ts",
+          "selector": "life.bait.author"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "life.basic_rod",
+      "sourceRef": "life.basic_rod",
+      "version": 1,
+      "sourceDigest": "e44ce980114d1bdbf8878f7fe4cebfdc7684fb3e30ab1f6348d6041992d47c73",
+      "digestFields": [
+        "author",
+        "body"
+      ],
+      "fields": {
+        "author": "lifeItem.basic_rod.v1.author",
+        "body": "lifeItem.basic_rod.v1.summary"
+      },
+      "locations": {
+        "body": {
+          "path": "apps/platform/infrastructure/postgresql/life-commerce-repository.ts",
+          "selector": "life.basic_rod.body"
+        },
+        "author": {
+          "path": "apps/platform/infrastructure/postgresql/life-commerce-repository.ts",
+          "selector": "life.basic_rod.author"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "life.bread_meal",
+      "sourceRef": "life.bread_meal",
+      "version": 1,
+      "sourceDigest": "047040442d1b14b4d2a8c4776cd2566e8c5bf9853b336f618f5f3088fa357b1f",
+      "digestFields": [
+        "author",
+        "body"
+      ],
+      "fields": {
+        "author": "lifeItem.bread_meal.v1.author",
+        "body": "lifeItem.bread_meal.v1.summary"
+      },
+      "locations": {
+        "body": {
+          "path": "apps/platform/infrastructure/postgresql/life-c-commerce-repository.ts",
+          "selector": "life.bread_meal.body"
+        },
+        "author": {
+          "path": "apps/platform/infrastructure/postgresql/life-c-commerce-repository.ts",
+          "selector": "life.bread_meal.author"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "life.grilled_fish",
+      "sourceRef": "life.grilled_fish",
+      "version": 1,
+      "sourceDigest": "047040442d1b14b4d2a8c4776cd2566e8c5bf9853b336f618f5f3088fa357b1f",
+      "digestFields": [
+        "author",
+        "body"
+      ],
+      "fields": {
+        "author": "lifeItem.grilled_fish.v1.author",
+        "body": "lifeItem.grilled_fish.v1.summary"
+      },
+      "locations": {
+        "body": {
+          "path": "apps/platform/infrastructure/postgresql/life-c-commerce-repository.ts",
+          "selector": "life.grilled_fish.body"
+        },
+        "author": {
+          "path": "apps/platform/infrastructure/postgresql/life-c-commerce-repository.ts",
+          "selector": "life.grilled_fish.author"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "life.harbor_handbook",
+      "sourceRef": "life.harbor_handbook",
+      "version": 1,
+      "sourceDigest": "ad3b1f63ff0ac2a01c467c6460db2cdfdef08ca2ccfdb2cf53d751bc7013b543",
+      "digestFields": [
+        "author",
+        "body"
+      ],
+      "fields": {
+        "author": "lifeItem.harbor_handbook.v1.author",
+        "body": "lifeItem.harbor_handbook.v1.summary"
+      },
+      "locations": {
+        "body": {
+          "path": "apps/platform/infrastructure/postgresql/life-c-commerce-repository.ts",
+          "selector": "life.harbor_handbook.body"
+        },
+        "author": {
+          "path": "apps/platform/infrastructure/postgresql/life-c-commerce-repository.ts",
+          "selector": "life.harbor_handbook.author"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "life.herbal_tea",
+      "sourceRef": "life.herbal_tea",
+      "version": 1,
+      "sourceDigest": "047040442d1b14b4d2a8c4776cd2566e8c5bf9853b336f618f5f3088fa357b1f",
+      "digestFields": [
+        "author",
+        "body"
+      ],
+      "fields": {
+        "author": "lifeItem.herbal_tea.v1.author",
+        "body": "lifeItem.herbal_tea.v1.summary"
+      },
+      "locations": {
+        "body": {
+          "path": "apps/platform/infrastructure/postgresql/life-c-commerce-repository.ts",
+          "selector": "life.herbal_tea.body"
+        },
+        "author": {
+          "path": "apps/platform/infrastructure/postgresql/life-c-commerce-repository.ts",
+          "selector": "life.herbal_tea.author"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "life.mackerel",
+      "sourceRef": "life.mackerel",
+      "version": 1,
+      "sourceDigest": "257c0e0f8c4a613ca140c466aae14613340f337dfb9b6ccd1960af6f674c399b",
+      "digestFields": [
+        "author",
+        "body"
+      ],
+      "fields": {
+        "author": "lifeItem.mackerel.v1.author",
+        "body": "lifeItem.mackerel.v1.summary"
+      },
+      "locations": {
+        "body": {
+          "path": "apps/platform/infrastructure/postgresql/life-commerce-repository.ts",
+          "selector": "life.mackerel.body"
+        },
+        "author": {
+          "path": "apps/platform/infrastructure/postgresql/life-commerce-repository.ts",
+          "selector": "life.mackerel.author"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "life.sardine",
+      "sourceRef": "life.sardine",
+      "version": 1,
+      "sourceDigest": "257c0e0f8c4a613ca140c466aae14613340f337dfb9b6ccd1960af6f674c399b",
+      "digestFields": [
+        "author",
+        "body"
+      ],
+      "fields": {
+        "author": "lifeItem.sardine.v1.author",
+        "body": "lifeItem.sardine.v1.summary"
+      },
+      "locations": {
+        "body": {
+          "path": "apps/platform/infrastructure/postgresql/life-commerce-repository.ts",
+          "selector": "life.sardine.body"
+        },
+        "author": {
+          "path": "apps/platform/infrastructure/postgresql/life-commerce-repository.ts",
+          "selector": "life.sardine.author"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "life.sea_bass",
+      "sourceRef": "life.sea_bass",
+      "version": 1,
+      "sourceDigest": "257c0e0f8c4a613ca140c466aae14613340f337dfb9b6ccd1960af6f674c399b",
+      "digestFields": [
+        "author",
+        "body"
+      ],
+      "fields": {
+        "author": "lifeItem.sea_bass.v1.author",
+        "body": "lifeItem.sea_bass.v1.summary"
+      },
+      "locations": {
+        "body": {
+          "path": "apps/platform/infrastructure/postgresql/life-commerce-repository.ts",
+          "selector": "life.sea_bass.body"
+        },
+        "author": {
+          "path": "apps/platform/infrastructure/postgresql/life-commerce-repository.ts",
+          "selector": "life.sea_bass.author"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "lookout",
+      "sourceRef": "lookout",
+      "version": 3,
+      "sourceDigest": "42b9760d5d1f5135011d401e67a432709ca322c7c7f0f103a49a85fa95d179d3",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifePlace.lookout.v3.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-life/spatial-manifest-c-v1.json",
+          "selector": "lookout.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "mackerel",
+      "sourceRef": "mackerel",
+      "version": 3,
+      "sourceDigest": "b6316b2b23c7ad97e311ec442a4ad369e82b8e42a682f1f2c0cd17d8f1b008ee",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeItem.mackerel.v3.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/life/b-catalog.ts",
+          "selector": "mackerel.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "meal.eat",
+      "sourceRef": "meal.eat",
+      "version": 3,
+      "sourceDigest": "0e484bff445352bc6f87da74a20c7589b0a24f79811d487a045bc0892dcc0ec0",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeAction.meal.eat.v3.garden_bench.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/application/life-c-read-model.ts",
+          "selector": "meal.eat.name",
+          "context": {
+            "placeId": "garden_bench"
+          }
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision",
+      "selector": {
+        "placeId": "garden_bench"
+      }
+    },
+    {
+      "sourceId": "meal.eat",
+      "sourceRef": "meal.eat",
+      "version": 3,
+      "sourceDigest": "0e484bff445352bc6f87da74a20c7589b0a24f79811d487a045bc0892dcc0ec0",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeAction.meal.eat.v3.harbor_tavern.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/application/life-c-read-model.ts",
+          "selector": "meal.eat.name",
+          "context": {
+            "placeId": "harbor_tavern"
+          }
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision",
+      "selector": {
+        "placeId": "harbor_tavern"
+      }
+    },
+    {
+      "sourceId": "meal.prepare",
+      "sourceRef": "meal.prepare",
+      "version": 3,
+      "sourceDigest": "e70de2bc28dccb501f8ddfac4dee8d40a379f1bdd889fb9b8ec1de2de7178797",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeAction.meal.prepare.v3.harbor_tavern.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/application/life-c-read-model.ts",
+          "selector": "meal.prepare.name",
+          "context": {
+            "placeId": "harbor_tavern"
+          }
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision",
+      "selector": {
+        "placeId": "harbor_tavern"
+      }
+    },
+    {
+      "sourceId": "notice",
+      "sourceRef": "notice",
+      "version": 2,
+      "sourceDigest": "68adae99abe7ed17c8d08ed73f96f9c9d242fc662893c5873d32cef58a0c6b51",
+      "digestFields": [
+        "name",
+        "text",
+        "title"
+      ],
+      "fields": {
+        "name": "townNotice.notice.v2.name",
+        "text": "townNotice.notice.v2.text",
+        "title": "townNotice.notice.v2.title"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/town-services/catalog.ts",
+          "selector": "notice.name"
+        },
+        "title": {
+          "path": "apps/platform/domains/town-services/catalog.ts",
+          "selector": "notice.title"
+        },
+        "text": {
+          "path": "apps/platform/domains/town-services/catalog.ts",
+          "selector": "notice.text"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "npc-life/gardener/open@1",
+      "sourceRef": "npc-life/gardener/open@1",
+      "version": 1,
+      "sourceDigest": "93bd91081f4ddf786c97821694ac2b5fe277bd2dd829e930fad7490754a43c50",
+      "digestFields": [
+        "text"
+      ],
+      "fields": {
+        "text": "npcLifeMessage.npc-life/gardener/open.v1.text"
+      },
+      "locations": {
+        "text": {
+          "path": "apps/platform/domains/npc-life/content-v1.json",
+          "selector": "npc-life/gardener/open@1.text"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "npc-life/system/gardener-away@1",
+      "sourceRef": "npc-life/system/gardener-away@1",
+      "version": 1,
+      "sourceDigest": "69610b5331e77d66a871c02da7aa96c860c0675aee20bfa1e1862e6188013402",
+      "digestFields": [
+        "text"
+      ],
+      "fields": {
+        "text": "npcLifeMessage.npc-life/system/gardener-away.v1.text"
+      },
+      "locations": {
+        "text": {
+          "path": "apps/platform/domains/npc-life/content-v1.json",
+          "selector": "npc-life/system/gardener-away@1.text"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "pier_spot",
+      "sourceRef": "pier_spot",
+      "version": 2,
+      "sourceDigest": "2d981e8aed7cf0b583341a693f78aaad95de29d3bdc821467204642dac5a3cb3",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeFishingSpot.pier_spot.v2.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/life/b-catalog.ts",
+          "selector": "pier_spot.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "pine-care-water-01",
+      "sourceRef": "pine-care-water-01",
+      "version": 1,
+      "sourceDigest": "88814433e3d37df2b901cf5883c83ee53b7483e51a74314ab95b3066183fed94",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifePlace.pine-care-water-01.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/application/npc-life-service.ts",
+          "selector": "pine-care-water-01.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "pine-care-water-01",
+      "sourceRef": "pine-care-water-01",
+      "version": 1,
+      "sourceDigest": "88814433e3d37df2b901cf5883c83ee53b7483e51a74314ab95b3066183fed94",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "carePoint.pine-care-water-01.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/npc-life/definition.ts",
+          "selector": "pine-care-water-01.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "pine-gardener-reception",
+      "sourceRef": "pine-gardener-reception",
+      "version": 1,
+      "sourceDigest": "e99dddb6166c77beb70ddbda7bf55d939488497816127a6d32d9a6118222e29a",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifePlace.pine-gardener-reception.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/application/npc-life-service.ts",
+          "selector": "pine-gardener-reception.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "qingzhou_life_guide",
+      "sourceRef": "qingzhou_life_guide",
+      "version": 1,
+      "sourceDigest": "f60504262d369ffc4cea6add99046342e84a202a2d198c8768630941c7d00e47",
+      "digestFields": [
+        "authorDisplay",
+        "title"
+      ],
+      "fields": {
+        "authorDisplay": "lifeBook.qingzhou_life_guide.v1.authorDisplay",
+        "title": "lifeBook.qingzhou_life_guide.v1.title"
+      },
+      "locations": {
+        "title": {
+          "path": "apps/platform/domains/life/c-books.ts",
+          "selector": "qingzhou_life_guide.title"
+        },
+        "authorDisplay": {
+          "path": "apps/platform/domains/life/c-books.ts",
+          "selector": "qingzhou_life_guide.authorDisplay"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "rest.bench",
+      "sourceRef": "rest.bench",
+      "version": 3,
+      "sourceDigest": "e7b91c00befd2e0bb8684b096bccc4f0234372be3cd919280353e72f27c09177",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeAction.rest.bench.v3.garden_bench.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/application/life-service.ts",
+          "selector": "rest.bench.name",
+          "context": {
+            "placeId": "garden_bench"
+          }
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision",
+      "selector": {
+        "placeId": "garden_bench"
+      }
+    },
+    {
+      "sourceId": "rest.inn",
+      "sourceRef": "rest.inn",
+      "version": 3,
+      "sourceDigest": "0ebb007b8945c03d098fe21010e8296c9e98c663b968f4a9106b1e972b93c396",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeAction.rest.inn.v3.stone_inn.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/application/life-c-read-model.ts",
+          "selector": "rest.inn.name",
+          "context": {
+            "placeId": "stone_inn"
+          }
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision",
+      "selector": {
+        "placeId": "stone_inn"
+      }
+    },
+    {
+      "sourceId": "sardine",
+      "sourceRef": "sardine",
+      "version": 3,
+      "sourceDigest": "ad2e6699afd5404e0b23d23c8ef7c661b131eaf7e65f55553344cf46064dc9bd",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeItem.sardine.v3.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/life/b-catalog.ts",
+          "selector": "sardine.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "sea_bass",
+      "sourceRef": "sea_bass",
+      "version": 3,
+      "sourceDigest": "c826f484f80d19bddf6e82ca2403cb26dcead1d4881e73896fcc3bcef6f5f88d",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeItem.sea_bass.v3.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/life/b-catalog.ts",
+          "selector": "sea_bass.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "shop.buy",
+      "sourceRef": "shop.buy",
+      "version": 3,
+      "sourceDigest": "62b72ef882d11f7474e69bcfd423260cfd9c8c6050422c7360f49ded93fe24b6",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeAction.shop.buy.v3.blue_library.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/application/life-c-read-model.ts",
+          "selector": "shop.buy.name",
+          "context": {
+            "placeId": "blue_library"
+          }
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision",
+      "selector": {
+        "placeId": "blue_library"
+      }
+    },
+    {
+      "sourceId": "shop.buy",
+      "sourceRef": "shop.buy",
+      "version": 3,
+      "sourceDigest": "6281c7fe2b6abd4079ab34e9b937c890807601d6fb646baf268135dba0e1a731",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeAction.shop.buy.v3.fisher_shop.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/application/life-b-read-model.ts",
+          "selector": "shop.buy.name",
+          "context": {
+            "placeId": "fisher_shop"
+          }
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision",
+      "selector": {
+        "placeId": "fisher_shop"
+      }
+    },
+    {
+      "sourceId": "shop.buy",
+      "sourceRef": "shop.buy",
+      "version": 3,
+      "sourceDigest": "e11b34e2472e118c97bd44191e5be118aa02f2694dfc3d63b55e5013d83958f8",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeAction.shop.buy.v3.harbor_tavern.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/application/life-c-read-model.ts",
+          "selector": "shop.buy.name",
+          "context": {
+            "placeId": "harbor_tavern"
+          }
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision",
+      "selector": {
+        "placeId": "harbor_tavern"
+      }
+    },
+    {
+      "sourceId": "shop.sell",
+      "sourceRef": "shop.sell",
+      "version": 3,
+      "sourceDigest": "e8faee0a36a5fb3e9a14ffb85a61bd4bd0a2b48875995663e6518f222499ba5e",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeAction.shop.sell.v3.fisher_shop.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/application/life-b-read-model.ts",
+          "selector": "shop.sell.name",
+          "context": {
+            "placeId": "fisher_shop"
+          }
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision",
+      "selector": {
+        "placeId": "fisher_shop"
+      }
+    },
+    {
+      "sourceId": "shore_spot",
+      "sourceRef": "shore_spot",
+      "version": 2,
+      "sourceDigest": "9d04ff35729ef788c02f8f00380928db280a6d0cf9b15bd5135e8df65986654f",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeFishingSpot.shore_spot.v2.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/life/b-catalog.ts",
+          "selector": "shore_spot.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "stone_inn",
+      "sourceRef": "stone_inn",
+      "version": 3,
+      "sourceDigest": "7a5bf18cd2bd22e41f77484fed909a99642f481f141df3e7b2d041d8e710a974",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifePlace.stone_inn.v3.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-life/spatial-manifest-c-v1.json",
+          "selector": "stone_inn.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "tavern.host",
+      "sourceRef": "tavern.host",
+      "version": 2,
+      "sourceDigest": "d05d5a58a441a272836d7b9ce750e8980dca75a02343d3c5116289b8b3c9e8ed",
+      "digestFields": [
+        "description",
+        "name"
+      ],
+      "fields": {
+        "description": "townService.tavern.host.v2.description",
+        "name": "townService.tavern.host.v2.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/town-services/catalog.ts",
+          "selector": "tavern.host.name"
+        },
+        "description": {
+          "path": "apps/platform/domains/town-services/catalog.ts",
+          "selector": "tavern.host.description"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "tavern_shift",
+      "sourceRef": "tavern_shift",
+      "version": 1,
+      "sourceDigest": "e1c6e94968a0309944065634256dbfbcad19230485d1609ebec48968d228f08e",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeJob.tavern_shift.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/life/catalog.ts",
+          "selector": "tavern_shift.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "town",
+      "sourceRef": "town",
+      "version": 2,
+      "sourceDigest": "213a6c27914fcb7e6569622fea23917b55bd32cd3bed3e12f147c0a488a2edab",
+      "digestFields": [
+        "label",
+        "response"
+      ],
+      "fields": {
+        "label": "townTopic.tavern.host.town.v2.label",
+        "response": "townTopic.tavern.host.town.v2.response"
+      },
+      "locations": {
+        "label": {
+          "path": "apps/platform/domains/town-services/catalog.ts",
+          "selector": "town.label"
+        },
+        "response": {
+          "path": "apps/platform/domains/town-services/catalog.ts",
+          "selector": "town.response"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "town-inn-voucher",
+      "sourceRef": "town-inn-voucher",
+      "version": 1,
+      "sourceDigest": "06be9cda4429ecdfedc198dc3267dd1c4842fc72e250b18c402dfe78ac3fee19",
+      "digestFields": [
+        "text",
+        "title"
+      ],
+      "fields": {
+        "text": "townItem.town-inn-voucher.v1.text",
+        "title": "townItem.town-inn-voucher.v1.title"
+      },
+      "locations": {
+        "title": {
+          "path": "apps/platform/domains/town-services/catalog.ts",
+          "selector": "town-inn-voucher.title"
+        },
+        "text": {
+          "path": "apps/platform/domains/town-services/catalog.ts",
+          "selector": "town-inn-voucher.text"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "town-resident-card",
+      "sourceRef": "town-resident-card",
+      "version": 1,
+      "sourceDigest": "25c2dcfe01993613db49a84013f3d7d340fffe1d563717ece6bc4dc3390baa11",
+      "digestFields": [
+        "text",
+        "title"
+      ],
+      "fields": {
+        "text": "townItem.town-resident-card.v1.text",
+        "title": "townItem.town-resident-card.v1.title"
+      },
+      "locations": {
+        "title": {
+          "path": "apps/platform/domains/town-services/catalog.ts",
+          "selector": "town-resident-card.title"
+        },
+        "text": {
+          "path": "apps/platform/domains/town-services/catalog.ts",
+          "selector": "town-resident-card.text"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "town-tavern-voucher",
+      "sourceRef": "town-tavern-voucher",
+      "version": 1,
+      "sourceDigest": "08c70514e23a62b952fe3c041b8a679f7c3b91cdaee03bdad7b2785dafc7d3fa",
+      "digestFields": [
+        "text",
+        "title"
+      ],
+      "fields": {
+        "text": "townItem.town-tavern-voucher.v1.text",
+        "title": "townItem.town-tavern-voucher.v1.title"
+      },
+      "locations": {
+        "title": {
+          "path": "apps/platform/domains/town-services/catalog.ts",
+          "selector": "town-tavern-voucher.title"
+        },
+        "text": {
+          "path": "apps/platform/domains/town-services/catalog.ts",
+          "selector": "town-tavern-voucher.text"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "town_hall",
+      "sourceRef": "town_hall",
+      "version": 3,
+      "sourceDigest": "41c62f52db7f70843f28cc4bad71b29c744a32d8fcaa386c3fb03e4b26a94f92",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifePlace.town_hall.v3.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/life/catalog.ts",
+          "selector": "town_hall.name"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "visit.place",
+      "sourceRef": "visit.place",
+      "version": 3,
+      "sourceDigest": "817be8b7d824b5c9b2b920aefaf44d2a768dd6b2109bca23ae7209b022c099f4",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeAction.visit.place.v3.garden_bench.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/application/life-c-read-model.ts",
+          "selector": "visit.place.name",
+          "context": {
+            "placeId": "garden_bench"
+          }
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision",
+      "selector": {
+        "placeId": "garden_bench"
+      }
+    },
+    {
+      "sourceId": "visit.place",
+      "sourceRef": "visit.place",
+      "version": 3,
+      "sourceDigest": "817be8b7d824b5c9b2b920aefaf44d2a768dd6b2109bca23ae7209b022c099f4",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeAction.visit.place.v3.harbor_pier.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/application/life-c-read-model.ts",
+          "selector": "visit.place.name",
+          "context": {
+            "placeId": "harbor_pier"
+          }
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision",
+      "selector": {
+        "placeId": "harbor_pier"
+      }
+    },
+    {
+      "sourceId": "visit.place",
+      "sourceRef": "visit.place",
+      "version": 3,
+      "sourceDigest": "817be8b7d824b5c9b2b920aefaf44d2a768dd6b2109bca23ae7209b022c099f4",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeAction.visit.place.v3.harbor_shore.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/application/life-c-read-model.ts",
+          "selector": "visit.place.name",
+          "context": {
+            "placeId": "harbor_shore"
+          }
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision",
+      "selector": {
+        "placeId": "harbor_shore"
+      }
+    },
+    {
+      "sourceId": "visit.place",
+      "sourceRef": "visit.place",
+      "version": 3,
+      "sourceDigest": "817be8b7d824b5c9b2b920aefaf44d2a768dd6b2109bca23ae7209b022c099f4",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeAction.visit.place.v3.lookout.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/application/life-c-read-model.ts",
+          "selector": "visit.place.name",
+          "context": {
+            "placeId": "lookout"
+          }
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision",
+      "selector": {
+        "placeId": "lookout"
+      }
+    },
+    {
+      "sourceId": "welcome",
+      "sourceRef": "welcome",
+      "version": 2,
+      "sourceDigest": "b66c319991d4a7229d53e43146bde2b3ac0c98e35005d78709d9a0a9a835d8aa",
+      "digestFields": [
+        "label",
+        "response"
+      ],
+      "fields": {
+        "label": "townTopic.tavern.host.welcome.v2.label",
+        "response": "townTopic.tavern.host.welcome.v2.response"
+      },
+      "locations": {
+        "label": {
+          "path": "apps/platform/domains/town-services/catalog.ts",
+          "selector": "welcome.label"
+        },
+        "response": {
+          "path": "apps/platform/domains/town-services/catalog.ts",
+          "selector": "welcome.response"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "welcome.claim",
+      "sourceRef": "welcome.claim",
+      "version": 2,
+      "sourceDigest": "1ee1828d5d92b122ee6e93a2229e83595c37339117e6b5eb0bff767a62a1a51f",
+      "digestFields": [
+        "description",
+        "name"
+      ],
+      "fields": {
+        "description": "townService.welcome.claim.v2.description",
+        "name": "townService.welcome.claim.v2.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/town-services/catalog.ts",
+          "selector": "welcome.claim.name"
+        },
+        "description": {
+          "path": "apps/platform/domains/town-services/catalog.ts",
+          "selector": "welcome.claim.description"
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+    },
+    {
+      "sourceId": "work.shift",
+      "sourceRef": "work.shift",
+      "version": 3,
+      "sourceDigest": "6f4de44bc5ba94a5a2ed29aa1b0341676688edbd3460c339c041358dc681374e",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeAction.work.shift.v3.harbor_shift.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/application/life-service.ts",
+          "selector": "work.shift.name",
+          "context": {
+            "jobId": "harbor_shift"
+          }
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision",
+      "selector": {
+        "jobId": "harbor_shift"
+      }
+    },
+    {
+      "sourceId": "work.shift",
+      "sourceRef": "work.shift",
+      "version": 3,
+      "sourceDigest": "e1c6e94968a0309944065634256dbfbcad19230485d1609ebec48968d228f08e",
+      "digestFields": [
+        "name"
+      ],
+      "fields": {
+        "name": "lifeAction.work.shift.v3.tavern_shift.name"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/application/life-service.ts",
+          "selector": "work.shift.name",
+          "context": {
+            "jobId": "tavern_shift"
+          }
+        }
+      },
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision",
+      "selector": {
+        "jobId": "tavern_shift"
+      }
+    }
+  ],
+  "files": [
+    {
+      "path": "apps/platform/application/life-b-read-model.ts",
+      "sha256": "d66a695ded8edd8ba2bc1827a6c7a8076bf9c9a56c49adde61db1ed9b91441ac",
+      "meaning": "Fixed source-file audit evidence; runtime matching uses the record digest, stable ID and version above."
+    },
+    {
+      "path": "apps/platform/application/life-c-read-model.ts",
+      "sha256": "98c4bbfde46c4b4e299d179694412ae5891f286faee008b5c394c4b2ea24e771",
+      "meaning": "Fixed source-file audit evidence; runtime matching uses the record digest, stable ID and version above."
+    },
+    {
+      "path": "apps/platform/application/life-service.ts",
+      "sha256": "ce720fe9a6310ce4bfbe7225a126b11e1a7c80398d80acabf6d02f48044d4e5c",
+      "meaning": "Fixed source-file audit evidence; runtime matching uses the record digest, stable ID and version above."
+    },
+    {
+      "path": "apps/platform/application/npc-life-service.ts",
+      "sha256": "2ab264d4f57b6fc98cf230baf3be6a7c1e067f6c2fcf129b9ef6f5ac0abac220",
+      "meaning": "Fixed source-file audit evidence; runtime matching uses the record digest, stable ID and version above."
+    },
+    {
+      "path": "apps/platform/domains/life/b-catalog.ts",
+      "sha256": "20cd3db5c747ad2fdba0d790b8223d6225ce4f080259696416309d90ee307a23",
+      "meaning": "Fixed source-file audit evidence; runtime matching uses the record digest, stable ID and version above."
+    },
+    {
+      "path": "apps/platform/domains/life/c-books.ts",
+      "sha256": "86065beb11546c88151aa7e659089b759d690065de346c441ded2d8f823106da",
+      "meaning": "Fixed source-file audit evidence; runtime matching uses the record digest, stable ID and version above."
+    },
+    {
+      "path": "apps/platform/domains/life/c-values.ts",
+      "sha256": "0c4545e7e6b5424cf561252a35428b096582bde19f553d1c04cfc4a30b06daf4",
+      "meaning": "Fixed source-file audit evidence; runtime matching uses the record digest, stable ID and version above."
+    },
+    {
+      "path": "apps/platform/domains/life/catalog.ts",
+      "sha256": "3052d95cf67842de38099935bb5d45907b5914f22eb9bf4ab2495d49726b5e86",
+      "meaning": "Fixed source-file audit evidence; runtime matching uses the record digest, stable ID and version above."
+    },
+    {
+      "path": "apps/platform/domains/npc-life/content-v1.json",
+      "sha256": "8f97313f99fbb71b56fb9bd10eb1251ebd7378d7c319c8507848de27c7f1d451",
+      "meaning": "Fixed source-file audit evidence; runtime matching uses the record digest, stable ID and version above."
+    },
+    {
+      "path": "apps/platform/domains/npc-life/definition.ts",
+      "sha256": "1d8eabe0dc269fc060d559e2fcc0a92961c051049522375d851300785bd0f783",
+      "meaning": "Fixed source-file audit evidence; runtime matching uses the record digest, stable ID and version above."
+    },
+    {
+      "path": "apps/platform/domains/town-services/catalog.ts",
+      "sha256": "31cb6e321140017a78a1df2e2395adc95142f13ecec291c38781838e7f379a3b",
+      "meaning": "Fixed source-file audit evidence; runtime matching uses the record digest, stable ID and version above."
+    },
+    {
+      "path": "apps/platform/infrastructure/postgresql/life-c-commerce-repository.ts",
+      "sha256": "d6b34b3a9b87c7438e07ba6743cc0621684c0acffda2e4ec9d1c7b6e5c9f66bc",
+      "meaning": "Fixed source-file audit evidence; runtime matching uses the record digest, stable ID and version above."
+    },
+    {
+      "path": "apps/platform/infrastructure/postgresql/life-commerce-repository.ts",
+      "sha256": "3bdb9ffa06ee1211bb3d9086ed5a46a4c3f5ec0cebd001e9e682d1703e5da1f5",
+      "meaning": "Fixed source-file audit evidence; runtime matching uses the record digest, stable ID and version above."
+    },
+    {
+      "path": "apps/web/public/world-life/spatial-manifest-c-v1.json",
+      "sha256": "e30e46f7a6d66315b11af0eb7896908e84e5a70af0a0bfe72006fbbb8199152a",
+      "meaning": "Fixed source-file audit evidence; runtime matching uses the record digest, stable ID and version above."
+    }
+  ]
+}

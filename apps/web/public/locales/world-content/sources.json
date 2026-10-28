@@ -1,0 +1,3094 @@
+{
+  "schemaVersion": 1,
+  "namespace": "world-content",
+  "sourceBaseline": {
+    "commit": "a14c59017a4b8f29812f439bc92523df6c741abc",
+    "appVersion": "0.10.6",
+    "checkedDate": "2026-10-28"
+  },
+  "digestContract": {
+    "algorithm": "sha256",
+    "encoding": "UTF-8",
+    "canonicalization": "Build an object mapping each source field in fields to its exact current original string. Sort field names by Unicode code point; serialize as compact JSON with no ASCII escaping, whitespace, normalization or trailing newline; hash the UTF-8 bytes. Field names are ASCII in this edition, so JS lexicographic sorting is equivalent.",
+    "coverage": "Only the original display fields listed in fields. Versions, stable IDs, selectors, native digests and stateGuards must also match independently. This is a translation-source digest, never a replacement for a machine/identity digest.",
+    "mismatch": "Do not use this translation group. Render the current permitted original text with an explicit source-changed/unavailable indicator; never restore a withdrawn or inaccessible source from this public dictionary.",
+    "missingVersion": "A null version means the original has no content version; compare the field digest and source identity rather than inventing a version."
+  },
+  "resources": {
+    "zh-CN": {
+      "path": "zh-CN.json",
+      "sha256": "55a0325f6cd9c361cb9fa22ae406cdc6f2ee56cdcc3c46565803732bd3cfaf64"
+    },
+    "en": {
+      "path": "en.json",
+      "sha256": "ae6d37e73198ab3ce55d45c5d179034ef62578e6a653e6226b54f4bf9bdc0a44"
+    }
+  },
+  "groups": [
+    {
+      "sourceId": "commons",
+      "sourceRef": "ws02-place-profiles@1/commons",
+      "version": 1,
+      "sourceDigest": "bb0d2af4084e5f8301d4317a7ce53d67394942b6e7ca5a7c7058588d1a5641cc",
+      "digestFields": [
+        "area",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.commons.v1.area",
+        "description": "places.commons.v1.description",
+        "name": "places.commons.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/31/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/31/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/31/description"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "commons",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "commons"
+      }
+    },
+    {
+      "sourceId": "dawn",
+      "sourceRef": "world-atlas/dawn",
+      "version": null,
+      "sourceDigest": "f8d7c71f678020d39f4fb95d0ee0339c55bb6ed9373e4f9ccf3408f0b2be7c56",
+      "digestFields": [
+        "english",
+        "name",
+        "subtitle",
+        "summary"
+      ],
+      "fields": {
+        "english": "atlas.dawn.english",
+        "name": "atlas.dawn.name",
+        "subtitle": "atlas.dawn.subtitle",
+        "summary": "atlas.dawn.summary"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/2/name"
+        },
+        "subtitle": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/2/subtitle"
+        },
+        "summary": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/2/summary"
+        },
+        "english": {
+          "path": "apps/web/public/world-atlas/atlas-overlays.json",
+          "pointer": "/regions/dawn/english"
+        }
+      },
+      "stateGuards": {
+        "state": "partial"
+      },
+      "versionKind": "none; original map data has no content version"
+    },
+    {
+      "sourceId": "dusk-sail-bay",
+      "sourceRef": "world-atlas/dusk-sail-bay",
+      "version": null,
+      "sourceDigest": "5fbd21ced2268a3b07ad125291d28087e74d57693589fcff5d94252e9157faf3",
+      "digestFields": [
+        "kind",
+        "name",
+        "summary"
+      ],
+      "fields": {
+        "kind": "atlas.dusk-sail-bay.kind",
+        "name": "atlas.dusk-sail-bay.name",
+        "summary": "atlas.dusk-sail-bay.summary"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/0/destinations/0/name"
+        },
+        "kind": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/0/destinations/0/kind"
+        },
+        "summary": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/0/destinations/0/summary"
+        }
+      },
+      "stateGuards": {
+        "state": "planned"
+      },
+      "versionKind": "none; original map data has no content version"
+    },
+    {
+      "sourceId": "e-inn",
+      "sourceRef": "ws02-place-profiles@1/e-inn",
+      "version": 1,
+      "sourceDigest": "a2e408052aedc168201244afed3ecc99980fc875d8a1e3783483a6ba73cf9f98",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.e-inn.v1.area",
+        "availabilityNote": "places.e-inn.v1.availabilityNote",
+        "description": "places.e-inn.v1.description",
+        "name": "places.e-inn.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/11/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/11/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/11/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "e-inn",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "e-linked",
+      "sourceRef": "ws02-place-profiles@1/e-linked",
+      "version": 1,
+      "sourceDigest": "3a3561d8682901121bc3dce249957cca54df2bf77fa59d0fdff87b8b1489c1a1",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.e-linked.v1.area",
+        "availabilityNote": "places.e-linked.v1.availabilityNote",
+        "description": "places.e-linked.v1.description",
+        "name": "places.e-linked.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/12/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/12/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/12/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "e-linked",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "e-market",
+      "sourceRef": "ws02-place-profiles@1/e-market",
+      "version": 1,
+      "sourceDigest": "b04c9f47684e08c6beae42eaebdc42e00d51fc555198f6a3364e2af1ba72b4bd",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.e-market.v1.area",
+        "availabilityNote": "places.e-market.v1.availabilityNote",
+        "description": "places.e-market.v1.description",
+        "name": "places.e-market.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/10/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/10/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/10/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "e-market",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "e-stall",
+      "sourceRef": "ws02-place-profiles@1/e-stall",
+      "version": 1,
+      "sourceDigest": "3c297781c3bc937003492f34e79af00bb03a966494075e5244e9ed482a1f539a",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.e-stall.v1.area",
+        "availabilityNote": "places.e-stall.v1.availabilityNote",
+        "description": "places.e-stall.v1.description",
+        "name": "places.e-stall.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/13/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/13/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/13/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "e-stall",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "east-fence-ferry",
+      "sourceRef": "world-atlas/east-fence-ferry",
+      "version": null,
+      "sourceDigest": "71c4f4296915467db9fca8e97907736bdffab387b1ebcd2e040cbff2a71ebd1f",
+      "digestFields": [
+        "kind",
+        "name",
+        "summary"
+      ],
+      "fields": {
+        "kind": "atlas.east-fence-ferry.kind",
+        "name": "atlas.east-fence-ferry.name",
+        "summary": "atlas.east-fence-ferry.summary"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/2/destinations/2/name"
+        },
+        "kind": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/2/destinations/2/kind"
+        },
+        "summary": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/2/destinations/2/summary"
+        }
+      },
+      "stateGuards": {
+        "state": "planned"
+      },
+      "versionKind": "none; original map data has no content version"
+    },
+    {
+      "sourceId": "evening-star-beacon",
+      "sourceRef": "world-atlas/evening-star-beacon",
+      "version": null,
+      "sourceDigest": "a8f33783145c2079f58344a1e46591b052b41251a52be01d6b0494f4509c31db",
+      "digestFields": [
+        "kind",
+        "name",
+        "summary"
+      ],
+      "fields": {
+        "kind": "atlas.evening-star-beacon.kind",
+        "name": "atlas.evening-star-beacon.name",
+        "summary": "atlas.evening-star-beacon.summary"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/0/destinations/2/name"
+        },
+        "kind": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/0/destinations/2/kind"
+        },
+        "summary": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/0/destinations/2/summary"
+        }
+      },
+      "stateGuards": {
+        "state": "planned"
+      },
+      "versionKind": "none; original map data has no content version"
+    },
+    {
+      "sourceId": "g-glass",
+      "sourceRef": "ws02-place-profiles@1/g-glass",
+      "version": 1,
+      "sourceDigest": "5f9a3c626c698005b8bafa97a762f3dadc70d916b7cfdb8368c56021b9a101f5",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.g-glass.v1.area",
+        "availabilityNote": "places.g-glass.v1.availabilityNote",
+        "description": "places.g-glass.v1.description",
+        "name": "places.g-glass.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/27/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/27/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/27/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "g-glass",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "g-linked",
+      "sourceRef": "ws02-place-profiles@1/g-linked",
+      "version": 1,
+      "sourceDigest": "5d49d72add2c8b6aea66e5749553201539e040f8867687592d9edf608caff479",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.g-linked.v1.area",
+        "availabilityNote": "places.g-linked.v1.availabilityNote",
+        "description": "places.g-linked.v1.description",
+        "name": "places.g-linked.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/29/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/29/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/29/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "g-linked",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "g-lodge",
+      "sourceRef": "ws02-place-profiles@1/g-lodge",
+      "version": 1,
+      "sourceDigest": "876f9c56cb22f7f29a8559be3ae9f00717d3b4d40497398222243f92baadba32",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.g-lodge.v1.area",
+        "availabilityNote": "places.g-lodge.v1.availabilityNote",
+        "description": "places.g-lodge.v1.description",
+        "name": "places.g-lodge.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/30/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/30/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/30/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "g-lodge",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "g-pavilion",
+      "sourceRef": "ws02-place-profiles@1/g-pavilion",
+      "version": 1,
+      "sourceDigest": "03d05543ebfd92907c35e7aa6eb6a2e081d8807197e4cc66dd07488980998168",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.g-pavilion.v1.area",
+        "availabilityNote": "places.g-pavilion.v1.availabilityNote",
+        "description": "places.g-pavilion.v1.description",
+        "name": "places.g-pavilion.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/28/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/28/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/28/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "g-pavilion",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "h-beacon",
+      "sourceRef": "ws02-place-profiles@1/h-beacon",
+      "version": 1,
+      "sourceDigest": "8a2092489cb899b176cfc8bdc569c0df392551cde805e400169002cd6f126089",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.h-beacon.v1.area",
+        "availabilityNote": "places.h-beacon.v1.availabilityNote",
+        "description": "places.h-beacon.v1.description",
+        "name": "places.h-beacon.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/25/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/25/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/25/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "h-beacon",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "h-boatshed",
+      "sourceRef": "ws02-place-profiles@1/h-boatshed",
+      "version": 1,
+      "sourceDigest": "c9a57fa4a3f793cd9a06e0de5d13e4ce1178dd4fe3643991eacd203c320a11bd",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.h-boatshed.v1.area",
+        "availabilityNote": "places.h-boatshed.v1.availabilityNote",
+        "description": "places.h-boatshed.v1.description",
+        "name": "places.h-boatshed.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/26/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/26/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/26/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "h-boatshed",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "h-tavern",
+      "sourceRef": "ws02-place-profiles@1/h-tavern",
+      "version": 1,
+      "sourceDigest": "fbdc1a8c8bca9d9f32c8795956e1b37d7841c3648d1b027257f6c4c3a333f64b",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.h-tavern.v1.area",
+        "availabilityNote": "places.h-tavern.v1.availabilityNote",
+        "description": "places.h-tavern.v1.description",
+        "name": "places.h-tavern.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/24/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/24/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/24/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "h-tavern",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "h-warehouse",
+      "sourceRef": "ws02-place-profiles@1/h-warehouse",
+      "version": 1,
+      "sourceDigest": "22b9fcca499a19fcf2cd33db274d464fd319ab47b118f695a339e47066bbb1e1",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.h-warehouse.v1.area",
+        "availabilityNote": "places.h-warehouse.v1.availabilityNote",
+        "description": "places.h-warehouse.v1.description",
+        "name": "places.h-warehouse.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/23/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/23/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/23/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "h-warehouse",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "life:blue_library",
+      "sourceRef": "ws02-place-profiles@1/life:blue_library",
+      "version": 1,
+      "sourceDigest": "e756f2edf4f5ba7a47a9498ae3e9992fb6ed7a5942c971425631ab1b48735c3f",
+      "digestFields": [
+        "area",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.life:blue_library.v1.area",
+        "description": "places.life:blue_library.v1.description",
+        "name": "places.life:blue_library.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/45/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/45/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/45/description"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "life-place:blue_library",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "life-place"
+      }
+    },
+    {
+      "sourceId": "life:fisher_shop",
+      "sourceRef": "ws02-place-profiles@1/life:fisher_shop",
+      "version": 1,
+      "sourceDigest": "ef159a77f834384e902af761446f602f61592e79e875f50d3f0cc66c799cd727",
+      "digestFields": [
+        "area",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.life:fisher_shop.v1.area",
+        "description": "places.life:fisher_shop.v1.description",
+        "name": "places.life:fisher_shop.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/43/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/43/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/43/description"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "life-place:fisher_shop",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "life-place"
+      }
+    },
+    {
+      "sourceId": "life:garden_bench",
+      "sourceRef": "ws02-place-profiles@1/life:garden_bench",
+      "version": 1,
+      "sourceDigest": "837d4bad2d1ab691a9ca3767648b85cd9f5a7d7f4c126307ffc5f8506247658a",
+      "digestFields": [
+        "area",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.life:garden_bench.v1.area",
+        "description": "places.life:garden_bench.v1.description",
+        "name": "places.life:garden_bench.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/40/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/40/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/40/description"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "life-place:garden_bench",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "life-place"
+      }
+    },
+    {
+      "sourceId": "life:harbor_pier",
+      "sourceRef": "ws02-place-profiles@1/life:harbor_pier",
+      "version": 1,
+      "sourceDigest": "b488dcc72cec334846db378daf17214cacda1514acf3a0e62f52e05b9c3ea362",
+      "digestFields": [
+        "area",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.life:harbor_pier.v1.area",
+        "description": "places.life:harbor_pier.v1.description",
+        "name": "places.life:harbor_pier.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/42/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/42/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/42/description"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "life-place:harbor_pier",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "life-place"
+      }
+    },
+    {
+      "sourceId": "life:harbor_shore",
+      "sourceRef": "ws02-place-profiles@1/life:harbor_shore",
+      "version": 1,
+      "sourceDigest": "12f5342d3d41fd485f36c01d5145191423950e7f6affe6c1c7b4cbaab043acc3",
+      "digestFields": [
+        "area",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.life:harbor_shore.v1.area",
+        "description": "places.life:harbor_shore.v1.description",
+        "name": "places.life:harbor_shore.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/41/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/41/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/41/description"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "life-place:harbor_shore",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "life-place"
+      }
+    },
+    {
+      "sourceId": "life:harbor_tavern",
+      "sourceRef": "ws02-place-profiles@1/life:harbor_tavern",
+      "version": 1,
+      "sourceDigest": "0b0b458a15af4f27f5cbff1a4c64c73d2f9d33af62ea30e918a2b65525c17312",
+      "digestFields": [
+        "area",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.life:harbor_tavern.v1.area",
+        "description": "places.life:harbor_tavern.v1.description",
+        "name": "places.life:harbor_tavern.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/39/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/39/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/39/description"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "life-place:harbor_tavern",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "life-place"
+      }
+    },
+    {
+      "sourceId": "life:harbor_work",
+      "sourceRef": "ws02-place-profiles@1/life:harbor_work",
+      "version": 1,
+      "sourceDigest": "9c4911d49522c7718ca82b17416b2f3288d69e0af59387faa03a43b279f077ce",
+      "digestFields": [
+        "area",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.life:harbor_work.v1.area",
+        "description": "places.life:harbor_work.v1.description",
+        "name": "places.life:harbor_work.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/38/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/38/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/38/description"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "life-place:harbor_work",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "life-place"
+      }
+    },
+    {
+      "sourceId": "life:lookout",
+      "sourceRef": "ws02-place-profiles@1/life:lookout",
+      "version": 1,
+      "sourceDigest": "37374093c1be14f8243749254938f996717db1b6b2b1c5dc1bb2c71bf210ab0d",
+      "digestFields": [
+        "area",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.life:lookout.v1.area",
+        "description": "places.life:lookout.v1.description",
+        "name": "places.life:lookout.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/46/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/46/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/46/description"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "life-place:lookout",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "life-place"
+      }
+    },
+    {
+      "sourceId": "life:stone_inn",
+      "sourceRef": "ws02-place-profiles@1/life:stone_inn",
+      "version": 1,
+      "sourceDigest": "510eb21ad0890d9d9271c7a562e2093961de8a2ec0077924b910c79a8f3f8f03",
+      "digestFields": [
+        "area",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.life:stone_inn.v1.area",
+        "description": "places.life:stone_inn.v1.description",
+        "name": "places.life:stone_inn.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/44/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/44/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/44/description"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "life-place:stone_inn",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "life-place"
+      }
+    },
+    {
+      "sourceId": "longwind-meadow",
+      "sourceRef": "world-atlas/longwind-meadow",
+      "version": null,
+      "sourceDigest": "574f940ea4ce237905cbde6eb885cfe31ca8fd42e296cb8280e43ba4f94cec2b",
+      "digestFields": [
+        "kind",
+        "name",
+        "summary"
+      ],
+      "fields": {
+        "kind": "atlas.longwind-meadow.kind",
+        "name": "atlas.longwind-meadow.name",
+        "summary": "atlas.longwind-meadow.summary"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/1/destinations/1/name"
+        },
+        "kind": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/1/destinations/1/kind"
+        },
+        "summary": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/1/destinations/1/summary"
+        }
+      },
+      "stateGuards": {
+        "state": "planned"
+      },
+      "versionKind": "none; original map data has no content version"
+    },
+    {
+      "sourceId": "morning-dew-lake",
+      "sourceRef": "world-atlas/morning-dew-lake",
+      "version": null,
+      "sourceDigest": "412072ddd8edb21c8b6fe831293e3df5db15c24081bda02285f2e6a558a86e0b",
+      "digestFields": [
+        "kind",
+        "name",
+        "summary"
+      ],
+      "fields": {
+        "kind": "atlas.morning-dew-lake.kind",
+        "name": "atlas.morning-dew-lake.name",
+        "summary": "atlas.morning-dew-lake.summary"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/2/destinations/1/name"
+        },
+        "kind": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/2/destinations/1/kind"
+        },
+        "summary": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/2/destinations/1/summary"
+        }
+      },
+      "stateGuards": {
+        "state": "planned"
+      },
+      "versionKind": "none; original map data has no content version"
+    },
+    {
+      "sourceId": "n-attic",
+      "sourceRef": "ws02-place-profiles@1/n-attic",
+      "version": 1,
+      "sourceDigest": "0741d238d96f4ea933f7ab97f4aafd8e8fa185f9bdcb7cdad3fb73c3b5cfe62a",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.n-attic.v1.area",
+        "availabilityNote": "places.n-attic.v1.availabilityNote",
+        "description": "places.n-attic.v1.description",
+        "name": "places.n-attic.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/1/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/1/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/1/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "n-attic",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "n-blue",
+      "sourceRef": "ws02-place-profiles@1/n-blue",
+      "version": 1,
+      "sourceDigest": "4e477c40da42dc2b365f70e5250ac0bcd262ac9efa76501b75d60427ffd6f67c",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.n-blue.v1.area",
+        "availabilityNote": "places.n-blue.v1.availabilityNote",
+        "description": "places.n-blue.v1.description",
+        "name": "places.n-blue.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/4/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/4/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/4/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "n-blue",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "n-cottage",
+      "sourceRef": "ws02-place-profiles@1/n-cottage",
+      "version": 1,
+      "sourceDigest": "b6b409c6d8dee76a8dc36c0426e4259430a60eb024e0756306d4560a71324b07",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.n-cottage.v1.area",
+        "availabilityNote": "places.n-cottage.v1.availabilityNote",
+        "description": "places.n-cottage.v1.description",
+        "name": "places.n-cottage.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/0/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/0/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/0/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "n-cottage",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "n-kiosk",
+      "sourceRef": "ws02-place-profiles@1/n-kiosk",
+      "version": 1,
+      "sourceDigest": "191a0aeab89fe24c5b7c03d53435231e66790166214ae208ad1d656544f01352",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.n-kiosk.v1.area",
+        "availabilityNote": "places.n-kiosk.v1.availabilityNote",
+        "description": "places.n-kiosk.v1.description",
+        "name": "places.n-kiosk.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/5/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/5/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/5/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "n-kiosk",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "n-long",
+      "sourceRef": "ws02-place-profiles@1/n-long",
+      "version": 1,
+      "sourceDigest": "647508752821dcfa38ae826a8aef79b70c4972cd313217ba5985f94a41ed0331",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.n-long.v1.area",
+        "availabilityNote": "places.n-long.v1.availabilityNote",
+        "description": "places.n-long.v1.description",
+        "name": "places.n-long.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/2/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/2/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/2/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "n-long",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "n-tower",
+      "sourceRef": "ws02-place-profiles@1/n-tower",
+      "version": 1,
+      "sourceDigest": "42a5ad0e2c0beb2fe0f157a848846ec213def5a59f0c294c39ecc666e8cb42bc",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.n-tower.v1.area",
+        "availabilityNote": "places.n-tower.v1.availabilityNote",
+        "description": "places.n-tower.v1.description",
+        "name": "places.n-tower.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/3/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/3/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/3/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "n-tower",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "north",
+      "sourceRef": "world-atlas/north",
+      "version": null,
+      "sourceDigest": "03d60260135205bbcd70efaccb22a45d358074f3484770396202a7cef6ec2b7d",
+      "digestFields": [
+        "english",
+        "name",
+        "subtitle",
+        "summary"
+      ],
+      "fields": {
+        "english": "atlas.north.english",
+        "name": "atlas.north.name",
+        "subtitle": "atlas.north.subtitle",
+        "summary": "atlas.north.summary"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/3/name"
+        },
+        "subtitle": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/3/subtitle"
+        },
+        "summary": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/3/summary"
+        },
+        "english": {
+          "path": "apps/web/public/world-atlas/atlas-overlays.json",
+          "pointer": "/regions/north/english"
+        }
+      },
+      "stateGuards": {
+        "state": "planned"
+      },
+      "versionKind": "none; original map data has no content version"
+    },
+    {
+      "sourceId": "npc-care-board",
+      "sourceRef": "ws02-place-profiles@1/npc-care-board",
+      "version": 1,
+      "sourceDigest": "f03c597a29fe2121a4132bcb836c4a6c70abcca4f4df79aa8360a54295ae7fae",
+      "digestFields": [
+        "area",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.npc-care-board.v1.area",
+        "description": "places.npc-care-board.v1.description",
+        "name": "places.npc-care-board.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/47/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/47/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/47/description"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "npc-care-board",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "care-point"
+      }
+    },
+    {
+      "sourceId": "npc-fishing-clerk",
+      "sourceRef": "npc-personas/npc-fishing-clerk@1",
+      "version": 1,
+      "sourceDigest": "2315abddcdee29835e750d465d28b59b5b37021d5a91c6155327053f0a15a35e",
+      "digestFields": [
+        "name",
+        "role",
+        "story"
+      ],
+      "fields": {
+        "name": "npcs.npc-fishing-clerk.v1.name",
+        "role": "npcs.npc-fishing-clerk.v1.role",
+        "story": "npcs.npc-fishing-clerk.v1.story"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/4/name"
+        },
+        "role": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/4/role"
+        },
+        "story": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/4/story"
+        }
+      },
+      "versionKind": "identity.version",
+      "nativeStoryDigest": "1acfdbfa6793c590fd753a304d9ab66d13ba79f7694387326b0970bc2b60a371",
+      "currentSource": {
+        "operation": "world.npcs",
+        "selector": {
+          "npcId": "npc-fishing-clerk"
+        },
+        "record": "identity"
+      }
+    },
+    {
+      "sourceId": "npc-gardener",
+      "sourceRef": "npc-personas/npc-gardener@1",
+      "version": 1,
+      "sourceDigest": "c9d96407b9b631b98d828f0d42cdbbd4f632b4d0843ca03fa5aa37172fc0d6ca",
+      "digestFields": [
+        "name",
+        "role",
+        "story"
+      ],
+      "fields": {
+        "name": "npcs.npc-gardener.v1.name",
+        "role": "npcs.npc-gardener.v1.role",
+        "story": "npcs.npc-gardener.v1.story"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/7/name"
+        },
+        "role": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/7/role"
+        },
+        "story": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/7/story"
+        }
+      },
+      "versionKind": "identity.version",
+      "nativeStoryDigest": "bfb81c91924c32a90a4528ad8068ad6aaadbf3ed8496ea3072c27cac00c2354d",
+      "currentSource": {
+        "operation": "world.npcs",
+        "selector": {
+          "npcId": "npc-gardener"
+        },
+        "record": "identity"
+      }
+    },
+    {
+      "sourceId": "npc-harbor-hand",
+      "sourceRef": "npc-personas/npc-harbor-hand@1",
+      "version": 1,
+      "sourceDigest": "c83c151602170b3dae6fb62cd30c42a82b9dba8abfaa707707c57e8404d10cb1",
+      "digestFields": [
+        "name",
+        "role",
+        "story"
+      ],
+      "fields": {
+        "name": "npcs.npc-harbor-hand.v1.name",
+        "role": "npcs.npc-harbor-hand.v1.role",
+        "story": "npcs.npc-harbor-hand.v1.story"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/3/name"
+        },
+        "role": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/3/role"
+        },
+        "story": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/3/story"
+        }
+      },
+      "versionKind": "identity.version",
+      "nativeStoryDigest": "e931b0baca411994dec2a46c086d96f74c14ee33338754d637e79f50a892fa64",
+      "currentSource": {
+        "operation": "world.npcs",
+        "selector": {
+          "npcId": "npc-harbor-hand"
+        },
+        "record": "identity"
+      }
+    },
+    {
+      "sourceId": "npc-innkeeper",
+      "sourceRef": "npc-personas/npc-innkeeper@1",
+      "version": 1,
+      "sourceDigest": "6df48d29e9677befbe87776abaa4a056b4322a28035e697ee7fbdd11ec3fd51a",
+      "digestFields": [
+        "name",
+        "role",
+        "story"
+      ],
+      "fields": {
+        "name": "npcs.npc-innkeeper.v1.name",
+        "role": "npcs.npc-innkeeper.v1.role",
+        "story": "npcs.npc-innkeeper.v1.story"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/2/name"
+        },
+        "role": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/2/role"
+        },
+        "story": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/2/story"
+        }
+      },
+      "versionKind": "identity.version",
+      "nativeStoryDigest": "39c1c0c2ebd61abd1837a8a751878fb417e56256ebedbb62fa6bfd5bd87e4347",
+      "currentSource": {
+        "operation": "world.npcs",
+        "selector": {
+          "npcId": "npc-innkeeper"
+        },
+        "record": "identity"
+      }
+    },
+    {
+      "sourceId": "npc-librarian",
+      "sourceRef": "npc-personas/npc-librarian@1",
+      "version": 1,
+      "sourceDigest": "1ebf493cbedfa616dd849a5a2c9e777a73fc2343ac26b7f558de43ffc7527c6e",
+      "digestFields": [
+        "name",
+        "role",
+        "story"
+      ],
+      "fields": {
+        "name": "npcs.npc-librarian.v1.name",
+        "role": "npcs.npc-librarian.v1.role",
+        "story": "npcs.npc-librarian.v1.story"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/5/name"
+        },
+        "role": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/5/role"
+        },
+        "story": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/5/story"
+        }
+      },
+      "versionKind": "identity.version",
+      "nativeStoryDigest": "0d10253873d2a6f70a6b71f3590f3603052df2513096de40312c4654c1907374",
+      "currentSource": {
+        "operation": "world.npcs",
+        "selector": {
+          "npcId": "npc-librarian"
+        },
+        "record": "identity"
+      }
+    },
+    {
+      "sourceId": "npc-mayor",
+      "sourceRef": "npc-personas/npc-mayor@1",
+      "version": 1,
+      "sourceDigest": "cdd69d8de92a97090c8f902615e646240efdaf9190f1f3884d179ef7d7d09f4e",
+      "digestFields": [
+        "name",
+        "role",
+        "story"
+      ],
+      "fields": {
+        "name": "npcs.npc-mayor.v1.name",
+        "role": "npcs.npc-mayor.v1.role",
+        "story": "npcs.npc-mayor.v1.story"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/0/name"
+        },
+        "role": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/0/role"
+        },
+        "story": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/0/story"
+        }
+      },
+      "versionKind": "identity.version",
+      "nativeStoryDigest": "b22806454d7e4d693867089c03de58995bda47c34705678ae1e724dbff17ba1e",
+      "currentSource": {
+        "operation": "world.npcs",
+        "selector": {
+          "npcId": "npc-mayor"
+        },
+        "record": "identity"
+      }
+    },
+    {
+      "sourceId": "npc-neighbor",
+      "sourceRef": "npc-personas/npc-neighbor@1",
+      "version": 1,
+      "sourceDigest": "4ea8cad757247411e1f695b92a7eda1dc930d208f9f97c2ea29dbbc3e0a7e0cd",
+      "digestFields": [
+        "name",
+        "role",
+        "story"
+      ],
+      "fields": {
+        "name": "npcs.npc-neighbor.v1.name",
+        "role": "npcs.npc-neighbor.v1.role",
+        "story": "npcs.npc-neighbor.v1.story"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/6/name"
+        },
+        "role": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/6/role"
+        },
+        "story": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/6/story"
+        }
+      },
+      "versionKind": "identity.version",
+      "nativeStoryDigest": "37bb125d9d9cb127fb9c7cc915dca372e4d4e7674e8af73d873fded1017ebf77",
+      "currentSource": {
+        "operation": "world.npcs",
+        "selector": {
+          "npcId": "npc-neighbor"
+        },
+        "record": "identity"
+      }
+    },
+    {
+      "sourceId": "npc-tavern",
+      "sourceRef": "npc-personas/npc-tavern@1",
+      "version": 1,
+      "sourceDigest": "fdee3c9da80a2d271cb9050127a35ea5640ab1633e7fd94ad310999a6654bf1b",
+      "digestFields": [
+        "name",
+        "role",
+        "story"
+      ],
+      "fields": {
+        "name": "npcs.npc-tavern.v1.name",
+        "role": "npcs.npc-tavern.v1.role",
+        "story": "npcs.npc-tavern.v1.story"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/1/name"
+        },
+        "role": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/1/role"
+        },
+        "story": {
+          "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+          "pointer": "/profiles/1/story"
+        }
+      },
+      "versionKind": "identity.version",
+      "nativeStoryDigest": "244d7e5f161337205094794295f0e683bafb769f20cf37b48da650faafad4646",
+      "currentSource": {
+        "operation": "world.npcs",
+        "selector": {
+          "npcId": "npc-tavern"
+        },
+        "record": "identity"
+      }
+    },
+    {
+      "sourceId": "p-arcade",
+      "sourceRef": "ws02-place-profiles@1/p-arcade",
+      "version": 1,
+      "sourceDigest": "4b8800086f20a4c556ff1f4bb8cda91ba8d8280065456a1683a51d1c71c8c4bb",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.p-arcade.v1.area",
+        "availabilityNote": "places.p-arcade.v1.availabilityNote",
+        "description": "places.p-arcade.v1.description",
+        "name": "places.p-arcade.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/19/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/19/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/19/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "p-arcade",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "p-hall",
+      "sourceRef": "ws02-place-profiles@1/p-hall",
+      "version": 1,
+      "sourceDigest": "019d308a3f072cc5abe19faa63cb3fc48f16d7cbf69dec493e0b421319821511",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.p-hall.v1.area",
+        "availabilityNote": "places.p-hall.v1.availabilityNote",
+        "description": "places.p-hall.v1.description",
+        "name": "places.p-hall.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/18/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/18/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/18/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "p-hall",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "p-observatory",
+      "sourceRef": "ws02-place-profiles@1/p-observatory",
+      "version": 1,
+      "sourceDigest": "045b9ab1d97b29e58aba8375eb7b65da620c2fed0cc993a96f2991fafb959729",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.p-observatory.v1.area",
+        "availabilityNote": "places.p-observatory.v1.availabilityNote",
+        "description": "places.p-observatory.v1.description",
+        "name": "places.p-observatory.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/20/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/20/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/20/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "p-observatory",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "p-stand",
+      "sourceRef": "ws02-place-profiles@1/p-stand",
+      "version": 1,
+      "sourceDigest": "0069fd969f72522065a69c253e743a5f19ed3ecbf07631df58bfc1f5e69d8700",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.p-stand.v1.area",
+        "availabilityNote": "places.p-stand.v1.availabilityNote",
+        "description": "places.p-stand.v1.description",
+        "name": "places.p-stand.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/22/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/22/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/22/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "p-stand",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "p-welcome",
+      "sourceRef": "ws02-place-profiles@1/p-welcome",
+      "version": 1,
+      "sourceDigest": "46f1f50edda919d77c149ad4fe9e50c458d64fcdb726f229973bcb008b5c137f",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.p-welcome.v1.area",
+        "availabilityNote": "places.p-welcome.v1.availabilityNote",
+        "description": "places.p-welcome.v1.description",
+        "name": "places.p-welcome.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/21/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/21/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/21/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "p-welcome",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "pine-mist-valley",
+      "sourceRef": "world-atlas/pine-mist-valley",
+      "version": null,
+      "sourceDigest": "2235b8c91e63c06ea6e0e57ec9f38ca7d395c2b1d83ab5a6b68a64764171d88c",
+      "digestFields": [
+        "kind",
+        "name",
+        "summary"
+      ],
+      "fields": {
+        "kind": "atlas.pine-mist-valley.kind",
+        "name": "atlas.pine-mist-valley.name",
+        "summary": "atlas.pine-mist-valley.summary"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/3/destinations/0/name"
+        },
+        "kind": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/3/destinations/0/kind"
+        },
+        "summary": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/3/destinations/0/summary"
+        }
+      },
+      "stateGuards": {
+        "state": "planned"
+      },
+      "versionKind": "none; original map data has no content version"
+    },
+    {
+      "sourceId": "plain",
+      "sourceRef": "world-atlas/plain",
+      "version": null,
+      "sourceDigest": "f8761dc7f4b4f3b3c07cf37e4796a55dcccedcdce8955dfc9410fd62fd1fed50",
+      "digestFields": [
+        "english",
+        "name",
+        "subtitle",
+        "summary"
+      ],
+      "fields": {
+        "english": "atlas.plain.english",
+        "name": "atlas.plain.name",
+        "subtitle": "atlas.plain.subtitle",
+        "summary": "atlas.plain.summary"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/1/name"
+        },
+        "subtitle": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/1/subtitle"
+        },
+        "summary": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/1/summary"
+        },
+        "english": {
+          "path": "apps/web/public/world-atlas/atlas-overlays.json",
+          "pointer": "/regions/plain/english"
+        }
+      },
+      "stateGuards": {
+        "state": "planned"
+      },
+      "versionKind": "none; original map data has no content version"
+    },
+    {
+      "sourceId": "qingzhou-town",
+      "sourceRef": "world-atlas/qingzhou-town",
+      "version": null,
+      "sourceDigest": "e3e400bc599dd234bb336130ce1dd7de892481dad4eb8e07e733091adac6cbf0",
+      "digestFields": [
+        "kind",
+        "name",
+        "places.0",
+        "places.1",
+        "places.2",
+        "places.3",
+        "summary"
+      ],
+      "fields": {
+        "kind": "atlas.qingzhou-town.kind",
+        "name": "atlas.qingzhou-town.name",
+        "places.0": "atlas.qingzhou-town.places.0",
+        "places.1": "atlas.qingzhou-town.places.1",
+        "places.2": "atlas.qingzhou-town.places.2",
+        "places.3": "atlas.qingzhou-town.places.3",
+        "summary": "atlas.qingzhou-town.summary"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/2/destinations/0/name"
+        },
+        "kind": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/2/destinations/0/kind"
+        },
+        "summary": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/2/destinations/0/summary"
+        },
+        "places.0": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/2/destinations/0/places/0"
+        },
+        "places.1": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/2/destinations/0/places/1"
+        },
+        "places.2": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/2/destinations/0/places/2"
+        },
+        "places.3": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/2/destinations/0/places/3"
+        }
+      },
+      "stateGuards": {
+        "state": "open"
+      },
+      "versionKind": "none; original map data has no content version"
+    },
+    {
+      "sourceId": "region:east-street",
+      "sourceRef": "ws02-place-profiles@1/region:east-street",
+      "version": 1,
+      "sourceDigest": "53721ceb932c0ef08194cd9647df299b67a3b4308a21abc66acbb387311b9ef0",
+      "digestFields": [
+        "area",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.region:east-street.v1.area",
+        "description": "places.region:east-street.v1.description",
+        "name": "places.region:east-street.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/37/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/37/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/37/description"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "region:east-street",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "region"
+      }
+    },
+    {
+      "sourceId": "region:harbour",
+      "sourceRef": "ws02-place-profiles@1/region:harbour",
+      "version": 1,
+      "sourceDigest": "14869977719502ee74bfd71ee29bfa66967616c8d013830caff5998b805874f3",
+      "digestFields": [
+        "area",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.region:harbour.v1.area",
+        "description": "places.region:harbour.v1.description",
+        "name": "places.region:harbour.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/32/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/32/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/32/description"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "region:harbour",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "region"
+      }
+    },
+    {
+      "sourceId": "region:pine-walk",
+      "sourceRef": "ws02-place-profiles@1/region:pine-walk",
+      "version": 1,
+      "sourceDigest": "4f979fa363514e6d60ddea2249aad169a128ac84b78ef7968745b89d61211ef6",
+      "digestFields": [
+        "area",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.region:pine-walk.v1.area",
+        "description": "places.region:pine-walk.v1.description",
+        "name": "places.region:pine-walk.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/35/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/35/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/35/description"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "region:pine-walk",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "region"
+      }
+    },
+    {
+      "sourceId": "region:plateau",
+      "sourceRef": "ws02-place-profiles@1/region:plateau",
+      "version": 1,
+      "sourceDigest": "ace416bc80436e1e3215a86c70aa3884d1ce0574046be40d828f487368e10eeb",
+      "digestFields": [
+        "area",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.region:plateau.v1.area",
+        "description": "places.region:plateau.v1.description",
+        "name": "places.region:plateau.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/33/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/33/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/33/description"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "region:plateau",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "region"
+      }
+    },
+    {
+      "sourceId": "region:river-walk",
+      "sourceRef": "ws02-place-profiles@1/region:river-walk",
+      "version": 1,
+      "sourceDigest": "be6283e39fa3b456991a53053cd0265c56a4a487b1da0b409196f3d30c5a1ef4",
+      "digestFields": [
+        "area",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.region:river-walk.v1.area",
+        "description": "places.region:river-walk.v1.description",
+        "name": "places.region:river-walk.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/36/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/36/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/36/description"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "region:river-walk",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "region"
+      }
+    },
+    {
+      "sourceId": "region:woodland",
+      "sourceRef": "ws02-place-profiles@1/region:woodland",
+      "version": 1,
+      "sourceDigest": "aef7c8cd9f185ef713e985fc317da7c761cf3940dcef4f194506d1d724d54932",
+      "digestFields": [
+        "area",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.region:woodland.v1.area",
+        "description": "places.region:woodland.v1.description",
+        "name": "places.region:woodland.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/34/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/34/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/34/description"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "region:woodland",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "region"
+      }
+    },
+    {
+      "sourceId": "s-cottage",
+      "sourceRef": "ws02-place-profiles@1/s-cottage",
+      "version": 1,
+      "sourceDigest": "4e3d52d7ccf0c86dbf6a0287c4aaa6d74c3c880cd126629d860112e8dd1aa131",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.s-cottage.v1.area",
+        "availabilityNote": "places.s-cottage.v1.availabilityNote",
+        "description": "places.s-cottage.v1.description",
+        "name": "places.s-cottage.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/17/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/17/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/17/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "s-cottage",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "s-glass",
+      "sourceRef": "ws02-place-profiles@1/s-glass",
+      "version": 1,
+      "sourceDigest": "b8aaaef0d198aa7c87170a55b57e13fd03f53b5f771effe111fb3e245158931c",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.s-glass.v1.area",
+        "availabilityNote": "places.s-glass.v1.availabilityNote",
+        "description": "places.s-glass.v1.description",
+        "name": "places.s-glass.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/15/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/15/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/15/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "s-glass",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "s-green",
+      "sourceRef": "ws02-place-profiles@1/s-green",
+      "version": 1,
+      "sourceDigest": "9ad1f121ff53436f4cc72fe3758d00e7a9fc33f7947cd5ba2f195203917e37ed",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.s-green.v1.area",
+        "availabilityNote": "places.s-green.v1.availabilityNote",
+        "description": "places.s-green.v1.description",
+        "name": "places.s-green.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/14/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/14/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/14/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "s-green",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "s-observer",
+      "sourceRef": "ws02-place-profiles@1/s-observer",
+      "version": 1,
+      "sourceDigest": "d72ef01a6460a1ae9d5d9a8a46d54c2ec47d3886ac9af3d6db6d0feaae983e02",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.s-observer.v1.area",
+        "availabilityNote": "places.s-observer.v1.availabilityNote",
+        "description": "places.s-observer.v1.description",
+        "name": "places.s-observer.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/16/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/16/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/16/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "s-observer",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "snow-listening-pass",
+      "sourceRef": "world-atlas/snow-listening-pass",
+      "version": null,
+      "sourceDigest": "8abd94fe88d112ade640b932598986d28d50611ba493b12e6bafc996c9a90e64",
+      "digestFields": [
+        "kind",
+        "name",
+        "summary"
+      ],
+      "fields": {
+        "kind": "atlas.snow-listening-pass.kind",
+        "name": "atlas.snow-listening-pass.name",
+        "summary": "atlas.snow-listening-pass.summary"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/3/destinations/1/name"
+        },
+        "kind": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/3/destinations/1/kind"
+        },
+        "summary": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/3/destinations/1/summary"
+        }
+      },
+      "stateGuards": {
+        "state": "planned"
+      },
+      "versionKind": "none; original map data has no content version"
+    },
+    {
+      "sourceId": "sunset",
+      "sourceRef": "world-atlas/sunset",
+      "version": null,
+      "sourceDigest": "8c10f772ab4eaa54b2bc489dc616b84e411727091ad9cc2892d8d5ebec47a8aa",
+      "digestFields": [
+        "english",
+        "name",
+        "subtitle",
+        "summary"
+      ],
+      "fields": {
+        "english": "atlas.sunset.english",
+        "name": "atlas.sunset.name",
+        "subtitle": "atlas.sunset.subtitle",
+        "summary": "atlas.sunset.summary"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/0/name"
+        },
+        "subtitle": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/0/subtitle"
+        },
+        "summary": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/0/summary"
+        },
+        "english": {
+          "path": "apps/web/public/world-atlas/atlas-overlays.json",
+          "pointer": "/regions/sunset/english"
+        }
+      },
+      "stateGuards": {
+        "state": "planned"
+      },
+      "versionKind": "none; original map data has no content version"
+    },
+    {
+      "sourceId": "three-river-valley",
+      "sourceRef": "world-atlas/three-river-valley",
+      "version": null,
+      "sourceDigest": "164c96dc42636f7d37c0b49b4802aea9701fcaa90b74cfc78aec5ea163b5c002",
+      "digestFields": [
+        "kind",
+        "name",
+        "summary"
+      ],
+      "fields": {
+        "kind": "atlas.three-river-valley.kind",
+        "name": "atlas.three-river-valley.name",
+        "summary": "atlas.three-river-valley.summary"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/1/destinations/2/name"
+        },
+        "kind": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/1/destinations/2/kind"
+        },
+        "summary": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/1/destinations/2/summary"
+        }
+      },
+      "stateGuards": {
+        "state": "planned"
+      },
+      "versionKind": "none; original map data has no content version"
+    },
+    {
+      "sourceId": "tidal-isle",
+      "sourceRef": "world-atlas/tidal-isle",
+      "version": null,
+      "sourceDigest": "41634499904c10ffaafab15aa7aa43c8d7f33983177b2cee605463a64f53a8fb",
+      "digestFields": [
+        "kind",
+        "name",
+        "summary"
+      ],
+      "fields": {
+        "kind": "atlas.tidal-isle.kind",
+        "name": "atlas.tidal-isle.name",
+        "summary": "atlas.tidal-isle.summary"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/0/destinations/1/name"
+        },
+        "kind": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/0/destinations/1/kind"
+        },
+        "summary": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/0/destinations/1/summary"
+        }
+      },
+      "stateGuards": {
+        "state": "planned"
+      },
+      "versionKind": "none; original map data has no content version"
+    },
+    {
+      "sourceId": "trisavia",
+      "sourceRef": "world-atlas/trisavia",
+      "version": null,
+      "sourceDigest": "46dc72e2ebd025b1ba5109787804947ae2d515e647a6d562ac3f2084ead4ea5e",
+      "digestFields": [
+        "currentRegionScope",
+        "goal",
+        "goalDescription",
+        "introduction",
+        "mapIntroduction",
+        "name",
+        "tagline",
+        "unopenedText"
+      ],
+      "fields": {
+        "currentRegionScope": "atlas.trisavia.currentRegionScope",
+        "goal": "atlas.trisavia.goal",
+        "goalDescription": "atlas.trisavia.goalDescription",
+        "introduction": "atlas.trisavia.introduction",
+        "mapIntroduction": "atlas.trisavia.mapIntroduction",
+        "name": "atlas.trisavia.name",
+        "tagline": "atlas.trisavia.tagline",
+        "unopenedText": "atlas.trisavia.unopenedText"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/world/name"
+        },
+        "tagline": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/world/tagline"
+        },
+        "goal": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/world/goal"
+        },
+        "introduction": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/world/introduction"
+        },
+        "goalDescription": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/world/goalDescription"
+        },
+        "mapIntroduction": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/world/mapIntroduction"
+        },
+        "unopenedText": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/unopenedText"
+        },
+        "currentRegionScope": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/currentRegionScope"
+        }
+      },
+      "stateGuards": {
+        "currentDestinationId": "qingzhou-town"
+      },
+      "versionKind": "none; original map data has no content version"
+    },
+    {
+      "sourceId": "w-annex",
+      "sourceRef": "ws02-place-profiles@1/w-annex",
+      "version": 1,
+      "sourceDigest": "8df2fc4a3c77935f771f857ae4d3a127655a55ed86cca83b7337e066c0a3ef02",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.w-annex.v1.area",
+        "availabilityNote": "places.w-annex.v1.availabilityNote",
+        "description": "places.w-annex.v1.description",
+        "name": "places.w-annex.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/9/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/9/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/9/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "w-annex",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "w-bakery",
+      "sourceRef": "ws02-place-profiles@1/w-bakery",
+      "version": 1,
+      "sourceDigest": "263b9600326422b0ded76e68cfb895adf9d4f6b63b7cbea7bd3923be0143f38d",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.w-bakery.v1.area",
+        "availabilityNote": "places.w-bakery.v1.availabilityNote",
+        "description": "places.w-bakery.v1.description",
+        "name": "places.w-bakery.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/8/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/8/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/8/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "w-bakery",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "w-studio",
+      "sourceRef": "ws02-place-profiles@1/w-studio",
+      "version": 1,
+      "sourceDigest": "8d1a50b494134b19f29d30c6d2330f2432ac7b7b1861f87b6eeb23e8dd0e909e",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.w-studio.v1.area",
+        "availabilityNote": "places.w-studio.v1.availabilityNote",
+        "description": "places.w-studio.v1.description",
+        "name": "places.w-studio.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/7/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/7/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/7/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "w-studio",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "w-workshop",
+      "sourceRef": "ws02-place-profiles@1/w-workshop",
+      "version": 1,
+      "sourceDigest": "cd91cd3c8a0c177a28399d402595a6cc96aa76f1aa36901e9cda6ee69ea381b2",
+      "digestFields": [
+        "area",
+        "availabilityNote",
+        "description",
+        "name"
+      ],
+      "fields": {
+        "area": "places.w-workshop.v1.area",
+        "availabilityNote": "places.w-workshop.v1.availabilityNote",
+        "description": "places.w-workshop.v1.description",
+        "name": "places.w-workshop.v1.name"
+      },
+      "locations": {
+        "name": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/6/name"
+        },
+        "area": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/6/area"
+        },
+        "description": {
+          "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+          "pointer": "/profiles/6/description"
+        },
+        "availabilityNote": {
+          "path": "apps/platform/domains/world/place-profile-catalog.ts",
+          "selector": "publishedPlaceProfileCatalog.profiles[profileId].availabilityNote"
+        }
+      },
+      "versionKind": "place profile catalog version",
+      "currentSource": {
+        "operation": "world.place_profile",
+        "targetId": "w-workshop",
+        "record": "profile"
+      },
+      "stateGuards": {
+        "kind": "building"
+      }
+    },
+    {
+      "sourceId": "welcome-trisavia-20261024",
+      "sourceRef": "welcome-trisavia-20261024",
+      "version": 2,
+      "sourceDigest": "f3ab10b2c2115665cc6ff7902ff2057684597e00f71e3b03dcda381501242b13",
+      "digestFields": [
+        "author",
+        "body",
+        "title"
+      ],
+      "fields": {
+        "author": "announcements.welcome-trisavia-20261024.v2.author",
+        "body": "announcements.welcome-trisavia-20261024.v2.body",
+        "title": "announcements.welcome-trisavia-20261024.v2.title"
+      },
+      "locations": {
+        "title": {
+          "path": "apps/platform/application/world-welcome-story.json",
+          "pointer": "/title"
+        },
+        "body": {
+          "path": "apps/platform/application/world-welcome-story.json",
+          "pointer": "/body"
+        },
+        "author": {
+          "path": "apps/platform/application/world-announcements.ts",
+          "pointer": "WELCOME_ANNOUNCEMENT.author (retained by v2 revision)"
+        }
+      },
+      "versionKind": "announcement content version",
+      "stateGuards": {
+        "edition": "welcome-story-1",
+        "dataMode": "real"
+      },
+      "access": "Only after the original current announcement reader permits this record. These resources do not publish an announcement."
+    },
+    {
+      "sourceId": "wind-grain-post",
+      "sourceRef": "world-atlas/wind-grain-post",
+      "version": null,
+      "sourceDigest": "8d6ab787430b40e52eb95d81becc9f7809bd0ae253cdc2bf0cb97555e7c9c759",
+      "digestFields": [
+        "kind",
+        "name",
+        "summary"
+      ],
+      "fields": {
+        "kind": "atlas.wind-grain-post.kind",
+        "name": "atlas.wind-grain-post.name",
+        "summary": "atlas.wind-grain-post.summary"
+      },
+      "locations": {
+        "name": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/1/destinations/0/name"
+        },
+        "kind": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/1/destinations/0/kind"
+        },
+        "summary": {
+          "path": "apps/web/public/world-atlas/map-data.json",
+          "pointer": "/regions/1/destinations/0/summary"
+        }
+      },
+      "stateGuards": {
+        "state": "planned"
+      },
+      "versionKind": "none; original map data has no content version"
+    }
+  ],
+  "files": [
+    {
+      "path": "apps/platform/application/world-announcements.ts",
+      "sha256": "96fbe04f20be6319f5fb3c373c87aa5642be4eb78b496e4b4cecb3279b6e9e6a",
+      "meaning": "Fixed source-file audit evidence; runtime matching uses the record digest, stable ID and version above."
+    },
+    {
+      "path": "apps/platform/application/world-welcome-story.json",
+      "sha256": "16f10748c0625a83c7bbc389d1fbac6dc1eb6e1803b50225b3f59f3a16c54d4f",
+      "meaning": "Fixed source-file audit evidence; runtime matching uses the record digest, stable ID and version above."
+    },
+    {
+      "path": "apps/platform/domains/town-services/npc-identities-v1.json",
+      "sha256": "cc0480c4e09a3f115c98e7cacdf4d70ba54d5b5e1cb1b8601f0bca90b23e4ab9",
+      "meaning": "Fixed source-file audit evidence; runtime matching uses the record digest, stable ID and version above."
+    },
+    {
+      "path": "apps/platform/domains/world/place-profile-catalog.ts",
+      "sha256": "637cbdd3063be6c7a47982ba803a76d4977a109fd258c67b1e7eaba3a4142ed9",
+      "meaning": "Fixed source-file audit evidence; runtime matching uses the record digest, stable ID and version above."
+    },
+    {
+      "path": "apps/web/public/world-atlas/atlas-overlays.json",
+      "sha256": "ffdd48cbe13000fd0d5b01b3cd218e47cfbc5ffda374e1ed18555779478a8e48",
+      "meaning": "Fixed source-file audit evidence; runtime matching uses the record digest, stable ID and version above."
+    },
+    {
+      "path": "apps/web/public/world-atlas/map-data.json",
+      "sha256": "19253fad48a5c80e532eb66c75cdd8dd2bc663a17b0eeaaf7021ba783ca9ddd7",
+      "meaning": "Fixed source-file audit evidence; runtime matching uses the record digest, stable ID and version above."
+    },
+    {
+      "path": "docs/workstreams/ws02-perception/product/place-profiles-20261027/profiles.v1.json",
+      "sha256": "aab0cfbb3276f6226b6feb653fce36973b6747b03f9c4c2c36aeb827e8239d9d",
+      "meaning": "Fixed source-file audit evidence; runtime matching uses the record digest, stable ID and version above."
+    }
+  ]
+}
