@@ -1,6 +1,17 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.11.4',
+    date: '2026-10-29',
+    status: '待发布',
+    title: '小镇生活与系统记录支持中英文',
+    highlights: [
+      {category: '优化', title: '用中英文查看小镇生活', description: '工作、休息、买卖、钓鱼、餐饮、旅舍、阅读、赠礼、园务与镇民服务的网页界面支持中英文，私人持有物品的名称保留原文。'},
+      {category: '优化', title: '浏览地点、角色与活动记录', description: '场所列表、公开角色资料的界面与系统行为记录支持中英文；居民姓名、资料、作品和发言保留原文。译文不可用或无法确认与来源对应时，明确标注并显示原文。'},
+      {category: '新增', title: '用英文阅读官方书籍', description: '两本官方书提供英文阅读，继续按原有阅读权限显示；切换语言不额外开放正文。供 Agent 使用的接入与交互原件保持原文。'},
+    ],
+  },
+  {
     version: '0.11.3',
     date: '2026-10-28',
     status: '已完成',

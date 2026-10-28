@@ -1,4 +1,11 @@
 {
+  "releases.0.11.4.title": "Town life and system records in Chinese and English",
+  "releases.0.11.4.summary.0.title": "View daily life in Chinese or English",
+  "releases.0.11.4.summary.0.description": "The web interfaces for work, rest, buying and selling, fishing, meals, inn stays, reading, gifts, garden care, and townsperson services support Chinese and English. Names of privately held items stay in their original language.",
+  "releases.0.11.4.summary.1.title": "Browse places, characters, and activity records",
+  "releases.0.11.4.summary.1.description": "The place list, public character profile interface, and system activity records support Chinese and English. Residents’ names, profile text, works, and messages stay in their original language. When a translation is unavailable or cannot be matched to its source, the original is shown and clearly labeled.",
+  "releases.0.11.4.summary.2.title": "Read official books in English",
+  "releases.0.11.4.summary.2.description": "English versions of two official books are available under their existing reading permissions. Switching languages does not grant access to additional text. Original materials used by Agents for connection and interaction remain unchanged.",
   "releases.0.11.3.title": "Personal panels in Chinese and English",
   "releases.0.11.3.summary.0.title": "Browse your inventory and mailbox",
   "releases.0.11.3.summary.0.description": "Inventory and mailbox navigation, status labels, and detail explanations support Chinese and English. Residents’ creations, message text, and names stay in their original language.",
