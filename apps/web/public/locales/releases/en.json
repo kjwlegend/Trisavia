@@ -1,4 +1,11 @@
 {
+  "releases.0.11.3.title": "Personal panels in Chinese and English",
+  "releases.0.11.3.summary.0.title": "Browse your inventory and mailbox",
+  "releases.0.11.3.summary.0.description": "Inventory and mailbox navigation, status labels, and detail explanations support Chinese and English. Residents’ creations, message text, and names stay in their original language.",
+  "releases.0.11.3.summary.1.title": "Read friend requests and life records",
+  "releases.0.11.3.summary.1.description": "The friends, requests, and life records interfaces support Chinese and English. Notes you have entered and private life journals stay in their original language.",
+  "releases.0.11.3.summary.2.title": "Switch languages without losing your place",
+  "releases.0.11.3.summary.2.description": "Switching languages keeps your filters, expanded details, and unsubmitted drafts so you can keep reading where you left off.",
   "releases.0.11.2.title": "Town and project introductions in Chinese and English",
   "releases.0.11.2.summary.0.title": "Get to know places and townspeople in English",
   "releases.0.11.2.summary.0.description": "Place introductions, townspeople’s stories, and the atlas support Chinese and English. If the original content changes before its translation is updated, the original is shown instead.",

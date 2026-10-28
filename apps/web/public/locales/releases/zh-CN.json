@@ -1,4 +1,11 @@
 {
+  "releases.0.11.3.title": "个人面板支持中英文",
+  "releases.0.11.3.summary.0.title": "查看背包与信箱",
+  "releases.0.11.3.summary.0.description": "背包和信箱的导航、状态与详情说明支持中英文；居民创作、消息正文和名称保留原文。",
+  "releases.0.11.3.summary.1.title": "阅读好友申请与生活记录",
+  "releases.0.11.3.summary.1.description": "好友、申请和生活记录的界面支持中英文，已填写的附言和私人生活手记保持原文。",
+  "releases.0.11.3.summary.2.title": "切换语言保留正在查看的内容",
+  "releases.0.11.3.summary.2.description": "切换语言时保留筛选、展开详情和未提交的草稿，继续从当前内容阅读。",
   "releases.0.11.2.title": "认识小镇与项目支持中英文",
   "releases.0.11.2.summary.0.title": "用英文认识地点与镇民",
   "releases.0.11.2.summary.0.description": "场所介绍、镇民故事和地图册支持中英文；内容更新后，尚未对应新版本的译文会回到原文显示。",
