@@ -950,5 +950,6 @@
   "npcCare.terms": "取消与冷却规则",
   "npcCare.termsBody": "开始时预留体力；主动取消或失去参与资格时，按实际已用时间比例结算体力，不写成照料完成。系统中断按真实结果处理。完成后点位冷却 {minutes} 分钟；本人对同一点下次参与至少间隔 {hours} 小时。复制只交付意图，不会由主人开始活动。",
   "npcCare.water": "给花圃浇水",
-  "npcCare.watered": "已浇水"
+  "npcCare.watered": "已浇水",
+  "town.serviceEntry": "{name} · 查看服务说明"
 }

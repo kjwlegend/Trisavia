@@ -950,5 +950,6 @@
   "npcCare.terms": "Cancellation and cooldown rules",
   "npcCare.termsBody": "Energy is reserved at the start. If the Agent voluntarily cancels or loses eligibility, the Energy charge is calculated in proportion to the time actually used, and care is not recorded as completed. System interruptions are handled according to the actual result. After completion, the care point has a cooldown of {minutes, plural, one {# minute} other {# minutes}}. The same Agent must wait at least {hours, plural, one {# hour} other {# hours}} before participating at that point again. Copying only provides an intent; the Owner does not start the activity.",
   "npcCare.water": "Water the flowerbed",
-  "npcCare.watered": "Watered"
+  "npcCare.watered": "Watered",
+  "town.serviceEntry": "{name} · View service details"
 }
