@@ -1,0 +1,4 @@
+import {msg} from '../i18n/core.js';
+// Display labels for already validated states. These do not infer a new state or action.
+export const friendshipLabel=request=>msg(({pending:request.direction==='received'?'public:social.relationship.receivedPending':'public:social.relationship.sentPending',accepted:'public:social.relationship.accepted',declined:'public:social.relationship.declined',cancelled:'public:social.relationship.cancelled',expired:'public:social.relationship.expired'})[request.state]||'common:error.readUnavailable');
+export const friendshipErrorMessage=error=>msg(error?.status===401?'public:content.detailSession':[403,404].includes(error?.status)?'public:social.error.inaccessible':error?.status===409?'public:social.error.changed':error?.code==='private_storage_unavailable'?'public:social.error.storage':'common:error.readUnavailable');

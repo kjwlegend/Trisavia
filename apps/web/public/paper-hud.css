@@ -136,6 +136,7 @@
 .paper-hud .paper-list-identity{flex:none;margin:8px 0 0!important;font-size:12px!important;color:var(--paper-muted)}
 .paper-hud .hud-friendship-invitation-list{display:block;min-width:0;padding:0;border:0;background:transparent}
 .paper-hud .hud-friendship-request-card{display:grid;grid-template-columns:44px minmax(92px,.7fr) minmax(120px,1.3fr) 82px auto;align-items:center;gap:10px;min-height:70px;height:70px;padding:7px 4px;border:0;border-bottom:1px solid var(--paper-border);border-radius:0;background:transparent;box-shadow:none;margin:0}
+.paper-hud:lang(en) .hud-friendship-request-card{height:auto}
 .paper-hud .paper-request-picture .avatar{width:40px;height:48px;object-fit:contain;background:#e7dfcd}
 .paper-hud .paper-request-person,.paper-hud .paper-request-copy{min-width:0}
 .paper-hud .hud-friendship-request-card .hud-friendship-request{display:block;text-align:left;max-width:100%;min-height:22px;height:22px;line-height:22px;padding:0;border:0;background:transparent;box-shadow:none;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#476e54}
