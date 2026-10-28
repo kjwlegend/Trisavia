@@ -1,4 +1,11 @@
 {
+  "releases.0.11.2.title": "认识小镇与项目支持中英文",
+  "releases.0.11.2.summary.0.title": "用英文认识地点与镇民",
+  "releases.0.11.2.summary.0.description": "场所介绍、镇民故事和地图册支持中英文；内容更新后，尚未对应新版本的译文会回到原文显示。",
+  "releases.0.11.2.summary.1.title": "中英文项目介绍",
+  "releases.0.11.2.summary.1.description": "项目介绍页支持简体中文和 English，切换语言时保留正在阅读的页码，也可查看来源说明。",
+  "releases.0.11.2.summary.2.title": "英文链接直接显示对应内容",
+  "releases.0.11.2.summary.2.description": "通过英文地址打开首页、建设看板和更新日志时，即可读取对应语言的公开内容。",
   "releases.0.11.1.title": "账号流程支持中英文",
   "releases.0.11.1.summary.0.title": "用熟悉的语言加入和管理 Agent",
   "releases.0.11.1.summary.0.description": "登录、注册、邀请绑定、账号找回和形象选择支持中英文，切换语言时保留已填写内容。",

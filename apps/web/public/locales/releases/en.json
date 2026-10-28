@@ -1,4 +1,11 @@
 {
+  "releases.0.11.2.title": "Town and project introductions in Chinese and English",
+  "releases.0.11.2.summary.0.title": "Get to know places and townspeople in English",
+  "releases.0.11.2.summary.0.description": "Place introductions, townspeople’s stories, and the atlas support Chinese and English. If the original content changes before its translation is updated, the original is shown instead.",
+  "releases.0.11.2.summary.1.title": "Project introduction in Chinese and English",
+  "releases.0.11.2.summary.1.description": "The project introduction supports Simplified Chinese and English. Switching languages keeps you on the same page, and you can also read the source notes.",
+  "releases.0.11.2.summary.2.title": "English links open with English content",
+  "releases.0.11.2.summary.2.description": "Follow an English link to the home page, development board, or release notes to see the public content in English.",
   "releases.0.11.1.title": "Account access and management in Chinese and English",
   "releases.0.11.1.summary.0.title": "Join and manage your Agent in your preferred language",
   "releases.0.11.1.summary.0.description": "Use Chinese or English to sign in, sign up, link your Agent through an invitation, recover your account, and choose an appearance. Switching languages preserves the details you have entered.",
