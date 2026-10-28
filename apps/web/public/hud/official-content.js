@@ -2,7 +2,7 @@ import {ensureNamespaces,t,bindText,clearBinding,getLocale,onLocaleChange} from 
 
 // These are translation-source indices, not world facts or permission caches.
 const indices={
- 'world-content':'42aadf4806807d43227516f1ebd95c7e179c7ef1ab76eb4e6ef32ecea939a6d9',
+ 'world-content':'37dcb422c2ddbcf3a0914efee5c28a82d325e01faf66e39f4ddad6fefe567082',
  'life-content':'343d4d95a480f3db5471bc185ab2a8a0bd4d200da069df96a258714e2183f793',
 };
 const pending=new Map();
@@ -25,7 +25,9 @@ export async function readOfficialPresentation(namespace,spec){
  try{
   const [index]=await Promise.all([sourceIndex(namespace),ensureNamespaces(['public',namespace])]);
   const groups=index.groups.filter(g=>g.sourceId===spec.id&&g.sourceRef===spec.ref&&g.version===spec.version&&same(g.selector,spec.selector));
-  if(groups.length!==1)return fallback('changed');const group=groups[0];
+  if(groups.length!==1)return fallback('changed');const group=groups[0],bundleId=group.currentSource?.bundle;
+  if(bundleId){const bundle=index.listSourceBundles?.[bundleId],proof=spec.listSource;if(!['pixelTownLayout','lifeSpatialTargets','commons'].includes(bundleId)||!bundle||proof?.bundle!==bundleId||proof.sourceRef!==bundle.sourceRef||proof.version!==bundle.version||spec.ref!==bundle.sourceRef||spec.version!==bundle.version||bundleId==='pixelTownLayout'&&(typeof spec.version!=='string'||proof.byteSha256!==bundle.byteSha256)||bundleId==='lifeSpatialTargets'&&(spec.version!==3||proof.canonicalSha256!==bundle.canonicalSha256)||bundleId==='commons'&&spec.version!==null)return fallback('changed');}
+  else if(typeof spec.version==='string')return fallback('changed');
   if(!Object.entries(group.stateGuards??{}).every(([key,value])=>spec.state?.[key]===value)||group.nativeStoryDigest&&group.nativeStoryDigest!==spec.nativeDigest)return fallback('changed');
   const fields=Object.fromEntries([...group.digestFields].sort().map(field=>[field,at(original,field)]));
   if(Object.values(fields).some(value=>typeof value!=='string'))return fallback('unavailable');

@@ -1,10 +1,10 @@
 import {createLifePlaceCard,lifeBuilding} from './life-place-card.js';
 import {readPublicId} from '../public-id.js';
 import {$,el,api} from '../common.js';
-import {bindText,bindAttribute,clearBinding} from '../i18n/core.js';
+import {msg,bindText,bindAttribute,clearBinding} from '../i18n/core.js';
 import {readPublicCapabilities} from '../public-capabilities.js';
 import {createWorldScene,placeDetails} from '../world-scene.js';
-import {loadPixelTown,COMMONS_PLACE} from '../world-pixel/town.js';
+import {loadPixelTown,COMMONS_PLACE,placeListSource} from '../world-pixel/town.js';
 import {createOwnedAgentBinding} from './owned-agents.js';
 import {createPanelTransition} from './panel-transition.js';
 import {createWorldSceneProvider} from './world-scene-provider.js';
@@ -22,6 +22,7 @@ import {createNpcLifeDirectoryReader} from './npc-life-reader.js';
 import {npcLifePlace} from './npc-life-place.js';
 import {createNpcPersonCard} from './npc-person-card.js';
 import {createPlaceProfileCard,placeProfileTargetId} from './place-profile-card.js';
+import {bindOfficialFields} from './official-content.js';
 let scene=null;
 export function initSceneRenderer({session,onSelectAgent=()=>{},rendering=null}={}){
 let mapReady=false,mapFailed=false,pageActive=true,firstSceneMarked=false;
@@ -84,14 +85,18 @@ function renderDetails(place){
   if(town){detailText('#world-detail-area',place.kind==='town-notice'?'小镇公告':'镇民服务',place.kind==='town-notice'?'scene.area.notice':'scene.area.services');detailText('#world-detail-title',place.kind==='world-npc'?'镇民':place.name,place.kind==='world-npc'?'scene.title.npc':null);return{links:[]};}
   const details=placeDetails(place);detailText('#world-detail-area',details.area);detailText('#world-detail-title',place.kind==='world-npc'?'镇民':details.name,place.kind==='world-npc'?'scene.title.npc':null);detailText('#world-detail-icon',details.icon);detailText('#world-detail-description',details.description);detailText('#world-detail-note',details.note);return details;
 }
-const list = $('#world-place-list');
-function renderPlaceList(places){list.replaceChildren();
+const list = $('#world-place-list'),listBindings=[],listStarts=[];
+function clearPlaceList(){for(const stop of listBindings.splice(0))stop();listStarts.length=0;}
+function localizePlaceList(){if($('#world-place-directory').open)for(const start of listStarts)start();}
+$('#world-place-directory').addEventListener('toggle',localizePlaceList);
+function bindListPlace(place,nodes){let closed=false,started=false,stop=()=>{};listBindings.push(()=>{closed=true;stop();});listStarts.push(()=>{if(started||closed)return;started=true;void placeListSource(place).then(source=>{if(!closed&&source)stop=bindOfficialFields(nodes,'world-content',source);});});}
+function renderPlaceList(places){clearPlaceList();list.replaceChildren();
 for (const area of [...new Set(places.map(place => place.area))]) {
   const group = el('section', 'world-place-group');
-  group.append(el('h3', '', area));
+  const areaTitle=el('h3','',area);group.append(areaTitle);let first=true;
   const buttons = el('div');
   for (const place of places.filter(item => item.area === area)) {
-    const button = el('button', 'world-place-button', place.kind==='life-place'?place.name+' · 场所活动':place.name);
+    const button = el('button', 'world-place-button'),name=el('span','',place.name);button.append(name);if(place.kind==='life-place')button.append(document.createTextNode(' · '),el('span','',msg('public:life.heading')));bindListPlace(place,{name,...(first?{area:areaTitle}:{})});first=false;
     button.type = 'button';
     button.id = `world-place-${place.id}`;
     button.dataset.placeId = place.id;
@@ -102,6 +107,7 @@ for (const area of [...new Set(places.map(place => place.area))]) {
   }
   group.append(buttons); list.append(group);
 }
+localizePlaceList();
 }
 renderPlaceList(rendering?.places||[COMMONS_PLACE]);
 function positionCharacterCard(){
@@ -243,7 +249,7 @@ document.addEventListener('visibilitychange',()=>{syncNpcLifeDirectory();worldPr
 for (const link of document.querySelectorAll('a[href="#connect"]')) link.addEventListener('click', () => { $('#connect').open = true; });
 if (location.hash === '#connect') $('#connect').open = true;
 worldProvider.setVisible(!document.hidden);worldProvider.start();startScene();
-window.addEventListener('pagehide', event => {pageActive=false;syncNpcLifeDirectory(false);stopEntryRead();worldProvider.setVisible(false);statusHud.setVisible(false);if (!event.persisted){stopNpcLifeDirectory();npcLifeDirectory.dispose();cancelPublicFocus();noticeAbort?.abort();placeProfile.dispose();townCard.dispose();lifeCard.dispose();entryObserver?.disconnect();sceneGeneration++;sceneAbort?.abort();worldProvider.dispose();statusHud.dispose();stopStatusSession?.();ownedAgents?.dispose();characterCard.dispose();publicCharacter.dispose();window.removeEventListener('resize',positionCharacterCard);characterSize.disconnect();detailTransition.destroy();scene?.destroy();} });
+window.addEventListener('pagehide', event => {pageActive=false;syncNpcLifeDirectory(false);stopEntryRead();worldProvider.setVisible(false);statusHud.setVisible(false);if (!event.persisted){clearPlaceList();$('#world-place-directory').removeEventListener('toggle',localizePlaceList);stopNpcLifeDirectory();npcLifeDirectory.dispose();cancelPublicFocus();noticeAbort?.abort();placeProfile.dispose();townCard.dispose();lifeCard.dispose();entryObserver?.disconnect();sceneGeneration++;sceneAbort?.abort();worldProvider.dispose();statusHud.dispose();stopStatusSession?.();ownedAgents?.dispose();characterCard.dispose();publicCharacter.dispose();window.removeEventListener('resize',positionCharacterCard);characterSize.disconnect();detailTransition.destroy();scene?.destroy();} });
 window.addEventListener('pageshow',()=>{pageActive=true;syncNpcLifeDirectory();if(scene&&!mapFailed){worldProvider.setVisible(scene.getState().visible);statusHud.setVisible(scene.getState().visible&&!document.hidden);}if(entryVisible)void readEntryCapabilities();});
 return{focusPublicResident,returnToTown(){if(!mapReady||!scene)return false;closePlace(false);scene.fit();$('#world-canvas')?.focus({preventScroll:true});return true;},locateAgent(agentId){return mapReady&&scene?.locateOwnedAgent(agentId)||false;}};
 }
