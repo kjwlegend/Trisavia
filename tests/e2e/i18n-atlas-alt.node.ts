@@ -1,0 +1,16 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdir,readFile,writeFile} from 'node:fs/promises';
+import {resolve} from 'node:path';
+import Fastify from 'fastify';
+import {chromium,expect} from '@playwright/test';
+import {registerSiteRoutes} from '../../apps/platform/transport/http/site-routes.ts';
+test('atlas image alt follows locale without replacing or reloading the current image',async t=>{
+ const app=Fastify({logger:false}),requests:string[]=[],errors:string[]=[];t.after(()=>app.close());app.addHook('onRequest',async req=>{assert.equal(req.method,'GET');assert.equal(req.headers.authorization,undefined);requests.push(req.url);});
+ app.get('/atlas-alt',(_req,reply)=>reply.type('text/html').send('<!doctype html><html lang="zh-CN"><head><link rel="stylesheet" href="/assets/hud/world-atlas.css"></head><body><button id="world-atlas-entry">地图</button><script type="module" src="/atlas-alt.js"></script></body></html>'));
+ app.get('/atlas-alt.js',(_req,reply)=>reply.type('text/javascript').send("import{initI18n}from'/assets/i18n/core.js';import{mountWorldAtlas}from'/assets/hud/world-atlas.js';await initI18n({namespaces:['public','shell']});window.atlasFixture=mountWorldAtlas();"));
+ registerSiteRoutes(app,{assetMode:'source',repoRoot:resolve('.')});const origin=await app.listen({host:'127.0.0.1',port:0}),browser=await chromium.launch({headless:true,executablePath:process.env.M1_TEST_CHROMIUM_PATH||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});t.after(()=>browser.close());const context=await browser.newContext({viewport:{width:1440,height:1000},locale:'zh-CN',reducedMotion:'reduce'});t.after(()=>context.close());const page=await context.newPage();page.setDefaultTimeout(5000);page.on('pageerror',e=>errors.push(e.message));
+ await page.goto(origin+'/atlas-alt');await page.locator('#world-atlas-entry').click();await expect(page.locator('.atlas-map-stage')).toBeVisible();const image=page.locator('.atlas-map-stage img'),node=await image.elementHandle(),src=await image.getAttribute('src'),zh=JSON.parse(await readFile('apps/web/public/locales/public/zh-CN.json','utf8')),en=JSON.parse(await readFile('apps/web/public/locales/public/en.json','utf8'));await expect(image).toHaveAttribute('alt',zh['atlas.imageAlt']);
+ await page.evaluate(async()=>{const path='/assets/i18n/core.js';await(await import(path)).setLocale('en',{source:'explicit'});});await expect(image).toHaveAttribute('alt',en['atlas.imageAlt']);assert.equal(await node!.evaluate(n=>n===document.querySelector('.atlas-map-stage img')),true);assert.equal(await image.getAttribute('src'),src);assert.equal(requests.filter(url=>url==='/assets/world-atlas/trisavia-atlas-base.jpg').length,1);assert.deepEqual(errors,[]);
+ const out=resolve('outputs/i18n-v0110/atlas-alt');await mkdir(out,{recursive:true});await writeFile(resolve(out,'results.json'),JSON.stringify({scope:'Isolated source atlas, real fixed public dictionaries/art; no formal service or identities',alt:await image.getAttribute('alt'),sameImageNode:true,src,imageRequests:1,requests,errors},null,2));await page.keyboard.press('Escape');await expect(page.locator('#world-atlas-entry')).toBeFocused();
+});
