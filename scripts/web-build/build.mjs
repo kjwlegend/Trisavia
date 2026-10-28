@@ -8,6 +8,10 @@ import {verifyI18nVendor,FORMATJS_VERSIONS} from './i18n-vendor.mjs';
 const defaultRoot=resolve(fileURLToPath(new URL('../../',import.meta.url)));
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex'),posix=path=>path.split(sep).join('/');
 function attributes(tag){return Object.fromEntries([...tag.matchAll(/([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)].map(m=>[m[1].toLowerCase(),m[2]??m[3]]));}
+function completeMessageLiteral(text,match){
+ const suffix=text.slice(match.index+match[0].length).replace(/^(?:\s|\/\*[\s\S]*?\*\/|\/\/[^\n]*(?:\n|$))*/,'');
+ return !suffix.startsWith('+')&&!/^\.concat\s*\(/.test(suffix);
+}
 async function filesIn(directory){const out=[];for(const e of (await readdir(directory,{withFileTypes:true})).sort((a,b)=>a.name.localeCompare(b.name,'en'))){const path=resolve(directory,e.name);if(e.isDirectory())out.push(...await filesIn(path));else if(e.isFile())out.push(path);else throw new Error('Build sources cannot be links: '+e.name);}return out;}
 /** Production outputs are derived only from this checkout. Never reads serving files or a saved bundle. */
 export async function buildWeb({root=defaultRoot}={}){
@@ -17,9 +21,9 @@ export async function buildWeb({root=defaultRoot}={}){
  const references=new Set(),quotedKeys=new Set();
  const source=async path=>{const full=resolve(path),name=posix(relative(root,full));if(name.startsWith('../')||name==='..'||(await lstat(full)).isSymbolicLink())throw new Error('Build input must be a regular checkout file');const bytes=await readFile(full);sources.set(name,sha(bytes));
   if(name.startsWith('apps/web/public/')&&/\.(?:html|js)$/.test(name)){
-   const text=bytes.toString('utf8');for(const match of text.matchAll(/\b(?:t|msg)\(\s*(['"])([a-z][a-z0-9-]{0,47}:[A-Za-z0-9_.:-]{1,200})\1/g))references.add(match[2]);
+   const text=bytes.toString('utf8');for(const match of text.matchAll(/\b(?:t|msg)\(\s*(['"])([a-z][a-z0-9-]{0,47}:[A-Za-z0-9_.:-]{1,200})\1/g))if(completeMessageLiteral(text,match))references.add(match[2]);
    for(const match of text.matchAll(/data-i18n(?:-(?:placeholder|title|aria-label))?\s*=\s*(['"])([a-z][a-z0-9-]{0,47}:[A-Za-z0-9_.:-]{1,200})\1/g))references.add(match[2]);
-   for(const match of text.matchAll(/(['"])([a-z][a-z0-9-]{0,47}:[A-Za-z0-9_.:-]{1,200})\1/g))quotedKeys.add(match[2]);
+   for(const match of text.matchAll(/(['"])([a-z][a-z0-9-]{0,47}:[A-Za-z0-9_.:-]{1,200})\1/g))if(completeMessageLiteral(text,match))quotedKeys.add(match[2]);
   }
   return bytes;};
  const publicFile=url=>{if(!url.startsWith('/assets/')||/[?#\u0000-\u0020]/u.test(url))throw new Error('Expected an exact source /assets/ path');const full=resolve(publicRoot,url.slice('/assets/'.length));if(!full.startsWith(publicRoot+sep))throw new Error('Asset path escapes public root');return full;};

@@ -61,6 +61,15 @@ test('ICU parsing, same-key/parameter contracts and declared missing keys fail t
  await writeFile(resolve(f.pub,'locales/common/en.json'),JSON.stringify({ready:'Hello {name}'}));await writeFile(resolve(f.pub,'entry.js'),'import {t} from "./i18n/core.js";globalThis.fixtureTitle=t("common:absent");');await assert.rejects(()=>buildWeb({root:f.root}),/Declared i18n message.*common:absent/);
 });
 
+test('actual common errorKey and explicit dynamic prefixes do not become fake complete dictionary keys',async t=>{
+ const f=await fixture(t);await cp(resolve(checkout,'apps/web/public/common.js'),resolve(f.pub,'common.js'));
+ for(const locale of ['en','zh-CN'])await cp(resolve(checkout,'apps/web/public/locales/common',locale+'.json'),resolve(f.pub,'locales/common',locale+'.json'));
+ for(const page of ['index','resident','releases','kanban']){const path=resolve(f.pub,page+'.html');await writeFile(path,(await readFile(path,'utf8')).replace('common:ready','common:action.retry'));}
+ const entry='import {errorText} from "./common.js";import {t} from "./i18n/core.js";const code="field_locked";globalThis.fixtureTitle=errorText({code,status:403})+t("common:error."+code)+t(`common:${code}`);';
+ await writeFile(resolve(f.pub,'entry.js'),entry);await buildWeb({root:f.root});
+ await writeFile(resolve(f.pub,'entry.js'),entry+'globalThis.invalid=t("common:missingComplete");');await assert.rejects(()=>buildWeb({root:f.root}),/Declared i18n message.*common:missingComplete/);
+});
+
 test('actual fixed WS07 public dictionaries parse with FormatJS and have identical named parameters in both languages',async t=>{
  const root=await mkdtemp(join(tmpdir(),'trisavia-ws07-dictionaries-'));t.after(()=>rm(root,{recursive:true,force:true}));await mkdir(resolve(root,'locales'));
  for(const namespace of ['common','shell','public','releases','kanban','help'])await cp(resolve(checkout,'apps/web/public/locales',namespace),resolve(root,'locales',namespace),{recursive:true});
