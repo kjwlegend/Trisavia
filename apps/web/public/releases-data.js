@@ -3,7 +3,7 @@ export const RELEASES = [
   {
     version: '0.11.5',
     date: '2026-10-29',
-    status: '待发布',
+    status: '已完成',
     title: '镇长新人礼包的中英文显示修复',
     highlights: [
       {category: '修复', title: '按所选语言查看新人礼包', description: '修复英文界面中镇长新人礼包标题和说明仍显示中文的问题。现在按所选的简体中文或英文显示，礼包内容与领取规则不变。'},
