@@ -17,11 +17,11 @@
   "resources": {
     "zh-CN": {
       "path": "../../locales/life-content/zh-CN.json",
-      "sha256": "14256100c7cfb30c12306b9c421177c5f856a26b0c80728566d6922b6aa1210c"
+      "sha256": "efc4586d320819c14f94a04f3e78757679c25a46bae728102b9c379396970be9"
     },
     "en": {
       "path": "../../locales/life-content/en.json",
-      "sha256": "1d65f2b3925c3cf36b5a8807d6473706448362c1f6c5582dcdf7a6549fcfdc96"
+      "sha256": "664b4476b1fa6aeae84f8a3b219d068ece359f69581840f1205afb8d437e6326"
     }
   },
   "groups": [
@@ -1561,6 +1561,294 @@
       "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision",
       "selector": {
         "jobId": "tavern_shift"
+      }
+    },
+    {
+      "sourceId": "life.basic_rod",
+      "sourceRef": "life.basic_rod",
+      "version": 1,
+      "sourceDigest": "fe35bb975a8adf8e0fa87ab490b161b2642e1258e75513cab761fc4370759715",
+      "digestFields": [
+        "body",
+        "title"
+      ],
+      "fields": {
+        "body": "lifeItem.basic_rod.v1.summary",
+        "title": "lifeItem.basic_rod.v1.title"
+      },
+      "locations": {
+        "body": {
+          "path": "apps/platform/infrastructure/postgresql/life-commerce-repository.ts",
+          "selector": "life.basic_rod.body"
+        },
+        "title": {
+          "path": "apps/platform/infrastructure/postgresql/life-commerce-repository.ts",
+          "selector": "life.basic_rod.title",
+          "parent": {
+            "path": "apps/platform/domains/life/b-catalog.ts",
+            "selector": "basic_rod.name"
+          }
+        }
+      },
+      "versionKind": "original item definition content version; independent of economic catalog revision and holding/instance versions",
+      "selector": {
+        "projection": "detail"
+      }
+    },
+    {
+      "sourceId": "life.bait",
+      "sourceRef": "life.bait",
+      "version": 1,
+      "sourceDigest": "691f0c6e9b9d0c85138eb980bc17b1f0e7f736e97e07d83a4f6e7fa8109632c1",
+      "digestFields": [
+        "body",
+        "title"
+      ],
+      "fields": {
+        "body": "lifeItem.bait.v1.summary",
+        "title": "lifeItem.bait.v1.title"
+      },
+      "locations": {
+        "body": {
+          "path": "apps/platform/infrastructure/postgresql/life-commerce-repository.ts",
+          "selector": "life.bait.body"
+        },
+        "title": {
+          "path": "apps/platform/infrastructure/postgresql/life-commerce-repository.ts",
+          "selector": "life.bait.title",
+          "parent": {
+            "path": "apps/platform/domains/life/b-catalog.ts",
+            "selector": "bait.name"
+          }
+        }
+      },
+      "versionKind": "original item definition content version; independent of economic catalog revision and holding/instance versions",
+      "selector": {
+        "projection": "detail"
+      }
+    },
+    {
+      "sourceId": "life.sardine",
+      "sourceRef": "life.sardine",
+      "version": 1,
+      "sourceDigest": "36b1c309b9ba11f33050fe3646b9205eaa061598e5314b54dbf4fd6bb8e25225",
+      "digestFields": [
+        "body",
+        "title"
+      ],
+      "fields": {
+        "body": "lifeItem.sardine.v1.summary",
+        "title": "lifeItem.sardine.v1.title"
+      },
+      "locations": {
+        "body": {
+          "path": "apps/platform/infrastructure/postgresql/life-commerce-repository.ts",
+          "selector": "life.sardine.body"
+        },
+        "title": {
+          "path": "apps/platform/infrastructure/postgresql/life-commerce-repository.ts",
+          "selector": "life.sardine.title",
+          "parent": {
+            "path": "apps/platform/domains/life/b-catalog.ts",
+            "selector": "sardine.name"
+          }
+        }
+      },
+      "versionKind": "original item definition content version; independent of economic catalog revision and holding/instance versions",
+      "selector": {
+        "projection": "detail"
+      }
+    },
+    {
+      "sourceId": "life.mackerel",
+      "sourceRef": "life.mackerel",
+      "version": 1,
+      "sourceDigest": "44c399879e663bb011baea3b62b8b174be835702462825171674cdb8066bd4c2",
+      "digestFields": [
+        "body",
+        "title"
+      ],
+      "fields": {
+        "body": "lifeItem.mackerel.v1.summary",
+        "title": "lifeItem.mackerel.v1.title"
+      },
+      "locations": {
+        "body": {
+          "path": "apps/platform/infrastructure/postgresql/life-commerce-repository.ts",
+          "selector": "life.mackerel.body"
+        },
+        "title": {
+          "path": "apps/platform/infrastructure/postgresql/life-commerce-repository.ts",
+          "selector": "life.mackerel.title",
+          "parent": {
+            "path": "apps/platform/domains/life/b-catalog.ts",
+            "selector": "mackerel.name"
+          }
+        }
+      },
+      "versionKind": "original item definition content version; independent of economic catalog revision and holding/instance versions",
+      "selector": {
+        "projection": "detail"
+      }
+    },
+    {
+      "sourceId": "life.sea_bass",
+      "sourceRef": "life.sea_bass",
+      "version": 1,
+      "sourceDigest": "d5ee9e25446a35220a9aec5a09f0e18fc2774bd26df4c708cc936f35a766744f",
+      "digestFields": [
+        "body",
+        "title"
+      ],
+      "fields": {
+        "body": "lifeItem.sea_bass.v1.summary",
+        "title": "lifeItem.sea_bass.v1.title"
+      },
+      "locations": {
+        "body": {
+          "path": "apps/platform/infrastructure/postgresql/life-commerce-repository.ts",
+          "selector": "life.sea_bass.body"
+        },
+        "title": {
+          "path": "apps/platform/infrastructure/postgresql/life-commerce-repository.ts",
+          "selector": "life.sea_bass.title",
+          "parent": {
+            "path": "apps/platform/domains/life/b-catalog.ts",
+            "selector": "sea_bass.name"
+          }
+        }
+      },
+      "versionKind": "original item definition content version; independent of economic catalog revision and holding/instance versions",
+      "selector": {
+        "projection": "detail"
+      }
+    },
+    {
+      "sourceId": "life.bread_meal",
+      "sourceRef": "life.bread_meal",
+      "version": 1,
+      "sourceDigest": "710abb740b0777217eb0573f3f36fffe8d6e11abba05753d565af2f3723de97e",
+      "digestFields": [
+        "body",
+        "title"
+      ],
+      "fields": {
+        "body": "lifeItem.bread_meal.v1.summary",
+        "title": "lifeItem.bread_meal.v1.title"
+      },
+      "locations": {
+        "body": {
+          "path": "apps/platform/infrastructure/postgresql/life-c-commerce-repository.ts",
+          "selector": "life.bread_meal.body"
+        },
+        "title": {
+          "path": "apps/platform/infrastructure/postgresql/life-c-commerce-repository.ts",
+          "selector": "life.bread_meal.title",
+          "parent": {
+            "path": "apps/platform/domains/life/c-values.ts",
+            "selector": "bread_meal.name"
+          }
+        }
+      },
+      "versionKind": "original item definition content version; independent of economic catalog revision and holding/instance versions",
+      "selector": {
+        "projection": "detail"
+      }
+    },
+    {
+      "sourceId": "life.herbal_tea",
+      "sourceRef": "life.herbal_tea",
+      "version": 1,
+      "sourceDigest": "6a856128db018434ec1b380ef53a1409d34c58f8a4e670cd2d4a2e8169de529b",
+      "digestFields": [
+        "body",
+        "title"
+      ],
+      "fields": {
+        "body": "lifeItem.herbal_tea.v1.summary",
+        "title": "lifeItem.herbal_tea.v1.title"
+      },
+      "locations": {
+        "body": {
+          "path": "apps/platform/infrastructure/postgresql/life-c-commerce-repository.ts",
+          "selector": "life.herbal_tea.body"
+        },
+        "title": {
+          "path": "apps/platform/infrastructure/postgresql/life-c-commerce-repository.ts",
+          "selector": "life.herbal_tea.title",
+          "parent": {
+            "path": "apps/platform/domains/life/c-values.ts",
+            "selector": "herbal_tea.name"
+          }
+        }
+      },
+      "versionKind": "original item definition content version; independent of economic catalog revision and holding/instance versions",
+      "selector": {
+        "projection": "detail"
+      }
+    },
+    {
+      "sourceId": "life.grilled_fish",
+      "sourceRef": "life.grilled_fish",
+      "version": 1,
+      "sourceDigest": "ed741b6d90772671c4df1e871e8da25ac72dac1fdcb311c9c2df5e1206e264b4",
+      "digestFields": [
+        "body",
+        "title"
+      ],
+      "fields": {
+        "body": "lifeItem.grilled_fish.v1.summary",
+        "title": "lifeItem.grilled_fish.v1.title"
+      },
+      "locations": {
+        "body": {
+          "path": "apps/platform/infrastructure/postgresql/life-c-commerce-repository.ts",
+          "selector": "life.grilled_fish.body"
+        },
+        "title": {
+          "path": "apps/platform/infrastructure/postgresql/life-c-commerce-repository.ts",
+          "selector": "life.grilled_fish.title",
+          "parent": {
+            "path": "apps/platform/domains/life/c-values.ts",
+            "selector": "grilled_fish.name"
+          }
+        }
+      },
+      "versionKind": "original item definition content version; independent of economic catalog revision and holding/instance versions",
+      "selector": {
+        "projection": "detail"
+      }
+    },
+    {
+      "sourceId": "life.harbor_handbook",
+      "sourceRef": "life.harbor_handbook",
+      "version": 1,
+      "sourceDigest": "42b8078c8a86922a1fa3757707ca74402b7592e9fb6c94789cc520f4b08b7e5f",
+      "digestFields": [
+        "body",
+        "title"
+      ],
+      "fields": {
+        "body": "lifeItem.harbor_handbook.v1.summary",
+        "title": "lifeItem.harbor_handbook.v1.title"
+      },
+      "locations": {
+        "body": {
+          "path": "apps/platform/infrastructure/postgresql/life-c-commerce-repository.ts",
+          "selector": "life.harbor_handbook.body"
+        },
+        "title": {
+          "path": "apps/platform/infrastructure/postgresql/life-c-commerce-repository.ts",
+          "selector": "life.harbor_handbook.title",
+          "parent": {
+            "path": "apps/platform/domains/life/c-values.ts",
+            "selector": "harbor_handbook.name"
+          }
+        }
+      },
+      "versionKind": "original item definition content version; independent of economic catalog revision and holding/instance versions",
+      "selector": {
+        "projection": "detail"
       }
     }
   ],
