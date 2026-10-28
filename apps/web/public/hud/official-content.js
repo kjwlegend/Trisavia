@@ -2,7 +2,7 @@ import {ensureNamespaces,t,bindText,clearBinding,getLocale,onLocaleChange} from 
 
 // These are translation-source indices, not world facts or permission caches.
 const indices={
- 'world-content':'ac87844584fdf548d4e9f7351dc114944fe07a2da25bfe43d705b45fda80bca5',
+ 'world-content':'42aadf4806807d43227516f1ebd95c7e179c7ef1ab76eb4e6ef32ecea939a6d9',
  'life-content':'343d4d95a480f3db5471bc185ab2a8a0bd4d200da069df96a258714e2183f793',
 };
 const pending=new Map();
