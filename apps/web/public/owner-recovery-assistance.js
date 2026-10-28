@@ -1,9 +1,10 @@
+import {accountMessage,accountText} from './owner-i18n.js';
 import {publicIdLabel} from './public-id.js';
 import {$ as query,api,ApiError,validToken,tokenId,stamp} from './common.js';
 import {BackupError} from './owner-backup.js';
 
 const storageKey='connet.owner.assistance.v1';
-const statuses={pending:'等待主人验证',completed:'本次协助已完成',cancelled:'本次协助已取消',expired:'本次协助已过期'};
+const statuses={pending:accountMessage("recovery.assistance.status.pending"),completed:accountMessage("recovery.assistance.status.completed"),cancelled:accountMessage("recovery.assistance.status.cancelled"),expired:accountMessage("recovery.assistance.status.expired")};
 
 // The private entry locates one request. It never supplies owner authority.
 export function createRecoveryAssistance(onChange,root=document){
@@ -12,14 +13,14 @@ export function createRecoveryAssistance(onChange,root=document){
   try{const saved=JSON.parse(sessionStorage.getItem(storageKey)||'null');if(saved?.origin===location.origin&&validToken(saved.assistanceToken))proof=saved.assistanceToken;}catch{}
   function render(error){
     $('#assistance-context').hidden=!proof;
-    $('#assistance-status').textContent=error?'暂时无法读取协助状态，请重试。':verified&&context?.status==='pending'?'主人备份已验证，尚未重设密码。':statuses[context?.status]||'正在读取协助请求…';
-    $('#assistance-agent-name').textContent=agentName||'发起协助的 Agent';
+    accountText($('#assistance-status'),()=>(error?accountMessage("recovery.assistance.status.unavailable"):verified&&context?.status==='pending'?accountMessage("recovery.assistance.status.backupVerified"):statuses[context?.status]||accountMessage("recovery.assistance.status.loading")));
+    accountText($('#assistance-agent-name'),()=>(agentName||accountMessage("recovery.assistance.agentFallback")));
     $('#assistance-target').hidden=!context?.agentId;
-    $('#assistance-agent-id').textContent=publicIdLabel(context?.publicId);
-    $('#assistance-expiry').textContent=context?.expiresAt?`有效期至 ${stamp(context.expiresAt)}`:'';
+    accountText($('#assistance-agent-id'),()=>(publicIdLabel(context?.publicId)));
+    accountText($('#assistance-expiry'),()=>(context?.expiresAt?accountMessage("recovery.expiry",{time:stamp(context.expiresAt)}):''));
     $('#assistance-refresh').hidden=!error;
     $('#assistance-terminal').hidden=!context||context.status==='pending';
-    if(context&&context.status!=='pending')$('#assistance-terminal').textContent=context.status==='completed'?'这次协助已完成，不能再次重设。请用新密码登录。':context.status==='cancelled'?'这次协助已取消，不能继续重设。你仍可使用当前有效的登录备份自行找回。':'这次协助已过期，不能继续重设。请让 Agent 在有效授权下重新发起，或使用当前有效的登录备份自行找回。';
+    if(context&&context.status!=='pending')accountText($('#assistance-terminal'),()=>(context.status==='completed'?accountMessage("recovery.assistance.terminal.completed"):context.status==='cancelled'?accountMessage("recovery.assistance.terminal.cancelled"):accountMessage("recovery.assistance.terminal.expired")));
     onChange();
   }
   function snapshot(){return context?.ownerId?{assistanceToken:proof,requestId:context.requestId,agentId:context.agentId,publicId:context.publicId,ownerId:context.ownerId,version:context.version}:null;}

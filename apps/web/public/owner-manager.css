@@ -38,3 +38,7 @@
 .owner-world-summary-record{display:flex;flex-direction:column;align-items:stretch;gap:4px}
 .owner-world-summary-record time{position:static;min-width:0;white-space:normal;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
 .owner-world-summary-record>span{min-width:0;white-space:normal;overflow-wrap:anywhere}
+
+/* Human translations may wrap; controls and user-entered content keep their identity. */
+.account-root .manager-nav-button>span{min-width:0;white-space:normal;overflow-wrap:anywhere}
+.account-root .manager-actions button,.account-root .auth-panel button{white-space:normal;overflow-wrap:anywhere}
