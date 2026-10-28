@@ -2,6 +2,8 @@ import {el} from '../common.js';
 import {resolveLook,drawLook} from '../world-pixel/look.js';
 import {loadLookAssets} from '../world-pixel/look-assets.js';
 import {readNpcSprite,NPC_LIFE_MANIFEST,NPC_LIFE_MANIFEST_SHA} from '../world-pixel/npc-life-art.js';
+import {msg,bindAttribute} from '../i18n/core.js';
+import {bindOfficialFields} from './official-content.js';
 
 // A static portrait of the same finite NPC art as the world. No Agent identity,
 // custom-avatar authority or arbitrary image URL is accepted here.
@@ -26,18 +28,19 @@ async function npcPortrait(npc){
  return portraits.get(key);
 }
 function portrait(node,npc){
- const canvas=el('canvas','avatar');canvas.width=canvas.height=80;canvas.setAttribute('role','img');canvas.setAttribute('aria-label',`${npc.name}的角色形象`);canvas.dataset.appearanceState='loading';node.replaceChildren(canvas);
+ const canvas=el('canvas','avatar');canvas.width=canvas.height=80;canvas.setAttribute('role','img');bindAttribute(canvas,'aria-label','public:npc.portraitLabel',{name:npc.name});canvas.dataset.appearanceState='loading';node.replaceChildren(canvas);
  const read=async()=>{if(npc.appearance?.kind==='npc_sprite')return npcPortrait(npc);const look=resolveLook(npc.appearance);if(!look)throw Error('npc_portrait_unresolved');const assets=await loadLookAssets(),frame=document.createElement('canvas');frame.width=96;frame.height=64;drawLook(frame.getContext('2d'),look,assets.images,{x:48,y:39,still:true});return crop(frame);};
- void read().then(({frame,left,top,width,height})=>{if(node.firstChild!==canvas)return;if(width<=0||height<=0)throw Error('npc_portrait_empty');const ctx=canvas.getContext('2d'),scale=Math.max(1,Math.floor(Math.min(64/width,64/height)));ctx.imageSmoothingEnabled=false;ctx.drawImage(frame,left,top,width,height,Math.floor((80-width*scale)/2),Math.floor((80-height*scale)/2),width*scale,height*scale);canvas.dataset.visibleHeight=String(height*scale);canvas.dataset.appearanceState='ready';}).catch(()=>{if(node.firstChild!==canvas)return;canvas.dataset.appearanceState='error';canvas.title='人物形象暂时无法显示';});
+ void read().then(({frame,left,top,width,height})=>{if(node.firstChild!==canvas)return;if(width<=0||height<=0)throw Error('npc_portrait_empty');const ctx=canvas.getContext('2d'),scale=Math.max(1,Math.floor(Math.min(64/width,64/height)));ctx.imageSmoothingEnabled=false;ctx.drawImage(frame,left,top,width,height,Math.floor((80-width*scale)/2),Math.floor((80-height*scale)/2),width*scale,height*scale);canvas.dataset.visibleHeight=String(height*scale);canvas.dataset.appearanceState='ready';}).catch(()=>{if(node.firstChild!==canvas)return;canvas.dataset.appearanceState='error';bindAttribute(canvas,'title','public:npc.portraitUnavailable');});
 }
 export function createNpcPersonCard(){
- const node=el('section','npc-person-card'),picture=el('span','npc-person-picture'),copy=el('div','npc-person-copy'),name=el('h3','npc-person-name'),role=el('p','npc-person-role'),story=el('p','npc-person-story'),state=el('p','npc-person-state');copy.append(name,role);node.append(picture,copy,story,state);node.hidden=true;let key='';
+ const node=el('section','npc-person-card'),picture=el('span','npc-person-picture'),copy=el('div','npc-person-copy'),name=el('h3','npc-person-name'),role=el('p','npc-person-role'),story=el('p','npc-person-story'),state=el('p','npc-person-state'),sourceNote=el('p','npc-person-state');copy.append(name,role);node.append(picture,copy,story,state,sourceNote);node.hidden=true;sourceNote.hidden=true;let key='',stopContent=()=>{};
  return{node,set(npc,{stale=false}={}){
-  if(!npc){key='';node.hidden=true;picture.replaceChildren();return;}
+  if(!npc){key='';stopContent();node.hidden=true;picture.replaceChildren();return;}
   const next=JSON.stringify([npc.npcId,npc.name,npc.role,npc.identity??null,npc.appearance,stale]);if(next===key)return;key=next;
   node.hidden=false;node.dataset.npcId=npc.npcId;name.textContent=npc.name;role.textContent=npc.role;
-  story.textContent=npc.identity?.story||'';story.hidden=!story.textContent;
-  state.textContent=stale?'上次读取的人物信息已过期，当前状态有待重新确认。':npc.readOnly||npc.status==='service_unavailable'?'当前互动尚未开放。':'';state.hidden=!state.textContent;
+  stopContent();story.textContent=npc.identity?.story||'';story.hidden=!story.textContent;
+  if(npc.identity)stopContent=bindOfficialFields({name,role,story},'world-content',{id:npc.npcId,ref:npc.identity.ref,version:npc.identity.version,values:npc.identity,nativeDigest:npc.identity.digest},{note:sourceNote});
+  state.replaceChildren();if(stale)state.append(el('span','',msg('public:npc.stale')));else if(npc.readOnly||npc.status==='service_unavailable')state.append(el('span','',msg('public:npc.notOpen')));state.hidden=!state.childNodes.length;
   portrait(picture,npc);
- },clear(){key='';node.hidden=true;picture.replaceChildren();}};
+ },clear(){key='';stopContent();node.hidden=true;picture.replaceChildren();}};
 }
