@@ -1,5 +1,7 @@
 import {publicIdLabel,readPublicId} from '../public-id.js';
 import {api,el} from '../common.js';
+import {msg,t,isMessage,bindText,bindAttribute,clearBinding} from '../i18n/core.js';
+import {createLifePresentation} from './life-presentation.js';
 import {iconBodies} from '../paper-ui/icons.js';
 import {avatar} from '../scene.js';
 import {PIXEL_LAYOUT_SHA256,PIXEL_GEOMETRY_DIGEST,PIXEL_MAP} from '../world-pixel/map.js';
@@ -57,81 +59,80 @@ const townPaths={
  check:'m4 12 5 5L20 6',
 };
 function townIcon(name){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','2');svg.setAttribute('stroke-linecap','round');svg.setAttribute('stroke-linejoin','round');svg.setAttribute('aria-hidden','true');svg.classList.add('town-icon');const body=iconBodies[({greet:'speech',cancel:'close'})[name]||name];if(body){svg.setAttribute('stroke','none');svg.innerHTML=body;return svg;}const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d',townPaths[name]||townPaths.info);svg.append(path);return svg;}
-function familiarity(value){const box=el('div','town-familiarity'),meter=el('progress');meter.max=100;meter.value=value;meter.setAttribute('aria-label',`熟悉度 ${value} / 100`);box.append(el('span','',`熟悉度 ${value} / 100`),meter);return box;}
-function factLine(label,kind='info'){const line=el('p','town-fact');line.append(townIcon(kind),document.createTextNode(label));return line;}
+const m=(key,params)=>msg('public:town.'+key,params);
+const translated=value=>isMessage(value)?t(value.key,typeof value.params==='function'?value.params():value.params):value;
+function attribute(node,name,value){if(isMessage(value))bindAttribute(node,name,value.key,value.params);else{clearBinding(node,name);node.setAttribute(name,value);}}
+function familiarity(value){const box=el('div','town-familiarity'),meter=el('progress');meter.max=100;meter.value=value;bindAttribute(meter,'aria-label','public:town.familiarity',{count:value});box.append(el('span','',m('familiarity',{count:value})),meter);return box;}
+function factLine(label,kind='info'){const line=el('p','town-fact');line.append(townIcon(kind),el('span','',label));return line;}
 function portrait(fields,className){const picture=el('span',className);avatar(picture,fields);return picture;}
 
 // One read-only source card. Opening it never greets, claims, consumes or rests.
 export function createTownServiceCard(session,{chooseAgent=()=>{},getWorldState=()=>null,onContextChange=()=>{}}={}){
- const node=el('section','town-service-card');
+ const presentation=createLifePresentation(),node=el('section','town-service-card');
  let target=null,context=session.snapshot(),active=false,generation=0,abort=null,publicData=null,privateData=null,phase='idle',privatePhase='idle',message='',messageNode=null,worldStale=false;
  function cancel(){generation++;abort?.abort();abort=null;}
- function footer(){const box=el('footer','town-card-footer');messageNode=el('p','town-card-message',message||'复制后交给 Agent 执行。');messageNode.setAttribute('role','status');messageNode.setAttribute('aria-live','polite');box.append(townIcon('info'),messageNode);return box;}
+ function footer(){const box=el('footer','town-card-footer');messageNode=el('p','town-card-message',m(message||'footer'));messageNode.setAttribute('role','status');messageNode.setAttribute('aria-live','polite');box.append(townIcon('info'),messageNode);return box;}
  async function copy(service,topic=null,kind='service'){
   const turn=generation,npc=publicData.npc,agent=selected(context),facility=publicData.facility;
   const destination=kind==='greet'?`到 ${npc.name} 当前实际所在的合法问候区域`:`到 ${service.name} 的固定设施交互区域（${facility.position.x}, ${facility.position.y}），不要追随 NPC 的当前行走位置`;
   const intent=kind==='cancel'?'取消你当前尚未完成的这次休息':kind==='greet'?'向它打个招呼':service.serviceId==='welcome.claim'?'领取尚未领取的新邻居礼包':service.serviceId==='inn.rest'?'使用一张休息券休息一分钟':`使用一张招待券，聊聊「${topic.label}」`;
-  try{await navigator.clipboard.writeText(`请先阅读 ${location.origin}/agent/entry.md 的最新世界指南，${agent?`以${agent.name}的身份`:'以自己的身份'}${destination}，${intent}。请先确认当前服务条件，再到实际服务交互处，按当前参与和权限设置行动，并如实告诉我结果。`);if(turn!==generation||!active)return;message='已复制。交给你的 Agent 后，由它按当前条件决定和行动。';}
-  catch{if(turn!==generation||!active)return;message='暂时无法复制，请稍后重试。';}
-  if(messageNode)messageNode.textContent=message;
+  try{await navigator.clipboard.writeText(`请先阅读 ${location.origin}/agent/entry.md 的最新世界指南，${agent?`以${agent.name}的身份`:'以自己的身份'}${destination}，${intent}。请先确认当前服务条件，再到实际服务交互处，按当前参与和权限设置行动，并如实告诉我结果。`);if(turn!==generation||!active)return;message='copyDone';}
+  catch{if(turn!==generation||!active)return;message='copyFailed';}
+  if(messageNode)bindText(messageNode,'public:town.'+message);
  }
- function actionRow(label,iconName,run,{disabled=false,reason='',ariaLabel=`复制${label}指令`}={}){
-  const row=el('div','town-action-row'),title=el('span','town-action-label'),button=control('复制指引',run);title.append(townIcon(iconName),document.createTextNode(label));button.setAttribute('aria-label',ariaLabel);button.disabled=disabled||worldStale;if(reason)button.title=reason;row.classList.toggle('is-disabled',disabled);row.append(title,button);return row;
+ function actionRow(label,iconName,run,{disabled=false,reason='',ariaLabel=m('copyNamed',()=>({label:translated(label)}))}={}){
+  const row=el('div','town-action-row'),title=el('span','town-action-label'),button=control(m('copy'),run);title.append(townIcon(iconName),el('span','',label));attribute(button,'aria-label',ariaLabel);button.disabled=disabled||worldStale;if(reason)attribute(button,'title',reason);row.classList.toggle('is-disabled',disabled);row.append(title,button);return row;
  }
  function agentContext(){
-  const row=el('div','town-agent-context'),agent=selected(context);row.append(el('span','',agent?`当前 Agent：${agent.name}`:context.authenticated?'尚未选择 Agent':'登录后可查看自己 Agent 的当前条件'),control(agent?'切换 Agent':context.authenticated?'选择 Agent':'登录／注册',chooseAgent));
-  if(agent?.ownerPaused)row.append(el('span','hud-muted','主人已暂停参与。'));else if(agent?.platformRestricted)row.append(el('span','hud-muted','当前参与受到限制。'));return row;
+  const row=el('div','town-agent-context'),agent=selected(context);row.append(el('span','',agent?m('currentAgent',{name:agent.name}):m(context.authenticated?'noAgent':'loginConditions')),control(agent?m('switchAgent'):msg(context.authenticated?'public:content.chooseAgent':'shell:nav.account'),chooseAgent));
+  if(agent?.ownerPaused)row.append(el('span','hud-muted',m('ownerPaused')));else if(agent?.platformRestricted)row.append(el('span','hud-muted',m('restricted')));return row;
  }
  function statusBox(service){
   if(!selected(context))return null;const current=privateData?.progress.activeRest,operation=privateData?.operation;if(privatePhase==='ready'&&current?.npcId!==publicData.npc.npcId&&!['completed','cancelled'].includes(operation?.state))return null;
   const box=el('div','town-service-status');box.setAttribute('role','status');const content=el('div','town-status-copy');box.append(townIcon('info'),content);
-  if(!selected(context))content.append(el('p','','登录并选择 Agent 后，可查看实际状态。'));
-  else if(privatePhase==='loading')content.append(el('p','','正在读取当前情况…'));
-  else if(privatePhase!=='ready')content.append(el('p','',privatePhase==='forbidden'?'当前情况暂不可查看，请重新选择 Agent。':'当前情况暂时无法读取。'));
+  if(!selected(context))content.append(el('p','',m('loginStatus')));
+  else if(privatePhase==='loading')content.append(el('p','',m('statusLoading')));
+  else if(privatePhase!=='ready')content.append(el('p','',privatePhase==='forbidden'?m('statusForbidden'):m('statusError')));
   else{
    const {progress,operation}=privateData,rest=progress.activeRest;
-   if(rest?.npcId===publicData.npc.npcId)content.append(el('p','','正在休息，券已保留。'),el('p','hud-muted','完成后扣除；取消则释放。'));
+   if(rest?.npcId===publicData.npc.npcId)content.append(el('p','',m('resting')),el('p','hud-muted',m('restingHint')));
    else if(operation?.state==='completed'){
-    if(service.serviceId!=='tavern.host'||!operation.response)content.append(el('p','',service.serviceId==='welcome.claim'?'新邻居礼包已领取，招待券和休息券各一张。':service.serviceId==='inn.rest'?'本次休息已完成。':'本次招待已完成。'));
+    if(service.serviceId!=='tavern.host'||!operation.response)content.append(el('p','',service.serviceId==='welcome.claim'?m('claimDone'):service.serviceId==='inn.rest'?m('restDone'):m('hostDone')));
     if(text(operation.response,4000)&&operation.response)content.append(el('p','town-response',operation.response));
-   }else if(operation?.state==='cancelled')content.append(el('p','','这次服务已取消。保留的券已按实际结果处理。'));
-   else content.append(el('p','',service.serviceId==='welcome.claim'?'当前状态：尚未领取新邻居礼包。':service.serviceId==='inn.rest'?'当前没有正在进行的休息。':'尚未读取到这项服务的完成结果。'));
+   }else if(operation?.state==='cancelled')content.append(el('p','',m('cancelled')));
+   else content.append(el('p','',service.serviceId==='welcome.claim'?m('unclaimed'):service.serviceId==='inn.rest'?m('notResting'):m('noResult')));
   }
-  if(selected(context)){const retry=control('',()=>void load());retry.className='town-status-refresh';retry.setAttribute('aria-label',privatePhase==='error'||privatePhase==='forbidden'?'重新读取':'刷新当前情况');retry.title='重新读取当前情况';retry.append(townIcon('refresh'));retry.disabled=privatePhase==='loading';box.append(retry);}
+  if(selected(context)){const retry=control('',()=>void load());retry.className='town-status-refresh';attribute(retry,'aria-label',m(privatePhase==='error'||privatePhase==='forbidden'?'rereadStatus':'refreshStatus'));attribute(retry,'title',m('rereadStatus'));retry.append(townIcon('refresh'));retry.disabled=privatePhase==='loading';box.append(retry);}
   return box;
  }
  function guideSection(service,npc){
-  const box=el('section','town-section town-action-guide');box.append(el('h3','town-section-title','互动'));
-  const plan=el('div','town-service-plan'),offer=el('div','town-service-offer'),offerText=el('div');offer.append(townIcon(service.serviceId==='welcome.claim'?'gift':service.serviceId==='inn.rest'?'rest':'tea'));offerText.append(el('h4','',service.name),el('p','town-service-description',service.description));
-  let condition=service.itemCost?`需要 1 张${names[service.itemCost]}`:'每位 Agent 限领一次，无需用券';
-  if(service.durationMs)condition+=` · 约 ${service.durationMs/1000} 秒`;
-  if(service.itemCost&&privatePhase==='ready'){
-   const items=privateData.inventory.items.filter(item=>item.itemKind===service.itemCost),count=items.reduce((sum,item)=>sum+item.availableQuantity,0);condition+=` · ${names[service.itemCost]}：${count} 张可用${privateData.inventory.complete?'':'（已读取部分）'}`;
-  }
-  offerText.append(el('p','hud-muted',condition));if(service.serviceId==='inn.rest')offerText.append(el('p','hud-muted','完成后才扣券，并最多恢复 70 体力（不超过上限）；体力已满不能开始。共享服务名额不代表实际床位或进入室内，取消或失去资格不扣券、不恢复。'));if(publicData.facility.providerRequired&&!publicData.facility.providerPresent)offerText.append(el('p','life-condition','招待者当前未在设施值守，请稍后让 Agent 重新核实；不会在缺席时扣券。'));if(service.serviceId==='welcome.claim')offerText.append(el('p','town-gift-contents','招待券 ×1 · 休息券 ×1'));offer.append(offerText);plan.append(offer);
-  if(npc.actions.includes('town_services.npc.greet'))plan.append(actionRow('打个招呼','greet',()=>void copy(service,null,'greet'),{ariaLabel:'复制问候指令'}));
+  const box=el('section','town-section town-action-guide');box.append(el('h3','town-section-title',m('interactions')));
+  const plan=el('div','town-service-plan'),offer=el('div','town-service-offer'),offerText=el('div');offer.append(townIcon(service.serviceId==='welcome.claim'?'gift':service.serviceId==='inn.rest'?'rest':'tea'));offerText.append(presentation.label(el('h4'),'public:life.name',{name:service.name},{name:{namespace:'life-content',spec:{id:service.serviceId,ref:service.serviceId,version:publicData.catalogVersion,values:service},field:'name'}}),presentation.label(el('p','town-service-description'),'public:life.name',{name:service.description},{name:{namespace:'life-content',spec:{id:service.serviceId,ref:service.serviceId,version:publicData.catalogVersion,values:service},field:'description'}}));
+  const condition=()=>{const voucher=service.itemCost?t('public:town.voucher.'+service.itemCost):'',base=service.itemCost?t('public:town.costVoucher',{voucher}):t('public:town.freeOnce');let value=service.durationMs?t('public:town.duration',{condition:base,seconds:service.durationMs/1000}):base;if(service.itemCost&&privatePhase==='ready'){const count=privateData.inventory.items.filter(item=>item.itemKind===service.itemCost).reduce((sum,item)=>sum+item.availableQuantity,0);value=t(privateData.inventory.complete?'public:town.voucherCount':'public:town.voucherPartial',{condition:value,voucher,count});}return{name:value};};
+  offerText.append(el('p','hud-muted',msg('public:life.name',condition)));if(service.serviceId==='inn.rest')offerText.append(el('p','hud-muted',m('innRules')));if(publicData.facility.providerRequired&&!publicData.facility.providerPresent)offerText.append(el('p','life-condition',m('providerAway')));if(service.serviceId==='welcome.claim')offerText.append(el('p','town-gift-contents',m('giftContents')));offer.append(offerText);plan.append(offer);
+  if(npc.actions.includes('town_services.npc.greet'))plan.append(actionRow(m('greet'),'greet',()=>void copy(service,null,'greet'),{ariaLabel:m('copyGreet')}));
   const resting=privatePhase==='ready'&&privateData.progress.activeRest?.npcId===npc.npcId;
   const claimed=privatePhase==='ready'&&service.serviceId==='welcome.claim'&&privateData.progress.claim?.state==='completed';
   const unknownState=Boolean(selected(context))&&privatePhase!=='ready';
   if(npc.actions.includes(service.action)){
-   if(service.topics.length)for(const topic of service.topics)plan.append(actionRow(topic.label,topic.id==='town'?'location':'tea',()=>void copy(service,topic),{disabled:publicData.facility.providerRequired&&!publicData.facility.providerPresent,reason:'招待者当前不在设施值守，请重新确认。',ariaLabel:`复制「${topic.label}」指令`}));
-   else plan.append(actionRow(service.serviceId==='inn.rest'?'开始休息':'领取新邻居礼包',service.serviceId==='inn.rest'?'rest':'gift',()=>void copy(service),{disabled:Boolean(resting||claimed||unknownState),reason:resting?'正在休息，请等待实际结果或复制取消指令。':claimed?'本期礼包已经领取。':unknownState?'请先取得当前服务状态。':'',ariaLabel:service.serviceId==='inn.rest'?'复制开始休息指令':'复制领取新邻居礼包指令'}));
+   if(service.topics.length)for(const topic of service.topics)plan.append(actionRow(topic.label,topic.id==='town'?'location':'tea',()=>void copy(service,topic),{disabled:publicData.facility.providerRequired&&!publicData.facility.providerPresent,reason:m('providerAwayShort'),ariaLabel:m('copyTopic',{topic:topic.label})}));
+   else plan.append(actionRow(service.serviceId==='inn.rest'?m('startRest'):m('claimGift'),service.serviceId==='inn.rest'?'rest':'gift',()=>void copy(service),{disabled:Boolean(resting||claimed||unknownState),reason:resting?m('waitRest'):claimed?m('alreadyClaimed'):unknownState?m('needStatus'):'',ariaLabel:service.serviceId==='inn.rest'?m('copyRest'):m('copyGift')}));
   }
-  if(service.serviceId==='inn.rest'&&npc.actions.includes('town_services.inn.rest.cancel'))plan.append(actionRow('取消休息','cancel',()=>void copy(service,null,'cancel'),{disabled:!resting,reason:resting?'':'当前没有获准取消的进行中休息。',ariaLabel:'复制取消休息指令'}));
+  if(service.serviceId==='inn.rest'&&npc.actions.includes('town_services.inn.rest.cancel'))plan.append(actionRow(m('cancelRest'),'cancel',()=>void copy(service,null,'cancel'),{disabled:!resting,reason:resting?'':m('noCancellableRest'),ariaLabel:m('copyCancel')}));
   const state=statusBox(service);if(state)plan.append(state);box.append(plan);return box;
  }
  function render(){
-  node.replaceChildren();messageNode=null;if(!active)return;node.dataset.townKind=target?.notice&&phase!=='ready'?'notice':'npc';node.setAttribute('aria-busy',String(phase==='loading'));
+  presentation.clear();node.replaceChildren();messageNode=null;if(!active)return;node.dataset.townKind=target?.notice&&phase!=='ready'?'notice':'npc';node.setAttribute('aria-busy',String(phase==='loading'));
   if(phase==='loading'||phase==='error'){
-   const state=el('div','town-card-state');state.append(el('p','hud-muted',phase==='loading'?'正在读取小镇服务…':'小镇服务暂时无法读取。'));if(phase==='error')state.append(control('重试服务说明',()=>void load()));node.append(state,footer());return;
+   const state=el('div','town-card-state');state.append(el('p','hud-muted',phase==='loading'?m('loading'):m('error')));if(phase==='error')state.append(control(m('retry'),()=>void load()));node.append(state,footer());return;
   }
   if(phase==='notice'){
-   const n=publicData.notice,notice=el('article','town-notice');notice.append(el('p','town-notice-source','小镇公告牌 · 小镇物件'),el('h3','',n.title),el('p','town-notice-text',n.text));
-   const links=el('nav','town-notice-services');links.setAttribute('aria-label','公告与服务说明');links.append(control('查看公开公告',()=>document.dispatchEvent(new CustomEvent('hud:world-content',{detail:{category:'announcements'}}))));for(const id of n.serviceIds)links.append(control(({'welcome.claim':'新邻居礼包','tavern.host':'酒馆招待','inn.rest':'旅社休息'})[id]||'服务说明',()=>open({serviceId:id,catalogVersion:publicData.catalogVersion})));notice.append(links);node.append(notice);return;
+   const n=publicData.notice,notice=el('article','town-notice');notice.append(el('p','town-notice-source',m('noticeSource')),el('h3','',n.title),el('p','town-notice-text',n.text));
+   const links=el('nav','town-notice-services');attribute(links,'aria-label',m('noticeNavigation'));links.append(control(m('announcements'),()=>document.dispatchEvent(new CustomEvent('hud:world-content',{detail:{category:'announcements'}}))));for(const id of n.serviceIds)links.append(control(m(serviceIds.includes(id)?'service.'+id:'service.other'),()=>open({serviceId:id,catalogVersion:publicData.catalogVersion})));notice.append(links);node.append(notice);return;
   }
   if(!publicData)return;
-  if(worldStale)node.append(el('p','life-status','上次镇民状态已过期，位置与动作冻结；恢复连接后重新确认服务。'));
-  const {npc,service}=publicData;node.append(agentContext(),guideSection(service,npc),footer());
+  if(worldStale)node.append(el('p','life-status',m('worldStale')));
+  const {npc,service}=publicData;node.append(agentContext(),guideSection(service,npc),footer(),presentation.note);
  }
  async function load(){
   if(!active||!target)return;cancel();const turn=generation,controller=new AbortController();abort=controller;phase='loading';privatePhase='idle';publicData=null;privateData=null;message='';render();
@@ -157,23 +158,23 @@ export function createTownServiceCard(session,{chooseAgent=()=>{},getWorldState=
  }
  function open(value){target=value;active=true;worldStale=getWorldState()?.worldScene?.stale===true;void load();}
  const stop=session.subscribe(value=>{const changed=context.observationRevision!==value.observationRevision;context=value;if(changed){privateData=null;privatePhase='idle';if(active)void load();}});
- return{node,open,observeWorld(value){if(!active||!publicData?.npc)return;worldStale=value.stale===true||value.phase==='paused';const npc=value.npcs?.find(row=>row.npcId===publicData.npc.npcId);if(npc){publicData.npc=npc;if(npc.providerPresent!==null&&publicData.facility){publicData.facility.providerPresent=npc.providerPresent;publicData.facility.nextCheckAt=npc.nextCheckAt;}}render();},close(){active=false;cancel();target=publicData=privateData=null;messageNode=null;node.replaceChildren();},dispose(){active=false;cancel();stop();}};
+ return{node,open,observeWorld(value){if(!active||!publicData?.npc)return;worldStale=value.stale===true||value.phase==='paused';const npc=value.npcs?.find(row=>row.npcId===publicData.npc.npcId);if(npc){publicData.npc=npc;if(npc.providerPresent!==null&&publicData.facility){publicData.facility.providerPresent=npc.providerPresent;publicData.facility.nextCheckAt=npc.nextCheckAt;}}render();},close(){active=false;presentation.clear();cancel();target=publicData=privateData=null;messageNode=null;node.replaceChildren();},dispose(){active=false;presentation.dispose();cancel();stop();}};
 }
 export function createTownRelationships(session,{openNpc=()=>{}}={}){
- const node=el('section','town-relationships');let active=false,context=session.snapshot(),rows=[],complete=false,cursor=null,phase='idle',revision=0,abort=null;
+ const presentation=createLifePresentation(),node=el('section','town-relationships');let active=false,context=session.snapshot(),rows=[],complete=false,cursor=null,phase='idle',revision=0,abort=null;
  function clear(){revision++;abort?.abort();abort=null;rows=[];cursor=null;complete=false;phase='idle';render();}
  function render(){
-  node.replaceChildren();if(!active)return;node.append(el('h3','','镇民关系 · 熟悉度'),el('p','hud-muted','这里只显示当前 Agent 已结识的镇民。熟悉度最高为 100。'));
-  if(phase==='loading'&&!rows.length){node.append(el('p','hud-muted','正在读取已结识的镇民…'));return;}
-  if(phase==='error'){node.append(el('p','hud-muted','镇民关系暂时无法读取。'),control('重试镇民关系',()=>void load()));return;}
-  if(phase!=='ready')return;if(!rows.length)node.append(el('p','hud-muted','还没有结识镇民。可以让 Agent 先去打个招呼。'));
-  for(const relation of rows){const row=el('div','town-relationship'),npc=relation.npc,copy=el('div');if(npc)row.append(portrait({appearance:npc.appearance,displayName:npc.name},'town-relationship-picture'));copy.append(el('strong','',npc?.name||'一位已结识的镇民'),el('span','paper-stable-id',publicIdLabel(npc?.publicId,'N')),familiarity(relation.familiarity));row.append(copy);if(npc)row.append(control('服务说明',()=>openNpc(npc)));node.append(row);}
-  if(!complete)node.append(control('继续载入镇民',()=>void load(true)));node.append(control('刷新镇民关系',()=>void load()));
+  presentation.clear();node.replaceChildren();if(!active)return;node.append(el('h3','',m('relationships')),el('p','hud-muted',m('relationshipScope')));
+  if(phase==='loading'&&!rows.length){node.append(el('p','hud-muted',m('relationshipLoading')));return;}
+  if(phase==='error'){node.append(el('p','hud-muted',m('relationshipError')),control(m('relationshipRetry'),()=>void load()));return;}
+  if(phase!=='ready')return;if(!rows.length)node.append(el('p','hud-muted',m('relationshipEmpty')));
+  for(const relation of rows){const row=el('div','town-relationship'),npc=relation.npc,copy=el('div');if(npc)row.append(portrait({appearance:npc.appearance,displayName:npc.name},'town-relationship-picture'));copy.append(npc?.identity?presentation.label(el('strong'),'public:life.name',{name:npc.name},{name:{namespace:'world-content',spec:{id:npc.npcId,ref:npc.identity.ref,version:npc.identity.version,values:npc.identity,nativeDigest:npc.identity.digest},field:'name'}}):el('strong','',npc?.name||m('knownNpc')),el('span','paper-stable-id',publicIdLabel(npc?.publicId,'N')),familiarity(relation.familiarity));row.append(copy);if(npc)row.append(control(m('service.other'),()=>openNpc(npc)));node.append(row);}
+  if(!complete)node.append(control(m('moreNpcs'),()=>void load(true)));node.append(control(m('refreshRelationships'),()=>void load()),presentation.note);
  }
  async function load(more=false){
   if(!active||!selected(context))return;revision++;abort?.abort();const turn=revision,controller=new AbortController();abort=controller;if(!more){rows=[];cursor=null;}phase='loading';render();
   try{const result=await readTownOwner(session,'relationships',cursor?{afterNpcId:cursor}:{},{signal:controller.signal});if(turn!==revision||!active)return;rows=more?[...rows,...result.relationships]:result.relationships;complete=result.complete;cursor=result.nextAfterNpcId;phase='ready';render();}
   catch(error){if(turn!==revision||controller.signal.aborted)return;rows=[];phase='error';render();}
  }
- return{node,activate(){active=true;void load();},deactivate(){active=false;clear();},setContext(value){const changed=context.observationRevision!==value.observationRevision;context=value;if(changed){clear();if(active)void load();}},dispose(){active=false;clear();}};
+ return{node,activate(){active=true;void load();},deactivate(){active=false;clear();},setContext(value){const changed=context.observationRevision!==value.observationRevision;context=value;if(changed){clear();if(active)void load();}},dispose(){active=false;clear();presentation.dispose();}};
 }

@@ -1,6 +1,7 @@
 import {createLifePlaceCard,lifeBuilding} from './life-place-card.js';
 import {readPublicId} from '../public-id.js';
 import {$,el,api} from '../common.js';
+import {bindText,bindAttribute,clearBinding} from '../i18n/core.js';
 import {readPublicCapabilities} from '../public-capabilities.js';
 import {createWorldScene,placeDetails} from '../world-scene.js';
 import {loadPixelTown,COMMONS_PLACE} from '../world-pixel/town.js';
@@ -54,7 +55,9 @@ async function tryPublicFocus(){
 }
 function focusPublicResident(agentId){cancelPublicFocus();if(!readPublicId(agentId)&&!/^[A-Za-z0-9_-]{8,100}$/.test(agentId)){focusMessage('这个居民档案链接暂时无法定位。');return;}publicFocus={agentId,waiting:true,reading:false};focusMessage('正在寻找这位居民的公开位置…');void tryPublicFocus();}
 focusRetry.addEventListener('click',()=>{if(!publicFocus)return;publicFocus.waiting=true;focusMessage('正在重新确认公开位置…');void worldProvider.refresh();});
-const detail=$('#world-detail'),detailTransition=createPanelTransition(detail),environment=getPanelEnvironment();detail.prepend(nativeFrame('lightWood'));$('#world-detail-close').replaceChildren(icon('close'));
+function detailText(selector,value,key){const node=$(selector);clearBinding(node);node.textContent=value;if(key)bindText(node,'public:'+key);}
+function detailClose(key,fallback){const node=$('#world-detail-close');clearBinding(node,'aria-label');node.setAttribute('aria-label',fallback);bindAttribute(node,'aria-label','public:'+key);}
+const detail=$('#world-detail'),detailTransition=createPanelTransition(detail),environment=getPanelEnvironment();detail.prepend(nativeFrame('lightWood'));$('#world-detail-close').replaceChildren(icon('close'));$('#world-detail-close').removeAttribute('data-i18n-aria-label');
 const placeProfile=createPlaceProfileCard({getRules:()=>worldData.rules,request:api}),npcPerson=createNpcPersonCard(),publicCharacter=createPublicCharacterReader(),characterCard=createPublicCharacterCard(publicCharacter,{session,getExpressions:()=>scene?.getExpressions()||[]});const townCard=createTownServiceCard(session,{chooseAgent:()=>document.dispatchEvent(new CustomEvent('hud:choose-agent')),getWorldState:()=>scene?{...scene.getState(),rules:worldData.rules}:null,onContextChange:townContextChanged});townCard.node.hidden=true;const lifeCard=createLifePlaceCard(session,{npcLifeDirectory,chooseAgent:()=>document.dispatchEvent(new CustomEvent('hud:choose-agent')),getWorldState:()=>scene?{...scene.getState(),rules:worldData.rules}:null});lifeCard.node.hidden=true;$('.world-detail-body',detail).prepend(placeProfile.node,npcPerson.node,characterCard.node,townCard.node,lifeCard.node);
 const profileMapKey=()=>JSON.stringify([worldData.instanceId,worldData.rules?.mapManifest]);let currentProfileMap=null;
 let noticeVersion=null,noticeAbort=null;
@@ -66,20 +69,20 @@ function townContextChanged(value){
   if(!notice&&placeProfileTargetId(currentPlace)){currentPlace={...currentPlace,...(currentPlace.serviceNpc?{serviceNpc:source}:{npc:source})};scene?.select(currentPlace);return;}
   currentPlace={...currentPlace,...(worldData.rules?pixelPoint(source.position,worldData.rules):{}),id:notice?'notice':source.npcId,name:source.name,kind:notice?'town-notice':'world-npc',...(notice?{notice:source,serviceNpc:null,npc:null}:{npc:source,serviceNpc:null})};
   if(!notice)npcPerson.set(source,{stale:worldData.stale===true});
-  $('#world-detail-area').textContent=notice?'小镇公告':'镇民服务';$('#world-detail-title').textContent=notice?source.name:'镇民';
-  $('#world-detail-close').setAttribute('aria-label',notice?'关闭公告牌':'关闭镇民服务');scene?.select(currentPlace);
+  detailText('#world-detail-area',notice?'小镇公告':'镇民服务',notice?'scene.area.notice':'scene.area.services');detailText('#world-detail-title',notice?source.name:'镇民',notice?null:'scene.title.npc');
+  detailClose(notice?'scene.close.notice':'scene.close.services',notice?'关闭公告牌':'关闭镇民服务');scene?.select(currentPlace);
 }
 function renderDetails(place){
   const character=place.kind==='world-avatar',provider=place.serviceNpc||place.npc,town=place.kind==='town-notice'||Boolean(provider&&!provider.readOnly&&provider.serviceIds?.length),life=lifeBuilding(place);detail.classList.toggle('is-life-place',life);lifeCard.node.hidden=!life;detail.classList.toggle('is-town-service',town);townCard.node.hidden=!town;detail.classList.toggle('is-character-card',character);characterCard.node.hidden=!character;
   npcPerson.set(place.kind==='world-npc'?provider:null,{stale:worldData.stale===true});detail.classList.toggle('is-npc-person',place.kind==='world-npc');if(place.kind==='world-npc')detail.setAttribute('aria-label',`${provider.name}的镇民详情`);else detail.removeAttribute('aria-label');
   const profile=placeProfileTargetId(place);detail.classList.toggle('is-place-profile',Boolean(profile));
-  $('#world-detail-close').setAttribute('aria-label',character?'关闭角色详情':'关闭场所说明');detail.dataset.agentId=character?place.agentId:'';
-  if(character){$('#world-detail-area').textContent='';$('#world-detail-title').textContent='角色资料';$('#world-detail-description').textContent='';$('#world-detail-note').textContent='';return{links:[]};}
-  if(profile){$('#world-detail-area').textContent='';$('#world-detail-title').textContent='场所';$('#world-detail-icon').textContent='';$('#world-detail-description').textContent='';$('#world-detail-note').textContent='';return{links:placeDetails(place).links||[]};}
-  if(npcLifePlace(place)){$('#world-detail-area').textContent='园务照料';$('#world-detail-title').textContent='镇民';$('#world-detail-icon').textContent='';$('#world-detail-description').textContent='读取园务牌，了解当前照料点与真实资格。';$('#world-detail-note').textContent='网页只提供查看与复制意图，由 Agent 按现有权限执行。';return{links:[]};}
-  if(life&&!town){$('#world-detail-area').textContent=place.kind==='world-npc'?'镇民与场所活动':'场所活动';$('#world-detail-title').textContent=place.kind==='world-npc'?'镇民':place.name;$('#world-detail-icon').textContent='';$('#world-detail-description').textContent='活动位于建筑外场，条件与名额以当前目录为准。';$('#world-detail-note').textContent='建筑室内尚未开放。';return{links:[]};}
-  if(town){$('#world-detail-area').textContent=place.kind==='town-notice'?'小镇公告':'镇民服务';$('#world-detail-title').textContent=place.kind==='world-npc'?'镇民':place.name;return{links:[]};}
-  const details=placeDetails(place);$('#world-detail-area').textContent=details.area;$('#world-detail-title').textContent=place.kind==='world-npc'?'镇民':details.name;$('#world-detail-icon').textContent=details.icon;$('#world-detail-description').textContent=details.description;$('#world-detail-note').textContent=details.note;return details;
+  detailClose(character?'scene.close.character':'home.closePlace',character?'关闭角色详情':'关闭场所说明');detail.dataset.agentId=character?place.agentId:'';
+  if(character){detailText('#world-detail-area','');detailText('#world-detail-title','角色资料','scene.title.character');detailText('#world-detail-description','');detailText('#world-detail-note','');return{links:[]};}
+  if(profile){detailText('#world-detail-area','');detailText('#world-detail-title','场所','scene.title.place');detailText('#world-detail-icon','');detailText('#world-detail-description','');detailText('#world-detail-note','');return{links:placeDetails(place).links||[]};}
+  if(npcLifePlace(place)){detailText('#world-detail-area','园务照料','scene.area.care');detailText('#world-detail-title','镇民','scene.title.npc');detailText('#world-detail-icon','');detailText('#world-detail-description','读取园务牌，了解当前照料点与真实资格。','scene.careDescription');detailText('#world-detail-note','网页只提供查看与复制意图，由 Agent 按现有权限执行。','scene.careNote');return{links:[]};}
+  if(life&&!town){detailText('#world-detail-area',place.kind==='world-npc'?'镇民与场所活动':'场所活动',place.kind==='world-npc'?'scene.area.npcActivities':'scene.area.activities');detailText('#world-detail-title',place.kind==='world-npc'?'镇民':place.name,place.kind==='world-npc'?'scene.title.npc':null);detailText('#world-detail-icon','');detailText('#world-detail-description','活动位于建筑外场，条件与名额以当前目录为准。','scene.activityDescription');detailText('#world-detail-note','建筑室内尚未开放。','scene.interiorsClosed');return{links:[]};}
+  if(town){detailText('#world-detail-area',place.kind==='town-notice'?'小镇公告':'镇民服务',place.kind==='town-notice'?'scene.area.notice':'scene.area.services');detailText('#world-detail-title',place.kind==='world-npc'?'镇民':place.name,place.kind==='world-npc'?'scene.title.npc':null);return{links:[]};}
+  const details=placeDetails(place);detailText('#world-detail-area',details.area);detailText('#world-detail-title',place.kind==='world-npc'?'镇民':details.name,place.kind==='world-npc'?'scene.title.npc':null);detailText('#world-detail-icon',details.icon);detailText('#world-detail-description',details.description);detailText('#world-detail-note',details.note);return details;
 }
 const list = $('#world-place-list');
 function renderPlaceList(places){list.replaceChildren();
