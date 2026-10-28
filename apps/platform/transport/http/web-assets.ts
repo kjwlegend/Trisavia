@@ -97,15 +97,17 @@ export function loadProductionWebAssets(repoRoot:string,buildRoot:string):Produc
    sources.add(file);
   }
   for(const required of ['package.json','package-lock.json','scripts/build-web.mjs','apps/web/public/index.html','apps/web/public/resident.html','apps/web/public/releases.html','apps/web/public/kanban.html'])if(!sources.has(required))throw new Error('Required web build input is absent');
+  if(sources.has('apps/web/public/i18n/core.js')&&manifest.i18n===undefined)throw new Error('Required public locale manifest is absent');
   let localeManifest:VerifiedWebFile|undefined;
   if(manifest.i18n!==undefined){
    const metadata=record(manifest.i18n);if(Object.keys(metadata).join(',')!=='manifestUrl'||typeof metadata.manifestUrl!=='string')throw new Error('Invalid public locale mapping');
    localeManifest=assets.get(metadata.manifestUrl);if(!localeManifest||!localeManifest.file.endsWith('.json'))throw new Error('Missing public locale manifest');
    const mapping=record(JSON.parse(readFileSync(productionPath(buildRoot,localeManifest.file),'utf8'))),namespaces=record(mapping.namespaces);
    if(mapping.version!==1||mapping.format!=='icu-ast-v1'||Object.keys(namespaces).length>32)throw new Error('Invalid public locale manifest');
+   for(const required of ['apps/web/public/i18n/vendor/formatjs.js','apps/web/public/i18n/vendor/provenance.json','apps/web/public/i18n/vendor/LICENSES.txt','scripts/web-build/i18n-vendor.mjs','scripts/web-build/i18n-resources.mjs'])if(!sources.has(required))throw new Error('Required reviewed locale build input is absent');
    for(const [namespace,value]of Object.entries(namespaces)){
     const languages=record(value);if(!/^[a-z][a-z0-9-]{0,47}$/.test(namespace)||Object.keys(languages).sort().join(',')!=='en,zh-CN')throw new Error('Invalid public locale identity');
-    for(const locale of ['zh-CN','en']){const entry=record(languages[locale]),asset=assets.get(String(entry.url));if(!asset||!asset.file.endsWith('.json')||entry.sha256!==asset.sha256||entry.bytes!==asset.bytes||asset.bytes>262144)throw new Error('Invalid public locale asset');}
+    for(const locale of ['zh-CN','en']){const entry=record(languages[locale]),asset=assets.get(String(entry.url));if(!asset||!asset.file.endsWith('.json')||entry.sha256!==asset.sha256||entry.bytes!==asset.bytes||asset.bytes>262144||!sources.has(`apps/web/public/locales/${namespace}/${locale}.json`))throw new Error('Invalid public locale asset');}
    }
   }
   return {pages,assets,...(localeManifest?{localeManifest}:{})};
