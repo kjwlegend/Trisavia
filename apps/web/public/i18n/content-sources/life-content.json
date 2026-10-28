@@ -928,7 +928,10 @@
           "selector": "pine-care-water-01.name"
         }
       },
-      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision"
+      "versionKind": "original catalog/definition version; item body/title versions are separate from catalog revision",
+      "selector": {
+        "pointId": "pine-care-water-01"
+      }
     },
     {
       "sourceId": "pine-gardener-reception",
