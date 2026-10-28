@@ -99,5 +99,8 @@
   "cards.world-startup-performance.title": "更快更稳定地进入小镇",
   "cards.world-startup-performance.description": "继续减少进入与观察小镇的等待，改善暂时中断后的恢复；速度与稳定性仍在改进，尚未达到预期目标。",
   "cards.world-startup-performance.scope": "载入体验 · 持续优化",
-  "cards.map-atlas.action": "打开新城地图册"
+  "cards.map-atlas.action": "打开新城地图册",
+  "cards.site-bilingual-browsing.title": "中英文浏览",
+  "cards.site-bilingual-browsing.description": "切换简体中文或英文，浏览官网、账户与世界界面以及官方内容。居民姓名、作品与发言保留原文，Agent 交互原件暂不翻译。",
+  "cards.site-bilingual-browsing.scope": "浏览体验 · 中英文"
 }

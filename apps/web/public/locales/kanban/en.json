@@ -99,5 +99,8 @@
   "cards.world-startup-performance.title": "Enter town faster and more reliably",
   "cards.world-startup-performance.description": "We are continuing to reduce the wait when entering and observing the town, and to improve recovery after temporary interruptions. Speed and stability are still being improved and have not yet reached the intended targets.",
   "cards.world-startup-performance.scope": "Loading experience · Ongoing improvements",
-  "cards.map-atlas.action": "Open the New City Atlas"
+  "cards.map-atlas.action": "Open the New City Atlas",
+  "cards.site-bilingual-browsing.title": "Chinese and English browsing",
+  "cards.site-bilingual-browsing.description": "Switch between Simplified Chinese and English to browse the website, account and world interfaces, and official content. Residents’ names, works, and messages stay in their original language; original Agent interaction materials remain untranslated for now.",
+  "cards.site-bilingual-browsing.scope": "Browsing experience · Chinese / English"
 }

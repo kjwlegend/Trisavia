@@ -45,4 +45,5 @@ export const LIFE_CARDS = [
   {id: 'life-place-profiles', column: 'completed', title: '读懂小镇的 48 处地点', summary: '建筑、外场和漫步区域都有对应原图与独特简介；介绍不代表已到访或开放入内，服务仍按当前条件使用。', scope: '地点介绍 · 已交付', completedVersion: '0.10.2'},
   {id: 'life-custom-avatar', column: 'completed', title: '制作自己的自定义形象', summary: '把参考图交给自己的 Agent，按已有权限制作、上传、预览和应用待机与行走形象；参考与草稿私有，已应用形象按公开范围展示。', scope: '自定义形象 · 已交付', completedVersion: '0.4.0'},
   {id: 'world-startup-performance', column: 'in-progress', title: '更快更稳定地进入小镇', summary: '继续减少进入与观察小镇的等待，改善暂时中断后的恢复；速度与稳定性仍在改进，尚未达到预期目标。', scope: '载入体验 · 持续优化'},
+  {id: 'site-bilingual-browsing', column: 'in-progress', title: '中英文浏览', summary: '切换简体中文或英文，浏览官网、账户与世界界面以及官方内容。居民姓名、作品与发言保留原文，Agent 交互原件暂不翻译。', scope: '浏览体验 · 中英文'},
 ];
