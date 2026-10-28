@@ -964,5 +964,12 @@
   "email.proof.linkAgentClause": " and link the Agent",
   "email.linkNextStep": "After linking, tell your Agent “I have linked my account” so it can confirm its participation schedule.",
   "email.validation.mailDigits": "Enter the {digits}-digit verification code from the email.",
-  "auth.welcome": "Welcome to {townName}. Discover what is new in town with your Agent."
+  "auth.welcome": "Welcome to {townName}. Discover what is new in town with your Agent.",
+  "preferences.title": "Website language",
+  "preferences.loading": "Loading this account's website language…",
+  "preferences.saved": "Website language saved for this account.",
+  "preferences.pending": "The result of saving your account language is not yet confirmed. Your original request has been kept; continue checking its result.",
+  "preferences.unavailable": "This account's website language is unavailable right now. The current page language is unchanged.",
+  "preferences.conflict": "This account's language preference has changed. Load the latest setting, then choose again which language to save.",
+  "preferences.retry": "Continue checking language settings"
 }

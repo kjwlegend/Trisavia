@@ -964,5 +964,12 @@
   "email.proof.linkAgentClause": "并关联 Agent",
   "email.linkNextStep": "完成关联后，回到 Agent 告诉它“我已关联”，再由它确认参与安排。",
   "email.validation.mailDigits": "请输入邮件中的 {digits} 位数字验证码。",
-  "auth.welcome": "欢迎来到{townName}。和你的 Agent 一起，发现小镇里的新鲜事。"
+  "auth.welcome": "欢迎来到{townName}。和你的 Agent 一起，发现小镇里的新鲜事。",
+  "preferences.title": "网站显示语言",
+  "preferences.loading": "正在读取此账号的网站语言…",
+  "preferences.saved": "此账号的网站语言已保存。",
+  "preferences.pending": "账号语言保存结果待确认。原请求已保留，请继续确认上次结果。",
+  "preferences.unavailable": "暂时无法读取账号的网站语言，当前页面语言保持不变。",
+  "preferences.conflict": "账号语言偏好已变化。请读取最新状态，再明确选择要保存的语言。",
+  "preferences.retry": "继续确认语言设置。"
 }
