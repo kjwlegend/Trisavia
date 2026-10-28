@@ -1,3 +1,4 @@
+import {humanBookPresentation} from './application/human-book-presentation.ts';
 import {createPublishedWorldPlaceProfilesService} from './application/world-place-profiles-source.ts';
 import {placeProfileGatewayOperations,placeProfilePublicReads} from './application/agent-gateway-place-profiles.ts';
 import {registerPlaceProfileRoutes} from './transport/http/world-place-profiles-routes.ts';
@@ -44,7 +45,7 @@ import {createLifeService} from './application/life-service.ts';
 import {LIFE_REPOSITORY} from './domains/life/repository.ts';
 import {LIFE_WALLET_REPOSITORY} from './domains/wallet/life-wallet.ts';
 import {lifeGatewayGuide,lifeGatewayOperations,lifePublicReads} from './application/agent-gateway-life.ts';
-import {registerLifeObservationRoutes} from './transport/http/life-routes.ts';
+import {registerLifeObservationRoutes,registerHumanBookRoutes} from './transport/http/life-routes.ts';
 import {registerHealthRoute} from './transport/http/health-routes.ts';
 import {createPublicIdentifierService} from './application/public-identifiers.ts';
 import {publicIdentifierGatewayOperations,publicIdentifierPublicReads,publicIdentifierGatewayGuide} from './application/agent-gateway-public-identifiers.ts';
@@ -190,11 +191,11 @@ export async function buildApp(options:BuildAppOptions):Promise<FastifyInstance>
     if(npcLife){retainedSchemas.push(...operations.filter(o=>APPROVED_LIFE_ACTION_IDS.has(o.id)).flatMap(gatewayOperationSchemas),...publicReads.filter(r=>APPROVED_LIFE_ACTION_IDS.has(r.id)).flatMap(gatewayPublicReadSchemas));operations.splice(0,operations.length,...withApprovedLifeOperations(operations));publicReads.splice(0,publicReads.length,...withApprovedLifeReads(publicReads));}
    }
    const placeWorldIndex=guides.findIndex(guide=>guide.moduleId==='world');if(placeWorldIndex>=0&&guides[placeWorldIndex]!.version===approvedWorldGuide.version){retainedGuides.push(guides[placeWorldIndex]!);guides.splice(placeWorldIndex,1,placeProfileWorldGuide);}
-   const gateway=createAgentGateway({store:runtime,identity,operations,publicReads,guides,retainedSchemas,...(behaviorLogs?{humanBehavior:{world:behaviorLogs.humanPublicWorld,recent:behaviorLogs.humanPublicRecent,owner:behaviorLogs.humanOwnerHistory}}:{}),...(runtimeGuideProvider?{runtimeGuide:runtimeGuideProvider,retainedGuides}:{})});
+   const gateway=createAgentGateway({store:runtime,identity,operations,publicReads,guides,retainedSchemas,...(lifeRevision===3?{humanBook:humanBookPresentation}:{}),...(behaviorLogs?{humanBehavior:{world:behaviorLogs.humanPublicWorld,recent:behaviorLogs.humanPublicRecent,owner:behaviorLogs.humanOwnerHistory}}:{}),...(runtimeGuideProvider?{runtimeGuide:runtimeGuideProvider,retainedGuides}:{})});
    gatewayCapabilities=async()=>({...await gateway.currentCapabilities(),worldSimulation:{enabled:true,actionAdvancement:'deterministic-rule-tasks',movementPolicyVersion:CURRENT_MOVEMENT_POLICY.version,stepIntervalMs:CURRENT_MOVEMENT_POLICY.stepIntervalMs,pollIntervalMs:1000,idleLife:{enabled:true,policyVersion:CURRENT_IDLE_LIFE_POLICY.version,stepIntervalMs:CURRENT_IDLE_LIFE_POLICY.stepIntervalMs,maxPathLength:CURRENT_IDLE_LIFE_POLICY.maxPathLength,minRestMs:CURRENT_IDLE_LIFE_POLICY.minRestMs,restJitterMs:CURRENT_IDLE_LIFE_POLICY.restJitterMs},externalAgentExecution:false}});
    const gatewayHttp=registerAgentGatewayRoutes(app,gateway,{instanceId:store.instanceId,now:options.clock??Date.now});registerWorldObservationRoutes(gateway,gatewayHttp);registerPlaceProfileRoutes(gateway,gatewayHttp);if(behaviorLogs)registerBehaviorLogRoutes(gateway,gatewayHttp);
    if(npcLife)gatewayHttp.route('GET','/v1/world/npc-life/directory',request=>{object(request.query,[]);return gateway.publicRead('npc_life.public_directory',{},gatewayHttp.validate(request));});
-   if(life)registerLifeObservationRoutes(gateway,gatewayHttp,lifeRevision);if(town)registerTownObservationRoutes(gateway,gatewayHttp);registerPublicIdentifierRoutes(gateway,gatewayHttp);
+   if(life){registerLifeObservationRoutes(gateway,gatewayHttp,lifeRevision);if(lifeRevision===3)registerHumanBookRoutes(gateway,gatewayHttp);}if(town)registerTownObservationRoutes(gateway,gatewayHttp);registerPublicIdentifierRoutes(gateway,gatewayHttp);
    const scheduler=createDeterministicScheduler({store:runtime,workerId:`world-rules-${process.pid}`,handlers,batchLimit:10,leaseMs:30000});
    let nextIdleDiscovery=0,idleAfter:string|undefined,lifeAfter:string|undefined,giftAfter:string|undefined;
    ruleDriver=createWorldRuleDriver({async runDue(){const now=(options.clock??Date.now)();if(now>=nextIdleDiscovery){idleAfter=await runtime!.transaction(ctx=>world.ensureIdleLife(ctx,'default',idleAfter));if(life)lifeAfter=await runtime!.transaction(ctx=>life!.reconcile(ctx,lifeAfter));if(gifts)giftAfter=await runtime!.transaction(ctx=>gifts!.reconcile(ctx,giftAfter));nextIdleDiscovery=now+CURRENT_IDLE_LIFE_POLICY.scanIntervalMs;}return scheduler.runDue();},close:()=>scheduler.close()},CURRENT_WORLD_RULE_INTERVAL_MS);app.addHook('onReady',async()=>{ruleDriver!.start();});
