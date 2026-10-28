@@ -105,5 +105,6 @@
   "worldStatus.time.source.server": "Time synchronized with the server",
   "worldStatus.light.day": "Daylight",
   "worldStatus.light.dusk": "Dusk lighting",
-  "worldStatus.light.night": "Night lighting"
+  "worldStatus.light.night": "Night lighting",
+  "worldStatus.time.aria": "Current date and time in Shanghai"
 }

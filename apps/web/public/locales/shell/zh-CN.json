@@ -105,5 +105,6 @@
   "worldStatus.time.source.server": "服务器时间已校准",
   "worldStatus.light.day": "日间光照",
   "worldStatus.light.dusk": "黄昏光照",
-  "worldStatus.light.night": "夜间光照"
+  "worldStatus.light.night": "夜间光照",
+  "worldStatus.time.aria": "上海当前日期时间"
 }
