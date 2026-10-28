@@ -3014,10 +3014,24 @@
       },
       "versionKind": "announcement content version",
       "stateGuards": {
-        "edition": "welcome-story-1",
         "dataMode": "real"
       },
-      "access": "Only after the original current announcement reader permits this record. These resources do not publish an announcement."
+      "access": "Only after the original current announcement reader permits this record. These resources do not publish an announcement.",
+      "sourceEdition": "welcome-story-1",
+      "sourceEditionMeaning": "Audit provenance only. Internal revision edition is not projected by the public reader and is not a runtime match condition.",
+      "currentSource": {
+        "method": "GET",
+        "path": "/v1/world/announcements/welcome-trisavia-20261024?worldId=default",
+        "record": "data.item",
+        "idField": "id",
+        "versionField": "version",
+        "digestFields": [
+          "author",
+          "body",
+          "title"
+        ],
+        "requireCompleteRecord": true
+      }
     },
     {
       "sourceId": "wind-grain-post",
