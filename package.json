@@ -1,6 +1,6 @@
 {
   "name": "agents-era-m1-backend",
-  "version": "0.10.6",
+  "version": "0.11.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -18,11 +18,13 @@
   },
   "dependencies": {
     "fastify": "5.12.7",
+    "intl-messageformat": "12.1.4",
     "jpeg-js": "0.4.4",
     "pg": "^8.23.1",
     "pngjs": "7.0.0"
   },
   "devDependencies": {
+    "@formatjs/icu-messageformat-parser": "3.5.22",
     "@playwright/test": "1.64.1",
     "@types/node": "24.19.2",
     "@types/pg": "^8.23.1",
