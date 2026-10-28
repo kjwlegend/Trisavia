@@ -1,8 +1,8 @@
 import {el} from '../common.js';
-import {msg,isMessage,t,bindText,bindAttribute,clearBinding} from '../i18n/core.js';
+import {msg,isMessage,t,bindText,bindAttribute,clearBinding,getLocale,onLocaleChange,ensureNamespaces} from '../i18n/core.js';
 import {icon} from './icons.js';
 import {browserLogTimeZone,logDateTime} from './behavior-log-reader.js';
-import {groupLogItems,logFact,logOutcomes,ownerLogText,ownerLogTitle} from './behavior-log-presentation.js';
+import {groupLogItems,logFact,logOutcomes,ownerLogText,ownerLogTitle,originalLogField,logFactFields,humanLogLeaf} from './behavior-log-presentation.js';
 const message=(key,params)=>msg('shell:logs.'+key,params),present={message};
 const resolved=value=>isMessage(value)?t(value.key,typeof value.params==='function'?value.params():value.params):value;
 const put=(node,value)=>{clearBinding(node);if(isMessage(value))bindText(node,value.key,value.params);else node.textContent=value??'';};
@@ -11,9 +11,9 @@ const control=(label,run)=>{const node=el('button','',label);node.type='button';
 const duration=value=>{const hours=Math.floor(value/3600000),minutes=Math.floor(value%3600000/60000),seconds=value%60000/1000;return message('duration',{hours,minutes,seconds,showSeconds:seconds||!hours&&!minutes?'yes':'no'});};
 const detailTime=(value,timeZone)=>new Intl.DateTimeFormat('zh-CN',{timeZone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).format(value);
 function ownerDate(item){const [year,month,day]=item.date.split('-').map(Number);return message(year===new Date().getFullYear()?'owner.dateMonthDay':'owner.dateFull',{year,month,day});}
-function ownerRecordDetail(item){
+function ownerRecordDetail(item,{leaf,fact,hasHuman}){
  const node=el('article','behavior-log-detail behavior-owner-note'),details=item.details,authored=item.authored?.kind==='agent_life_statement';
- node.append(el('p','behavior-owner-date',message('owner.dateLine',()=>({name:item.agent.displayName||resolved(message('owner.currentActor')),date:resolved(ownerDate(item)),time:item.time}))),el('h3','',ownerLogTitle(item,present)),el('p','behavior-owner-origin',message(authored?'owner.statementOrigin':'owner.eventOrigin')),el('p','behavior-owner-text',ownerLogText(item,present)));
+ node.append(el('p','behavior-owner-date',message('owner.dateLine',()=>({name:item.agent.displayName||resolved(message('owner.currentActor')),date:resolved(ownerDate(item)),time:item.time}))),authored||!hasHuman(item)?el('h3','',ownerLogTitle(item,present)):leaf(item,'title','h3'),el('p','behavior-owner-origin',message(authored?'owner.statementOrigin':'owner.eventOrigin')),authored||!hasHuman(item)?el('p','behavior-owner-text',ownerLogText(item,present)):fact(item,'p','behavior-owner-text'));
  const rows=[],journal=details?.journal,life=details?.life;
  if(journal){
   for(const row of journal.items)rows.push([message('role.'+row.role),`${row.name} × ${row.quantity}`]);
@@ -27,10 +27,10 @@ function ownerRecordDetail(item){
  if(details?.completeness==='partial'||details?.gaps?.length)node.append(el('p','hud-muted',details.gaps.join(' ')||message('fact.partial')));
  if(!authored&&item.source.label)node.append(el('p','behavior-owner-source',item.source.label));return node;
 }
-function recordDetail(item,timeZone,{mode}={}){
- if(mode==='owner')return ownerRecordDetail(item);
- const node=el('article','behavior-log-detail'),details=item.details;node.append(el('h3','',item.title),el('p','hud-muted',message('detail.recorded',()=>({name:item.agent.displayName||resolved(message('actor.someone')),date:item.date,time:item.time}))),el('p','behavior-log-result',details?.summary||item.result));
- if(details?.summary&&item.result&&![details.summary,item.title].includes(item.result))node.append(el('p','',item.result));
+function recordDetail(item,timeZone,{mode,leaf,fact,hasHuman}={}){
+ if(mode==='owner')return ownerRecordDetail(item,{leaf,fact,hasHuman});
+ const node=el('article','behavior-log-detail'),details=item.details;node.append(leaf(item,'title','h3'),el('p','hud-muted',message('detail.recorded',()=>({name:item.agent.displayName||resolved(message('actor.someone')),date:item.date,time:item.time}))),leaf(item,details?.summary?'summary':'result','p','behavior-log-result'));
+ if(details?.summary&&item.result&&![details.summary,item.title].includes(item.result))node.append(leaf(item,'result','p'));
  if(!details){node.append(el('p','hud-muted',message('detail.noMore')));return node;}
  const care=details.life?.care;if(care){node.append(el('p','',message(care.completed?care.careKind==='water'?'care.waterDone':'care.clearDone':'care.notDone')));if(care.lastCareAt!==null)node.append(el('p','hud-muted',message('care.lastCompleted',{time:detailTime(care.lastCareAt,timeZone)})));if(care.nextEligibleAt!==null)node.append(el('p','hud-muted',message('care.nextEligible',{time:detailTime(care.nextEligibleAt,timeZone)})));}
  if(details.journal){
@@ -58,7 +58,15 @@ export function createBehaviorLogView(reader,{mode,chooseAgent=()=>{},openSource
  const node=el('section',`behavior-logs behavior-logs-${mode}`),heading=el('h3'),subtitle=el('p','hud-muted'),toolbar=el('div','behavior-log-tools'),status=el('p','behavior-log-status'),coverage=el('details','behavior-log-coverage'),coverageText=el('p'),detailTools=el('div','behavior-log-detail-tools'),list=el('div','behavior-log-list'),footer=el('div','behavior-log-footer'),refresh=control(message('action.refresh'),()=>reader.refresh()),previous=control(message('action.previous'),()=>reader.previous()),next=control(message('action.next'),()=>reader.next()),retry=control(message('action.retry'),()=>reader.retry()),choose=control(message('action.chooseAgent'),chooseAgent),zones=el('select'),zoneName=el('span','hud-muted');
  coverage.append(el('summary','',message('detail.scope')),coverageText);node.append(heading,subtitle,toolbar,status,detailTools,list,coverage,footer);detailTools.hidden=true;status.setAttribute('role','status');list.tabIndex=-1;
  // Translated leaf heights must not move the user's timeline scroll anchor.
- list.style.overflowAnchor='none';bindAttribute(list,'aria-label','shell:logs.list.'+mode);let value=reader.snapshot(),selected=null,savedScroll=0;const expanded=new Set();
+ list.style.overflowAnchor='none';bindAttribute(list,'aria-label','shell:logs.list.'+mode);let value=reader.snapshot(),selected=null,savedScroll=0,presentations=new Map();const expanded=new Set(),leafStops=[];
+ const hasHuman=item=>presentations.has(item.id);
+ function leaf(item,field,tag='span',className=''){
+  const original=originalLogField(item,field),presentation=presentations.get(item.id);if(!presentation||presentation.fields[field]?.kind==='verbatim')return el(tag,className,original);
+  const node=el(tag,className),text=el('span','',original),marker=el('small','hud-muted behavior-log-original','原文（简体中文）');marker.style.marginInlineStart='.35em';node.append(text,marker);bindText(marker,'shell:logs.originalZhCN');let active=true;
+  const paint=()=>{if(!active)return;const value=humanLogLeaf(item,field,presentation,getLocale()),translated=value.key?t(value.key,value.params):null,missing=value.key&&translated==='[missing '+value.key+']';text.textContent=value.key&&!missing?translated:value.original;marker.hidden=!(value.markOriginal||missing);};
+  const stop=onLocaleChange(paint);leafStops.push(()=>{active=false;stop();});paint();if(presentation.fields[field]?.kind==='template'&&humanLogLeaf(item,field,presentation,getLocale()).key)void ensureNamespaces(['behavior-facts']).then(paint).catch(paint);return node;
+ }
+ const fact=(item,tag='span',className='')=>{const node=el(tag,className);logFactFields(item).forEach((field,index)=>{if(index)node.append(document.createTextNode('，'));node.append(leaf(item,field));});return node;};
  const from=el('input'),to=el('input');from.type=to.type='date';bindAttribute(from,'aria-label','shell:logs.filter.startDate');bindAttribute(to,'aria-label','shell:logs.filter.endDate');bindAttribute(zones,'aria-label','shell:logs.filter.timeZone');for(const zone of [...new Set([browserLogTimeZone(),'Asia/Shanghai','UTC'])]){const option=el('option','',zone);option.value=zone;zones.append(option);}zones.value=value.filters.timeZone;zones.addEventListener('change',()=>reader.configure({timeZone:zones.value}));from.addEventListener('change',()=>reader.configure({fromDate:from.value}));to.addEventListener('change',()=>reader.configure({toDate:to.value}));
  if(mode==='owner'){const filters=el('details','behavior-owner-filters');filters.append(el('summary','',message('filter.title')));for(const [key,input]of [['filter.from',from],['filter.to',to],['filter.zone',zones]]){const field=el('label');field.append(el('span','',message(key)),input);filters.append(field);}toolbar.append(filters);}else if(mode==='world')toolbar.append(zones);else toolbar.append(zoneName);toolbar.append(refresh);if(mode==='owner')footer.append(previous,next);footer.append(retry,choose);
  function showDetail(item){selected=item;savedScroll=list.scrollTop;renderList();list.scrollTop=0;list.focus({preventScroll:true});}
@@ -66,8 +74,8 @@ export function createBehaviorLogView(reader,{mode,chooseAgent=()=>{},openSource
  function recordParts(item,{groupCount=0}={}){
   const picture=el('span','behavior-log-avatar');picture.setAttribute('aria-hidden','true');picture.append(icon('profile'));
   const copy=el('span','behavior-log-copy'),story=el('span','behavior-log-story'),name=el('strong','',item.agent.displayName||message('actor.someone'));
-  if(mode==='owner'){story.append(el('span','',ownerLogText(item,present)));copy.append(el('span','behavior-owner-title',ownerLogTitle(item,present)));}
-  else story.append(name,document.createTextNode(' '),el('span','',logFact(item)));copy.append(story);
+  if(mode==='owner'){const authored=item.authored?.kind==='agent_life_statement';story.append(authored||!hasHuman(item)?el('span','',ownerLogText(item,present)):fact(item));copy.append(authored||!hasHuman(item)?el('span','behavior-owner-title',ownerLogTitle(item,present)):leaf(item,'title','span','behavior-owner-title'));}
+  else story.append(name,document.createTextNode(' '),hasHuman(item)?fact(item):el('span','',logFact(item)));copy.append(story);
   const outcomes=logOutcomes(item,{mode,message});if(outcomes.length)copy.append(join(el('small','behavior-log-outcomes'),outcomes));
   if(groupCount){copy.append(el('small','behavior-log-group-note',message('group.note',{count:groupCount})),el('span','behavior-log-hint',message('group.expand',{count:groupCount})));}
   else if(mode!=='owner')copy.append(el('span','behavior-log-hint',message('action.detail')));
@@ -75,13 +83,14 @@ export function createBehaviorLogView(reader,{mode,chooseAgent=()=>{},openSource
  }
  function recordRow(item){const row=control('',()=>showDetail(item));row.className='behavior-log-row';row.dataset.logId=item.id;row.append(...recordParts(item));return row;}
  function renderList(){
-  list.replaceChildren();detailTools.replaceChildren();detailTools.hidden=!selected;coverage.hidden=!value.data||Boolean(selected);if(selected){const back=control(message('action.back'),returnToList);back.className='behavior-log-detail-back';detailTools.append(back);list.append(recordDetail(selected,value.data.timeZone,{mode}));if(openSource&&selected.source.detail)list.append(control(message('action.source'),()=>openSource(selected.source.detail)));return;}
+  for(const stop of leafStops.splice(0))stop();
+  list.replaceChildren();detailTools.replaceChildren();detailTools.hidden=!selected;coverage.hidden=!value.data||Boolean(selected);if(selected){const back=control(message('action.back'),returnToList);back.className='behavior-log-detail-back';detailTools.append(back);list.append(recordDetail(selected,value.data.timeZone,{mode,leaf,fact,hasHuman}));if(openSource&&selected.source.detail)list.append(control(message('action.source'),()=>openSource(selected.source.detail)));return;}
   let date='';for(const group of groupLogItems(value.data?.items||[],{mode})){const item=group.items[0];if(item.date!==date){date=item.date;list.append(el('h4','behavior-log-date',mode==='owner'?ownerDate(item):date));}if(group.items.length===1){list.append(recordRow(item));continue;}
    const fold=el('details','behavior-log-group'),summary=el('summary','behavior-log-row'),rows=el('div','behavior-log-group-rows');fold.dataset.logGroup=group.id;summary.append(...recordParts(item,{groupCount:group.items.length}));rows.append(...group.items.map(recordRow));fold.append(summary,rows);fold.open=expanded.has(group.id);fold.addEventListener('toggle',()=>{if(!fold.isConnected)return;if(fold.open)expanded.add(group.id);else expanded.delete(group.id);});list.append(fold);
   }
  }
  function render(){
-  const ready=value.phase==='ready',data=value.data;node.dataset.logPhase=value.phase;put(heading,message('heading.'+mode,()=>({name:value.agentName||resolved(message('owner.currentActor'))})));put(subtitle,message('subtitle.'+mode));zoneName.textContent=value.filters.timeZone;from.value=value.filters.fromDate;to.value=value.filters.toDate;zones.value=value.filters.timeZone;refresh.disabled=value.phase==='loading';previous.disabled=!value.canPrevious||value.phase==='loading';next.disabled=!value.canNext||value.phase==='loading';retry.hidden=value.phase!=='error'&&value.phase!=='changed';choose.hidden=!['session','no_agent'].includes(value.phase);put(choose,message(value.phase==='session'?'action.login':'action.chooseAgent'));
+  const ready=value.phase==='ready',data=value.data,ids=new Set(data?.items.map(item=>item.id)||[]);presentations=new Map((value.presentations||[]).filter(row=>ids.has(row.recordId)).map(row=>[row.recordId,row]));node.dataset.logPhase=value.phase;put(heading,message('heading.'+mode,()=>({name:value.agentName||resolved(message('owner.currentActor'))})));put(subtitle,message('subtitle.'+mode));zoneName.textContent=value.filters.timeZone;from.value=value.filters.fromDate;to.value=value.filters.toDate;zones.value=value.filters.timeZone;refresh.disabled=value.phase==='loading';previous.disabled=!value.canPrevious||value.phase==='loading';next.disabled=!value.canNext||value.phase==='loading';retry.hidden=value.phase!=='error'&&value.phase!=='changed';choose.hidden=!['session','no_agent'].includes(value.phase);put(choose,message(value.phase==='session'?'action.login':'action.chooseAgent'));
   let statusKey=null;
   if(value.phase==='loading')statusKey=mode==='world'?'status.loadingWorld':mode==='owner'?'status.loadingOwner':'status.loadingRecent';
   else if(['session','no_agent','forbidden','changed','invalid','error'].includes(value.phase))statusKey=({session:'status.session',no_agent:'status.noAgent',forbidden:'status.forbidden',changed:'status.changed',invalid:'status.invalid',error:'status.error'})[value.phase];
@@ -94,5 +103,5 @@ export function createBehaviorLogView(reader,{mode,chooseAgent=()=>{},openSource
  // Locale changes update only explicit leaf bindings. They never render a page,
  // reset a draft/filter, replace focused controls or invoke the reader.
  const stop=reader.subscribe(next=>{const changed=next.data!==value.data;value=next;if(changed){selected=null;expanded.clear();}render();});
- return{node,dispose(){stop();},back(){if(!selected)return false;returnToList();return true;}};
+ return{node,dispose(){stop();for(const off of leafStops.splice(0))off();},back(){if(!selected)return false;returnToList();return true;}};
 }

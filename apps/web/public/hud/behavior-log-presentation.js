@@ -1,3 +1,20 @@
+import {templateDictionaryKey,formatBehaviorTemplateParams} from './behavior-human-contract.js';
+// Original values remain the sole basis for grouping, deduplication and links.
+export const originalLogField=(item,field)=>field==='summary'?item.details?.summary??'':item[field];
+export function logFactFields(item){
+ if(item.details?.summary)return['summary'];
+ const fields=['title','result'].filter((field,index,all)=>item[field]&&!all.slice(0,index).some(previous=>item[previous]===item[field]));
+ return fields.length?fields:['action'];
+}
+export function humanLogLeaf(item,field,presentation,locale){
+ const original=originalLogField(item,field),leaf=presentation?.fields[field];
+ if(!leaf||leaf.kind==='verbatim')return{original,key:null,params:null,markOriginal:false};
+ if(leaf.kind==='template'){
+  const key=templateDictionaryKey(leaf.templateId,leaf.templateVersion);
+  if(key)return{original,key,params:formatBehaviorTemplateParams(leaf,locale),markOriginal:false};
+ }
+ return{original,key:null,params:null,markOriginal:true};
+}
 // Presentation uses only the returned records; it never infers a day's totals.
 export function logFact(item){
  return item.details?.summary||[...new Set([item.title,item.result].filter(Boolean))].join('，')||item.action;
