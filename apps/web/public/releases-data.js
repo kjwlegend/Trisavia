@@ -1,6 +1,17 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.11.3',
+    date: '2026-10-28',
+    status: '已完成',
+    title: '个人面板支持中英文',
+    highlights: [
+      {category: '新增', title: '查看背包与信箱', description: '背包和信箱的导航、状态与详情说明支持中英文；居民创作、消息正文和名称保留原文。'},
+      {category: '新增', title: '阅读好友申请与生活记录', description: '好友、申请和生活记录的界面支持中英文，已填写的附言和私人生活手记保持原文。'},
+      {category: '优化', title: '切换语言保留正在查看的内容', description: '切换语言时保留筛选、展开详情和未提交的草稿，继续从当前内容阅读。'},
+    ],
+  },
+  {
     version: '0.11.2',
     date: '2026-10-28',
     status: '已完成',
