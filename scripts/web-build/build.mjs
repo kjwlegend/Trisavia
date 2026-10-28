@@ -6,6 +6,7 @@ import {fileURLToPath} from 'node:url';
 import {buildLocaleResources} from './i18n-resources.mjs';
 import {verifyI18nVendor,FORMATJS_VERSIONS} from './i18n-vendor.mjs';
 import {copyPublishedIntro} from './intro.mjs';
+import {publicHtmlScope,publicHtmlInputs,localizedPublicHtml,legacyPublicHtml,PUBLIC_HTML_LOCALES} from './public-html.mjs';
 const defaultRoot=resolve(fileURLToPath(new URL('../../',import.meta.url)));
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex'),posix=path=>path.split(sep).join('/');
 function attributes(tag){return Object.fromEntries([...tag.matchAll(/([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)].map(m=>[m[1].toLowerCase(),m[2]??m[3]]));}
@@ -15,7 +16,7 @@ function completeMessageLiteral(text,match){
 }
 async function filesIn(directory){const out=[];for(const e of (await readdir(directory,{withFileTypes:true})).sort((a,b)=>a.name.localeCompare(b.name,'en'))){const path=resolve(directory,e.name);if(e.isDirectory())out.push(...await filesIn(path));else if(e.isFile())out.push(path);else throw new Error('Build sources cannot be links: '+e.name);}return out;}
 /** Production outputs are derived only from this checkout. Never reads serving files or a saved bundle. */
-export async function buildWeb({root=defaultRoot}={}){
+export async function buildWeb({root=defaultRoot,publicOrigin,publishedLocales}={}){
  root=await realpath(resolve(root));const publicRoot=resolve(root,'apps/web/public'),dist=resolve(root,'dist'),output=resolve(dist,'web');
  for(const path of [dist,output]){try{if((await lstat(path)).isSymbolicLink())throw new Error('Refuse linked build destination');}catch(e){if(e.code!=='ENOENT')throw e;}}
  await mkdir(dist,{recursive:true});await rm(output,{recursive:true,force:true});const temporary=await mkdtemp(resolve(dist,'.web-')),sources=new Map(),assets=[],pages={},aliases=new Map();await mkdir(resolve(temporary,'build'));
@@ -42,6 +43,7 @@ export async function buildWeb({root=defaultRoot}={}){
   await source(resolve(publicRoot,'npc-life-v1/spatial-addon-v1.json'));
   const pkg=JSON.parse(await source(resolve(root,'package.json'))),lock=JSON.parse(await source(resolve(root,'package-lock.json')));await source(resolve(root,'scripts/build-web.mjs'));for(const path of await filesIn(resolve(root,'scripts/web-build')))await source(path);
   const intro=await copyPublishedIntro({root,destination:temporary,source});
+  const publicInputs=await publicHtmlInputs({publicRoot,source}),scope=publicHtmlScope({publicOrigin,publishedLocales}),localized={version:1,scope,pages:Object.fromEntries(PUBLIC_HTML_LOCALES.map(locale=>[locale,{}]))};
   const localeBuild=await buildLocaleResources({publicRoot,source,emit:async(...args)=>{
    const url=await emit(...args),asset=assets.find(a=>a.url===url);return {url,sha256:asset.sha256,bytes:asset.bytes};
   }});
@@ -74,11 +76,17 @@ export async function buildWeb({root=defaultRoot}={}){
    const cssBuild=await build({...options,stdin:{contents:css,loader:'css',resolveDir:publicRoot,sourcefile:name+'-ordered.css'},outfile:resolve(temporary,name+'.css')}),cssUrl=await emit(name,'css',cssBuild.outputFiles[0].contents,'text/css; charset=utf-8');let first=true;for(const tag of tags){html=html.replace(tag,first?`<link rel="stylesheet" href="${cssUrl}">`:'');first=false;}
    const scripts=[...html.matchAll(/<script\b[^>]*>\s*<\/script>/gi)].map(m=>m[0]).filter(tag=>attributes(tag).type==='module');if(scripts.length!==1)throw new Error('One explicit module entry per page required: '+name);const tag=scripts[0],entry=attributes(tag).src;if(!entry)throw new Error('External module entry required');const jsBuild=await build({...options,entryPoints:[publicFile(entry)],format:'esm',splitting:false,outfile:resolve(temporary,name+'.js')});
    if(Object.values(jsBuild.metafile.outputs).some(o=>o.imports.length))throw new Error('Unbundled browser imports are not production-ready');const jsUrl=await emit(name,'js',jsBuild.outputFiles[0].contents,'text/javascript; charset=utf-8');html=html.replace(tag,tag.replace(entry,jsUrl));for(const [before,after]of aliases)html=html.split(before).join(after);
+   if(publicInputs){
+    for(const locale of PUBLIC_HTML_LOCALES)for(const page of name==='index'?[name,'owner']:[name]){
+     const file=`localized/${locale}/${page}.html`,bytes=Buffer.from(localizedPublicHtml(html,{page,locale,inputs:publicInputs,scope}));await mkdir(dirname(resolve(temporary,file)),{recursive:true});await writeFile(resolve(temporary,file),bytes);localized.pages[locale][page]={file,sha256:sha(bytes),bytes:bytes.length};
+    }
+    html=legacyPublicHtml(html);
+   }
    const bytes=Buffer.from(html);await writeFile(resolve(temporary,name+'.html'),bytes);pages[name]={file:name+'.html',sha256:sha(bytes),bytes:bytes.length};
   }
   for(const key of quotedKeys)if(localeResources?.namespaces[key.split(':')[0]])references.add(key);
   for(const key of references)if(!localeBuild?.keys.has(key))throw new Error('Declared i18n message is not available in both languages: '+key);
-  const manifest={version:1,appVersion:pkg.version,pages,assets:assets.sort((a,b)=>a.url.localeCompare(b.url,'en')),sources:[...sources].sort(([a],[b])=>a.localeCompare(b,'en')).map(([file,sha256])=>({file,sha256})),...(localeManifest?{i18n:{manifestUrl:localeManifest}}:{}),...(intro?{intro}:{})};
+  const manifest={version:1,appVersion:pkg.version,pages,assets:assets.sort((a,b)=>a.url.localeCompare(b.url,'en')),sources:[...sources].sort(([a],[b])=>a.localeCompare(b,'en')).map(([file,sha256])=>({file,sha256})),...(localeManifest?{i18n:{manifestUrl:localeManifest}}:{}),...(intro?{intro}:{}),...(publicInputs?{localized}:{})};
   await writeFile(resolve(temporary,'manifest.json'),JSON.stringify(manifest,null,2)+'\n');await rename(temporary,output);return manifest;
  }catch(e){await rm(temporary,{recursive:true,force:true});throw e;}
 }

@@ -6,11 +6,12 @@ import {promisify} from 'node:util';
 import type {FastifyInstance,FastifyReply,FastifyRequest} from 'fastify';
 import {containedWebPath,loadProductionWebAssets,loadSourceLocaleManifest,WEB_MIME,webSha256,type ProductionWebAssets,type VerifiedWebFile} from './web-assets.ts';
 import {INTRO_PACKAGE_ROOT,INTRO_ROUTES,introContentType} from '../../../../scripts/web-build/intro.mjs';
+import {publicHtmlScope,publicHtmlInputs,localizedPublicHtml,legacyPublicHtml,type PublicHtmlOptions} from '../../../../scripts/web-build/public-html.mjs';
 
 const defaultWebRoot=fileURLToPath(new URL('../../../web/public/',import.meta.url));
 const defaultRepoRoot=fileURLToPath(new URL('../../../../',import.meta.url));
 const compress=promisify(gzip);
-export interface SiteRouteOptions {assetMode?:'source'|'production';repoRoot?:string;webRoot?:string;buildRoot?:string}
+export interface SiteRouteOptions extends PublicHtmlOptions {assetMode?:'source'|'production';repoRoot?:string;webRoot?:string;buildRoot?:string}
 function missing(reply:FastifyReply){return reply.type('application/json; charset=utf-8').code(404).send({error:{code:'not_found',message:'Resource not found'}});}
 function unavailable(reply:FastifyReply){return reply.type('application/json; charset=utf-8').code(503).send({error:{code:'web_asset_unavailable',message:'The production web asset is unavailable'}});}
 const anonymous=(request:FastifyRequest)=>request.headers.authorization===undefined&&request.headers.cookie===undefined;
@@ -32,7 +33,7 @@ export function registerSiteRoutes(app:FastifyInstance,options:SiteRouteOptions=
  const repoRoot=options.repoRoot??defaultRepoRoot,webRoot=options.webRoot??defaultWebRoot,buildRoot=options.buildRoot??resolve(repoRoot,'dist/web');
  const mode=options.assetMode??process.env.WEB_ASSET_MODE??'source';
  if(mode!=='source'&&mode!=='production')throw new Error('WEB_ASSET_MODE must be source or production');
- const production:ProductionWebAssets|undefined=mode==='production'?loadProductionWebAssets(repoRoot,buildRoot):undefined;
+ const scope=publicHtmlScope(options),production:ProductionWebAssets|undefined=mode==='production'?loadProductionWebAssets(repoRoot,buildRoot,scope):undefined;
  const policies=new WeakMap<FastifyReply,string>();
  app.addHook('onSend',async(request,reply,payload)=>{
   reply.header('X-Content-Type-Options','nosniff');
@@ -69,8 +70,12 @@ export function registerSiteRoutes(app:FastifyInstance,options:SiteRouteOptions=
   return reply.send(body);
  }
  for(const [route,page,name]of [['/','index','index.html'],['/owner','index','index.html'],['/residents/:agentId','resident','resident.html'],['/releases','releases','releases.html'],['/kanban','kanban','kanban.html']] as const){
-  const routes=[route,...['en','zh-CN'].flatMap(locale=>route==='/'?['/'+locale,'/'+locale+'/']:['/'+locale+route])];
-  for(const alias of routes)app.get(alias,(request,reply)=>mode==='production'?production?file(request,reply,buildRoot,name,undefined,production.pages[page]):unavailable(reply):file(request,reply,webRoot,name));
+  const routes=[{url:route,locale:null},...['en','zh-CN'].flatMap(locale=>(route==='/'?['/'+locale,'/'+locale+'/']:['/'+locale+route]).map(url=>({url,locale})))];
+  for(const {url,locale}of routes)app.get(url,async(request,reply)=>{
+   const view=route==='/owner'?'owner':page;if(!locale||view==='owner'||view==='resident'||!scope.publicOrigin||!scope.publishedLocales.includes(locale))reply.header('X-Robots-Tag','noindex');
+   if(mode==='production'){const expected=locale?production?.localized?.pages[locale]?.[view]??production?.pages[page]:production?.pages[page];return expected?file(request,reply,buildRoot,expected.file,undefined,expected):unavailable(reply);}
+   try{const html=await readFile(await containedWebPath(webRoot,name),'utf8');if(!locale)return reply.type('text/html; charset=utf-8').send(legacyPublicHtml(html));const inputs=await publicHtmlInputs({publicRoot:webRoot});return reply.type('text/html; charset=utf-8').send(inputs?localizedPublicHtml(html,{page:view,locale,inputs,scope}):html);}catch{return unavailable(reply);}
+  });
  }
  app.get('/assets/i18n/manifest.json',async(_request,reply)=>{
   if(mode==='production')return production?.localeManifest?file(_request,reply,buildRoot,production.localeManifest.file,undefined,production.localeManifest):unavailable(reply);

@@ -3,6 +3,7 @@ import {realpath,stat} from 'node:fs/promises';
 import {readFileSync,realpathSync,statSync,readdirSync} from 'node:fs';
 import {extname,resolve,sep} from 'node:path';
 import {INTRO_PACKAGE_ROOT,INTRO_PUBLISH_FILES,INTRO_SOURCE_FILES,introContentType} from '../../../../scripts/web-build/intro.mjs';
+import {publicHtmlScope,PUBLIC_HTML_LOCALES,PUBLIC_HTML_PAGES,type PublicHtmlScope} from '../../../../scripts/web-build/public-html.mjs';
 
 export const WEB_MIME:Readonly<Record<string,string>>={
  '.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8',
@@ -11,7 +12,7 @@ export const WEB_MIME:Readonly<Record<string,string>>={
  '.wav':'audio/wav','.ogg':'audio/ogg','.mp3':'audio/mpeg',
 };
 export interface VerifiedWebFile {root:string;file:string;sha256:string;bytes:number;contentType:string}
-export interface ProductionWebAssets {pages:{index:VerifiedWebFile;resident:VerifiedWebFile;releases:VerifiedWebFile;kanban:VerifiedWebFile};assets:ReadonlyMap<string,VerifiedWebFile>;localeManifest?:VerifiedWebFile;intro?:ReadonlyMap<string,VerifiedWebFile>}
+export interface ProductionWebAssets {pages:{index:VerifiedWebFile;resident:VerifiedWebFile;releases:VerifiedWebFile;kanban:VerifiedWebFile};assets:ReadonlyMap<string,VerifiedWebFile>;localeManifest?:VerifiedWebFile;intro?:ReadonlyMap<string,VerifiedWebFile>;localized?:{scope:PublicHtmlScope;pages:Readonly<Record<string,Readonly<Record<string,VerifiedWebFile>>>>}}
 export const webSha256=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
 const record=(value:unknown):Record<string,unknown>=>{
  if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Invalid web manifest object');
@@ -68,7 +69,7 @@ function productionPathDirectory(root:string,name:string):string{
  const base=realpathSync(root),path=realpathSync(resolve(base,name));if(!path.startsWith(base+sep))throw new Error('Invalid locale namespace');return path;
 }
 /** No request or readiness check builds, repairs or falls back from an invalid production release. */
-export function loadProductionWebAssets(repoRoot:string,buildRoot:string):ProductionWebAssets{
+export function loadProductionWebAssets(repoRoot:string,buildRoot:string,expectedScope:PublicHtmlScope=publicHtmlScope()):ProductionWebAssets{
  try{
   const raw=readFileSync(productionPath(buildRoot,'manifest.json'));
   if(raw.length>2*1024*1024)throw new Error('Web manifest is too large');
@@ -123,6 +124,17 @@ export function loadProductionWebAssets(repoRoot:string,buildRoot:string):Produc
    }
    for(const path of [...INTRO_SOURCE_FILES,'scripts/web-build/intro.mjs'])if(!sources.has(path))throw new Error('Required intro publish input is absent');
   }else if(sources.has(INTRO_PACKAGE_ROOT+'/ROUTES.md'))throw new Error('Intro publish declaration is absent');
-  return {pages,assets,...(localeManifest?{localeManifest}:{}),...(intro?{intro}:{})};
+  let localized:ProductionWebAssets['localized'];
+  if(manifest.localized!==undefined){
+   const declaration=record(manifest.localized),rawScope=record(declaration.scope),variants=record(declaration.pages);
+   if(declaration.version!==1||Object.keys(declaration).sort().join(',')!=='pages,scope,version'||Object.keys(rawScope).sort().join(',')!=='publicOrigin,publishedLocales'||Object.keys(variants).sort().join(',')!==[...PUBLIC_HTML_LOCALES].sort().join(','))throw new Error('Invalid localized public HTML declaration');
+   if(rawScope.publicOrigin!==null&&typeof rawScope.publicOrigin!=='string'||!Array.isArray(rawScope.publishedLocales)||rawScope.publishedLocales.some(value=>typeof value!=='string'))throw new Error('Invalid public HTML publishing scope');
+   const scope=publicHtmlScope({publicOrigin:rawScope.publicOrigin as string|null,publishedLocales:rawScope.publishedLocales as string[]});if(JSON.stringify(scope)!==JSON.stringify(expectedScope))throw new Error('Public HTML build and serving scopes differ');
+   const publicPages:Record<string,Record<string,VerifiedWebFile>>={};
+   for(const locale of PUBLIC_HTML_LOCALES){const entries=record(variants[locale]);if(Object.keys(entries).sort().join(',')!==[...PUBLIC_HTML_PAGES].sort().join(','))throw new Error('Missing localized public HTML page');publicPages[locale]={};for(const page of PUBLIC_HTML_PAGES){const verified=checkedFile(buildRoot,entries[page],`localized/${locale}/${page}.html`),html=readFileSync(productionPath(buildRoot,verified.file),'utf8'),urls=[...html.matchAll(/(?:src|href)=["'](\/assets\/build\/[^"'?#]+)["']/g)].map(match=>match[1]!);if(!urls.some(url=>url.endsWith('.js'))||!urls.some(url=>url.endsWith('.css'))||urls.some(url=>!assets.has(url)))throw new Error('Localized public HTML references an undeclared asset');publicPages[locale][page]=verified;}}
+   for(const required of ['scripts/web-build/public-html.mjs','apps/web/public/releases-data.js','apps/web/public/kanban-data.js',...PUBLIC_HTML_LOCALES.flatMap(locale=>['common','public','shell','releases','kanban'].map(namespace=>`apps/web/public/locales/${namespace}/${locale}.json`))])if(!sources.has(required))throw new Error('Public HTML source is absent');
+   localized={scope,pages:publicPages};
+  }else if(sources.has('apps/web/public/locales/public/en.json'))throw new Error('Required localized public HTML is absent');
+  return {pages,assets,...(localeManifest?{localeManifest}:{}),...(intro?{intro}:{}),...(localized?{localized}:{})};
  }catch{throw new Error('Production web assets are missing or invalid; build dist/web from this exact source before startup');}
 }

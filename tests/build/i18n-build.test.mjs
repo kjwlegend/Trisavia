@@ -12,6 +12,8 @@ import {registerSiteRoutes} from '../../apps/platform/transport/http/site-routes
 import {loadProductionWebAssets} from '../../apps/platform/transport/http/web-assets.ts';
 import {createI18n} from '../../apps/web/public/i18n/core.js';
 import {INTRO_PACKAGE_ROOT,INTRO_PUBLISH_FILES,INTRO_ROUTES,introContentType} from '../../scripts/web-build/intro.mjs';
+import {parse as parseHtml,serialize as serializeHtml} from 'parse5';
+import {publicHtmlScope,publicHtmlInputs,localizedPublicHtml} from '../../scripts/web-build/public-html.mjs';
 
 const checkout=resolve(fileURLToPath(new URL('../../',import.meta.url))),sha=b=>createHash('sha256').update(b).digest('hex');
 async function fixture(t){
@@ -104,6 +106,36 @@ test('authored intro publish files serve exact source/production locale routes w
  const deck=await readFile(resolve(publish,'deck.js'));await writeFile(resolve(publish,'deck.js'),Buffer.concat([deck,Buffer.from('\n// changed source')]));assert.throws(()=>loadProductionWebAssets(f.root,buildRoot),/Production web assets/);await writeFile(resolve(publish,'deck.js'),deck);
  await writeFile(resolve(buildRoot,'intro/deck.js'),'changed production bytes');const tampered=await apps.production.inject('/intro/deck.js');assert.equal(tampered.statusCode,503);assert.equal(tampered.headers['cache-control'],'no-store');assert.equal(tampered.headers.etag,undefined);
  await writeFile(resolve(f.root,'private.css'),'synthetic-private-not-published');await rm(resolve(publish,'style.css'));await symlink(resolve(f.root,'private.css'),resolve(publish,'style.css'));assert.equal((await apps.source.inject('/intro/style.css')).statusCode,404);
+});
+
+test('raw public HTML is localized from current public sources, binds canonical scope, and retains private/legacy noindex paths',async t=>{
+ const f=await fixture(t),walk=node=>[node,...(node.childNodes??[]).flatMap(walk)],attributes=node=>Object.fromEntries((node.attrs??[]).map(a=>[a.name,a.value])),value=node=>node.nodeName==='#text'?node.value:(node.childNodes??[]).map(value).join('');
+ for(const namespace of ['common','public','shell','kanban','releases'])await cp(resolve(checkout,'apps/web/public/locales',namespace),resolve(f.pub,'locales',namespace),{recursive:true});
+ for(const locale of ['en','zh-CN']){const path=resolve(f.pub,'locales/common',locale+'.json'),messages=JSON.parse(await readFile(path,'utf8'));messages.ready=locale==='en'?'Ready {name}':'已准备 {name}';await writeFile(path,JSON.stringify(messages));}
+ for(const name of ['releases-data.js','kanban-data.js'])await cp(resolve(checkout,'apps/web/public',name),resolve(f.pub,name));
+ for(const page of ['index','resident','releases','kanban']){
+  const document=parseHtml(await readFile(resolve(checkout,'apps/web/public',page+'.html'),'utf8')),all=walk(document),styles=all.filter(node=>node.tagName==='link'&&attributes(node).rel==='stylesheet');
+  styles.forEach((node,index)=>{if(index===0)node.attrs.find(a=>a.name==='href').value='/assets/style.css';else node.parentNode.childNodes=node.parentNode.childNodes.filter(child=>child!==node);});
+  const script=all.find(node=>node.tagName==='script'&&attributes(node).type==='module');script.attrs.find(a=>a.name==='src').value='/assets/entry.js';all.find(node=>node.tagName==='title').attrs.push({name:'data-probe',value:'A > B'});await writeFile(resolve(f.pub,page+'.html'),serializeHtml(document));
+ }
+ const options={publicOrigin:'https://published.example.test',publishedLocales:['en','zh-CN']},scope=publicHtmlScope(options),inputs=await publicHtmlInputs({publicRoot:f.pub}),manifest=await buildWeb({root:f.root,...options}),buildRoot=resolve(f.root,'dist/web');
+ assert.deepEqual(manifest.localized.scope,scope);assert.throws(()=>loadProductionWebAssets(f.root,buildRoot,publicHtmlScope({publicOrigin:'https://not-published.example.test',publishedLocales:['en','zh-CN']})),/Production web assets/);
+ for(const mode of ['source','production']){
+  const app=Fastify({logger:false});t.after(()=>app.close());registerSiteRoutes(app,{repoRoot:f.root,webRoot:f.pub,assetMode:mode,...options});
+  for(const locale of ['en','zh-CN'])for(const [url,page,titleKey,descriptionKey]of [['/','index','home.title','home.description'],['/releases','releases','releases.title','releases.lead'],['/kanban','kanban','kanban.title','kanban.lead'],['/residents/A001','resident','resident.title','resident.description']]){
+   const response=await app.inject('/'+locale+(url==='/'?'/':url)),nodes=walk(parseHtml(response.body)),html=nodes.find(node=>node.tagName==='html'),title=nodes.find(node=>node.tagName==='title'),dictionary=inputs.dictionaries[locale].public;
+   assert.equal(response.statusCode,200);assert.equal(attributes(html).lang,locale);assert.equal(value(title),dictionary[titleKey]);assert.equal(attributes(title)['data-probe'],'A > B');assert.equal(attributes(nodes.find(node=>node.tagName==='meta'&&attributes(node).name==='description')).content,dictionary[descriptionKey]);
+   const links=nodes.filter(node=>node.tagName==='link'),canonical=links.find(node=>attributes(node).rel==='canonical'),alternates=links.filter(node=>attributes(node).rel==='alternate');
+   if(page==='resident'){assert.equal(canonical,undefined);assert.equal(alternates.length,0);assert.equal(response.headers['x-robots-tag'],'noindex');assert.equal(value(nodes.find(node=>attributes(node).id==='resident-name')),'');}
+   else{assert.equal(attributes(canonical).href,options.publicOrigin+'/'+locale+(url==='/'?'/':url));assert.deepEqual(alternates.map(node=>attributes(node).hreflang).sort(),['en','x-default','zh-CN']);assert.equal(response.headers['x-robots-tag'],undefined);}
+   if(page==='releases'){const cards=nodes.filter(node=>attributes(node)['data-release-version']);assert.deepEqual(cards.map(node=>attributes(node)['data-release-version']),inputs.releases.map(release=>release.version));assert(value(cards[0]).includes(inputs.dictionaries[locale].releases[`releases.${inputs.releases[0].version}.title`]));}
+   if(page==='kanban'){const cards=nodes.filter(node=>attributes(node)['data-card']);assert.deepEqual(cards.map(node=>attributes(node)['data-card']).sort(),inputs.cards.map(card=>card.id).sort());for(const card of cards)assert(value(card).includes(inputs.dictionaries[locale].kanban[`cards.${attributes(card)['data-card']}.title`]));}
+   if(page==='kanban'||page==='releases')assert(!nodes.some(node=>node.tagName==='noscript'),'pre-rendered content no longer requires JavaScript to be read');
+  }
+  for(const path of ['/','/owner','/releases','/kanban','/residents/A001','/en/owner','/zh-CN/owner']){const r=await app.inject(path);assert.equal(r.statusCode,200);assert.equal(r.headers['x-robots-tag'],'noindex');assert.equal(r.headers.location,undefined);assert(!walk(parseHtml(r.body)).some(node=>node.tagName==='link'&&attributes(node).rel==='canonical'));}
+ }
+ const unpublished=localizedPublicHtml(await readFile(resolve(f.pub,'kanban.html'),'utf8'),{page:'kanban',locale:'en',inputs,scope:publicHtmlScope({publicOrigin:null,publishedLocales:[]})}),nodes=walk(parseHtml(unpublished));assert(!nodes.some(node=>node.tagName==='link'&&['canonical','alternate'].includes(attributes(node).rel)));assert.equal(attributes(nodes.find(node=>node.tagName==='meta'&&attributes(node).name==='robots')).content,'noindex');
+ const file=manifest.localized.pages.en.kanban.file;await writeFile(resolve(buildRoot,file),'tampered localized HTML');assert.throws(()=>loadProductionWebAssets(f.root,buildRoot,scope),/Production web assets/);
 });
 
 test('actual fixed WS07 public dictionaries parse with FormatJS and have identical named parameters in both languages',async t=>{
