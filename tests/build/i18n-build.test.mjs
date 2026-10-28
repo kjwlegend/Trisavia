@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {mkdtemp,mkdir,cp,writeFile,readFile,rm,symlink} from 'node:fs/promises';
+import {mkdtemp,mkdir,cp,writeFile,readFile,rm,symlink,realpath} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {resolve,join} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -82,6 +82,19 @@ test('official content indices are required only for their namespace and changin
  const next=await buildWeb({root:f.root});assert.notDeepEqual(next.sources,first.sources);assert.deepEqual(next.assets,first.assets,'the source index is not copied into a JS or all-language payload');
  await rm(resolve(f.pub,index));await assert.rejects(()=>buildWeb({root:f.root}));await writeFile(resolve(f.pub,index),original);
  const malformed=JSON.parse(original);malformed.namespace='life-content';await writeFile(resolve(f.pub,index),JSON.stringify(malformed));await assert.rejects(()=>buildWeb({root:f.root}),/Invalid official content source index/);
+});
+
+test('fixed official announcement projections compile with strict source metadata and reject unknown or malformed declarations',async t=>{
+ const root=await realpath(await mkdtemp(join(tmpdir(),'trisavia-official-projection-')));t.after(()=>rm(root,{recursive:true,force:true}));
+ for(const namespace of ['world-content','life-content']){await cp(resolve(checkout,'apps/web/public/locales',namespace),resolve(root,'locales',namespace),{recursive:true});await mkdir(resolve(root,'i18n/content-sources'),{recursive:true});await cp(resolve(checkout,'apps/web/public/i18n/content-sources',namespace+'.json'),resolve(root,'i18n/content-sources',namespace+'.json'));}
+ const file=resolve(root,'i18n/content-sources/world-content.json'),bytes=await readFile(file),actual=JSON.parse(bytes),simple=actual.groups.find(g=>g.currentSource?.targetId),get=actual.groups.find(g=>g.currentSource?.method==='GET'),post=actual.groups.find(g=>g.currentSource?.method==='POST');assert(simple&&get&&post);assert.equal(post.selector.projection,'perception.detail');
+ const build=()=>buildLocaleResources({publicRoot:root,source:path=>readFile(path),emit:async(name,_extension,body)=>({url:'/assets/build/'+name+'.json',sha256:sha(body),bytes:body.length})});
+ const built=await build();assert.deepEqual(Object.keys(built.manifest.namespaces).sort(),['life-content','world-content']);assert(built.keys.has('world-content:'+post.fields.body));
+ const mutations=[g=>{g.extra='unknown';},g=>{g.sourceEdition=1;},g=>{delete g.sourceEditionMeaning;},g=>{g.currentSource.extra=true;},g=>{g.currentSource.path='/v1/private/secret';},g=>{g.currentSource.method='DELETE';},g=>{g.currentSource.fieldMap.body='content.secret';},g=>{g.currentSource.stateFields.contentComplete='unknown.path';},g=>{g.currentSource.requireCompleteRecord=false;},g=>{g.currentSource.completion={};},g=>{g.currentSource.digestFields=['body'];},g=>{g.stateGuards.contentComplete=false;},g=>{g.selector.projection='other';}];
+ for(const mutate of mutations){const changed=structuredClone(actual);mutate(changed.groups.find(g=>g.currentSource?.method==='POST'));await writeFile(file,JSON.stringify(changed));await assert.rejects(build,/Invalid official content source index/);}
+ const changedGet=structuredClone(actual);changedGet.groups.find(g=>g.currentSource?.method==='GET').currentSource.idField='ownerId';await writeFile(file,JSON.stringify(changedGet));await assert.rejects(build,/Invalid official content source index/);
+ const changedSimple=structuredClone(actual);changedSimple.groups.find(g=>g.currentSource?.targetId).currentSource.extra=true;await writeFile(file,JSON.stringify(changedSimple));await assert.rejects(build,/Invalid official content source index/);await writeFile(file,bytes);
+ const lifeFile=resolve(root,'i18n/content-sources/life-content.json'),lifeBytes=await readFile(lifeFile),life=JSON.parse(lifeBytes);for(const badParent of [{path:'../outside',selector:'value'},{path:'apps/source.ts',selector:1},{path:'apps/source.ts',selector:'value',extra:true}]){const changed=structuredClone(life),group=changed.groups.find(g=>Object.values(g.locations).some(location=>location.parent));Object.values(group.locations).find(location=>location.parent).parent=badParent;await writeFile(lifeFile,JSON.stringify(changed));await assert.rejects(build,/Invalid official content source index/);}await writeFile(lifeFile,lifeBytes);
 });
 
 test('fixed life-content slash keys compile and load through source and production while missing complete slash keys still fail',async t=>{

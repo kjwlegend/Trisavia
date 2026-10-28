@@ -10,6 +10,17 @@ const string=(value,max=2048)=>typeof value==='string'&&value.length>0&&value.le
 const keys=(value,required,optional=[])=>record(value)&&required.every(key=>Object.hasOwn(value,key))&&Object.keys(value).every(key=>required.includes(key)||optional.includes(key));
 const flat=value=>record(value)&&Object.keys(value).length<=32&&Object.entries(value).every(([key,v])=>string(key,160)&&(v===null||typeof v==='boolean'||typeof v==='number'&&Number.isFinite(v)||string(v)));
 const sourcePath=value=>string(value,512)&&!value.startsWith('/')&&!/[\\\0]/.test(value)&&value.split('/').every(part=>part&&part!=='.'&&part!=='..');
+const identical=(value,expected)=>record(value)&&Object.keys(value).length===Object.keys(expected).length&&Object.entries(expected).every(([key,item])=>value[key]===item);
+const announcementStateFields=Object.freeze({moduleId:'ref.moduleId',type:'ref.type',dataMode:'content.dataMode',sourceId:'sourceId',sourceKind:'content.source.kind',sourceReference:'content.source.reference',contentComplete:'contentComplete'});
+function currentSourceValid(group){
+ const value=group.currentSource;if(value===undefined)return true;
+ // Retain the original descriptive source form. These fields never select a
+ // request URL or authorize a read in the browser.
+ if(!Object.hasOwn(value??{},'method'))return keys(value,['operation','record'],['targetId','selector'])&&string(value.operation,160)&&string(value.record,160)&&(value.targetId===undefined||string(value.targetId,160))&&(value.selector===undefined||flat(value.selector));
+ if(value.method==='GET')return keys(value,['method','path','record','idField','versionField','digestFields','requireCompleteRecord'])&&value.path===`/v1/world/announcements/${group.sourceId}?worldId=default`&&value.record==='data.item'&&value.idField==='id'&&value.versionField==='version'&&value.requireCompleteRecord===true&&JSON.stringify(value.digestFields)===JSON.stringify(['author','body','title'])&&JSON.stringify([...group.digestFields].sort())===JSON.stringify(value.digestFields);
+ if(value.method!=='POST')return false;
+ return keys(value,['method','path','operation','channel','record','idField','versionField','digestFields','fieldMap','stateFields','requireCompleteRecord','completion'])&&value.path==='/v1/perception/detail'&&value.operation==='perception.detail'&&value.channel==='world'&&value.record==='data'&&value.idField==='ref.id'&&value.versionField==='version'&&value.requireCompleteRecord===true&&string(value.completion)&&JSON.stringify(value.digestFields)===JSON.stringify(['body','title'])&&JSON.stringify([...group.digestFields].sort())===JSON.stringify(value.digestFields)&&identical(value.fieldMap,{body:'content.text',title:'content.title'})&&identical(value.stateFields,announcementStateFields)&&identical(group.selector,{projection:'perception.detail'})&&identical(group.stateGuards,{moduleId:'world',type:'world.announcement@1',dataMode:'real',sourceId:'demo-announcements',sourceKind:'administrative_publication',sourceReference:group.sourceRef,contentComplete:true});
+}
 async function contentSourceIndex(publicRoot,namespace,messageKeys,source){
  const path=resolve(publicRoot,'i18n/content-sources',namespace+'.json');
  if(await realpath(path)!==path||!(await lstat(path)).isFile())throw new Error('Official content indices must be regular contained source files');
@@ -25,14 +36,14 @@ async function contentSourceIndex(publicRoot,namespace,messageKeys,source){
  }
  if(!Array.isArray(value.groups)||!value.groups.length||value.groups.length>512||!Array.isArray(value.files)||!value.files.length||value.files.length>128)bad();
  for(const group of value.groups){
-  if(!keys(group,['sourceId','sourceRef','version','sourceDigest','digestFields','fields','locations','versionKind'],['access','currentSource','nativeStoryDigest','stateGuards','selector'])||!string(group.sourceId,160)||!string(group.sourceRef,512)||group.version!==null&&(!Number.isSafeInteger(group.version)||group.version<1)||!digest(group.sourceDigest)||!string(group.versionKind,512)||!record(group.fields)||!record(group.locations)||!Array.isArray(group.digestFields))bad();
+  if(!keys(group,['sourceId','sourceRef','version','sourceDigest','digestFields','fields','locations','versionKind'],['access','currentSource','nativeStoryDigest','stateGuards','selector','sourceEdition','sourceEditionMeaning'])||!string(group.sourceId,160)||!string(group.sourceRef,512)||group.version!==null&&(!Number.isSafeInteger(group.version)||group.version<1)||!digest(group.sourceDigest)||!string(group.versionKind,512)||!record(group.fields)||!record(group.locations)||!Array.isArray(group.digestFields))bad();
   const fields=Object.keys(group.fields).sort();if(!fields.length||fields.length>32||JSON.stringify(fields)!==JSON.stringify([...group.digestFields].sort())||JSON.stringify(fields)!==JSON.stringify(Object.keys(group.locations).sort()))bad();
   for(const [field,key]of Object.entries(group.fields)){
    if(!string(field,160)||typeof key!=='string'||!messageKeys.has(namespace+':'+key))bad();const location=group.locations[field];
-   if(!keys(location,['path'],['pointer','selector','context'])||!sourcePath(location.path)||Object.hasOwn(location,'pointer')===Object.hasOwn(location,'selector')||!string(location.pointer??location.selector)||location.context!==undefined&&!flat(location.context))bad();
+   if(!keys(location,['path'],['pointer','selector','context','parent'])||!sourcePath(location.path)||Object.hasOwn(location,'pointer')===Object.hasOwn(location,'selector')||!string(location.pointer??location.selector)||location.context!==undefined&&!flat(location.context)||location.parent!==undefined&&(!keys(location.parent,['path','selector'])||!sourcePath(location.parent.path)||!string(location.parent.selector)))bad();
   }
   if(group.nativeStoryDigest!==undefined&&!digest(group.nativeStoryDigest)||group.access!==undefined&&!string(group.access)||['stateGuards','selector'].some(key=>group[key]!==undefined&&!flat(group[key])))bad();
-  if(group.currentSource!==undefined&&(!keys(group.currentSource,['operation','record'],['targetId','selector'])||!string(group.currentSource.operation,160)||!string(group.currentSource.record,160)||group.currentSource.targetId!==undefined&&!string(group.currentSource.targetId,160)||group.currentSource.selector!==undefined&&!flat(group.currentSource.selector)))bad();
+  if(Object.hasOwn(group,'sourceEdition')!==Object.hasOwn(group,'sourceEditionMeaning')||group.sourceEdition!==undefined&&(!string(group.sourceEdition,160)||!string(group.sourceEditionMeaning))||!currentSourceValid(group))bad();
  }
  for(const file of value.files)if(!keys(file,['path','sha256','meaning'])||!sourcePath(file.path)||!digest(file.sha256)||!string(file.meaning))bad();
 }
