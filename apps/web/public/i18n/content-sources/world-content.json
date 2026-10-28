@@ -3066,6 +3066,74 @@
         "state": "planned"
       },
       "versionKind": "none; original map data has no content version"
+    },
+    {
+      "sourceId": "welcome-trisavia-20261024",
+      "sourceRef": "welcome-trisavia-20261024",
+      "version": 2,
+      "sourceDigest": "8ca2592bf35ece8046df01d4e975692670d7f3bb96e7497a52afea52fcf42e56",
+      "digestFields": [
+        "body",
+        "title"
+      ],
+      "fields": {
+        "body": "announcements.welcome-trisavia-20261024.v2.body",
+        "title": "announcements.welcome-trisavia-20261024.v2.title"
+      },
+      "locations": {
+        "body": {
+          "path": "apps/platform/application/world-welcome-story.json",
+          "pointer": "/body"
+        },
+        "title": {
+          "path": "apps/platform/application/world-welcome-story.json",
+          "pointer": "/title"
+        }
+      },
+      "versionKind": "announcement content version; unchanged by the perception detail projection",
+      "selector": {
+        "projection": "perception.detail"
+      },
+      "stateGuards": {
+        "moduleId": "world",
+        "type": "world.announcement@1",
+        "dataMode": "real",
+        "sourceId": "demo-announcements",
+        "sourceKind": "administrative_publication",
+        "sourceReference": "welcome-trisavia-20261024",
+        "contentComplete": true
+      },
+      "access": "Only after the current permitted worldProvider.detail announcement read has completed. No author is reconstructed, no extra announcement/list read is required, and these resources never restore withdrawn or inaccessible content.",
+      "sourceEdition": "welcome-story-1",
+      "sourceEditionMeaning": "Audit provenance only; not a runtime matching condition.",
+      "currentSource": {
+        "method": "POST",
+        "path": "/v1/perception/detail",
+        "operation": "perception.detail",
+        "channel": "world",
+        "record": "data",
+        "idField": "ref.id",
+        "versionField": "version",
+        "digestFields": [
+          "body",
+          "title"
+        ],
+        "fieldMap": {
+          "body": "content.text",
+          "title": "content.title"
+        },
+        "stateFields": {
+          "moduleId": "ref.moduleId",
+          "type": "ref.type",
+          "dataMode": "content.dataMode",
+          "sourceId": "sourceId",
+          "sourceKind": "content.source.kind",
+          "sourceReference": "content.source.reference",
+          "contentComplete": "contentComplete"
+        },
+        "requireCompleteRecord": true,
+        "completion": "Use the complete, version-consistent content.text returned by worldProvider.detail after all segments are validated. Never hash a single partial segment or use list summary fields."
+      }
     }
   ],
   "files": [
