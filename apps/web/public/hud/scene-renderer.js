@@ -1,7 +1,7 @@
 import {createLifePlaceCard,lifeBuilding} from './life-place-card.js';
 import {readPublicId} from '../public-id.js';
 import {$,el,api} from '../common.js';
-import {msg,bindText,bindAttribute,clearBinding} from '../i18n/core.js';
+import {msg,t,isMessage,bindText,bindAttribute,clearBinding} from '../i18n/core.js';
 import {readPublicCapabilities} from '../public-capabilities.js';
 import {createWorldScene,placeDetails} from '../world-scene.js';
 import {loadPixelTown,COMMONS_PLACE,placeListSource} from '../world-pixel/town.js';
@@ -36,26 +36,29 @@ let returnFocus = null;
 let currentPlace = null,currentTownVersion=null;
 let publicFocus=null,publicFocusGeneration=0;
 const focusNotice=el('section','world-public-focus-notice'),focusText=el('p'),focusRetry=el('button','','重试定位');focusNotice.hidden=true;focusNotice.setAttribute('role','status');focusRetry.type='button';focusNotice.append(focusText,focusRetry);$('#world-scene').parentNode.append(focusNotice);
-function focusMessage(text,retry=false){focusNotice.hidden=!text;focusText.textContent=text;focusRetry.hidden=!retry;}
+const uiBindings=new WeakMap();
+function uiText(node,key,original,params){const old=uiBindings.get(node);if(old?.key===key&&old.params===params)return;clearBinding(node);node.removeAttribute('data-i18n');node.textContent=original;bindText(node,key,params);uiBindings.set(node,{key,params});}
+function focusMessage(text,retry=false,key){focusNotice.hidden=!text;if(key)uiText(focusText,'public:'+key,text);else{uiBindings.delete(focusText);clearBinding(focusText);focusText.textContent=text;}focusRetry.hidden=!retry;}
+uiText(focusRetry,'public:scene.retryLocate','重试定位');
 function cancelPublicFocus(){publicFocusGeneration++;publicFocus=null;focusMessage('');}
 function publicPlace(row){const state=scene?.getState().worldScene,rendered=state?.avatars.find(avatar=>avatar.fact.agentId===row.agentId);return rendered?{...row,sceneStale:worldData.stale===true,kind:'world-avatar',projectionVersion:state.projectionVersion,x:rendered.x,y:rendered.y}:null;}
 async function tryPublicFocus(){
   const pending=publicFocus;if(!pending||pending.reading||!pending.waiting||!mapReady)return;
-  if(['error','unavailable','recovering'].includes(worldData.phase)){pending.waiting=false;focusMessage('当前无法取得这位居民的最新公开位置，请稍后重试。',true);return;}
+  if(['error','unavailable','recovering'].includes(worldData.phase)){pending.waiting=false;focusMessage('当前无法取得这位居民的最新公开位置，请稍后重试。',true,'scene.locateUnavailable');return;}
   if(worldData.phase!=='ready')return;
-  if(!worldData.complete||!worldData.lastSuccessAt||Date.now()-worldData.lastSuccessAt>5000){pending.waiting=false;focusMessage('公开位置尚未更新，暂时无法定位，请重试。',true);return;}
-  const row=worldData.avatars.find(avatar=>(avatar.agentId===pending.agentId||avatar.publicId===pending.agentId));if(!row){pending.waiting=false;focusMessage('当前公开场景中没有这位居民的可定位位置。',true);return;}
-  const initialPlace=publicPlace(row);if(!initialPlace){pending.waiting=false;focusMessage('地图暂时无法定位这位居民，请重试。',true);return;}
+  if(!worldData.complete||!worldData.lastSuccessAt||Date.now()-worldData.lastSuccessAt>5000){pending.waiting=false;focusMessage('公开位置尚未更新，暂时无法定位，请重试。',true,'scene.locateStale');return;}
+  const row=worldData.avatars.find(avatar=>(avatar.agentId===pending.agentId||avatar.publicId===pending.agentId));if(!row){pending.waiting=false;focusMessage('当前公开场景中没有这位居民的可定位位置。',true,'scene.locateMissing');return;}
+  const initialPlace=publicPlace(row);if(!initialPlace){pending.waiting=false;focusMessage('地图暂时无法定位这位居民，请重试。',true,'scene.locateMapUnavailable');return;}
   pending.reading=true;const turn=publicFocusGeneration;await publicCharacter.open(initialPlace);
   if(turn!==publicFocusGeneration||publicFocus!==pending)return;pending.reading=false;pending.waiting=false;
   const profile=publicCharacter.snapshot(),latest=worldData.phase==='ready'&&worldData.complete&&Date.now()-worldData.lastSuccessAt<=5000?worldData.avatars.find(avatar=>(avatar.agentId===pending.agentId||avatar.publicId===pending.agentId)):null;
-  if(profile.phase!=='ready'){focusMessage([403,404].includes(profile.errorStatus)?'这位居民的公开档案暂不可查看。':'暂时无法确认公开资料，请重试定位。',true);return;}
-  if(!latest||profile.data.publishedVersion<latest.profile.publishedVersion){focusMessage('公开位置或资料已更新，暂时无法定位，请重试。',true);return;}
-  const place=publicPlace(latest);if(!place||!scene.locateOwnedAgent(latest.agentId)){focusMessage('地图暂时无法定位这位居民，请重试。',true);return;}
+  if(profile.phase!=='ready'){focusMessage([403,404].includes(profile.errorStatus)?'这位居民的公开档案暂不可查看。':'暂时无法确认公开资料，请重试定位。',true,[403,404].includes(profile.errorStatus)?'scene.locateHidden':'scene.locateProfileUnknown');return;}
+  if(!latest||profile.data.publishedVersion<latest.profile.publishedVersion){focusMessage('公开位置或资料已更新，暂时无法定位，请重试。',true,'scene.locateChanged');return;}
+  const place=publicPlace(latest);if(!place||!scene.locateOwnedAgent(latest.agentId)){focusMessage('地图暂时无法定位这位居民，请重试。',true,'scene.locateMapUnavailable');return;}
   publicCharacter.observe(place);publicFocus=null;focusMessage('');openPlace(place,scene.canvas,{reuseProfile:true,fromPublicFocus:true});
 }
-function focusPublicResident(agentId){cancelPublicFocus();if(!readPublicId(agentId)&&!/^[A-Za-z0-9_-]{8,100}$/.test(agentId)){focusMessage('这个居民档案链接暂时无法定位。');return;}publicFocus={agentId,waiting:true,reading:false};focusMessage('正在寻找这位居民的公开位置…');void tryPublicFocus();}
-focusRetry.addEventListener('click',()=>{if(!publicFocus)return;publicFocus.waiting=true;focusMessage('正在重新确认公开位置…');void worldProvider.refresh();});
+function focusPublicResident(agentId){cancelPublicFocus();if(!readPublicId(agentId)&&!/^[A-Za-z0-9_-]{8,100}$/.test(agentId)){focusMessage('这个居民档案链接暂时无法定位。',false,'scene.locateInvalid');return;}publicFocus={agentId,waiting:true,reading:false};focusMessage('正在寻找这位居民的公开位置…',false,'scene.locating');void tryPublicFocus();}
+focusRetry.addEventListener('click',()=>{if(!publicFocus)return;publicFocus.waiting=true;focusMessage('正在重新确认公开位置…',false,'scene.relocating');void worldProvider.refresh();});
 function detailText(selector,value,key){const node=$(selector);clearBinding(node);node.textContent=value;if(key)bindText(node,'public:'+key);}
 function detailClose(key,fallback){const node=$('#world-detail-close');clearBinding(node,'aria-label');node.setAttribute('aria-label',fallback);bindAttribute(node,'aria-label','public:'+key);}
 const detail=$('#world-detail'),detailTransition=createPanelTransition(detail),environment=getPanelEnvironment();detail.prepend(nativeFrame('lightWood'));$('#world-detail-close').replaceChildren(icon('close'));$('#world-detail-close').removeAttribute('data-i18n-aria-label');
@@ -75,7 +78,7 @@ function townContextChanged(value){
 }
 function renderDetails(place){
   const character=place.kind==='world-avatar',provider=place.serviceNpc||place.npc,town=place.kind==='town-notice'||Boolean(provider&&!provider.readOnly&&provider.serviceIds?.length),life=lifeBuilding(place);detail.classList.toggle('is-life-place',life);lifeCard.node.hidden=!life;detail.classList.toggle('is-town-service',town);townCard.node.hidden=!town;detail.classList.toggle('is-character-card',character);characterCard.node.hidden=!character;
-  npcPerson.set(place.kind==='world-npc'?provider:null,{stale:worldData.stale===true});detail.classList.toggle('is-npc-person',place.kind==='world-npc');if(place.kind==='world-npc')detail.setAttribute('aria-label',`${provider.name}的镇民详情`);else detail.removeAttribute('aria-label');
+  npcPerson.set(place.kind==='world-npc'?provider:null,{stale:worldData.stale===true});detail.classList.toggle('is-npc-person',place.kind==='world-npc');clearBinding(detail,'aria-label');if(place.kind==='world-npc'){detail.setAttribute('aria-label',`${provider.name}的镇民详情`);bindAttribute(detail,'aria-label','public:scene.npcDetails',{name:provider.name});}else detail.removeAttribute('aria-label');
   const profile=placeProfileTargetId(place);detail.classList.toggle('is-place-profile',Boolean(profile));
   detailClose(character?'scene.close.character':'home.closePlace',character?'关闭角色详情':'关闭场所说明');detail.dataset.agentId=character?place.agentId:'';
   if(character){detailText('#world-detail-area','');detailText('#world-detail-title','角色资料','scene.title.character');detailText('#world-detail-description','');detailText('#world-detail-note','');return{links:[]};}
@@ -138,7 +141,7 @@ function openPlace(place, origin,{reuseProfile=false,fromPublicFocus=false}={}) 
   const details = renderDetails(place);lifeCard.close();if(lifeBuilding(place))lifeCard.open(place);currentTownVersion=detail.classList.contains('is-town-service')?worldData.npcCatalogVersion:null;townCard.close();if(detail.classList.contains('is-town-service'))townCard.open(place.kind==='town-notice'?{notice:true,catalogVersion:worldData.npcCatalogVersion}:{npc:place.serviceNpc||place.npc,catalogVersion:worldData.npcCatalogVersion});if(place.kind==='world-avatar'){if(!reuseProfile)void publicCharacter.open(place);}else publicCharacter.clear();
   const links = $('#world-detail-links'); links.replaceChildren();
   for (const link of details.links || []) { const node = el('a', '', `${link.label} ↗`); node.href = link.href; links.append(node); }
-  if(place.id==='noticeboard')for(const [category,label]of [['announcements','查看公开公告'],['events','查看事件计划与发生记录']]){const control=el('button','',label);control.type='button';control.addEventListener('click',()=>document.dispatchEvent(new CustomEvent('hud:world-content',{detail:{category}})));links.append(control);}
+  if(place.id==='noticeboard')for(const [category,key]of [['announcements','public:town.announcements'],['events','public:scene.events']]){const control=el('button','',msg(key));control.type='button';control.addEventListener('click',()=>document.dispatchEvent(new CustomEvent('hud:world-content',{detail:{category}})));links.append(control);}
   for (const button of list.querySelectorAll('button')) button.setAttribute('aria-pressed', String(button.dataset.placeId === place.id));
   environment.set('world',detail);detailTransition.show();positionCharacterCard();
   $('#world-layout').classList.add('has-detail');
@@ -162,25 +165,25 @@ function updateControls(state) {
   syncNpcLifeDirectory(state.visible);
   worldProvider.setVisible(pageActive&&!document.hidden&&!mapFailed&&state.visible);statusHud.setVisible(pageActive&&!document.hidden);
   document.dispatchEvent(new CustomEvent('world:state',{detail:{exploring:state.exploring,reducedMotion:state.reducedMotion}}));
-  $('#world-explore').textContent=state.exploring?'退出探索':'探索地图';
+  uiText($('#world-explore'),state.exploring?'public:scene.exploreExit':'public:home.explore',state.exploring?'退出探索':'探索地图');
   $('#world-explore').setAttribute('aria-pressed',String(state.exploring));
   $('#world-explore').hidden=state.mode==='overview';$('#world-reset').hidden=state.mode!=='overview';
-  $('#world-gesture-hint').textContent=state.exploring?'探索中 · 单指拖动地图 · 退出探索后可向下浏览':'向下浏览了解与接入 · 选择探索地图后可单指拖动';
+  uiText($('#world-gesture-hint'),state.exploring?'public:scene.exploringHint':'public:scene.normalHint',state.exploring?'探索中 · 单指拖动地图 · 退出探索后可向下浏览':'向下浏览了解与接入 · 选择探索地图后可单指拖动');
   $('#world-zoom').textContent = `${Math.round(state.zoom * 100)}%`;
   $('#world-zoom-out').disabled = !mapReady || state.zoom <= state.minZoom + .001;
   $('#world-zoom-in').disabled = !mapReady || state.zoom >= 3;
-  $('#world-pause').textContent = state.paused ? '播放动态' : '暂停动态';
+  uiText($('#world-pause'),state.paused?'public:home.resumeMotion':'public:home.pauseMotion',state.paused?'播放动态':'暂停动态');
   $('#world-pause').setAttribute('aria-pressed', String(state.paused));
   reduceMotion.setAttribute('aria-pressed',String(state.reducedMotion));
   const text = state.worldScene?.stale?'上次画面已过期 · 位置停止更新，正在恢复连接':state.worldScene?.phase!=='demo'?'服务器角色位置按读取结果显示 · 画布动画不代表在线':state.paused ? state.pauseReason === 'reduced' ? '静止展示 · 已遵循系统的减少动态设置' : state.pauseReason === 'performance' ? '静止展示 · 可手动播放演示' : '静止展示 · 演示动态已暂停' : !state.visible ? '演示动态在地图可见时继续' : '人物与环境为演示动态';
-  if ($('#world-motion-status').textContent !== text) $('#world-motion-status').textContent = text;
+  const motionKey=state.worldScene?.stale?'motionStale':state.worldScene?.phase!=='demo'?'motionServer':state.paused?state.pauseReason==='reduced'?'motionReduced':state.pauseReason==='performance'?'motionPerformance':'motionPaused':!state.visible?'motionInvisible':'motionDemo';uiText($('#world-motion-status'),'public:scene.'+motionKey,text);
   positionCharacterCard();
 }
 async function startScene() {
   const generation=++sceneGeneration;sceneAbort?.abort();sceneAbort=new AbortController();ownedAgents?.attach(null);
   scene?.destroy(); scene = null;mapReady=false;mapFailed=false;setMapAvailable(false);
   $('#world-fallback').hidden = true;
-  $('#world-motion-status').textContent = '正在载入世界画布…';
+  uiText($('#world-motion-status'),'public:scene.loadingCanvas','正在载入世界画布…');
   let loaded;
   try {
     loaded=rendering||await loadPixelTown({signal:sceneAbort.signal});
@@ -197,10 +200,10 @@ function setMapAvailable(value){mapReady=value;for(const id of ['world-zoom-out'
 function markFirstScene(){if(firstSceneMarked||!mapReady||mapFailed||worldData.phase!=='ready'||worldData.stale||!worldData.complete||!scene||Date.now()-worldData.lastSuccessAt>5000)return;const shown=scene.getState().worldScene;if(shown.phase!=='ready'||!shown.complete||shown.stale||shown.worldRevision!==worldData.worldRevision)return;firstSceneMarked=true;performance.mark('trisavia:first-scene-ready',{detail:{instanceId:worldData.instanceId,worldRevision:worldData.worldRevision,rulesVersion:worldData.rules.version}});}
 function mapError() {
   mapFailed=true;worldProvider.setVisible(false);ownedAgents?.attach(null);setMapAvailable(false);
-  if(publicFocus){publicFocus.waiting=false;focusMessage('地图暂不可用，恢复地图后可重试定位。',true);}
+  if(publicFocus){publicFocus.waiting=false;focusMessage('地图暂不可用，恢复地图后可重试定位。',true,'scene.locateMapRecover');}
   $('#world-fallback').hidden = false;
   $('#world-place-directory').open = true;
-  $('#world-motion-status').textContent = '地图暂不可用 · 场所列表仍可查看';
+  uiText($('#world-motion-status'),'public:scene.mapUnavailable','地图暂不可用 · 场所列表仍可查看');
 }
 document.addEventListener('hud:open',()=>{cancelPublicFocus();closePlace(false);});
 document.addEventListener('world:town-service',event=>{const row=worldData.complete&&worldData.npcs.find(row=>row.npcId===event.detail?.npcId);if(!row||row.readOnly||!scene)return;const point=pixelPoint(row.position,worldData.rules);openPlace({kind:'world-npc',id:row.npcId,name:row.name,npc:row,...point},scene.canvas);});
@@ -216,8 +219,8 @@ document.addEventListener('pointerdown',event=>{const directory=$('#world-place-
 $('#world-open-list').addEventListener('click',()=>{$('#world-place-directory').open=true;if(!document.body.classList.contains('paper-app-ready'))$('#world-place-directory').scrollIntoView({block:'start',behavior:'instant'});$('#world-place-directory > summary').focus({preventScroll:true});});
 $('#world-pause').addEventListener('click', () => { if (scene) scene.setPaused(!scene.getState().paused); });
 $('#world-retry').addEventListener('click', startScene);
-const reduceMotion=el('button','','减少动态');reduceMotion.id='world-reduce-motion';reduceMotion.type='button';reduceMotion.setAttribute('aria-pressed','false');reduceMotion.addEventListener('click',()=>{if(scene)scene.setReducedMotion(!scene.getState().reducedMotion);});($('#hud-map-menu')||$('.world-controls')).append(reduceMotion);
-const refreshWorld=el('button','','刷新世界'),moreWorld=el('button','','继续载入角色');refreshWorld.id='world-refresh';moreWorld.id='world-load-more';refreshWorld.type=moreWorld.type='button';moreWorld.hidden=true;
+const reduceMotion=el('button','','减少动态');reduceMotion.id='world-reduce-motion';uiText(reduceMotion,'public:scene.reducedMotion','减少动态');reduceMotion.type='button';reduceMotion.setAttribute('aria-pressed','false');reduceMotion.addEventListener('click',()=>{if(scene)scene.setReducedMotion(!scene.getState().reducedMotion);});($('#hud-map-menu')||$('.world-controls')).append(reduceMotion);
+const refreshWorld=el('button','','刷新世界'),moreWorld=el('button','','继续载入角色');refreshWorld.id='world-refresh';moreWorld.id='world-load-more';uiText(refreshWorld,'public:scene.refresh','刷新世界');uiText(moreWorld,'public:scene.moreResidents','继续载入角色');refreshWorld.type=moreWorld.type='button';moreWorld.hidden=true;
 ($('#hud-map-menu')||$('.world-controls')).append(refreshWorld,moreWorld);
 refreshWorld.addEventListener('click',()=>{noticeVersion=null;noticeAbort?.abort();void worldProvider.refresh();});moreWorld.addEventListener('click',()=>void worldProvider.loadMore());
 worldProvider.subscribe(value=>{
@@ -236,13 +239,13 @@ worldProvider.subscribe(value=>{
     else{const renderedState=scene?.getState().worldScene,rendered=renderedState?.avatars.find(avatar=>avatar.fact.agentId===row.agentId);currentPlace={...row,sceneStale:value.stale===true,kind:'world-avatar',projectionVersion:renderedState?.projectionVersion,x:rendered?.x??currentPlace.x,y:rendered?.y??currentPlace.y};void publicCharacter.observe(currentPlace);scene?.select(currentPlace);}
   }
 });
-const entryCopy=$('#world-entry-capabilities');let entryVisible=false,entryGeneration=0,entryAbort=null;
+const entryCopy=$('#world-entry-capabilities');entryCopy?.removeAttribute('data-i18n');function putEntry(value){if(!entryCopy)return;clearBinding(entryCopy);if(isMessage(value))bindText(entryCopy,value.key,value.params);else entryCopy.textContent=value;}let entryVisible=false,entryGeneration=0,entryAbort=null;
 function stopEntryRead(){entryGeneration++;entryAbort?.abort();entryAbort=null;}
 async function readEntryCapabilities(){
   stopEntryRead();if(!entryCopy||!entryVisible||!pageActive||document.hidden)return;
-  const generation=entryGeneration,controller=new AbortController();entryAbort=controller;entryCopy.textContent=entryCapabilityText(null);
-  try{const caps=await readPublicCapabilities({signal:controller.signal});if(generation===entryGeneration&&!controller.signal.aborted&&pageActive&&!document.hidden)entryCopy.textContent=entryCapabilityText(caps);}
-  catch(error){if(generation===entryGeneration&&!controller.signal.aborted&&error.name!=='AbortError')entryCopy.textContent=entryCapabilityText(null);}
+  const generation=entryGeneration,controller=new AbortController();entryAbort=controller;putEntry(entryCapabilityText(null));
+  try{const caps=await readPublicCapabilities({signal:controller.signal});if(generation===entryGeneration&&!controller.signal.aborted&&pageActive&&!document.hidden)putEntry(entryCapabilityText(caps));}
+  catch(error){if(generation===entryGeneration&&!controller.signal.aborted&&error.name!=='AbortError')putEntry(entryCapabilityText(null));}
 }
 const entryObserver=entryCopy?new IntersectionObserver(entries=>{const next=entries[0].isIntersecting;if(next===entryVisible)return;entryVisible=next;if(next)void readEntryCapabilities();else stopEntryRead();},{threshold:.01}):null;if(entryCopy)entryObserver.observe(entryCopy);
 document.addEventListener('visibilitychange',()=>{syncNpcLifeDirectory();worldProvider.setVisible(pageActive&&!document.hidden&&!mapFailed&&(!scene||scene.getState().visible));statusHud.setVisible(pageActive&&!document.hidden);if(document.hidden)stopEntryRead();else if(entryVisible)void readEntryCapabilities();});
@@ -255,8 +258,7 @@ return{focusPublicResident,returnToTown(){if(!mapReady||!scene)return false;clos
 }
 export function getWorldState(){return scene?.getState()??null;}
 function entryCapabilityText(caps){
-  if(caps?.apiVersion!=='v1')return'当前暂时无法确认感知与互动是否开放。可先阅读接入说明；Agent 仍在自己的工具中运行，由它自行发起访问，平台不会代为唤醒它。';
-  const interaction=caps.gateway?.protocolVersion===1&&Array.isArray(caps.gateway.modules)?caps.gateway.modules.includes('interaction'):caps.interaction;
-  const perception=caps.perception===true?'感知读取已开放':caps.perception===false?'感知读取暂未开放':'感知读取状态尚待确认',interactions=interaction===true?'互动已开放':interaction===false?'互动暂未开放':'互动状态尚待确认';
-  return`可让自己的 Agent 注册、设定角色、加入与关联主人。${perception}，${interactions}，实际操作仍须符合当前权限。Agent 在自己的工具中运行，需要自行发起访问与互动；平台不会代为唤醒它。${caps.gateway?.worldSimulation?.enabled===true?'已提交的移动安排会由世界规则推进位置。':''}`;
+ if(caps?.apiVersion!=='v1')return msg('public:scene.entryUnknown');
+ const interaction=caps.gateway?.protocolVersion===1&&Array.isArray(caps.gateway.modules)?caps.gateway.modules.includes('interaction'):caps.interaction;
+ return msg('public:scene.entryAvailable',()=>({perception:t(caps.perception===true?'public:scene.perceptionOpen':caps.perception===false?'public:scene.perceptionClosed':'public:scene.perceptionUnknown'),interaction:t(interaction===true?'public:scene.interactionOpen':interaction===false?'public:scene.interactionClosed':'public:scene.interactionUnknown'),movement:caps.gateway?.worldSimulation?.enabled===true?t('public:scene.movementEnabled'):''}));
 }
