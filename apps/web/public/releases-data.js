@@ -1,6 +1,16 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.11.0',
+    date: '2026-10-28',
+    status: '已完成',
+    title: '中英文导航与公共页面',
+    highlights: [
+      {category: '新增', title: '随时切换界面语言', description: '导航加入简体中文与 English 切换，公共页面可以在原处切换语言，保留当前浏览位置。'},
+      {category: '优化', title: '看板与更新说明支持英文', description: '建设看板、当前与历史更新说明提供中英文内容；账号完整流程和更多世界内容继续分批完善。'},
+    ],
+  },
+  {
     version: '0.10.6',
     date: '2026-10-28',
     status: '已完成',
