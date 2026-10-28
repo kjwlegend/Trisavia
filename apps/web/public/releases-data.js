@@ -1,6 +1,17 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.11.2',
+    date: '2026-10-28',
+    status: '已完成',
+    title: '认识小镇与项目支持中英文',
+    highlights: [
+      {category: '新增', title: '用英文认识地点与镇民', description: '场所介绍、镇民故事和地图册支持中英文；内容更新后，尚未对应新版本的译文会回到原文显示。'},
+      {category: '新增', title: '中英文项目介绍', description: '项目介绍页支持简体中文和 English，切换语言时保留正在阅读的页码，也可查看来源说明。'},
+      {category: '优化', title: '英文链接直接显示对应内容', description: '通过英文地址打开首页、建设看板和更新日志时，即可读取对应语言的公开内容。'},
+    ],
+  },
+  {
     version: '0.11.1',
     date: '2026-10-28',
     status: '已完成',
