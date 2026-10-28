@@ -351,8 +351,8 @@ body.reading .toolbar{position:fixed;bottom:0;left:0;right:0;width:100%;max-widt
 .phase-detail{font-size:1.45cqw;line-height:1.4}
 .roadmap-statement{font-size:2cqw;line-height:1.6}
 .join-copy>p:not(.join-wordmark){font-size:1.65cqw;line-height:1.7}
-@media (max-width:1000px){.toolbar-hint>span:last-child{display:none}.page-dots{gap:5px}.page-controls,.view-controls{gap:8px}.resident{--sprite-scale:2.1}.join-residents .resident{--sprite-scale:2.5}}
-@media (max-width:800px),(orientation:portrait){
+@media screen and (max-width:1000px){.toolbar-hint>span:last-child{display:none}.page-dots{gap:5px}.page-controls,.view-controls{gap:8px}.resident{--sprite-scale:2.1}.join-residents .resident{--sprite-scale:2.5}}
+@media screen and (max-width:800px),screen and (orientation:portrait){
   html,body{background:var(--paper)}
   .viewer{padding:0 0 70px;gap:0;display:block;min-height:0}
   .deck,html:not(.js) .deck,body.reading .deck{width:100%;max-width:none;aspect-ratio:auto;height:auto;overflow:visible;box-shadow:none;container-type:inline-size}
@@ -387,4 +387,78 @@ body.reading .toolbar{position:fixed;bottom:0;left:0;right:0;width:100%;max-widt
   .deck,html:not(.js) .deck,body.reading .deck{width:320mm!important;max-width:none!important;aspect-ratio:auto!important;height:auto!important;overflow:visible!important;box-shadow:none!important;container-type:inline-size!important}
   .slide,html:not(.js) .slide,body.reading .slide{position:relative!important;inset:auto!important;width:320mm!important;height:180mm!important;aspect-ratio:16/9!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important;page-break-after:always;break-after:page;margin:0!important;box-shadow:none!important;overflow:hidden!important;transition:none!important}
   .slide:last-child{page-break-after:auto;break-after:auto}.toolbar,.viewer-message,.noscript-note{display:none!important}.sprite-strip{animation:none!important}.cover-art:after{display:block!important}a{text-decoration:none!important}
+}
+
+/* The two language entries share the original artwork and one set of resources. */
+.language-controls{display:flex;gap:10px;align-items:center;flex:none;font-size:12px;white-space:nowrap}
+.language-link{text-decoration:none;min-height:30px;display:inline-flex;align-items:center;padding:3px 2px;color:var(--muted)}
+.language-link[aria-current="true"]{color:var(--ink);text-decoration:underline;text-decoration-color:var(--clay);text-underline-offset:5px}
+.brand-tagline{font-family:var(--serif);font-size:1.15cqw;color:var(--ink);margin-top:.55cqw;line-height:1.4}
+.guide-note{display:block;font-size:.87cqw;line-height:1.5;color:var(--muted);margin-top:.4cqw}
+html[lang="en"] .cover-title-line,html[lang="en"] .cover-description-line{display:block}
+html[lang="en"] .eyebrow{letter-spacing:.1em}
+html[lang="en"] .architecture-slide h2{font-size:2.9cqw}
+html[lang="en"] .architecture-cell h3{font-size:1.5cqw}
+html[lang="en"] .engine h3{flex-direction:column;align-items:center;gap:.1cqw}
+html[lang="en"] .engine-cn{font-size:1.1cqw}
+html[lang="en"] .architecture-cell p{font-size:1.13cqw}
+html[lang="en"] .architecture-row{grid-template-columns:5.8cqw 1fr}
+html[lang="en"] .architecture-connector{margin-left:6.65cqw}
+html[lang="en"] .layer-label{font-size:.93cqw;letter-spacing:0}
+html[lang="en"] .business-modules{font-size:1.05cqw;align-items:center}
+html[lang="en"] .extension-note>.micro{white-space:normal}
+html[lang="en"] .participation-item h3{font-size:1.45cqw}
+html[lang="en"] .participation-state{font-size:.85cqw;letter-spacing:0}
+html[lang="en"] .participation-item p{font-size:1.14cqw}
+html[lang="en"] .comparison-table{font-size:1.15cqw;line-height:1.5}
+html[lang="en"] .comparison-table th,html[lang="en"] .comparison-table td{padding:.75cqw 1.1cqw}
+html[lang="en"] .comparison-table tbody th{white-space:normal}
+html[lang="en"] .table-cn{display:block;margin:.2cqw 0 0;font-size:.85cqw}
+html[lang="en"] .protocol h2{font-size:2.65cqw}
+html[lang="en"] .protocol-guards{font-size:.87cqw}
+html[lang="en"] .mod-contract-heading{flex-wrap:wrap;gap:.1cqw}
+html[lang="en"] .roadmap-phase ul{font-size:1.15cqw;line-height:1.8}
+html[lang="en"] .join h2{font-size:2.85cqw}
+.sources-page{background:var(--paper);line-height:1.75}
+.sources-main{max-width:980px;margin:0 auto;padding:36px 32px 70px}
+.sources-nav{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:38px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+.sources-main h1{font-size:36px;line-height:1.25;margin:0 0 28px}
+.sources-main h2{font-size:25px;letter-spacing:-.02em;margin:36px 0 16px}
+.sources-main h3{font-size:20px;margin:30px 0 14px}
+.sources-main p,.sources-main ul{margin:16px 0;font-size:17px}
+.sources-main li+li{margin-top:8px}
+.sources-main table{border-collapse:collapse;width:100%;font-size:16px;margin:22px 0}
+.sources-main td,.sources-main th{border:1px solid var(--line);padding:9px 12px;text-align:left}
+.sources-main th{background:var(--soft)}
+.sources-main code{font-size:.9em;overflow-wrap:anywhere}
+[hidden]{display:none!important}
+/* Responsive screen layouts never enter print. Print always uses the full desktop composition. */
+/* English slide 06 retains the original type sizes and its full scope qualification. */
+@media print,screen and (min-width:801px) and (orientation:landscape){
+  html[lang="en"] .human-build h2{margin-top:1.1cqw;margin-bottom:.8cqw}
+  html[lang="en"] .human-build .co-build-lower{margin-top:.7cqw;padding-top:.8cqw}
+  html[lang="en"] .human-build .module-contract-list{margin-top:.45cqw}
+  html[lang="en"] .human-build .module-contract-list>div{margin-bottom:.3cqw}
+  html[lang="en"] .human-build .module-contract-list dt{line-height:1.3}
+  html[lang="en"] .human-build .module-contract-list dd{line-height:1.35}
+  html[lang="en"] .human-build .slide-footer{padding-top:.6cqw}
+}
+@media screen and (max-width:1100px) and (min-width:801px){.toolbar-hint{display:none}.view-controls{flex:none}.page-controls{margin-right:auto}.toolbar{gap:12px}}
+@media screen and (max-width:800px),screen and (orientation:portrait){
+  .toolbar{flex-wrap:wrap;row-gap:0;padding-top:4px;padding-bottom:4px}.toolbar .page-controls{min-width:65%;order:1}.toolbar .view-controls{order:2}.toolbar .language-controls{order:3;width:100%;justify-content:center;min-height:24px;gap:20px;font-size:11px}.language-link{min-height:26px}
+  .brand-tagline{font-size:15px;margin-top:10px}.guide-note{font-size:12px;margin-top:8px}.viewer{padding-bottom:100px}
+  html[lang="en"] .cover-title-line,html[lang="en"] .cover-description-line{white-space:normal}
+  html[lang="en"] .architecture-slide h2{font-size:clamp(29px,6.4vw,42px)}
+  html[lang="en"] .architecture-row{grid-template-columns:50px 1fr}html[lang="en"] .architecture-connector{margin-left:60px}
+  html[lang="en"] .architecture-cell h3{font-size:16px}html[lang="en"] .engine-cn{font-size:12px}html[lang="en"] .architecture-cell p{font-size:12px}html[lang="en"] .layer-label{font-size:11px}html[lang="en"] .business-modules{font-size:12px}
+  html[lang="en"] .participation-item h3{font-size:22px}html[lang="en"] .participation-state{font-size:12px}html[lang="en"] .participation-item p{font-size:16px}
+  html[lang="en"] .comparison-table{font-size:13px}html[lang="en"] .comparison-table td,html[lang="en"] .comparison-table th{padding:14px 8px}html[lang="en"] .table-cn{font-size:11px}
+  html[lang="en"] .protocol h2{font-size:clamp(29px,6.4vw,42px)}html[lang="en"] .protocol-guards{font-size:12px}
+  html[lang="en"] .roadmap-phase ul{font-size:17px}html[lang="en"] .join h2{font-size:clamp(30px,7vw,48px)}
+  .sources-main{padding:25px 22px 50px}.sources-nav{align-items:flex-start;gap:15px}.sources-nav>.language-controls{gap:12px}.sources-main h1{font-size:28px}.sources-main p,.sources-main ul{font-size:16px}.sources-main table{font-size:14px}
+}
+@media print{
+  .language-controls{display:none!important}
+  .sources-main{max-width:none;padding:12mm}.sources-nav{display:none}.sources-main article{page-break-after:auto}
+  body.sources-page{width:auto}.sources-page article{break-after:auto}
 }

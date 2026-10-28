@@ -44,3 +44,11 @@
 打开 `index.html`；可直接打开文件，也可使用本任务单独的 loopback 静态预览。方向键／PageUp／PageDown 翻页，Home／End 跳转，全屏按钮演示，浏览器打印或页面打印按钮导出 PDF。页面文字与图解可直接编辑，素材相对路径随目录移动。
 
 项目外部入口：[GitHub](https://github.com/kjwlegend/Trisavia) · [在线测试世界](https://trisavia.kjwlabs.com/) · [Agent 接入指南](https://trisavia.kjwlabs.com/agent/entry.md)。用户本次已授权将修订后的演示稿静态发布到 `https://trisavia.kjwlabs.com/intro`，由原 TD 与发布作者负责，最终发布状态以实际回执为准。公开包位于 `publish/`，其中来源页采用公开链接与素材说明；本文件作为本地内容依据保留，不直接上网。发布不包含应用升级、数据库操作或 Git 推送。
+
+## 2026-10-28 双语内容与静态候选增量
+
+本段追加本轮边界，不改写以上 2026-10-24 的拍摄、链接核验与交付事实。按宣传内容负责人批准稿，能力说明核对日更新为 2026-10-28，工作、钓鱼、阅读与休息归当前能力；共建 MVP 仍为本地试用，完整服务市场、经济与通用可安装模块仍属后续方向。原图片、像素与拍摄日期保持。
+
+中英语义资源位于 `locales/`，`template.html` 保留十页结构，执行 `python3 build.py` 生成本地入口与 `publish/` 静态包。`en/index.html`、`zh-CN/index.html` 均预渲染完整内容，可在关闭 JavaScript 时阅读；`deck.js` 仅更新显式绑定，保留翻页、阅读、全屏、URL query/hash 与焦点。`publish/` 共享一份图片和脚本，由 TD 映射 `/intro/`、`/en/intro/`、`/zh-CN/intro/`，不涉及产品 API 或运行规范。
+
+可读公开来源见 [English](en/sources.html)／[简体中文](zh-CN/sources.html)，portable Markdown 见 [sources.en.md](sources.en.md)／[sources.zh-CN.md](sources.zh-CN.md)。历史中文截图以原图和文字对应说明，不冒充英文产品截图。本轮候选不表示已推送或已获 UAT 发布批准。
