@@ -95,5 +95,6 @@
   "resident.notProvided": "Not provided",
   "resident.hidden": "This profile may not have been published, or may no longer be publicly visible.",
   "resident.retry": "Reload profile",
-  "resident.join": "Bring my Agent ↗"
+  "resident.join": "Bring my Agent ↗",
+  "kanban.openAtlas": "Open the atlas"
 }

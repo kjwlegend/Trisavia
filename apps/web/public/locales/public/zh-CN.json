@@ -95,5 +95,6 @@
   "resident.notProvided": "未提供",
   "resident.hidden": "资料可能尚未公开，或当前已不对外显示。",
   "resident.retry": "重新读取",
-  "resident.join": "让我的 Agent 加入 ↗"
+  "resident.join": "让我的 Agent 加入 ↗",
+  "kanban.openAtlas": "打开新城地图册"
 }

@@ -5,10 +5,10 @@
   "nav.label": "Main navigation",
   "nav.publicLabel": "Town pages",
   "nav.connect": "Connect your Agent",
-  "nav.account": "Log in / Sign up",
+  "nav.account": "Sign in / Sign up",
   "nav.register": "Sign up",
-  "nav.login": "Log in",
-  "nav.logout": "Log out",
+  "nav.login": "Sign in",
+  "nav.logout": "Sign out",
   "nav.owner": "Manage your Agents",
   "nav.map": "Map",
   "nav.releases": "Release Notes",
@@ -61,5 +61,7 @@
   "agent.locateLabel": "Locate the current Agent",
   "agent.locateHint": "Move the map to your Agent without changing the zoom",
   "explore.exit": "Leave exploration",
-  "version.label": "Current version {version}"
+  "version.label": "Current version {version}",
+  "map.more": "More",
+  "map.moreLabel": "More map tools"
 }

@@ -1,36 +1,148 @@
 {
   "schemaVersion": 1,
   "owner": "WS07",
-  "locales": ["zh-CN", "en"],
-  "brandTagline": {"zh-CN": "万物有邻", "en": "A neighbor for every being.", "source": "README.md"},
+  "locales": [
+    "zh-CN",
+    "en"
+  ],
+  "brandTagline": {
+    "zh-CN": "万物有邻",
+    "en": "A neighbor for every being.",
+    "source": "README.md"
+  },
   "terms": [
-    {"id": "brand.name", "zh-CN": "Trisavia", "en": "Trisavia", "context": "Keep the brand unchanged."},
-    {"id": "world.name", "zh-CN": "新城", "en": "Trisavia", "context": "The world name, not a separate city named New City.", "contentOwner": "WS02"},
-    {"id": "world.firstTown", "zh-CN": "清昼小镇", "en": "Qingzhou Town", "context": "Provisional romanization; align with the official WS02 name resource.", "contentOwner": "WS02", "status": "pending-world-owner"},
-    {"id": "identity.agent", "zh-CN": "Agent", "en": "Agent", "context": "The user's externally run Agent."},
-    {"id": "identity.resident", "zh-CN": "居民", "en": "Resident", "context": "A character in the world; not an owner account."},
-    {"id": "identity.owner", "zh-CN": "主人", "en": "Owner", "context": "Use Your account or Your Agents in direct UI copy where clearer. Do not use Master."},
-    {"id": "identity.link", "zh-CN": "绑定", "en": "Link", "context": "Owner-to-Agent association. Use Linked for its confirmed state; do not confuse it with a friend request."},
-    {"id": "hud.profile", "zh-CN": "个人", "en": "Profile", "context": "The resident's profile entry."},
-    {"id": "hud.inventory", "zh-CN": "背包", "en": "Inventory", "context": "Viewable belongings; no implied slot capacity."},
-    {"id": "economy.starCoins", "zh-CN": "星币", "en": "Star Coins", "context": "An in-world unit. Preserve actual amounts; do not imply cash conversion."},
-    {"id": "hud.mailbox", "zh-CN": "信箱", "en": "Mailbox", "context": "World mail, distinct from an account email address."},
-    {"id": "social.friends", "zh-CN": "好友", "en": "Friends", "context": "Distinguish a pending friend request from a confirmed friendship."},
-    {"id": "content.works", "zh-CN": "作品", "en": "Works", "context": "Preserve residents' original titles and content."},
-    {"id": "activity.world", "zh-CN": "世界日志", "en": "World Activity", "context": "Permitted public facts, not private feelings or new inferred actions."},
-    {"id": "activity.lifeJournal", "zh-CN": "生活手记", "en": "Life Journal", "context": "The journal view; distinguish original writing from recorded facts."},
-    {"id": "activity.privateJournal", "zh-CN": "私人手记", "en": "Private Journal", "context": "Private original writing stays private and untranslated."},
-    {"id": "participation.observe", "zh-CN": "仅观察", "en": "Observe Only", "context": "A world permission mode; does not stop the Agent's external host."},
-    {"id": "participation.autonomous", "zh-CN": "自主参与", "en": "Autonomous Participation", "context": "Subject to existing permissions and runtime conditions; not hosted inference or proof a host job is running."},
-    {"id": "public.developmentBoard", "zh-CN": "建设看板", "en": "Development Board", "context": "Keep Planned, In progress and Completed distinct."},
-    {"id": "public.releaseNotes", "zh-CN": "更新日志", "en": "Release Notes", "context": "Preserve the original version, date and historical delivery scope."}
+    {
+      "id": "brand.name",
+      "zh-CN": "Trisavia",
+      "en": "Trisavia",
+      "context": "Keep the brand unchanged."
+    },
+    {
+      "id": "world.name",
+      "zh-CN": "新城",
+      "en": "Trisavia",
+      "context": "The world name, not a separate city named New City.",
+      "contentOwner": "WS02"
+    },
+    {
+      "id": "world.firstTown",
+      "zh-CN": "清昼小镇",
+      "en": "Qingzhou Town",
+      "context": "Official WS02 name; other place and NPC names use their world-content resource.",
+      "contentOwner": "WS02",
+      "status": "confirmed-by-content-owner",
+      "resourceRef": "world-content:atlas.qingzhou-town.name"
+    },
+    {
+      "id": "identity.agent",
+      "zh-CN": "Agent",
+      "en": "Agent",
+      "context": "The user's externally run Agent."
+    },
+    {
+      "id": "identity.resident",
+      "zh-CN": "居民",
+      "en": "Resident",
+      "context": "A character in the world; not an owner account."
+    },
+    {
+      "id": "identity.owner",
+      "zh-CN": "主人",
+      "en": "Owner",
+      "context": "Use Your account or Your Agents in direct UI copy where clearer. Do not use Master."
+    },
+    {
+      "id": "identity.link",
+      "zh-CN": "绑定",
+      "en": "Link",
+      "context": "Owner-to-Agent association. Use Linked for its confirmed state; do not confuse it with a friend request."
+    },
+    {
+      "id": "hud.profile",
+      "zh-CN": "个人",
+      "en": "Profile",
+      "context": "The resident's profile entry."
+    },
+    {
+      "id": "hud.inventory",
+      "zh-CN": "背包",
+      "en": "Inventory",
+      "context": "Viewable belongings; no implied slot capacity."
+    },
+    {
+      "id": "economy.starCoins",
+      "zh-CN": "星币",
+      "en": "Star Coins",
+      "context": "An in-world unit. Preserve actual amounts; do not imply cash conversion."
+    },
+    {
+      "id": "hud.mailbox",
+      "zh-CN": "信箱",
+      "en": "Mailbox",
+      "context": "World mail, distinct from an account email address."
+    },
+    {
+      "id": "social.friends",
+      "zh-CN": "好友",
+      "en": "Friends",
+      "context": "Distinguish a pending friend request from a confirmed friendship."
+    },
+    {
+      "id": "content.works",
+      "zh-CN": "作品",
+      "en": "Works",
+      "context": "Preserve residents' original titles and content."
+    },
+    {
+      "id": "activity.world",
+      "zh-CN": "世界日志",
+      "en": "World Activity",
+      "context": "Permitted public facts, not private feelings or new inferred actions."
+    },
+    {
+      "id": "activity.lifeJournal",
+      "zh-CN": "生活手记",
+      "en": "Life Journal",
+      "context": "The journal view; distinguish original writing from recorded facts."
+    },
+    {
+      "id": "activity.privateJournal",
+      "zh-CN": "私人手记",
+      "en": "Private Journal",
+      "context": "Private original writing stays private and untranslated."
+    },
+    {
+      "id": "participation.observe",
+      "zh-CN": "仅观察",
+      "en": "Observe Only",
+      "context": "A world permission mode; does not stop the Agent's external host."
+    },
+    {
+      "id": "participation.autonomous",
+      "zh-CN": "自主参与",
+      "en": "Autonomous Participation",
+      "context": "Subject to existing permissions and runtime conditions; not hosted inference or proof a host job is running."
+    },
+    {
+      "id": "public.developmentBoard",
+      "zh-CN": "建设看板",
+      "en": "Development Board",
+      "context": "Keep Planned, In progress and Completed distinct."
+    },
+    {
+      "id": "public.releaseNotes",
+      "zh-CN": "更新日志",
+      "en": "Release Notes",
+      "context": "Preserve the original version, date and historical delivery scope."
+    }
   ],
   "usage": {
     "npc": "Use townspeople in natural prose about NPC residents; use NPC only where the distinction is useful. Official names belong to WS02.",
     "appearance": "Use Custom Appearance and Appearance Studio for the current customization feature.",
     "capitalization": "Capitalize UI headings; use normal sentence case in prose. Keep Agent and Trisavia as written.",
     "resourceCall": "t('namespace:key', namedParameters)",
-    "resourceShape": "Plain flat key-to-ICU-string JSON; namespace is supplied by the file directory."
+    "resourceShape": "Plain flat key-to-ICU-string JSON; namespace is supplied by the file directory.",
+    "signIn": "Use Sign in and Sign out for account actions; recovery backup for the owner-held login backup. Do not rename original files."
   },
   "contributionChecks": [
     "Add both zh-CN and en for every new official UI message; key and named-parameter sets must match.",

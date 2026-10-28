@@ -61,5 +61,7 @@
   "agent.locateLabel": "定位当前 Agent",
   "agent.locateHint": "只平移地图，不改变缩放",
   "explore.exit": "退出探索",
-  "version.label": "当前版本 {version}"
+  "version.label": "当前版本 {version}",
+  "map.more": "更多",
+  "map.moreLabel": "更多地图工具"
 }
