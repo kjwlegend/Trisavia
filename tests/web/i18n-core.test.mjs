@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {createHash} from 'node:crypto';
 import {createI18n,msg,isMessage,stripLocalePath} from '../../apps/web/public/i18n/core.js';
+import {errorText,errorMessage,stamp} from '../../apps/web/public/common.js';
 
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 class Node {
@@ -47,4 +48,19 @@ test('a failed dictionary retains the complete prior UI, and a late language res
 test('applyI18n touches only declared text/attributes and clearing a binding prevents stale message resurrection',async()=>{
  const f=fixture();await f.i18n.initI18n();const root=new Node(),label=new Node(),input=new Node();label.setAttribute('data-i18n','common:count');input.setAttribute('data-i18n-placeholder','common:count');root.children=[label,input];f.i18n.applyI18n(root);assert.equal(label.textContent,'[missing common:count]');
  f.i18n.bindText(label,'common:label',{name:'C'});f.i18n.clearBinding(label);label.textContent='new raw result';await f.i18n.setLocale('zh-CN');assert.equal(label.textContent,'new raw result');assert.equal(input.value,'private draft');
+});
+
+test('pending bindings preserve original labels and a failed optional namespace does not poison later switches',async()=>{
+ const block=deferred(),f=fixture({hold:url=>url.endsWith('shell/en.json')?block.promise:undefined});
+ await f.i18n.initI18n();const label=new Node();label.textContent='Readable original';f.i18n.bindText(label,'shell:label',{name:'D'});assert.equal(label.textContent,'Readable original');block.resolve();await f.i18n.ensureNamespaces(['shell']);assert.equal(label.textContent,'Hello D');
+ const missing=new Node();missing.textContent='Original label';f.i18n.bindText(missing,'shell:missing');assert.equal(missing.textContent,'Original label [missing shell:missing]');
+ await assert.rejects(()=>f.i18n.ensureNamespaces(['not-published']));assert.equal(await f.i18n.setLocale('zh-CN'),true);assert.equal(label.textContent,'你好，D');
+});
+
+test('shared error descriptors retain existing classification and never expose unrecognized error fields',()=>{
+ assert.equal(errorMessage({code:'field_locked',status:403,details:'synthetic-private-detail'}).key,'common:error.field_locked');
+ assert.equal(errorMessage({code:'any',status:503}).key,'common:error.resultUnknown');
+ assert.equal(errorMessage({code:'toString',status:400}).key,'common:error.operationFailed');
+ assert(!errorText({code:'any-private-code',status:400,details:'synthetic-private-detail'}).includes('synthetic-private-detail'));
+ const now=1793188800000;assert.equal(stamp(now),new Date(now).toLocaleString('en',{hour12:false}));
 });

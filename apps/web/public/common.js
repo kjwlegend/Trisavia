@@ -1,3 +1,4 @@
+import {isMessage,bindText,clearBinding,getLocale,t,msg} from './i18n/core.js';
 export const $ = (selector, root = document) => root.querySelector(selector);
 export const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 export function el(tag, className, value) {
@@ -7,7 +8,7 @@ export function el(tag, className, value) {
   else if (value !== undefined) node.textContent = String(value);
   return node;
 }
-export const stamp = (value) => typeof value === 'number' ? new Date(value).toLocaleString('zh-CN', {hour12: false}) : '尚无记录';
+export const stamp = (value) => typeof value === 'number' ? new Date(value).toLocaleString(getLocale(), {hour12: false}) : translated('common:state.notRecorded','尚无记录');
 export const id = () => crypto.randomUUID();
 export function credential(kind) {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
@@ -70,10 +71,10 @@ const messages = {
   quota_exceeded: '当前操作次数或数量已达限制，请稍后重试。',
   restore_access_unsupported: '身份仍保留，但旧备份中的授权不能用于恢复管理访问。',
 };
-export function errorText(error) {
-  if (isUnknown(error)) return '暂时无法确认是否完成。当前进度已保留，请继续上次操作。';
-  return messages[error.code] || '操作未完成。请保留当前输入，稍后重试或重新读取状态。';
-}
+function errorKey(error){return isUnknown(error)?'common:error.resultUnknown':Object.hasOwn(messages,error.code)?'common:error.'+error.code:'common:error.operationFailed';}
+function translated(key,original){const value=t(key);return value==='[missing '+key+']'?original+' '+value:value;}
+export function errorText(error) {return translated(errorKey(error),isUnknown(error)?'暂时无法确认是否完成。当前进度已保留，请继续上次操作。':Object.hasOwn(messages,error.code)?messages[error.code]:'操作未完成。请保留当前输入，稍后重试或重新读取状态。');}
+export function errorMessage(error){return msg(errorKey(error));}
 export function isUnknown(error) { return !error.status || error.status >= 500 || ['commit_result_unknown','retry_same_operation','response_unknown','network_unknown','request_timeout'].includes(error.code); }
 export function notice(node, message, tone = '') {
   clearBinding(node);
@@ -90,4 +91,3 @@ export function brandHeader(active = '') {
   header.innerHTML = '<div class="nav-wrap"><a class="brand" href="/" aria-label="connet.ai 首页"><span class="brand-mark" aria-hidden="true">c</span>connet<span>.ai</span></a><nav aria-label="主导航"><a href="/agent/entry.md">接入说明 <span aria-hidden="true">↗</span></a><a href="/owner" class="nav-owner">主人入口</a></nav></div>';
   if (active === 'owner') $('.nav-owner', header).setAttribute('aria-current', 'page');
 }
-import {isMessage,bindText,clearBinding} from './i18n/core.js';

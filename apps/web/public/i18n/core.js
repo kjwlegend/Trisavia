@@ -64,16 +64,27 @@ export function createI18n({window:win=globalThis.window,document:doc=globalThis
   const formatter=resources.get(locale+'/'+ns)?.get(name);if(!formatter)return missing(key);
   try{const value=formatter.format(params);return typeof value==='string'?value:typeof value==='number'?String(value):missing(key);}catch{return missing(key);}
  }
- function render(node,binding){const text=t(binding.key,typeof binding.params==='function'?binding.params():binding.params);if(binding.attribute)node.setAttribute(binding.attribute,text);else node.textContent=text;}
+ function render(node,binding){
+  const [ns]=splitKey(binding.key),loaded=resources.has(locale+'/'+ns);
+  // An asynchronous first load must not erase an already readable source label.
+  if(!loaded&&binding.original)return;
+  let params=binding.params;try{if(typeof params==='function')params=params();}catch{params=undefined;}
+  let text=t(binding.key,params);
+  if(text===missing(binding.key)&&binding.original)text=binding.original+' '+text;
+  if(binding.attribute)node.setAttribute(binding.attribute,text);else node.textContent=text;
+ }
  function renderAll(){for(const reference of nodes){const node=reference.deref();if(!node){nodes.delete(reference);continue;}for(const binding of bindings.get(node)?.values()??[])render(node,binding);}}
  async function ensureNamespaces(namespaces){
   if(!Array.isArray(namespaces)||namespaces.some(ns=>!namespacePattern.test(ns))||new Set([...active,...namespaces]).size>32)throw new TypeError('Invalid i18n namespaces');
-  for(const ns of namespaces)active.add(ns);const current=locale;await Promise.all(namespaces.map(ns=>load(current,ns)));if(current===locale)renderAll();
+  const current=locale;await Promise.all(namespaces.map(ns=>load(current,ns)));
+  if(current!==locale)return ensureNamespaces(namespaces);
+  for(const ns of namespaces)active.add(ns);renderAll();
  }
  function bind(node,attribute,key,params){
   const [ns]=splitKey(key);if(attribute&&!['placeholder','title','aria-label','alt'].includes(attribute))throw new TypeError('Unsupported translated attribute');
   let records=bindings.get(node);if(!records){records=new Map();bindings.set(node,records);nodes.add(new WeakRef(node));}
-  const record={attribute,key,params};records.set(attribute??'text',record);render(node,record);
+  const previous=records.get(attribute??'text'),original=previous?.key===key?previous.original:attribute?node.getAttribute(attribute):node.textContent;
+  const record={attribute,key,params,original:original??''};records.set(attribute??'text',record);render(node,record);
   void ensureNamespaces([ns]).catch(()=>{});return ()=>{if(records.get(attribute??'text')===record)records.delete(attribute??'text');};
  }
  const bindText=(node,key,params)=>bind(node,null,key,params),bindAttribute=(node,attribute,key,params)=>bind(node,attribute,key,params);
@@ -92,13 +103,13 @@ export function createI18n({window:win=globalThis.window,document:doc=globalThis
    for(;;){const wanted=[...active];await Promise.all(wanted.map(ns=>load(next,ns)));if(generation!==switchGeneration)return false;if(wanted.length===active.size)break;}
   }catch{return false;}
   if(generation!==switchGeneration)return false;
+  if(nextSource==='explicit'&&win?.history&&win?.location){const {pathname,search='',hash=''}=win.location;try{win.history.replaceState(win.history.state,'',localePath(pathname,next)+search+hash);}catch{return false;}}
   locale=next;source=nextSource;if(doc?.documentElement)doc.documentElement.lang=locale;
   if(persist&&nextSource==='explicit')try{localStorage?.setItem('trisavia.locale',locale);}catch{}
-  if(nextSource==='explicit'&&win?.history&&win?.location){const {pathname,search='',hash=''}=win.location;win.history.replaceState(win.history.state,'',localePath(pathname)+search+hash);}
   renderAll();for(const callback of listeners)try{callback(locale);}catch{}return true;
  }
  function initI18n({namespaces=[]}={}){
-  initPromise??=ensureNamespaces(['common',...namespaces]).then(()=>{if(doc?.documentElement)doc.documentElement.lang=locale;applyI18n(doc);});return initPromise;
+  initPromise??=ensureNamespaces(['common',...namespaces]).then(()=>{if(doc?.documentElement)doc.documentElement.lang=locale;applyI18n(doc);}).catch(error=>{initPromise=undefined;throw error;});return initPromise;
  }
  return {getLocale,getLocaleSource,initI18n,ensureNamespaces,t,msg,bindText,bindAttribute,clearBinding,applyI18n,onLocaleChange,setLocale,localePath};
 }

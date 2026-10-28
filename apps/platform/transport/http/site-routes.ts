@@ -4,7 +4,7 @@ import {fileURLToPath} from 'node:url';
 import {gzip} from 'node:zlib';
 import {promisify} from 'node:util';
 import type {FastifyInstance,FastifyReply,FastifyRequest} from 'fastify';
-import {containedWebPath,loadProductionWebAssets,WEB_MIME,webSha256,type ProductionWebAssets,type VerifiedWebFile} from './web-assets.ts';
+import {containedWebPath,loadProductionWebAssets,loadSourceLocaleManifest,WEB_MIME,webSha256,type ProductionWebAssets,type VerifiedWebFile} from './web-assets.ts';
 
 const defaultWebRoot=fileURLToPath(new URL('../../../web/public/',import.meta.url));
 const defaultRepoRoot=fileURLToPath(new URL('../../../../',import.meta.url));
@@ -68,8 +68,13 @@ export function registerSiteRoutes(app:FastifyInstance,options:SiteRouteOptions=
   return reply.send(body);
  }
  for(const [route,page,name]of [['/','index','index.html'],['/owner','index','index.html'],['/residents/:agentId','resident','resident.html'],['/releases','releases','releases.html'],['/kanban','kanban','kanban.html']] as const){
-  app.get(route,(request,reply)=>mode==='production'?production?file(request,reply,buildRoot,name,undefined,production.pages[page]):unavailable(reply):file(request,reply,webRoot,name));
+  const routes=[route,...['en','zh-CN'].flatMap(locale=>route==='/'?['/'+locale,'/'+locale+'/']:['/'+locale+route])];
+  for(const alias of routes)app.get(alias,(request,reply)=>mode==='production'?production?file(request,reply,buildRoot,name,undefined,production.pages[page]):unavailable(reply):file(request,reply,webRoot,name));
  }
+ app.get('/assets/i18n/manifest.json',async(_request,reply)=>{
+  if(mode==='production')return production?.localeManifest?file(_request,reply,buildRoot,production.localeManifest.file,undefined,production.localeManifest):unavailable(reply);
+  try{return reply.type('application/json; charset=utf-8').send(loadSourceLocaleManifest(webRoot));}catch{return unavailable(reply);}
+ });
  app.get('/world-map-life-v1.json',(request,reply)=>file(request,reply,webRoot,'world-map-life-v1.json','revalidate'));
  app.get('/world-map-v2.json',(request,reply)=>file(request,reply,webRoot,'world-map-v2.json','revalidate'));
  app.get('/favicon.ico',(_request,reply)=>reply.code(204).send());
@@ -80,6 +85,7 @@ export function registerSiteRoutes(app:FastifyInstance,options:SiteRouteOptions=
    const asset=production?.assets.get('/assets/'+name);
    return asset?file(request,reply,buildRoot,asset.file,'immutable',asset):missing(reply);
   }
+  if(mode==='production'&&name.startsWith('locales/'))return missing(reply);
   return file(request,reply,webRoot,name,'revalidate');
  });
  for(const name of ['entry.md','http-api.md','local-setup.md','prompt.md','avatar.md']){
