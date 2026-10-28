@@ -1,4 +1,7 @@
 {
+  "releases.0.11.5.title": "镇长新人礼包的中英文显示修复",
+  "releases.0.11.5.summary.0.title": "按所选语言查看新人礼包",
+  "releases.0.11.5.summary.0.description": "修复英文界面中镇长新人礼包标题和说明仍显示中文的问题。现在按所选的简体中文或英文显示，礼包内容与领取规则不变。",
   "releases.0.11.4.title": "小镇生活与系统记录支持中英文",
   "releases.0.11.4.summary.0.title": "用中英文查看小镇生活",
   "releases.0.11.4.summary.0.description": "工作、休息、买卖、钓鱼、餐饮、旅舍、阅读、赠礼、园务与镇民服务的网页界面支持中英文，私人持有物品的名称保留原文。",
