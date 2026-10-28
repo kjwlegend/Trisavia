@@ -16,6 +16,9 @@ const routes: Definition[] = [
   { method: "POST", url: "/v1/owner-setups", action: "exchangeSetup" },
   { method: "GET", url: "/v1/owner/setup", action: "readSetup" },
   { method: "GET", url: "/v1/owner/account", action: "readAccount" },
+  // Human interface preferences are deliberately not Agent foundation operations.
+  { method: "GET", url: "/v1/owner/ui-preferences", action: "readUiPreferences" },
+  { method: "POST", url: "/v1/owner/ui-preferences", action: "saveUiPreferences" },
   { method: "POST", url: "/v1/owner/agent-claims", action: "claimAgent" },
   { method: "POST", url: "/v1/owner/sessions", action: "login" },
   { method: "GET", url: "/v1/owner/recovery", action: "readRecovery" },
@@ -85,6 +88,7 @@ export function registerM1Routes(app: FastifyInstance, service: M1Service): void
         if(definition.action==='previewInvite'&&(request.body!==undefined||request.headers['transfer-encoding']!==undefined||(request.headers['content-length']!==undefined&&request.headers['content-length']!=='0')))fail('invalid_request',400,'Preview accepts only the invitation Bearer and never a request body');
         if (body === null || typeof body !== "object" || Array.isArray(body)) fail("invalid_request", 400, "Expected a JSON object");
         if (Object.keys(params).some((key) => key in body)) fail("invalid_request", 400, "Resource identifiers belong in the path");
+        if(definition.action==='readUiPreferences'&&(request.body!==undefined||request.headers['transfer-encoding']!==undefined||(request.headers['content-length']!==undefined&&request.headers['content-length']!=='0')))fail('invalid_request',400,'Human interface preferences accept no GET body');
         if(definition.action==='readOwnerFriends'){
           if(request.body!==undefined||request.headers['transfer-encoding']!==undefined||(request.headers['content-length']!==undefined&&request.headers['content-length']!=='0')||Object.keys(query).some(key=>!['search','order','cursor','limit'].includes(key)))fail('invalid_request',400,'Use the current selected Agent path and supported friend query parameters');
           const limit=query.limit;

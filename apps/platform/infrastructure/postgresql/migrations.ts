@@ -1,4 +1,5 @@
 import {BEHAVIOR_JOURNAL_MIGRATION} from './behavior-journal-migration.ts';
+import {OWNER_UI_PREFERENCES_MIGRATION} from './owner-ui-preferences-migration.ts';
 import {NPC_LIFE_MIGRATION,LIFE_NPC_ACTIONS_MIGRATION} from './npc-life-migration.ts';
 import {WORLD_EXPRESSIONS_MIGRATION} from './world-expressions-migration.ts';
 import {WORLD_MOVEMENT_POLICY_MIGRATION} from './world-movement-policy-migration.ts';
@@ -186,6 +187,7 @@ POSTGRES_MIGRATIONS.push(LIFE_MIGRATION,LIFE_WALLET_MIGRATION,LIFE_RUNTIME_MIGRA
 POSTGRES_MIGRATIONS.push(NPC_LIFE_MIGRATION,LIFE_NPC_ACTIONS_MIGRATION);
 POSTGRES_MIGRATIONS.push(AVATAR_ASSETS_MIGRATION,AVATAR_PROFILE_REFERENCE_MIGRATION);
 POSTGRES_MIGRATIONS.push(BEHAVIOR_JOURNAL_MIGRATION);
+POSTGRES_MIGRATIONS.push(OWNER_UI_PREFERENCES_MIGRATION);
 export const POSTGRES_SCHEMA_SIGNATURE=createHash('sha256').update(POSTGRES_MIGRATIONS.map(item=>`${item.moduleId}:${createHash('sha256').update(item.sql).digest('hex')}`).join('\n')).digest('hex');
 
 /** Explicit DDL-role operation; openPostgresStore never calls this. */

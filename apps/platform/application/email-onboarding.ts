@@ -8,6 +8,8 @@ import { accountFields } from '../domains/access/account-identifiers.ts';
 import { equalDigest, hashPassword, parseToken, payloadHash } from '../domains/access/credentials.ts';
 import { emailCode, emailDigest, openMail, sealMail } from '../domains/access/email-secrets.ts';
 import { fail, M1Error, object, text } from '../domains/common/errors.ts';
+import {optionalUiLocale,type OwnerUiLocale} from '../domains/access/owner-ui-preferences.ts';
+import {localizedChallenge,localizedRecoveryNotice} from '../domains/email/messages.ts';
 import { loadEmailConfig, sendResend, type EmailConfig, type EmailMode, type ResendEmailConfig, type MailPayload, type Delivery } from '../infrastructure/email/resend.ts';
 export const EMAIL_ACTIONS = ['startRegistration', 'readRegistrationAttempt', 'sendRegistrationCode', 'verifyRegistrationEmail', 'cancelRegistration', 'registerOwner', 'completeSetup', 'startEmailRecovery', 'readEmailRecoveryAttempt', 'sendRecoveryCode', 'verifyRecoveryEmail', 'recoverByEmail', 'enableRecoveryBackup'] as const;
 interface EmailCredential extends JsonObject {
@@ -140,9 +142,10 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
             fail('email_rate_limited', 429, 'Try again later');
         return ownerKey;
     }
-    async function notify(tx: M1Transaction, owner: StoredRow, operationId: string, mode: EmailMode = currentMode === 'experience' ? 'experience' : 'resend') {
+    async function notify(tx: M1Transaction, owner: StoredRow, operationId: string, mode: EmailMode = currentMode === 'experience' ? 'experience' : 'resend',uiLocale?:OwnerUiLocale) {
         const id = randomUUID(), sender = mode === 'resend' ? config?.resend : undefined;
-        const payload: MailPayload | null = sender ? { from: sender.from, to: [string(owner, 'email')], subject: 'connet.ai · Password recovery completed', text: `Your connet.ai password was reset at ${new Date(now()).toISOString()}. If you did not request this, return to the trusted site ${sender.publicOrigin}. This message contains no password or login credential.` } : null;
+        const locale=uiLocale??optionalUiLocale(owner.data.uiLocale);
+        const payload: MailPayload | null = sender ? { from: sender.from, to: [string(owner, 'email')], ...(locale?localizedRecoveryNotice(locale,{completedAt:new Date(now()).toISOString(),publicOrigin:sender.publicOrigin}):{subject: 'connet.ai · Password recovery completed', text: `Your connet.ai password was reset at ${new Date(now()).toISOString()}. If you did not request this, return to the trusted site ${sender.publicOrigin}. This message contains no password or login credential.`}) } : null;
         await mailJobRepository(tx).insert({ id, version: 1, data: { purpose: 'notification', verificationMode: mode, ownerKey: owner.id, operationId, createdAt: now(), state: mode === 'experience' ? 'not_sent' : sender ? 'queued' : 'unavailable', retryable: Boolean(sender), dispatchLeaseUntil: 0, idempotencyKey: `m1-notice:${store.instanceId}:${id}`, encryptedPayload: payload ? sealMail(sender!.codeSecret, payload) : null, epoch: store.recoveryEpoch } });
     }
     async function invoke(action: string, raw: unknown, proof: unknown, clientIp = 'internal'): Promise<JsonObject> {
@@ -222,7 +225,8 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
                 });
             }
             const registration = ['readRegistrationAttempt', 'sendRegistrationCode', 'verifyRegistrationEmail', 'cancelRegistration', 'registerOwner', 'completeSetup'].includes(action);
-            const input = object(raw, action.startsWith('read') ? ['attemptId'] : action === 'registerOwner' || action === 'completeSetup' ? ['operationId', 'attemptId', 'password', 'sessionToken', 'recoveryToken', 'handoffToken', 'setupToken'] : action === 'recoverByEmail' ? ['operationId', 'attemptId', 'password', 'sessionToken', 'recoveryToken'] : action.startsWith('verify') ? ['operationId', 'attemptId', 'code', 'sendOperationId'] : ['operationId', 'attemptId']);
+            const input = object(raw, action.startsWith('read') ? ['attemptId'] : action === 'registerOwner' || action === 'completeSetup' ? ['operationId', 'attemptId', 'password', 'sessionToken', 'recoveryToken', 'handoffToken', 'setupToken'] : action === 'recoverByEmail' ? ['operationId', 'attemptId', 'password', 'sessionToken', 'recoveryToken','uiLocale'] : action.startsWith('verify') ? ['operationId', 'attemptId', 'code', 'sendOperationId'] : action.startsWith('send')?['operationId','attemptId','uiLocale']:['operationId', 'attemptId']);
+            const requestedLocale=optionalUiLocale(input.uiLocale);
             const row = await browser(tx, proof, input.attemptId, registration ? 'registration' : 'recovery');
             if (action.startsWith('read'))
                 return await view(tx, row);
@@ -253,7 +257,9 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
                     const key = sourceKey(clientIp), ownerKey = await sendLimit(tx, row, sourceKeys(clientIp)), code = mode === 'experience' ? '1234' : emailCode(), generation = (row.data.challengeGeneration as number ?? 0) + 1;
                     const id = randomUUID(), expiresAt = Math.min(now() + 10 * 60000, number(row, 'expiresAt'));
                     const purpose = registration ? 'registration' : 'password recovery';
-                    const payload: MailPayload | null = email ? { from: email.from, to: [string(row, 'email')], subject: `connet.ai · ${purpose} code`, text: `Your connet.ai ${purpose} code is ${code}. Requested at ${new Date(now()).toISOString()}. Enter it only on the trusted page ${email.publicOrigin} that you just opened. Do not give this code to an Agent or anyone else. It expires in 10 minutes. If you did not request this, ignore this message.` } : null;
+                    const owner=!registration&&typeof row.data.ownerId==='string'?await humanAccountRepository(tx).get(row.data.ownerId):undefined;
+                    const locale=requestedLocale??optionalUiLocale(owner?.data.uiLocale);
+                    const payload: MailPayload | null = email ? { from: email.from, to: [string(row, 'email')], ...(locale?localizedChallenge(locale,registration?'registration':'recovery',{code,requestedAt:new Date(now()).toISOString(),publicOrigin:email.publicOrigin,minutes:Math.ceil((expiresAt-now())/60000)}):{subject: `connet.ai · ${purpose} code`, text: `Your connet.ai ${purpose} code is ${code}. Requested at ${new Date(now()).toISOString()}. Enter it only on the trusted page ${email.publicOrigin} that you just opened. Do not give this code to an Agent or anyone else. It expires in 10 minutes. If you did not request this, ignore this message.`}) } : null;
                     await mailJobRepository(tx).insert({ id, version: 1, data: { purpose: 'code', verificationMode: mode, attemptId: row.id, operationId: text(input.operationId, 'operationId', 8, 100), ownerKey, recipientKey: payloadHash([store.instanceId, 'recipient', string(row, 'emailKey')]), sourceKey: key, createdAt: now(), epoch: store.recoveryEpoch,
                             idempotencyKey: `m1-code:${store.instanceId}:${row.id}:${generation}`, encryptedPayload: payload ? sealMail(email!.codeSecret, payload) : null, state: mode === 'experience' ? 'not_sent' : 'queued', retryable: mode === 'resend', dispatchLeaseUntil: 0 } });
                     return await view(tx, await update(emailAttemptRepository(tx), row, { deliveryId: id, challengeGeneration: generation, codeDigest: digest(mode, 'code', string(row, 'purpose'), row.id, string(row, 'emailKey'), String(generation), code), codeExpiresAt: expiresAt, resendAfter: now() + 60000 }));
@@ -331,7 +337,7 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
                     const updated = await update(humanAccountRepository(tx), owner, { authVersion: ownerAuthVersion, passwordSalt: password.salt, passwordHash: password.hash, ...(mode === 'resend' ? { emailVerified: true, emailVerifiedAt: now(), emailVerificationSource: 'recovery_code', emailVerificationMode: mode } : {}), lastRecoveryVerificationMode: mode, lastRecoveryVerificationSource: mode === 'resend' ? 'recovery_code' : 'experience_code' });
                     await update(recoveryRequestRepository(tx), request, { status: 'completed', completedAt: now(), completionOperationId: text(input.operationId, 'operationId', 8, 100), completionVerificationMode: mode });
                     await update(emailAttemptRepository(tx), row, { status: 'completed', completionAction: action, completionOperationId: text(input.operationId, 'operationId', 8, 100), completionVerificationMode: mode });
-                    await notify(tx, updated, text(input.operationId, 'operationId', 8, 100), mode);
+                    await notify(tx, updated, text(input.operationId, 'operationId', 8, 100), mode,requestedLocale);
                     return { attemptId: row.id, requestId: request.id, agentId: request.data.agentId!, ownerId: owner.id, sessionId: session.id, expiresAt: session.data.expiresAt!, ownerAuthVersion, emailVerified: updated.data.emailVerified === true, verificationMode: mode, verificationSource: mode === 'resend' ? 'recovery_code' : 'experience_code', invalidated: ['owner_session', 'owner_recovery', 'invite', 'other_email_authorizations'] };
                 }
                 fail('invalid_request', 400, 'Unsupported email action');

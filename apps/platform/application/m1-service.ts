@@ -5,6 +5,7 @@ import {assertProfileBusinessWrite,assertProfileDirectSave,assertProfilePublicat
 import {isCustomAvatar} from '../domains/profile/appearance.ts';
 import {assertWorldActionAllowed,worldActionPolicy,worldActionPolicyView} from '../domains/access/world-action-policy.ts';
 import {authenticateCredential} from '../domains/access/authentication.ts';
+import {ownerUiPreferencesView,optionalUiLocale} from '../domains/access/owner-ui-preferences.ts';
 import { mapAsync } from '../domains/common/async-collections.ts';
 import { requireRow as required, patchRow as update } from '../domains/common/repository.ts';
 import { profileRepository } from '../domains/profile/repository.ts';
@@ -32,7 +33,7 @@ import {agentIdentityView,knownTimestamp} from './agent-identity-view.ts';
 import {agentInviteState,agentInviteView,inspectAgentInvite,requireActiveAgentInvite} from './agent-invites.ts';
 import {ensurePublicId,readPublicId,findPublicIdentifier} from '../domains/public-identifiers/repository.ts';
 import type { PerceptionAction } from "../domains/perception/protocol.ts";
-export type M1Action = PerceptionAction | "previewInvite" | "consumeInvite" | "readOwnerFriends" | "queryOwnerMailbox" | "capabilities" | "catalog" | "register" | "registrationResult" | "self" | "publicProfile" | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup" | "readRecovery" | "registerOwner" | "readAccount" | "claimAgent" | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites" | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveProfile" | "saveDraft" | "publishProfile" | "unpublishProfile" | "profilePolicy" | "createRecoveryRequest" | "readRecoveryRequest" | "cancelRecoveryRequest" | "recoveryAssistance" | "verifyRecoveryRequest" | "rejectRecoveryRequest" | "startRegistration" | "readRegistrationAttempt" | "sendRegistrationCode" | "verifyRegistrationEmail" | "cancelRegistration" | "startEmailRecovery" | "readEmailRecoveryAttempt" | "sendRecoveryCode" | "verifyRecoveryEmail" | "recoverByEmail" | "enableRecoveryBackup" | "readWorldActionPolicy" | "saveWorldActionPolicy" | "readWorldAccess" | "saveWorldAccess" | "adoptWorldAccess" | "readMembership" | "join" | "leave" | "participation" | "receipt";
+export type M1Action = "readUiPreferences" | "saveUiPreferences" | PerceptionAction | "previewInvite" | "consumeInvite" | "readOwnerFriends" | "queryOwnerMailbox" | "capabilities" | "catalog" | "register" | "registrationResult" | "self" | "publicProfile" | "issueHandoff" | "declareDelivery" | "previewHandoff" | "exchangeSetup" | "readSetup" | "completeSetup" | "readRecovery" | "registerOwner" | "readAccount" | "claimAgent" | "login" | "recover" | "listAgents" | "managedAgent" | "issueInvite" | "revokeInvite" | "listInvites" | "revokeRuntime" | "replaceRuntime" | "readProfile" | "saveProfile" | "saveDraft" | "publishProfile" | "unpublishProfile" | "profilePolicy" | "createRecoveryRequest" | "readRecoveryRequest" | "cancelRecoveryRequest" | "recoveryAssistance" | "verifyRecoveryRequest" | "rejectRecoveryRequest" | "startRegistration" | "readRegistrationAttempt" | "sendRegistrationCode" | "verifyRegistrationEmail" | "cancelRegistration" | "startEmailRecovery" | "readEmailRecoveryAttempt" | "sendRecoveryCode" | "verifyRecoveryEmail" | "recoverByEmail" | "enableRecoveryBackup" | "readWorldActionPolicy" | "saveWorldActionPolicy" | "readWorldAccess" | "saveWorldAccess" | "adoptWorldAccess" | "readMembership" | "join" | "leave" | "participation" | "receipt";
 export interface M1Options {
     legacyAvatarIdentity?:LegacyAvatarIdentityReader<M1ReadSession>;
     perception?: PerceptionOptions;
@@ -370,6 +371,10 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
             return await wallet.query(raw, token);
         if (perception.handles(action))
             return await perception.invoke(action as PerceptionAction, raw, token);
+        if (action === 'readUiPreferences') {
+            object(raw,[]);
+            return await store.read(async tx=>{const actor=await authenticate(tx,token,['owner_session']);return ownerUiPreferencesView(await required(humanAccountRepository(tx),actor.data.ownerId!),now());});
+        }
         if (action === "readWorldActionPolicy") {
             return await store.read(async tx => {
                 const asOf=now(),input=object(raw,['agentId']);
@@ -381,6 +386,19 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         return await store.transaction(async (tx) => {
             // This is the server's state-read time, never evidence that a local Agent is online.
             const asOf = now();
+            if(action==='saveUiPreferences'){
+                const input=object(raw,['operationId','expectedVersion','uiLocale']);
+                const actor=await authenticate(tx,token,['owner_session']),uiLocale=optionalUiLocale(input.uiLocale);
+                if(uiLocale===undefined)fail('invalid_request',400,'Choose a human interface language',{field:'uiLocale'});
+                return await command(tx,`owner:${actor.data.ownerId!}`,action,input,async()=>{
+                    const owner=await required(humanAccountRepository(tx),actor.data.ownerId!),current=ownerUiPreferencesView(owner,asOf);
+                    if(version(input.expectedVersion)!==current.version)fail('version_conflict',409,'Human interface preference changed',{version:current.version!});
+                    if(current.uiLocale===uiLocale)return {...current,changed:false};
+                    const nextVersion=Number(current.version)+1;if(!Number.isSafeInteger(nextVersion))fail('state_conflict',409,'Preference version cannot advance');
+                    const next=await update(humanAccountRepository(tx),owner,{uiLocale,uiPreferencesVersion:nextVersion,uiPreferencesUpdatedAt:asOf});
+                    return {...ownerUiPreferencesView(next,asOf),changed:true};
+                });
+            }
             if (action === "readAccount") {
                 object(raw, []);
                 const actor = await authenticate(tx, token, ["owner_session"]);
@@ -637,7 +655,8 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                 return action === "verifyRecoveryRequest" ? await work() : await command(tx, `owner:${actor.data.ownerId!}`, action, input, work);
             }
             if (action === "recover") {
-                const input = object(raw, ["operationId", "password", "recoveryToken", "sessionToken", "credentialsSaved", "assistanceToken"]);
+                const input = object(raw, ["operationId", "password", "recoveryToken", "sessionToken", "credentialsSaved", "assistanceToken", "uiLocale"]);
+                const uiLocale=optionalUiLocale(input.uiLocale);
                 const actor = await authenticate(tx, token, ["owner_recovery"]);
                 return await command(tx, `owner:${actor.data.ownerId!}`, action, input, async () => {
                     if (input.credentialsSaved !== true)
@@ -657,7 +676,7 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     await update(humanAccountRepository(tx), owner, { authVersion: ownerAuthVersion, passwordSalt: password.salt, passwordHash: password.hash });
                     if (assistance)
                         await update(recoveryRequestRepository(tx), assistance, { status: "completed", completedAt: now(), completionOperationId: text(input.operationId, "operationId", 8, 100) });
-                    await email.notify(tx, owner, text(input.operationId, "operationId", 8, 100));
+                    await email.notify(tx, owner, text(input.operationId, "operationId", 8, 100),undefined,uiLocale);
                     return { ownerId: owner.id, ...(assistance ? { requestId: assistance.id } : {}), sessionId: session.id, ownerAuthVersion, expiresAt: session.data.expiresAt!, invalidated: ["owner_session", "owner_recovery", "invite"] };
                 });
             }
