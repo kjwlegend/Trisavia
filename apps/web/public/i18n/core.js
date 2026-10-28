@@ -94,15 +94,18 @@ export function createI18n({window:win=globalThis.window,document:doc=globalThis
   for(const node of declared){if(node.closest?.('[data-i18n-deferred]'))continue;const key=node.getAttribute('data-i18n');if(key)bindText(node,key);for(const attr of ['placeholder','title','aria-label']){const key=node.getAttribute('data-i18n-'+attr);if(key)bindAttribute(node,attr,key);}}
  }
  function onLocaleChange(callback){listeners.add(callback);return ()=>listeners.delete(callback);}
- async function setLocale(next,{source:nextSource='explicit',persist=nextSource==='explicit'}={}){
+ async function setLocale(next,{source:nextSource='explicit',persist=nextSource==='explicit',isCurrent=()=>true}={}){
+  const currentRequest=()=>{try{return typeof isCurrent==='function'&&isCurrent()===true;}catch{return false;}};
+  // Reject an obsolete identity before advancing the shared switch generation.
+  if(!currentRequest())return false;
   if(!validLocale(next)||!['explicit','account','browser','fallback'].includes(nextSource))return false;
   if(localeRanks[nextSource]<localeRanks[source])return false;
   const generation=++switchGeneration;
   try{
    // Include namespaces registered while a switch was loading, before committing any label.
-   for(;;){const wanted=[...active];await Promise.all(wanted.map(ns=>load(next,ns)));if(generation!==switchGeneration)return false;if(wanted.length===active.size)break;}
+   for(;;){const wanted=[...active];await Promise.all(wanted.map(ns=>load(next,ns)));if(generation!==switchGeneration||!currentRequest())return false;if(wanted.length===active.size)break;}
   }catch{return false;}
-  if(generation!==switchGeneration)return false;
+  if(generation!==switchGeneration||!currentRequest())return false;
   if(nextSource==='explicit'&&win?.history&&win?.location){const {pathname,search='',hash=''}=win.location;try{win.history.replaceState(win.history.state,'',localePath(pathname,next)+search+hash);}catch{return false;}}
   locale=next;source=nextSource;if(doc?.documentElement)doc.documentElement.lang=locale;
   if(persist&&nextSource==='explicit')try{localStorage?.setItem('trisavia.locale',locale);}catch{}

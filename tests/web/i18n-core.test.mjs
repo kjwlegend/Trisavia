@@ -71,3 +71,13 @@ test('an explicitly deferred account subtree is not registered or fetched until 
  f.i18n.applyI18n(root);assert.equal(account.textContent,'账户原文');assert.equal(f.requests.some(r=>r.url.includes('/shell/')),false);
  account.closest=()=>null;f.i18n.applyI18n(root);await f.i18n.ensureNamespaces(['shell']);assert.equal(account.textContent,'Account UI');assert.equal(f.requests.filter(r=>r.url.includes('/shell/en.json')).length,1);
 });
+
+test('an account locale load invalidated asynchronously cannot mutate UI and cannot cancel its successor',async()=>{
+ const block=deferred(),f=fixture({pathname:'/owner',hold:url=>url.endsWith('/zh-CN.json')?block.promise:undefined});await f.i18n.initI18n();
+ const label=new Node(),changes=[];f.i18n.bindText(label,'common:label',{name:'E'});f.i18n.onLocaleChange(locale=>changes.push(locale));let owner='A';
+ const old=f.i18n.setLocale('zh-CN',{source:'account',persist:false,isCurrent:()=>owner==='A'});owner='B';block.resolve();
+ assert.equal(await old,false);assert.equal(f.i18n.getLocale(),'en');assert.equal(f.i18n.getLocaleSource(),'browser');assert.equal(label.textContent,'Hello E');assert.equal(f.document.documentElement.lang,'en');assert.deepEqual(changes,[]);assert.deepEqual(f.updates,[]);assert.equal(f.stored.size,0);
+ const successor=f.i18n.setLocale('zh-CN',{source:'account',persist:false,isCurrent:()=>owner==='B'}),requests=f.requests.length;
+ assert.equal(await f.i18n.setLocale('en',{source:'explicit',persist:true,isCurrent:()=>false}),false);assert.equal(f.requests.length,requests);
+ assert.equal(await successor,true);assert.equal(label.textContent,'你好，E');assert.equal(f.i18n.getLocaleSource(),'account');assert.deepEqual(changes,['zh-CN']);assert.deepEqual(f.updates,[]);assert.equal(f.stored.size,0);
+});
