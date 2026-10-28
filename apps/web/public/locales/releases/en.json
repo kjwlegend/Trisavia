@@ -1,4 +1,9 @@
 {
+  "releases.0.11.0.title": "Navigation and public pages in Chinese and English",
+  "releases.0.11.0.summary.0.title": "Switch the interface language at any time",
+  "releases.0.11.0.summary.0.description": "Use the navigation to switch between Simplified Chinese and English on public pages without losing your place.",
+  "releases.0.11.0.summary.1.title": "Read the board and release notes in English",
+  "releases.0.11.0.summary.1.description": "The development board and both current and past release notes are available in Chinese and English. Bilingual support for the full account journey and more world content is still being completed in stages.",
   "releases.0.10.6.title": "The development board reflects recent progress",
   "releases.0.10.6.summary.0.title": "Existing experiences are easier to find on the board",
   "releases.0.10.6.summary.0.description": "The development board now reflects recently completed work on dining, reading, gifts, townspeople, place introductions, custom appearances, and private journals, making it easier to see what you can already experience in town.",

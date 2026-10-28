@@ -1,4 +1,9 @@
 {
+  "releases.0.11.0.title": "中英文导航与公共页面",
+  "releases.0.11.0.summary.0.title": "随时切换界面语言",
+  "releases.0.11.0.summary.0.description": "导航加入简体中文与 English 切换，公共页面可以在原处切换语言，保留当前浏览位置。",
+  "releases.0.11.0.summary.1.title": "看板与更新说明支持英文",
+  "releases.0.11.0.summary.1.description": "建设看板、当前与历史更新说明提供中英文内容；账号完整流程和更多世界内容继续分批完善。",
   "releases.0.10.6.title": "建设看板同步近期进展",
   "releases.0.10.6.summary.0.title": "已有体验在看板中更清楚",
   "releases.0.10.6.summary.0.description": "建设看板按近期实际交付补齐餐饮、阅读、赠礼、镇民、场所介绍、自定义形象与私人生活手记等进展，方便了解小镇已有的体验。",
