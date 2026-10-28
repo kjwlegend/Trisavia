@@ -5,6 +5,7 @@ import {resolve,relative,dirname,sep,extname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {buildLocaleResources} from './i18n-resources.mjs';
 import {verifyI18nVendor,FORMATJS_VERSIONS} from './i18n-vendor.mjs';
+import {copyPublishedIntro} from './intro.mjs';
 const defaultRoot=resolve(fileURLToPath(new URL('../../',import.meta.url)));
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex'),posix=path=>path.split(sep).join('/');
 function attributes(tag){return Object.fromEntries([...tag.matchAll(/([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)].map(m=>[m[1].toLowerCase(),m[2]??m[3]]));}
@@ -40,6 +41,7 @@ export async function buildWeb({root=defaultRoot}={}){
   await source(resolve(publicRoot,'npc-life-v1/manifest.json'));
   await source(resolve(publicRoot,'npc-life-v1/spatial-addon-v1.json'));
   const pkg=JSON.parse(await source(resolve(root,'package.json'))),lock=JSON.parse(await source(resolve(root,'package-lock.json')));await source(resolve(root,'scripts/build-web.mjs'));for(const path of await filesIn(resolve(root,'scripts/web-build')))await source(path);
+  const intro=await copyPublishedIntro({root,destination:temporary,source});
   const localeBuild=await buildLocaleResources({publicRoot,source,emit:async(...args)=>{
    const url=await emit(...args),asset=assets.find(a=>a.url===url);return {url,sha256:asset.sha256,bytes:asset.bytes};
   }});
@@ -76,7 +78,7 @@ export async function buildWeb({root=defaultRoot}={}){
   }
   for(const key of quotedKeys)if(localeResources?.namespaces[key.split(':')[0]])references.add(key);
   for(const key of references)if(!localeBuild?.keys.has(key))throw new Error('Declared i18n message is not available in both languages: '+key);
-  const manifest={version:1,appVersion:pkg.version,pages,assets:assets.sort((a,b)=>a.url.localeCompare(b.url,'en')),sources:[...sources].sort(([a],[b])=>a.localeCompare(b,'en')).map(([file,sha256])=>({file,sha256})),...(localeManifest?{i18n:{manifestUrl:localeManifest}}:{})};
+  const manifest={version:1,appVersion:pkg.version,pages,assets:assets.sort((a,b)=>a.url.localeCompare(b.url,'en')),sources:[...sources].sort(([a],[b])=>a.localeCompare(b,'en')).map(([file,sha256])=>({file,sha256})),...(localeManifest?{i18n:{manifestUrl:localeManifest}}:{}),...(intro?{intro}:{})};
   await writeFile(resolve(temporary,'manifest.json'),JSON.stringify(manifest,null,2)+'\n');await rename(temporary,output);return manifest;
  }catch(e){await rm(temporary,{recursive:true,force:true});throw e;}
 }

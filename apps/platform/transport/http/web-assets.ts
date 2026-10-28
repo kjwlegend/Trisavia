@@ -2,6 +2,7 @@ import {createHash} from 'node:crypto';
 import {realpath,stat} from 'node:fs/promises';
 import {readFileSync,realpathSync,statSync,readdirSync} from 'node:fs';
 import {extname,resolve,sep} from 'node:path';
+import {INTRO_PACKAGE_ROOT,INTRO_PUBLISH_FILES,INTRO_SOURCE_FILES,introContentType} from '../../../../scripts/web-build/intro.mjs';
 
 export const WEB_MIME:Readonly<Record<string,string>>={
  '.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8',
@@ -10,7 +11,7 @@ export const WEB_MIME:Readonly<Record<string,string>>={
  '.wav':'audio/wav','.ogg':'audio/ogg','.mp3':'audio/mpeg',
 };
 export interface VerifiedWebFile {root:string;file:string;sha256:string;bytes:number;contentType:string}
-export interface ProductionWebAssets {pages:{index:VerifiedWebFile;resident:VerifiedWebFile;releases:VerifiedWebFile;kanban:VerifiedWebFile};assets:ReadonlyMap<string,VerifiedWebFile>;localeManifest?:VerifiedWebFile}
+export interface ProductionWebAssets {pages:{index:VerifiedWebFile;resident:VerifiedWebFile;releases:VerifiedWebFile;kanban:VerifiedWebFile};assets:ReadonlyMap<string,VerifiedWebFile>;localeManifest?:VerifiedWebFile;intro?:ReadonlyMap<string,VerifiedWebFile>}
 export const webSha256=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
 const record=(value:unknown):Record<string,unknown>=>{
  if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Invalid web manifest object');
@@ -37,10 +38,10 @@ function productionPath(root:string,name:string):string{
  if(!path.startsWith(base+sep)||!statSync(path).isFile())throw new Error('Invalid web asset path');
  return path;
 }
-function checkedFile(root:string,value:unknown,expectedName?:string):VerifiedWebFile{
+function checkedFile(root:string,value:unknown,expectedName?:string,expectedType?:string):VerifiedWebFile{
  const file=record(value),name=file.file;
  if(typeof name!=='string'||expectedName!==undefined&&name!==expectedName)throw new Error('Invalid web manifest file');
- const path=productionPath(root,name),sha256=digest(file.sha256),bytes=size(file.bytes),body=readFileSync(path),contentType=WEB_MIME[extname(name)];
+ const path=productionPath(root,name),sha256=digest(file.sha256),bytes=size(file.bytes),body=readFileSync(path),contentType=expectedType??WEB_MIME[extname(name)];
  if(!contentType||body.length!==bytes||webSha256(body)!==sha256)throw new Error('Web manifest file differs');
  return {root,file:name,sha256,bytes,contentType};
 }
@@ -92,7 +93,7 @@ export function loadProductionWebAssets(repoRoot:string,buildRoot:string):Produc
   const sources=new Set<string>();
   for(const value of manifest.sources){
    const input=record(value),file=input.file;
-   if(typeof file!=='string'||sources.has(file)||!(/^(apps\/web\/public\/|scripts\/web-build\/)/.test(file)||['package.json','package-lock.json','scripts/build-web.mjs'].includes(file)))throw new Error('Invalid web build input');
+   if(typeof file!=='string'||sources.has(file)||!(/^(apps\/web\/public\/|scripts\/web-build\/)/.test(file)||['package.json','package-lock.json','scripts/build-web.mjs',...INTRO_SOURCE_FILES].includes(file)))throw new Error('Invalid web build input');
    if(webSha256(readFileSync(productionPath(repoRoot,file)))!==digest(input.sha256))throw new Error('Web build input differs');
    sources.add(file);
   }
@@ -111,6 +112,17 @@ export function loadProductionWebAssets(repoRoot:string,buildRoot:string):Produc
     for(const locale of ['zh-CN','en']){const entry=record(languages[locale]),asset=assets.get(String(entry.url));if(!asset||!asset.file.endsWith('.json')||entry.sha256!==asset.sha256||entry.bytes!==asset.bytes||asset.bytes>262144||!sources.has(`apps/web/public/locales/${namespace}/${locale}.json`))throw new Error('Invalid public locale asset');}
    }
   }
-  return {pages,assets,...(localeManifest?{localeManifest}:{})};
+  let intro:Map<string,VerifiedWebFile>|undefined;
+  if(manifest.intro!==undefined){
+   const declaration=record(manifest.intro);if(declaration.version!==1||Object.keys(declaration).sort().join(',')!=='files,version'||!Array.isArray(declaration.files)||declaration.files.length!==INTRO_PUBLISH_FILES.length)throw new Error('Invalid intro publish declaration');
+   intro=new Map();let total=0;
+   for(const value of declaration.files){const item=record(value),name=typeof item.file==='string'?item.file.slice('intro/'.length):'';
+    if(!INTRO_PUBLISH_FILES.includes(name)||item.file!=='intro/'+name||intro.has(name))throw new Error('Unexpected intro publish file');
+    const verified=checkedFile(buildRoot,item,'intro/'+name,introContentType(name));total+=verified.bytes;
+    if(item.contentType!==verified.contentType||verified.bytes>8*1024*1024||total>20*1024*1024)throw new Error('Invalid intro publish bytes');intro.set(name,verified);
+   }
+   for(const path of [...INTRO_SOURCE_FILES,'scripts/web-build/intro.mjs'])if(!sources.has(path))throw new Error('Required intro publish input is absent');
+  }else if(sources.has(INTRO_PACKAGE_ROOT+'/ROUTES.md'))throw new Error('Intro publish declaration is absent');
+  return {pages,assets,...(localeManifest?{localeManifest}:{}),...(intro?{intro}:{})};
  }catch{throw new Error('Production web assets are missing or invalid; build dist/web from this exact source before startup');}
 }

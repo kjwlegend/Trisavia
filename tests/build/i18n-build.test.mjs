@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {mkdtemp,mkdir,cp,writeFile,readFile,rm} from 'node:fs/promises';
+import {mkdtemp,mkdir,cp,writeFile,readFile,rm,symlink} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {resolve,join} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -11,6 +11,7 @@ import {buildLocaleResources} from '../../scripts/web-build/i18n-resources.mjs';
 import {registerSiteRoutes} from '../../apps/platform/transport/http/site-routes.ts';
 import {loadProductionWebAssets} from '../../apps/platform/transport/http/web-assets.ts';
 import {createI18n} from '../../apps/web/public/i18n/core.js';
+import {INTRO_PACKAGE_ROOT,INTRO_PUBLISH_FILES,INTRO_ROUTES,introContentType} from '../../scripts/web-build/intro.mjs';
 
 const checkout=resolve(fileURLToPath(new URL('../../',import.meta.url))),sha=b=>createHash('sha256').update(b).digest('hex');
 async function fixture(t){
@@ -89,6 +90,20 @@ test('fixed life-content slash keys compile and load through source and producti
   const app=Fastify({logger:false});t.after(()=>app.close());registerSiteRoutes(app,{repoRoot:f.root,webRoot:f.pub,assetMode:mode});const runtime=createI18n({navigator:{languages:['en']},fetch:async url=>{const r=await app.inject(url);return new Response(r.rawPayload,{status:r.statusCode,headers:r.headers});}});await runtime.initI18n({namespaces:['life-content']});for(const key of keys)assert.equal(runtime.t('life-content:'+key),expected[key]);
  }
  await writeFile(resolve(f.pub,'entry.js'),entry+'globalThis.invalid=t("life-content:npcLifeMessage.npc-life/missing.v1.text");');await assert.rejects(()=>buildWeb({root:f.root}),/Declared i18n message.*npc-life\/missing/);
+});
+
+test('authored intro publish files serve exact source/production locale routes with manifest and path protection',async t=>{
+ const f=await fixture(t),packageRoot=resolve(f.root,INTRO_PACKAGE_ROOT),publish=resolve(packageRoot,'publish'),buildRoot=resolve(f.root,'dist/web');await mkdir(packageRoot,{recursive:true});await cp(resolve(checkout,INTRO_PACKAGE_ROOT,'publish'),publish,{recursive:true});await cp(resolve(checkout,INTRO_PACKAGE_ROOT,'ROUTES.md'),resolve(packageRoot,'ROUTES.md'));
+ await writeFile(resolve(publish,'template.html'),'synthetic-private-not-published');const manifest=await buildWeb({root:f.root});assert.equal(manifest.intro.files.length,INTRO_PUBLISH_FILES.length);assert.equal(manifest.sources.filter(source=>source.file.startsWith(INTRO_PACKAGE_ROOT+'/')).length,INTRO_PUBLISH_FILES.length+1);assert(!manifest.sources.some(source=>source.file.endsWith('/publish/template.html')));await assert.rejects(()=>readFile(resolve(buildRoot,'intro/template.html')));assert.doesNotThrow(()=>loadProductionWebAssets(f.root,buildRoot));
+ const apps={};
+ for(const mode of ['source','production']){
+  const app=apps[mode]=Fastify({logger:false});t.after(()=>app.close());registerSiteRoutes(app,{repoRoot:f.root,webRoot:f.pub,assetMode:mode});
+  for(const {url,file}of INTRO_ROUTES){const response=await app.inject(url),expected=await readFile(resolve(publish,file));assert.equal(response.statusCode,200,url);assert.equal(sha(response.rawPayload),sha(expected),url);assert.equal(response.headers['content-type'],introContentType(file));assert.equal(response.headers['cache-control'],file.endsWith('.html')?'no-store':'public, max-age=0, must-revalidate');assert.match(response.headers['content-security-policy'],/script-src 'self'/);}
+  for(const url of ['/intro/index.html','/intro/template.html','/intro/ROUTES.md','/intro/locales/en.json','/intro/build.py','/intro/tests/deck.test.cjs','/intro/assets/not-listed.png','/en/intro/style.css','/intro/..%2Fpackage.json']){const response=await app.inject(url);assert.equal(response.statusCode,404,url);assert(!response.body.includes('synthetic-private-not-published'));}
+ }
+ const deck=await readFile(resolve(publish,'deck.js'));await writeFile(resolve(publish,'deck.js'),Buffer.concat([deck,Buffer.from('\n// changed source')]));assert.throws(()=>loadProductionWebAssets(f.root,buildRoot),/Production web assets/);await writeFile(resolve(publish,'deck.js'),deck);
+ await writeFile(resolve(buildRoot,'intro/deck.js'),'changed production bytes');const tampered=await apps.production.inject('/intro/deck.js');assert.equal(tampered.statusCode,503);assert.equal(tampered.headers['cache-control'],'no-store');assert.equal(tampered.headers.etag,undefined);
+ await writeFile(resolve(f.root,'private.css'),'synthetic-private-not-published');await rm(resolve(publish,'style.css'));await symlink(resolve(f.root,'private.css'),resolve(publish,'style.css'));assert.equal((await apps.source.inject('/intro/style.css')).statusCode,404);
 });
 
 test('actual fixed WS07 public dictionaries parse with FormatJS and have identical named parameters in both languages',async t=>{

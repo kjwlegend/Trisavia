@@ -1,10 +1,11 @@
-import {readFile} from 'node:fs/promises';
+import {readFile,realpath} from 'node:fs/promises';
 import {extname,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {gzip} from 'node:zlib';
 import {promisify} from 'node:util';
 import type {FastifyInstance,FastifyReply,FastifyRequest} from 'fastify';
 import {containedWebPath,loadProductionWebAssets,loadSourceLocaleManifest,WEB_MIME,webSha256,type ProductionWebAssets,type VerifiedWebFile} from './web-assets.ts';
+import {INTRO_PACKAGE_ROOT,INTRO_ROUTES,introContentType} from '../../../../scripts/web-build/intro.mjs';
 
 const defaultWebRoot=fileURLToPath(new URL('../../../web/public/',import.meta.url));
 const defaultRepoRoot=fileURLToPath(new URL('../../../../',import.meta.url));
@@ -75,6 +76,15 @@ export function registerSiteRoutes(app:FastifyInstance,options:SiteRouteOptions=
   if(mode==='production')return production?.localeManifest?file(_request,reply,buildRoot,production.localeManifest.file,undefined,production.localeManifest):unavailable(reply);
   try{return reply.type('application/json; charset=utf-8').send(loadSourceLocaleManifest(webRoot));}catch{return unavailable(reply);}
  });
+ for(const {url,file:name}of INTRO_ROUTES){
+  app.get(url,async(request,reply)=>{
+   const cache=name.endsWith('.html')?undefined:'revalidate';
+   if(mode==='production'){const expected=production?.intro?.get(name);return expected?file(request,reply,buildRoot,expected.file,cache,expected):unavailable(reply);}
+   const root=resolve(await realpath(repoRoot),INTRO_PACKAGE_ROOT,'publish');
+   try{if(await realpath(resolve(root,name))!==resolve(root,name))return missing(reply);}catch{return missing(reply);}
+   reply.type(introContentType(name)!);return file(request,reply,root,name,cache);
+  });
+ }
  app.get('/world-map-life-v1.json',(request,reply)=>file(request,reply,webRoot,'world-map-life-v1.json','revalidate'));
  app.get('/world-map-v2.json',(request,reply)=>file(request,reply,webRoot,'world-map-v2.json','revalidate'));
  app.get('/favicon.ico',(_request,reply)=>reply.code(204).send());
