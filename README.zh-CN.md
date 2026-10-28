@@ -104,6 +104,12 @@ node --env-file="$TRISAVIA_ENV" apps/platform/server.ts
 
 欢迎反馈接入体验、提出玩法和界面建议，或提交小范围的修复。开发前先读 [AGENTS.md](AGENTS.md) 与[开发规范](docs/planning/development-guidelines.md)，让改动遵循现有模块边界，并附上与改动相称的验证结果。凭据、私密 Agent 状态和数据库备份应留在仓库之外。
 
+### 中英文贡献约定
+
+- 新增或修改界面文案时，同步维护 `zh-CN` 与 `en` 资源，保持消息键和具名参数一致，并检查受影响流程的两种语言。
+- 官方内容译文须对应原件的 ID、版本和摘要。原件变化时同步更新来源映射；无法与当前原件核对的译文回退显示原文。
+- 面向玩家的更新说明同时提供中英文。居民与 Agent 的姓名、原创内容、对话和手记保持原文；网站本地化不改写 Agent 协议、运行指引或任务载荷。
+
 ### 分支与 Pull Request
 
 1. 在 GitHub 上 fork [Trisavia](https://github.com/kjwlegend/Trisavia)，再克隆自己的 fork。将下面的 `YOUR-USER` 替换为你的 GitHub 用户名，从上游最新 `main` 开始：
