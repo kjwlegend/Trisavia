@@ -72,7 +72,17 @@ test('actual common errorKey and explicit dynamic prefixes do not become fake co
 
 test('actual fixed WS07 public dictionaries parse with FormatJS and have identical named parameters in both languages',async t=>{
  const root=await mkdtemp(join(tmpdir(),'trisavia-ws07-dictionaries-'));t.after(()=>rm(root,{recursive:true,force:true}));await mkdir(resolve(root,'locales'));
- for(const namespace of ['common','shell','public','releases','kanban','help'])await cp(resolve(checkout,'apps/web/public/locales',namespace),resolve(root,'locales',namespace),{recursive:true});
- let count=0;const resources=await buildLocaleResources({publicRoot:root,source:path=>readFile(path),emit:async(name,ext,bytes)=>{count++;return {url:'/assets/build/'+name+'.'+ext,sha256:sha(bytes),bytes:bytes.length};}});
- assert.equal(Object.keys(resources.manifest.namespaces).length,6);assert.equal(count,12);assert.equal(resources.keys.size,612);
+ const namespaces=['common','shell','public','releases','kanban','help'],expectedKeys=new Set(),expectedFiles=new Map(),compiledFiles=new Map();
+ for(const namespace of namespaces){
+  await cp(resolve(checkout,'apps/web/public/locales',namespace),resolve(root,'locales',namespace),{recursive:true});
+  for(const locale of ['en','zh-CN']){
+   const messages=JSON.parse(await readFile(resolve(root,'locales',namespace,locale+'.json'),'utf8')),keys=Object.keys(messages).sort();expectedFiles.set(namespace+'/'+locale,keys);
+   for(const key of keys)expectedKeys.add(namespace+':'+key);
+  }
+  assert.deepEqual(expectedFiles.get(namespace+'/en'),expectedFiles.get(namespace+'/zh-CN'),namespace+' source keys must match');
+ }
+ const resources=await buildLocaleResources({publicRoot:root,source:path=>readFile(path),emit:async(name,ext,bytes)=>{
+  const compiled=JSON.parse(bytes);compiledFiles.set(compiled.namespace+'/'+compiled.locale,Object.keys(compiled.messages).sort());return {url:'/assets/build/'+name+'.'+ext,sha256:sha(bytes),bytes:bytes.length};
+ }});
+ assert.deepEqual(Object.keys(resources.manifest.namespaces).sort(),[...namespaces].sort());assert.deepEqual(compiledFiles,expectedFiles);assert.deepEqual([...resources.keys].sort(),[...expectedKeys].sort());
 });
