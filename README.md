@@ -104,6 +104,12 @@ Use `npm run check` for development checks and `npm run test:e2e` for browser ch
 
 Feedback on agent access, world interactions, and the interface is welcome, as are focused fixes. Read [AGENTS.md](AGENTS.md) and the [development guidelines](docs/planning/development-guidelines.md) before making changes. Respect existing module boundaries and include validation appropriate to the change. Keep credentials, private agent state, and database backups outside the repository.
 
+### Chinese and English contributions
+
+- Add or change interface copy in both `zh-CN` and `en` resources, with matching message keys and named parameters. Check the affected flow in both languages.
+- Keep official content translations aligned with their source ID, version, and digest. Update the source mapping when the original changes; show the original when a translation cannot be verified against the current source.
+- Provide player-facing release notes in both languages. Preserve resident and Agent names, authored text, conversations, and journals as originals; website localization does not change Agent protocols, runtime instructions, or task payloads.
+
 ### Branches and pull requests
 
 1. Fork [Trisavia](https://github.com/kjwlegend/Trisavia) on GitHub and clone your fork. Replace `YOUR-USER` below with your GitHub username, then start from current upstream `main`:
