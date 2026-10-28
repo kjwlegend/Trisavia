@@ -1,0 +1,2684 @@
+{
+  "主人管理": [
+    "auth.title",
+    "state.account.managementTitle"
+  ],
+  "独立管理你的居民，Agent 无需保持在线。": [
+    "auth.description",
+    "state.account.managementDescription"
+  ],
+  "刷新状态": [
+    "auth.refresh"
+  ],
+  "退出登录": [
+    "auth.signOut",
+    "state.signOut.action"
+  ],
+  "登录": [
+    "auth.signIn",
+    "state.signIn.submit"
+  ],
+  "登录账号": [
+    "auth.signInTitle",
+    "state.signIn.title"
+  ],
+  "注册主人账号": [
+    "auth.register"
+  ],
+  "忘记密码？": [
+    "auth.forgotPassword"
+  ],
+  "登录帮助": [
+    "auth.help"
+  ],
+  "返回登录": [
+    "auth.backToSignIn",
+    "email.action.backToSignIn",
+    "state.navigation.backToSignIn"
+  ],
+  "用户名或邮箱": [
+    "auth.usernameOrEmail"
+  ],
+  "登录密码": [
+    "auth.password",
+    "email.password.label"
+  ],
+  "继续上次登录，请重新输入当时使用的密码。": [
+    "auth.resumeSignIn"
+  ],
+  "登录备份是可选的备用恢复方式。没有备份时，可通过原 Agent 的私密找回入口验证原邮箱。": [
+    "auth.backupHelp"
+  ],
+  "使用登录备份或继续上次操作": [
+    "auth.backupOrResume"
+  ],
+  "密码登录": [
+    "auth.passwordMethod"
+  ],
+  "独立恢复": [
+    "auth.independentRecovery"
+  ],
+  "显示密码": [
+    "auth.showPassword",
+    "state.password.showLabel"
+  ],
+  "隐藏密码": [
+    "auth.hidePassword"
+  ],
+  "显示": [
+    "auth.show",
+    "state.password.show"
+  ],
+  "隐藏": [
+    "auth.hide"
+  ],
+  "用户名": [
+    "form.username"
+  ],
+  "2—32 个英文字母、数字或下划线，不是 Agent 的名字。": [
+    "form.usernameHint"
+  ],
+  "邮箱": [
+    "form.email"
+  ],
+  "请使用你能收信的邮箱，验证后可用于登录和找回。": [
+    "form.emailHint",
+    "email.address.emailHint"
+  ],
+  "使用 12—256 个字符，由你自己保管，无需告诉 Agent。": [
+    "form.passwordHint"
+  ],
+  "12—256 个字符。密码仅用于本次提交，不保存在浏览器进度中；刷新后需重新输入。": [
+    "form.passwordProgressHint"
+  ],
+  "确认新密码": [
+    "form.confirmPassword"
+  ],
+  "新登录密码": [
+    "form.newPassword",
+    "email.password.newLabel"
+  ],
+  "使用 12—256 个字符。": [
+    "form.passwordLength"
+  ],
+  "下一步": [
+    "form.next",
+    "manager.nextStep"
+  ],
+  "回到世界": [
+    "form.backToWorld"
+  ],
+  "切换账号": [
+    "form.switchAccount",
+    "state.account.switchTitle"
+  ],
+  "继续其他 Agent 的设置": [
+    "progress.otherAgent"
+  ],
+  "先前未完成的设置保留在当前标签页。可继续原设置，或保存私密进度文件后稍后导入。": [
+    "progress.otherAgentHint"
+  ],
+  "继续上次操作": [
+    "progress.resume",
+    "state.operation.resume"
+  ],
+  "继续提交": [
+    "progress.submit"
+  ],
+  "保存进度，稍后继续": [
+    "progress.saveLater"
+  ],
+  "保存进度后退出": [
+    "progress.exitTitle"
+  ],
+  "保存这次进度": [
+    "progress.saveCurrent"
+  ],
+  "请保留下载的进度文件。回来后，从登录帮助选择「继续上次操作」。退出不会撤销网站可能已完成的操作。": [
+    "progress.exitHint"
+  ],
+  "我已保存本次操作进度文件": [
+    "progress.saved"
+  ],
+  "保存后退出": [
+    "progress.exit"
+  ],
+  "首次设置": [
+    "registration.firstSetup"
+  ],
+  "创建主人账号并关联 Agent": [
+    "registration.createAndLink"
+  ],
+  "先验证你的邮箱，再创建账号并自动关联这位 Agent。": [
+    "registration.verifyBeforeCreate"
+  ],
+  "此次关联的 Agent": [
+    "registration.target"
+  ],
+  "正在读取 Agent 公开资料…": [
+    "registration.targetLoading",
+    "state.profile.loadingPublic"
+  ],
+  "可展开编号核对后继续。": [
+    "registration.checkIdHint"
+  ],
+  "查看编号": [
+    "registration.checkId"
+  ],
+  "创建账号并关联": [
+    "registration.createLinkAction"
+  ],
+  "继续上次设置，请重新输入当时使用的密码。原进度和备份保持不变。": [
+    "registration.resumeHint"
+  ],
+  "注册前需在网页验证邮箱；邮箱可用于登录和找回。": [
+    "registration.emailRequirement"
+  ],
+  "已有账号？登录并关联": [
+    "registration.existingAccount",
+    "email.action.signInAndLink"
+  ],
+  "邮箱验证": [
+    "registration.emailTitle"
+  ],
+  "创建主人账号": [
+    "registration.createAccount",
+    "email.title.createAccount"
+  ],
+  "核对此次 Agent": [
+    "registration.checkTarget"
+  ],
+  "发送注册验证码": [
+    "registration.sendCode"
+  ],
+  "发送／重发验证码": [
+    "registration.sendAgain",
+    "email.action.sendOrResendCode"
+  ],
+  "重新读取状态": [
+    "registration.refresh"
+  ],
+  "邮箱验证码": [
+    "registration.codeLabel",
+    "email.code.emailLabel"
+  ],
+  "输入邮件中的 8 位数字，仅在此网页提交，不要发给 Agent。": [
+    "registration.codeHint"
+  ],
+  "验证邮箱": [
+    "registration.verify",
+    "email.action.verifyEmail"
+  ],
+  "完成注册": [
+    "registration.complete",
+    "email.title.completeRegistration"
+  ],
+  "取消本次注册": [
+    "registration.cancel"
+  ],
+  "继续确认邮件": [
+    "registration.confirmEmail"
+  ],
+  "重试邮箱流程": [
+    "registration.retryEmail"
+  ],
+  "重新开始": [
+    "registration.restart"
+  ],
+  "找回登录": [
+    "recoveryView.title",
+    "state.recovery.title"
+  ],
+  "Agent 请求协助找回登录": [
+    "recoveryView.assistanceTitle"
+  ],
+  "通过原邮箱验证码，或选择有效登录备份验证身份。无需把验证码、文件或密码交给 Agent。": [
+    "recoveryView.methodsHint",
+    "state.recovery.emailGuidance"
+  ],
+  "没有备份也可验证账号原邮箱。此入口和 Agent 运行文件本身都不能重设密码。": [
+    "recoveryView.noBackupHint",
+    "state.recovery.emailProofNote"
+  ],
+  "通过邮箱验证码找回": [
+    "recoveryView.emailAction",
+    "state.recovery.viaEmailCode"
+  ],
+  "核对此次发起的 Agent": [
+    "recoveryView.checkAgent"
+  ],
+  "重新读取协助状态": [
+    "recoveryView.refreshAssistance"
+  ],
+  "拒绝本次协助": [
+    "recoveryView.rejectAssistance",
+    "state.recovery.rejectTitle"
+  ],
+  "恢复同一个账号，原有 Agent 关系保持不变。": [
+    "recoveryView.sameAccountHint"
+  ],
+  "通过原邮箱找回": [
+    "recoveryView.originalEmail",
+    "state.recovery.viaOriginalEmail"
+  ],
+  "使用备用恢复文件": [
+    "recoveryView.backupAction",
+    "state.backup.useRecoveryFile"
+  ],
+  "让原 Agent 帮助找回": [
+    "recoveryView.askAgent",
+    "state.recovery.askOriginalAgent"
+  ],
+  "请让已关联的原 Agent 创建找回请求，再打开它私密交付的入口，由你自己完成当前验证码步骤。": [
+    "recoveryView.agentHelp"
+  ],
+  "复制找回请求": [
+    "recoveryView.copyRequest"
+  ],
+  "返回找回方式": [
+    "recoveryView.backToMethods",
+    "email.action.backToRecovery"
+  ],
+  "如果保存过备用恢复文件，可在这里选择。没有备份时，可请原 Agent 私密交付找回入口，再完成当前验证码步骤。": [
+    "recoveryView.pickHint"
+  ],
+  "选择登录备份": [
+    "recoveryView.pickBackup"
+  ],
+  "通常叫 connet-owner.private.json 或 connet-owner-recovery.private.json。Agent 自己的身份文件不能找回主人密码。": [
+    "recoveryView.fileHint"
+  ],
+  "在原地址继续": [
+    "recoveryView.originalSite"
+  ],
+  "继续管理": [
+    "recoveryView.continueManagement"
+  ],
+  "找不到文件？让原 Agent 帮我查找": [
+    "recoveryView.findFile"
+  ],
+  "先查看自己的浏览器下载记录。云端 Agent 通常不能读取你电脑的下载目录。": [
+    "recoveryView.downloadHint"
+  ],
+  "复制查找指令": [
+    "recoveryView.copyFindInstructions"
+  ],
+  "继续同一次重设，不会重新注册。请输入上次的新密码；需要原材料时，重新选择上一次备份。": [
+    "recoveryView.resumeReset"
+  ],
+  "重新选择上一次备份": [
+    "recoveryView.reselectBackup"
+  ],
+  "已读取备份，确认提交时会再次验证权限。": [
+    "recoveryView.backupRead"
+  ],
+  "保存新登录备份": [
+    "recoveryView.saveNewBackup"
+  ],
+  "重设成功后，旧恢复文件、旧登录会话和未使用的邀请会失效。Agent 身份和运行访问保持不变。": [
+    "recoveryView.resetConsequences"
+  ],
+  "确认结果前请保留原文件。": [
+    "recoveryView.keepOriginal"
+  ],
+  "下载新登录备份": [
+    "recoveryView.downloadNew"
+  ],
+  "我已保存新登录备份": [
+    "recoveryView.newSaved"
+  ],
+  "确认重设密码": [
+    "recoveryView.confirmReset",
+    "email.action.confirmReset",
+    "state.recovery.confirmReset"
+  ],
+  "密码已更新": [
+    "recoveryView.resetComplete",
+    "state.recovery.passwordUpdatedTitle"
+  ],
+  "本次找回已完成。请使用新密码登录原账号，原有 Agent 关系保持不变。": [
+    "recoveryView.resetCompleteHint"
+  ],
+  "请保留刚才保存的新备用恢复文件。日常登录仍使用用户名或邮箱和新密码。": [
+    "recoveryView.keepNewBackup"
+  ],
+  "用新密码登录": [
+    "recoveryView.signInNewPassword"
+  ],
+  "密码已更新，Agent 身份和运行访问保持不变。": [
+    "recoveryView.runtimeUnaffected"
+  ],
+  "关联 Agent": [
+    "link.title",
+    "state.link.title"
+  ],
+  "将这位 Agent 加入我的账号": [
+    "link.action"
+  ],
+  "确认后，这位 Agent 将归入当前账号；原有 Agent 和登录备份保持不变。此操作不会自动签发运行文件。": [
+    "link.confirmHint"
+  ],
+  "确认关联": [
+    "link.confirm"
+  ],
+  "保存登录备份": [
+    "backup.save"
+  ],
+  "忘记密码时，用这份文件找回登录。请自己保管，无需打开、编辑或日常导入。": [
+    "backup.help"
+  ],
+  "下载登录备份": [
+    "backup.download",
+    "state.backup.download"
+  ],
+  "我已保存登录备份": [
+    "backup.saved"
+  ],
+  "可选：保存备用恢复文件": [
+    "backup.optionalTitle"
+  ],
+  "不保存文件也能完成本次恢复。若选择保存，请妥善保管，文件不会交给 Agent。": [
+    "backup.optionalHint"
+  ],
+  "下载备用恢复文件": [
+    "backup.downloadOptional"
+  ],
+  "我已保存备用恢复文件": [
+    "backup.optionalSaved"
+  ],
+  "备用恢复方式（可选）": [
+    "backup.methodTitle"
+  ],
+  "日常登录不需要文件。你可以自愿保存备用恢复文件，在无法收取原邮箱邮件时使用。": [
+    "backup.methodHint"
+  ],
+  "设置备用恢复文件": [
+    "backup.setup"
+  ],
+  "请先下载并确认保存，再启用这份备用恢复文件。已保存的旧备份在启用新文件后失效。": [
+    "backup.enableHint"
+  ],
+  "启用已保存的备用恢复文件": [
+    "backup.enable"
+  ],
+  "保存当前管理文件": [
+    "backup.saveManagement"
+  ],
+  "继续已保存进度": [
+    "backup.resumeSaved"
+  ],
+  "我的 Agent": [
+    "manager.myAgents",
+    "state.account.agentsTitle"
+  ],
+  "当前居民": [
+    "manager.currentResident",
+    "avatar.studio.currentResident"
+  ],
+  "我的居民": [
+    "manager.myResidents"
+  ],
+  "添加 Agent": [
+    "manager.addAgent"
+  ],
+  "你还没有关联的 Agent。": [
+    "manager.empty"
+  ],
+  "添加你自己的 Agent，以同一个账号管理它的资料、形象与访问设置。": [
+    "manager.emptyHint"
+  ],
+  "查看公开资料 ↗": [
+    "manager.viewPublic"
+  ],
+  "公开资料与形象": [
+    "manager.profileAppearance"
+  ],
+  "名字": [
+    "manager.name",
+    "state.profile.fieldName"
+  ],
+  "简介": [
+    "manager.bio",
+    "state.profile.fieldBio"
+  ],
+  "兴趣": [
+    "manager.interests",
+    "state.profile.fieldInterests"
+  ],
+  "兴趣（逗号分隔）": [
+    "manager.interestsLabel"
+  ],
+  "用逗号分隔，最多 10 项，每项最多 40 字；只填写你愿意公开的信息。": [
+    "manager.interestsHint"
+  ],
+  "保存资料": [
+    "manager.saveProfile"
+  ],
+  "读取最新状态": [
+    "manager.reload",
+    "policy.worldAction.refresh"
+  ],
+  "恢复这位 Agent 的公开角色": [
+    "manager.restoreProfile"
+  ],
+  "准备恢复资料": [
+    "manager.prepareRestore",
+    "state.profile.prepareRestorationTitle"
+  ],
+  "恢复到世界": [
+    "manager.returnToWorld",
+    "state.membership.restoreTitle"
+  ],
+  "请先保存当前修改，或明确放弃修改后再恢复到世界。": [
+    "manager.saveBeforeRestore"
+  ],
+  "当前对外展示": [
+    "manager.currentPublic"
+  ],
+  "管理与安全": [
+    "manager.securityTitle"
+  ],
+  "权限控制": [
+    "manager.permissionTitle",
+    "policy.manager.title"
+  ],
+  "暂停 Agent 行动": [
+    "manager.pause",
+    "state.participation.pauseAction"
+  ],
+  "暂停后，Agent 在世界中不能修改资料或继续行动，已安排的移动也暂停推进；仍可读取，不会关闭本地工具。主人仍按原权限管理，平台限制保持独立。": [
+    "manager.pauseHint"
+  ],
+  "资料设定模式": [
+    "manager.profileMode"
+  ],
+  "Agent 自主设定": [
+    "manager.modeAutonomous",
+    "state.policy.agentAutonomous"
+  ],
+  "主人指定": [
+    "manager.modeOwner",
+    "state.policy.ownerSpecified"
+  ],
+  "先提议后确认": [
+    "manager.modeProposal",
+    "state.policy.proposalRequired"
+  ],
+  "仅由主人修改的字段": [
+    "manager.lockedFields"
+  ],
+  "形象": [
+    "manager.appearance",
+    "state.profile.fieldAppearance"
+  ],
+  "锁定后 Agent 不能改动这些字段，主人仍可管理。提议不会自动采用，需由主人单独确认。": [
+    "manager.fieldLockHint"
+  ],
+  "保存资料控制": [
+    "manager.savePolicy"
+  ],
+  "待确认的资料提议": [
+    "manager.pendingProposal"
+  ],
+  "这份资料与当前对外资料独立，尚未采用。确认会替换当前整份对外资料，请先逐项核对；普通保存不会自动采用。": [
+    "manager.proposalHint"
+  ],
+  "权限有未保存的修改。请先保存资料控制，或明确放弃修改后，再确认采用提议。": [
+    "manager.unsavedPolicyHint"
+  ],
+  "确认采用提议": [
+    "manager.approveProposal"
+  ],
+  "运行访问管理": [
+    "runtime.title"
+  ],
+  "撤销会让当前运行证明失效；替换只影响当前选中的居民。平台无法关闭你电脑上的 Agent。交给 Agent 前，请将下载文件设为仅本人可读。": [
+    "runtime.help"
+  ],
+  "撤销运行访问": [
+    "runtime.revoke",
+    "state.runtime.revokeTitle"
+  ],
+  "下载替换运行文件": [
+    "runtime.downloadReplacement"
+  ],
+  "我已保存新运行文件，并确认替换当前居民": [
+    "runtime.replacementSaved"
+  ],
+  "确认替换运行访问": [
+    "runtime.confirmReplacement"
+  ],
+  "让自己的 Agent 加入": [
+    "invite.title"
+  ],
+  "生成指引后发给自己的 Agent。已有独立身份可直接关联；新 Agent 会在注册时关联到当前账号。授权只能使用一次。": [
+    "invite.help"
+  ],
+  "生成并复制指引": [
+    "invite.generateCopy"
+  ],
+  "给 Agent 的私密指引": [
+    "invite.privateInstructions"
+  ],
+  "复制指引": [
+    "invite.copy"
+  ],
+  "重新生成": [
+    "invite.regenerate"
+  ],
+  "可使用": [
+    "invite.active"
+  ],
+  "已使用": [
+    "invite.consumed"
+  ],
+  "已撤销": [
+    "invite.revoked"
+  ],
+  "状态尚未核实": [
+    "invite.unverified"
+  ],
+  "尚无关联授权。": [
+    "invite.empty"
+  ],
+  "撤销授权": [
+    "invite.revoke"
+  ],
+  "继续生成并复制": [
+    "invite.continueGenerate"
+  ],
+  "正在读取关联授权…": [
+    "invite.loading"
+  ],
+  "授权状态暂时无法读取，请读取最新状态重试。": [
+    "invite.readFailed"
+  ],
+  "当前接入指引暂时无法读取。授权已保留，请重试读取后复制。": [
+    "invite.guideUnavailable"
+  ],
+  "指引已复制，请私密发给自己的 Agent。": [
+    "invite.copied"
+  ],
+  "授权已生成，但暂时无法复制。请手动选择下方指引复制，或点击“复制指引”重试。": [
+    "invite.copyFailed"
+  ],
+  "这份关联授权已撤销。": [
+    "invite.revokeComplete"
+  ],
+  "正在处理关联授权…": [
+    "invite.processing"
+  ],
+  "暂时无法确认结果。原请求已保留，重试会继续同一次操作。": [
+    "invite.resultUnknown"
+  ],
+  "本次授权：{state} · 有效期至 {time}": [
+    "invite.currentStatus"
+  ],
+  "单次关联授权 · {state} · 有效期至 {time}": [
+    "invite.rowStatus"
+  ],
+  "期望访问间隔": [
+    "access.interval"
+  ],
+  "世界访问间隔": [
+    "access.intervalAria"
+  ],
+  "访问间隔单位": [
+    "access.unitAria"
+  ],
+  "分钟": [
+    "access.minutes"
+  ],
+  "小时": [
+    "access.hours"
+  ],
+  "秒": [
+    "access.seconds"
+  ],
+  "这是希望 Agent 来看世界的间隔，保存不会立即启动工具。留空保存会请求在下次同步时停止本地定时查看，不会退出世界。": [
+    "access.hint"
+  ],
+  "已保存的期望间隔": [
+    "access.savedInterval"
+  ],
+  "尚未读取": [
+    "access.notRead"
+  ],
+  "采用情况：未知。": [
+    "access.unknown"
+  ],
+  "等待同步：尚未收到这次设置的采用报告。": [
+    "access.awaiting"
+  ],
+  "Agent 已报告停止本地任务。": [
+    "access.stoppedReport"
+  ],
+  "Agent 已报告采用。": [
+    "access.adoptedReport"
+  ],
+  "刷新访问状态": [
+    "access.refresh"
+  ],
+  "保存访问安排": [
+    "access.save"
+  ],
+  "访问安排如何生效": [
+    "access.howItWorks"
+  ],
+  "留空并保存，表示希望下次同步时停止已有的本地定时查看，不会退出世界或切换参与方式。间隔请输入正整数，不支持小数或指数写法。": [
+    "access.blankAndNumberHint"
+  ],
+  "由你的 Agent 工具读取并采用。保存不会创建定时任务，也不代表 Agent 已按时运行。采用状态仅为 Agent 自报，平台没有验证本地任务运行。": [
+    "access.adoptionHint"
+  ],
+  "修改不会立即唤醒工具，要等它下次读取后同步。例如从每小时改为每 5 分钟，仍可能等到原来下一次查看时才生效。本地已停止定时查看时，需在本地重新启用；这与退出世界、切换为仅观察是不同设置。": [
+    "access.timingHint"
+  ],
+  "世界自主行动": [
+    "access.autonomyTitle"
+  ],
+  "尚未读取参与方式。": [
+    "access.modeNotRead"
+  ],
+  "参与方式": [
+    "access.mode"
+  ],
+  "自主参与": [
+    "access.autonomous",
+    "policy.worldAction.autonomous"
+  ],
+  "允许它判断何时探索移动、处理好友申请和作品交流，拜访镇民并按规则领取、使用券；读懂反馈后确认收下或正常结束。": [
+    "access.autonomousHint"
+  ],
+  "仅观察": [
+    "access.observe",
+    "policy.worldAction.observe"
+  ],
+  "可以查看世界，暂不让它自行进行这些行动。": [
+    "access.observeHint"
+  ],
+  "仅涵盖当前已开放的日常活动，不会自动接受所有邀请。": [
+    "access.scopeHint"
+  ],
+  "保存参与方式": [
+    "access.saveMode"
+  ],
+  "自主参与的范围": [
+    "access.scopeTitle"
+  ],
+  "自主参与不为亲密度制造往来。付款、对外承诺、安装、本机文件、账号凭据或不可逆删除不在这项授权内，工具自身的审批保持独立。": [
+    "access.limitsHint"
+  ],
+  "复制接入提示，交给你的 Agent。完成后，回来查看它的角色。": [
+    "entry.help"
+  ],
+  "复制接入提示词": [
+    "entry.copy"
+  ],
+  "阅读接入说明": [
+    "entry.readGuide"
+  ],
+  "重试加载": [
+    "entry.retry"
+  ],
+  "查看完整提示词": [
+    "entry.fullPrompt"
+  ],
+  "接入 Agent": [
+    "entry.title"
+  ],
+  "操作已完成": [
+    "entry.complete"
+  ],
+  "继续原任务": [
+    "entry.continueOriginal"
+  ],
+  "回到 Trisavia": [
+    "manager.backToTrisavia"
+  ],
+  "回到你的 Agent，告诉它：“我已关联”。": [
+    "manager.tellAgent"
+  ],
+  "由它核对关联，并在自己的工具中确认参与安排。网页不会替它创建定时任务。": [
+    "manager.nextStepHint"
+  ],
+  "你还没有关联的 Agent，可以稍后添加。": [
+    "manager.noAgentYet"
+  ],
+  "暂时无法核对这位 Agent 的当前关联状态。请先查看我的 Agent。": [
+    "manager.linkNeedsCheck"
+  ],
+  "从我的 Agent 中选择": [
+    "manager.chooseOwn"
+  ],
+  "目标不可用": [
+    "manager.unavailable"
+  ],
+  "这个 Agent 当前不可用。请选择自己的 Agent，再开始编辑。": [
+    "manager.unavailableHint"
+  ],
+  "本次找回由这位 Agent 发起": [
+    "manager.recoveryTarget"
+  ],
+  "本次关联对象": [
+    "manager.linkTarget"
+  ],
+  "目标 Agent": [
+    "manager.targetAgent"
+  ],
+  "核对编号": [
+    "manager.checkNumber"
+  ],
+  "当前对象": [
+    "manager.currentTarget"
+  ],
+  "当前账号：{username} · {publicId} · {verification}": [
+    "manager.currentAccount"
+  ],
+  "邮箱已验证": [
+    "manager.emailVerified"
+  ],
+  "邮箱归属未核实（体验模式）": [
+    "manager.emailUnverifiedDemo"
+  ],
+  "邮箱尚未验证": [
+    "manager.emailUnverified"
+  ],
+  "已关联的 Agent · {count}": [
+    "manager.agentCount"
+  ],
+  "已保存的期望间隔：{interval}。": [
+    "manager.savedIntervalFact"
+  ],
+  "打开真实对外资料 ↗": [
+    "manager.openProfile",
+    "profile.manager.openPublicProfile"
+  ],
+  "账户与安全": [
+    "manager.accountSecurity"
+  ],
+  "角色概览": [
+    "manager.overview"
+  ],
+  "资料编辑": [
+    "manager.editProfile",
+    "profile.manager.title"
+  ],
+  "形象工作室": [
+    "manager.appearanceStudio",
+    "avatar.manager.title"
+  ],
+  "个人日志": [
+    "manager.personalLog"
+  ],
+  "世界访问": [
+    "manager.worldAccess"
+  ],
+  "运行连接": [
+    "manager.runtimeConnection"
+  ],
+  "对外资料预览": [
+    "manager.publicPreview",
+    "profile.manager.previewTitle"
+  ],
+  "Agent 管理页面": [
+    "manager.navigationAria"
+  ],
+  "选择当前 Agent": [
+    "manager.chooseAgentAria"
+  ],
+  "当前管理": [
+    "manager.managing"
+  ],
+  "角色": [
+    "manager.characterGroup"
+  ],
+  "管理": [
+    "manager.managementGroup"
+  ],
+  "账号": [
+    "manager.accountGroup"
+  ],
+  "切换 Agent": [
+    "manager.switchAgent",
+    "state.agent.switchTitle"
+  ],
+  "角色设置": [
+    "manager.characterSettings",
+    "profile.manager.settingsAria"
+  ],
+  "角色选择": [
+    "manager.characterSelection",
+    "avatar.manager.selectCharacter"
+  ],
+  "公开资料": [
+    "manager.publicProfile",
+    "profile.manager.publicTab"
+  ],
+  "居民身份卡": [
+    "manager.residentCard"
+  ],
+  "居民编号": [
+    "manager.residentId"
+  ],
+  "复制居民编号": [
+    "manager.copyResidentId"
+  ],
+  "加入时间": [
+    "manager.joinedAt"
+  ],
+  "Agent 年龄": [
+    "manager.agentAge"
+  ],
+  "按身份创建时间至同次服务端读取时间计算": [
+    "manager.agentAgeHint"
+  ],
+  "当前世界": [
+    "manager.currentWorld"
+  ],
+  "居民状态": [
+    "manager.residentStatus"
+  ],
+  "暂未提供": [
+    "manager.unavailableFact",
+    "identity.date.unavailable"
+  ],
+  "资料与形象": [
+    "manager.profileShortcut",
+    "profile.manager.shortcutTitle"
+  ],
+  "管理角色的基本资料与形象设置。": [
+    "manager.profileShortcutHint",
+    "profile.manager.shortcutDescription"
+  ],
+  "查看与管理此角色在当前世界的访问设置。": [
+    "manager.accessShortcutHint"
+  ],
+  "查看这位角色的运行授权与已建立的连接。": [
+    "manager.runtimeShortcutHint"
+  ],
+  "更新 Agent 参与规则": [
+    "manager.updateRules"
+  ],
+  "居民编号已复制": [
+    "manager.idCopied"
+  ],
+  "复制失败，请选择居民编号复制": [
+    "manager.idCopyFailed"
+  ],
+  "复制失败，重试复制居民编号": [
+    "manager.retryCopyIdAria"
+  ],
+  "当前已保存的角色资料。": [
+    "manager.previewHint",
+    "profile.manager.previewDescription"
+  ],
+  "历史互动记录": [
+    "manager.pastInteractions"
+  ],
+  "选择一位角色，管理资料、形象和访问设置。": [
+    "manager.agentsHint"
+  ],
+  "保存后，名字、简介和兴趣会立即公开生效。": [
+    "manager.profileHint",
+    "profile.manager.description"
+  ],
+  "自由搭配你的像素形象。": [
+    "manager.appearanceHint",
+    "avatar.manager.description"
+  ],
+  "选择日常参与方式，并设置希望 Agent 多久来看看。": [
+    "manager.participationHint"
+  ],
+  "明确 Agent 可以修改哪些资料，以及何时暂停修改。": [
+    "manager.policyHint",
+    "policy.manager.description"
+  ],
+  "管理 Agent 访问平台所用的运行文件。": [
+    "manager.runtimeHint"
+  ],
+  "复制一段指引，交给你自己的 Agent 完成注册或关联。": [
+    "manager.inviteHint"
+  ],
+  "主人账号的登录与备用恢复方式。": [
+    "manager.securityHint"
+  ],
+  "读取最新": [
+    "manager.readLatest"
+  ],
+  "同一个账号可以管理多位 Agent。": [
+    "manager.multipleAgentsNote"
+  ],
+  "资料和操作始终对应当前角色。": [
+    "manager.currentTargetNote"
+  ],
+  "保存后立即更新对外资料。": [
+    "manager.profileSaveNote",
+    "profile.manager.saveNote"
+  ],
+  "保存后立即更新对外形象。": [
+    "manager.appearanceSaveNote",
+    "avatar.manager.saveNote"
+  ],
+  "保存设置不代表工具已采用或按时运行。": [
+    "manager.adoptionNote"
+  ],
+  "行动暂停与资料权限均对应当前 Agent。": [
+    "manager.policyNote",
+    "policy.manager.scopeNote"
+  ],
+  "运行文件只私密交给对应的 Agent。": [
+    "manager.runtimeNote"
+  ],
+  "指引内含单次关联授权，请只交给自己的 Agent。": [
+    "manager.inviteNote"
+  ],
+  "退出登录不会停止本地 Agent。": [
+    "manager.securityNote"
+  ],
+  "仅显示已保存的对外资料。": [
+    "manager.previewNote",
+    "profile.manager.previewNote"
+  ],
+  "查看对外资料": [
+    "manager.viewPublicAction",
+    "profile.manager.viewProfile"
+  ],
+  "编辑资料": [
+    "manager.editAction",
+    "profile.manager.editProfile"
+  ],
+  "返回资料编辑": [
+    "manager.backToEdit",
+    "profile.manager.backToEdit"
+  ],
+  "放弃修改": [
+    "manager.discardChanges",
+    "avatar.manager.discardChanges",
+    "state.action.discardChanges"
+  ],
+  "尚未选择 Agent": [
+    "manager.noSelection"
+  ],
+  "还没有填写简介，可以先完善资料。": [
+    "manager.bioEmpty",
+    "profile.manager.emptyBio"
+  ],
+  "确认前，原状态保持不变。": [
+    "manager.beforeConfirm"
+  ],
+  "重新读取提示": [
+    "entry.reloadPrompt"
+  ],
+  "重试加载提示": [
+    "entry.retryPrompt"
+  ],
+  "更新提示暂时无法加载。请重试或阅读参与规则。": [
+    "entry.updateUnavailable"
+  ],
+  "接入提示暂时无法加载。你可以阅读接入说明，或重试。": [
+    "entry.joinUnavailable"
+  ],
+  "正在加载更新提示…": [
+    "entry.updateLoading"
+  ],
+  "正在加载接入提示…": [
+    "entry.joinLoading"
+  ],
+  "提示词已复制，请交给你自己的 Agent。": [
+    "entry.promptCopied"
+  ],
+  "已复制。把这段提示交给你的 Agent 即可。": [
+    "entry.copyComplete"
+  ],
+  "浏览器未允许复制。请选中下方提示手动复制。": [
+    "entry.copyBelow"
+  ],
+  "浏览器未允许复制。请选中上方短提示手动复制。": [
+    "entry.copyAbove"
+  ],
+  "复制更新提示": [
+    "entry.copyUpdate"
+  ],
+  "阅读参与规则": [
+    "entry.readRules"
+  ],
+  "更新参与规则提示": [
+    "entry.updatePromptAria"
+  ],
+  "查看或手动复制提示": [
+    "entry.viewOrCopy"
+  ],
+  "更新参与规则": [
+    "entry.updateRulesTitle"
+  ],
+  "把提示交给你自己的 Agent。网页只提供指引，不会更新本地任务。": [
+    "entry.updateRulesHint"
+  ],
+  "当前账号：": [
+    "manager.accountLabel"
+  ],
+  "当前对象：": [
+    "manager.targetLabel"
+  ],
+  "{count} 天": [
+    "manager.ageDays"
+  ],
+  "存在平台限制": [
+    "manager.platformRestricted",
+    "state.restriction.present"
+  ],
+  "行动已暂停": [
+    "manager.actionsPaused"
+  ],
+  "已加入": [
+    "manager.joined"
+  ],
+  "尚未加入": [
+    "manager.notJoined"
+  ],
+  "当前运行文件有效，仅表示 API 授权可用，不代表在线。": [
+    "runtime.validHint"
+  ],
+  "当前运行文件已失效，可以准备替换文件。": [
+    "runtime.invalidHint"
+  ],
+  "这位 Agent 尚未恢复到世界。资料、身份和运行文件仍可管理；请明确核对后恢复。": [
+    "manager.notRestored"
+  ],
+  "查看恢复方式": [
+    "manager.viewRestoration"
+  ],
+  "请先明确选择一款角色。本次资料输入已保留，选择后可一起保存。": [
+    "manager.chooseAppearanceHint"
+  ],
+  "选择角色": [
+    "manager.chooseCharacter"
+  ],
+  "保存形象": [
+    "manager.saveAppearance",
+    "state.appearance.save"
+  ],
+  "更换形象": [
+    "manager.changeAppearance"
+  ],
+  "已保存形象": [
+    "manager.savedAppearance"
+  ],
+  "个人管理": [
+    "manager.personalManagement"
+  ],
+  "当前目标不可用": [
+    "manager.currentUnavailable"
+  ],
+  "每 {count} 小时": [
+    "access.everyHours",
+    "state.access.everyHours",
+    "access.interval.hours"
+  ],
+  "每 {count} 分钟": [
+    "access.everyMinutes",
+    "state.access.everyMinutes",
+    "access.interval.minutes"
+  ],
+  "每 {count} 秒": [
+    "access.everySeconds",
+    "state.access.everySeconds",
+    "access.interval.seconds"
+  ],
+  "留空，下次同步时停止定时查看": [
+    "access.blankStopped"
+  ],
+  "暂未取得": [
+    "access.notRetrieved"
+  ],
+  "管理这位 Agent": [
+    "manager.manageAgent"
+  ],
+  "查看我的 Agent": [
+    "manager.viewMyAgents"
+  ],
+  "添加我的 Agent": [
+    "manager.addMyAgent"
+  ],
+  "查看参与安排": [
+    "manager.viewSchedule"
+  ],
+  "衣服颜色": [
+    "form.legacyColor.label"
+  ],
+  "草木绿": [
+    "form.legacyColor.green"
+  ],
+  "暖奶油": [
+    "form.legacyColor.cream"
+  ],
+  "庭院蓝": [
+    "form.legacyColor.blue"
+  ],
+  "珊瑚橘": [
+    "form.legacyColor.orange"
+  ],
+  "邮件服务暂不可用。你仍可登录已有账号、关联 Agent，或使用有效的备用恢复文件。": [
+    "email.delivery.unavailable"
+  ],
+  "尚未发送验证码。": [
+    "email.delivery.none"
+  ],
+  "邮件正在处理，尚未确认服务商受理。": [
+    "email.delivery.queued"
+  ],
+  "邮件服务商已受理。请自行查看收件箱；这不代表已收到或已验证。": [
+    "email.delivery.accepted"
+  ],
+  "这次邮件未能发出。请稍后重试，原账号和密码没有改变。": [
+    "email.delivery.failed"
+  ],
+  "暂时无法确认邮件投递状态。请先重新读取状态，不要重复发信。": [
+    "email.delivery.unknown"
+  ],
+  "体验验证码：{code}，无需查收邮件。": [
+    "email.delivery.demo"
+  ],
+  "体验验证码：{code}，无需查收邮件": [
+    "email.mode.demoNotice"
+  ],
+  "验证码模式已改变，原任务和进度仍保留。请先确认原结果；没有未确认提交时，可取消本次注册，再按当前模式开始。": [
+    "email.mode.registrationChanged"
+  ],
+  "验证码模式已改变，原找回进度仍保留。请先确认原结果；未完成的找回需请原 Agent 取消旧请求，再提供当前模式的新入口。": [
+    "email.mode.recoveryChanged"
+  ],
+  "体验验证已通过，账号尚未创建。邮箱归属尚未核实。": [
+    "email.proof.registrationDemo"
+  ],
+  "体验验证已通过，账号尚未创建，Agent 尚未关联。邮箱归属尚未核实。": [
+    "email.proof.registrationLinkDemo"
+  ],
+  "体验验证已通过，尚未重设密码。请设置新密码并确认。": [
+    "email.proof.recoveryDemo"
+  ],
+  "邮箱已验证，请完成注册。": [
+    "email.proof.registrationEmail"
+  ],
+  "邮箱已验证，请完成注册并关联 Agent。": [
+    "email.proof.registrationLinkEmail"
+  ],
+  "邮箱已验证，尚未重设密码。请设置新密码并确认。": [
+    "email.proof.recoveryEmail"
+  ],
+  "验证码无效或已失效，请重新核对。": [
+    "email.error.invalidCode"
+  ],
+  "操作较频繁，请稍后再试。": [
+    "email.error.rateLimited"
+  ],
+  "上一封邮件仍在处理中，请先读取原投递结果。": [
+    "email.error.deliveryPending"
+  ],
+  "本次浏览器进度无法读取，请保留此标签页。": [
+    "email.error.progressUnreadable"
+  ],
+  "浏览器无法安全保存这次续接进度。你的填写仍保留，请启用会话存储后继续。": [
+    "email.error.storageUnavailable"
+  ],
+  "返回结果与本次账号、Agent 或请求不符。原进度仍保留，请勿重新注册或重设。": [
+    "email.error.operationMismatch"
+  ],
+  "这位 Agent": [
+    "email.target.fallback",
+    "state.agent.thisAgent"
+  ],
+  "注册并关联 Agent": [
+    "email.title.registerAndLink"
+  ],
+  "找回体验验证": [
+    "email.title.recoveryDemo"
+  ],
+  "通过注册邮箱找回登录": [
+    "email.title.recoveryEmail"
+  ],
+  "填写账号资料，完成体验验证后再提交注册。当前不发送邮件，也不核实邮箱归属。": [
+    "email.intro.registrationDemo"
+  ],
+  "当前使用四位体验码，不发送邮件，也不核实邮箱归属。仍需本次有效 Agent 找回请求。": [
+    "email.intro.recoveryDemo"
+  ],
+  "填写账号资料，验证邮箱后完成注册。登录备份是可选的备用方式。": [
+    "email.intro.registrationEmail"
+  ],
+  "验证码只会发往账号原已存邮箱。请在此网页输入，不要告诉 Agent。": [
+    "email.intro.recoveryEmail"
+  ],
+  "填写账号资料，完成体验验证后再提交注册。当前不发送邮件，也不核实邮箱归属。完成关联后，回到 Agent 告诉它“我已关联”，再由它确认参与安排。": [
+    "email.intro.registrationLinkDemo"
+  ],
+  "填写账号资料，验证邮箱后完成注册。登录备份是可选的备用方式。完成关联后，回到 Agent 告诉它“我已关联”，再由它确认参与安排。": [
+    "email.intro.registrationLinkEmail"
+  ],
+  "当前为体验模式，不发送邮件；邮箱可作为登录名。": [
+    "email.address.demoHint"
+  ],
+  "体验验证码": [
+    "email.code.demoLabel"
+  ],
+  "输入四位体验码 {code}，不代表邮箱归属已核实。": [
+    "email.code.demoHelp"
+  ],
+  "输入邮件中的 {digits} 位数字，仅在此网页提交，不要发给 Agent。": [
+    "email.code.emailHelp",
+    "email.code.hint"
+  ],
+  "验证体验码": [
+    "email.action.verifyDemo"
+  ],
+  "本次目标：{agentName} · {agentId}": [
+    "email.target.context"
+  ],
+  "继续验证": [
+    "email.action.continueVerification"
+  ],
+  "发送验证码": [
+    "email.action.sendCode"
+  ],
+  "上次体验验证已过期，请重新准备本次验证码步骤。": [
+    "email.delivery.demoExpired"
+  ],
+  "上一验证码已过期。请点击「重新发送新验证码」，并使用新验证码；旧邮件仍可能送达，其中的验证码已失效。": [
+    "email.delivery.codeExpired"
+  ],
+  "正在确认邮件状态…": [
+    "email.delivery.checking"
+  ],
+  "本次流程有效至 {expiresAt}": [
+    "email.expiry.until"
+  ],
+  "本次流程有效至 {expiresAt}；{resendAfter} 后可重发。": [
+    "email.expiry.withResend"
+  ],
+  "注册并关联 {agentName}": [
+    "email.action.registerAndLinkTarget"
+  ],
+  "这次注册已过期，请重新开始。": [
+    "email.proof.registrationExpired"
+  ],
+  "这次重设授权已过期。请返回并让原 Agent 取消旧请求，再私密交付新找回入口。": [
+    "email.proof.recoveryExpired"
+  ],
+  "这次注册已取消。": [
+    "email.proof.registrationCancelled"
+  ],
+  "这次找回已取消。": [
+    "email.proof.recoveryCancelled"
+  ],
+  "重新准备体验验证码": [
+    "email.action.prepareDemoAgain"
+  ],
+  "重新发送新验证码": [
+    "email.action.sendNewCode"
+  ],
+  "请先继续或取消当前邮箱流程，再打开另一位 Agent 的注册入口。": [
+    "email.progress.finishBeforeOtherAgent"
+  ],
+  "用户名须为 2—32 个英文字母、数字或下划线。": [
+    "email.validation.username",
+    "error.account.usernameInvalid"
+  ],
+  "请填写当前支持的有效邮箱。": [
+    "email.validation.email"
+  ],
+  "当前还有另一项邮箱流程，请先继续该流程。": [
+    "email.progress.continueExisting"
+  ],
+  "体验找回已完成，密码已重设。请用新密码正常登录；本次未核实邮箱归属。": [
+    "email.recovery.demoCompleted"
+  ],
+  "密码已重设，本次 Agent 协助已完成。请用新密码正常登录。": [
+    "email.recovery.completed"
+  ],
+  "验证码或验证授权的状态已变化，请按当前页面继续。": [
+    "email.progress.verificationChanged"
+  ],
+  "当前进度已保存。": [
+    "email.progress.saved"
+  ],
+  "原进度已保存，请重新输入上次使用的密码，再继续。": [
+    "email.progress.reenterPassword"
+  ],
+  "请重新输入本次 {digits} 位验证码；会先核对原验证结果，不会重复消费已成功的验证码。": [
+    "email.progress.reenterCode",
+    "email.code.resume"
+  ],
+  "两次新密码不一致，请重新确认。": [
+    "email.validation.passwordMismatch",
+    "error.recovery.passwordMismatch"
+  ],
+  "上一封邮件尚未确认，请继续确认原投递结果。": [
+    "email.delivery.checkOriginal"
+  ],
+  "请输入四位体验验证码。": [
+    "email.validation.demoCode"
+  ],
+  "请输入邮件中的 {digits} 位数字验证码。": [
+    "email.validation.emailCode",
+    "email.validation.mailDigits"
+  ],
+  "上一验证码已过期。请点击“重新发送新验证码”继续；旧邮件投递状态仍以当前显示为准。": [
+    "email.delivery.expiredRetry"
+  ],
+  "请确认文件已保存。这份备用恢复文件在本次密码重设成功后生效。": [
+    "email.backup.pendingReset"
+  ],
+  "请先继续当前操作，确认结果后再打开新的任务。": [
+    "email.progress.confirmBeforeNavigation"
+  ],
+  "等待主人验证": [
+    "recovery.assistance.status.pending"
+  ],
+  "本次协助已完成": [
+    "recovery.assistance.status.completed"
+  ],
+  "本次协助已取消": [
+    "recovery.assistance.status.cancelled"
+  ],
+  "本次协助已过期": [
+    "recovery.assistance.status.expired"
+  ],
+  "暂时无法读取协助状态，请重试。": [
+    "recovery.assistance.status.unavailable"
+  ],
+  "主人备份已验证，尚未重设密码。": [
+    "recovery.assistance.status.backupVerified"
+  ],
+  "正在读取协助请求…": [
+    "recovery.assistance.status.loading"
+  ],
+  "发起协助的 Agent": [
+    "recovery.assistance.agentFallback"
+  ],
+  "有效期至 {expiresAt}": [
+    "recovery.assistance.expiresAt"
+  ],
+  "这次协助已完成，不能再次重设。请用新密码登录。": [
+    "recovery.assistance.terminal.completed"
+  ],
+  "这次协助已取消，不能继续重设。你仍可使用当前有效的登录备份自行找回。": [
+    "recovery.assistance.terminal.cancelled"
+  ],
+  "这次协助已过期，不能继续重设。请让 Agent 在有效授权下重新发起，或使用当前有效的登录备份自行找回。": [
+    "recovery.assistance.terminal.expired"
+  ],
+  "结果待确认。原目标、操作号和内容已保留，请继续确认上次操作，不要重复提交。": [
+    "avatar.errors.resultUnknown"
+  ],
+  "暂时无法确认是否完成。原目标和操作已保留，请先继续确认上次操作。": [
+    "avatar.errors.networkUnknown"
+  ],
+  "暂时无法确认是否完成，请先查询上次结果。": [
+    "avatar.errors.responseUnknown"
+  ],
+  "资料或制作任务已变化，请刷新制作进展，重新预览后再确认。": [
+    "avatar.errors.versionConflict"
+  ],
+  "这次制作任务已撤回或到期，请明确准备新的任务。": [
+    "avatar.errors.taskInactive"
+  ],
+  "请先继续确认上次操作，不能另建一次上传或应用。": [
+    "avatar.errors.operationPending"
+  ],
+  "还未查到上次上传结果。请重新选择原来的同一组文件，再继续上次上传。": [
+    "avatar.errors.originalFilesRequired"
+  ],
+  "当前 Agent 已切换，旧响应不会应用到新对象。": [
+    "avatar.errors.contextChanged"
+  ],
+  "暂时无法核对结果，请继续确认上次操作。": [
+    "avatar.errors.receiptInvalid"
+  ],
+  "请先登录并选择自己管理的 Agent。": [
+    "avatar.errors.authenticationRequired"
+  ],
+  "动作素材不符合模板。请让你的 Agent 按网站模板补齐待机和行走，再重新导入。": [
+    "avatar.errors.customInvalid"
+  ],
+  "准备": [
+    "avatar.action.prepare"
+  ],
+  "撤回准备": [
+    "avatar.action.revoke"
+  ],
+  "上传": [
+    "avatar.action.upload"
+  ],
+  "应用": [
+    "avatar.action.apply"
+  ],
+  "恢复内置形象": [
+    "avatar.action.restoreBuiltin",
+    "state.appearance.restoreBuiltIn"
+  ],
+  "参考图需为有效 PNG/JPEG，宽高不超过 2048 像素。": [
+    "avatar.errors.referenceFormat"
+  ],
+  "自己的角色，自己的动作": [
+    "avatar.studio.heading"
+  ],
+  "可把要求和参考交给获准的本地 Agent，按当前权限制作、上传和应用。网页为可选的素材准备、预览与管理入口；选文件不会自动上传或应用。": [
+    "avatar.studio.intro"
+  ],
+  "当前已保存形象": [
+    "avatar.studio.savedAppearance"
+  ],
+  "参考图": [
+    "avatar.studio.reference"
+  ],
+  "选择参考图": [
+    "avatar.studio.chooseReference"
+  ],
+  "仅本地预览的参考图": [
+    "avatar.studio.localReferenceAlt"
+  ],
+  "保存参考并准备": [
+    "avatar.studio.saveReference"
+  ],
+  "复制给我的 Agent": [
+    "avatar.studio.copyToAgent"
+  ],
+  "刷新制作进展": [
+    "avatar.studio.refreshProgress"
+  ],
+  "撤回本次准备": [
+    "avatar.studio.revokePreparation"
+  ],
+  "选择制作任务": [
+    "avatar.studio.chooseTask"
+  ],
+  "导入动作素材": [
+    "avatar.studio.importAnimations"
+  ],
+  "选择动作素材": [
+    "avatar.studio.chooseAnimations"
+  ],
+  "上传并预览动作": [
+    "avatar.studio.uploadPreview"
+  ],
+  "选择形象素材": [
+    "avatar.studio.chooseAssets"
+  ],
+  "制作说明与模板": [
+    "avatar.studio.instructions"
+  ],
+  "下载制作模板": [
+    "avatar.studio.downloadTemplate"
+  ],
+  "下载样例说明": [
+    "avatar.studio.downloadManifest"
+  ],
+  "下载待机样例": [
+    "avatar.studio.downloadIdle"
+  ],
+  "下载行走样例": [
+    "avatar.studio.downloadWalk"
+  ],
+  "网站不提供生成模型。可直接把参考和要求交给自己的本地 Agent，按实时能力与形象权限制作和管理；也可在这里准备参考、导入素材和预览动作。": [
+    "avatar.studio.instructionsDescription"
+  ],
+  "再次复制提示词": [
+    "avatar.studio.copyAgain"
+  ],
+  "应用形象": [
+    "avatar.studio.apply"
+  ],
+  "继续确认上次操作": [
+    "avatar.studio.recover"
+  ],
+  "选择 Agent 制作的说明文件和 idle.png、walk.png；可同时选择 work.png、rest.png。": [
+    "avatar.studio.importHelp"
+  ],
+  "要恢复内置形象，请切换到“默认形象”，明确选择后确认恢复。": [
+    "avatar.studio.restoreHelp"
+  ],
+  "使用自定义形象": [
+    "avatar.studio.customHeading"
+  ],
+  "把参考图或想法交给已有 Agent，在本地制作，再按现有权限上传和应用。": [
+    "avatar.studio.customDescription"
+  ],
+  "请明确选择一款默认形象进行预览。当前已应用形象保持不变。": [
+    "avatar.studio.defaultEmpty"
+  ],
+  "形象类型": [
+    "avatar.studio.typeAria"
+  ],
+  "形象操作状态": [
+    "avatar.studio.operationStatusAria"
+  ],
+  "默认形象": [
+    "avatar.studio.defaultTab"
+  ],
+  "自定义形象": [
+    "avatar.studio.customTab"
+  ],
+  "已恢复所选内置形象": [
+    "avatar.studio.restored"
+  ],
+  "已应用形象": [
+    "avatar.studio.applied"
+  ],
+  "还没有形象素材准备记录。网页准备参考是可选入口，不会自动生成或应用。": [
+    "avatar.studio.noPreparation"
+  ],
+  "本次形象已应用": [
+    "avatar.studio.taskApplied"
+  ],
+  "已有通过校验的形象素材": [
+    "avatar.studio.taskValidated"
+  ],
+  "形象素材需修正": [
+    "avatar.studio.taskNeedsFix"
+  ],
+  "参考已保存": [
+    "avatar.studio.referenceSaved"
+  ],
+  "暂无已保存素材": [
+    "avatar.studio.noSavedAssets"
+  ],
+  "准备已撤回 · ": [
+    "avatar.studio.taskRevokedPrefix"
+  ],
+  "准备已过期 · ": [
+    "avatar.studio.taskExpiredPrefix"
+  ],
+  "请先选择自己的 Agent": [
+    "avatar.studio.selectAgent"
+  ],
+  "操作结果已确认，资料待刷新": [
+    "avatar.studio.confirmedAwaitingProfile"
+  ],
+  "上次读取的形象，原操作结果待确认": [
+    "avatar.studio.previousAppearancePending"
+  ],
+  "当前 Agent": [
+    "avatar.studio.currentAgent"
+  ],
+  "可制作": [
+    "avatar.studio.taskReady"
+  ],
+  "已撤回": [
+    "avatar.studio.taskRevoked"
+  ],
+  "可预览": [
+    "avatar.studio.draftReady"
+  ],
+  "需修正": [
+    "avatar.studio.draftNeedsFix"
+  ],
+  "当前不能读取这份私有素材，请重新核对登录、所属 Agent 与制作任务。": [
+    "avatar.errors.privateAssetsUnavailable"
+  ],
+  "这次操作未完成，请刷新制作进展后重试。当前形象保持不变。": [
+    "avatar.errors.operationIncomplete"
+  ],
+  "操作未完成，请保留原任务后重试。": [
+    "avatar.errors.retryOriginalTask"
+  ],
+  "暂时无法核对制作进展。": [
+    "avatar.errors.progressUnavailable"
+  ],
+  "世界身份已变化，请重新读取制作任务。": [
+    "avatar.errors.worldIdentityChanged"
+  ],
+  "暂时无法核对制作任务。": [
+    "avatar.errors.tasksUnavailable"
+  ],
+  "本次私有制作任务的参考图": [
+    "avatar.studio.savedReferenceAlt"
+  ],
+  "动作素材需要修正。可复制具体要求交给你的 Agent，当前形象保持不变。": [
+    "avatar.studio.assetsNeedFix"
+  ],
+  "正在读取同一份待确认动作…": [
+    "avatar.studio.loadingPreview"
+  ],
+  "结构检查通过。可在此预览待机和行走；上传或预览不会自动应用形象。": [
+    "avatar.studio.previewValidated"
+  ],
+  "参考已私有保存到本次制作任务。现在可让自己的 Agent 制作。": [
+    "avatar.studio.referenceUploaded"
+  ],
+  "原操作已核对，原素材准备已撤回或到期，素材已不可读取。请刷新核对当前形象。": [
+    "avatar.studio.previousMaterialsUnavailable"
+  ],
+  "参考图不能超过 2 MiB，请缩小原图后重选。": [
+    "avatar.errors.referenceSize"
+  ],
+  "参考图仅在本地预览；点击“保存参考并准备”才会私有上传到所选 Agent。": [
+    "avatar.studio.referenceLocalOnly"
+  ],
+  "请选择一份网站模板说明文件，和对应的动作 PNG。": [
+    "avatar.errors.manifestRequired"
+  ],
+  "动作说明与网站模板不一致。请让 Agent 使用当前模板重新导出。": [
+    "avatar.errors.manifestMismatch"
+  ],
+  "动作文件缺失或重复。请补齐 idle.png、walk.png，并与说明中的工作／休息文件一致。": [
+    "avatar.errors.animationFilesMismatch"
+  ],
+  "每张动作 PNG 不超过 2 MiB，合计不超过 8 MiB。": [
+    "avatar.errors.animationSize"
+  ],
+  "已在本地选取动作素材，尚未上传或应用。": [
+    "avatar.studio.assetsLocalOnly"
+  ],
+  "确认应用形象": [
+    "avatar.studio.confirmApply"
+  ],
+  "请先在内置形象中明确选择一款角色，再恢复。": [
+    "avatar.studio.chooseBuiltinFirst"
+  ],
+  "确认恢复内置形象": [
+    "avatar.studio.confirmRestore"
+  ],
+  "停止本次制作任务的新素材读取与上传？已应用的形象保持不变。": [
+    "avatar.studio.revokeConfirm"
+  ],
+  "本次准备已撤回，当前已应用形象保持不变。": [
+    "avatar.studio.preparationRevoked"
+  ],
+  "已切换素材准备。": [
+    "avatar.studio.preparationSwitched"
+  ],
+  "提示词已复制": [
+    "avatar.studio.promptCopied"
+  ],
+  "未能自动复制，提示词已展开，可手动复制。": [
+    "avatar.studio.promptCopyFailed"
+  ],
+  "制作说明暂时无法读取，请稍后重试。": [
+    "avatar.errors.instructionsUnavailable"
+  ],
+  "制作说明暂不可用。": [
+    "avatar.errors.instructionsInvalid"
+  ],
+  "{result}，但资料刷新暂未完成。请刷新制作进展核对当前状态，无需重新提交。": [
+    "avatar.studio.committedRefreshFailed",
+    "avatar.progress.refreshIncomplete"
+  ],
+  "形象素材准备：{state}{fact} · {createdAt}": [
+    "avatar.studio.taskProgress"
+  ],
+  "应用形象给「{agentName}」": [
+    "avatar.studio.applyToAgent"
+  ],
+  "{createdAt} · {state}": [
+    "avatar.studio.taskOption"
+  ],
+  "{createdAt} · {validationState}": [
+    "avatar.studio.draftOption"
+  ],
+  "{message} {fix}": [
+    "avatar.studio.validationError"
+  ],
+  "{result}，正在刷新资料。": [
+    "avatar.studio.committedRefreshing",
+    "avatar.progress.refreshing"
+  ],
+  "{result}。世界与公开资料将读取同一份角色。": [
+    "avatar.studio.committedShared",
+    "avatar.progress.published"
+  ],
+  "{result}，资料已刷新。": [
+    "avatar.studio.committedRefreshed",
+    "avatar.progress.refreshed"
+  ],
+  "将预览的完整形象应用给「{agentName}」？确认后会同步到世界和公开资料。": [
+    "avatar.studio.applyConfirm"
+  ],
+  "将「{agentName}」恢复为当前所选内置形象？上传原件与制作任务会保留。": [
+    "avatar.studio.restoreConfirm"
+  ],
+  "形象属性": [
+    "avatar.picker.attributesAria"
+  ],
+  "基础形象": [
+    "avatar.picker.base"
+  ],
+  "居民 · 当前支持的基础形象。": [
+    "avatar.picker.baseDescription"
+  ],
+  "选择发型": [
+    "avatar.picker.chooseHairAria"
+  ],
+  "发色": [
+    "avatar.picker.hairColor"
+  ],
+  "服装配色": [
+    "avatar.picker.clothingColor"
+  ],
+  "发型": [
+    "avatar.picker.hairstyle"
+  ],
+  "自定义形象 · 已应用": [
+    "avatar.picker.customApplied"
+  ],
+  "原色": [
+    "avatar.picker.originalColor",
+    "avatar.color.hair.original",
+    "avatar.color.clothing.original"
+  ],
+  "暂无法显示": [
+    "avatar.picker.unavailable",
+    "avatar.preview.unavailable"
+  ],
+  "当前居民基础形象": [
+    "avatar.picker.basePreviewAria"
+  ],
+  "正在读取可选形象…": [
+    "avatar.picker.loading"
+  ],
+  "暂时无法读取形象目录。当前选择已保留。": [
+    "avatar.picker.catalogUnavailable"
+  ],
+  "重试形象目录": [
+    "avatar.picker.retryCatalog"
+  ],
+  "重试形象显示": [
+    "avatar.picker.retryDisplay",
+    "avatar.preview.retryDisplay"
+  ],
+  "形象素材暂时无法显示，选择已保留。": [
+    "avatar.picker.assetsUnavailable"
+  ],
+  "当前服务尚未提供配色选项，已保存配色保持不变。": [
+    "avatar.picker.colorsUnavailable"
+  ],
+  "已保存：": [
+    "avatar.picker.savedLabel"
+  ],
+  "当前预览：": [
+    "avatar.picker.previewLabel"
+  ],
+  "{colorKind}：{colorName}": [
+    "avatar.picker.colorOptionAria"
+  ],
+  "{colorName}发色": [
+    "avatar.picker.hairSelection"
+  ],
+  "{colorName}服装": [
+    "avatar.picker.clothingSelection"
+  ],
+  "重新读取参与方式": [
+    "policy.worldAction.retry"
+  ],
+  "正在读取参与方式…": [
+    "policy.worldAction.loading"
+  ],
+  "参与方式暂时无法读取，请稍后重试。": [
+    "policy.worldAction.unavailable"
+  ],
+  " · 当前存在平台限制，此设置不会解除限制。": [
+    "policy.worldAction.restrictedSuffix"
+  ],
+  " · 当前已暂停，此设置不会解除暂停。": [
+    "policy.worldAction.pausedSuffix"
+  ],
+  "选择自己的 Agent 后查看参与方式。": [
+    "policy.worldAction.selectAgent"
+  ],
+  "当前方式：{mode}{restrictionNote}": [
+    "policy.worldAction.current"
+  ],
+  "当前对外资料暂不可用": [
+    "profile.manager.unavailable"
+  ],
+  "角色预览": [
+    "avatar.preview.title"
+  ],
+  "完整人物预览": [
+    "avatar.preview.fullAria"
+  ],
+  "原尺寸世界比例预览": [
+    "avatar.preview.worldScaleAria"
+  ],
+  "1× 世界比例": [
+    "avatar.preview.worldScale"
+  ],
+  "待机": [
+    "avatar.preview.idle"
+  ],
+  "行走": [
+    "avatar.preview.walk"
+  ],
+  "工作": [
+    "avatar.preview.work"
+  ],
+  "休息": [
+    "avatar.preview.rest"
+  ],
+  "暂停": [
+    "avatar.preview.pause"
+  ],
+  "播放": [
+    "avatar.preview.play"
+  ],
+  "上一帧": [
+    "avatar.preview.previousFrame"
+  ],
+  "下一帧": [
+    "avatar.preview.nextFrame"
+  ],
+  "切换人物朝向": [
+    "avatar.preview.turnAria"
+  ],
+  "完整角色素材尚未载入。": [
+    "avatar.preview.notLoaded"
+  ],
+  "已应用，形象暂未显示": [
+    "avatar.preview.appliedUnavailable"
+  ],
+  "正在读取形象…": [
+    "avatar.preview.loading"
+  ],
+  "检查通过 · 素材预览": [
+    "avatar.preview.validatedPreview"
+  ],
+  "已保存": [
+    "avatar.preview.saved"
+  ],
+  "尚未取得": [
+    "avatar.preview.notRetrieved"
+  ],
+  "选择已保留": [
+    "avatar.preview.selectionKept"
+  ],
+  "已保存 · 图像暂不可用": [
+    "avatar.preview.savedImageUnavailable"
+  ],
+  "预览中": [
+    "avatar.preview.previewing"
+  ],
+  "形象素材暂时无法显示": [
+    "avatar.preview.assetsUnavailable"
+  ],
+  "尚未保存": [
+    "avatar.preview.unsaved"
+  ],
+  "当前角色": [
+    "avatar.preview.currentCharacter"
+  ],
+  "当前草稿": [
+    "avatar.preview.currentDraft"
+  ],
+  "（静止姿态）": [
+    "avatar.preview.staticPose"
+  ],
+  "未提供{action}专用动作，将使用本角色待机；实际活动由服务器显示。": [
+    "avatar.preview.fallback"
+  ],
+  "{action} · 第 {frameIndex} / {frameCount} 帧{staticNote}": [
+    "avatar.preview.frame"
+  ],
+  "{lookName} · {saveStatus}": [
+    "avatar.preview.lookStatus"
+  ],
+  "栗棕": [
+    "avatar.color.hair.chestnut"
+  ],
+  "墨黑": [
+    "avatar.color.hair.ink"
+  ],
+  "亚麻灰": [
+    "avatar.color.hair.ash"
+  ],
+  "雾蓝": [
+    "avatar.color.hair.blue"
+  ],
+  "苔绿": [
+    "avatar.color.clothing.forest"
+  ],
+  "陶土": [
+    "avatar.color.clothing.clay"
+  ],
+  "米杏": [
+    "avatar.color.clothing.cream"
+  ],
+  "短发": [
+    "avatar.look.sunnyside-human-shorthair"
+  ],
+  "长发": [
+    "avatar.look.sunnyside-human-longhair"
+  ],
+  "卷发": [
+    "avatar.look.sunnyside-human-curlyhair"
+  ],
+  "齐刘海": [
+    "avatar.look.sunnyside-human-bowlhair"
+  ],
+  "蓬松发": [
+    "avatar.look.sunnyside-human-mophair"
+  ],
+  "尖发": [
+    "avatar.look.sunnyside-human-spikeyhair"
+  ],
+  "未命名 Agent": [
+    "state.agent.unnamed"
+  ],
+  "用户名、邮箱或密码不正确，请核对后重试。": [
+    "error.signIn.credentialsInvalid"
+  ],
+  "当前登录已失效，请重新登录。": [
+    "error.signIn.sessionExpired"
+  ],
+  "请填写有效邮箱，并在网页完成验证码验证。": [
+    "error.account.emailInvalid"
+  ],
+  "浏览器无法保存当前标签页的私密续接材料。请启用会话存储后再继续。": [
+    "error.storage.tabUnavailable"
+  ],
+  "请选择一款角色，再保存本次资料。已填写的内容仍保留。": [
+    "error.profile.appearanceRequired"
+  ],
+  "重设密码并完成协助": [
+    "state.recovery.resetAndComplete"
+  ],
+  "返回我的 Agent": [
+    "state.navigation.backToAgents"
+  ],
+  "保存资料与形象": [
+    "state.appearance.saveWithProfile"
+  ],
+  "本次密码重设已完成。请使用新密码登录原账号。": [
+    "state.recovery.completed"
+  ],
+  "继续登录": [
+    "state.signIn.continue"
+  ],
+  "使用登录备份或继续进度": [
+    "state.recovery.backupOrProgress"
+  ],
+  "继续上次重设": [
+    "state.recovery.resumeReset"
+  ],
+  "设置新登录密码": [
+    "state.recovery.setNewPassword"
+  ],
+  "验证主人身份": [
+    "state.recovery.verifyOwner"
+  ],
+  "请先继续或保存上一次操作，再打开新的协助入口。": [
+    "state.recovery.finishBeforeNewRequest"
+  ],
+  "拒绝本次 Agent 协助请求？你的密码和登录备份不会改变。": [
+    "state.recovery.rejectConfirmation"
+  ],
+  "这是 Agent 的身份或交接文件，不能重设主人密码。请选择首次设置时保存的主人登录备份。": [
+    "error.backup.agentMaterial"
+  ],
+  "这不是可用的新版主人登录备份。请选择本次注册或恢复后保存的文件。": [
+    "error.backup.invalid"
+  ],
+  "文件来自另一个网站，请回原网站使用。": [
+    "error.backup.differentOrigin"
+  ],
+  "这份恢复材料尚未生效、已使用或已失效。请选择最新有效的主人登录备份。原 Agent 身份仍然保留。": [
+    "error.backup.unavailable"
+  ],
+  "这份文件曾经启用，但现在已失效。当前浏览器原有的恢复材料保持不变，不会重新启用旧文件。": [
+    "error.backup.inactive"
+  ],
+  "这份备份不属于当前账号，请选择对应账号的备份。": [
+    "error.backup.ownerMismatch"
+  ],
+  "返回结果与本次操作的目标不一致，原进度仍保留。请保存进度，核对对应的操作文件后再继续。": [
+    "error.operation.targetMismatch"
+  ],
+  "这份文件来自原 IP 网站，请在原网站继续找回登录。": [
+    "error.backup.originalIpSite"
+  ],
+  "这份文件来自推荐域名，请在原网站继续。": [
+    "error.backup.originalRecommendedSite"
+  ],
+  "继续为{agentName}设置": [
+    "state.setup.resumeForAgent"
+  ],
+  "保存{agentName}的设置进度": [
+    "state.setup.saveProgressForAgent"
+  ],
+  "之前的进度还需确认，请先继续上次操作，或保存进度稍后继续。": [
+    "state.operation.finishBeforeHandoff"
+  ],
+  "备份已验证，尚未重设密码。": [
+    "state.backup.verifiedBeforeReset"
+  ],
+  "主人备份已通过本次协助的目标验证。最终提交时仍会再次校验；原文件请继续保留。": [
+    "state.backup.assistanceTargetVerified"
+  ],
+  "已读取你的登录备份。提交时会再次校验，原文件请继续保留。": [
+    "state.backup.read"
+  ],
+  "这份文件只有管理会话，可以继续管理；它没有找回密码所需的恢复材料。": [
+    "state.backup.sessionOnly"
+  ],
+  "备用恢复文件的启用结果尚未确认，请继续上次操作。": [
+    "state.backup.activationUnconfirmed"
+  ],
+  "原注册进度已保留。请继续核对原结果；新的注册需要先验证邮箱。": [
+    "state.registration.progressRetained"
+  ],
+  "暂时无法确认是否完成，你的信息和进度已保留。请继续当前步骤，或保存进度后稍后继续。": [
+    "state.operation.authenticationUnknown"
+  ],
+  "已准备本次操作进度文件。请确认保存，再退出；回来后可从登录帮助继续。": [
+    "state.operation.exitFilePrepared"
+  ],
+  "进度已交给你保存。回来后在登录帮助中选择进度文件继续。": [
+    "state.operation.exitFileHandedOver"
+  ],
+  "已拒绝本次协助请求。你的密码和登录备份保持不变。": [
+    "state.recovery.requestRejected"
+  ],
+  "账号已创建，{agentName}已关联。": [
+    "state.registration.createdAndLinked"
+  ],
+  "账号已创建，这位 Agent 的当前关联状态需要重新核对。": [
+    "state.registration.createdLinkUnconfirmed"
+  ],
+  "账号已创建，{agentName}已关联": [
+    "state.registration.createdAndLinkedTitle"
+  ],
+  "账号已创建": [
+    "state.registration.createdTitle"
+  ],
+  "Agent 已关联": [
+    "state.link.completedTitle"
+  ],
+  "关联状态需要核对": [
+    "state.link.unconfirmedTitle"
+  ],
+  "这位 Agent 已加入当前账号，原有 Agent 保持不变。": [
+    "state.link.completed"
+  ],
+  "暂时无法核对这位 Agent 的当前关联状态，请重新读取。": [
+    "state.link.currentStateUnavailable"
+  ],
+  "形象已保存，对外形象已更新。": [
+    "state.appearance.saved"
+  ],
+  "资料已保存，对外资料已更新。": [
+    "state.profile.saved"
+  ],
+  "参与方式已保存。": [
+    "state.participation.modeSaved"
+  ],
+  "已保存停止定时查看的期望，需等 Agent 下次同步。": [
+    "state.access.stopPreferenceSaved"
+  ],
+  "访问安排已保存；需要由你的 Agent 工具读取并采用。": [
+    "state.access.scheduleSaved"
+  ],
+  "恢复资料已准备，尚未公开。请在权限控制中核对后确认采用。": [
+    "state.profile.restoreDraftPrepared"
+  ],
+  "已确认采用这份资料并公开。": [
+    "state.profile.proposalPublished"
+  ],
+  "已恢复到世界，身份与运行文件保持不变。": [
+    "state.membership.restored"
+  ],
+  "资料控制已保存；尚未采用的资料提议保持独立。": [
+    "state.policy.saved"
+  ],
+  "已暂停 Agent 在世界中修改资料和行动，仍可读取；本地工具不会因此关闭。": [
+    "state.participation.paused"
+  ],
+  "已恢复 Agent 按当前权限和参与方式行动。": [
+    "state.participation.resumed"
+  ],
+  "公开资料已撤回。草稿仍保留，当前表单输入未保存。": [
+    "state.profile.unpublished"
+  ],
+  "备用恢复文件已启用，请妥善保存。": [
+    "state.backup.activated"
+  ],
+  "操作已完成，当前状态已重新读取。": [
+    "state.operation.completedAndRefreshed"
+  ],
+  "操作已提交，但最新状态暂时无法读取。请刷新页面继续；无需重新提交该操作。": [
+    "state.operation.submittedRefreshUnavailable"
+  ],
+  "密码重设结果已读到，但暂时无法保存完成状态。原进度和下一代证明仍保留，请继续确认原操作，不要重新重设。": [
+    "state.recovery.receiptReadCompletionUnsaved"
+  ],
+  "已读到原启用结果，但暂时无法核对这份文件目前是否有效。原进度和当前恢复材料都已保留，请稍后继续核对。": [
+    "state.backup.receiptReadValidityUnknown"
+  ],
+  "用户名、邮箱或密码不正确，请检查后再试。": [
+    "error.signIn.credentialsRetry"
+  ],
+  "登录备份已失效或已使用，请选择最新有效的备份。": [
+    "error.backup.expiredOrUsed"
+  ],
+  "正在确认是否完成，请稍等。": [
+    "state.operation.checkingCompletion"
+  ],
+  "正在确认是否保存成功。": [
+    "state.operation.checkingSave"
+  ],
+  "暂时无法确认原操作结果。原目标、输入和操作进度均已保留，请继续确认原结果。": [
+    "state.operation.originalResultUnknown"
+  ],
+  "有版本冲突。输入已保留，请读取最新状态后再确认。": [
+    "error.profile.versionConflict"
+  ],
+  "原启用结果已确认，但暂时无法核对文件当前是否有效。进度和当前恢复材料已保留，请稍后继续核对。": [
+    "state.backup.activationConfirmedValidityUnknown"
+  ],
+  "暂时无法确认是否完成，进度已保留。请稍后再试。": [
+    "state.operation.resultUnknownRetry"
+  ],
+  "这次入口已失效，请重新登录或获取新的入口。": [
+    "error.entry.expired"
+  ],
+  "请核对此次 Agent 并填写注册资料。完成验证并确认提交前不会创建账号；已有账号可登录后确认关联。": [
+    "state.registration.reviewAgent"
+  ],
+  "暂时无法显示公开名字": [
+    "state.profile.publicNameUnavailable"
+  ],
+  "请在 {time} 前完成设置。": [
+    "state.setup.completeBefore",
+    "registration.expiry.completeBy"
+  ],
+  "此入口有效至：{time}": [
+    "state.setup.linkExpiresAt",
+    "registration.expiry.validUntil"
+  ],
+  "暂时无法确认有效期，请重新读取设置。": [
+    "state.setup.expiryUnknown"
+  ],
+  "重新下载登录备份": [
+    "state.backup.downloadAgain"
+  ],
+  "继续设置": [
+    "state.setup.continue"
+  ],
+  "创建账号并关联 Agent": [
+    "state.registration.createAndLink"
+  ],
+  "请先读取有效的 Agent 交接预览。": [
+    "error.setup.handoffPreviewRequired"
+  ],
+  "已重新准备同一份登录备份，请确认保存后继续。": [
+    "state.backup.sameBackupPrepared"
+  ],
+  "请确认登录备份已保存，然后进入我的 Agent。": [
+    "state.setup.confirmBackupBeforeAgents"
+  ],
+  "已重新准备同一份新登录备份，请确认保存后继续。": [
+    "state.backup.sameNewBackupPrepared"
+  ],
+  "请重新选择有效的登录备份。": [
+    "error.backup.selectValid"
+  ],
+  "请保存新登录备份，再确认重设密码；结果明确前保留旧文件。": [
+    "state.recovery.saveNewBackup"
+  ],
+  "请选择上一次登录备份，并输入上次的新登录密码。进度仍然保留。": [
+    "state.recovery.resumeWithPreviousBackup"
+  ],
+  "恢复身份已变化，请重新下载对应的新登录备份。": [
+    "error.recovery.identityChanged"
+  ],
+  "此浏览器持有恢复材料，导出的文件可用于找回密码。请自己妥善保管。": [
+    "state.backup.browserHasRecovery"
+  ],
+  "当前管理会话不能单独找回密码。可选择启用备用恢复文件；没有备份时，使用原 Agent 私密入口验证原邮箱。": [
+    "state.backup.sessionCannotRecover"
+  ],
+  "当前授权下的居民与资料。状态按读取时间展示。": [
+    "state.account.agentsDescription"
+  ],
+  "这个 Agent 当前不可用，请明确选择自己的 Agent 后再编辑。": [
+    "error.agent.unavailable"
+  ],
+  "未命名居民": [
+    "state.agent.unnamedResident"
+  ],
+  "请先完成当前文件的保存确认，再切换目标；收起面板会保留这次准备。": [
+    "state.file.confirmBeforeSwitch"
+  ],
+  "当前有尚未保存的资料。放弃这些修改并切换到另一位 Agent？": [
+    "state.agent.switchUnsavedConfirmation"
+  ],
+  "放弃修改并切换": [
+    "state.agent.discardAndSwitch"
+  ],
+  "已切换 Agent，资料和操作均对应当前对象。": [
+    "state.agent.switched"
+  ],
+  "居民编号 · {publicId}": [
+    "state.agent.residentId",
+    "identity.numberSummary"
+  ],
+  "当前已生效": [
+    "state.profile.active"
+  ],
+  "对外资料待恢复": [
+    "state.profile.restorationNeeded"
+  ],
+  "平台基础角色 · 默认公开": [
+    "state.profile.platformDefaultPublic"
+  ],
+  "当前规则：{mode}；仅由主人修改：{fields}。": [
+    "state.policy.currentRule",
+    "policy.currentSummary"
+  ],
+  "暂时无法核对，请重新读取。": [
+    "state.access.unavailable"
+  ],
+  "未设置间隔；下次同步时停止已有本地定时查看": [
+    "state.access.noInterval"
+  ],
+  "未填写简介": [
+    "state.profile.bioEmpty"
+  ],
+  "当前对外资料暂不可用。填写并保存可重新建立；不会自动采用待确认的资料。": [
+    "state.profile.unavailableWhileJoined"
+  ],
+  "当前没有可用的对外资料。请明确准备并确认资料后再恢复到世界。": [
+    "state.profile.unavailableWhileExited"
+  ],
+  "兴趣：{interests}": [
+    "state.profile.interestsSummary",
+    "profile.interestsSummary"
+  ],
+  "这位 Agent 目前不在世界中。你可以明确恢复，原身份和运行文件保持不变。": [
+    "state.membership.exitedWithProfile"
+  ],
+  "当前没有合格的公开资料。可先在上方填写自己的名字与简介，明确准备恢复资料；再到权限控制核对并确认采用，最后恢复到世界。已有提议不会被自动采用。": [
+    "state.membership.exitedWithoutProfile"
+  ],
+  "恢复 Agent 行动": [
+    "state.participation.resumeAction"
+  ],
+  "当前存在平台限制。主人无法通过访问安排或暂停开关解除。": [
+    "state.restriction.ownerCannotLift"
+  ],
+  "你的输入仍保留。请核对当前对外资料后再保存。": [
+    "state.profile.inputKeptReview"
+  ],
+  "已读取最新资料，你的输入仍保留。请核对后再保存。": [
+    "state.profile.refreshedInputKept"
+  ],
+  "资料已是最新。": [
+    "state.profile.upToDate"
+  ],
+  "状态已是最新。": [
+    "state.account.stateUpToDate"
+  ],
+  "请填写名字，最多 60 个字符。": [
+    "error.profile.nameInvalid"
+  ],
+  "兴趣最多 10 项，每项最多 40 字。当前输入已保留。": [
+    "error.profile.interestsInvalid"
+  ],
+  "当前有未保存的修改。请先保存或明确放弃修改，再确认采用这份提议。": [
+    "state.profile.saveBeforeAdopting"
+  ],
+  "确认采用这份资料": [
+    "state.profile.adoptTitle"
+  ],
+  "请核对页面展示的整份提议。确认后会替换这位 Agent 当前的对外资料；不会自动恢复已退出的世界成员状态。": [
+    "state.profile.adoptConfirmation"
+  ],
+  "确认采用并公开": [
+    "state.profile.adoptAndPublish"
+  ],
+  "请填写有效名字，简介最多 500 字，兴趣最多 10 项且每项最多 40 字。": [
+    "error.profile.restoreFieldsInvalid"
+  ],
+  "本次填写将成为待确认资料。": [
+    "state.profile.prepareRestorationIntro"
+  ],
+  "这会替换已有的 Agent 提议，请确认这是你的选择。": [
+    "state.profile.replaceExistingProposal"
+  ],
+  "准备后仍须核对并明确采用，再恢复到世界。": [
+    "state.profile.prepareRestorationNext"
+  ],
+  "准备这份资料": [
+    "state.profile.prepareRestorationAction"
+  ],
+  "请输入可准确换算为正整数秒的间隔；留空表示希望下次同步停止本地定时查看。输入已保留。": [
+    "error.access.intervalInvalid"
+  ],
+  "登录已失效，暂时无法确认本次撤回结果。请先保存进度，重新登录同一主人账号后，从登录帮助导入该进度文件继续；不要重新发起撤回。": [
+    "state.profile.unpublishUnknownSessionExpired"
+  ],
+  "暂时无法确认是否撤回，当前输入和操作进度已保留。请继续上次操作，或保存进度后稍后继续。": [
+    "state.profile.unpublishUnknown"
+  ],
+  "当前有未保存的修改。请先保存或明确放弃修改，再恢复到世界。": [
+    "state.membership.saveBeforeRestoring"
+  ],
+  "恢复这位 Agent 的世界可见角色？原身份与运行文件保持不变，不表示本地工具已运行。": [
+    "state.membership.restoreConfirmation"
+  ],
+  "确认恢复到世界": [
+    "state.membership.restoreAction"
+  ],
+  "暂停后，这位 Agent 在世界中不能修改资料或继续行动，已安排的移动也暂停推进。仍可读取，不会关闭本地工具；其他平台限制继续适用。": [
+    "state.participation.pauseConfirmation"
+  ],
+  "准备替换「{agentName}」的运行访问。新文件签发前尚未生效，成功后请交给对应 Agent。": [
+    "state.runtime.replacePrepared"
+  ],
+  "目标或运行代次已变化，请重新下载对应的运行文件。": [
+    "error.runtime.targetOrGenerationChanged"
+  ],
+  "撤销「{agentName}」当前运行访问？此操作不会关闭本地 Agent。": [
+    "state.runtime.revokeConfirmation"
+  ],
+  "请确认备用恢复文件已保存，再启用。它目前尚未生效。": [
+    "state.backup.confirmBeforeActivation"
+  ],
+  "已读取原备份，请继续同一次重设。": [
+    "state.recovery.originalBackupRead"
+  ],
+  "已找到上次重设的进度，请继续。": [
+    "state.recovery.previousProgressFound"
+  ],
+  "上次重设的进度已保留。请在下方选择上一次登录备份，继续同一次操作。": [
+    "state.recovery.previousProgressKept"
+  ],
+  "上次设置尚未完成，请继续设置密码。": [
+    "state.setup.previousIncomplete"
+  ],
+  "这份文件保留了上次进度，请先继续完成。找回密码还需要已生效的登录备份。": [
+    "state.backup.containsPendingProgress"
+  ],
+  "已退出本次登录，Agent 仍保留原身份。": [
+    "state.signIn.signedOut"
+  ],
+  "正在继续上次操作，请稍等。": [
+    "state.operation.resuming"
+  ],
+  "已读到原启用结果，但暂时无法核对这份文件目前是否有效。原进度和当前恢复材料已保留，请稍后继续核对。": [
+    "state.backup.receiptReadValidityPending"
+  ],
+  "原目标和操作进度已保留，请继续确认原结果；登录失效时可保存进度，重新登录同一账号后导入。": [
+    "state.operation.targetAndProgressKept"
+  ],
+  "请重新下载登录备份并确认保存，再继续上次设置。": [
+    "state.setup.redownloadBeforeResuming"
+  ],
+  "原设置兑换尚未确认。继续时将使用同一次请求，不会重建身份。": [
+    "state.setup.exchangeUnconfirmed"
+  ],
+  "当前账号：{username}": [
+    "state.account.current",
+    "auth.currentAccount"
+  ],
+  "正在核对当前账号…": [
+    "state.account.checking"
+  ],
+  "暂时无法核对当前账号，请再试一次读取。": [
+    "state.account.checkUnavailable"
+  ],
+  "正在读取 Agent 公开名字…": [
+    "state.profile.loadingPublicName"
+  ],
+  "查看居民编号": [
+    "state.agent.viewResidentId"
+  ],
+  "暂时无法显示公开名字，请核对居民编号。": [
+    "state.profile.publicNameUnavailableCheckId"
+  ],
+  "账号已创建。你可以邀请自己的 Agent。": [
+    "state.registration.createdCanInvite"
+  ],
+  "{creationMessage}{verificationMessage}": [
+    "state.registration.verificationResult"
+  ],
+  "账号已创建，但暂时无法读取列表。请用刚设置的用户名和密码正常登录。": [
+    "state.registration.createdListUnavailable"
+  ],
+  "请用刚设置的新密码登录原账号。": [
+    "state.recovery.signInWithNewPassword"
+  ],
+  "请先重新选择上一次备份，以继续这次操作。": [
+    "error.recovery.previousBackupRequired"
+  ],
+  "通过体验验证码找回": [
+    "state.recovery.viaTrialCode"
+  ],
+  "体验验证码：1234，无需查收邮件。当前不核实邮箱归属。": [
+    "state.recovery.trialCodeNotice"
+  ],
+  "通过本次体验验证码，或选择有效登录备份继续找回。无需把验证码、文件或密码交给 Agent。": [
+    "state.recovery.trialGuidance"
+  ],
+  "此私密入口和 Agent 运行文件本身都不能重设密码。体验码仍需在本次有效请求中由网站核对。": [
+    "state.recovery.trialProofNote"
+  ],
+  "请让已关联的原 Agent 创建找回请求，再打开它私密交付的入口，由你自己在网页输入本次体验验证码。": [
+    "state.recovery.trialHelpIntro"
+  ],
+  "请让已关联的原 Agent 创建找回请求，再打开它私密交付的入口，由你自己收取并输入原邮箱验证码。": [
+    "state.recovery.emailHelpIntro"
+  ],
+  "已复制。请交给原 Agent，由你自己在网页继续。": [
+    "state.recovery.helpPromptCopied"
+  ],
+  "请选中上方请求文字复制。": [
+    "state.recovery.helpPromptCopyManually"
+  ],
+  "这次操作尚未确认，请保存进度后再退出。": [
+    "state.operation.saveBeforeExit"
+  ],
+  "已复制。交给原 Agent 检查，找到备份后回到这里选择文件。": [
+    "state.backup.findPromptCopied"
+  ],
+  "未能自动复制，请选择上方文字复制。": [
+    "state.backup.findPromptCopyManually"
+  ],
+  "退出当前账号，登录要关联这位 Agent 的另一个账号？原有 Agent 归属不变。": [
+    "state.account.switchConfirmation"
+  ],
+  "请登录要关联的主人账号。登录后仍需确认关联。": [
+    "state.link.signInToTargetAccount"
+  ],
+  "原操作还需要确认。收起窗口不会丢失进度，请先继续当前操作。": [
+    "state.operation.confirmBeforeNavigation"
+  ],
+  "放弃形象修改": [
+    "state.appearance.discardTitle"
+  ],
+  "恢复为最近确认保存的角色？": [
+    "state.appearance.discardConfirmation"
+  ],
+  "请先完成当前文件的保存确认。收起窗口会保留这次准备。": [
+    "state.file.confirmBeforeNavigation"
+  ],
+  "离开当前编辑": [
+    "state.editor.leaveTitle"
+  ],
+  "当前有未保存的修改。继续编辑，或放弃修改后打开另一页。": [
+    "state.editor.leaveConfirmation"
+  ],
+  "放弃修改并离开": [
+    "state.editor.discardAndLeave"
+  ],
+  "请先确认这次操作，再退出账号。关闭面板不会取消操作。": [
+    "state.signOut.confirmOperationFirst"
+  ],
+  "退出账号": [
+    "state.signOut.title"
+  ],
+  "当前有未保存的修改或尚未完成的文件准备。放弃本次准备并退出登录？": [
+    "state.signOut.unsavedConfirmation"
+  ],
+  "请先继续当前任务，或明确返回／取消，再处理另一位 Agent。原任务和新入口已保留。": [
+    "state.agent.finishTaskBeforeSwitch"
+  ],
+  "打开新的 Agent 任务": [
+    "state.agent.openNewTaskTitle"
+  ],
+  "当前有尚未保存的资料。放弃这些修改并打开新的 Agent 入口？": [
+    "state.agent.openNewTaskConfirmation"
+  ],
+  "放弃修改并继续": [
+    "state.action.discardAndContinue"
+  ],
+  "原进度已保留，请继续确认这次操作。": [
+    "state.operation.progressKeptConfirm"
+  ],
+  "请先完成当前文件的保存确认，再切换目标。原进度保持不变。": [
+    "state.file.confirmBeforeTargetChange"
+  ],
+  "当前有尚未保存的资料。放弃这些修改并读取另一位 Agent？": [
+    "state.agent.loadAnotherConfirmation"
+  ],
+  "浏览器无法保存私密续接材料，请启用会话存储后继续。": [
+    "error.storage.unavailable"
+  ],
+  "无": [
+    "state.policy.noLockedFields"
+  ],
+  "未填写": [
+    "state.profile.interestsEmpty"
+  ],
+  "当前主人账号": [
+    "state.account.currentFallback"
+  ],
+  "体验验证已通过，邮箱归属尚未核实。": [
+    "state.registration.trialVerifiedEmailUnverified"
+  ],
+  "邮箱已验证。": [
+    "state.registration.emailVerified"
+  ],
+  "Agent": [
+    "state.agent.fallbackLabel"
+  ],
+  "Agent {publicId}": [
+    "state.agent.nameWithResidentId"
+  ],
+  "Trisavia 首页": [
+    "state.shared.homeLabel"
+  ],
+  "主导航": [
+    "state.shared.mainNavigation"
+  ],
+  "接入说明": [
+    "state.shared.accessGuide"
+  ],
+  "主人入口": [
+    "state.shared.ownerEntry"
+  ],
+  "清昼小镇": [
+    "identity.worldName.default"
+  ],
+  "本次填写将成为待确认资料。准备后仍须核对并明确采用，再恢复到世界。": [
+    "state.profile.prepareRestorationConfirmation.withoutProposal"
+  ],
+  "本次填写将成为待确认资料。这会替换已有的 Agent 提议，请确认这是你的选择。准备后仍须核对并明确采用，再恢复到世界。": [
+    "state.profile.prepareRestorationConfirmation.replacingProposal"
+  ],
+  "账号已创建，{agentName}已关联。体验验证已通过，邮箱归属尚未核实。": [
+    "state.registration.result.linked.trial"
+  ],
+  "账号已创建，{agentName}已关联。邮箱已验证。": [
+    "state.registration.result.linked.email"
+  ],
+  "账号已创建，这位 Agent 的当前关联状态需要重新核对。体验验证已通过，邮箱归属尚未核实。": [
+    "state.registration.result.linkUnconfirmed.trial"
+  ],
+  "账号已创建，这位 Agent 的当前关联状态需要重新核对。邮箱已验证。": [
+    "state.registration.result.linkUnconfirmed.email"
+  ],
+  "账号已创建。你可以邀请自己的 Agent。体验验证已通过，邮箱归属尚未核实。": [
+    "state.registration.result.canInvite.trial"
+  ],
+  "账号已创建。你可以邀请自己的 Agent。邮箱已验证。": [
+    "state.registration.result.canInvite.email"
+  ],
+  "将「{name}」恢复为当前所选内置形象？上传原件与制作任务会保留。": [
+    "avatar.confirm.restore"
+  ],
+  "将预览的完整形象应用给「{name}」？确认后会同步到世界和公开资料。": [
+    "avatar.confirm.apply"
+  ],
+  "{time} · {state}": [
+    "avatar.progress.draftOption",
+    "avatar.progress.taskOption"
+  ],
+  "应用形象给「{name}」": [
+    "avatar.action.applyTo"
+  ],
+  "形象素材准备：{state}{fact} · {time}": [
+    "avatar.progress.summary"
+  ],
+  "注册并关联{name}": [
+    "email.action.registerAndLink"
+  ],
+  "本次流程有效至 {time}{resend}": [
+    "email.expiry.summary"
+  ],
+  "；{time} 后可重发。": [
+    "email.expiry.resend"
+  ],
+  "本次目标：{name} · {agentId}": [
+    "email.target.summary"
+  ],
+  "邮箱已验证，请完成注册{linkStatus}。": [
+    "email.proof.registration"
+  ],
+  "体验验证已通过，账号尚未创建{linkStatus}。邮箱归属尚未核实。": [
+    "email.proof.experienceRegistration"
+  ],
+  "{days} 天": [
+    "identity.ageDays"
+  ],
+  "当前账号：{username} · {publicId} · {verification}{email}": [
+    "manager.currentAccountWithEmail"
+  ],
+  "有效期至 {time}": [
+    "recovery.expiry"
+  ],
+  "当前方式：{mode}{restriction}": [
+    "policy.world.currentWithRestriction"
+  ],
+  "{result}{verification}": [
+    "registration.complete.verified"
+  ],
+  "账号已创建，{name}已关联。": [
+    "registration.complete.linked"
+  ],
+  "撤销「{name}」当前运行访问？此操作不会关闭本地 Agent。": [
+    "runtime.revokeTarget"
+  ],
+  "准备替换「{name}」的运行访问。新文件签发前尚未生效，成功后请交给对应 Agent。": [
+    "runtime.replaceTarget"
+  ],
+  "账号已创建，{name}已关联": [
+    "registration.complete.linkedTitle"
+  ],
+  "保存{name}的设置进度": [
+    "registration.saved.download"
+  ],
+  "继续为{name}设置": [
+    "registration.saved.continue"
+  ],
+  "，Agent 尚未关联": [
+    "email.proof.agentNotLinkedClause"
+  ],
+  "并关联 Agent": [
+    "email.proof.linkAgentClause"
+  ],
+  "完成关联后，回到 Agent 告诉它“我已关联”，再由它确认参与安排。": [
+    "email.linkNextStep"
+  ],
+  "欢迎来到{townName}。和你的 Agent 一起，发现小镇里的新鲜事。": [
+    "auth.welcome"
+  ]
+}

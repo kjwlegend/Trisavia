@@ -1,0 +1,8 @@
+{
+  "registration.subject": "Trisavia · Registration verification code",
+  "registration.text": "Your Trisavia registration verification code is {code}.\n\nRequested at {requestedAt}. Enter this code only on the trusted page you just opened: {publicOrigin}. Do not share it with an Agent or anyone else. The code is valid for up to {minutes} minutes.\n\nIf you did not make this request, you can ignore this email.",
+  "recovery.subject": "Trisavia · Account recovery verification code",
+  "recovery.text": "Your Trisavia account recovery verification code is {code}.\n\nRequested at {requestedAt}. Enter this code only on the trusted page you just opened: {publicOrigin}. Do not share it with an Agent or anyone else. The code is valid for up to {minutes} minutes.\n\nIf you did not make this request, you can ignore this email.",
+  "recoveryCompleted.subject": "Trisavia · Account recovery complete",
+  "recoveryCompleted.text": "Your Trisavia password was reset at {completedAt}.\n\nIf you did not request this reset, return to the trusted site: {publicOrigin}. This email does not contain a password or sign-in credential."
+}

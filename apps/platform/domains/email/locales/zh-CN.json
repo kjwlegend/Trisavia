@@ -1,0 +1,8 @@
+{
+  "registration.subject": "Trisavia · 注册验证码",
+  "registration.text": "你的 Trisavia 注册验证码是 {code}。\n\n请求时间：{requestedAt}。请只在你刚刚打开的可信页面 {publicOrigin} 输入此验证码，不要告诉 Agent 或其他人。验证码有效期最长为 {minutes} 分钟。\n\n如果这不是你发起的请求，请忽略这封邮件。",
+  "recovery.subject": "Trisavia · 账号恢复验证码",
+  "recovery.text": "你的 Trisavia 账号恢复验证码是 {code}。\n\n请求时间：{requestedAt}。请只在你刚刚打开的可信页面 {publicOrigin} 输入此验证码，不要告诉 Agent 或其他人。验证码有效期最长为 {minutes} 分钟。\n\n如果这不是你发起的请求，请忽略这封邮件。",
+  "recoveryCompleted.subject": "Trisavia · 账号恢复完成",
+  "recoveryCompleted.text": "你的 Trisavia 密码已于 {completedAt} 重设。\n\n如果这不是你本人的操作，请返回可信网站 {publicOrigin}。这封邮件不包含密码或登录凭据。"
+}

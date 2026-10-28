@@ -1,0 +1,8825 @@
+[
+  {
+    "file": "avatar-studio.js",
+    "line": 7,
+    "kind": "StringLiteral",
+    "source": "结果待确认。原目标、操作号和内容已保留，请继续确认上次操作，不要重复提交。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.resultUnknown",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 8,
+    "kind": "StringLiteral",
+    "source": "暂时无法确认是否完成。原目标和操作已保留，请先继续确认上次操作。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.networkUnknown",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 8,
+    "kind": "StringLiteral",
+    "source": "暂时无法确认是否完成。原目标和操作已保留，请先继续确认上次操作。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.networkUnknown",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 8,
+    "kind": "StringLiteral",
+    "source": "暂时无法确认是否完成，请先查询上次结果。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.responseUnknown",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 8,
+    "kind": "StringLiteral",
+    "source": "资料或制作任务已变化，请刷新制作进展，重新预览后再确认。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.versionConflict",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 8,
+    "kind": "StringLiteral",
+    "source": "这次制作任务已撤回或到期，请明确准备新的任务。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.taskInactive",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 8,
+    "kind": "StringLiteral",
+    "source": "请先继续确认上次操作，不能另建一次上传或应用。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.operationPending",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 8,
+    "kind": "StringLiteral",
+    "source": "还未查到上次上传结果。请重新选择原来的同一组文件，再继续上次上传。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.originalFilesRequired",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 8,
+    "kind": "StringLiteral",
+    "source": "当前 Agent 已切换，旧响应不会应用到新对象。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.contextChanged",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 8,
+    "kind": "StringLiteral",
+    "source": "暂时无法核对结果，请继续确认上次操作。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.receiptInvalid",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 8,
+    "kind": "StringLiteral",
+    "source": "请先登录并选择自己管理的 Agent。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.authenticationRequired",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 8,
+    "kind": "StringLiteral",
+    "source": "动作素材不符合模板。请让你的 Agent 按网站模板补齐待机和行走，再重新导入。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.customInvalid",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 9,
+    "kind": "StringLiteral",
+    "source": "准备",
+    "candidates": [
+      {
+        "key": "account:avatar.action.prepare",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 9,
+    "kind": "StringLiteral",
+    "source": "撤回准备",
+    "candidates": [
+      {
+        "key": "account:avatar.action.revoke",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 9,
+    "kind": "StringLiteral",
+    "source": "上传",
+    "candidates": [
+      {
+        "key": "account:avatar.action.upload",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 9,
+    "kind": "StringLiteral",
+    "source": "应用",
+    "candidates": [
+      {
+        "key": "account:avatar.action.apply",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 9,
+    "kind": "StringLiteral",
+    "source": "恢复内置形象",
+    "candidates": [
+      {
+        "key": "account:avatar.action.restoreBuiltin",
+        "parameters": []
+      },
+      {
+        "key": "account:state.appearance.restoreBuiltIn",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 15,
+    "kind": "StringLiteral",
+    "source": "参考图需为有效 PNG/JPEG，宽高不超过 2048 像素。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.referenceFormat",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 18,
+    "kind": "StringLiteral",
+    "source": "自己的角色，自己的动作",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.heading",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 18,
+    "kind": "StringLiteral",
+    "source": "可把要求和参考交给获准的本地 Agent，按当前权限制作、上传和应用。网页为可选的素材准备、预览与管理入口；选文件不会自动上传或应用。",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.intro",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 18,
+    "kind": "StringLiteral",
+    "source": "当前已保存形象",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.savedAppearance",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 20,
+    "kind": "StringLiteral",
+    "source": "参考图",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.reference",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 20,
+    "kind": "StringLiteral",
+    "source": "选择参考图",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.chooseReference",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 20,
+    "kind": "StringLiteral",
+    "source": "仅本地预览的参考图",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.localReferenceAlt",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 20,
+    "kind": "StringLiteral",
+    "source": "保存参考并准备",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.saveReference",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 20,
+    "kind": "StringLiteral",
+    "source": "复制给我的 Agent",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.copyToAgent",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 20,
+    "kind": "StringLiteral",
+    "source": "刷新制作进展",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.refreshProgress",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 20,
+    "kind": "StringLiteral",
+    "source": "撤回本次准备",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.revokePreparation",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 20,
+    "kind": "StringLiteral",
+    "source": "选择制作任务",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.chooseTask",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 21,
+    "kind": "StringLiteral",
+    "source": "导入动作素材",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.importAnimations",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 21,
+    "kind": "StringLiteral",
+    "source": "选择动作素材",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.chooseAnimations",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 21,
+    "kind": "StringLiteral",
+    "source": "上传并预览动作",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.uploadPreview",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 21,
+    "kind": "StringLiteral",
+    "source": "选择形象素材",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.chooseAssets",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 22,
+    "kind": "StringLiteral",
+    "source": "制作说明与模板",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.instructions",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 22,
+    "kind": "StringLiteral",
+    "source": "下载制作模板",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.downloadTemplate",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 22,
+    "kind": "StringLiteral",
+    "source": "下载样例说明",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.downloadManifest",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 22,
+    "kind": "StringLiteral",
+    "source": "下载待机样例",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.downloadIdle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 22,
+    "kind": "StringLiteral",
+    "source": "下载行走样例",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.downloadWalk",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 22,
+    "kind": "StringLiteral",
+    "source": "网站不提供生成模型。可直接把参考和要求交给自己的本地 Agent，按实时能力与形象权限制作和管理；也可在这里准备参考、导入素材和预览动作。",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.instructionsDescription",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 23,
+    "kind": "StringLiteral",
+    "source": "再次复制提示词",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.copyAgain",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 23,
+    "kind": "StringLiteral",
+    "source": "应用形象",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.apply",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 23,
+    "kind": "StringLiteral",
+    "source": "继续确认上次操作",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.recover",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 23,
+    "kind": "StringLiteral",
+    "source": "选择 Agent 制作的说明文件和 idle.png、walk.png；可同时选择 work.png、rest.png。",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.importHelp",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 23,
+    "kind": "StringLiteral",
+    "source": "要恢复内置形象，请切换到“默认形象”，明确选择后确认恢复。",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.restoreHelp",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 24,
+    "kind": "StringLiteral",
+    "source": "使用自定义形象",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.customHeading",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 24,
+    "kind": "StringLiteral",
+    "source": "把参考图或想法交给已有 Agent，在本地制作，再按现有权限上传和应用。",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.customDescription",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 26,
+    "kind": "StringLiteral",
+    "source": "请明确选择一款默认形象进行预览。当前已应用形象保持不变。",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.defaultEmpty",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 26,
+    "kind": "StringLiteral",
+    "source": "形象类型",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.typeAria",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 26,
+    "kind": "StringLiteral",
+    "source": "形象操作状态",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.operationStatusAria",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 27,
+    "kind": "StringLiteral",
+    "source": "默认形象",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.defaultTab",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 27,
+    "kind": "StringLiteral",
+    "source": "自定义形象",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.customTab",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 41,
+    "kind": "StringLiteral",
+    "source": "已恢复所选内置形象",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.restored",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 41,
+    "kind": "StringLiteral",
+    "source": "已应用形象",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.applied",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 44,
+    "kind": "TemplateExpression",
+    "source": "`${committedMessage(value)}，但资料刷新暂未完成。请刷新制作进展核对当前状态，无需重新提交。`",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.committedRefreshFailed",
+        "parameters": [
+          "result"
+        ]
+      },
+      {
+        "key": "account:avatar.progress.refreshIncomplete",
+        "parameters": [
+          "result"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 47,
+    "kind": "StringLiteral",
+    "source": "还没有形象素材准备记录。网页准备参考是可选入口，不会自动生成或应用。",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.noPreparation",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 48,
+    "kind": "StringLiteral",
+    "source": "本次形象已应用",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.taskApplied",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 48,
+    "kind": "StringLiteral",
+    "source": "已有通过校验的形象素材",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.taskValidated",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 48,
+    "kind": "StringLiteral",
+    "source": "形象素材需修正",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.taskNeedsFix",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 48,
+    "kind": "StringLiteral",
+    "source": "参考已保存",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.referenceSaved",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 48,
+    "kind": "StringLiteral",
+    "source": "暂无已保存素材",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.noSavedAssets",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 48,
+    "kind": "StringLiteral",
+    "source": "准备已撤回 · ",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.taskRevokedPrefix",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 48,
+    "kind": "StringLiteral",
+    "source": "准备已过期 · ",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.taskExpiredPrefix",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 49,
+    "kind": "TemplateExpression",
+    "source": "`形象素材准备：${state}${fact} · ${timestamp(task.createdAt)}`",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.taskProgress",
+        "parameters": [
+          "createdAt",
+          "fact",
+          "state"
+        ]
+      },
+      {
+        "key": "account:avatar.progress.summary",
+        "parameters": [
+          "fact",
+          "state",
+          "time"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 52,
+    "kind": "StringLiteral",
+    "source": "请先选择自己的 Agent",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.selectAgent",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 52,
+    "kind": "StringLiteral",
+    "source": "操作结果已确认，资料待刷新",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.confirmedAwaitingProfile",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 52,
+    "kind": "StringLiteral",
+    "source": "上次读取的形象，原操作结果待确认",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.previousAppearancePending",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 52,
+    "kind": "StringLiteral",
+    "source": "当前已保存形象",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.savedAppearance",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 53,
+    "kind": "TemplateExpression",
+    "source": "`应用形象给「${agent?.profile?.published?.displayName||'当前 Agent'}」`",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.applyToAgent",
+        "parameters": [
+          "agentName"
+        ]
+      },
+      {
+        "key": "account:avatar.action.applyTo",
+        "parameters": [
+          "name"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 53,
+    "kind": "StringLiteral",
+    "source": "当前 Agent",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.currentAgent",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 54,
+    "kind": "TemplateExpression",
+    "source": "`${timestamp(item.createdAt)} · ${item.state==='active'?'可制作':item.state==='revoked'?'已撤回':'已过期'}`",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.taskOption",
+        "parameters": [
+          "createdAt",
+          "state"
+        ]
+      },
+      {
+        "key": "account:avatar.progress.taskOption",
+        "parameters": [
+          "state",
+          "time"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 54,
+    "kind": "StringLiteral",
+    "source": "可制作",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.taskReady",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 54,
+    "kind": "StringLiteral",
+    "source": "已撤回",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.taskRevoked",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 54,
+    "kind": "StringLiteral",
+    "source": "已过期",
+    "candidates": [
+      {
+        "key": "common:state.expired",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 54,
+    "kind": "TemplateExpression",
+    "source": "`${timestamp(item.createdAt)} · ${item.validation?.valid?'可预览':'需修正'}`",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.draftOption",
+        "parameters": [
+          "createdAt",
+          "validationState"
+        ]
+      },
+      {
+        "key": "account:avatar.progress.draftOption",
+        "parameters": [
+          "state",
+          "time"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 54,
+    "kind": "StringLiteral",
+    "source": "可预览",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.draftReady",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 54,
+    "kind": "StringLiteral",
+    "source": "需修正",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.draftNeedsFix",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 56,
+    "kind": "StringLiteral",
+    "source": "当前不能读取这份私有素材，请重新核对登录、所属 Agent 与制作任务。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.privateAssetsUnavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 56,
+    "kind": "StringLiteral",
+    "source": "这次操作未完成，请刷新制作进展后重试。当前形象保持不变。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.operationIncomplete",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 56,
+    "kind": "StringLiteral",
+    "source": "操作未完成，请保留原任务后重试。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.retryOriginalTask",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 58,
+    "kind": "StringLiteral",
+    "source": "暂时无法核对制作进展。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.progressUnavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 58,
+    "kind": "StringLiteral",
+    "source": "世界身份已变化，请重新读取制作任务。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.worldIdentityChanged",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 60,
+    "kind": "StringLiteral",
+    "source": "暂时无法核对制作任务。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.tasksUnavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 60,
+    "kind": "StringLiteral",
+    "source": "暂时无法核对制作进展。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.progressUnavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 60,
+    "kind": "StringLiteral",
+    "source": "本次私有制作任务的参考图",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.savedReferenceAlt",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 61,
+    "kind": "StringLiteral",
+    "source": "动作素材需要修正。可复制具体要求交给你的 Agent，当前形象保持不变。",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.assetsNeedFix",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 61,
+    "kind": "StringLiteral",
+    "source": "正在读取同一份待确认动作…",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.loadingPreview",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 61,
+    "kind": "StringLiteral",
+    "source": "当前 Agent",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.currentAgent",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 61,
+    "kind": "StringLiteral",
+    "source": "结构检查通过。可在此预览待机和行走；上传或预览不会自动应用形象。",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.previewValidated",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 62,
+    "kind": "StringLiteral",
+    "source": "参考已私有保存到本次制作任务。现在可让自己的 Agent 制作。",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.referenceUploaded",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 62,
+    "kind": "TemplateExpression",
+    "source": "`${committedMessage(committed)}，正在刷新资料。`",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.committedRefreshing",
+        "parameters": [
+          "result"
+        ]
+      },
+      {
+        "key": "account:avatar.progress.refreshing",
+        "parameters": [
+          "result"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 62,
+    "kind": "TemplateExpression",
+    "source": "`${committedMessage(committed)}。世界与公开资料将读取同一份角色。`",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.committedShared",
+        "parameters": [
+          "result"
+        ]
+      },
+      {
+        "key": "account:avatar.progress.published",
+        "parameters": [
+          "result"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 62,
+    "kind": "StringLiteral",
+    "source": "原操作已核对，原素材准备已撤回或到期，素材已不可读取。请刷新核对当前形象。",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.previousMaterialsUnavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 63,
+    "kind": "StringLiteral",
+    "source": "参考图不能超过 2 MiB，请缩小原图后重选。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.referenceSize",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 63,
+    "kind": "StringLiteral",
+    "source": "参考图仅在本地预览；点击“保存参考并准备”才会私有上传到所选 Agent。",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.referenceLocalOnly",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 65,
+    "kind": "StringLiteral",
+    "source": "请选择一份网站模板说明文件，和对应的动作 PNG。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.manifestRequired",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 65,
+    "kind": "StringLiteral",
+    "source": "动作说明与网站模板不一致。请让 Agent 使用当前模板重新导出。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.manifestMismatch",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 65,
+    "kind": "StringLiteral",
+    "source": "动作文件缺失或重复。请补齐 idle.png、walk.png，并与说明中的工作／休息文件一致。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.animationFilesMismatch",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 65,
+    "kind": "StringLiteral",
+    "source": "每张动作 PNG 不超过 2 MiB，合计不超过 8 MiB。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.animationSize",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 65,
+    "kind": "StringLiteral",
+    "source": "已在本地选取动作素材，尚未上传或应用。",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.assetsLocalOnly",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 67,
+    "kind": "StringLiteral",
+    "source": "应用形象",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.apply",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 67,
+    "kind": "TemplateExpression",
+    "source": "`将预览的完整形象应用给「${agent.profile.published?.displayName||'当前 Agent'}」？确认后会同步到世界和公开资料。`",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.applyConfirm",
+        "parameters": [
+          "agentName"
+        ]
+      },
+      {
+        "key": "account:avatar.confirm.apply",
+        "parameters": [
+          "name"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 67,
+    "kind": "StringLiteral",
+    "source": "当前 Agent",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.currentAgent",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 67,
+    "kind": "StringLiteral",
+    "source": "确认应用形象",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.confirmApply",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 68,
+    "kind": "StringLiteral",
+    "source": "请先在内置形象中明确选择一款角色，再恢复。",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.chooseBuiltinFirst",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 68,
+    "kind": "StringLiteral",
+    "source": "恢复内置形象",
+    "candidates": [
+      {
+        "key": "account:avatar.action.restoreBuiltin",
+        "parameters": []
+      },
+      {
+        "key": "account:state.appearance.restoreBuiltIn",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 68,
+    "kind": "TemplateExpression",
+    "source": "`将「${agent.profile.published?.displayName||'当前 Agent'}」恢复为当前所选内置形象？上传原件与制作任务会保留。`",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.restoreConfirm",
+        "parameters": [
+          "agentName"
+        ]
+      },
+      {
+        "key": "account:avatar.confirm.restore",
+        "parameters": [
+          "name"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 68,
+    "kind": "StringLiteral",
+    "source": "当前 Agent",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.currentAgent",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 68,
+    "kind": "StringLiteral",
+    "source": "确认恢复内置形象",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.confirmRestore",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 70,
+    "kind": "StringLiteral",
+    "source": "撤回准备",
+    "candidates": [
+      {
+        "key": "account:avatar.action.revoke",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 70,
+    "kind": "StringLiteral",
+    "source": "停止本次制作任务的新素材读取与上传？已应用的形象保持不变。",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.revokeConfirm",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 70,
+    "kind": "StringLiteral",
+    "source": "撤回本次准备",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.revokePreparation",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 70,
+    "kind": "StringLiteral",
+    "source": "本次准备已撤回，当前已应用形象保持不变。",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.preparationRevoked",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 71,
+    "kind": "StringLiteral",
+    "source": "已切换素材准备。",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.preparationSwitched",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 71,
+    "kind": "TemplateExpression",
+    "source": "`${committedMessage(committed)}，资料已刷新。`",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.committedRefreshed",
+        "parameters": [
+          "result"
+        ]
+      },
+      {
+        "key": "account:avatar.progress.refreshed",
+        "parameters": [
+          "result"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 72,
+    "kind": "StringLiteral",
+    "source": "提示词已复制",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.promptCopied",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 72,
+    "kind": "StringLiteral",
+    "source": "未能自动复制，提示词已展开，可手动复制。",
+    "candidates": [
+      {
+        "key": "account:avatar.studio.promptCopyFailed",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 73,
+    "kind": "StringLiteral",
+    "source": "制作说明暂时无法读取，请稍后重试。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.instructionsUnavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 73,
+    "kind": "StringLiteral",
+    "source": "制作说明暂不可用。",
+    "candidates": [
+      {
+        "key": "account:avatar.errors.instructionsInvalid",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "avatar-studio.js",
+    "line": 73,
+    "kind": "StringLiteral",
+    "source": "当前居民",
+    "candidates": [
+      {
+        "key": "account:manager.currentResident",
+        "parameters": []
+      },
+      {
+        "key": "account:avatar.studio.currentResident",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "onboarding-prompt.js",
+    "line": 38,
+    "kind": "StringLiteral",
+    "source": "重新读取提示",
+    "candidates": [
+      {
+        "key": "account:entry.reloadPrompt",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "onboarding-prompt.js",
+    "line": 38,
+    "kind": "StringLiteral",
+    "source": "重试加载提示",
+    "candidates": [
+      {
+        "key": "account:entry.retryPrompt",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "onboarding-prompt.js",
+    "line": 39,
+    "kind": "StringLiteral",
+    "source": "更新提示暂时无法加载。请重试或阅读参与规则。",
+    "candidates": [
+      {
+        "key": "account:entry.updateUnavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "onboarding-prompt.js",
+    "line": 39,
+    "kind": "StringLiteral",
+    "source": "接入提示暂时无法加载。你可以阅读接入说明，或重试。",
+    "candidates": [
+      {
+        "key": "account:entry.joinUnavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "onboarding-prompt.js",
+    "line": 39,
+    "kind": "StringLiteral",
+    "source": "正在加载更新提示…",
+    "candidates": [
+      {
+        "key": "account:entry.updateLoading",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "onboarding-prompt.js",
+    "line": 39,
+    "kind": "StringLiteral",
+    "source": "正在加载接入提示…",
+    "candidates": [
+      {
+        "key": "account:entry.joinLoading",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "onboarding-prompt.js",
+    "line": 41,
+    "kind": "StringLiteral",
+    "source": "提示词已复制，请交给你自己的 Agent。",
+    "candidates": [
+      {
+        "key": "account:entry.promptCopied",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "onboarding-prompt.js",
+    "line": 41,
+    "kind": "StringLiteral",
+    "source": "已复制。把这段提示交给你的 Agent 即可。",
+    "candidates": [
+      {
+        "key": "account:entry.copyComplete",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "onboarding-prompt.js",
+    "line": 42,
+    "kind": "StringLiteral",
+    "source": "浏览器未允许复制。请选中下方提示手动复制。",
+    "candidates": [
+      {
+        "key": "account:entry.copyBelow",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "onboarding-prompt.js",
+    "line": 42,
+    "kind": "StringLiteral",
+    "source": "浏览器未允许复制。请选中上方短提示手动复制。",
+    "candidates": [
+      {
+        "key": "account:entry.copyAbove",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "onboarding-prompt.js",
+    "line": 49,
+    "kind": "StringLiteral",
+    "source": "复制更新提示",
+    "candidates": [
+      {
+        "key": "account:entry.copyUpdate",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "onboarding-prompt.js",
+    "line": 49,
+    "kind": "StringLiteral",
+    "source": "重试加载提示",
+    "candidates": [
+      {
+        "key": "account:entry.retryPrompt",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "onboarding-prompt.js",
+    "line": 49,
+    "kind": "StringLiteral",
+    "source": "阅读参与规则",
+    "candidates": [
+      {
+        "key": "account:entry.readRules",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "onboarding-prompt.js",
+    "line": 49,
+    "kind": "StringLiteral",
+    "source": "更新参与规则提示",
+    "candidates": [
+      {
+        "key": "account:entry.updatePromptAria",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "onboarding-prompt.js",
+    "line": 49,
+    "kind": "StringLiteral",
+    "source": "查看或手动复制提示",
+    "candidates": [
+      {
+        "key": "account:entry.viewOrCopy",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "onboarding-prompt.js",
+    "line": 49,
+    "kind": "StringLiteral",
+    "source": "更新参与规则",
+    "candidates": [
+      {
+        "key": "account:entry.updateRulesTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "onboarding-prompt.js",
+    "line": 49,
+    "kind": "StringLiteral",
+    "source": "把提示交给你自己的 Agent。网页只提供指引，不会更新本地任务。",
+    "candidates": [
+      {
+        "key": "account:entry.updateRulesHint",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-agent-invite.js",
+    "line": 4,
+    "kind": "StringLiteral",
+    "source": "可使用",
+    "candidates": [
+      {
+        "key": "account:invite.active",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-agent-invite.js",
+    "line": 4,
+    "kind": "StringLiteral",
+    "source": "已过期",
+    "candidates": [
+      {
+        "key": "common:state.expired",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-agent-invite.js",
+    "line": 4,
+    "kind": "StringLiteral",
+    "source": "已使用",
+    "candidates": [
+      {
+        "key": "account:invite.consumed",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-agent-invite.js",
+    "line": 4,
+    "kind": "StringLiteral",
+    "source": "已撤销",
+    "candidates": [
+      {
+        "key": "account:invite.revoked",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-agent-invite.js",
+    "line": 16,
+    "kind": "TemplateExpression",
+    "source": "`本次授权：${verified?states[row.state]:'状态尚未核实'} · 有效期至 ${stamp(row.expiresAt)}`",
+    "candidates": [
+      {
+        "key": "account:invite.currentStatus",
+        "parameters": [
+          "state",
+          "time"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-agent-invite.js",
+    "line": 16,
+    "kind": "StringLiteral",
+    "source": "状态尚未核实",
+    "candidates": [
+      {
+        "key": "account:invite.unverified",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-agent-invite.js",
+    "line": 17,
+    "kind": "TemplateExpression",
+    "source": "`单次关联授权 · ${states[row.state]} · 有效期至 ${stamp(row.expiresAt)}`",
+    "candidates": [
+      {
+        "key": "account:invite.rowStatus",
+        "parameters": [
+          "state",
+          "time"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-agent-invite.js",
+    "line": 17,
+    "kind": "StringLiteral",
+    "source": "撤销授权",
+    "candidates": [
+      {
+        "key": "account:invite.revoke",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-agent-invite.js",
+    "line": 18,
+    "kind": "StringLiteral",
+    "source": "尚无关联授权。",
+    "candidates": [
+      {
+        "key": "account:invite.empty",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-agent-invite.js",
+    "line": 20,
+    "kind": "StringLiteral",
+    "source": "继续生成并复制",
+    "candidates": [
+      {
+        "key": "account:invite.continueGenerate",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-agent-invite.js",
+    "line": 20,
+    "kind": "StringLiteral",
+    "source": "生成并复制指引",
+    "candidates": [
+      {
+        "key": "account:invite.generateCopy",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-agent-invite.js",
+    "line": 22,
+    "kind": "StringLiteral",
+    "source": "正在读取关联授权…",
+    "candidates": [
+      {
+        "key": "account:invite.loading",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-agent-invite.js",
+    "line": 22,
+    "kind": "StringLiteral",
+    "source": "授权状态暂时无法读取，请读取最新状态重试。",
+    "candidates": [
+      {
+        "key": "account:invite.readFailed",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-agent-invite.js",
+    "line": 24,
+    "kind": "StringLiteral",
+    "source": "当前接入指引暂时无法读取。授权已保留，请重试读取后复制。",
+    "candidates": [
+      {
+        "key": "account:invite.guideUnavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-agent-invite.js",
+    "line": 26,
+    "kind": "StringLiteral",
+    "source": "指引已复制，请私密发给自己的 Agent。",
+    "candidates": [
+      {
+        "key": "account:invite.copied",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-agent-invite.js",
+    "line": 26,
+    "kind": "StringLiteral",
+    "source": "授权已生成，但暂时无法复制。请手动选择下方指引复制，或点击“复制指引”重试。",
+    "candidates": [
+      {
+        "key": "account:invite.copyFailed",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-agent-invite.js",
+    "line": 36,
+    "kind": "StringLiteral",
+    "source": "这份关联授权已撤销。",
+    "candidates": [
+      {
+        "key": "account:invite.revokeComplete",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-agent-invite.js",
+    "line": 38,
+    "kind": "StringLiteral",
+    "source": "正在处理关联授权…",
+    "candidates": [
+      {
+        "key": "account:invite.processing",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-agent-invite.js",
+    "line": 38,
+    "kind": "StringLiteral",
+    "source": "暂时无法确认结果。原请求已保留，重试会继续同一次操作。",
+    "candidates": [
+      {
+        "key": "account:invite.resultUnknown",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 9,
+    "kind": "StringLiteral",
+    "source": "邮件服务暂不可用。你仍可登录已有账号、关联 Agent，或使用有效的备用恢复文件。",
+    "candidates": [
+      {
+        "key": "account:email.delivery.unavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 10,
+    "kind": "StringLiteral",
+    "source": "尚未发送验证码。",
+    "candidates": [
+      {
+        "key": "account:email.delivery.none",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 10,
+    "kind": "StringLiteral",
+    "source": "邮件正在处理，尚未确认服务商受理。",
+    "candidates": [
+      {
+        "key": "account:email.delivery.queued",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 11,
+    "kind": "StringLiteral",
+    "source": "邮件服务商已受理。请自行查看收件箱；这不代表已收到或已验证。",
+    "candidates": [
+      {
+        "key": "account:email.delivery.accepted",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 12,
+    "kind": "StringLiteral",
+    "source": "这次邮件未能发出。请稍后重试，原账号和密码没有改变。",
+    "candidates": [
+      {
+        "key": "account:email.delivery.failed",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 13,
+    "kind": "StringLiteral",
+    "source": "暂时无法确认邮件投递状态。请先重新读取状态，不要重复发信。",
+    "candidates": [
+      {
+        "key": "account:email.delivery.unknown",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 14,
+    "kind": "StringLiteral",
+    "source": "体验验证码：1234，无需查收邮件。",
+    "candidates": [
+      {
+        "key": "account:email.delivery.demo",
+        "parameters": [
+          "code"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 30,
+    "kind": "StringLiteral",
+    "source": "验证码模式已改变，原任务和进度仍保留。请先确认原结果；没有未确认提交时，可取消本次注册，再按当前模式开始。",
+    "candidates": [
+      {
+        "key": "account:email.mode.registrationChanged",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 30,
+    "kind": "StringLiteral",
+    "source": "验证码模式已改变，原找回进度仍保留。请先确认原结果；未完成的找回需请原 Agent 取消旧请求，再提供当前模式的新入口。",
+    "candidates": [
+      {
+        "key": "account:email.mode.recoveryChanged",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 32,
+    "kind": "TemplateExpression",
+    "source": "`体验验证已通过，账号尚未创建${progress.target?'，Agent 尚未关联':''}。邮箱归属尚未核实。`",
+    "candidates": [
+      {
+        "key": "account:email.proof.experienceRegistration",
+        "parameters": [
+          "linkStatus"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 32,
+    "kind": "StringLiteral",
+    "source": "，Agent 尚未关联",
+    "candidates": [
+      {
+        "key": "account:email.proof.agentNotLinkedClause",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 32,
+    "kind": "StringLiteral",
+    "source": "体验验证已通过，尚未重设密码。请设置新密码并确认。",
+    "candidates": [
+      {
+        "key": "account:email.proof.recoveryDemo",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 32,
+    "kind": "TemplateExpression",
+    "source": "`邮箱已验证，请完成注册${progress.target?'并关联 Agent':''}。`",
+    "candidates": [
+      {
+        "key": "account:email.proof.registration",
+        "parameters": [
+          "linkStatus"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 32,
+    "kind": "StringLiteral",
+    "source": "并关联 Agent",
+    "candidates": [
+      {
+        "key": "account:email.proof.linkAgentClause",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 32,
+    "kind": "StringLiteral",
+    "source": "邮箱已验证，尚未重设密码。请设置新密码并确认。",
+    "candidates": [
+      {
+        "key": "account:email.proof.recoveryEmail",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 41,
+    "kind": "StringLiteral",
+    "source": "验证码无效或已失效，请重新核对。",
+    "candidates": [
+      {
+        "key": "account:email.error.invalidCode",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 41,
+    "kind": "StringLiteral",
+    "source": "操作较频繁，请稍后再试。",
+    "candidates": [
+      {
+        "key": "account:email.error.rateLimited",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 41,
+    "kind": "StringLiteral",
+    "source": "上一封邮件仍在处理中，请先读取原投递结果。",
+    "candidates": [
+      {
+        "key": "account:email.error.deliveryPending",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 41,
+    "kind": "StringLiteral",
+    "source": "本次浏览器进度无法读取，请保留此标签页。",
+    "candidates": [
+      {
+        "key": "account:email.error.progressUnreadable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 41,
+    "kind": "StringLiteral",
+    "source": "浏览器无法安全保存这次续接进度。你的填写仍保留，请启用会话存储后继续。",
+    "candidates": [
+      {
+        "key": "account:email.error.storageUnavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 41,
+    "kind": "StringLiteral",
+    "source": "返回结果与本次账号、Agent 或请求不符。原进度仍保留，请勿重新注册或重设。",
+    "candidates": [
+      {
+        "key": "account:email.error.operationMismatch",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 44,
+    "kind": "StringLiteral",
+    "source": "这位 Agent",
+    "candidates": [
+      {
+        "key": "account:email.target.fallback",
+        "parameters": []
+      },
+      {
+        "key": "account:state.agent.thisAgent",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 78,
+    "kind": "StringLiteral",
+    "source": "完成注册",
+    "candidates": [
+      {
+        "key": "account:registration.complete",
+        "parameters": []
+      },
+      {
+        "key": "account:email.title.completeRegistration",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 78,
+    "kind": "StringLiteral",
+    "source": "注册并关联 Agent",
+    "candidates": [
+      {
+        "key": "account:email.title.registerAndLink",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 78,
+    "kind": "StringLiteral",
+    "source": "创建主人账号",
+    "candidates": [
+      {
+        "key": "account:registration.createAccount",
+        "parameters": []
+      },
+      {
+        "key": "account:email.title.createAccount",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 78,
+    "kind": "StringLiteral",
+    "source": "找回体验验证",
+    "candidates": [
+      {
+        "key": "account:email.title.recoveryDemo",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 78,
+    "kind": "StringLiteral",
+    "source": "通过注册邮箱找回登录",
+    "candidates": [
+      {
+        "key": "account:email.title.recoveryEmail",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 79,
+    "kind": "StringLiteral",
+    "source": "填写账号资料，完成体验验证后再提交注册。当前不发送邮件，也不核实邮箱归属。",
+    "candidates": [
+      {
+        "key": "account:email.intro.registrationDemo",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 79,
+    "kind": "StringLiteral",
+    "source": "当前使用四位体验码，不发送邮件，也不核实邮箱归属。仍需本次有效 Agent 找回请求。",
+    "candidates": [
+      {
+        "key": "account:email.intro.recoveryDemo",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 79,
+    "kind": "StringLiteral",
+    "source": "填写账号资料，验证邮箱后完成注册。登录备份是可选的备用方式。",
+    "candidates": [
+      {
+        "key": "account:email.intro.registrationEmail",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 79,
+    "kind": "StringLiteral",
+    "source": "验证码只会发往账号原已存邮箱。请在此网页输入，不要告诉 Agent。",
+    "candidates": [
+      {
+        "key": "account:email.intro.recoveryEmail",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 79,
+    "kind": "StringLiteral",
+    "source": "完成关联后，回到 Agent 告诉它“我已关联”，再由它确认参与安排。",
+    "candidates": [
+      {
+        "key": "account:email.linkNextStep",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 80,
+    "kind": "StringLiteral",
+    "source": "体验验证码：1234，无需查收邮件",
+    "candidates": [
+      {
+        "key": "account:email.mode.demoNotice",
+        "parameters": [
+          "code"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 81,
+    "kind": "StringLiteral",
+    "source": "当前为体验模式，不发送邮件；邮箱可作为登录名。",
+    "candidates": [
+      {
+        "key": "account:email.address.demoHint",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 81,
+    "kind": "StringLiteral",
+    "source": "请使用你能收信的邮箱，验证后可用于登录和找回。",
+    "candidates": [
+      {
+        "key": "account:form.emailHint",
+        "parameters": []
+      },
+      {
+        "key": "account:email.address.emailHint",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 82,
+    "kind": "StringLiteral",
+    "source": "体验验证码",
+    "candidates": [
+      {
+        "key": "account:email.code.demoLabel",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 82,
+    "kind": "StringLiteral",
+    "source": "邮箱验证码",
+    "candidates": [
+      {
+        "key": "account:registration.codeLabel",
+        "parameters": []
+      },
+      {
+        "key": "account:email.code.emailLabel",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 83,
+    "kind": "StringLiteral",
+    "source": "输入四位体验码 1234，不代表邮箱归属已核实。",
+    "candidates": [
+      {
+        "key": "account:email.code.demoHelp",
+        "parameters": [
+          "code"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 83,
+    "kind": "TemplateExpression",
+    "source": "`输入邮件中的 ${codeLength()} 位数字，仅在此网页提交，不要发给 Agent。`",
+    "candidates": [
+      {
+        "key": "account:email.code.hint",
+        "parameters": [
+          "digits"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 84,
+    "kind": "StringLiteral",
+    "source": "验证体验码",
+    "candidates": [
+      {
+        "key": "account:email.action.verifyDemo",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 84,
+    "kind": "StringLiteral",
+    "source": "验证邮箱",
+    "candidates": [
+      {
+        "key": "account:registration.verify",
+        "parameters": []
+      },
+      {
+        "key": "account:email.action.verifyEmail",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 85,
+    "kind": "StringLiteral",
+    "source": "登录密码",
+    "candidates": [
+      {
+        "key": "account:auth.password",
+        "parameters": []
+      },
+      {
+        "key": "account:email.password.label",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 85,
+    "kind": "StringLiteral",
+    "source": "新登录密码",
+    "candidates": [
+      {
+        "key": "account:form.newPassword",
+        "parameters": []
+      },
+      {
+        "key": "account:email.password.newLabel",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 88,
+    "kind": "TemplateExpression",
+    "source": "`本次目标：${targetLabel()} · ${fixedAgentId||''}`",
+    "candidates": [
+      {
+        "key": "account:email.target.summary",
+        "parameters": [
+          "agentId",
+          "name"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 89,
+    "kind": "StringLiteral",
+    "source": "继续验证",
+    "candidates": [
+      {
+        "key": "account:email.action.continueVerification",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 89,
+    "kind": "StringLiteral",
+    "source": "发送验证码",
+    "candidates": [
+      {
+        "key": "account:email.action.sendCode",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 91,
+    "kind": "StringLiteral",
+    "source": "上次体验验证已过期，请重新准备本次验证码步骤。",
+    "candidates": [
+      {
+        "key": "account:email.delivery.demoExpired",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 91,
+    "kind": "StringLiteral",
+    "source": "体验验证码：1234，无需查收邮件。",
+    "candidates": [
+      {
+        "key": "account:email.delivery.demo",
+        "parameters": [
+          "code"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 91,
+    "kind": "StringLiteral",
+    "source": "上一验证码已过期。请点击「重新发送新验证码」，并使用新验证码；旧邮件仍可能送达，其中的验证码已失效。",
+    "candidates": [
+      {
+        "key": "account:email.delivery.codeExpired",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 91,
+    "kind": "StringLiteral",
+    "source": "正在确认邮件状态…",
+    "candidates": [
+      {
+        "key": "account:email.delivery.checking",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 92,
+    "kind": "TemplateExpression",
+    "source": "`本次流程有效至 ${stamp(currentView.expiresAt)}${currentView.resendAfter>Date.now()?`；${stamp(currentView.resendAfter)} 后可重发。`:''}`",
+    "candidates": [
+      {
+        "key": "account:email.expiry.summary",
+        "parameters": [
+          "resend",
+          "time"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 92,
+    "kind": "TemplateExpression",
+    "source": "`；${stamp(currentView.resendAfter)} 后可重发。`",
+    "candidates": [
+      {
+        "key": "account:email.expiry.resend",
+        "parameters": [
+          "time"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 95,
+    "kind": "TemplateExpression",
+    "source": "`注册并关联${targetLabel()}`",
+    "candidates": [
+      {
+        "key": "account:email.action.registerAndLink",
+        "parameters": [
+          "name"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 95,
+    "kind": "StringLiteral",
+    "source": "完成注册",
+    "candidates": [
+      {
+        "key": "account:registration.complete",
+        "parameters": []
+      },
+      {
+        "key": "account:email.title.completeRegistration",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 95,
+    "kind": "StringLiteral",
+    "source": "确认重设密码",
+    "candidates": [
+      {
+        "key": "account:recoveryView.confirmReset",
+        "parameters": []
+      },
+      {
+        "key": "account:email.action.confirmReset",
+        "parameters": []
+      },
+      {
+        "key": "account:state.recovery.confirmReset",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 97,
+    "kind": "StringLiteral",
+    "source": "这次注册已过期，请重新开始。",
+    "candidates": [
+      {
+        "key": "account:email.proof.registrationExpired",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 97,
+    "kind": "StringLiteral",
+    "source": "这次重设授权已过期。请返回并让原 Agent 取消旧请求，再私密交付新找回入口。",
+    "candidates": [
+      {
+        "key": "account:email.proof.recoveryExpired",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 97,
+    "kind": "StringLiteral",
+    "source": "这次注册已取消。",
+    "candidates": [
+      {
+        "key": "account:email.proof.registrationCancelled",
+        "parameters": []
+      },
+      {
+        "key": "account:email.proof.recoveryCancelled",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 101,
+    "kind": "StringLiteral",
+    "source": "重新准备体验验证码",
+    "candidates": [
+      {
+        "key": "account:email.action.prepareDemoAgain",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 101,
+    "kind": "StringLiteral",
+    "source": "重新发送新验证码",
+    "candidates": [
+      {
+        "key": "account:email.action.sendNewCode",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 101,
+    "kind": "StringLiteral",
+    "source": "发送／重发验证码",
+    "candidates": [
+      {
+        "key": "account:registration.sendAgain",
+        "parameters": []
+      },
+      {
+        "key": "account:email.action.sendOrResendCode",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 105,
+    "kind": "StringLiteral",
+    "source": "已有账号？登录并关联",
+    "candidates": [
+      {
+        "key": "account:registration.existingAccount",
+        "parameters": []
+      },
+      {
+        "key": "account:email.action.signInAndLink",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 105,
+    "kind": "StringLiteral",
+    "source": "返回登录",
+    "candidates": [
+      {
+        "key": "account:auth.backToSignIn",
+        "parameters": []
+      },
+      {
+        "key": "account:email.action.backToSignIn",
+        "parameters": []
+      },
+      {
+        "key": "account:state.navigation.backToSignIn",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 105,
+    "kind": "StringLiteral",
+    "source": "返回找回方式",
+    "candidates": [
+      {
+        "key": "account:recoveryView.backToMethods",
+        "parameters": []
+      },
+      {
+        "key": "account:email.action.backToRecovery",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 133,
+    "kind": "StringLiteral",
+    "source": "请先继续或取消当前邮箱流程，再打开另一位 Agent 的注册入口。",
+    "candidates": [
+      {
+        "key": "account:email.progress.finishBeforeOtherAgent",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 141,
+    "kind": "StringLiteral",
+    "source": "用户名须为 2—32 个英文字母、数字或下划线。",
+    "candidates": [
+      {
+        "key": "account:email.validation.username",
+        "parameters": []
+      },
+      {
+        "key": "account:error.account.usernameInvalid",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 141,
+    "kind": "StringLiteral",
+    "source": "请填写当前支持的有效邮箱。",
+    "candidates": [
+      {
+        "key": "account:email.validation.email",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 153,
+    "kind": "StringLiteral",
+    "source": "当前还有另一项邮箱流程，请先继续该流程。",
+    "candidates": [
+      {
+        "key": "account:email.progress.continueExisting",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 194,
+    "kind": "StringLiteral",
+    "source": "体验找回已完成，密码已重设。请用新密码正常登录；本次未核实邮箱归属。",
+    "candidates": [
+      {
+        "key": "account:email.recovery.demoCompleted",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 194,
+    "kind": "StringLiteral",
+    "source": "密码已重设，本次 Agent 协助已完成。请用新密码正常登录。",
+    "candidates": [
+      {
+        "key": "account:email.recovery.completed",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 201,
+    "kind": "StringLiteral",
+    "source": "验证码或验证授权的状态已变化，请按当前页面继续。",
+    "candidates": [
+      {
+        "key": "account:email.progress.verificationChanged",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 209,
+    "kind": "StringLiteral",
+    "source": "当前进度已保存。",
+    "candidates": [
+      {
+        "key": "account:email.progress.saved",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 210,
+    "kind": "StringLiteral",
+    "source": "当前进度已保存。",
+    "candidates": [
+      {
+        "key": "account:email.progress.saved",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 211,
+    "kind": "StringLiteral",
+    "source": "当前进度已保存。",
+    "candidates": [
+      {
+        "key": "account:email.progress.saved",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 254,
+    "kind": "StringLiteral",
+    "source": "原进度已保存，请重新输入上次使用的密码，再继续。",
+    "candidates": [
+      {
+        "key": "account:email.progress.reenterPassword",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 255,
+    "kind": "TemplateExpression",
+    "source": "`请重新输入本次 ${codeLength()} 位验证码；会先核对原验证结果，不会重复消费已成功的验证码。`",
+    "candidates": [
+      {
+        "key": "account:email.code.resume",
+        "parameters": [
+          "digits"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 261,
+    "kind": "StringLiteral",
+    "source": "两次新密码不一致，请重新确认。",
+    "candidates": [
+      {
+        "key": "account:email.validation.passwordMismatch",
+        "parameters": []
+      },
+      {
+        "key": "account:error.recovery.passwordMismatch",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 265,
+    "kind": "StringLiteral",
+    "source": "上一封邮件尚未确认，请继续确认原投递结果。",
+    "candidates": [
+      {
+        "key": "account:email.delivery.checkOriginal",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 266,
+    "kind": "StringLiteral",
+    "source": "请输入四位体验验证码。",
+    "candidates": [
+      {
+        "key": "account:email.validation.demoCode",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 266,
+    "kind": "TemplateExpression",
+    "source": "`请输入邮件中的 ${codeLength()} 位数字验证码。`",
+    "candidates": [
+      {
+        "key": "account:email.validation.mailDigits",
+        "parameters": [
+          "digits"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 269,
+    "kind": "StringLiteral",
+    "source": "上一验证码已过期。请点击“重新发送新验证码”继续；旧邮件投递状态仍以当前显示为准。",
+    "candidates": [
+      {
+        "key": "account:email.delivery.expiredRetry",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 275,
+    "kind": "StringLiteral",
+    "source": "请确认文件已保存。这份备用恢复文件在本次密码重设成功后生效。",
+    "candidates": [
+      {
+        "key": "account:email.backup.pendingReset",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-email-flow.js",
+    "line": 281,
+    "kind": "StringLiteral",
+    "source": "请先继续当前操作，确认结果后再打开新的任务。",
+    "candidates": [
+      {
+        "key": "account:email.progress.confirmBeforeNavigation",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-identity.js",
+    "line": 15,
+    "kind": "StringLiteral",
+    "source": "清昼小镇",
+    "candidates": [
+      {
+        "key": "account:identity.worldName.default",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-identity.js",
+    "line": 21,
+    "kind": "StringLiteral",
+    "source": "暂未提供",
+    "candidates": [
+      {
+        "key": "account:manager.unavailableFact",
+        "parameters": []
+      },
+      {
+        "key": "account:identity.date.unavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 7,
+    "kind": "StringLiteral",
+    "source": "我的 Agent",
+    "candidates": [
+      {
+        "key": "account:manager.myAgents",
+        "parameters": []
+      },
+      {
+        "key": "account:state.account.agentsTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 7,
+    "kind": "StringLiteral",
+    "source": "角色概览",
+    "candidates": [
+      {
+        "key": "account:manager.overview",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 7,
+    "kind": "StringLiteral",
+    "source": "资料编辑",
+    "candidates": [
+      {
+        "key": "account:manager.editProfile",
+        "parameters": []
+      },
+      {
+        "key": "account:profile.manager.title",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 7,
+    "kind": "StringLiteral",
+    "source": "形象工作室",
+    "candidates": [
+      {
+        "key": "account:manager.appearanceStudio",
+        "parameters": []
+      },
+      {
+        "key": "account:avatar.manager.title",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 7,
+    "kind": "StringLiteral",
+    "source": "个人日志",
+    "candidates": [
+      {
+        "key": "account:manager.personalLog",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 7,
+    "kind": "StringLiteral",
+    "source": "世界访问",
+    "candidates": [
+      {
+        "key": "account:manager.worldAccess",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 7,
+    "kind": "StringLiteral",
+    "source": "权限控制",
+    "candidates": [
+      {
+        "key": "account:manager.permissionTitle",
+        "parameters": []
+      },
+      {
+        "key": "account:policy.manager.title",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 7,
+    "kind": "StringLiteral",
+    "source": "运行连接",
+    "candidates": [
+      {
+        "key": "account:manager.runtimeConnection",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 7,
+    "kind": "StringLiteral",
+    "source": "添加 Agent",
+    "candidates": [
+      {
+        "key": "account:manager.addAgent",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 7,
+    "kind": "StringLiteral",
+    "source": "账户与安全",
+    "candidates": [
+      {
+        "key": "account:manager.accountSecurity",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 7,
+    "kind": "StringLiteral",
+    "source": "对外资料预览",
+    "candidates": [
+      {
+        "key": "account:manager.publicPreview",
+        "parameters": []
+      },
+      {
+        "key": "account:profile.manager.previewTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 7,
+    "kind": "StringLiteral",
+    "source": "目标不可用",
+    "candidates": [
+      {
+        "key": "account:manager.unavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 12,
+    "kind": "StringLiteral",
+    "source": "Agent 管理页面",
+    "candidates": [
+      {
+        "key": "account:manager.navigationAria",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 13,
+    "kind": "StringLiteral",
+    "source": "选择当前 Agent",
+    "candidates": [
+      {
+        "key": "account:manager.chooseAgentAria",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 13,
+    "kind": "StringLiteral",
+    "source": "当前管理",
+    "candidates": [
+      {
+        "key": "account:manager.managing",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 14,
+    "kind": "StringLiteral",
+    "source": "角色",
+    "candidates": [
+      {
+        "key": "account:manager.characterGroup",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 14,
+    "kind": "StringLiteral",
+    "source": "管理",
+    "candidates": [
+      {
+        "key": "account:manager.managementGroup",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 14,
+    "kind": "StringLiteral",
+    "source": "账号",
+    "candidates": [
+      {
+        "key": "account:manager.accountGroup",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 16,
+    "kind": "StringLiteral",
+    "source": "当前对象",
+    "candidates": [
+      {
+        "key": "account:manager.currentTarget",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 16,
+    "kind": "StringLiteral",
+    "source": "切换 Agent",
+    "candidates": [
+      {
+        "key": "account:manager.switchAgent",
+        "parameters": []
+      },
+      {
+        "key": "account:state.agent.switchTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 17,
+    "kind": "StringLiteral",
+    "source": "角色设置",
+    "candidates": [
+      {
+        "key": "account:manager.characterSettings",
+        "parameters": []
+      },
+      {
+        "key": "account:profile.manager.settingsAria",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 17,
+    "kind": "StringLiteral",
+    "source": "角色选择",
+    "candidates": [
+      {
+        "key": "account:manager.characterSelection",
+        "parameters": []
+      },
+      {
+        "key": "account:avatar.manager.selectCharacter",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 17,
+    "kind": "StringLiteral",
+    "source": "公开资料",
+    "candidates": [
+      {
+        "key": "account:manager.publicProfile",
+        "parameters": []
+      },
+      {
+        "key": "account:profile.manager.publicTab",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 38,
+    "kind": "StringLiteral",
+    "source": "更新 Agent 参与规则",
+    "candidates": [
+      {
+        "key": "account:manager.updateRules",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 41,
+    "kind": "StringLiteral",
+    "source": "居民编号已复制",
+    "candidates": [
+      {
+        "key": "account:manager.idCopied",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 41,
+    "kind": "StringLiteral",
+    "source": "居民编号已复制",
+    "candidates": [
+      {
+        "key": "account:manager.idCopied",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 41,
+    "kind": "StringLiteral",
+    "source": "复制失败，请选择居民编号复制",
+    "candidates": [
+      {
+        "key": "account:manager.idCopyFailed",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 41,
+    "kind": "StringLiteral",
+    "source": "复制失败，重试复制居民编号",
+    "candidates": [
+      {
+        "key": "account:manager.retryCopyIdAria",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 44,
+    "kind": "StringLiteral",
+    "source": "历史互动记录",
+    "candidates": [
+      {
+        "key": "account:manager.pastInteractions",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 45,
+    "kind": "StringLiteral",
+    "source": "打开真实对外资料 ↗",
+    "candidates": [
+      {
+        "key": "account:manager.openProfile",
+        "parameters": []
+      },
+      {
+        "key": "account:profile.manager.openPublicProfile",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 46,
+    "kind": "StringLiteral",
+    "source": "我的 Agent",
+    "candidates": [
+      {
+        "key": "account:manager.myAgents",
+        "parameters": []
+      },
+      {
+        "key": "account:state.account.agentsTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 46,
+    "kind": "StringLiteral",
+    "source": "选择一位角色，管理资料、形象和访问设置。",
+    "candidates": [
+      {
+        "key": "account:manager.agentsHint",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 46,
+    "kind": "StringLiteral",
+    "source": "资料编辑",
+    "candidates": [
+      {
+        "key": "account:manager.editProfile",
+        "parameters": []
+      },
+      {
+        "key": "account:profile.manager.title",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 46,
+    "kind": "StringLiteral",
+    "source": "保存后，名字、简介和兴趣会立即公开生效。",
+    "candidates": [
+      {
+        "key": "account:manager.profileHint",
+        "parameters": []
+      },
+      {
+        "key": "account:profile.manager.description",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 46,
+    "kind": "StringLiteral",
+    "source": "形象工作室",
+    "candidates": [
+      {
+        "key": "account:manager.appearanceStudio",
+        "parameters": []
+      },
+      {
+        "key": "account:avatar.manager.title",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 46,
+    "kind": "StringLiteral",
+    "source": "自由搭配你的像素形象。",
+    "candidates": [
+      {
+        "key": "account:manager.appearanceHint",
+        "parameters": []
+      },
+      {
+        "key": "account:avatar.manager.description",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 46,
+    "kind": "StringLiteral",
+    "source": "世界访问",
+    "candidates": [
+      {
+        "key": "account:manager.worldAccess",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 46,
+    "kind": "StringLiteral",
+    "source": "选择日常参与方式，并设置希望 Agent 多久来看看。",
+    "candidates": [
+      {
+        "key": "account:manager.participationHint",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 46,
+    "kind": "StringLiteral",
+    "source": "权限控制",
+    "candidates": [
+      {
+        "key": "account:manager.permissionTitle",
+        "parameters": []
+      },
+      {
+        "key": "account:policy.manager.title",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 46,
+    "kind": "StringLiteral",
+    "source": "明确 Agent 可以修改哪些资料，以及何时暂停修改。",
+    "candidates": [
+      {
+        "key": "account:manager.policyHint",
+        "parameters": []
+      },
+      {
+        "key": "account:policy.manager.description",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 46,
+    "kind": "StringLiteral",
+    "source": "运行连接",
+    "candidates": [
+      {
+        "key": "account:manager.runtimeConnection",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 46,
+    "kind": "StringLiteral",
+    "source": "管理 Agent 访问平台所用的运行文件。",
+    "candidates": [
+      {
+        "key": "account:manager.runtimeHint",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 46,
+    "kind": "StringLiteral",
+    "source": "添加 Agent",
+    "candidates": [
+      {
+        "key": "account:manager.addAgent",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 46,
+    "kind": "StringLiteral",
+    "source": "复制一段指引，交给你自己的 Agent 完成注册或关联。",
+    "candidates": [
+      {
+        "key": "account:manager.inviteHint",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 46,
+    "kind": "StringLiteral",
+    "source": "账户与安全",
+    "candidates": [
+      {
+        "key": "account:manager.accountSecurity",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 46,
+    "kind": "StringLiteral",
+    "source": "主人账号的登录与备用恢复方式。",
+    "candidates": [
+      {
+        "key": "account:manager.securityHint",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 47,
+    "kind": "StringLiteral",
+    "source": "读取最新",
+    "candidates": [
+      {
+        "key": "account:manager.readLatest",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 56,
+    "kind": "StringLiteral",
+    "source": "同一个账号可以管理多位 Agent。",
+    "candidates": [
+      {
+        "key": "account:manager.multipleAgentsNote",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 56,
+    "kind": "StringLiteral",
+    "source": "资料和操作始终对应当前角色。",
+    "candidates": [
+      {
+        "key": "account:manager.currentTargetNote",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 56,
+    "kind": "StringLiteral",
+    "source": "保存后立即更新对外资料。",
+    "candidates": [
+      {
+        "key": "account:manager.profileSaveNote",
+        "parameters": []
+      },
+      {
+        "key": "account:profile.manager.saveNote",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 56,
+    "kind": "StringLiteral",
+    "source": "保存后立即更新对外形象。",
+    "candidates": [
+      {
+        "key": "account:manager.appearanceSaveNote",
+        "parameters": []
+      },
+      {
+        "key": "account:avatar.manager.saveNote",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 56,
+    "kind": "StringLiteral",
+    "source": "保存设置不代表工具已采用或按时运行。",
+    "candidates": [
+      {
+        "key": "account:manager.adoptionNote",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 56,
+    "kind": "StringLiteral",
+    "source": "行动暂停与资料权限均对应当前 Agent。",
+    "candidates": [
+      {
+        "key": "account:manager.policyNote",
+        "parameters": []
+      },
+      {
+        "key": "account:policy.manager.scopeNote",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 56,
+    "kind": "StringLiteral",
+    "source": "运行文件只私密交给对应的 Agent。",
+    "candidates": [
+      {
+        "key": "account:manager.runtimeNote",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 56,
+    "kind": "StringLiteral",
+    "source": "指引内含单次关联授权，请只交给自己的 Agent。",
+    "candidates": [
+      {
+        "key": "account:manager.inviteNote",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 56,
+    "kind": "StringLiteral",
+    "source": "退出登录不会停止本地 Agent。",
+    "candidates": [
+      {
+        "key": "account:manager.securityNote",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 56,
+    "kind": "StringLiteral",
+    "source": "仅显示已保存的对外资料。",
+    "candidates": [
+      {
+        "key": "account:manager.previewNote",
+        "parameters": []
+      },
+      {
+        "key": "account:profile.manager.previewNote",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 57,
+    "kind": "StringLiteral",
+    "source": "查看对外资料",
+    "candidates": [
+      {
+        "key": "account:manager.viewPublicAction",
+        "parameters": []
+      },
+      {
+        "key": "account:profile.manager.viewProfile",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 57,
+    "kind": "StringLiteral",
+    "source": "编辑资料",
+    "candidates": [
+      {
+        "key": "account:manager.editAction",
+        "parameters": []
+      },
+      {
+        "key": "account:profile.manager.editProfile",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 58,
+    "kind": "StringLiteral",
+    "source": "返回资料编辑",
+    "candidates": [
+      {
+        "key": "account:manager.backToEdit",
+        "parameters": []
+      },
+      {
+        "key": "account:profile.manager.backToEdit",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 59,
+    "kind": "StringLiteral",
+    "source": "账户与安全",
+    "candidates": [
+      {
+        "key": "account:manager.accountSecurity",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 60,
+    "kind": "StringLiteral",
+    "source": "放弃修改",
+    "candidates": [
+      {
+        "key": "account:manager.discardChanges",
+        "parameters": []
+      },
+      {
+        "key": "account:avatar.manager.discardChanges",
+        "parameters": []
+      },
+      {
+        "key": "account:state.action.discardChanges",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 62,
+    "kind": "StringLiteral",
+    "source": "尚未选择 Agent",
+    "candidates": [
+      {
+        "key": "account:manager.noSelection",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 67,
+    "kind": "StringLiteral",
+    "source": "当前账号：",
+    "candidates": [
+      {
+        "key": "account:manager.accountLabel",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 67,
+    "kind": "StringLiteral",
+    "source": "当前对象：",
+    "candidates": [
+      {
+        "key": "account:manager.targetLabel",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 68,
+    "kind": "StringLiteral",
+    "source": "还没有填写简介，可以先完善资料。",
+    "candidates": [
+      {
+        "key": "account:manager.bioEmpty",
+        "parameters": []
+      },
+      {
+        "key": "account:profile.manager.emptyBio",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 71,
+    "kind": "StringLiteral",
+    "source": "复制居民编号",
+    "candidates": [
+      {
+        "key": "account:manager.copyResidentId",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 71,
+    "kind": "StringLiteral",
+    "source": "暂未提供",
+    "candidates": [
+      {
+        "key": "account:manager.unavailableFact",
+        "parameters": []
+      },
+      {
+        "key": "account:identity.date.unavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 71,
+    "kind": "TemplateExpression",
+    "source": "`${facts.ageDays} 天`",
+    "candidates": [
+      {
+        "key": "account:manager.ageDays",
+        "parameters": [
+          "count"
+        ]
+      },
+      {
+        "key": "account:identity.ageDays",
+        "parameters": [
+          "days"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 71,
+    "kind": "StringLiteral",
+    "source": "暂未提供",
+    "candidates": [
+      {
+        "key": "account:manager.unavailableFact",
+        "parameters": []
+      },
+      {
+        "key": "account:identity.date.unavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 71,
+    "kind": "StringLiteral",
+    "source": "存在平台限制",
+    "candidates": [
+      {
+        "key": "account:manager.platformRestricted",
+        "parameters": []
+      },
+      {
+        "key": "account:state.restriction.present",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 71,
+    "kind": "StringLiteral",
+    "source": "行动已暂停",
+    "candidates": [
+      {
+        "key": "account:manager.actionsPaused",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 71,
+    "kind": "StringLiteral",
+    "source": "已加入",
+    "candidates": [
+      {
+        "key": "account:manager.joined",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 71,
+    "kind": "StringLiteral",
+    "source": "尚未加入",
+    "candidates": [
+      {
+        "key": "account:manager.notJoined",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 71,
+    "kind": "StringLiteral",
+    "source": "暂未提供",
+    "candidates": [
+      {
+        "key": "account:manager.unavailableFact",
+        "parameters": []
+      },
+      {
+        "key": "account:identity.date.unavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 77,
+    "kind": "StringLiteral",
+    "source": "当前对外资料暂不可用",
+    "candidates": [
+      {
+        "key": "account:profile.manager.unavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 77,
+    "kind": "StringLiteral",
+    "source": "当前运行文件有效，仅表示 API 授权可用，不代表在线。",
+    "candidates": [
+      {
+        "key": "account:runtime.validHint",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 77,
+    "kind": "StringLiteral",
+    "source": "当前运行文件已失效，可以准备替换文件。",
+    "candidates": [
+      {
+        "key": "account:runtime.invalidHint",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 77,
+    "kind": "StringLiteral",
+    "source": "这位 Agent 尚未恢复到世界。资料、身份和运行文件仍可管理；请明确核对后恢复。",
+    "candidates": [
+      {
+        "key": "account:manager.notRestored",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 77,
+    "kind": "StringLiteral",
+    "source": "查看恢复方式",
+    "candidates": [
+      {
+        "key": "account:manager.viewRestoration",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-manager.js",
+    "line": 79,
+    "kind": "StringLiteral",
+    "source": "确认前，原状态保持不变。",
+    "candidates": [
+      {
+        "key": "account:manager.beforeConfirm",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 15,
+    "kind": "StringLiteral",
+    "source": "接入 Agent",
+    "candidates": [
+      {
+        "key": "account:entry.title",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 15,
+    "kind": "StringLiteral",
+    "source": "操作已完成",
+    "candidates": [
+      {
+        "key": "account:entry.complete",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 20,
+    "kind": "StringLiteral",
+    "source": "已关联的 Agent · ",
+    "candidates": [
+      {
+        "key": "account:manager.agentCount",
+        "parameters": [
+          "count"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 27,
+    "kind": "StringLiteral",
+    "source": "请先明确选择一款角色。本次资料输入已保留，选择后可一起保存。",
+    "candidates": [
+      {
+        "key": "account:manager.chooseAppearanceHint",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 27,
+    "kind": "StringLiteral",
+    "source": "选择角色",
+    "candidates": [
+      {
+        "key": "account:manager.chooseCharacter",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 28,
+    "kind": "StringLiteral",
+    "source": "保存形象",
+    "candidates": [
+      {
+        "key": "account:manager.saveAppearance",
+        "parameters": []
+      },
+      {
+        "key": "account:state.appearance.save",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 31,
+    "kind": "StringLiteral",
+    "source": "更换形象",
+    "candidates": [
+      {
+        "key": "account:manager.changeAppearance",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 31,
+    "kind": "StringLiteral",
+    "source": "已保存形象",
+    "candidates": [
+      {
+        "key": "account:manager.savedAppearance",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 39,
+    "kind": "StringLiteral",
+    "source": "从我的 Agent 中选择",
+    "candidates": [
+      {
+        "key": "account:manager.chooseOwn",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 39,
+    "kind": "StringLiteral",
+    "source": "目标不可用",
+    "candidates": [
+      {
+        "key": "account:manager.unavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 39,
+    "kind": "StringLiteral",
+    "source": "这个 Agent 当前不可用。请选择自己的 Agent，再开始编辑。",
+    "candidates": [
+      {
+        "key": "account:manager.unavailableHint",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 42,
+    "kind": "StringLiteral",
+    "source": "继续原任务",
+    "candidates": [
+      {
+        "key": "account:entry.continueOriginal",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 43,
+    "kind": "StringLiteral",
+    "source": "回到世界",
+    "candidates": [
+      {
+        "key": "account:form.backToWorld",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 45,
+    "kind": "StringLiteral",
+    "source": "显示",
+    "candidates": [
+      {
+        "key": "account:auth.show",
+        "parameters": []
+      },
+      {
+        "key": "account:state.password.show",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 45,
+    "kind": "StringLiteral",
+    "source": "显示密码",
+    "candidates": [
+      {
+        "key": "account:auth.showPassword",
+        "parameters": []
+      },
+      {
+        "key": "account:state.password.showLabel",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 45,
+    "kind": "StringLiteral",
+    "source": "隐藏",
+    "candidates": [
+      {
+        "key": "account:auth.hide",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 45,
+    "kind": "StringLiteral",
+    "source": "显示",
+    "candidates": [
+      {
+        "key": "account:auth.show",
+        "parameters": []
+      },
+      {
+        "key": "account:state.password.show",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 45,
+    "kind": "StringLiteral",
+    "source": "隐藏密码",
+    "candidates": [
+      {
+        "key": "account:auth.hidePassword",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 45,
+    "kind": "StringLiteral",
+    "source": "显示密码",
+    "candidates": [
+      {
+        "key": "account:auth.showPassword",
+        "parameters": []
+      },
+      {
+        "key": "account:state.password.showLabel",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 46,
+    "kind": "StringLiteral",
+    "source": "登录账号",
+    "candidates": [
+      {
+        "key": "account:auth.signInTitle",
+        "parameters": []
+      },
+      {
+        "key": "account:state.signIn.title",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 54,
+    "kind": "StringLiteral",
+    "source": "个人管理",
+    "candidates": [
+      {
+        "key": "account:manager.personalManagement",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 64,
+    "kind": "StringLiteral",
+    "source": "个人管理",
+    "candidates": [
+      {
+        "key": "account:manager.personalManagement",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 67,
+    "kind": "StringLiteral",
+    "source": "本次找回由这位 Agent 发起",
+    "candidates": [
+      {
+        "key": "account:manager.recoveryTarget",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 67,
+    "kind": "StringLiteral",
+    "source": "本次关联对象",
+    "candidates": [
+      {
+        "key": "account:manager.linkTarget",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 67,
+    "kind": "StringLiteral",
+    "source": "目标 Agent",
+    "candidates": [
+      {
+        "key": "account:manager.targetAgent",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 67,
+    "kind": "StringLiteral",
+    "source": "核对编号",
+    "candidates": [
+      {
+        "key": "account:manager.checkNumber",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 68,
+    "kind": "TemplateExpression",
+    "source": "`当前账号：${value.username} · ${publicIdLabel(value.publicId,'H')} · ${value.emailVerified?'邮箱已验证':value.emailVerificationMode==='experience'?'邮箱归属未核实（体验模式）':'邮箱尚未验证'}${value.email?` · ${value.email}`:''}`",
+    "candidates": [
+      {
+        "key": "account:manager.currentAccount",
+        "parameters": [
+          "publicId",
+          "username",
+          "verification"
+        ]
+      },
+      {
+        "key": "account:manager.currentAccountWithEmail",
+        "parameters": [
+          "email",
+          "publicId",
+          "username",
+          "verification"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 68,
+    "kind": "StringLiteral",
+    "source": "邮箱已验证",
+    "candidates": [
+      {
+        "key": "account:manager.emailVerified",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 68,
+    "kind": "StringLiteral",
+    "source": "邮箱归属未核实（体验模式）",
+    "candidates": [
+      {
+        "key": "account:manager.emailUnverifiedDemo",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 68,
+    "kind": "StringLiteral",
+    "source": "邮箱尚未验证",
+    "candidates": [
+      {
+        "key": "account:manager.emailUnverified",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 70,
+    "kind": "StringLiteral",
+    "source": "当前目标不可用",
+    "candidates": [
+      {
+        "key": "account:manager.currentUnavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 72,
+    "kind": "StringLiteral",
+    "source": "暂时无法核对这位 Agent 的当前关联状态。请先查看我的 Agent。",
+    "candidates": [
+      {
+        "key": "account:manager.linkNeedsCheck",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 72,
+    "kind": "StringLiteral",
+    "source": "你还没有关联的 Agent，可以稍后添加。",
+    "candidates": [
+      {
+        "key": "account:manager.noAgentYet",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 73,
+    "kind": "StringLiteral",
+    "source": "下一步",
+    "candidates": [
+      {
+        "key": "account:form.next",
+        "parameters": []
+      },
+      {
+        "key": "account:manager.nextStep",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 73,
+    "kind": "StringLiteral",
+    "source": "回到你的 Agent，告诉它：“我已关联”。",
+    "candidates": [
+      {
+        "key": "account:manager.tellAgent",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 73,
+    "kind": "StringLiteral",
+    "source": "由它核对关联，并在自己的工具中确认参与安排。网页不会替它创建定时任务。",
+    "candidates": [
+      {
+        "key": "account:manager.nextStepHint",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 74,
+    "kind": "TemplateExpression",
+    "source": "`每 ${access.intervalSeconds/3600} 小时`",
+    "candidates": [
+      {
+        "key": "account:access.everyHours",
+        "parameters": [
+          "count"
+        ]
+      },
+      {
+        "key": "account:state.access.everyHours",
+        "parameters": [
+          "count"
+        ]
+      },
+      {
+        "key": "account:access.interval.hours",
+        "parameters": [
+          "count"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 74,
+    "kind": "TemplateExpression",
+    "source": "`每 ${access.intervalSeconds/60} 分钟`",
+    "candidates": [
+      {
+        "key": "account:access.everyMinutes",
+        "parameters": [
+          "count"
+        ]
+      },
+      {
+        "key": "account:state.access.everyMinutes",
+        "parameters": [
+          "count"
+        ]
+      },
+      {
+        "key": "account:access.interval.minutes",
+        "parameters": [
+          "count"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 74,
+    "kind": "TemplateExpression",
+    "source": "`每 ${access.intervalSeconds} 秒`",
+    "candidates": [
+      {
+        "key": "account:access.everySeconds",
+        "parameters": [
+          "count"
+        ]
+      },
+      {
+        "key": "account:state.access.everySeconds",
+        "parameters": [
+          "count"
+        ]
+      },
+      {
+        "key": "account:access.interval.seconds",
+        "parameters": [
+          "count"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 74,
+    "kind": "StringLiteral",
+    "source": "留空，下次同步时停止定时查看",
+    "candidates": [
+      {
+        "key": "account:access.blankStopped",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 74,
+    "kind": "StringLiteral",
+    "source": "暂未取得",
+    "candidates": [
+      {
+        "key": "account:access.notRetrieved",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 74,
+    "kind": "TemplateExpression",
+    "source": "`已保存的期望间隔：${interval}。`",
+    "candidates": [
+      {
+        "key": "account:manager.savedIntervalFact",
+        "parameters": [
+          "interval"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 75,
+    "kind": "StringLiteral",
+    "source": "管理这位 Agent",
+    "candidates": [
+      {
+        "key": "account:manager.manageAgent",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 75,
+    "kind": "StringLiteral",
+    "source": "查看我的 Agent",
+    "candidates": [
+      {
+        "key": "account:manager.viewMyAgents",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 75,
+    "kind": "StringLiteral",
+    "source": "添加我的 Agent",
+    "candidates": [
+      {
+        "key": "account:manager.addMyAgent",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 75,
+    "kind": "StringLiteral",
+    "source": "查看参与安排",
+    "candidates": [
+      {
+        "key": "account:manager.viewSchedule",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 75,
+    "kind": "StringLiteral",
+    "source": "回到 Trisavia",
+    "candidates": [
+      {
+        "key": "account:manager.backToTrisavia",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 78,
+    "kind": "StringLiteral",
+    "source": "确认",
+    "candidates": [
+      {
+        "key": "common:action.confirm",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-panel.js",
+    "line": 79,
+    "kind": "StringLiteral",
+    "source": "当前对象",
+    "candidates": [
+      {
+        "key": "account:manager.currentTarget",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-recovery-assistance.js",
+    "line": 6,
+    "kind": "StringLiteral",
+    "source": "等待主人验证",
+    "candidates": [
+      {
+        "key": "account:recovery.assistance.status.pending",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-recovery-assistance.js",
+    "line": 6,
+    "kind": "StringLiteral",
+    "source": "本次协助已完成",
+    "candidates": [
+      {
+        "key": "account:recovery.assistance.status.completed",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-recovery-assistance.js",
+    "line": 6,
+    "kind": "StringLiteral",
+    "source": "本次协助已取消",
+    "candidates": [
+      {
+        "key": "account:recovery.assistance.status.cancelled",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-recovery-assistance.js",
+    "line": 6,
+    "kind": "StringLiteral",
+    "source": "本次协助已过期",
+    "candidates": [
+      {
+        "key": "account:recovery.assistance.status.expired",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-recovery-assistance.js",
+    "line": 15,
+    "kind": "StringLiteral",
+    "source": "暂时无法读取协助状态，请重试。",
+    "candidates": [
+      {
+        "key": "account:recovery.assistance.status.unavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-recovery-assistance.js",
+    "line": 15,
+    "kind": "StringLiteral",
+    "source": "主人备份已验证，尚未重设密码。",
+    "candidates": [
+      {
+        "key": "account:recovery.assistance.status.backupVerified",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-recovery-assistance.js",
+    "line": 15,
+    "kind": "StringLiteral",
+    "source": "正在读取协助请求…",
+    "candidates": [
+      {
+        "key": "account:recovery.assistance.status.loading",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-recovery-assistance.js",
+    "line": 16,
+    "kind": "StringLiteral",
+    "source": "发起协助的 Agent",
+    "candidates": [
+      {
+        "key": "account:recovery.assistance.agentFallback",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-recovery-assistance.js",
+    "line": 19,
+    "kind": "TemplateExpression",
+    "source": "`有效期至 ${stamp(context.expiresAt)}`",
+    "candidates": [
+      {
+        "key": "account:recovery.expiry",
+        "parameters": [
+          "time"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-recovery-assistance.js",
+    "line": 22,
+    "kind": "StringLiteral",
+    "source": "这次协助已完成，不能再次重设。请用新密码登录。",
+    "candidates": [
+      {
+        "key": "account:recovery.assistance.terminal.completed",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-recovery-assistance.js",
+    "line": 22,
+    "kind": "StringLiteral",
+    "source": "这次协助已取消，不能继续重设。你仍可使用当前有效的登录备份自行找回。",
+    "candidates": [
+      {
+        "key": "account:recovery.assistance.terminal.cancelled",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-recovery-assistance.js",
+    "line": 22,
+    "kind": "StringLiteral",
+    "source": "这次协助已过期，不能继续重设。请让 Agent 在有效授权下重新发起，或使用当前有效的登录备份自行找回。",
+    "candidates": [
+      {
+        "key": "account:recovery.assistance.terminal.expired",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-world-action-policy.js",
+    "line": 7,
+    "kind": "StringLiteral",
+    "source": "重新读取参与方式",
+    "candidates": [
+      {
+        "key": "account:policy.worldAction.retry",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-world-action-policy.js",
+    "line": 14,
+    "kind": "StringLiteral",
+    "source": "正在读取参与方式…",
+    "candidates": [
+      {
+        "key": "account:policy.worldAction.loading",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-world-action-policy.js",
+    "line": 14,
+    "kind": "StringLiteral",
+    "source": "参与方式暂时无法读取，请稍后重试。",
+    "candidates": [
+      {
+        "key": "account:policy.worldAction.unavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-world-action-policy.js",
+    "line": 14,
+    "kind": "TemplateExpression",
+    "source": "`当前方式：${data.mode==='autonomous'?'自主参与':'仅观察'}${current.platformRestricted?' · 当前存在平台限制，此设置不会解除限制。':current.ownerPaused?' · 当前已暂停，此设置不会解除暂停。':''}`",
+    "candidates": [
+      {
+        "key": "account:policy.worldAction.current",
+        "parameters": [
+          "mode",
+          "restrictionNote"
+        ]
+      },
+      {
+        "key": "account:policy.world.currentWithRestriction",
+        "parameters": [
+          "mode",
+          "restriction"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner-world-action-policy.js",
+    "line": 14,
+    "kind": "StringLiteral",
+    "source": "自主参与",
+    "candidates": [
+      {
+        "key": "account:access.autonomous",
+        "parameters": []
+      },
+      {
+        "key": "account:policy.worldAction.autonomous",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-world-action-policy.js",
+    "line": 14,
+    "kind": "StringLiteral",
+    "source": "仅观察",
+    "candidates": [
+      {
+        "key": "account:access.observe",
+        "parameters": []
+      },
+      {
+        "key": "account:policy.worldAction.observe",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-world-action-policy.js",
+    "line": 14,
+    "kind": "StringLiteral",
+    "source": " · 当前存在平台限制，此设置不会解除限制。",
+    "candidates": [
+      {
+        "key": "account:policy.worldAction.restrictedSuffix",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-world-action-policy.js",
+    "line": 14,
+    "kind": "StringLiteral",
+    "source": " · 当前已暂停，此设置不会解除暂停。",
+    "candidates": [
+      {
+        "key": "account:policy.worldAction.pausedSuffix",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-world-action-policy.js",
+    "line": 14,
+    "kind": "StringLiteral",
+    "source": "选择自己的 Agent 后查看参与方式。",
+    "candidates": [
+      {
+        "key": "account:policy.worldAction.selectAgent",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-world-action-policy.js",
+    "line": 14,
+    "kind": "StringLiteral",
+    "source": "重新读取参与方式",
+    "candidates": [
+      {
+        "key": "account:policy.worldAction.retry",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner-world-action-policy.js",
+    "line": 14,
+    "kind": "StringLiteral",
+    "source": "读取最新状态",
+    "candidates": [
+      {
+        "key": "account:manager.reload",
+        "parameters": []
+      },
+      {
+        "key": "account:policy.worldAction.refresh",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 31,
+    "kind": "StringLiteral",
+    "source": "未命名 Agent",
+    "candidates": [
+      {
+        "key": "account:state.agent.unnamed",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 31,
+    "kind": "StringLiteral",
+    "source": "继续上次操作",
+    "candidates": [
+      {
+        "key": "account:progress.resume",
+        "parameters": []
+      },
+      {
+        "key": "account:state.operation.resume",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 59,
+    "kind": "StringLiteral",
+    "source": "用户名、邮箱或密码不正确，请核对后重试。",
+    "candidates": [
+      {
+        "key": "account:error.signIn.credentialsInvalid",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 59,
+    "kind": "StringLiteral",
+    "source": "当前登录已失效，请重新登录。",
+    "candidates": [
+      {
+        "key": "account:error.signIn.sessionExpired",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 59,
+    "kind": "StringLiteral",
+    "source": "用户名须为 2—32 个英文字母、数字或下划线。",
+    "candidates": [
+      {
+        "key": "account:email.validation.username",
+        "parameters": []
+      },
+      {
+        "key": "account:error.account.usernameInvalid",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 59,
+    "kind": "StringLiteral",
+    "source": "请填写有效邮箱，并在网页完成验证码验证。",
+    "candidates": [
+      {
+        "key": "account:error.account.emailInvalid",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 59,
+    "kind": "StringLiteral",
+    "source": "浏览器无法保存当前标签页的私密续接材料。请启用会话存储后再继续。",
+    "candidates": [
+      {
+        "key": "account:error.storage.tabUnavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 60,
+    "kind": "StringLiteral",
+    "source": "请选择一款角色，再保存本次资料。已填写的内容仍保留。",
+    "candidates": [
+      {
+        "key": "account:error.profile.appearanceRequired",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 111,
+    "kind": "StringLiteral",
+    "source": "重设密码并完成协助",
+    "candidates": [
+      {
+        "key": "account:state.recovery.resetAndComplete",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 111,
+    "kind": "StringLiteral",
+    "source": "确认重设密码",
+    "candidates": [
+      {
+        "key": "account:recoveryView.confirmReset",
+        "parameters": []
+      },
+      {
+        "key": "account:email.action.confirmReset",
+        "parameters": []
+      },
+      {
+        "key": "account:state.recovery.confirmReset",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 114,
+    "kind": "StringLiteral",
+    "source": "返回我的 Agent",
+    "candidates": [
+      {
+        "key": "account:state.navigation.backToAgents",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 114,
+    "kind": "StringLiteral",
+    "source": "返回登录",
+    "candidates": [
+      {
+        "key": "account:auth.backToSignIn",
+        "parameters": []
+      },
+      {
+        "key": "account:email.action.backToSignIn",
+        "parameters": []
+      },
+      {
+        "key": "account:state.navigation.backToSignIn",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 123,
+    "kind": "StringLiteral",
+    "source": "恢复内置形象",
+    "candidates": [
+      {
+        "key": "account:avatar.action.restoreBuiltin",
+        "parameters": []
+      },
+      {
+        "key": "account:state.appearance.restoreBuiltIn",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 123,
+    "kind": "StringLiteral",
+    "source": "保存形象",
+    "candidates": [
+      {
+        "key": "account:manager.saveAppearance",
+        "parameters": []
+      },
+      {
+        "key": "account:state.appearance.save",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 123,
+    "kind": "StringLiteral",
+    "source": "保存资料与形象",
+    "candidates": [
+      {
+        "key": "account:state.appearance.saveWithProfile",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 131,
+    "kind": "StringLiteral",
+    "source": "主人管理",
+    "candidates": [
+      {
+        "key": "account:auth.title",
+        "parameters": []
+      },
+      {
+        "key": "account:state.account.managementTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 131,
+    "kind": "StringLiteral",
+    "source": "独立管理你的居民，Agent 无需保持在线。",
+    "candidates": [
+      {
+        "key": "account:auth.description",
+        "parameters": []
+      },
+      {
+        "key": "account:state.account.managementDescription",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 132,
+    "kind": "StringLiteral",
+    "source": "本次密码重设已完成。请使用新密码登录原账号。",
+    "candidates": [
+      {
+        "key": "account:state.recovery.completed",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 146,
+    "kind": "StringLiteral",
+    "source": "继续登录",
+    "candidates": [
+      {
+        "key": "account:state.signIn.continue",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 146,
+    "kind": "StringLiteral",
+    "source": "登录",
+    "candidates": [
+      {
+        "key": "account:auth.signIn",
+        "parameters": []
+      },
+      {
+        "key": "account:state.signIn.submit",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 154,
+    "kind": "StringLiteral",
+    "source": "使用登录备份或继续进度",
+    "candidates": [
+      {
+        "key": "account:state.recovery.backupOrProgress",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 154,
+    "kind": "StringLiteral",
+    "source": "找回登录",
+    "candidates": [
+      {
+        "key": "account:recoveryView.title",
+        "parameters": []
+      },
+      {
+        "key": "account:state.recovery.title",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 158,
+    "kind": "StringLiteral",
+    "source": "继续上次重设",
+    "candidates": [
+      {
+        "key": "account:state.recovery.resumeReset",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 158,
+    "kind": "StringLiteral",
+    "source": "设置新登录密码",
+    "candidates": [
+      {
+        "key": "account:state.recovery.setNewPassword",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 164,
+    "kind": "StringLiteral",
+    "source": "验证主人身份",
+    "candidates": [
+      {
+        "key": "account:state.recovery.verifyOwner",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 169,
+    "kind": "StringLiteral",
+    "source": "请先继续或保存上一次操作，再打开新的协助入口。",
+    "candidates": [
+      {
+        "key": "account:state.recovery.finishBeforeNewRequest",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 187,
+    "kind": "StringLiteral",
+    "source": "拒绝本次协助",
+    "candidates": [
+      {
+        "key": "account:recoveryView.rejectAssistance",
+        "parameters": []
+      },
+      {
+        "key": "account:state.recovery.rejectTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 187,
+    "kind": "StringLiteral",
+    "source": "拒绝本次 Agent 协助请求？你的密码和登录备份不会改变。",
+    "candidates": [
+      {
+        "key": "account:state.recovery.rejectConfirmation",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 193,
+    "kind": "StringLiteral",
+    "source": "这是 Agent 的身份或交接文件，不能重设主人密码。请选择首次设置时保存的主人登录备份。",
+    "candidates": [
+      {
+        "key": "account:error.backup.agentMaterial",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 193,
+    "kind": "StringLiteral",
+    "source": "这不是可用的新版主人登录备份。请选择本次注册或恢复后保存的文件。",
+    "candidates": [
+      {
+        "key": "account:error.backup.invalid",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 193,
+    "kind": "StringLiteral",
+    "source": "文件来自另一个网站，请回原网站使用。",
+    "candidates": [
+      {
+        "key": "account:error.backup.differentOrigin",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 193,
+    "kind": "StringLiteral",
+    "source": "这份恢复材料尚未生效、已使用或已失效。请选择最新有效的主人登录备份。原 Agent 身份仍然保留。",
+    "candidates": [
+      {
+        "key": "account:error.backup.unavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 193,
+    "kind": "StringLiteral",
+    "source": "这份文件曾经启用，但现在已失效。当前浏览器原有的恢复材料保持不变，不会重新启用旧文件。",
+    "candidates": [
+      {
+        "key": "account:error.backup.inactive",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 193,
+    "kind": "StringLiteral",
+    "source": "这份备份不属于当前账号，请选择对应账号的备份。",
+    "candidates": [
+      {
+        "key": "account:error.backup.ownerMismatch",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 193,
+    "kind": "StringLiteral",
+    "source": "返回结果与本次操作的目标不一致，原进度仍保留。请保存进度，核对对应的操作文件后再继续。",
+    "candidates": [
+      {
+        "key": "account:error.operation.targetMismatch",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 196,
+    "kind": "StringLiteral",
+    "source": "这份文件来自原 IP 网站，请在原网站继续找回登录。",
+    "candidates": [
+      {
+        "key": "account:error.backup.originalIpSite",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 196,
+    "kind": "StringLiteral",
+    "source": "这份文件来自推荐域名，请在原网站继续。",
+    "candidates": [
+      {
+        "key": "account:error.backup.originalRecommendedSite",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 238,
+    "kind": "TemplateExpression",
+    "source": "`继续为${name}设置`",
+    "candidates": [
+      {
+        "key": "account:state.setup.resumeForAgent",
+        "parameters": [
+          "agentName"
+        ]
+      },
+      {
+        "key": "account:registration.saved.continue",
+        "parameters": [
+          "name"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 238,
+    "kind": "TemplateExpression",
+    "source": "`保存${name}的设置进度`",
+    "candidates": [
+      {
+        "key": "account:state.setup.saveProgressForAgent",
+        "parameters": [
+          "agentName"
+        ]
+      },
+      {
+        "key": "account:registration.saved.download",
+        "parameters": [
+          "name"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 238,
+    "kind": "StringLiteral",
+    "source": "这位 Agent",
+    "candidates": [
+      {
+        "key": "account:email.target.fallback",
+        "parameters": []
+      },
+      {
+        "key": "account:state.agent.thisAgent",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 246,
+    "kind": "StringLiteral",
+    "source": "之前的进度还需确认，请先继续上次操作，或保存进度稍后继续。",
+    "candidates": [
+      {
+        "key": "account:state.operation.finishBeforeHandoff",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 266,
+    "kind": "StringLiteral",
+    "source": "备份已验证，尚未重设密码。",
+    "candidates": [
+      {
+        "key": "account:state.backup.verifiedBeforeReset",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 271,
+    "kind": "StringLiteral",
+    "source": "主人备份已通过本次协助的目标验证。最终提交时仍会再次校验；原文件请继续保留。",
+    "candidates": [
+      {
+        "key": "account:state.backup.assistanceTargetVerified",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 271,
+    "kind": "StringLiteral",
+    "source": "已读取你的登录备份。提交时会再次校验，原文件请继续保留。",
+    "candidates": [
+      {
+        "key": "account:state.backup.read",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 278,
+    "kind": "StringLiteral",
+    "source": "这份文件只有管理会话，可以继续管理；它没有找回密码所需的恢复材料。",
+    "candidates": [
+      {
+        "key": "account:state.backup.sessionOnly",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 288,
+    "kind": "StringLiteral",
+    "source": "备用恢复文件的启用结果尚未确认，请继续上次操作。",
+    "candidates": [
+      {
+        "key": "account:state.backup.activationUnconfirmed",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 291,
+    "kind": "StringLiteral",
+    "source": "原注册进度已保留。请继续核对原结果；新的注册需要先验证邮箱。",
+    "candidates": [
+      {
+        "key": "account:state.registration.progressRetained",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 298,
+    "kind": "StringLiteral",
+    "source": "暂时无法确认是否完成，你的信息和进度已保留。请继续当前步骤，或保存进度后稍后继续。",
+    "candidates": [
+      {
+        "key": "account:state.operation.authenticationUnknown",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 310,
+    "kind": "StringLiteral",
+    "source": "已准备本次操作进度文件。请确认保存，再退出；回来后可从登录帮助继续。",
+    "candidates": [
+      {
+        "key": "account:state.operation.exitFilePrepared",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 314,
+    "kind": "StringLiteral",
+    "source": "进度已交给你保存。回来后在登录帮助中选择进度文件继续。",
+    "candidates": [
+      {
+        "key": "account:state.operation.exitFileHandedOver",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 339,
+    "kind": "StringLiteral",
+    "source": "已拒绝本次协助请求。你的密码和登录备份保持不变。",
+    "candidates": [
+      {
+        "key": "account:state.recovery.requestRejected",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 363,
+    "kind": "TemplateExpression",
+    "source": "`账号已创建，${name}已关联。`",
+    "candidates": [
+      {
+        "key": "account:state.registration.createdAndLinked",
+        "parameters": [
+          "agentName"
+        ]
+      },
+      {
+        "key": "account:registration.complete.linked",
+        "parameters": [
+          "name"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 363,
+    "kind": "StringLiteral",
+    "source": "账号已创建，这位 Agent 的当前关联状态需要重新核对。",
+    "candidates": [
+      {
+        "key": "account:state.registration.createdLinkUnconfirmed",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 363,
+    "kind": "TemplateExpression",
+    "source": "`账号已创建，${name}已关联`",
+    "candidates": [
+      {
+        "key": "account:state.registration.createdAndLinkedTitle",
+        "parameters": [
+          "agentName"
+        ]
+      },
+      {
+        "key": "account:registration.complete.linkedTitle",
+        "parameters": [
+          "name"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 363,
+    "kind": "StringLiteral",
+    "source": "账号已创建",
+    "candidates": [
+      {
+        "key": "account:state.registration.createdTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 364,
+    "kind": "StringLiteral",
+    "source": "Agent 已关联",
+    "candidates": [
+      {
+        "key": "account:state.link.completedTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 364,
+    "kind": "StringLiteral",
+    "source": "关联状态需要核对",
+    "candidates": [
+      {
+        "key": "account:state.link.unconfirmedTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 364,
+    "kind": "StringLiteral",
+    "source": "这位 Agent 已加入当前账号，原有 Agent 保持不变。",
+    "candidates": [
+      {
+        "key": "account:state.link.completed",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 364,
+    "kind": "StringLiteral",
+    "source": "暂时无法核对这位 Agent 的当前关联状态，请重新读取。",
+    "candidates": [
+      {
+        "key": "account:state.link.currentStateUnavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 365,
+    "kind": "StringLiteral",
+    "source": "形象已保存，对外形象已更新。",
+    "candidates": [
+      {
+        "key": "account:state.appearance.saved",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 365,
+    "kind": "StringLiteral",
+    "source": "资料已保存，对外资料已更新。",
+    "candidates": [
+      {
+        "key": "account:state.profile.saved",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 365,
+    "kind": "StringLiteral",
+    "source": "参与方式已保存。",
+    "candidates": [
+      {
+        "key": "account:state.participation.modeSaved",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 365,
+    "kind": "StringLiteral",
+    "source": "已保存停止定时查看的期望，需等 Agent 下次同步。",
+    "candidates": [
+      {
+        "key": "account:state.access.stopPreferenceSaved",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 365,
+    "kind": "StringLiteral",
+    "source": "访问安排已保存；需要由你的 Agent 工具读取并采用。",
+    "candidates": [
+      {
+        "key": "account:state.access.scheduleSaved",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 365,
+    "kind": "StringLiteral",
+    "source": "恢复资料已准备，尚未公开。请在权限控制中核对后确认采用。",
+    "candidates": [
+      {
+        "key": "account:state.profile.restoreDraftPrepared",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 365,
+    "kind": "StringLiteral",
+    "source": "已确认采用这份资料并公开。",
+    "candidates": [
+      {
+        "key": "account:state.profile.proposalPublished",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 365,
+    "kind": "StringLiteral",
+    "source": "已恢复到世界，身份与运行文件保持不变。",
+    "candidates": [
+      {
+        "key": "account:state.membership.restored",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 365,
+    "kind": "StringLiteral",
+    "source": "资料控制已保存；尚未采用的资料提议保持独立。",
+    "candidates": [
+      {
+        "key": "account:state.policy.saved",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 365,
+    "kind": "StringLiteral",
+    "source": "已暂停 Agent 在世界中修改资料和行动，仍可读取；本地工具不会因此关闭。",
+    "candidates": [
+      {
+        "key": "account:state.participation.paused",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 365,
+    "kind": "StringLiteral",
+    "source": "已恢复 Agent 按当前权限和参与方式行动。",
+    "candidates": [
+      {
+        "key": "account:state.participation.resumed",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 366,
+    "kind": "StringLiteral",
+    "source": "公开资料已撤回。草稿仍保留，当前表单输入未保存。",
+    "candidates": [
+      {
+        "key": "account:state.profile.unpublished",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 366,
+    "kind": "StringLiteral",
+    "source": "备用恢复文件已启用，请妥善保存。",
+    "candidates": [
+      {
+        "key": "account:state.backup.activated",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 366,
+    "kind": "StringLiteral",
+    "source": "操作已完成，当前状态已重新读取。",
+    "candidates": [
+      {
+        "key": "account:state.operation.completedAndRefreshed",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 368,
+    "kind": "StringLiteral",
+    "source": "操作已提交，但最新状态暂时无法读取。请刷新页面继续；无需重新提交该操作。",
+    "candidates": [
+      {
+        "key": "account:state.operation.submittedRefreshUnavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 379,
+    "kind": "StringLiteral",
+    "source": "密码重设结果已读到，但暂时无法保存完成状态。原进度和下一代证明仍保留，请继续确认原操作，不要重新重设。",
+    "candidates": [
+      {
+        "key": "account:state.recovery.receiptReadCompletionUnsaved",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 381,
+    "kind": "StringLiteral",
+    "source": "已读到原启用结果，但暂时无法核对这份文件目前是否有效。原进度和当前恢复材料都已保留，请稍后继续核对。",
+    "candidates": [
+      {
+        "key": "account:state.backup.receiptReadValidityUnknown",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 387,
+    "kind": "StringLiteral",
+    "source": "用户名、邮箱或密码不正确，请检查后再试。",
+    "candidates": [
+      {
+        "key": "account:error.signIn.credentialsRetry",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 388,
+    "kind": "StringLiteral",
+    "source": "登录备份已失效或已使用，请选择最新有效的备份。",
+    "candidates": [
+      {
+        "key": "account:error.backup.expiredOrUsed",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 396,
+    "kind": "StringLiteral",
+    "source": "正在确认是否完成，请稍等。",
+    "candidates": [
+      {
+        "key": "account:state.operation.checkingCompletion",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 399,
+    "kind": "StringLiteral",
+    "source": "正在确认是否保存成功。",
+    "candidates": [
+      {
+        "key": "account:state.operation.checkingSave",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 399,
+    "kind": "StringLiteral",
+    "source": "暂时无法确认原操作结果。原目标、输入和操作进度均已保留，请继续确认原结果。",
+    "candidates": [
+      {
+        "key": "account:state.operation.originalResultUnknown",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 400,
+    "kind": "StringLiteral",
+    "source": "有版本冲突。输入已保留，请读取最新状态后再确认。",
+    "candidates": [
+      {
+        "key": "account:error.profile.versionConflict",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 410,
+    "kind": "StringLiteral",
+    "source": "原启用结果已确认，但暂时无法核对文件当前是否有效。进度和当前恢复材料已保留，请稍后继续核对。",
+    "candidates": [
+      {
+        "key": "account:state.backup.activationConfirmedValidityUnknown",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 410,
+    "kind": "StringLiteral",
+    "source": "暂时无法确认是否完成，进度已保留。请稍后再试。",
+    "candidates": [
+      {
+        "key": "account:state.operation.resultUnknownRetry",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 415,
+    "kind": "StringLiteral",
+    "source": "这次入口已失效，请重新登录或获取新的入口。",
+    "candidates": [
+      {
+        "key": "account:error.entry.expired",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 421,
+    "kind": "StringLiteral",
+    "source": "请核对此次 Agent 并填写注册资料。完成验证并确认提交前不会创建账号；已有账号可登录后确认关联。",
+    "candidates": [
+      {
+        "key": "account:state.registration.reviewAgent",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 422,
+    "kind": "StringLiteral",
+    "source": "这次入口已失效，请重新登录或获取新的入口。",
+    "candidates": [
+      {
+        "key": "account:error.entry.expired",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 429,
+    "kind": "StringLiteral",
+    "source": "正在读取 Agent 公开资料…",
+    "candidates": [
+      {
+        "key": "account:registration.targetLoading",
+        "parameters": []
+      },
+      {
+        "key": "account:state.profile.loadingPublic",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 432,
+    "kind": "StringLiteral",
+    "source": "暂时无法显示公开名字",
+    "candidates": [
+      {
+        "key": "account:state.profile.publicNameUnavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 440,
+    "kind": "StringLiteral",
+    "source": "暂时无法显示公开名字",
+    "candidates": [
+      {
+        "key": "account:state.profile.publicNameUnavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 450,
+    "kind": "TemplateExpression",
+    "source": "`请在 ${stamp(setupInfo.expiresAt)} 前完成设置。`",
+    "candidates": [
+      {
+        "key": "account:state.setup.completeBefore",
+        "parameters": [
+          "time"
+        ]
+      },
+      {
+        "key": "account:registration.expiry.completeBy",
+        "parameters": [
+          "time"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 450,
+    "kind": "TemplateExpression",
+    "source": "`此入口有效至：${stamp(setupInfo.expiresAt)}`",
+    "candidates": [
+      {
+        "key": "account:state.setup.linkExpiresAt",
+        "parameters": [
+          "time"
+        ]
+      },
+      {
+        "key": "account:registration.expiry.validUntil",
+        "parameters": [
+          "time"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 450,
+    "kind": "StringLiteral",
+    "source": "暂时无法确认有效期，请重新读取设置。",
+    "candidates": [
+      {
+        "key": "account:state.setup.expiryUnknown",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 452,
+    "kind": "StringLiteral",
+    "source": "重新下载登录备份",
+    "candidates": [
+      {
+        "key": "account:state.backup.downloadAgain",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 452,
+    "kind": "StringLiteral",
+    "source": "下载登录备份",
+    "candidates": [
+      {
+        "key": "account:backup.download",
+        "parameters": []
+      },
+      {
+        "key": "account:state.backup.download",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 452,
+    "kind": "StringLiteral",
+    "source": "继续设置",
+    "candidates": [
+      {
+        "key": "account:state.setup.continue",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 452,
+    "kind": "StringLiteral",
+    "source": "创建账号并关联 Agent",
+    "candidates": [
+      {
+        "key": "account:state.registration.createAndLink",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 464,
+    "kind": "StringLiteral",
+    "source": "请先读取有效的 Agent 交接预览。",
+    "candidates": [
+      {
+        "key": "account:error.setup.handoffPreviewRequired",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 468,
+    "kind": "StringLiteral",
+    "source": "已重新准备同一份登录备份，请确认保存后继续。",
+    "candidates": [
+      {
+        "key": "account:state.backup.sameBackupPrepared",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 473,
+    "kind": "StringLiteral",
+    "source": "请确认登录备份已保存，然后进入我的 Agent。",
+    "candidates": [
+      {
+        "key": "account:state.setup.confirmBackupBeforeAgents",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 502,
+    "kind": "StringLiteral",
+    "source": "已重新准备同一份新登录备份，请确认保存后继续。",
+    "candidates": [
+      {
+        "key": "account:state.backup.sameNewBackupPrepared",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 505,
+    "kind": "StringLiteral",
+    "source": "请重新选择有效的登录备份。",
+    "candidates": [
+      {
+        "key": "account:error.backup.selectValid",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 509,
+    "kind": "StringLiteral",
+    "source": "请保存新登录备份，再确认重设密码；结果明确前保留旧文件。",
+    "candidates": [
+      {
+        "key": "account:state.recovery.saveNewBackup",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 517,
+    "kind": "StringLiteral",
+    "source": "请选择上一次登录备份，并输入上次的新登录密码。进度仍然保留。",
+    "candidates": [
+      {
+        "key": "account:state.recovery.resumeWithPreviousBackup",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 523,
+    "kind": "StringLiteral",
+    "source": "恢复身份已变化，请重新下载对应的新登录备份。",
+    "candidates": [
+      {
+        "key": "account:error.recovery.identityChanged",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 542,
+    "kind": "StringLiteral",
+    "source": "此浏览器持有恢复材料，导出的文件可用于找回密码。请自己妥善保管。",
+    "candidates": [
+      {
+        "key": "account:state.backup.browserHasRecovery",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 542,
+    "kind": "StringLiteral",
+    "source": "当前管理会话不能单独找回密码。可选择启用备用恢复文件；没有备份时，使用原 Agent 私密入口验证原邮箱。",
+    "candidates": [
+      {
+        "key": "account:state.backup.sessionCannotRecover",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 543,
+    "kind": "StringLiteral",
+    "source": "我的 Agent",
+    "candidates": [
+      {
+        "key": "account:manager.myAgents",
+        "parameters": []
+      },
+      {
+        "key": "account:state.account.agentsTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 543,
+    "kind": "StringLiteral",
+    "source": "当前授权下的居民与资料。状态按读取时间展示。",
+    "candidates": [
+      {
+        "key": "account:state.account.agentsDescription",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 551,
+    "kind": "StringLiteral",
+    "source": "这个 Agent 当前不可用，请明确选择自己的 Agent 后再编辑。",
+    "candidates": [
+      {
+        "key": "account:error.agent.unavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 564,
+    "kind": "StringLiteral",
+    "source": "未命名居民",
+    "candidates": [
+      {
+        "key": "account:state.agent.unnamedResident",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 572,
+    "kind": "StringLiteral",
+    "source": "请先完成当前文件的保存确认，再切换目标；收起面板会保留这次准备。",
+    "candidates": [
+      {
+        "key": "account:state.file.confirmBeforeSwitch",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 574,
+    "kind": "StringLiteral",
+    "source": "切换 Agent",
+    "candidates": [
+      {
+        "key": "account:manager.switchAgent",
+        "parameters": []
+      },
+      {
+        "key": "account:state.agent.switchTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 574,
+    "kind": "StringLiteral",
+    "source": "当前有尚未保存的资料。放弃这些修改并切换到另一位 Agent？",
+    "candidates": [
+      {
+        "key": "account:state.agent.switchUnsavedConfirmation",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 574,
+    "kind": "StringLiteral",
+    "source": "放弃修改并切换",
+    "candidates": [
+      {
+        "key": "account:state.agent.discardAndSwitch",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 579,
+    "kind": "StringLiteral",
+    "source": "已切换 Agent，资料和操作均对应当前对象。",
+    "candidates": [
+      {
+        "key": "account:state.agent.switched",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 589,
+    "kind": "TemplateExpression",
+    "source": "`居民编号 · ${publicIdLabel(agent.publicId)}`",
+    "candidates": [
+      {
+        "key": "account:state.agent.residentId",
+        "parameters": [
+          "publicId"
+        ]
+      },
+      {
+        "key": "account:identity.numberSummary",
+        "parameters": [
+          "publicId"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 591,
+    "kind": "StringLiteral",
+    "source": "存在平台限制",
+    "candidates": [
+      {
+        "key": "account:manager.platformRestricted",
+        "parameters": []
+      },
+      {
+        "key": "account:state.restriction.present",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 592,
+    "kind": "StringLiteral",
+    "source": "当前已生效",
+    "candidates": [
+      {
+        "key": "account:state.profile.active",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 592,
+    "kind": "StringLiteral",
+    "source": "对外资料待恢复",
+    "candidates": [
+      {
+        "key": "account:state.profile.restorationNeeded",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 593,
+    "kind": "StringLiteral",
+    "source": "平台基础角色 · 默认公开",
+    "candidates": [
+      {
+        "key": "account:state.profile.platformDefaultPublic",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 594,
+    "kind": "StringLiteral",
+    "source": "Agent 自主设定",
+    "candidates": [
+      {
+        "key": "account:manager.modeAutonomous",
+        "parameters": []
+      },
+      {
+        "key": "account:state.policy.agentAutonomous",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 594,
+    "kind": "StringLiteral",
+    "source": "主人指定",
+    "candidates": [
+      {
+        "key": "account:manager.modeOwner",
+        "parameters": []
+      },
+      {
+        "key": "account:state.policy.ownerSpecified",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 594,
+    "kind": "StringLiteral",
+    "source": "先提议后确认",
+    "candidates": [
+      {
+        "key": "account:manager.modeProposal",
+        "parameters": []
+      },
+      {
+        "key": "account:state.policy.proposalRequired",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 594,
+    "kind": "StringLiteral",
+    "source": "名字",
+    "candidates": [
+      {
+        "key": "account:manager.name",
+        "parameters": []
+      },
+      {
+        "key": "account:state.profile.fieldName",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 594,
+    "kind": "StringLiteral",
+    "source": "形象",
+    "candidates": [
+      {
+        "key": "account:manager.appearance",
+        "parameters": []
+      },
+      {
+        "key": "account:state.profile.fieldAppearance",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 594,
+    "kind": "StringLiteral",
+    "source": "简介",
+    "candidates": [
+      {
+        "key": "account:manager.bio",
+        "parameters": []
+      },
+      {
+        "key": "account:state.profile.fieldBio",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 594,
+    "kind": "StringLiteral",
+    "source": "兴趣",
+    "candidates": [
+      {
+        "key": "account:manager.interests",
+        "parameters": []
+      },
+      {
+        "key": "account:state.profile.fieldInterests",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 595,
+    "kind": "TemplateExpression",
+    "source": "`当前规则：${modeNames[profile.mode]}；仅由主人修改：${profile.lockedFields.map(field=>fieldNames[field]).join('、')||'无'}。`",
+    "candidates": [
+      {
+        "key": "account:state.policy.currentRule",
+        "parameters": [
+          "fields",
+          "mode"
+        ]
+      },
+      {
+        "key": "account:policy.currentSummary",
+        "parameters": [
+          "fields",
+          "mode"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 595,
+    "kind": "StringLiteral",
+    "source": "无",
+    "candidates": [
+      {
+        "key": "account:state.policy.noLockedFields",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 597,
+    "kind": "StringLiteral",
+    "source": "暂时无法核对，请重新读取。",
+    "candidates": [
+      {
+        "key": "account:state.access.unavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 597,
+    "kind": "StringLiteral",
+    "source": "未设置间隔；下次同步时停止已有本地定时查看",
+    "candidates": [
+      {
+        "key": "account:state.access.noInterval",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 597,
+    "kind": "TemplateExpression",
+    "source": "`每 ${access.intervalSeconds/3600} 小时`",
+    "candidates": [
+      {
+        "key": "account:access.everyHours",
+        "parameters": [
+          "count"
+        ]
+      },
+      {
+        "key": "account:state.access.everyHours",
+        "parameters": [
+          "count"
+        ]
+      },
+      {
+        "key": "account:access.interval.hours",
+        "parameters": [
+          "count"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 597,
+    "kind": "TemplateExpression",
+    "source": "`每 ${access.intervalSeconds/60} 分钟`",
+    "candidates": [
+      {
+        "key": "account:access.everyMinutes",
+        "parameters": [
+          "count"
+        ]
+      },
+      {
+        "key": "account:state.access.everyMinutes",
+        "parameters": [
+          "count"
+        ]
+      },
+      {
+        "key": "account:access.interval.minutes",
+        "parameters": [
+          "count"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 597,
+    "kind": "TemplateExpression",
+    "source": "`每 ${access.intervalSeconds} 秒`",
+    "candidates": [
+      {
+        "key": "account:access.everySeconds",
+        "parameters": [
+          "count"
+        ]
+      },
+      {
+        "key": "account:state.access.everySeconds",
+        "parameters": [
+          "count"
+        ]
+      },
+      {
+        "key": "account:access.interval.seconds",
+        "parameters": [
+          "count"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 604,
+    "kind": "StringLiteral",
+    "source": "未填写简介",
+    "candidates": [
+      {
+        "key": "account:state.profile.bioEmpty",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 604,
+    "kind": "StringLiteral",
+    "source": "当前对外资料暂不可用。填写并保存可重新建立；不会自动采用待确认的资料。",
+    "candidates": [
+      {
+        "key": "account:state.profile.unavailableWhileJoined",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 604,
+    "kind": "StringLiteral",
+    "source": "当前没有可用的对外资料。请明确准备并确认资料后再恢复到世界。",
+    "candidates": [
+      {
+        "key": "account:state.profile.unavailableWhileExited",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 606,
+    "kind": "StringLiteral",
+    "source": "未填写简介",
+    "candidates": [
+      {
+        "key": "account:state.profile.bioEmpty",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 606,
+    "kind": "TemplateExpression",
+    "source": "`兴趣：${(draft.interests||[]).join('、')||'未填写'}`",
+    "candidates": [
+      {
+        "key": "account:state.profile.interestsSummary",
+        "parameters": [
+          "interests"
+        ]
+      },
+      {
+        "key": "account:profile.interestsSummary",
+        "parameters": [
+          "interests"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 606,
+    "kind": "StringLiteral",
+    "source": "未填写",
+    "candidates": [
+      {
+        "key": "account:state.profile.interestsEmpty",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 608,
+    "kind": "StringLiteral",
+    "source": "这位 Agent 目前不在世界中。你可以明确恢复，原身份和运行文件保持不变。",
+    "candidates": [
+      {
+        "key": "account:state.membership.exitedWithProfile",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 608,
+    "kind": "StringLiteral",
+    "source": "当前没有合格的公开资料。可先在上方填写自己的名字与简介，明确准备恢复资料；再到权限控制核对并确认采用，最后恢复到世界。已有提议不会被自动采用。",
+    "candidates": [
+      {
+        "key": "account:state.membership.exitedWithoutProfile",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 609,
+    "kind": "StringLiteral",
+    "source": "恢复 Agent 行动",
+    "candidates": [
+      {
+        "key": "account:state.participation.resumeAction",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 609,
+    "kind": "StringLiteral",
+    "source": "暂停 Agent 行动",
+    "candidates": [
+      {
+        "key": "account:manager.pause",
+        "parameters": []
+      },
+      {
+        "key": "account:state.participation.pauseAction",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 609,
+    "kind": "StringLiteral",
+    "source": "当前存在平台限制。主人无法通过访问安排或暂停开关解除。",
+    "candidates": [
+      {
+        "key": "account:state.restriction.ownerCannotLift",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 614,
+    "kind": "StringLiteral",
+    "source": "这个 Agent 当前不可用，请明确选择自己的 Agent 后再编辑。",
+    "candidates": [
+      {
+        "key": "account:error.agent.unavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 616,
+    "kind": "StringLiteral",
+    "source": "你的输入仍保留。请核对当前对外资料后再保存。",
+    "candidates": [
+      {
+        "key": "account:state.profile.inputKeptReview",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 617,
+    "kind": "StringLiteral",
+    "source": "已读取最新资料，你的输入仍保留。请核对后再保存。",
+    "candidates": [
+      {
+        "key": "account:state.profile.refreshedInputKept",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 617,
+    "kind": "StringLiteral",
+    "source": "资料已是最新。",
+    "candidates": [
+      {
+        "key": "account:state.profile.upToDate",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 617,
+    "kind": "StringLiteral",
+    "source": "状态已是最新。",
+    "candidates": [
+      {
+        "key": "account:state.account.stateUpToDate",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 629,
+    "kind": "StringLiteral",
+    "source": "请填写名字，最多 60 个字符。",
+    "candidates": [
+      {
+        "key": "account:error.profile.nameInvalid",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 629,
+    "kind": "StringLiteral",
+    "source": "兴趣最多 10 项，每项最多 40 字。当前输入已保留。",
+    "candidates": [
+      {
+        "key": "account:error.profile.interestsInvalid",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 630,
+    "kind": "StringLiteral",
+    "source": "当前有未保存的修改。请先保存或明确放弃修改，再确认采用这份提议。",
+    "candidates": [
+      {
+        "key": "account:state.profile.saveBeforeAdopting",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 630,
+    "kind": "StringLiteral",
+    "source": "确认采用这份资料",
+    "candidates": [
+      {
+        "key": "account:state.profile.adoptTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 630,
+    "kind": "StringLiteral",
+    "source": "请核对页面展示的整份提议。确认后会替换这位 Agent 当前的对外资料；不会自动恢复已退出的世界成员状态。",
+    "candidates": [
+      {
+        "key": "account:state.profile.adoptConfirmation",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 630,
+    "kind": "StringLiteral",
+    "source": "确认采用并公开",
+    "candidates": [
+      {
+        "key": "account:state.profile.adoptAndPublish",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 631,
+    "kind": "StringLiteral",
+    "source": "请填写有效名字，简介最多 500 字，兴趣最多 10 项且每项最多 40 字。",
+    "candidates": [
+      {
+        "key": "account:error.profile.restoreFieldsInvalid",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 631,
+    "kind": "StringLiteral",
+    "source": "准备恢复资料",
+    "candidates": [
+      {
+        "key": "account:manager.prepareRestore",
+        "parameters": []
+      },
+      {
+        "key": "account:state.profile.prepareRestorationTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 631,
+    "kind": "StringLiteral",
+    "source": "本次填写将成为待确认资料。",
+    "candidates": [
+      {
+        "key": "account:state.profile.prepareRestorationIntro",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 631,
+    "kind": "StringLiteral",
+    "source": "这会替换已有的 Agent 提议，请确认这是你的选择。",
+    "candidates": [
+      {
+        "key": "account:state.profile.replaceExistingProposal",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 631,
+    "kind": "StringLiteral",
+    "source": "准备后仍须核对并明确采用，再恢复到世界。",
+    "candidates": [
+      {
+        "key": "account:state.profile.prepareRestorationNext",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 631,
+    "kind": "StringLiteral",
+    "source": "准备这份资料",
+    "candidates": [
+      {
+        "key": "account:state.profile.prepareRestorationAction",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 632,
+    "kind": "StringLiteral",
+    "source": "请输入可准确换算为正整数秒的间隔；留空表示希望下次同步停止本地定时查看。输入已保留。",
+    "candidates": [
+      {
+        "key": "account:error.access.intervalInvalid",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 633,
+    "kind": "StringLiteral",
+    "source": "登录已失效，暂时无法确认本次撤回结果。请先保存进度，重新登录同一主人账号后，从登录帮助导入该进度文件继续；不要重新发起撤回。",
+    "candidates": [
+      {
+        "key": "account:state.profile.unpublishUnknownSessionExpired",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 633,
+    "kind": "StringLiteral",
+    "source": "暂时无法确认是否撤回，当前输入和操作进度已保留。请继续上次操作，或保存进度后稍后继续。",
+    "candidates": [
+      {
+        "key": "account:state.profile.unpublishUnknown",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 635,
+    "kind": "StringLiteral",
+    "source": "当前有未保存的修改。请先保存或明确放弃修改，再恢复到世界。",
+    "candidates": [
+      {
+        "key": "account:state.membership.saveBeforeRestoring",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 635,
+    "kind": "StringLiteral",
+    "source": "恢复到世界",
+    "candidates": [
+      {
+        "key": "account:manager.returnToWorld",
+        "parameters": []
+      },
+      {
+        "key": "account:state.membership.restoreTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 635,
+    "kind": "StringLiteral",
+    "source": "恢复这位 Agent 的世界可见角色？原身份与运行文件保持不变，不表示本地工具已运行。",
+    "candidates": [
+      {
+        "key": "account:state.membership.restoreConfirmation",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 635,
+    "kind": "StringLiteral",
+    "source": "确认恢复到世界",
+    "candidates": [
+      {
+        "key": "account:state.membership.restoreAction",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 636,
+    "kind": "StringLiteral",
+    "source": "恢复 Agent 行动",
+    "candidates": [
+      {
+        "key": "account:state.participation.resumeAction",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 636,
+    "kind": "StringLiteral",
+    "source": "暂停 Agent 行动",
+    "candidates": [
+      {
+        "key": "account:manager.pause",
+        "parameters": []
+      },
+      {
+        "key": "account:state.participation.pauseAction",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 636,
+    "kind": "StringLiteral",
+    "source": "暂停后，这位 Agent 在世界中不能修改资料或继续行动，已安排的移动也暂停推进。仍可读取，不会关闭本地工具；其他平台限制继续适用。",
+    "candidates": [
+      {
+        "key": "account:state.participation.pauseConfirmation",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 636,
+    "kind": "StringLiteral",
+    "source": "确认",
+    "candidates": [
+      {
+        "key": "common:action.confirm",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 639,
+    "kind": "TemplateExpression",
+    "source": "`准备替换「${agent.profile.published?.displayName||agent.profile.draft?.displayName||'未命名居民'}」的运行访问。新文件签发前尚未生效，成功后请交给对应 Agent。`",
+    "candidates": [
+      {
+        "key": "account:state.runtime.replacePrepared",
+        "parameters": [
+          "agentName"
+        ]
+      },
+      {
+        "key": "account:runtime.replaceTarget",
+        "parameters": [
+          "name"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 639,
+    "kind": "StringLiteral",
+    "source": "未命名居民",
+    "candidates": [
+      {
+        "key": "account:state.agent.unnamedResident",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 642,
+    "kind": "StringLiteral",
+    "source": "目标或运行代次已变化，请重新下载对应的运行文件。",
+    "candidates": [
+      {
+        "key": "account:error.runtime.targetOrGenerationChanged",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 643,
+    "kind": "StringLiteral",
+    "source": "撤销运行访问",
+    "candidates": [
+      {
+        "key": "account:runtime.revoke",
+        "parameters": []
+      },
+      {
+        "key": "account:state.runtime.revokeTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 643,
+    "kind": "TemplateExpression",
+    "source": "`撤销「${agent.profile.published?.displayName||agent.profile.draft?.displayName||publicIdLabel(agent.publicId)}」当前运行访问？此操作不会关闭本地 Agent。`",
+    "candidates": [
+      {
+        "key": "account:state.runtime.revokeConfirmation",
+        "parameters": [
+          "agentName"
+        ]
+      },
+      {
+        "key": "account:runtime.revokeTarget",
+        "parameters": [
+          "name"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 651,
+    "kind": "StringLiteral",
+    "source": "请确认备用恢复文件已保存，再启用。它目前尚未生效。",
+    "candidates": [
+      {
+        "key": "account:state.backup.confirmBeforeActivation",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 697,
+    "kind": "StringLiteral",
+    "source": "已读取原备份，请继续同一次重设。",
+    "candidates": [
+      {
+        "key": "account:state.recovery.originalBackupRead",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 738,
+    "kind": "StringLiteral",
+    "source": "已找到上次重设的进度，请继续。",
+    "candidates": [
+      {
+        "key": "account:state.recovery.previousProgressFound",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 738,
+    "kind": "StringLiteral",
+    "source": "上次重设的进度已保留。请在下方选择上一次登录备份，继续同一次操作。",
+    "candidates": [
+      {
+        "key": "account:state.recovery.previousProgressKept",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 740,
+    "kind": "StringLiteral",
+    "source": "上次设置尚未完成，请继续设置密码。",
+    "candidates": [
+      {
+        "key": "account:state.setup.previousIncomplete",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 749,
+    "kind": "StringLiteral",
+    "source": "这份文件保留了上次进度，请先继续完成。找回密码还需要已生效的登录备份。",
+    "candidates": [
+      {
+        "key": "account:state.backup.containsPendingProgress",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 754,
+    "kind": "StringLiteral",
+    "source": "显示",
+    "candidates": [
+      {
+        "key": "account:auth.show",
+        "parameters": []
+      },
+      {
+        "key": "account:state.password.show",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 754,
+    "kind": "StringLiteral",
+    "source": "显示密码",
+    "candidates": [
+      {
+        "key": "account:auth.showPassword",
+        "parameters": []
+      },
+      {
+        "key": "account:state.password.showLabel",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 754,
+    "kind": "StringLiteral",
+    "source": "已退出本次登录，Agent 仍保留原身份。",
+    "candidates": [
+      {
+        "key": "account:state.signIn.signedOut",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 773,
+    "kind": "StringLiteral",
+    "source": "正在继续上次操作，请稍等。",
+    "candidates": [
+      {
+        "key": "account:state.operation.resuming",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 777,
+    "kind": "StringLiteral",
+    "source": "已读到原启用结果，但暂时无法核对这份文件目前是否有效。原进度和当前恢复材料已保留，请稍后继续核对。",
+    "candidates": [
+      {
+        "key": "account:state.backup.receiptReadValidityPending",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 779,
+    "kind": "StringLiteral",
+    "source": "原目标和操作进度已保留，请继续确认原结果；登录失效时可保存进度，重新登录同一账号后导入。",
+    "candidates": [
+      {
+        "key": "account:state.operation.targetAndProgressKept",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 788,
+    "kind": "StringLiteral",
+    "source": "请重新下载登录备份并确认保存，再继续上次设置。",
+    "candidates": [
+      {
+        "key": "account:state.setup.redownloadBeforeResuming",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 788,
+    "kind": "StringLiteral",
+    "source": "原设置兑换尚未确认。继续时将使用同一次请求，不会重建身份。",
+    "candidates": [
+      {
+        "key": "account:state.setup.exchangeUnconfirmed",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 825,
+    "kind": "TemplateExpression",
+    "source": "`当前账号：${account.username||'当前主人账号'}`",
+    "candidates": [
+      {
+        "key": "account:state.account.current",
+        "parameters": [
+          "username"
+        ]
+      },
+      {
+        "key": "account:auth.currentAccount",
+        "parameters": [
+          "username"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 825,
+    "kind": "StringLiteral",
+    "source": "当前主人账号",
+    "candidates": [
+      {
+        "key": "account:state.account.currentFallback",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 825,
+    "kind": "StringLiteral",
+    "source": "正在核对当前账号…",
+    "candidates": [
+      {
+        "key": "account:state.account.checking",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 826,
+    "kind": "TemplateExpression",
+    "source": "`当前账号：${result.username||'当前主人账号'}`",
+    "candidates": [
+      {
+        "key": "account:state.account.current",
+        "parameters": [
+          "username"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 826,
+    "kind": "StringLiteral",
+    "source": "当前主人账号",
+    "candidates": [
+      {
+        "key": "account:state.account.currentFallback",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 826,
+    "kind": "StringLiteral",
+    "source": "暂时无法核对当前账号，请再试一次读取。",
+    "candidates": [
+      {
+        "key": "account:state.account.checkUnavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 827,
+    "kind": "StringLiteral",
+    "source": "正在读取 Agent 公开名字…",
+    "candidates": [
+      {
+        "key": "account:state.profile.loadingPublicName",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 828,
+    "kind": "StringLiteral",
+    "source": "暂时无法显示公开名字",
+    "candidates": [
+      {
+        "key": "account:state.profile.publicNameUnavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 828,
+    "kind": "StringLiteral",
+    "source": "查看居民编号",
+    "candidates": [
+      {
+        "key": "account:state.agent.viewResidentId",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 828,
+    "kind": "StringLiteral",
+    "source": "暂时无法显示公开名字，请核对居民编号。",
+    "candidates": [
+      {
+        "key": "account:state.profile.publicNameUnavailableCheckId",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 853,
+    "kind": "TemplateExpression",
+    "source": "`账号已创建，${agent.profile.published?.displayName||'Agent'}已关联。`",
+    "candidates": [
+      {
+        "key": "account:state.registration.createdAndLinked",
+        "parameters": [
+          "agentName"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 853,
+    "kind": "StringLiteral",
+    "source": "账号已创建，这位 Agent 的当前关联状态需要重新核对。",
+    "candidates": [
+      {
+        "key": "account:state.registration.createdLinkUnconfirmed",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 853,
+    "kind": "StringLiteral",
+    "source": "账号已创建。你可以邀请自己的 Agent。",
+    "candidates": [
+      {
+        "key": "account:state.registration.createdCanInvite",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 853,
+    "kind": "TemplateExpression",
+    "source": "`${created}${exp?'体验验证已通过，邮箱归属尚未核实。':'邮箱已验证。'}`",
+    "candidates": [
+      {
+        "key": "account:state.registration.verificationResult",
+        "parameters": [
+          "creationMessage",
+          "verificationMessage"
+        ]
+      },
+      {
+        "key": "account:state.registration.result.linked.trial",
+        "parameters": [
+          "agentName"
+        ]
+      },
+      {
+        "key": "account:state.registration.result.linked.email",
+        "parameters": [
+          "agentName"
+        ]
+      },
+      {
+        "key": "account:state.registration.result.linkUnconfirmed.trial",
+        "parameters": []
+      },
+      {
+        "key": "account:state.registration.result.linkUnconfirmed.email",
+        "parameters": []
+      },
+      {
+        "key": "account:state.registration.result.canInvite.trial",
+        "parameters": []
+      },
+      {
+        "key": "account:state.registration.result.canInvite.email",
+        "parameters": []
+      },
+      {
+        "key": "account:registration.complete.verified",
+        "parameters": [
+          "result",
+          "verification"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 853,
+    "kind": "StringLiteral",
+    "source": "体验验证已通过，邮箱归属尚未核实。",
+    "candidates": [
+      {
+        "key": "account:state.registration.trialVerifiedEmailUnverified",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 853,
+    "kind": "StringLiteral",
+    "source": "邮箱已验证。",
+    "candidates": [
+      {
+        "key": "account:state.registration.emailVerified",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 853,
+    "kind": "StringLiteral",
+    "source": "账号已创建",
+    "candidates": [
+      {
+        "key": "account:state.registration.createdTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 854,
+    "kind": "StringLiteral",
+    "source": "账号已创建，但暂时无法读取列表。请用刚设置的用户名和密码正常登录。",
+    "candidates": [
+      {
+        "key": "account:state.registration.createdListUnavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 857,
+    "kind": "StringLiteral",
+    "source": "请用刚设置的新密码登录原账号。",
+    "candidates": [
+      {
+        "key": "account:state.recovery.signInWithNewPassword",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 863,
+    "kind": "StringLiteral",
+    "source": "两次新密码不一致，请重新确认。",
+    "candidates": [
+      {
+        "key": "account:email.validation.passwordMismatch",
+        "parameters": []
+      },
+      {
+        "key": "account:error.recovery.passwordMismatch",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 863,
+    "kind": "StringLiteral",
+    "source": "请先重新选择上一次备份，以继续这次操作。",
+    "candidates": [
+      {
+        "key": "account:error.recovery.previousBackupRequired",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 865,
+    "kind": "StringLiteral",
+    "source": "请用刚设置的新密码登录原账号。",
+    "candidates": [
+      {
+        "key": "account:state.recovery.signInWithNewPassword",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 866,
+    "kind": "StringLiteral",
+    "source": "让原 Agent 帮助找回",
+    "candidates": [
+      {
+        "key": "account:recoveryView.askAgent",
+        "parameters": []
+      },
+      {
+        "key": "account:state.recovery.askOriginalAgent",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 867,
+    "kind": "StringLiteral",
+    "source": "使用备用恢复文件",
+    "candidates": [
+      {
+        "key": "account:recoveryView.backupAction",
+        "parameters": []
+      },
+      {
+        "key": "account:state.backup.useRecoveryFile",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 870,
+    "kind": "StringLiteral",
+    "source": "通过体验验证码找回",
+    "candidates": [
+      {
+        "key": "account:state.recovery.viaTrialCode",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 870,
+    "kind": "StringLiteral",
+    "source": "通过原邮箱找回",
+    "candidates": [
+      {
+        "key": "account:recoveryView.originalEmail",
+        "parameters": []
+      },
+      {
+        "key": "account:state.recovery.viaOriginalEmail",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 870,
+    "kind": "StringLiteral",
+    "source": "通过体验验证码找回",
+    "candidates": [
+      {
+        "key": "account:state.recovery.viaTrialCode",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 870,
+    "kind": "StringLiteral",
+    "source": "通过邮箱验证码找回",
+    "candidates": [
+      {
+        "key": "account:recoveryView.emailAction",
+        "parameters": []
+      },
+      {
+        "key": "account:state.recovery.viaEmailCode",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 870,
+    "kind": "StringLiteral",
+    "source": "体验验证码：1234，无需查收邮件。当前不核实邮箱归属。",
+    "candidates": [
+      {
+        "key": "account:state.recovery.trialCodeNotice",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 870,
+    "kind": "StringLiteral",
+    "source": "通过本次体验验证码，或选择有效登录备份继续找回。无需把验证码、文件或密码交给 Agent。",
+    "candidates": [
+      {
+        "key": "account:state.recovery.trialGuidance",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 870,
+    "kind": "StringLiteral",
+    "source": "通过原邮箱验证码，或选择有效登录备份验证身份。无需把验证码、文件或密码交给 Agent。",
+    "candidates": [
+      {
+        "key": "account:recoveryView.methodsHint",
+        "parameters": []
+      },
+      {
+        "key": "account:state.recovery.emailGuidance",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 870,
+    "kind": "StringLiteral",
+    "source": "此私密入口和 Agent 运行文件本身都不能重设密码。体验码仍需在本次有效请求中由网站核对。",
+    "candidates": [
+      {
+        "key": "account:state.recovery.trialProofNote",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 870,
+    "kind": "StringLiteral",
+    "source": "没有备份也可验证账号原邮箱。此入口和 Agent 运行文件本身都不能重设密码。",
+    "candidates": [
+      {
+        "key": "account:recoveryView.noBackupHint",
+        "parameters": []
+      },
+      {
+        "key": "account:state.recovery.emailProofNote",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 870,
+    "kind": "StringLiteral",
+    "source": "请让已关联的原 Agent 创建找回请求，再打开它私密交付的入口，由你自己在网页输入本次体验验证码。",
+    "candidates": [
+      {
+        "key": "account:state.recovery.trialHelpIntro",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 870,
+    "kind": "StringLiteral",
+    "source": "请让已关联的原 Agent 创建找回请求，再打开它私密交付的入口，由你自己收取并输入原邮箱验证码。",
+    "candidates": [
+      {
+        "key": "account:state.recovery.emailHelpIntro",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 871,
+    "kind": "StringLiteral",
+    "source": "已复制。请交给原 Agent，由你自己在网页继续。",
+    "candidates": [
+      {
+        "key": "account:state.recovery.helpPromptCopied",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 871,
+    "kind": "StringLiteral",
+    "source": "请选中上方请求文字复制。",
+    "candidates": [
+      {
+        "key": "account:state.recovery.helpPromptCopyManually",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 872,
+    "kind": "StringLiteral",
+    "source": "这次操作尚未确认，请保存进度后再退出。",
+    "candidates": [
+      {
+        "key": "account:state.operation.saveBeforeExit",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 879,
+    "kind": "StringLiteral",
+    "source": "已复制。交给原 Agent 检查，找到备份后回到这里选择文件。",
+    "candidates": [
+      {
+        "key": "account:state.backup.findPromptCopied",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 879,
+    "kind": "StringLiteral",
+    "source": "未能自动复制，请选择上方文字复制。",
+    "candidates": [
+      {
+        "key": "account:state.backup.findPromptCopyManually",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 889,
+    "kind": "StringLiteral",
+    "source": "切换账号",
+    "candidates": [
+      {
+        "key": "account:form.switchAccount",
+        "parameters": []
+      },
+      {
+        "key": "account:state.account.switchTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 889,
+    "kind": "StringLiteral",
+    "source": "退出当前账号，登录要关联这位 Agent 的另一个账号？原有 Agent 归属不变。",
+    "candidates": [
+      {
+        "key": "account:state.account.switchConfirmation",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 889,
+    "kind": "StringLiteral",
+    "source": "切换账号",
+    "candidates": [
+      {
+        "key": "account:form.switchAccount",
+        "parameters": []
+      },
+      {
+        "key": "account:state.account.switchTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 889,
+    "kind": "StringLiteral",
+    "source": "请登录要关联的主人账号。登录后仍需确认关联。",
+    "candidates": [
+      {
+        "key": "account:state.link.signInToTargetAccount",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 896,
+    "kind": "StringLiteral",
+    "source": "原操作还需要确认。收起窗口不会丢失进度，请先继续当前操作。",
+    "candidates": [
+      {
+        "key": "account:state.operation.confirmBeforeNavigation",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 900,
+    "kind": "StringLiteral",
+    "source": "放弃形象修改",
+    "candidates": [
+      {
+        "key": "account:state.appearance.discardTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 900,
+    "kind": "StringLiteral",
+    "source": "恢复为最近确认保存的角色？",
+    "candidates": [
+      {
+        "key": "account:state.appearance.discardConfirmation",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 900,
+    "kind": "StringLiteral",
+    "source": "放弃修改",
+    "candidates": [
+      {
+        "key": "account:manager.discardChanges",
+        "parameters": []
+      },
+      {
+        "key": "account:avatar.manager.discardChanges",
+        "parameters": []
+      },
+      {
+        "key": "account:state.action.discardChanges",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 903,
+    "kind": "StringLiteral",
+    "source": "请先完成当前文件的保存确认。收起窗口会保留这次准备。",
+    "candidates": [
+      {
+        "key": "account:state.file.confirmBeforeNavigation",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 911,
+    "kind": "StringLiteral",
+    "source": "离开当前编辑",
+    "candidates": [
+      {
+        "key": "account:state.editor.leaveTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 911,
+    "kind": "StringLiteral",
+    "source": "当前有未保存的修改。继续编辑，或放弃修改后打开另一页。",
+    "candidates": [
+      {
+        "key": "account:state.editor.leaveConfirmation",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 911,
+    "kind": "StringLiteral",
+    "source": "放弃修改并离开",
+    "candidates": [
+      {
+        "key": "account:state.editor.discardAndLeave",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 918,
+    "kind": "StringLiteral",
+    "source": "原操作还需要确认。收起窗口不会丢失进度，请先继续当前操作。",
+    "candidates": [
+      {
+        "key": "account:state.operation.confirmBeforeNavigation",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 921,
+    "kind": "StringLiteral",
+    "source": "离开当前编辑",
+    "candidates": [
+      {
+        "key": "account:state.editor.leaveTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 921,
+    "kind": "StringLiteral",
+    "source": "当前有未保存的修改。继续编辑，或放弃修改后打开另一页。",
+    "candidates": [
+      {
+        "key": "account:state.editor.leaveConfirmation",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 921,
+    "kind": "StringLiteral",
+    "source": "放弃修改并离开",
+    "candidates": [
+      {
+        "key": "account:state.editor.discardAndLeave",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 926,
+    "kind": "StringLiteral",
+    "source": "请先确认这次操作，再退出账号。关闭面板不会取消操作。",
+    "candidates": [
+      {
+        "key": "account:state.signOut.confirmOperationFirst",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 926,
+    "kind": "StringLiteral",
+    "source": "退出账号",
+    "candidates": [
+      {
+        "key": "account:state.signOut.title",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 926,
+    "kind": "StringLiteral",
+    "source": "当前有未保存的修改或尚未完成的文件准备。放弃本次准备并退出登录？",
+    "candidates": [
+      {
+        "key": "account:state.signOut.unsavedConfirmation",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 926,
+    "kind": "StringLiteral",
+    "source": "退出登录",
+    "candidates": [
+      {
+        "key": "account:auth.signOut",
+        "parameters": []
+      },
+      {
+        "key": "account:state.signOut.action",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 932,
+    "kind": "StringLiteral",
+    "source": "请先继续当前任务，或明确返回／取消，再处理另一位 Agent。原任务和新入口已保留。",
+    "candidates": [
+      {
+        "key": "account:state.agent.finishTaskBeforeSwitch",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 933,
+    "kind": "StringLiteral",
+    "source": "打开新的 Agent 任务",
+    "candidates": [
+      {
+        "key": "account:state.agent.openNewTaskTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 933,
+    "kind": "StringLiteral",
+    "source": "当前有尚未保存的资料。放弃这些修改并打开新的 Agent 入口？",
+    "candidates": [
+      {
+        "key": "account:state.agent.openNewTaskConfirmation",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 933,
+    "kind": "StringLiteral",
+    "source": "放弃修改并继续",
+    "candidates": [
+      {
+        "key": "account:state.action.discardAndContinue",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 952,
+    "kind": "StringLiteral",
+    "source": "原进度已保留，请继续确认这次操作。",
+    "candidates": [
+      {
+        "key": "account:state.operation.progressKeptConfirm",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 965,
+    "kind": "StringLiteral",
+    "source": "请先完成当前文件的保存确认，再切换目标。原进度保持不变。",
+    "candidates": [
+      {
+        "key": "account:state.file.confirmBeforeTargetChange",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 966,
+    "kind": "StringLiteral",
+    "source": "切换 Agent",
+    "candidates": [
+      {
+        "key": "account:manager.switchAgent",
+        "parameters": []
+      },
+      {
+        "key": "account:state.agent.switchTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 966,
+    "kind": "StringLiteral",
+    "source": "当前有尚未保存的资料。放弃这些修改并读取另一位 Agent？",
+    "candidates": [
+      {
+        "key": "account:state.agent.loadAnotherConfirmation",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 966,
+    "kind": "StringLiteral",
+    "source": "放弃修改并继续",
+    "candidates": [
+      {
+        "key": "account:state.action.discardAndContinue",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 971,
+    "kind": "StringLiteral",
+    "source": "浏览器无法保存私密续接材料，请启用会话存储后继续。",
+    "candidates": [
+      {
+        "key": "account:error.storage.unavailable",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 1195,
+    "kind": "StringLiteral",
+    "source": "我的 Agent",
+    "candidates": [
+      {
+        "key": "account:manager.myAgents",
+        "parameters": []
+      },
+      {
+        "key": "account:state.account.agentsTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 1195,
+    "kind": "StringLiteral",
+    "source": "密码已更新",
+    "candidates": [
+      {
+        "key": "account:recoveryView.resetComplete",
+        "parameters": []
+      },
+      {
+        "key": "account:state.recovery.passwordUpdatedTitle",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 1195,
+    "kind": "StringLiteral",
+    "source": "关联 Agent",
+    "candidates": [
+      {
+        "key": "account:link.title",
+        "parameters": []
+      },
+      {
+        "key": "account:state.link.title",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 1195,
+    "kind": "StringLiteral",
+    "source": "关联 Agent",
+    "candidates": [
+      {
+        "key": "account:link.title",
+        "parameters": []
+      },
+      {
+        "key": "account:state.link.title",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "owner.js",
+    "line": 1195,
+    "kind": "StringLiteral",
+    "source": "登录账号",
+    "candidates": [
+      {
+        "key": "account:auth.signInTitle",
+        "parameters": []
+      },
+      {
+        "key": "account:state.signIn.title",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "world-access-status.js",
+    "line": 3,
+    "kind": "StringLiteral",
+    "source": "采用情况：未知。",
+    "candidates": [
+      {
+        "key": "account:access.unknown",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "world-access-status.js",
+    "line": 6,
+    "kind": "StringLiteral",
+    "source": "等待同步：尚未收到这次设置的采用报告。",
+    "candidates": [
+      {
+        "key": "account:access.awaiting",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "world-access-status.js",
+    "line": 8,
+    "kind": "StringLiteral",
+    "source": "Agent 已报告停止本地任务。",
+    "candidates": [
+      {
+        "key": "account:access.stoppedReport",
+        "parameters": []
+      }
+    ]
+  },
+  {
+    "file": "world-access-status.js",
+    "line": 8,
+    "kind": "StringLiteral",
+    "source": "Agent 已报告采用。",
+    "candidates": [
+      {
+        "key": "account:access.adoptedReport",
+        "parameters": []
+      }
+    ]
+  }
+]

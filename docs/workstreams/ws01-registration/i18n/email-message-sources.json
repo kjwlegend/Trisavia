@@ -1,0 +1,43 @@
+{
+  "registration.subject": {
+    "catalog": "email",
+    "file": "apps/platform/application/email-onboarding.ts",
+    "line": 256,
+    "original": "connet.ai · ${purpose} code",
+    "note": "purpose=registration; brand replacement authorized; plain text only."
+  },
+  "registration.text": {
+    "catalog": "email",
+    "file": "apps/platform/application/email-onboarding.ts",
+    "line": 256,
+    "original": "Your connet.ai ${purpose} code is ${code}. Requested at ${new Date(now()).toISOString()}. Enter it only on the trusted page ${email.publicOrigin} that you just opened. Do not give this code to an Agent or anyone else. It expires in 10 minutes. If you did not request this, ignore this message.",
+    "note": "purpose=registration. Map requestedAt from request timestamp, publicOrigin from configured trusted origin, minutes=10 (current source); code is a runtime parameter, never stored in the locale file. Uses up to {minutes} minutes because source line 254 caps expiry at the earlier of 10 minutes and the attempt expiry."
+  },
+  "recovery.subject": {
+    "catalog": "email",
+    "file": "apps/platform/application/email-onboarding.ts",
+    "line": 256,
+    "original": "connet.ai · ${purpose} code",
+    "note": "purpose=password recovery; machine purpose value stays unchanged."
+  },
+  "recovery.text": {
+    "catalog": "email",
+    "file": "apps/platform/application/email-onboarding.ts",
+    "line": 256,
+    "original": "Your connet.ai ${purpose} code is ${code}. Requested at ${new Date(now()).toISOString()}. Enter it only on the trusted page ${email.publicOrigin} that you just opened. Do not give this code to an Agent or anyone else. It expires in 10 minutes. If you did not request this, ignore this message.",
+    "note": "purpose=password recovery. Map requestedAt from request timestamp, publicOrigin from configured trusted origin, minutes=10 (current source). Uses up to {minutes} minutes because source line 254 caps expiry at the earlier of 10 minutes and the attempt expiry."
+  },
+  "recoveryCompleted.subject": {
+    "catalog": "email",
+    "file": "apps/platform/application/email-onboarding.ts",
+    "line": 145,
+    "original": "connet.ai · Password recovery completed"
+  },
+  "recoveryCompleted.text": {
+    "catalog": "email",
+    "file": "apps/platform/application/email-onboarding.ts",
+    "line": 145,
+    "original": "Your connet.ai password was reset at ${new Date(now()).toISOString()}. If you did not request this, return to the trusted site ${sender.publicOrigin}. This message contains no password or login credential.",
+    "note": "Map completedAt from reset timestamp and publicOrigin from configured trusted origin; no HTML template in the source."
+  }
+}
