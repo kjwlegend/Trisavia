@@ -1088,6 +1088,12 @@ async function readLife(operation,input={}, {signal}={}){
   try{const result=await api('/gateway/query',{method:'POST',body,token:ctx.session,signal});if(!ctx.current()||signal?.aborted)throw new DOMException('Context changed','AbortError');return result;}
   catch(error){if(ctx.current()&&error.status===401)expireAuthenticatedSession(ctx.source,ctx.session,ctx.generation);throw error;}
 }
+// One human book request, with the same selected binding and original book input.
+async function readHumanLifeBook(input={}, {signal}={}){
+  const ctx=friendshipContext(),fields=lifeReadInput('books.get',input,ctx.target),body={protocolVersion:1,consumerId:'connet.owner.hud.v1',purpose:'human-inspect',input:fields};
+  try{const result=await api('/human/life/books',{method:'POST',body,token:ctx.session,signal});if(!ctx.current()||signal?.aborted)throw new DOMException('Context changed','AbortError');return result;}
+  catch(error){if(ctx.current()&&error.status===401)expireAuthenticatedSession(ctx.source,ctx.session,ctx.generation);throw error;}
+}
 // NPC life is observational for this Owner and always uses the selected binding.
 async function readNpcLife(operation,input={}, {signal}={}){
   const ctx=friendshipContext(),fields=npcLifeReadInput(operation,input,ctx.target),body={protocolVersion:1,consumerId:'connet.owner.hud.v1',purpose:'human-inspect',operation:'npc_life.care.options',input:fields};
@@ -1202,7 +1208,7 @@ const worldActionSettings=mountWorldActionPolicy($('#world-autonomy-form'),{sess
 const behaviorLogs=mountOwnerBehaviorLogs($('#owner-behavior-logs'),{snapshot:()=>structuredClone(summary()),readBehaviorHistory,readHumanBehaviorHistory,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}});
 const worldSummary=mountOwnerWorldSummary($('#owner-world-summary'),{read:readOwnerWorldSummary,subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);}});
 window.addEventListener('pagehide',event=>{if(!event.persisted){uiPreferences.dispose();behaviorLogs.dispose();worldSummary.dispose();worldActionSettings.dispose();}});
-return{start,open,select:selectAgent,refresh:refreshSummary,readPerception,readWallet,readFriends,readInteraction,readFriendship,readMailbox,readTownService,readLife,readNpcLife,readGifts,readBehaviorHistory,readHumanBehaviorHistory,commandFriendship,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
+return{start,open,select:selectAgent,refresh:refreshSummary,readPerception,readWallet,readFriends,readInteraction,readFriendship,readMailbox,readTownService,readLife,readHumanLifeBook,readNpcLife,readGifts,readBehaviorHistory,readHumanBehaviorHistory,commandFriendship,snapshot:()=>structuredClone(summary()),subscribe(listener){subscribers.add(listener);listener(structuredClone(summary()));return()=>subscribers.delete(listener);},
   hudContext(){if(authenticatedOwner()&&['ready','refreshing'].includes(summary().phase))return{kind:'owner',ownerId:account.ownerId,agentId:agents.some(agent=>agent.agentId===selectedId)?selectedId:''};return sessionPhase==='anonymous'&&!vault.sessionToken?{kind:'guest',ownerId:'',agentId:''}:null;},
   attachPresentation(value){presentation=value;value.setNavigator(navigateManager);value.connectAvatarStudio({request:avatarAssetRequest,context:()=>{const ctx=friendshipContext(),agent=current();return{ownerId:ctx.ownerId,agentId:ctx.target,profileVersion:agent.profile.version,policyVersion:agent.profile.policyVersion};},refresh:async()=>{await loadAgents({resetProfile:false});presentation?.resetAppearance();}});},
   notifyPresentation:controls,
