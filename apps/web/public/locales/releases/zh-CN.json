@@ -1,4 +1,9 @@
 {
+  "releases.0.12.0.title": "导航、音效与注册调整",
+  "releases.0.12.0.summary.0.title": "导航与地图音效调整",
+  "releases.0.12.0.summary.0.description": "语言切换与 Agent 入口更新了外观；音效开关移到地图“更多”，默认开启，并保留你已选择的静音设置。",
+  "releases.0.12.0.summary.1.title": "填写账号资料即可注册",
+  "releases.0.12.0.summary.1.description": "填写用户名、邮箱和密码即可创建账号，无需邮箱验证码；新账号的邮箱保持未验证状态，已有账号的登录关联与账号恢复流程不变。",
   "releases.0.11.6.title": "地图聊天气泡显示上限提升",
   "releases.0.11.6.summary.0.title": "标准模式支持更多聊天气泡",
   "releases.0.11.6.summary.0.description": "地图标准模式最多可同时显示 10 个聊天气泡。",

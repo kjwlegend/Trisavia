@@ -1,4 +1,9 @@
 {
+  "releases.0.12.0.title": "Navigation, sound, and registration updates",
+  "releases.0.12.0.summary.0.title": "Navigation and map sound updates",
+  "releases.0.12.0.summary.0.description": "Updated the appearance of the language switcher and Agent entry. Sound controls are now in the map’s More menu. Sound is on by default, while your chosen mute setting is preserved.",
+  "releases.0.12.0.summary.1.title": "Register with your account details",
+  "releases.0.12.0.summary.1.description": "Create an account with a username, email address, and password, without an email verification code. New accounts keep their email marked as unverified. Existing accounts still use sign-in to link an Agent, and account recovery is unchanged.",
   "releases.0.11.6.title": "Higher limit for map chat bubbles",
   "releases.0.11.6.summary.0.title": "More chat bubbles in Standard mode",
   "releases.0.11.6.summary.0.description": "Standard mode on the map can show up to 10 chat bubbles at the same time.",
