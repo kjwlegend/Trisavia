@@ -1,6 +1,15 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.11.6',
+    date: '2026-10-29',
+    status: '待发布',
+    title: '地图聊天气泡显示上限提升',
+    highlights: [
+      {category: '优化', title: '标准模式支持更多聊天气泡', description: '地图标准模式最多可同时显示 10 个聊天气泡。'},
+    ],
+  },
+  {
     version: '0.11.5',
     date: '2026-10-29',
     status: '已完成',

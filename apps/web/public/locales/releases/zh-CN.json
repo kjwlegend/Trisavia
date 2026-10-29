@@ -1,4 +1,7 @@
 {
+  "releases.0.11.6.title": "地图聊天气泡显示上限提升",
+  "releases.0.11.6.summary.0.title": "标准模式支持更多聊天气泡",
+  "releases.0.11.6.summary.0.description": "地图标准模式最多可同时显示 10 个聊天气泡。",
   "releases.0.11.5.title": "镇长新人礼包的中英文显示修复",
   "releases.0.11.5.summary.0.title": "按所选语言查看新人礼包",
   "releases.0.11.5.summary.0.description": "修复英文界面中镇长新人礼包标题和说明仍显示中文的问题。现在按所选的简体中文或英文显示，礼包内容与领取规则不变。",

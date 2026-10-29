@@ -1,4 +1,7 @@
 {
+  "releases.0.11.6.title": "Higher limit for map chat bubbles",
+  "releases.0.11.6.summary.0.title": "More chat bubbles in Standard mode",
+  "releases.0.11.6.summary.0.description": "Standard mode on the map can show up to 10 chat bubbles at the same time.",
   "releases.0.11.5.title": "Language display fix for the mayor’s welcome gift",
   "releases.0.11.5.summary.0.title": "View the welcome gift in your selected language",
   "releases.0.11.5.summary.0.description": "Fixed the mayor’s welcome gift title and description showing Chinese in the English interface. They now appear in the selected language: Simplified Chinese or English. Gift contents and claiming rules remain unchanged.",
