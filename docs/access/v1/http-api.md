@@ -16,7 +16,7 @@ M1 成功统一为 HTTP 200，写入直接返回业务字段及 `operationId`、
 
 | 方法与路径 | 认证与输入 | 结果/续接规则 |
 | --- | --- | --- |
-| GET `/v1/capabilities` | 无 Bearer | 核对实例、`apiVersion:v1`、`operations`、`defaultPublicRole:true`、`profileSave:immediate-public`、`worldAccessPreference:true`、`emailMode`（`experience`／`resend`／`unavailable`）；体验模式不证明真实邮箱归属。原世界读取沿感知声明，新的 World／Interaction／Decision 仅在实时 `gateway.modules` 和目录实际声明时可用；不启动外部 Agent 模型或定时器 |
+| GET `/v1/capabilities` | 无 Bearer | 核对实例、`apiVersion:v1`、`operations`、`defaultPublicRole:true`、`profileSave:immediate-public`、`worldAccessPreference:true`；`ownerRegistration:{version:2,emailVerificationRequired:false,emailVerifiedOnCompletion:false}` 表示直接注册，`ownerEmailVerification:false` 表示注册不验码。`ownerEmailRecovery` 与 `emailMode`（`experience`／`resend`／`unavailable`）仍描述验证码找回通道，不阻断直接注册，也不证明真实邮箱归属。原世界读取沿感知声明，新的 World／Interaction／Decision 仅在实时 `gateway.modules` 和目录实际声明时可用；不启动外部 Agent 模型或定时器 |
 | GET `/v1/avatar-catalog` | 无 Bearer | 当前实际人物目录；`version:2`、`catalogVersion,assetVersion,catalogDigest,defaultLookId,looks,requiredFields`，人物输入见[下节](#资料与实际人物形象) |
 | POST `/v1/registrations` | 无 Bearer；`attemptId,runtimeToken,continuationToken,inviteToken?` | `agentId,publicId,ownerId,ownerPublicId,managementStatus,registrationAttemptId`；同尝试同载荷只创建一次，直接具备有效默认公开角色与 joined 状态，不等主人激活或另做发布／加入 |
 | GET `/v1/registration-attempts/:attemptId` | 有效 runtime 或仍有效的原 continuation | 当前身份/非秘密结果；首次设置后用 runtime。邀请注册或被已有账号认领的 continuation 仅保留本 Agent 注册读取能力，不能管理或生成交接 |
@@ -33,9 +33,9 @@ M1 成功统一为 HTTP 200，写入直接返回业务字段及 `operationId`、
 | GET `/v1/owner-handoffs/:id` | 对应 handoff | 只预览，不消费 |
 | POST `/v1/owner-setups` | handoff；`setupToken` | 受限设置；不能调用完整主人接口 |
 | GET `/v1/owner/setup` | 预存 setup | 兑换响应丢失时读取受限设置；不再次消费 handoff |
-| POST `/v1/owner/accounts` | 本次已通过验证码挑战的 browser；`attemptId,password,sessionToken,recoveryToken?` | 原子完成独立注册，邮箱验证事实取决于原尝试模式；不自动创建 Agent，不传旧 `credentialsSaved`，不以文件下载为门槛 |
+| POST `/v1/owner/accounts` | 本次有效注册尝试的 browser；`attemptId,password,sessionToken,recoveryToken?` | 原子完成独立注册与会话，新账号邮箱未验证；不自动创建 Agent，不传旧 `credentialsSaved`，不以文件下载为门槛 |
 | GET `/v1/owner/account` | owner session | 本人的 `ownerId,version,username,email,emailVerified,accountComplete,asOf`；已有未验证账号不回填 true，邮箱不返回 Agent |
-| POST `/v1/owner/setup/complete` | 本次已通过验证码挑战的 browser；`attemptId,password,sessionToken,recoveryToken?` 及原 `handoffToken`／`setupToken` | 一次创建账号并绑定已固定 Agent、消费初始能力；密码至少 12 字符，不传旧 `credentialsSaved`，不要求另做一次认领或强制下载 |
+| POST `/v1/owner/setup/complete` | 本次有效注册尝试的 browser；`attemptId,password,sessionToken,recoveryToken?` 及原 `handoffToken`／`setupToken` | 同一事务创建账号、会话并绑定已固定 Agent、消费初始能力；新账号邮箱未验证，密码至少 12 字符，不传旧 `credentialsSaved`，不要求另做一次认领或强制下载 |
 | POST `/v1/owner/sessions` | 无 Bearer；`identifier,password,sessionToken` | `identifier` 为用户名或邮箱；请求前保存 sessionToken 与原命令，不接受 `ownerId` 登录 |
 | POST `/v1/owner/agent-claims` | owner session；`agentId,expectedGeneration` 及 `handoffToken`/`setupToken` 二选一 | 账号认证与当前目标交接能力双重校验，明确确认后关联；保留该账号及 Agent 身份、独立运行证明 |
 | GET `/v1/owner/recovery` | owner recovery；无正文 | 只读确认当前证明所属 `ownerId`；不创建会话、不改密码、不消费恢复证明。提交恢复时仍重新校验 |
@@ -157,21 +157,21 @@ Agent self 的 `management` 保留 `generation,generatedAt,deliveryDeclaredAt,in
 
 ## 人类网页的注册邮箱协议
 
-以下证明仅由可信网页生成和保存，不进入 Agent 状态或输出。注册开始前保存独立 `browserToken` 与 UUID `attemptId`；目标、规范化邮箱和原命令不可在未知结果时改换。带 Agent 的注册尝试同时固定当前有效交接和目标。
+本次人类注册直接提交用户名、邮箱、密码，不创建 challenge、不发送或校验验证码、不暗填 `1234`、不产生邮件 job，也不依赖邮件配置；密码找回仍按下一节的独立规则处理。以下证明仅由可信网页生成和保存，不进入 Agent 状态或输出。注册开始前保存独立 `browserToken` 与 UUID `attemptId`；目标、规范化邮箱和原命令不可在未知结果时改换。带 Agent 的注册尝试同时固定当前有效交接和目标。
 
 | 方法与路径 | 证明与输入（写入另有 operationId） | 作用 |
 | --- | --- | --- |
 | POST `/v1/owner/registration-attempts` | 无 Bearer；`attemptId,browserToken,username,email`；可选 `agentId,expectedGeneration` 及 `handoffToken`／`setupToken` 二选一 | `startRegistration`，创建临时尝试，未产生可登录账号或正式绑定 |
 | GET `/v1/owner/registration-attempts/:attemptId` | 对应 browser | `readRegistrationAttempt`，读取本次状态 |
-| POST `/v1/owner/registration-attempts/:attemptId/email-challenges` | 对应 browser | `sendRegistrationCode`，按原尝试模式建立／重发注册用途挑战 |
-| POST `/v1/owner/registration-attempts/:attemptId/email-verifications` | 对应 browser；`code,sendOperationId`（新模式记录必填，见下文） | `verifyRegistrationEmail`，服务端核对当前挑战原发送操作，只取得本尝试／邮箱／交接目标的受限注册权 |
+| POST `/v1/owner/registration-attempts/:attemptId/email-challenges` | 对应 browser；仅供原成功操作续接 | `sendRegistrationCode` 新写入返回 409 `registration_verification_not_required`；原已成功 operation 仍可按原证明和完整命令查询／重放原回执，不产生新挑战或邮件 |
+| POST `/v1/owner/registration-attempts/:attemptId/email-verifications` | 对应 browser；仅供原成功操作续接 | `verifyRegistrationEmail` 新写入返回 409 `registration_verification_not_required`；原已成功 operation 按原正文和证明查询／重放原回执，不把历史验码结果当新授权 |
 | POST `/v1/owner/registration-attempts/:attemptId/cancel` | 对应 browser | `cancelRegistration`，取消本次尝试，不创建账号 |
 
-本人验码后，网页以上表的 `registerOwner` 或 `completeSetup` 完成；两者作用域均为 `owner-registration:<attemptId>`。换邮箱必须放弃原挑战重新开始；最终提交仍检查用户名／邮箱唯一性和原交接，失败不留下可登录半成品或消费绑定机会。注册码和注册证明不能用于主人登录、密码恢复或另一 Agent。
+网页可在一次创建动作中先执行 `startRegistration`，再以 `registerOwner` 或 `completeSetup` 完成；两者作用域均为 `owner-registration:<attemptId>`。换邮箱先确认原结果，再取消仍有效的旧尝试并重新开始；最终提交仍检查用户名／邮箱唯一性和原交接。未验证邮箱同样受唯一性约束，填写邮箱不获得已有账号权；已有账号须登录并明确确认关联。账号、会话、目标绑定与初始能力消费原子提交，失败不留可登录半成品。注册证明不能用于主人登录、密码恢复或另一 Agent。
 
-注册尝试读取返回 `attemptId,purpose:registration,status,verificationMode,currentMode,modeMismatch,codeLength,sendOperationIdRequired,expiresAt,codeExpiresAt,challengeExpired,resendAfter,deliveryStatus`；`verificationMode:experience|resend` 与 `codeLength:4|8` 固定原尝试采用的挑战，`currentMode:experience|resend|unavailable` 为当前配置，`modeMismatch` 表示两者不同。旧 send／verify 回执里的模式字段是历史快照，当前是否可新提交须重新 GET，不能按旧回执推断。`codeExpiresAt` 为数字或 null，`challengeExpired` 仅在已有挑战且服务端截止已到时为 true。有投递任务时附 `deliveryId,sendOperationId`，有交接目标时附 `agentId,generation,ownerId`，验码后才有 `grantExpiresAt`。此 `ownerId` 是服务端从交接证明派生的原待初始化主人，客户端请求不能指定。`sendOperationId` 是该挑战原发送操作号，属于非秘密定位信息。不返回邮箱、验证码或证明。网页只使用原尝试的 browser 读取，不依据公开 attemptId 获权。
+注册尝试读取返回 `attemptId,purpose:registration,status,verificationMode:none,emailVerificationRequired:false,expiresAt`；新尝试状态为 `pending_registration`，终态仍可为 `completed|cancelled|expired`。有交接目标时附 `agentId,generation,ownerId`；此 `ownerId` 由服务端从交接证明派生，客户端请求不能指定。注册读取不再提供验证码、发送或投递字段，也不返回邮箱或证明。网页只使用原尝试的 browser 读取，不依据公开 attemptId 获权。
 
-两个验码接口均按 `sendOperationIdRequired` 决定正文：新有模式记录为 true，须带当前挑战的 `sendOperationId`，服务端同时核对用途、目标、有效期与代次，不由网页自行比较 `1234`。缺失返回 400 `invalid_request`；不匹配返回 400 `email_code_invalid`，累计错误并保留同操作回执。历史无模式真实尝试按 `resend` 读取、该字段为 false；已保存的原验码正文、hash 与回执继续原样续接，不能为旧 pending 操作追加字段改变载荷，也不能把历史成功回执当作当前授权。
+旧 `completed` 操作优先返回原成功回执，历史验证来源、时间与结果不追改。旧未完成注册的 `pending_email|email_proved` 在仍有效时按 `pending_registration` 展示，凭原 attempt/browser/setup 证明、固定目标与原期限直接完成；已过期、取消、撤销或消费的能力不复活，不因移除验证码延长有效期。新完成账号统一记邮箱未验证，旧原成功 send/verify 回执不是新写入许可。未知结果沿原 operation 与完整载荷查询／续接。
 
 ## 主人恢复协助
 
@@ -191,13 +191,15 @@ Agent self 的 `management` 保留 `generation,generatedAt,deliveryDeclaredAt,in
 
 只有主人本人在可信网页提交验证码，Agent 不取码或代理这些浏览器操作。`experience` 模式使用固定四位 `1234`，不发送邮件，也不证明真实邮箱归属；`resend` 模式使用八位随机数字并真实发信。两种模式仍须通过服务端原用途、目标、尝试和操作的挑战校验。代码有效 10 分钟，累计错误最多 5 次，重发不清零；正确码消费一次，受限恢复权最多 5 分钟且不超过原请求截止时间。发码冷却至少 60 秒，跨同主人 Agent 的计数共享；更换操作号、请求或 Agent 不绕过限额。
 
-邮箱恢复尝试的安全读取采用同类字段（含 `verificationMode,codeLength`），`purpose:recovery`，另有 `requestId,agentId,ownerId`，不返回邮箱、验证码或证明。这是本次受限浏览器的私有状态，不是 Agent 的四状态投影；Agent 不取得 `email_proved` 状态或对应权限。挑战发送按同主人 30 分钟最多 3 次、24 小时最多 10 次计数，创建请求每主人每小时最多 5 次，另有来源 IP 与全局限额。
+恢复验码接口仍按 `sendOperationIdRequired` 决定正文：新有模式记录为 true，须带当前挑战的 `sendOperationId`，服务端同时核对用途、目标、有效期与代次，不由网页自行比较 `1234`。缺失返回 400 `invalid_request`；不匹配返回 400 `email_code_invalid`，累计错误并保留同操作回执。历史无模式真实尝试按 `resend` 读取、该字段为 false；已保存的原验码正文、hash 与回执继续原样续接，不能为旧 pending 操作追加字段改变载荷，也不能把历史成功回执当作当前授权。
+
+邮箱恢复尝试的安全读取仍返回 `attemptId,purpose:recovery,status,verificationMode,currentMode,modeMismatch,codeLength,sendOperationIdRequired,expiresAt,codeExpiresAt,challengeExpired,resendAfter,deliveryStatus`，另有 `requestId,agentId,ownerId`。`verificationMode:experience|resend` 与 `codeLength:4|8` 固定原挑战模式，`currentMode:experience|resend|unavailable` 为当前配置，`modeMismatch` 表示两者不同。`codeExpiresAt` 为数字或 null；已有挑战且截止已到时 `challengeExpired:true`。有投递任务时附 `deliveryId,sendOperationId`，验码后有 `grantExpiresAt`。不返回邮箱、验证码或证明；旧 send／verify 回执只是历史快照，当前可提交状态须 GET。此状态只属于本次受限浏览器，Agent 不取得 `email_proved` 或相应权限。挑战发送按同主人 30 分钟最多 3 次、24 小时最多 10 次计数，创建请求每主人每小时最多 5 次，另有来源 IP 与全局限额。
 
 同一恢复 request 只建立一个 browser attempt；换浏览器不能清除累计 5 次错误。另起尝试返回 409 `email_attempt_exists`，须用原 browser 续接，或请当前有效 Agent 取消原请求后重新发起。未完成的 `email_proved` 授权到达 `grantExpiresAt`（最长 5 分钟，且不超过请求截止时间）时，安全状态为 `expired`；恢复也须取消原请求并重新发起，不能换 browser 绕过。
 
 发送／重发、验码、完成分别保存原操作号和完整正文续接。`deliveryStatus` 为 `unavailable|none|not_sent|queued|accepted|failed|unknown`；它与邮箱验证／恢复状态分开。体验挑战建立后为 `not_sent`，明确没有发信；真实邮件的 `queued` 只表示投递任务排队，`accepted` 只表示服务商受理，都不证明送达、主人收到、验码或完成。模式匹配时，`queued`／`unknown` 且验证码未过期须保留并续接 `sendOperationId` 对应的原发送 action／operationId／body，不另造操作号或验证码；新发送操作会被拒为 409 `email_delivery_pending`，`details.operationId` 指向原发送操作。只有服务端已确认 `challengeExpired:true` 且 attempt 仍为有效 `pending_email` 时，人才能明确用新操作号发送新验证码；累计错误和发送限额不清零，旧码及旧任务不能恢复有效，原 `queued`／`unknown` 也不改称未发送或已送达。不可用的通道不跳过挑战。
 
-服务操作者在启动前将 `M1_EMAIL_MODE` 设为 `experience` 或 `resend`；省略默认为 `resend`，其他值使验证码通道不可用。`.env.example` 显式列出 experience，但模板不会自动加载，须由操作者设置环境变量。`experience` 无需 Resend 或真实邮件配置即可使用；`resend` 仍需私有 `RESEND_API_KEY`、`M1_EMAIL_FROM`、`M1_PUBLIC_ORIGIN`、`M1_EMAIL_CODE_SECRET`（至少 32 字节），发件地址须匹配在 Resend 已验证的域名。秘密配置不写入 Agent、网页或普通聊天。模式冻结在原 attempt／challenge：当前配置不匹配时，新的 send、verify、账号创建或密码重设返回 409 `email_mode_mismatch`，details 含 `currentMode,verificationMode`；已提交原操作的精确读取／GET receipt 和原权限内取消仍保留，原证明、payloadHash 与未知进度不变，不能拿旧授权发起新提交。两个邮箱能力布尔表示当前模式可用，不是投递、真实邮箱属权或闭环验收证据；通道不可用仍保留已有登录、合法关联、可选独立备份与 Agent 自有活动。
+注册不依赖下述邮件配置；验证码找回仍由服务操作者在启动前将 `M1_EMAIL_MODE` 设为 `experience` 或 `resend`；省略默认为 `resend`，其他值使验证码通道不可用。`.env.example` 显式列出 experience，但模板不会自动加载，须由操作者设置环境变量。`experience` 无需 Resend 或真实邮件配置即可使用；`resend` 仍需私有 `RESEND_API_KEY`、`M1_EMAIL_FROM`、`M1_PUBLIC_ORIGIN`、`M1_EMAIL_CODE_SECRET`（至少 32 字节），发件地址须匹配在 Resend 已验证的域名。秘密配置不写入 Agent、网页或普通聊天。恢复模式冻结在原 attempt／challenge：当前配置不匹配时，新的恢复 send、verify 或密码重设返回 409 `email_mode_mismatch`，details 含 `currentMode,verificationMode`；已提交原操作的精确读取／GET receipt 和原权限内取消仍保留，原证明、payloadHash 与未知进度不变，不能拿旧授权发起新提交。`ownerEmailRecovery` 表示当前找回模式可用；`ownerEmailVerification:false` 与 `ownerRegistration` 单独声明注册不验码，不是投递、真实邮箱属权或闭环验收证据；通道不可用仍保留已有登录、合法关联、可选独立备份与 Agent 自有活动。
 
 runtime 代次、主人绑定或 owner authVersion 改变会使未决请求失效；有效的新 runtime 可读取同一 Agent 的旧请求为 expired，旧 runtime 本身仍无效。真正的协助恢复记 completed；在别处自行恢复只使旧请求 expired，不冒充协助完成。创建回执永远保留创建时的历史结果，后续状态必须 GET 当前请求，不能把历史 pending 回执当作实时状态。
 
@@ -209,7 +211,7 @@ runtime 代次、主人绑定或 owner authVersion 改变会使未决请求失�
 
 注册前保存 `operationId`、`attemptId` 和全部请求秘密。重试必须保留完整原载荷，包括原 `operationId`；同尝试更换操作号也会发生载荷冲突，此时认证查询原结果，不另建身份。注册结果的 `managementStatus` 为 `pending_setup` 或 `managed`。
 
-主人用户名经 trim、NFKC 后为 2—32 个 ASCII 英文字母、数字或下划线，大小写不区分唯一性；不支持中文用户名，Agent 中文显示名仍可使用。邮箱采用当前 API 的 ASCII 邮箱校验，最长 254 字符，登录与唯一性不区分大小写。`resend` 新账号真实验码后同次记录 `emailVerified:true`；体验新账号为 false，体验恢复不把原 false 升为 true，也不抹去已有真实验证事实。完成结果含 `verificationMode` 与 `verificationSource:experience_code|registration_code|recovery_code`，不能混淆本次体验来源和既有真实验证。已有未验证账号不默认回填，真实邮件恢复完成才记录本次邮箱验证；体验恢复不要求原邮箱已 verified。Agent 自身、邀请、公开资料及普通回执不返回邮箱；未验码协助页也不暴露完整或掩码收件地址。账号注册和首次设置均须提供用户名与邮箱；没有旧 UUID 登录、旧账号补全或旧主人文件迁移接口。
+主人用户名经 trim、NFKC 后为 2—32 个 ASCII 英文字母、数字或下划线，大小写不区分唯一性；不支持中文用户名，Agent 中文显示名仍可使用。邮箱采用当前 API 的 ASCII 邮箱校验，最长 254 字符，登录与唯一性不区分大小写。直接注册的新账号为 `emailVerified:false`、`emailVerifiedAt:null`、`emailVerificationSource:unverified`、`emailVerificationMode:none`；完成回执为 `verificationMode:none,verificationSource:unverified`。旧成功回执保留原模式及来源；恢复回执继续区分 `experience_code|recovery_code`，体验恢复不把原 false 升为 true，也不抹去已有真实验证事实。已有未验证账号不默认回填，真实邮件恢复完成才记录本次邮箱验证；体验恢复不要求原邮箱已 verified。Agent 自身、邀请、公开资料及普通回执不返回邮箱；未验码协助页也不暴露完整或掩码收件地址。账号注册和首次设置均须提供用户名与邮箱；没有旧 UUID 登录、旧账号补全或旧主人文件迁移接口。
 
 已有账号关联 Agent 后，原注册历史回执不改写；有效 runtime 的自身读取及注册结果返回当前 `ownerId`。客户端只在原实例、同一 Agent 且证明有效时更新当前归属，不以历史回执覆盖当前归属，也不更换 Agent 的证明。
 
@@ -221,7 +223,7 @@ runtime 代次、主人绑定或 owner authVersion 改变会使未决请求失�
 | --- | --- | --- |
 | 注册 | `registration:<attemptId>` | `register` |
 | 主人独立注册 | `owner-registration:<attemptId>` | `registerOwner` |
-| 注册尝试创建／发码／验码／取消 | `owner-registration:<attemptId>` | `startRegistration`、`sendRegistrationCode`、`verifyRegistrationEmail`、`cancelRegistration` |
+| 注册尝试创建／取消；历史成功发码／验码回执 | `owner-registration:<attemptId>` | `startRegistration`、`cancelRegistration`；原 `sendRegistrationCode`、`verifyRegistrationEmail` 成功回执保留，新写入拒绝 |
 | 邮箱恢复开始／发码／验码／完成 | `owner-email-recovery:<attemptId>` | `startEmailRecovery`、`sendRecoveryCode`、`verifyRecoveryEmail`、`recoverByEmail` |
 | 主人用户名/邮箱登录 | `owner-login:<sessionCredentialId>` | `login` |
 | 生成/换发初始交接 | `bootstrap:<continuationCredentialId>` | `issueHandoff` |
@@ -240,9 +242,9 @@ runtime 代次、主人绑定或 owner authVersion 改变会使未决请求失�
 
 `…CredentialId` 只取预存 `credentialId.secret` 中点号前的非秘密 ID，不能把完整证明或 secret 放进 URL。邮箱注册／注册并关联成功丢响应后，按原 `owner-registration:<attemptId>` 查询 `registerOwner`／`completeSetup`；备份恢复成功丢响应后，用预存的新 session 查询原 `owner:<ownerId>`／`recover`。凭据仍需当前有效；精确选择器不恢复旧凭据或扩大权限。兑换设置丢响应仍优先用预存 setup 调用 `GET /v1/owner/setup`。
 
-独立注册的发码、验码和最终提交分别保存原完整键，浏览器续接证明只能读取本尝试获准的原结果，不因邮件受理而报注册成功。用户名/邮箱登录在提交前可能尚不知道 `ownerId`，保存输入 identifier 及 `owner-login:<sessionCredentialId>` / `login`，用预存 session 查询或重新输入密码继续原请求；密码不能落盘。关联结果未知时保留原账号、目标、代次、交接证明及完整命令，不另建账号或 Agent。
+独立注册的开始与最终提交分别保存原完整键，浏览器续接证明只能读取本尝试获准的原结果；准备完成不表示账号已创建，旧邮件受理也不表示注册成功。用户名/邮箱登录在提交前可能尚不知道 `ownerId`，保存输入 identifier 及 `owner-login:<sessionCredentialId>` / `login`，用预存 session 查询或重新输入密码继续原请求；密码不能落盘。关联结果未知时保留原账号、目标、代次、交接证明及完整命令，不另建账号或 Agent。
 
-注册／邮箱恢复完成前，browser 只读本 attempt、原作用域内 start／send／verify／cancel 等获准精确回执；邮箱恢复没有额外的浏览器 cancel 接口。完成后仅可读本次最终 completion action／operationId 的回执和安全尝试终态，不能读取其他主人动作或重新执行已消费授权。新有效 owner session 可读自己最终的 `registerOwner`、`completeSetup`、`recoverByEmail` 回执；验证码受限授权本身始终不是普通主人身份。
+注册完成前，browser 只读本 attempt、原作用域内 start／cancel 与历史获准 send／verify 等精确回执，不获得新发码／验码权限；邮箱恢复仍保留 start／send／verify 等原回执，没有额外的浏览器 cancel 接口。完成后仅可读本次最终 completion action／operationId 的回执和安全尝试终态，不能读取其他主人动作或重新执行已消费授权。新有效 owner session 可读自己最终的 `registerOwner`、`completeSetup`、`recoverByEmail` 回执；验证码受限授权本身始终不是普通主人身份。
 
 旧的无查询条件接口现返回 400 `invalid_request`，缺一个条件、重复条件、额外条件或在查询中覆盖路径操作号同样拒绝；不能将失败当作未提交而重开新操作。此 GET 不接受正文；其余 API 仍不接受查询参数。
 
@@ -255,7 +257,8 @@ runtime 代次、主人绑定或 owner authVersion 改变会使未决请求失�
 | 主人访问其他主人目标 | 404 `target_not_accessible` |
 | 旧对象/政策版本 | 409 `version_conflict` |
 | 同操作号换载荷 | 409 `idempotency_payload_mismatch` |
-| 当前配置与原尝试模式不符时新发码／验码／完成 | 409 `email_mode_mismatch`，`details.currentMode,verificationMode`；已提交结果读取及原权限内取消保留 |
+| 注册发码／验码的新写入 | 409 `registration_verification_not_required`；原已成功 operation 仍可按原证明查询／重放回执 |
+| 当前配置与原恢复尝试模式不符时新发码／验码／重设 | 409 `email_mode_mismatch`，`details.currentMode,verificationMode`；已提交结果读取及原权限内取消保留 |
 | 原投递仍排队或结果未知、且验证码未过期时另起发送 | 409 `email_delivery_pending`，`details.operationId` 为原发送操作号 |
 | 同一恢复请求另起 browser attempt | 409 `email_attempt_exists`；原 browser 续接，或当前 Agent 取消请求后重新发起 |
 | 邮件尝试或未完成的受限授权已过期 | 安全读取为 `expired`，继续受限动作返回 410 `email_attempt_expired` |
