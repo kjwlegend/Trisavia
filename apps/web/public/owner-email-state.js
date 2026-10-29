@@ -15,7 +15,7 @@ export function readEmailProgress(){
   const invalid=()=>{throw new ApiError('email_progress_invalid',400);};
   if(saved.format!=='connet-email-progress-v1'||saved.origin!==location.origin||!Object.hasOwn(actions,saved.kind)||typeof saved.attemptId!=='string'||saved.attemptId.length<8||saved.attemptId.length>100||!validToken(saved.browserToken)||(saved.kind==='registration'&&!uuid(saved.attemptId)))invalid();
   const next={format:saved.format,origin:saved.origin,kind:saved.kind,attemptId:saved.attemptId,browserToken:saved.browserToken};
-  if(saved.verificationMode!==undefined){if(!['experience','resend'].includes(saved.verificationMode)||saved.codeLength!==(saved.verificationMode==='experience'?4:8))invalid();next.verificationMode=saved.verificationMode;next.codeLength=saved.codeLength;}
+  if(saved.verificationMode!==undefined){if(saved.verificationMode==='none'){if(saved.kind!=='registration'||saved.codeLength!==undefined)invalid();next.verificationMode='none';}else{if(!['experience','resend'].includes(saved.verificationMode)||saved.codeLength!==(saved.verificationMode==='experience'?4:8))invalid();next.verificationMode=saved.verificationMode;next.codeLength=saved.codeLength;}}
   if(saved.kind==='registration'){
     let fields;try{fields=accountFields(saved.username,saved.email);}catch{invalid();}
     if(fields.username!==saved.username||fields.email!==saved.email)invalid();Object.assign(next,fields);

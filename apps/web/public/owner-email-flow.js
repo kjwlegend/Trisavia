@@ -5,7 +5,7 @@ import {accountFields} from './owner-account.js';
 import {readEmailProgress,saveEmailProgress,clearEmailProgress,emailScope} from './owner-email-state.js';
 
 const finalActions=['registerOwner','completeSetup','recoverByEmail'];
-const states=['pending_email','email_proved','completed','cancelled','expired'];
+const states=['pending_registration','pending_email','email_proved','completed','cancelled','expired'];
 const deliveries=['unavailable','none','queued','accepted','failed','unknown','not_sent'];
 const copy={
   unavailable:accountMessage("email.delivery.unavailable"),
@@ -33,7 +33,7 @@ export function createOwnerEmailFlow(hooks){
   const validCode=()=>new RegExp(`^[0-9]{${codeLength()}}$`).test($('#email-code').value.trim());
   const verifiedMessage=()=>experience()?(registration()?accountMessage("email.proof.experienceRegistration",{linkStatus:progress.target?accountMessage("email.proof.agentNotLinkedClause"):''}):accountMessage("email.proof.recoveryDemo")):registration()?accountMessage("email.proof.registration",{linkStatus:progress.target?accountMessage("email.proof.linkAgentClause"):''}):accountMessage("email.proof.recoveryEmail");
   async function readCapabilities(){const revision=++capabilityRevision;try{const result=await api('/capabilities');if(revision!==capabilityRevision)return;if(!['experience','resend','unavailable'].includes(result.emailMode))return;capabilityMode=result.emailMode;render();hooks.modeChanged?.();}catch{/* Current attempt state remains authoritative, even if capabilities cannot be read. */}}
-  function retainMode(result){progress.verificationMode=result.verificationMode||'resend';progress.codeLength=result.codeLength??8;}
+  function retainMode(result){progress.verificationMode=result.verificationMode||'resend';if(result.verificationMode==='none')delete progress.codeLength;else progress.codeLength=result.codeLength??8;}
   const pending=()=>Boolean(progress?.pending);
   const editable=()=>!progress&&!storageError;
   const canRenewChallenge=()=>viewFromRead&&currentView?.status==='pending_email'&&currentView.challengeExpired===true;
@@ -45,11 +45,17 @@ export function createOwnerEmailFlow(hooks){
   }
   function targetLabel(){return hooks.targetName(progress?.target?.agentId||progress?.agentId||proposedTarget?.agentId)||accountMessage("email.target.fallback");}
   function assertView(result){
-    const p=progress;if(!p||result.attemptId!==p.attemptId||result.purpose!==(registration()?'registration':'recovery')||!states.includes(result.status)||!deliveries.includes(result.deliveryStatus)||!Number.isFinite(result.expiresAt))mismatch();
+    const p=progress;if(!p||result.attemptId!==p.attemptId||result.purpose!==(registration()?'registration':'recovery')||!states.includes(result.status)||!Number.isFinite(result.expiresAt))mismatch();
+    if(registration()&&result.verificationMode==='none'){
+      if(result.emailVerificationRequired!==false||!['pending_registration','completed','cancelled','expired'].includes(result.status))mismatch();
+      if(p.target&&(result.agentId!==p.target.agentId||result.generation!==p.target.generation||result.ownerId!==p.target.ownerId))mismatch();
+      if(!p.target&&result.agentId!==undefined)mismatch();return;
+    }
+    if(!deliveries.includes(result.deliveryStatus))mismatch();
     if(result.sendOperationId!==undefined&&result.sendOperationId!==null&&(typeof result.sendOperationId!=='string'||result.sendOperationId.length<8||result.sendOperationId.length>100))mismatch();
     if((result.codeExpiresAt!==null&&(!Number.isFinite(result.codeExpiresAt)||result.codeExpiresAt<=0))||typeof result.challengeExpired!=='boolean')mismatch();
     const viewMode=result.verificationMode||'resend',length=result.codeLength??8;
-    if(!['experience','resend'].includes(viewMode)||length!==(viewMode==='experience'?4:8)||(progress.verificationMode&&progress.verificationMode!==viewMode))mismatch();
+    if(!['experience','resend'].includes(viewMode)||length!==(viewMode==='experience'?4:8)||(progress.verificationMode&&progress.verificationMode!==viewMode&&!(registration()&&progress.verificationMode==='none')))mismatch();
     if(result.currentMode!==undefined&&(!['experience','resend','unavailable'].includes(result.currentMode)||typeof result.modeMismatch!=='boolean'||result.modeMismatch!==(result.currentMode!==viewMode)))mismatch();
     if(result.sendOperationIdRequired!==undefined&&typeof result.sendOperationIdRequired!=='boolean')mismatch();
     if((viewMode==='experience'&&['queued','accepted','failed','unknown'].includes(result.deliveryStatus))||(viewMode==='resend'&&result.deliveryStatus==='not_sent'))mismatch();
@@ -59,11 +65,12 @@ export function createOwnerEmailFlow(hooks){
   function assertReceipt(result,command){
     if(!result||result.operationId!==command.operationId||command.scope!==emailScope(progress)||result.attemptId!==progress.attemptId)mismatch();
     if(finalActions.includes(command.action)){
-      const resultMode=result.verificationMode||'resend',expectedSource=resultMode==='experience'?'experience_code':registration()?'registration_code':'recovery_code';
-      if(resultMode!==(progress.verificationMode||'resend')||(result.verificationSource!==undefined&&result.verificationSource!==expectedSource)||(resultMode==='experience'&&result.verificationSource!=='experience_code'))mismatch();
+      const resultMode=result.verificationMode||'resend',direct=registration()&&resultMode==='none',expectedSource=direct?'unverified':resultMode==='experience'?'experience_code':registration()?'registration_code':'recovery_code';
+      const originalRegistration=registration()&&progress.verificationMode==='none'&&['experience','resend'].includes(resultMode);
+      if((!direct&&!originalRegistration&&resultMode!==(progress.verificationMode||'resend'))||(result.verificationSource!==undefined&&result.verificationSource!==expectedSource)||(resultMode==='experience'&&result.verificationSource!=='experience_code')||(direct&&result.verificationSource!=='unverified'))mismatch();
       if(result.sessionId!==tokenId(progress.sessionToken))mismatch();
       if(registration()){
-        if(result.ownerId!==(progress.target?.ownerId||progress.attemptId)||result.emailVerified!==(resultMode!=='experience')||result.accountComplete!==true)mismatch();
+        if(result.ownerId!==(progress.target?.ownerId||progress.attemptId)||result.emailVerified!==(resultMode==='resend')||result.accountComplete!==true)mismatch();
         if(progress.target&&(result.agentId!==progress.target.agentId||result.managementStatus!=='managed'))mismatch();
       }else if(result.ownerId!==progress.ownerId||result.agentId!==progress.agentId||result.requestId!==progress.requestId)mismatch();
     }else{
@@ -76,11 +83,12 @@ export function createOwnerEmailFlow(hooks){
   function render(){
     if(!active)return;
     const reg=!progress||registration(),status=currentView?.status;
-    const exp=experience();
+    const exp=!reg&&experience();
+    accountText($('#email-step-label'),()=>(reg?accountMessage('registration.createAccount'):accountMessage('registration.emailTitle')));
     accountText($('#email-title'),()=>(reg?(status==='email_proved'?accountMessage("registration.complete"):progress?.target||proposedTarget?accountMessage("email.title.registerAndLink"):accountMessage("registration.createAccount")):exp?accountMessage("email.title.recoveryDemo"):accountMessage("email.title.recoveryEmail")));
-    accountText($('#email-intro'),()=>((exp?(reg?accountMessage("email.intro.registrationDemo"):accountMessage("email.intro.recoveryDemo")):reg?accountMessage("email.intro.registrationEmail"):accountMessage("email.intro.recoveryEmail"))+(reg&&(progress?.target||proposedTarget)?accountMessage("email.linkNextStep"):'')));
+    accountText($('#email-intro'),()=>(reg?accountMessage(progress?.target||proposedTarget?'registration.directLinkIntro':'registration.directIntro'):exp?accountMessage("email.intro.recoveryDemo"):accountMessage("email.intro.recoveryEmail")));
     $('#email-mode-notice').hidden=!exp&&!modeMismatch();accountText($('#email-mode-notice'),()=>(modeMismatch()?mismatchMessage():exp?accountMessage("email.mode.demoNotice",{"code":"1234"}):''));
-    accountText($('#email-address-hint'),()=>(exp?accountMessage("email.address.demoHint"):accountMessage("form.emailHint")));
+    accountText($('#email-address-hint'),()=>(reg?accountMessage('registration.directEmailHint'):exp?accountMessage("email.address.demoHint"):accountMessage("form.emailHint")));
     accountText($('#email-code-label'),()=>(exp?accountMessage("email.code.demoLabel"):accountMessage("registration.codeLabel")));$('#email-code').maxLength=codeLength();$('#email-code').pattern=`[0-9]{${codeLength()}}`;
     accountText($('#email-code-help'),()=>(exp?accountMessage("email.code.demoHelp",{"code":"1234"}):accountMessage("email.code.hint",{digits:codeLength()})));
     accountText($('#email-verify'),()=>(exp?accountMessage("email.action.verifyDemo"):accountMessage("registration.verify")));
@@ -88,12 +96,12 @@ export function createOwnerEmailFlow(hooks){
     $('#email-username').required=reg;$('#email-address').required=reg;$('#email-password-confirm').required=!reg;
     const fixedAgentId=progress?.target?.agentId||progress?.agentId||proposedTarget?.agentId;
     $('#email-target-context').hidden=!fixedAgentId;accountText($('#email-target'),()=>(accountMessage("email.target.summary",{name:targetLabel(),agentId:fixedAgentId||''})));
-    $('#email-start').hidden=Boolean(progress);accountText($('#email-start'),()=>(exp||!mode()?accountMessage("email.action.continueVerification"):accountMessage("email.action.sendCode")));
-    $('#email-challenge').hidden=!progress||status==='completed';
+    $('#email-start').hidden=Boolean(progress);accountText($('#email-start'),()=>(reg?accountMessage(progress?.target||proposedTarget?'registration.createLinkAction':'registration.createAccount'):exp||!mode()?accountMessage("email.action.continueVerification"):accountMessage("email.action.sendCode")));
+    $('#email-challenge').hidden=reg||!progress||status==='completed';
     accountText($('#email-delivery'),()=>(progress?(modeMismatch()?mismatchMessage():exp?(canRenewChallenge()?accountMessage("email.delivery.demoExpired"):accountMessage("email.delivery.demo",{"code":"1234"})):canRenewChallenge()?accountMessage("email.delivery.codeExpired"):copy[currentView?.deliveryStatus]||accountMessage("email.delivery.checking")):''));
     accountText($('#email-expiry'),()=>(currentView?accountMessage("email.expiry.summary",{time:stamp(currentView.expiresAt),resend:currentView.resendAfter>Date.now()?accountMessage("email.expiry.resend",{time:stamp(currentView.resendAfter)}):''}):''));
     $('#email-code-row').hidden=modeMismatch()||status==='email_proved'||status==='completed';
-    $('#email-finish').hidden=status!=='email_proved'&&!finalActions.includes(progress?.pending?.action);
+    $('#email-finish').hidden=!(reg&&status==='pending_registration')&&status!=='email_proved'&&!finalActions.includes(progress?.pending?.action);
     accountText($('#email-finish'),()=>(reg?(progress?.target?accountMessage("email.action.registerAndLink",{name:targetLabel()}):accountMessage("registration.complete")):accountMessage("recoveryView.confirmReset")));
     $('#email-password-row').hidden=!reg&&status!=='email_proved'&&!finalActions.includes(progress?.pending?.action);$('#email-password-confirm-row').hidden=reg;
     accountText($('#email-proof-status'),()=>(modeMismatch()?mismatchMessage():status==='email_proved'?verifiedMessage():status==='expired'?(reg?accountMessage("email.proof.registrationExpired"):accountMessage("email.proof.recoveryExpired")):status==='cancelled'?accountMessage("email.proof.registrationCancelled"):''));
@@ -117,7 +125,7 @@ export function createOwnerEmailFlow(hooks){
     $('#email-verify').disabled=locked||!progress||!currentView?.sendOperationId||closed||currentView?.status==='email_proved'||Boolean(progress.pending&&!['verifyRegistrationEmail','verifyRecoveryEmail'].includes(progress.pending.action));
     $('#email-send').disabled=locked||!progress?.started||closed||currentView?.status==='email_proved'||Boolean(progress.pending)||(['queued','unknown'].includes(currentView?.deliveryStatus)&&!canRenewChallenge())||(currentView?.resendAfter||0)>Date.now();
     $('#email-delivery-retry').disabled=locked||closed||pending();
-    $('#email-finish').disabled=locked||closed||(currentView?.status!=='email_proved'&&!finalActions.includes(progress?.pending?.action))||Boolean(progress?.pending&&!finalActions.includes(progress.pending.action))||Boolean(progress?.recoveryToken&&!progress.backupSaved);
+    $('#email-finish').disabled=locked||closed||(!(registration()&&currentView?.status==='pending_registration')&&currentView?.status!=='email_proved'&&!finalActions.includes(progress?.pending?.action))||Boolean(progress?.pending&&!finalActions.includes(progress.pending.action))||Boolean(progress?.recoveryToken&&!progress.backupSaved);
     $('#email-continue').disabled=locked||!pending();$('#email-refresh').disabled=locked||!progress;
     $('#email-password').disabled=locked||Boolean(progress?.pending&&!finalActions.includes(progress.pending.action));
     $('#email-back').disabled=locked||pending();$('#email-cancel').disabled=locked||pending();
@@ -145,7 +153,8 @@ export function createOwnerEmailFlow(hooks){
     await run(async()=>{
       const target=proposedTarget;progress={...baseState('registration'),attemptId:id(),...fields,...(target?{target}:{})};try{save();}catch(error){progress=null;throw error;}
       $('#email-username').value=fields.username;$('#email-address').value=fields.email;
-      await issue('startRegistration');await issue('sendRegistrationCode');
+      await issue('startRegistration');
+      if(progress&&!pending()&&currentView?.status==='pending_registration')await issue(progress.target?'completeSetup':'registerOwner');
     });
   }
   async function openRecovery(context){
@@ -208,7 +217,7 @@ export function createOwnerEmailFlow(hooks){
     if(command.action.startsWith('verify'))inform(modeMismatch()?mismatchMessage():verifiedMessage(),modeMismatch()?'pending':'');
     else if(command.action==='cancelRegistration'){clear();hooks.back();return;}
     // A start receipt recovered by originalReceipt needs the same current-state read as a fresh start.
-    else if(['startRegistration','startEmailRecovery'].includes(command.action)){await read();inform(modeMismatch()?mismatchMessage():copy[currentView.deliveryStatus]||accountMessage("email.progress.saved"));}
+    else if(['startRegistration','startEmailRecovery'].includes(command.action)){await read();inform(registration()?accountMessage('registration.progressReady'):modeMismatch()?mismatchMessage():copy[currentView.deliveryStatus]||accountMessage("email.progress.saved"));}
     else if(['sendRegistrationCode','sendRecoveryCode'].includes(command.action)){await read();inform(modeMismatch()?mismatchMessage():copy[currentView.deliveryStatus]||accountMessage("email.progress.saved"));}
     else inform(copy[result.deliveryStatus]||accountMessage("email.progress.saved"));render();
   }
@@ -253,17 +262,21 @@ export function createOwnerEmailFlow(hooks){
     catch(error){if(error.code==='operation_mismatch')throw error;if(error.code==='email_code_invalid'){delete progress.pending;save();throw error;}if(error.status!==404&&!(command.action.startsWith('start')&&error.status===401)){throw error;}}
     if(receipt!==undefined){await acceptOriginalReceipt(receipt,command);return;}
     try{await read();if(modeMismatch()){inform(mismatchMessage(),'pending');return;}}catch(error){if(!command.action.startsWith('start')||![401,404].includes(error.status))throw error;}
+    // Only after the original receipt is definitively absent may an obsolete
+    // registration challenge be retired. Its input is never replayed as a new grant.
+    if(registration()&&currentView?.verificationMode==='none'&&['sendRegistrationCode','verifyRegistrationEmail'].includes(command.action)){
+      delete progress.pending;save();$('#email-code').value='';inform(accountMessage('registration.progressReady'));render();return;
+    }
     if(finalActions.includes(command.action)&&!$('#email-password').reportValidity()){inform(accountMessage("email.progress.reenterPassword"),'pending');hooks.focus('#email-password');return;}
     if(command.action.startsWith('verify')&&!validCode()){inform(accountMessage("email.code.resume",{digits:codeLength()}),'pending');hooks.focus('#email-code');return;}
     await submit();
   }
   async function refresh(){await run(async()=>{if(progress?.pending)await continuePending();else if(progress)await read();});}
   function clear(){generation++;progress=null;currentView=null;viewFromRead=false;active=false;storageError=null;backupDownloaded=false;proposedTarget=null;clearEmailProgress();node.hidden=true;$('#email-password').value='';$('#email-password-confirm').value='';$('#email-code').value='';}
-  async function finish(event){event.preventDefault();if(!progress||(!finalActions.includes(progress.pending?.action)&&currentView?.status!=='email_proved'))return;if(!$('#email-password').reportValidity())return;
+  async function finish(event){event.preventDefault();if(!progress){await startRegistration();return;}if(!finalActions.includes(progress.pending?.action)&&currentView?.status!=='email_proved'&&!(registration()&&currentView?.status==='pending_registration'))return;if(!$('#email-password').reportValidity())return;
     if(!registration()&&$('#email-password').value!==$('#email-password-confirm').value){inform(accountMessage("email.validation.passwordMismatch"),'error');hooks.focus('#email-password-confirm');return;}
     await run(async()=>{if(progress.pending)await continuePending();else await issue(registration()?(progress.target?'completeSetup':'registerOwner'):'recoverByEmail');});
   }
-  $('#email-start').addEventListener('click',startRegistration);
   $('#email-send').addEventListener('click',()=>run(async()=>{if(!progress||pending())return;await read();if(currentView.status!=='pending_email')return;if(['queued','unknown'].includes(currentView.deliveryStatus)&&!canRenewChallenge()){inform(accountMessage("email.delivery.checkOriginal"),'pending');return;}await issue(registration()?'sendRegistrationCode':'sendRecoveryCode');}));
   $('#email-verify').addEventListener('click',()=>run(async()=>{if(pending()){await continuePending();return;}await read();if(!validCode()){inform(experience()?accountMessage("email.validation.demoCode"):accountMessage("email.code.hint",{digits:codeLength()}),'error');return;}await issue(registration()?'verifyRegistrationEmail':'verifyRecoveryEmail');}));
   $('#email-refresh').addEventListener('click',refresh);$('#email-continue').addEventListener('click',refresh);$('#email-form').addEventListener('submit',finish);

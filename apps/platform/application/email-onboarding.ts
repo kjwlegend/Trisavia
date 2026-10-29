@@ -2,6 +2,7 @@ import {ensurePublicId,readPublicId} from '../domains/public-identifiers/reposit
 import { requireRow as required, patchRow as update } from '../domains/common/repository.ts';
 import { mailJobRepository } from '../domains/email/repository.ts';
 import { recoveryRequestRepository, humanAccountRepository, credentialRepository, managementBindingRepository, emailAttemptRepository, agentRepository, registrationRepository } from '../domains/access/repository.ts';
+import { operationRepository } from '../domains/platform/repository.ts';
 import { randomUUID } from 'node:crypto';
 import type { JsonObject, M1ReadSession, M1Store, M1Transaction, StoredRow } from '../contracts/store.ts';
 import { accountFields } from '../domains/access/account-identifiers.ts';
@@ -69,7 +70,7 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
     async function status(tx: M1ReadSession, row: StoredRow): Promise<string> {
         if (['completed', 'cancelled'].includes(string(row, 'status')))
             return string(row, 'status');
-        if (row.data.epoch !== store.recoveryEpoch || number(row, 'expiresAt') <= now() || (row.data.status === 'email_proved' && number(row, 'grantExpiresAt') <= now()))
+        if (row.data.epoch !== store.recoveryEpoch || number(row, 'expiresAt') <= now() || (row.data.purpose === 'recovery' && row.data.status === 'email_proved' && number(row, 'grantExpiresAt') <= now()))
             return 'expired';
         if (row.data.purpose === 'recovery') {
             const request = await recoveryRequestRepository(tx).get(string(row, 'requestId'));
@@ -98,6 +99,13 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
         return typeof row.data.codeExpiresAt === 'number' && row.data.codeExpiresAt <= now();
     }
     async function view(tx: M1ReadSession, row: StoredRow): Promise<JsonObject> {
+        if (row.data.purpose === 'registration') {
+            const current = await status(tx, row);
+            return { attemptId: row.id, purpose: 'registration', verificationMode: 'none', emailVerificationRequired: false,
+                status: ['pending_email', 'email_proved'].includes(current) ? 'pending_registration' : current,
+                expiresAt: row.data.expiresAt!,
+                ...(row.data.agentId ? { agentId: row.data.agentId, generation: row.data.generation!, ownerId: row.data.ownerId! } : {}) };
+        }
         const delivery = typeof row.data.deliveryId === 'string' ? await mailJobRepository(tx).get(row.data.deliveryId) : undefined;
         return { attemptId: row.id, purpose: row.data.purpose!, verificationMode: attemptMode(row), currentMode, modeMismatch: currentMode !== attemptMode(row), sendOperationIdRequired: row.data.verificationMode !== undefined, codeLength: attemptMode(row) === 'experience' ? 4 : 8, status: await status(tx, row), expiresAt: row.data.expiresAt!,
             codeExpiresAt: row.data.codeExpiresAt ?? null, challengeExpired: challengeExpired(row),
@@ -110,7 +118,7 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
         const current = await status(tx, row);
         if (current === 'expired')
             fail('email_attempt_expired', 410, 'Email attempt expired');
-        if (!['pending_email', 'email_proved'].includes(current))
+        if (!['pending_registration', 'pending_email', 'email_proved'].includes(current))
             fail('email_attempt_closed', 409, 'Email attempt is closed');
         if (proved && (current !== 'email_proved' || number(row, 'grantExpiresAt') <= now()))
             fail('email_verification_required', 403, 'Verify this email attempt before completing it');
@@ -181,7 +189,7 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
                         target = { agentId, ownerId: actor.data.ownerId!, generation: actor.data.handoffGeneration!, targetCredentialId: actor.id, targetKind: actor.data.kind! };
                     }
                     const credential = await hooks.newCredential(tx, input.browserToken, 'email_registration', { attemptId });
-                    const row: StoredRow = { id: attemptId, version: 1, data: { ...fields, ...target, purpose: 'registration', verificationMode: currentMode === 'experience' ? 'experience' : 'resend', browserCredentialId: credential.id, status: 'pending_email', createdAt: now(), expiresAt, wrongCodes: 0, epoch: store.recoveryEpoch, sourceKey: key } };
+                    const row: StoredRow = { id: attemptId, version: 1, data: { ...fields, ...target, purpose: 'registration', verificationMode: 'none', browserCredentialId: credential.id, status: 'pending_registration', createdAt: now(), expiresAt, wrongCodes: 0, epoch: store.recoveryEpoch, sourceKey: key } };
                     await emailAttemptRepository(tx).insert(row);
                     return await view(tx, row);
                 });
@@ -236,6 +244,10 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
             if (action.startsWith('verify') && (row.data.verificationMode !== undefined || input.sendOperationId !== undefined))
                 text(input.sendOperationId, 'sendOperationId', 8, 100);
             let commandInput = input;
+            if (registration && action.startsWith('verify')) {
+                const prior = await operationRepository(tx).findByActionAndEpochAndOperationIdAndScope(action, store.recoveryEpoch, text(input.operationId, 'operationId', 8, 100), scope(row));
+                if (!prior.length) fail('registration_verification_not_required', 409, 'Registration does not require an email challenge');
+            }
             if (action.startsWith('verify'))
                 commandInput = { ...input, code: digest(mode, 'operation-code', row.id, text(input.code, 'code', 1, 64)) };
             const result = await hooks.command(tx, scope(row), action, commandInput, async () => {
@@ -245,9 +257,11 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
                 }
                 // command returns an existing exact receipt before reaching this gate.
                 // A frozen challenge may never mint new authority under another mode.
-                matchingMode(mode);
-                const email = configured(mode, action.startsWith('send'));
-                await pending(tx, row, action === 'registerOwner' || action === 'completeSetup' || action === 'recoverByEmail');
+                if (registration && (action.startsWith('send') || action.startsWith('verify')))
+                    fail('registration_verification_not_required', 409, 'Registration does not require an email challenge');
+                if (!registration) matchingMode(mode);
+                const email = registration ? undefined : configured(mode, action.startsWith('send'));
+                await pending(tx, row, action === 'recoverByEmail');
                 if (action.startsWith('send')) {
                     if (row.data.status !== 'pending_email')
                         fail('email_attempt_closed', 409, 'Email attempt is closed');
@@ -305,7 +319,7 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
                         owner = { id: ownerId, version: 1, data: { status: 'active', epoch: store.recoveryEpoch, authVersion: 1, createdAt: now() } };
                         await humanAccountRepository(tx).insert(owner);
                     }
-                    owner = await update(humanAccountRepository(tx), owner, { ...fields, status: 'active', emailVerified: mode === 'resend', emailVerifiedAt: mode === 'resend' ? now() : null, emailVerificationSource: mode === 'resend' ? 'registration_code' : 'experience_code', emailVerificationMode: mode, emailVersion: 1, initializedAt: now(), passwordSalt: password.salt, passwordHash: password.hash });
+                    owner = await update(humanAccountRepository(tx), owner, { ...fields, status: 'active', emailVerified: false, emailVerifiedAt: null, emailVerificationSource: 'unverified', emailVerificationMode: 'none', emailVersion: 1, initializedAt: now(), passwordSalt: password.salt, passwordHash: password.hash });
                     const ownerPublicId=await ensurePublicId(tx,'owner',ownerId);
                     const session = await hooks.newCredential(tx, input.sessionToken, 'owner_session', { ownerId, ownerAuthVersion: owner.data.authVersion!, expiresAt: now() + settings.sessionTtl });
                     if (input.recoveryToken !== undefined)
@@ -322,8 +336,8 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
                             if (old.data.active && ['bootstrap', 'handoff', 'setup'].includes(string(old, 'kind')))
                                 await update(credentialRepository(tx), old, { active: false });
                     }
-                    await update(emailAttemptRepository(tx), row, { status: 'completed', completionAction: action, completionOperationId: text(input.operationId, 'operationId', 8, 100), ownerId, completionVerificationMode: mode });
-                    return { attemptId: row.id, ownerId, ownerPublicId, sessionId: session.id, expiresAt: session.data.expiresAt!, accountComplete: true, emailVerified: mode === 'resend', verificationMode: mode, verificationSource: mode === 'resend' ? 'registration_code' : 'experience_code', ...(row.data.agentId ? { agentId: row.data.agentId!, publicId:await readPublicId(tx,'agent',string(row,'agentId')), managementStatus: 'managed' } : {}) };
+                    await update(emailAttemptRepository(tx), row, { status: 'completed', completionAction: action, completionOperationId: text(input.operationId, 'operationId', 8, 100), ownerId, completionVerificationMode: 'none' });
+                    return { attemptId: row.id, ownerId, ownerPublicId, sessionId: session.id, expiresAt: session.data.expiresAt!, accountComplete: true, emailVerified: false, verificationMode: 'none', verificationSource: 'unverified', ...(row.data.agentId ? { agentId: row.data.agentId!, publicId:await readPublicId(tx,'agent',string(row,'agentId')), managementStatus: 'managed' } : {}) };
                 }
                 if (action === 'recoverByEmail') {
                     const request = await required(recoveryRequestRepository(tx), string(row, 'requestId'));
@@ -375,7 +389,7 @@ export function createEmailOnboarding(store: M1Store, hooks: Hooks, settings: Se
                     return undefined;
                 if (job.data.purpose === 'code') {
                     const attempt = await emailAttemptRepository(tx).get(string(job, 'attemptId'));
-                    if (!attempt || await status(tx, attempt) !== 'pending_email' || attempt.data.deliveryId !== id || number(attempt, 'codeExpiresAt') <= now())
+                    if (!attempt || attempt.data.purpose === 'registration' || await status(tx, attempt) !== 'pending_email' || attempt.data.deliveryId !== id || number(attempt, 'codeExpiresAt') <= now())
                         return undefined;
                 }
                 return await update(mailJobRepository(tx), job, { dispatchLeaseUntil: now() + 15000, state: 'unknown' });
