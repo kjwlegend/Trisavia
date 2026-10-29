@@ -11,8 +11,8 @@ export function emitWorldAudio(cue,key=''){
 
 // One local mixer, with no notification polling, playback queue or world writes.
 export function createWorldAudio({storage=browserStorage(),request=globalThis.fetch,Context=globalThis.AudioContext||globalThis.webkitAudioContext,now=()=>performance.now(),setTimer=setTimeout,clearTimer=clearTimeout,visible=!globalThis.document?.hidden}={}){
-  let preferences={enabled:false,bgm:.5,sfx:.55};
-  try{const saved=JSON.parse(storage?.getItem(preferenceKey)||'null');if(saved?.version===1){preferences={enabled:saved.enabled===true,bgm:Number.isFinite(saved.bgm)?clamp(saved.bgm):.5,sfx:Number.isFinite(saved.sfx)?clamp(saved.sfx):.55};}}catch{}
+  let preferences={enabled:true,bgm:.5,sfx:.55};
+  try{const saved=JSON.parse(storage?.getItem(preferenceKey)||'null');if(saved?.version===1){preferences={enabled:saved.enabled!==false,bgm:Number.isFinite(saved.bgm)?clamp(saved.bgm):.5,sfx:Number.isFinite(saved.sfx)?clamp(saved.sfx):.55};}}catch{}
   let context=null,masterGain=null,bgmGain=null,sfxGain=null,manifest=null,loading=null,bgm=null,bgmPeak=0,offset=0,bgmStarted=0,unlocked=false,disposed=false,generation=0,effectGeneration=0,quietTimer=null,lastCue=-Infinity,phase='locked';
   const buffers=new Map(),voices=new Set(),seen=new Map(),listeners=new Set();
   const snapshot=()=>({...preferences,phase,unlocked,visible});

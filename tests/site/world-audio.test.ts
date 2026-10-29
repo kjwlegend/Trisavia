@@ -15,6 +15,10 @@ function fixture(saved:unknown=null,catalogues={effects:manifest,music}){
  const audio=createWorldAudio({storage:{getItem:(key:string)=>stored.get(key),setItem:(key:string,value:string)=>stored.set(key,value)},Context:FakeContext,request,visible:true,now:()=>stamp,setTimer:(callback:()=>void)=>{timers.set(++timerId,callback);return timerId;},clearTimer:(id:number)=>timers.delete(id)});
  return{audio,stored,timers,sources,gains,contexts,requested,advance:(ms=140)=>{stamp+=ms;},flush:()=>{for(const callback of [...timers.values()])callback();timers.clear();}};
 }
+test('default sound is on but stays locked without requests; explicit mute and saved volumes remain local',()=>{
+ for(const saved of [null,{version:1,bgm:.3,sfx:.4},{version:1,enabled:true,bgm:.3,sfx:.4}]){const f=fixture(saved);assert.equal(f.audio.snapshot().enabled,true);assert.equal(f.audio.snapshot().unlocked,false);assert.equal(f.audio.snapshot().phase,'locked');assert.deepEqual(f.requested,[]);assert.equal(f.contexts.length,0);if(saved){assert.equal(f.audio.snapshot().bgm,.3);assert.equal(f.audio.snapshot().sfx,.4);}f.audio.dispose();}
+ const muted=fixture({version:1,enabled:false,bgm:0,sfx:.25});assert.equal(muted.audio.snapshot().enabled,false);assert.equal(muted.audio.snapshot().bgm,0);assert.equal(muted.audio.snapshot().sfx,.25);assert.deepEqual(muted.requested,[]);muted.audio.dispose();
+});
 test('saved preference still waits for enable; the local mixer bounds voices, receipts and worst-case coherent peaks',async()=>{
  const f=fixture({version:1,enabled:true,bgm:1,sfx:1});assert.equal(f.contexts.length,0);assert.equal(await f.audio.cue('panel-open'),false);await f.audio.enable();assert.equal(f.contexts.length,1);assert.equal(f.sources.filter(source=>source.loop&&source.started).length,1);assert.deepEqual(f.requested.slice(0,3),['/assets/audio/town-v1/manifest.json','/assets/audio/town-v2/manifest.json','/assets/audio/town-v2/bgm.wav']);assert.equal(f.sources[0]!.loopEnd,80);
  for(let index=0;index<4;index++){f.advance();assert.equal(await f.audio.cue('result-success',{key:'receipt:'+index}),true);}
