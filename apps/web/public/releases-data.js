@@ -3,7 +3,7 @@ export const RELEASES = [
   {
     version: '0.12.0',
     date: '2026-10-29',
-    status: '待发布',
+    status: '已完成',
     title: '导航、音效与注册调整',
     highlights: [
       {category: '优化', title: '导航与地图音效调整', description: '语言切换与 Agent 入口更新了外观；音效开关移到地图“更多”，默认开启，并保留你已选择的静音设置。'},
