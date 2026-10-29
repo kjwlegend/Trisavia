@@ -96,7 +96,7 @@ export function createOwnerEmailFlow(hooks){
     $('#email-username').required=reg;$('#email-address').required=reg;$('#email-password-confirm').required=!reg;
     const fixedAgentId=progress?.target?.agentId||progress?.agentId||proposedTarget?.agentId;
     $('#email-target-context').hidden=!fixedAgentId;accountText($('#email-target'),()=>(accountMessage("email.target.summary",{name:targetLabel(),agentId:fixedAgentId||''})));
-    $('#email-start').hidden=Boolean(progress);accountText($('#email-start'),()=>(reg?accountMessage(progress?.target||proposedTarget?'registration.createLinkAction':'registration.createAccount'):exp||!mode()?accountMessage("email.action.continueVerification"):accountMessage("email.action.sendCode")));
+    $('#email-start').type=progress?'button':'submit';$('#email-start').hidden=Boolean(progress);accountText($('#email-start'),()=>(reg?accountMessage(progress?.target||proposedTarget?'registration.createLinkAction':'registration.createAccount'):exp||!mode()?accountMessage("email.action.continueVerification"):accountMessage("email.action.sendCode")));
     $('#email-challenge').hidden=reg||!progress||status==='completed';
     accountText($('#email-delivery'),()=>(progress?(modeMismatch()?mismatchMessage():exp?(canRenewChallenge()?accountMessage("email.delivery.demoExpired"):accountMessage("email.delivery.demo",{"code":"1234"})):canRenewChallenge()?accountMessage("email.delivery.codeExpired"):copy[currentView?.deliveryStatus]||accountMessage("email.delivery.checking")):''));
     accountText($('#email-expiry'),()=>(currentView?accountMessage("email.expiry.summary",{time:stamp(currentView.expiresAt),resend:currentView.resendAfter>Date.now()?accountMessage("email.expiry.resend",{time:stamp(currentView.resendAfter)}):''}):''));
