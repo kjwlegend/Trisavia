@@ -44,14 +44,14 @@
   "progress.exit": "保存后退出",
   "registration.firstSetup": "首次设置",
   "registration.createAndLink": "创建主人账号并关联 Agent",
-  "registration.verifyBeforeCreate": "先验证你的邮箱，再创建账号并自动关联这位 Agent。",
+  "registration.verifyBeforeCreate": "填写账号资料以创建账号并关联这位 Agent；本次注册无需邮箱验证码。",
   "registration.target": "此次关联的 Agent",
   "registration.targetLoading": "正在读取 Agent 公开资料…",
   "registration.checkIdHint": "可展开编号核对后继续。",
   "registration.checkId": "查看编号",
   "registration.createLinkAction": "创建账号并关联",
   "registration.resumeHint": "继续上次设置，请重新输入当时使用的密码。原进度和备份保持不变。",
-  "registration.emailRequirement": "注册前需在网页验证邮箱；邮箱可用于登录和找回。",
+  "registration.emailRequirement": "请填写你本人的邮箱。本次注册不发送验证码，邮箱将保持未验证状态。",
   "registration.existingAccount": "已有账号？登录并关联",
   "registration.emailTitle": "邮箱验证",
   "registration.createAccount": "创建主人账号",
@@ -971,5 +971,10 @@
   "preferences.pending": "账号语言保存结果待确认。原请求已保留，请继续确认上次结果。",
   "preferences.unavailable": "暂时无法读取账号的网站语言，当前页面语言保持不变。",
   "preferences.conflict": "账号语言偏好已变化。请读取最新状态，再明确选择要保存的语言。",
-  "preferences.retry": "继续确认语言设置。"
+  "preferences.retry": "继续确认语言设置。",
+  "registration.directIntro": "填写用户名、邮箱和密码即可创建账号。本次注册不发送验证码，邮箱仍为未验证状态。",
+  "registration.directEmailHint": "请填写你本人的邮箱；该邮箱目前尚未验证。",
+  "registration.directLinkIntro": "填写用户名、邮箱和密码，创建账号并关联这位 Agent，无需邮箱验证码。",
+  "registration.emailUnverified": "邮箱尚未验证",
+  "registration.progressReady": "可以继续创建账号。"
 }

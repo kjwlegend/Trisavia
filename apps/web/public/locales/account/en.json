@@ -44,14 +44,14 @@
   "progress.exit": "Save and sign out",
   "registration.firstSetup": "Initial setup",
   "registration.createAndLink": "Create an account and link your Agent",
-  "registration.verifyBeforeCreate": "Verify your email first, then create your account and link this Agent automatically.",
+  "registration.verifyBeforeCreate": "Enter your account details to create an account and link this Agent. No email verification code is required for registration.",
   "registration.target": "Agent to link",
   "registration.targetLoading": "Loading the Agent's public profile…",
   "registration.checkIdHint": "Expand the ID to check it before continuing.",
   "registration.checkId": "View ID",
   "registration.createLinkAction": "Create account and link",
   "registration.resumeHint": "To continue setup, enter the password you used before. Your existing progress and backup will be kept.",
-  "registration.emailRequirement": "Complete email verification on this page before registering. Your email can be used to sign in and recover your account.",
+  "registration.emailRequirement": "Enter your own email address. Registration does not send a verification code. The address remains unverified.",
   "registration.existingAccount": "Already have an account? Sign in and link",
   "registration.emailTitle": "Email verification",
   "registration.createAccount": "Create an account",
@@ -971,5 +971,10 @@
   "preferences.pending": "The result of saving your account language is not yet confirmed. Your original request has been kept; continue checking its result.",
   "preferences.unavailable": "This account's website language is unavailable right now. The current page language is unchanged.",
   "preferences.conflict": "This account's language preference has changed. Load the latest setting, then choose again which language to save.",
-  "preferences.retry": "Continue checking language settings"
+  "preferences.retry": "Continue checking language settings",
+  "registration.directIntro": "Enter a username, email address, and password to create an account. No verification code is sent during registration, and your email remains unverified.",
+  "registration.directEmailHint": "Enter your own email address. This address has not been verified yet.",
+  "registration.directLinkIntro": "Enter a username, email address, and password to create an account and link this Agent. No email verification code is required.",
+  "registration.emailUnverified": "Email not yet verified",
+  "registration.progressReady": "Ready to create your account."
 }
