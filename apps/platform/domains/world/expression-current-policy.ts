@@ -8,7 +8,7 @@ export const EXPRESSION_POLICY_V2=Object.freeze({
  }),
  limits:Object.freeze({...EXPRESSION_POLICY.limits,statusActorMinIntervalSeconds:20,
   npcActorMinIntervalSeconds:60,npcSameLineMinIntervalSeconds:300,npcEligibilityProbability:1,
-  visibleBubblesPerViewport:Object.freeze({standard:4,quiet:2,off:0}),
+  visibleBubblesPerViewport:Object.freeze({standard:10,quiet:2,off:0}),
  }),
 });
 export const CURRENT_EXPRESSION_POLICY=EXPRESSION_POLICY_V2;

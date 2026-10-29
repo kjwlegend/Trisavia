@@ -1,5 +1,5 @@
 import {el} from '../common.js';
-import {worldOverlayRects,overlaps,freeAreas} from '../world-safe-area.js';
+import {worldOverlayRects,overlaps} from '../world-safe-area.js';
 import {expressionPolicy as policy,expressionActorKey,expressionPreview} from './world-expression-reader.js';
 import {readPublicLifeActivity,publicLifeLabel} from './life-public-state.js';
 // A current fact is a quiet indicator, never an authored expression/event. It
@@ -10,8 +10,7 @@ export function currentActivityText(actor,serverTime){
  return serverTime>=activity.scheduledEndAt?'活动结果待确认':publicLifeLabel(activity);
 }
 export function expressionBudget(bounds,blocked=[],density='standard'){
- const max=policy.limits.visibleBubblesPerViewport[density]??0;if(density!=='standard')return max;
- const room=freeAreas({left:0,right:bounds.width,top:0,bottom:bounds.height},blocked).some(r=>r.right-r.left>=900&&r.bottom-r.top>=520);return room?max:Math.min(2,max);
+ return policy.limits.visibleBubblesPerViewport[density]??0;
 }
 export function placeExpression(rect,size,bounds,blocked=[],gap=12,actors=[]){
  const x=(rect.left+rect.right)/2,w=size.width,h=size.height;
