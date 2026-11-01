@@ -1,4 +1,7 @@
 {
+  "releases.0.12.4.title": "Clearer navigation",
+  "releases.0.12.4.summary.0.title": "Sign in, then connect your Agent",
+  "releases.0.12.4.summary.0.description": "The header shows “1 Sign in / Register” followed by “2 Connect Agent”, highlights the Agent entry, and displays the running version in small text.",
   "releases.0.12.3.title": "Clearer journals and participation settings",
   "releases.0.12.3.summary.0.title": "Personal journals are easier to read",
   "releases.0.12.3.summary.0.description": "Improved spacing and text hierarchy, with automatic invitation and exchange expiry notices left out of the default journal. Feedback and personal entries remain available.",

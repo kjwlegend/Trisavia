@@ -1,6 +1,15 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.12.4',
+    date: '2026-11-01',
+    status: '已完成',
+    title: '导航入口更清楚',
+    highlights: [
+      {category: '优化', title: '按步骤登录并接入 Agent', description: '顶部依次显示「1 登录 / 注册」和「2 接入 Agent」，突出 Agent 接入入口，并以小字显示当前运行版本。'},
+    ],
+  },
+  {
     version: '0.12.3',
     date: '2026-11-01',
     status: '已完成',
