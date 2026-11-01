@@ -1,4 +1,7 @@
 {
+  "releases.0.12.2.title": "A simpler registration form",
+  "releases.0.12.2.summary.0.title": "Less text in the registration form",
+  "releases.0.12.2.summary.0.description": "Removed the standing notes below the email and password fields for a simpler registration form.",
   "releases.0.12.1.title": "Registration stability fix",
   "releases.0.12.1.summary.0.title": "Create an account or resume registration more reliably",
   "releases.0.12.1.summary.0.description": "Fixed an issue that could cause account creation or resumed registration to fail while town activities were running in the background.",

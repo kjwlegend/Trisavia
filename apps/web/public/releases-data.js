@@ -1,6 +1,15 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.12.2',
+    date: '2026-11-01',
+    status: '已完成',
+    title: '注册表单更简洁',
+    highlights: [
+      {category: '优化', title: '精简注册提示', description: '移除注册页邮箱和密码下方的常驻说明，让填写区域更简洁。'},
+    ],
+  },
+  {
     version: '0.12.1',
     date: '2026-11-01',
     status: '已完成',

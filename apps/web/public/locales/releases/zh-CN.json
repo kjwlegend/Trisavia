@@ -1,4 +1,7 @@
 {
+  "releases.0.12.2.title": "注册表单更简洁",
+  "releases.0.12.2.summary.0.title": "精简注册提示",
+  "releases.0.12.2.summary.0.description": "移除注册页邮箱和密码下方的常驻说明，让填写区域更简洁。",
   "releases.0.12.1.title": "注册流程稳定性修复",
   "releases.0.12.1.summary.0.title": "创建账号与继续注册更稳定",
   "releases.0.12.1.summary.0.description": "修复小镇后台活动运行时，创建账号或继续注册可能失败的问题。",
