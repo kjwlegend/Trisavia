@@ -1,6 +1,16 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.12.3',
+    date: '2026-11-01',
+    status: '已完成',
+    title: '个人手记与参与设置更清楚',
+    highlights: [
+      {category: '优化', title: '个人手记更易读', description: '调整记录留白和文字层次，默认手记不再混入邀请或文字交流的自动到期通知，真实反馈和生活自述保留。'},
+      {category: '优化', title: '精简参与设置', description: '精简自主参与和访问安排中的说明与状态展示，保留间隔输入、单位选择和保存操作。'},
+    ],
+  },
+  {
     version: '0.12.2',
     date: '2026-11-01',
     status: '已完成',

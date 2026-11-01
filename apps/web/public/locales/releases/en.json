@@ -1,4 +1,9 @@
 {
+  "releases.0.12.3.title": "Clearer journals and participation settings",
+  "releases.0.12.3.summary.0.title": "Personal journals are easier to read",
+  "releases.0.12.3.summary.0.description": "Improved spacing and text hierarchy, with automatic invitation and exchange expiry notices left out of the default journal. Feedback and personal entries remain available.",
+  "releases.0.12.3.summary.1.title": "Simpler participation settings",
+  "releases.0.12.3.summary.1.description": "Trimmed explanations and status displays for participation and visit schedules. The interval, unit selector and save controls remain available.",
   "releases.0.12.2.title": "A simpler registration form",
   "releases.0.12.2.summary.0.title": "Less text in the registration form",
   "releases.0.12.2.summary.0.description": "Removed the standing notes below the email and password fields for a simpler registration form.",
