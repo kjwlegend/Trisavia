@@ -201,8 +201,12 @@
 .hud-root .hud-window .account-root #owner-behavior-logs .behavior-logs>:not(.behavior-log-list){flex:none}
 .hud-root .hud-window .account-root #owner-behavior-logs .behavior-logs>p.hud-muted{display:none}
 .hud-root .hud-window .account-root #owner-behavior-logs .behavior-logs>h3{margin:0;font-size:16px;line-height:24px}
-.hud-root .hud-window .account-root #owner-behavior-logs .behavior-log-row{min-height:60px;padding:6px 0}
-.hud-root .hud-window .account-root #owner-behavior-logs .behavior-log-copy>span{margin:0;line-height:22px}
+.hud-root .hud-window .account-root #owner-behavior-logs .behavior-log-row{min-height:0;padding:10px 8px;column-gap:12px}
+.hud-root .hud-window .account-root #owner-behavior-logs .behavior-log-copy{display:flex;flex-direction:column;gap:3px}
+.hud-root .hud-window .account-root #owner-behavior-logs .behavior-log-copy>span{margin:0;line-height:21px}
+.hud-root .hud-window .account-root #owner-behavior-logs .behavior-owner-title{font-size:14px;line-height:20px;font-weight:600;color:var(--owner-ink)}
+.hud-root .hud-window .account-root #owner-behavior-logs .behavior-log-story{font-size:13px;line-height:21px;color:var(--owner-muted)}
+.hud-root .hud-window .account-root #owner-behavior-logs .behavior-log-row time{font-size:11px;line-height:18px;white-space:nowrap;padding-top:1px}
 .hud-root .hud-window .account-root #owner-behavior-logs .behavior-log-date{padding:6px 0;line-height:18px}
 .hud-root .hud-window .account-root #owner-behavior-logs .behavior-log-footer{padding-top:0}
 .hud-root .hud-window .account-root #manage-view[data-manager-page=logs] .owner-past-interactions{flex:none;margin-top:6px;padding-top:6px}

@@ -16,7 +16,6 @@ import {createOwnerEmailFlow} from './owner-email-flow.js';
 import {createOwnerReceiptReader,confirmUnknownOwnerOperation} from './owner-receipt.js';
 import {managerActions,managerInput,managerRequest,assertManagerResult,parseIntervalSeconds} from './owner-manager-commands.js';
 import {readFriendshipResult} from './hud/friendship-source.js';
-import {worldAccessAdoptionText} from './world-access-status.js';
 import {mountWorldActionPolicy} from './owner-world-action-policy.js';
 import {mountOwnerWorldSummary} from './hud/owner-world-summary.js';
 import {mountOwnerBehaviorLogs} from './hud/behavior-logs.js';
@@ -597,8 +596,6 @@ function renderAgent(resetProfile=true){
   const modeNames={agent_autonomous:accountMessage("manager.modeAutonomous"),owner_specified:accountMessage("manager.modeOwner"),proposal_required:accountMessage("manager.modeProposal")},fieldNames={displayName:accountMessage("manager.name"),avatar:accountMessage("manager.appearance"),bio:accountMessage("manager.bio"),interests:accountMessage("manager.interests")};
   accountText($('#policy-current'),()=>(accountMessage("policy.currentSummary",{mode:modeNames[profile.mode],fields:profile.lockedFields.map(field=>fieldNames[field]).join('、')||accountMessage("state.policy.noLockedFields")})));
   const access=agent.worldAccess,accessReady=access?.agentId===agent.agentId&&Number.isSafeInteger(access.version)&&access.version>0&&(access.intervalSeconds===null||(Number.isSafeInteger(access.intervalSeconds)&&access.intervalSeconds>0));
-  accountText($('#world-access-current'),()=>(!accessReady?accountMessage("state.access.unavailable"):access.intervalSeconds===null?accountMessage("state.access.noInterval"):access.intervalSeconds%3600===0?accountMessage("access.interval.hours",{count:access.intervalSeconds/3600}):access.intervalSeconds%60===0?accountMessage("access.interval.minutes",{count:access.intervalSeconds/60}):accountMessage("access.interval.seconds",{count:access.intervalSeconds})));
-  accountText($('#world-access-adoption'),()=>(worldAccessAdoptionText(access)));
   if(resetProfile){
     $('#display-name').value=p.displayName||'';$('#bio').value=p.bio||'';$('#interests').value=(p.interests||[]).join('，');$('#profile-mode').value=profile.mode;$$('input[name=lock]').forEach(input=>input.checked=profile.lockedFields.includes(input.value));
     resetWorldAccess(accessReady?agent:null);worldActionSettings?.resetInputs();accountText($('#draft-note'),()=>(''));
@@ -885,7 +882,7 @@ $('#setup-start').addEventListener('click',startSetup);$('#credentials-download'
 $('#login-form').addEventListener('submit',login);$('#recovery-form').addEventListener('submit',recover);$('#recovery-download').addEventListener('click',prepareRecovery);$('#recovery-saved').addEventListener('change',controls);$('#login-tab').addEventListener('click',()=>tab('login'));$('#recovery-tab').addEventListener('click',()=>tab('recovery'));$('#show-login').addEventListener('click',()=>{showSignIn({fresh:true});tab('login');});$('#credentials-import').addEventListener('change',importCredentials);
 $('#check-result').addEventListener('click',checkResult);$('#retry-operation').addEventListener('click',()=>executePending());$('#refresh-agents').addEventListener('click',()=>refresh());$('#logout').addEventListener('click',requestLogout);$('#download-current').addEventListener('click',downloadVault);$('#agent-select').addEventListener('change',event=>selectAgent(event.target.value));
 $('#prepare-auth-exit').addEventListener('click',prepareAuthenticationExit);$('#auth-exit-saved').addEventListener('change',controls);$('#confirm-auth-exit').addEventListener('click',exitPendingAuthentication);
-$('#profile-form').addEventListener('submit',submitProfile);$('#publish-profile').addEventListener('click',publishProfile);$('#prepare-legacy-profile').addEventListener('click',prepareLegacyProfile);$('#reload-profile').addEventListener('click',()=>refresh(false));$('#policy-form').addEventListener('submit',policy);$('#join-agent').addEventListener('click',membership);$('#world-access-form').addEventListener('submit',saveWorldAccess);$('#world-access-refresh').addEventListener('click',()=>refresh(false));$('#pause-agent').addEventListener('click',pause);
+$('#profile-form').addEventListener('submit',submitProfile);$('#publish-profile').addEventListener('click',publishProfile);$('#prepare-legacy-profile').addEventListener('click',prepareLegacyProfile);$('#reload-profile').addEventListener('click',()=>refresh(false));$('#policy-form').addEventListener('submit',policy);$('#join-agent').addEventListener('click',membership);$('#world-access-form').addEventListener('submit',saveWorldAccess);$('#pause-agent').addEventListener('click',pause);
 $('#prepare-runtime').addEventListener('click',prepareRuntime);$('#runtime-saved').addEventListener('change',controls);$('#replace-runtime').addEventListener('click',replaceRuntime);$('#revoke-runtime').addEventListener('click',revokeRuntime);
 $('#show-register').addEventListener('click',()=>showRegistration());
 $('#setup-existing').addEventListener('click',()=>{if(keepClaimFromSetup())showSignIn();});
