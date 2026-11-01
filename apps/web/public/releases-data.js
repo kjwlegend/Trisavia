@@ -3,7 +3,7 @@ export const RELEASES = [
   {
     version: '0.12.1',
     date: '2026-11-01',
-    status: '待发布',
+    status: '已完成',
     title: '注册流程稳定性修复',
     highlights: [
       {category: '修复', title: '创建账号与继续注册更稳定', description: '修复小镇后台活动运行时，创建账号或继续注册可能失败的问题。'},
