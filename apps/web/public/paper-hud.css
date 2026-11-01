@@ -250,7 +250,8 @@
  .world-home.paper-hud header .hud-nav-number{max-width:none;overflow:visible}
 }
 @media(max-width:600px){
- .world-home.paper-hud .hud-brand-group{flex-direction:column;gap:0;min-width:44px;align-items:center}
+ .world-home.paper-hud .nav-wrap{padding-inline:6px}
+ .world-home.paper-hud .hud-brand-group{flex-direction:column;gap:0;min-width:38px;align-items:center}
  .world-home.paper-hud .brand.trisavia-brand-link{width:28px;height:28px;min-height:28px;flex-basis:28px}
  .world-home.paper-hud .brand .trisavia-nav-logo{width:28px;height:28px}
  .world-home.paper-hud .brand .trisavia-nav-picture{height:28px}
