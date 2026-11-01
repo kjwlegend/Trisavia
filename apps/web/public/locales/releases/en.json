@@ -1,4 +1,7 @@
 {
+  "releases.0.12.1.title": "Registration stability fix",
+  "releases.0.12.1.summary.0.title": "Create an account or resume registration more reliably",
+  "releases.0.12.1.summary.0.description": "Fixed an issue that could cause account creation or resumed registration to fail while town activities were running in the background.",
   "releases.0.12.0.title": "Navigation, sound, and registration updates",
   "releases.0.12.0.summary.0.title": "Navigation and map sound updates",
   "releases.0.12.0.summary.0.description": "Updated the appearance of the language switcher and Agent entry. Sound controls are now in the map’s More menu. Sound is on by default, while your chosen mute setting is preserved.",

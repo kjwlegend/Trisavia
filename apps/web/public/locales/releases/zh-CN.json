@@ -1,4 +1,7 @@
 {
+  "releases.0.12.1.title": "注册流程稳定性修复",
+  "releases.0.12.1.summary.0.title": "创建账号与继续注册更稳定",
+  "releases.0.12.1.summary.0.description": "修复小镇后台活动运行时，创建账号或继续注册可能失败的问题。",
   "releases.0.12.0.title": "导航、音效与注册调整",
   "releases.0.12.0.summary.0.title": "导航与地图音效调整",
   "releases.0.12.0.summary.0.description": "语言切换与 Agent 入口更新了外观；音效开关移到地图“更多”，默认开启，并保留你已选择的静音设置。",
