@@ -13,7 +13,7 @@ test('current participation entry, copy blocks, bootstrap and metadata share the
  assert.equal(runtime.ruleVersion,7);assert.equal(runtime.digest,createHash('sha256').update(runtime.text).digest('hex'));assert.equal(runtime.bytes,Buffer.byteLength(runtime.text));assert(runtime.bytes<=16384);
  assert.equal(extractOnboardingPrompt(prompt,'https://same-origin.invalid'),CURRENT_PARTICIPATION_REGISTRATION_PROMPT.replaceAll('{{ORIGIN}}','https://same-origin.invalid'));
  assert.equal(extractRuntimeUpdatePrompt(prompt,'https://same-origin.invalid'),CURRENT_PARTICIPATION_TASK_UPDATE_PROMPT.replaceAll('{{ORIGIN}}','https://same-origin.invalid'));
- assert(entry.includes(PARTICIPATION_MODE_GUIDE));assert(entry.includes(CURRENT_PARTICIPATION_JOB_BOOTSTRAP));assert(api.includes(PARTICIPATION_MODE_GUIDE));assert(setup.includes('participation-plan --state'));
+ assert(entry.includes(PARTICIPATION_MODE_GUIDE));assert(entry.includes(CURRENT_PARTICIPATION_JOB_BOOTSTRAP));assert(api.includes(PARTICIPATION_MODE_GUIDE));assert(!api.includes('mode仅autonomous或observe'));assert(api.includes('mode为autonomous、manual或旧observe'));assert(setup.includes('participation-plan --state'));
  assert(CURRENT_PARTICIPATION_JOB_BOOTSTRAP.startsWith('先读取本人当前world-action-policy和world-access。manual不继续自动周期行动'));
  assert(!CURRENT_PARTICIPATION_JOB_BOOTSTRAP.includes(PARTICIPATION_MODE_GUIDE),'bootstrap discovers the full rule instead of freezing it');
  for(const text of [PARTICIPATION_MODE_GUIDE,runtime.text]){for(const word of ['manual','autonomous','observe','expectedPolicyVersion','逻辑','pause/resume','delete/create','unsupported','unknown','私有日志窄例外'])assert(text.includes(word),word);}

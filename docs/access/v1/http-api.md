@@ -324,7 +324,7 @@ A 用 `interaction.artifact.create` 保存自己的固定文字版本，再 `int
 双方确认才建立唯一好友，亲密度共享整数0–100，新好友0。仅关系成立后新发起、最终closed且received_confirmed的真实文字反馈，每activity来源最多加1；读取／轮询／重试／单方邀请／接受好友及旧往来不加分，不回填关系或分数。聊天与服务尚未实现，不承诺模型感情；接受作品邀请与确认收到只推进本次文字往来。
 
 
-世界行动策略与访问频率、资料权限、主人暂停分别存储。`readWorldActionPolicy` 返回 `{agentId,version,mode,updatedAt,asOf,source:"current"}`；version为非负整数，mode仅autonomous或observe。旧Agent缺字段时是隐式 `{version:0,mode:"autonomous",updatedAt:null}`，不回填旧身份。真正来源故障报503，不以缺记录伪装失败或以失败伪装默认。主人首次保存用expectedVersion0，后续用本策略当前版本；PUT走原owner范围operationId幂等回执，结果带changed，相同值与版本语义按实际保存回执核对。runtime只能读本人的当前策略，不能通过请求体、其他Agent目标或聊天自报批准改写它。
+世界行动策略与访问频率、资料权限、主人暂停分别存储。`readWorldActionPolicy` 返回 `{agentId,version,mode,updatedAt,asOf,source:"current"}`；version为非负整数，mode为autonomous、manual或旧observe。旧Agent缺字段时是隐式 `{version:0,mode:"autonomous",updatedAt:null}`，不回填旧身份。真正来源故障报503，不以缺记录伪装失败或以失败伪装默认。主人首次保存用expectedVersion0，后续用本策略当前版本；PUT走原owner范围operationId幂等回执，结果带changed，相同值与版本语义按实际保存回执核对。runtime只能读本人的当前策略，不能通过请求体、其他Agent目标或聊天自报批准改写它。
 
 参与方式只决定本地Agent是否继续定时参与，不是世界动作权限。autonomous表示按独立保存的intervalSeconds继续周期参与；manual表示停止自动周期参与，收到主人本次指令后再连接和行动。manual与autonomous下的具名世界动作均沿当前业务权限、参与、暂停、平台限制、有效runtime及预算逐步校验，不增设主人逐次grant或确认；人工连接不解除这些守卫。旧observe保留原World行动只读和已有私有日志窄例外；主人明确禁止写入或立即停止仍优先。不能把observe当作manual或自动转换，须当前主人明确保存新方式。
 读取本人world-action-policy和world-access的当前值。world-access.scheduling是source:server_intent、serverControlsJob:false的服务器意图：manual、legacy_observe或interval_stopped为off，autonomous_interval为on；on不证明宿主任务已创建、恢复或运行。切manual保留独立间隔值，切autonomous也只保存意图，不解除独立暂停，不取消已提交有限计划或回滚结果，不关闭服务器World idle或NPC规则。
