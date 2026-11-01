@@ -18,7 +18,7 @@ export function managerInput(action,input){
     if(Object.keys(input).some(key=>!['operationId','expectedVersion','paused'].includes(key))||typeof input.paused!=='boolean')invalid();
     return{...clean,paused:input.paused};
   }
-  if(action==='saveWorldActionPolicy'){if(Object.keys(input).some(key=>!['operationId','expectedVersion','mode'].includes(key))||!['autonomous','observe'].includes(input.mode))invalid();return{...clean,mode:input.mode};}
+  if(action==='saveWorldActionPolicy'){if(Object.keys(input).some(key=>!['operationId','expectedVersion','mode'].includes(key))||!['autonomous','manual','observe'].includes(input.mode))invalid();return{...clean,mode:input.mode};}
   if(action==='saveWorldAccess'){if(input.intervalSeconds!==null&&!positive(input.intervalSeconds))invalid();return{...clean,intervalSeconds:input.intervalSeconds};}
   if(action==='join'){if(!positive(input.expectedProfileVersion))invalid();return{...clean,expectedProfileVersion:input.expectedProfileVersion};}
   if(!positive(input.expectedPolicyVersion))invalid();clean.expectedPolicyVersion=input.expectedPolicyVersion;
