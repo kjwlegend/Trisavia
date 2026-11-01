@@ -242,7 +242,12 @@
 /* Keep both numbered entry labels readable beside the true, optional version. */
 .paper-hud header .hud-entry-label{font-weight:700}
 @media(max-width:760px){
- .world-home.paper-hud header #hud-account>.hud-account-label,.world-home.paper-hud header :is(.hud-account,.hud-entry)>.hud-nav-number{position:static;width:auto;height:auto;max-width:none;padding:0;overflow:visible;clip:auto;white-space:nowrap;border:0}
+ .world-home.paper-hud header #hud-account>.hud-account-label,.world-home.paper-hud header :is(.hud-account,.hud-entry)>.hud-nav-number{position:static;width:auto;height:auto;padding:0;clip:auto;white-space:nowrap;border:0}
+ .world-home.paper-hud header nav{flex:1 1 auto;min-width:0;justify-content:flex-end}
+ .world-home.paper-hud header #hud-account{flex:0 1 auto;min-width:0}
+ .world-home.paper-hud header #hud-account>.hud-account-label{flex:0 1 auto;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+ .world-home.paper-hud header .hud-entry,.world-home.paper-hud header .hud-nav-number{flex:0 0 auto}
+ .world-home.paper-hud header .hud-nav-number{max-width:none;overflow:visible}
 }
 @media(max-width:600px){
  .world-home.paper-hud .hud-brand-group{flex-direction:column;gap:0;min-width:44px;align-items:center}
