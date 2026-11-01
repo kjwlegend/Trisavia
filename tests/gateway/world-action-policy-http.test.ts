@@ -49,6 +49,20 @@ test('an original runtime discovers and reads latest policy; Owner observe rejec
  }finally{await t.close();}
 });
 
+test('manual is explicit Owner intent with independent frequency and dual-version host reports, never a job-control claim',async()=>{
+ const t=await fixture();try{
+  const policy=`/v1/owner/agents/${t.agentId}/world-action-policy`,access=`/v1/agents/${t.agentId}/world-access`,report=access+'/adoption';
+  const cap=await t.call('GET','/v1/capabilities',undefined);assert.equal(cap.data.worldParticipationPolicy.version,2);assert.deepEqual(cap.data.worldParticipationPolicy.modes,['autonomous','manual','observe']);assert.equal(cap.data.hostParticipation.version,5);assert.equal(cap.data.hostParticipation.scheduling.serverControlsJob,false);
+  const save=await t.call('PUT',policy,t.owner,{operationId:randomUUID(),expectedVersion:0,mode:'manual'});assert.equal(save.status,200);assert.equal(save.data.actionVersion,0);
+  const view=(await t.call('GET',access,t.runtime)).data;assert.equal(view.intervalSeconds,3600);assert.equal(view.version,1);assert.equal(view.scheduling.effectiveState,'off');assert.equal(view.scheduling.source,'server_intent');assert.equal(view.adoption.status,'unknown');
+  const stopped=await t.call('PUT',report,t.runtime,{operationId:randomUUID(),expectedVersion:1,expectedPolicyVersion:1,jobState:'stopped'});assert.equal(stopped.status,200);assert.equal(stopped.data.adoption.appliedPolicyVersion,1);assert.equal(stopped.data.adoption.status,'current');assert.equal(stopped.data.adoption.source,'agent_report');
+  assert.equal((await t.call('PUT',report,t.runtime,{operationId:randomUUID(),expectedVersion:1,expectedPolicyVersion:0,jobState:'stopped'})).status,409);
+  const left=await t.call('POST',`/v1/agents/${t.agentId}/membership/leave`,t.runtime,{operationId:randomUUID(),expectedVersion:1});assert.equal(left.status,200);assert.equal(left.data.outcome,'committed');
+  await t.call('PUT',policy,t.owner,{operationId:randomUUID(),expectedVersion:1,mode:'autonomous'});
+  const next=(await t.call('GET',access,t.runtime)).data;assert.equal(next.intervalSeconds,3600);assert.equal(next.scheduling.effectiveState,'on');assert.equal(next.adoption.status,'awaiting');assert.equal(next.adoption.jobState,'stopped');
+ }finally{await t.close();}
+});
+
 test('Owner identity cards use source creation and first-join facts with server age, preserve full IDs and never guess missing dates',async()=>{
  const t=await fixture();try{
   const fields=defaultPublicProfile(t.agentId);t.put('profiles',t.agentId,{agentId:t.agentId,policyVersion:1,mode:'agent_autonomous',lockedFields:[],draft:fields,published:fields,publishedVersion:1});
@@ -64,12 +78,12 @@ test('Owner identity cards use source creation and first-join facts with server 
 test('runtime and Owner share authoritative frequency CAS; adoption is self-report for one exact version, never verified host execution',async()=>{
  const t=await fixture();try{
   const path=`/v1/agents/${t.agentId}/world-access`,ownerPath=`/v1/owner/agents/${t.agentId}/world-access`,adoptionPath=path+'/adoption';
-  const initial=(await t.call('GET',path,t.runtime)).data;assert.equal(initial.intervalSeconds,3600);assert.deepEqual(initial.adoption,{appliedVersion:null,jobState:'unknown',reportedAt:null,status:'unknown',source:'agent_report'});
+  const initial=(await t.call('GET',path,t.runtime)).data;assert.equal(initial.intervalSeconds,3600);assert.deepEqual(initial.adoption,{appliedVersion:null,appliedPolicyVersion:null,jobState:'unknown',reportedAt:null,status:'unknown',source:'agent_report'});
   const input={operationId:randomUUID(),expectedVersion:initial.version,intervalSeconds:600},saved=await t.call('PUT',path,t.runtime,input);assert.equal(saved.status,200);assert.equal(saved.data.version,2);assert.equal(saved.data.intervalSeconds,600);assert.deepEqual((await t.call('PUT',path,t.runtime,input)).data,saved.data);assert.equal((await t.call('PUT',ownerPath,t.owner,{operationId:randomUUID(),expectedVersion:1,intervalSeconds:300})).status,409);
   const appliedInput={operationId:randomUUID(),expectedVersion:2,jobState:'scheduled'},applied=await t.call('PUT',adoptionPath,t.runtime,appliedInput);assert.equal(applied.status,200);assert.equal(applied.data.version,2,'Adoption does not increment desired configuration');assert.equal(applied.data.adoption.appliedVersion,2);assert.equal(applied.data.adoption.status,'current');assert.equal(applied.data.adoption.source,'agent_report');assert.deepEqual((await t.call('PUT',adoptionPath,t.runtime,appliedInput)).data,applied.data);
   const newer=await t.call('PUT',ownerPath,t.owner,{operationId:randomUUID(),expectedVersion:2,intervalSeconds:300});assert.equal(newer.data.version,3);assert.equal(newer.data.adoption.status,'awaiting');assert.equal(newer.data.adoption.appliedVersion,2);assert.equal((await t.call('PUT',adoptionPath,t.runtime,{operationId:randomUUID(),expectedVersion:2,jobState:'scheduled'})).status,409);assert.equal((await t.call('PUT',adoptionPath,t.owner,{operationId:randomUUID(),expectedVersion:3,jobState:'scheduled'})).status,403);
   await t.call('PUT',`/v1/owner/agents/${t.agentId}/world-action-policy`,t.owner,{operationId:randomUUID(),expectedVersion:0,mode:'observe'});await t.call('PUT',`/v1/owner/agents/${t.agentId}/participation`,t.owner,{operationId:randomUUID(),expectedVersion:1,paused:true});
-  const stopped=await t.call('PUT',path,t.runtime,{operationId:randomUUID(),expectedVersion:3,intervalSeconds:null});assert.equal(stopped.status,200);assert.equal(stopped.data.version,4);assert.equal((await t.call('PUT',adoptionPath,t.runtime,{operationId:randomUUID(),expectedVersion:4,jobState:'scheduled'})).status,400);const report=await t.call('PUT',adoptionPath,t.runtime,{operationId:randomUUID(),expectedVersion:4,jobState:'stopped'});assert.equal(report.status,200);assert.equal(report.data.adoption.status,'current');assert.equal(report.data.adoption.jobState,'stopped');
+  const stopped=await t.call('PUT',path,t.runtime,{operationId:randomUUID(),expectedVersion:3,intervalSeconds:null});assert.equal(stopped.status,200);assert.equal(stopped.data.version,4);assert.equal((await t.call('PUT',adoptionPath,t.runtime,{operationId:randomUUID(),expectedVersion:4,jobState:'scheduled'})).status,400);const legacyReport=await t.call('PUT',adoptionPath,t.runtime,{operationId:randomUUID(),expectedVersion:4,jobState:'stopped'});assert.equal(legacyReport.status,200);assert.equal(legacyReport.data.adoption.status,'awaiting');const report=await t.call('PUT',adoptionPath,t.runtime,{operationId:randomUUID(),expectedVersion:4,expectedPolicyVersion:1,jobState:'stopped'});assert.equal(report.status,200);assert.equal(report.data.adoption.status,'current');assert.equal(report.data.adoption.jobState,'stopped');
   assert.equal((await t.call('PUT',`/v1/agents/${t.otherId}/world-access`,t.runtime,{operationId:randomUUID(),expectedVersion:1,intervalSeconds:600})).status,404);assert.deepEqual(t.rows('credentials'),t.credentialsBefore);assert.equal(t.rows('agents').find(row=>row.id===t.agentId)!.data.runtimeVersion,1);
  }finally{await t.close();}
 });

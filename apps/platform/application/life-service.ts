@@ -25,7 +25,7 @@ import {randomUUID} from 'node:crypto';
 import type {CommandKey,CommandReceipt,IdleTaskRecurrence,RuntimeReadContext,RuntimeTask,RuntimeTransaction} from '../contracts/runtime-store.ts';
 import type {JsonObject} from '../contracts/store.ts';
 import type {IdentityAccess,Principal} from '../domains/access/public.ts';
-import {assertWorldActionAllowed} from '../domains/access/world-action-policy.ts';
+import {assertWorldActionAllowed,worldActionAuthority} from '../domains/access/world-action-policy.ts';
 import {fail,M1Error,object,version} from '../domains/common/errors.ts';
 import {identifier} from '../domains/interaction/rules.ts';
 import {hashRuntimeRequest,commitRuntimeCommandIn} from '../domains/runtime/command.ts';
@@ -56,7 +56,7 @@ export function createLifeService(identity:IdentityAccess<RuntimeReadContext>,wa
   const p=await identity.readParticipation(ctx,actor.id);assertWorldActionAllowed(p.actionPolicy,operation);
   if(!p.runtimeActive||p.membership.state!=='joined'||p.membership.worldId!=='default'||p.membership.ownerPaused||p.membership.platformRestricted)fail('life_participation_unavailable',403,'Current world participation is required');
   const authority=prior?.authority??(principal&&await identity.captureExecutionAuthority?.(ctx,principal));if(!authority||!identity.validateExecutionAuthority)fail('life_authority_unavailable',503,'Stable continuation authorization is unavailable');await identity.validateExecutionAuthority(ctx,authority);
-  const next:LifeQualification={moduleGeneration:await ctx.tasks.currentGeneration('life'),recoveryEpoch:ctx.recoveryEpoch,runtimeVersion:p.runtimeVersion,membershipVersion:p.membership.version,policyVersion:p.actionPolicy.version,ownerPauseVersion:p.membership.ownerPauseVersion,platformVersion:p.membership.platformVersion,sharingGeneration:p.membership.sharingGeneration,authority};
+  const next:LifeQualification={moduleGeneration:await ctx.tasks.currentGeneration('life'),recoveryEpoch:ctx.recoveryEpoch,runtimeVersion:p.runtimeVersion,membershipVersion:p.membership.version,policyVersion:worldActionAuthority(p.actionPolicy).version,ownerPauseVersion:p.membership.ownerPauseVersion,platformVersion:p.membership.platformVersion,sharingGeneration:p.membership.sharingGeneration,authority};
   if(prior&&hashRuntimeRequest(json(prior))!==hashRuntimeRequest(json(next)))fail('life_authority_changed',403,'The original action authority has changed');return next;
  }
  async function actor(ctx:RuntimeTransaction,ref:LifeActorRef){const r=ctx.repository(LIFE_REPOSITORY);await r.lockActor(ref);let a=await r.getActor(ref);if(!a){a=freshActor(ref,ctx.now());await r.saveActor(a,null);}return a;}

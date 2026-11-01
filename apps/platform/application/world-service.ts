@@ -1,7 +1,7 @@
 import {TOWN_EXPANSION_GEOMETRY_DIGEST} from '../domains/world/town-expansion-v1.ts';
 import {behaviorSourceEvent,storedBehaviorDetails,worldBehaviorDetails} from '../domains/behavior/details.ts';
 import type {BehaviorDetails,BehaviorObservationAccess,BehaviorRecord} from '../domains/behavior/types.ts';
-import {assertWorldActionAllowed} from '../domains/access/world-action-policy.ts';
+import {assertWorldActionAllowed,worldActionsEnabled,worldActionAuthority} from '../domains/access/world-action-policy.ts';
 import { randomUUID } from 'node:crypto';
 import type { CommandKey, CommandReceipt, IdleTaskRecurrence, RuntimeEvent, RuntimeReadContext, RuntimeTask, RuntimeTransaction } from '../contracts/runtime-store.ts';
 import type { JsonObject } from '../contracts/store.ts';
@@ -133,7 +133,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
     try { assertWorldActionAllowed((await identity.readParticipation(context, agentId)).actionPolicy, 'world.idle.step'); await participation(context, agentId, worldId, true); } catch (error) { if (error instanceof M1Error && error.statusCode < 500) return rest(); throw error; }
     if(await options.activities?.isOccupied(context,worldId,agentId))return rest();
     const status = await identity.readParticipation(context, agentId);
-    const qualification = [context.recoveryEpoch, status.runtimeVersion, status.membership.ownerPauseVersion, status.membership.platformVersion, status.membership.sharingGeneration, status.actionPolicy.version].join(':');
+    const qualification = [context.recoveryEpoch, status.runtimeVersion, status.membership.ownerPauseVersion, status.membership.platformVersion, status.membership.sharingGeneration, worldActionAuthority(status.actionPolicy).version].join(':');
     const explicit = await repository.getLatestMovement(worldId, agentId), explicitStamp = explicit ? explicit.id + ':' + explicit.version : '';
     if (await repository.getActiveMovement(worldId, agentId)) return rest(explicitStamp);
     if(avatar.motion&&now<avatar.motion.arriveAt)return again(Math.max(1000,avatar.motion.arriveAt-now),{...payload});
@@ -157,7 +157,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
     if(occupied.some(p=>p.x===step.x&&p.y===step.y))return rest(explicitStamp);
     context.validateBeforeCommit(async latest => {
       await participation(latest, agentId, worldId, true); const fresh = await identity.readParticipation(latest, agentId), current = await rulesFor(latest, worldId);
-      if ([latest.recoveryEpoch, fresh.runtimeVersion, fresh.membership.ownerPauseVersion, fresh.membership.platformVersion, fresh.membership.sharingGeneration, fresh.actionPolicy.version].join(':') !== qualification
+      if ([latest.recoveryEpoch, fresh.runtimeVersion, fresh.membership.ownerPauseVersion, fresh.membership.platformVersion, fresh.membership.sharingGeneration, worldActionAuthority(fresh.actionPolicy).version].join(':') !== qualification
         || current.rules.version !== rules.version || current.rules.topologyVersion !== rules.topologyVersion) fail('world_qualification_changed', 409, 'Idle qualification changed before commit');
     });
     let next: WorldAvatar;
@@ -202,7 +202,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
       await participation(context, movement.agentId, movement.worldId, true);
       const status = await identity.readParticipation(context, movement.agentId), q = movement.qualification;
       if (movement.recoveryEpoch !== context.recoveryEpoch || status.runtimeVersion !== q.runtimeVersion || status.membership.ownerPauseVersion !== q.ownerPauseVersion
-        || status.membership.platformVersion !== q.platformVersion || status.membership.sharingGeneration !== q.sharingGeneration || status.actionPolicy.version !== (task.payload.actionPolicyVersion ?? 0)) fail('movement_qualification_changed', 409, 'Movement qualification has changed');
+        || status.membership.platformVersion !== q.platformVersion || status.membership.sharingGeneration !== q.sharingGeneration || worldActionAuthority(status.actionPolicy).version !== (task.payload.actionPolicyVersion ?? 0)) fail('movement_qualification_changed', 409, 'Movement qualification has changed');
       const current = await rulesFor(context, movement.worldId); rules = current.rules;
       if (!currentPlanRules(movement,rules) || !supportedMovementPolicy(movement.policyVersion,movement.stepIntervalMs)) fail('movement_rules_changed', 409, 'Movement rules have changed');
       const existing = await repository.getAvatar(movement.worldId, movement.agentId); if (!existing || existing.id !== movement.avatarId || existing.status !== 'idle' || existing.version !== movement.expectedAvatarVersion) fail('movement_avatar_changed', 409, 'Avatar has changed'); avatar = existing;
@@ -212,7 +212,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
         await participation(latest, movement.agentId, movement.worldId, true); const fresh = await identity.readParticipation(latest, movement.agentId), q = movement.qualification;
         const current = await rulesFor(latest, movement.worldId);
         if (fresh.runtimeVersion !== q.runtimeVersion || fresh.membership.ownerPauseVersion !== q.ownerPauseVersion || fresh.membership.platformVersion !== q.platformVersion
-          || fresh.membership.sharingGeneration !== q.sharingGeneration || fresh.actionPolicy.version !== (task.payload.actionPolicyVersion ?? 0) || current.rules.version !== rules.version || current.rules.topologyVersion !== rules.topologyVersion || !currentPlanRules(movement,current.rules)) fail('world_qualification_changed', 409, 'Movement qualification changed before commit');
+          || fresh.membership.sharingGeneration !== q.sharingGeneration || worldActionAuthority(fresh.actionPolicy).version !== (task.payload.actionPolicyVersion ?? 0) || current.rules.version !== rules.version || current.rules.topologyVersion !== rules.topologyVersion || !currentPlanRules(movement,current.rules)) fail('world_qualification_changed', 409, 'Movement qualification changed before commit');
       });
     } catch (error) {
       if (!(error instanceof M1Error) || error.statusCode >= 500) throw error;
@@ -230,7 +230,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
     const lifeProjection=options.publicActivity?{activity:await options.publicActivity(context,avatar.agentId)}:{};
     const publicRef=identity.readSubjectPublicId?{publicId:await identity.readSubjectPublicId(context,'agent',avatar.agentId)}:{};
     const status=await identity.readParticipation(context,avatar.agentId),motion=avatar.motion;
-    if(!motion||status.membership.ownerPaused||status.membership.platformRestricted||status.actionPolicy.mode!=='autonomous')return {...structuredClone(avatar),...lifeProjection,...publicRef,motion:null};
+    if(!motion||status.membership.ownerPaused||status.membership.platformRestricted||!worldActionsEnabled(status.actionPolicy))return {...structuredClone(avatar),...lifeProjection,...publicRef,motion:null};
     const latest=await context.repository(WORLD_REPOSITORY).getLatestMovement(avatar.worldId,avatar.agentId);
     const cancelled=latest?.state==='stopped'&&latest.updatedAt>=motion.startedAt;
     return {...structuredClone(avatar),...lifeProjection,...publicRef,motion:cancelled?null:structuredClone(motion)};
@@ -281,7 +281,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
           const fresh = await identity.readParticipation(latest, agentId);
           assertWorldActionAllowed(fresh.actionPolicy, key.action);
           if (fresh.runtimeVersion !== qualification.runtimeVersion || fresh.membership.ownerPauseVersion !== qualification.membership.ownerPauseVersion
-            || fresh.membership.platformVersion !== qualification.membership.platformVersion || fresh.membership.sharingGeneration !== qualification.membership.sharingGeneration || fresh.actionPolicy.version !== qualification.actionPolicy.version) fail('world_qualification_changed', 409, 'World qualification changed before commit');
+            || fresh.membership.platformVersion !== qualification.membership.platformVersion || fresh.membership.sharingGeneration !== qualification.membership.sharingGeneration || worldActionAuthority(fresh.actionPolicy).version !== worldActionAuthority(qualification.actionPolicy).version) fail('world_qualification_changed', 409, 'World qualification changed before commit');
         });
         await options.activities?.lockActor?.(current,worldId,agentId);
         const locked = await repository.lockWorld(worldId); if (!locked?.active) fail('world_not_accessible', 404, 'World is not available');
@@ -325,7 +325,7 @@ export function createWorldService(identity: IdentityAccess<RuntimeReadContext>,
               stepIntervalMs: CURRENT_MOVEMENT_POLICY.stepIntervalMs, createdAt: now, updatedAt: now, nextDueAt: Math.max(now,old.motion?.arriveAt??now) + CURRENT_MOVEMENT_POLICY.stepIntervalMs, completedAt: null, stoppedCode: null,
               commandId: key.commandId, recoveryEpoch: current.recoveryEpoch, qualification: { runtimeVersion: status.runtimeVersion, ownerPauseVersion: status.membership.ownerPauseVersion,
                 platformVersion: status.membership.platformVersion, sharingGeneration: status.membership.sharingGeneration } };
-            await repository.saveMovement(movement, null); await scheduleStep(current, movement, status.actionPolicy.version); const revision = await repository.advanceRevision(worldId, world.revision);
+            await repository.saveMovement(movement, null); await scheduleStep(current, movement, worldActionAuthority(status.actionPolicy).version); const revision = await repository.advanceRevision(worldId, world.revision);
             return { result: movementResult(movement, revision), eventIds: await movementFact(current, key, movement, revision) };
           }
         }

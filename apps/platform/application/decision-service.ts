@@ -1,4 +1,4 @@
-import {assertWorldActionAllowed} from '../domains/access/world-action-policy.ts';
+import {assertWorldActionAllowed,worldActionAuthority} from '../domains/access/world-action-policy.ts';
 import {randomUUID} from 'node:crypto';
 import type {JsonObject} from '../contracts/store.ts';
 import type {CommandKey,CommandReceipt,RuntimeReadContext,RuntimeTransaction} from '../contracts/runtime-store.ts';
@@ -34,7 +34,7 @@ export function createDecisionService(options:{identity:IdentityAccess<RuntimeRe
  }
  async function eligibility(ctx:RuntimeReadContext,p:Principal,row:DecisionRequest){
   const state=await options.identity.readParticipation(ctx,row.agentId);
-  return hashRuntimeRequest({actionPolicy:state.actionPolicy,credential:p.authorizationVersion,runtimeVersion:state.runtimeVersion,runtimeActive:state.runtimeActive,membershipState:state.membership.state,ownerPauseVersion:state.membership.ownerPauseVersion,platformVersion:state.membership.platformVersion,sharingGeneration:state.membership.sharingGeneration,templateVersion:row.templateVersion,configVersion:row.configVersion,dispatchPolicyVersion:policy.version});
+  return hashRuntimeRequest({actionPolicy:worldActionAuthority(state.actionPolicy),credential:p.authorizationVersion,runtimeVersion:state.runtimeVersion,runtimeActive:state.runtimeActive,membershipState:state.membership.state,ownerPauseVersion:state.membership.ownerPauseVersion,platformVersion:state.membership.platformVersion,sharingGeneration:state.membership.sharingGeneration,templateVersion:row.templateVersion,configVersion:row.configVersion,dispatchPolicyVersion:policy.version});
  }
  async function validateCommit(ctx:RuntimeTransaction,p:Principal,row:DecisionRequest,action:'decision.claim'|'decision.respond'){
   assertWorldActionAllowed((await options.identity.readParticipation(ctx,row.agentId)).actionPolicy,action);

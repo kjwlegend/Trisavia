@@ -1,9 +1,10 @@
 import type {AgentRuntimeGuideProvider} from './agent-runtime-guide.ts';
 import {currentAgentRuntime,runtimeRuleMetadata} from './agent-runtime-publication.ts';
-import {APPROVED_RECURRING_JOB_BOOTSTRAP,APPROVED_RUNTIME_HOST_GUIDE,APPROVED_PROFILE_GUIDANCE} from './agent-approved-prompts.ts';
+import {APPROVED_PROFILE_GUIDANCE} from './agent-approved-prompts.ts';
+import {PARTICIPATION_HOST_GUIDANCE} from './agent-participation-guide.ts';
 import {assertProfileBusinessWrite,assertProfileDirectSave,assertProfilePublicationMode,assertProfilePublicationFields} from '../domains/profile/publication-policy.ts';
 import {isCustomAvatar} from '../domains/profile/appearance.ts';
-import {assertWorldActionAllowed,worldActionPolicy,worldActionPolicyView} from '../domains/access/world-action-policy.ts';
+import {assertWorldActionAllowed,worldActionPolicy,worldActionPolicyView,worldActionAuthority,hostSchedulingIntent,WORLD_PARTICIPATION_CONTRACT} from '../domains/access/world-action-policy.ts';
 import {authenticateCredential} from '../domains/access/authentication.ts';
 import {ownerUiPreferencesView,optionalUiLocale} from '../domains/access/owner-ui-preferences.ts';
 import { mapAsync } from '../domains/common/async-collections.ts';
@@ -28,7 +29,6 @@ import { createTrustedMailboxReceiver } from "./mailbox-service.ts";
 import { createPerceptionService, type PerceptionOptions } from "./perception-service.ts";
 import { initializePerceptionAgent } from "./perception-seed.ts";
 import {createOwnerFriendsReader} from "./owner-friends.ts";
-import {HOST_PARTICIPATION_GUIDANCE} from './agent-hourly-participation-guide.ts';
 import {agentIdentityView,knownTimestamp} from './agent-identity-view.ts';
 import {agentInviteState,agentInviteView,inspectAgentInvite,requireActiveAgentInvite} from './agent-invites.ts';
 import {ensurePublicId,readPublicId,findPublicIdentifier} from '../domains/public-identifiers/repository.ts';
@@ -191,10 +191,11 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
             || (intervalSeconds !== null && (!Number.isSafeInteger(intervalSeconds) || (intervalSeconds as number) < 1)))
             throw new Error("Stored world access preference is invalid");
         const rawAdoption=stored.adoption;
-        if(rawAdoption!==undefined&&rawAdoption!==null&&(typeof rawAdoption!=='object'||Array.isArray(rawAdoption)||!Number.isSafeInteger(rawAdoption.appliedVersion)||Number(rawAdoption.appliedVersion)<1||!['scheduled','stopped','unknown'].includes(String(rawAdoption.jobState))||!Number.isSafeInteger(rawAdoption.reportedAt)||Number(rawAdoption.reportedAt)<0))fail('world_access_unavailable',503,'Stored adoption report is invalid');
-        const report=dataObject(rawAdoption),appliedVersion=report.appliedVersion??null,jobState=report.jobState??'unknown';
-        const adoption={appliedVersion,jobState,reportedAt:report.reportedAt??null,status:appliedVersion!==null&&appliedVersion!==currentVersion?'awaiting':jobState==='unknown'?'unknown':'current',source:'agent_report'};
-        return { agentId: agent.id, version: currentVersion, intervalSeconds, adoption, asOf };
+        if(rawAdoption!==undefined&&rawAdoption!==null&&(typeof rawAdoption!=='object'||Array.isArray(rawAdoption)||!Number.isSafeInteger(rawAdoption.appliedVersion)||Number(rawAdoption.appliedVersion)<1||rawAdoption.appliedPolicyVersion!==undefined&&(!Number.isSafeInteger(rawAdoption.appliedPolicyVersion)||Number(rawAdoption.appliedPolicyVersion)<0)||!['scheduled','stopped','unknown'].includes(String(rawAdoption.jobState))||!Number.isSafeInteger(rawAdoption.reportedAt)||Number(rawAdoption.reportedAt)<0))fail('world_access_unavailable',503,'Stored adoption report is invalid');
+        const policy=worldActionPolicy(agent),scheduling=hostSchedulingIntent(policy,intervalSeconds),report=dataObject(rawAdoption),appliedVersion=report.appliedVersion??null,jobState=report.jobState??'unknown',appliedPolicyVersion=report.appliedPolicyVersion??null;
+        const matches=appliedVersion===currentVersion&&(appliedPolicyVersion===policy.version||appliedPolicyVersion===null&&policy.version===0)&&(jobState===(scheduling.effectiveState==='on'?'scheduled':'stopped'));
+        const adoption={appliedVersion,appliedPolicyVersion,jobState,reportedAt:report.reportedAt??null,status:jobState==='unknown'?'unknown':matches?'current':'awaiting',source:'agent_report'};
+        return { agentId: agent.id, version: currentVersion, intervalSeconds, scheduling, adoption, asOf };
     }
     function membershipView(row: StoredRow): JsonObject {
         return { agentId: row.data.agentId!, worldId: row.data.worldId!, firstJoinedAt:knownTimestamp(row.data.firstJoinedAt,now()), version: row.version, state: row.data.state!, ownerPaused: row.data.ownerPaused!, ownerPauseVersion: row.data.ownerPauseVersion!, platformRestricted: row.data.platformRestricted!, platformVersion: row.data.platformVersion! };
@@ -350,8 +351,8 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
         if (action === "capabilities") {
             const gateway = await options.gateway?.();
             const runtimeRules=options.runtimeGuide?(gateway?.runtimeRules??runtimeRuleMetadata(await currentAgentRuntime(options.runtimeGuide))):null;
-            const hostParticipation=runtimeRules?{...HOST_PARTICIPATION_GUIDANCE,version:4,runtimeRules,bootstrap:APPROVED_RECURRING_JOB_BOOTSTRAP,instruction:APPROVED_RUNTIME_HOST_GUIDE}:HOST_PARTICIPATION_GUIDANCE;
-            return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, ownerRecoveryAssistance: true, ownerEmailVerification: false, ownerRegistration: { version: 2, emailVerificationRequired: false, emailVerifiedOnCompletion: false }, ownerEmailRecovery: email.configured, emailMode: email.mode, runtimeReplacement: true, ownerAgentInvites: {version:1,oneUse:true,preview:{method:"GET",path:"/v1/agent-invites/preview",authentication:"invite-bearer",consumes:false},consume:{method:"POST",path:"/v1/agent/invitations/consume",authentication:"own-runtime",action:"consumeInvite",receiptScope:"agent:{agentId}"},handoffFragment:"invite",newRegistration:"/v1/registrations"}, defaultPublicRole: true, profileSave: "immediate-public", worldAccessPreference: true, scheduling: false, hostParticipation, profilePersonalization:APPROVED_PROFILE_GUIDANCE, perception: true, perceptionApi: await perception.capabilities(), walletApi: wallet.capabilities(), ...(options.ownerMailboxRead?{ownerMailboxApi:{version:1,method:"POST",path:"/v1/owner/agents/:agentId/mailbox/query",boxes:["received","sent"],search:"currently-authorized-list-metadata",defaultLimit:20,maxLimit:50,readOnly:true,confirmation:false}}:{}), interaction: Array.isArray(gateway?.modules) && gateway.modules.includes("interaction"), ...(gateway ? { gateway } : {}), ...(options.avatarAssetsApi?{avatarAssetsApi:options.avatarAssetsApi()}:{}), operations: FOUNDATION_HTTP_OPERATIONS.filter(operation=>operation.action!=="queryOwnerMailbox"||!!options.ownerMailboxRead).map((operation) => ({ ...operation, actors: [...operation.actors], receiptScopes: { ...operation.receiptScopes }, requiredVersions: [...operation.requiredVersions] })) };
+            const hostParticipation=runtimeRules?{...PARTICIPATION_HOST_GUIDANCE,runtimeRules}:PARTICIPATION_HOST_GUIDANCE;
+            return { apiVersion: "v1", instanceId: store.instanceId, stage: "M1", authentication: "opaque-bearer-v1", ownerRecovery: true, ownerRecoveryAssistance: true, ownerEmailVerification: false, ownerRegistration: { version: 2, emailVerificationRequired: false, emailVerifiedOnCompletion: false }, ownerEmailRecovery: email.configured, emailMode: email.mode, runtimeReplacement: true, ownerAgentInvites: {version:1,oneUse:true,preview:{method:"GET",path:"/v1/agent-invites/preview",authentication:"invite-bearer",consumes:false},consume:{method:"POST",path:"/v1/agent/invitations/consume",authentication:"own-runtime",action:"consumeInvite",receiptScope:"agent:{agentId}"},handoffFragment:"invite",newRegistration:"/v1/registrations"}, defaultPublicRole: true, profileSave: "immediate-public", worldAccessPreference: true, worldParticipationPolicy:WORLD_PARTICIPATION_CONTRACT, scheduling: false, hostParticipation, profilePersonalization:APPROVED_PROFILE_GUIDANCE, perception: true, perceptionApi: await perception.capabilities(), walletApi: wallet.capabilities(), ...(options.ownerMailboxRead?{ownerMailboxApi:{version:1,method:"POST",path:"/v1/owner/agents/:agentId/mailbox/query",boxes:["received","sent"],search:"currently-authorized-list-metadata",defaultLimit:20,maxLimit:50,readOnly:true,confirmation:false}}:{}), interaction: Array.isArray(gateway?.modules) && gateway.modules.includes("interaction"), ...(gateway ? { gateway } : {}), ...(options.avatarAssetsApi?{avatarAssetsApi:options.avatarAssetsApi()}:{}), operations: FOUNDATION_HTTP_OPERATIONS.filter(operation=>operation.action!=="queryOwnerMailbox"||!!options.ownerMailboxRead).map((operation) => ({ ...operation, actors: [...operation.actors], receiptScopes: { ...operation.receiptScopes }, requiredVersions: [...operation.requiredVersions] })) };
         }
         if (action === "catalog")
             return avatarCatalog();
@@ -760,15 +761,16 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                 return await command(tx,`owner:${actor.data.ownerId!}`,action,input,async()=>{
                     if(!Number.isSafeInteger(input.expectedVersion)||Number(input.expectedVersion)<0)fail('invalid_request',400,'Expected a nonnegative policy version');
                     if(input.expectedVersion!==current.version)fail('version_conflict',409,'World action policy changed',{version:current.version});
-                    if(input.mode!=='autonomous'&&input.mode!=='observe')fail('invalid_request',400,'Choose autonomous or observe');
+                    if(input.mode!=='autonomous'&&input.mode!=='manual'&&input.mode!=='observe')fail('invalid_request',400,'Choose autonomous, manual or legacy observe');
                     if(input.mode===current.mode)return {...worldActionPolicyView(agent,asOf),changed:false};
                     const nextVersion=current.version+1;if(!Number.isSafeInteger(nextVersion))fail('state_conflict',409,'Policy version cannot advance');
-                    const next=await update(agentRepository(tx),agent,{worldActionPolicy:{version:nextVersion,mode:input.mode,updatedAt:asOf,updatedByOwnerId:actor.data.ownerId!}});
+                    const authority=worldActionAuthority(current),permissionChanged=(current.mode==='observe')!==(input.mode==='observe');
+                    const next=await update(agentRepository(tx),agent,{worldActionPolicy:{version:nextVersion,mode:input.mode,updatedAt:asOf,updatedByOwnerId:actor.data.ownerId!,actionVersion:authority.version+(permissionChanged?1:0),actionUpdatedAt:permissionChanged?asOf:authority.updatedAt}});
                     return {...worldActionPolicyView(next,asOf),changed:true};
                 });
             }
             if (action === "readWorldAccess" || action === "saveWorldAccess" || action === "adoptWorldAccess") {
-                const input = object(raw, action === "readWorldAccess" ? ["agentId"] : ["operationId", "agentId", "expectedVersion", ...(action === "adoptWorldAccess" ? ["jobState"] : ["intervalSeconds"])]);
+                const input = object(raw, action === "readWorldAccess" ? ["agentId"] : ["operationId", "agentId", "expectedVersion", ...(action === "adoptWorldAccess" ? ["jobState","expectedPolicyVersion"] : ["intervalSeconds"])]);
                 const actor = await authenticate(tx, token, action === "adoptWorldAccess" ? ["runtime"] : ["runtime", "owner_session"]);
                 const agentId = text(input.agentId, "agentId", 8, 100);
                 const agent = await target(tx, actor, agentId);
@@ -779,9 +781,11 @@ export function createM1Service(store: M1Store, options: M1Options = {}): M1Serv
                     if (version(input.expectedVersion) !== current.version)
                         fail("version_conflict", 409, "World access preference changed", { version: current.version! });
                     if(action==='adoptWorldAccess'){
-                        const jobState=input.jobState;
-                        if(!['scheduled','stopped','unknown'].includes(String(jobState))||jobState==='scheduled'&&current.intervalSeconds===null||jobState==='stopped'&&current.intervalSeconds!==null)fail('invalid_request',400,'Job state must agree with the current configured interval');
-                        const adoption={appliedVersion:current.version!,jobState:jobState as string,reportedAt:asOf};
+                        const jobState=input.jobState,policy=worldActionPolicy(agent),policyAware=input.expectedPolicyVersion!==undefined;
+                        if(policyAware){if(!Number.isSafeInteger(input.expectedPolicyVersion)||Number(input.expectedPolicyVersion)<0)fail('invalid_request',400,'Expected a nonnegative policy version');if(input.expectedPolicyVersion!==policy.version)fail('version_conflict',409,'World participation policy changed',{policyVersion:policy.version});}
+                        const expectedState=policyAware?(dataObject(current.scheduling).effectiveState==='on'?'scheduled':'stopped'):(current.intervalSeconds===null?'stopped':'scheduled');
+                        if(!['scheduled','stopped','unknown'].includes(String(jobState))||jobState!=='unknown'&&jobState!==expectedState)fail('invalid_request',400,'Job state must agree with the current scheduling intent');
+                        const adoption={appliedVersion:current.version!,...(policyAware?{appliedPolicyVersion:policy.version}:{}),jobState:jobState as string,reportedAt:asOf};
                         const next=await update(agentRepository(tx),agent,{worldAccess:{...dataObject(agent.data.worldAccess),adoption}});
                         return {...worldAccessView(next,asOf),changed:true};
                     }
