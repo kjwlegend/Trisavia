@@ -20,6 +20,8 @@ export type BehaviorNode=typeof BEHAVIOR_NODES[number];
 /** Internal user-log selection, never a client-supplied list of filters. */
 export const USER_LOG_PROCESS_NODES:readonly BehaviorNode[]=Object.freeze(['world.movement.received','world.movement.started','world.movement.completed','world.movement.stopped','world.idle.completed']);
 export const JOURNAL_SUPPRESSED_NODES:readonly BehaviorNode[]=Object.freeze(journalPolicy.journalDefaultSuppressedNodes as BehaviorNode[]);
+/** Presentation selection only; sources, history and authored-reference access stay intact. */
+export const SYSTEM_INTERACTION_EXPIRY_NODES:readonly BehaviorNode[]=Object.freeze(['interaction.invitation.expired','interaction.activity.expired']);
 export interface BehaviorObservationAccess<C extends object>{capture(context:C,agentId:string,sourceDomain:OwnerObservationDomain):Promise<OwnerAudienceProof|null>}
 export interface BehaviorCoverage {scope:BehaviorScope;fromAt:number;policyVersion:1;partial:boolean}
 export interface BehaviorPublicProjection {policyVersion:1;worldId:string;sharingGeneration:number;placeId:string|null;placeName:string|null}
@@ -45,5 +47,5 @@ export interface BehaviorDetails {
  gift?:{giftId:string;state:string;direction:'sent'|'received';items:{itemInstanceId:string;itemId:string;name:string}[]};
  life?:{care?:Omit<import('../npc-life/types.ts').CareResult,'message'>|null;activityId:string;actionId:string;jobId:string|null;resultId:string;scheduledEndAt:number;energySpent:number|null;energyRestored:number|null;coinReward:number|null;fishing?:import('../life/b-types.ts').LifeFishingResult&{unstartedCasts:number}|null;trade?:{moneyDelta:number;quantity:number}|null;c?:{book:{bookId:string;version:number;title:string;authorDisplay:string;digest:string}|null;visit:{first:boolean;recorded:boolean}|null;moneyDelta:number|null;consumedItems:number|null;createdItems:number|null}|null};
 }
-export interface BehaviorListInput {authoredOnly?:true;agentId?:string;publicOnly?:boolean;userLogOnly?:true;worldPublicOnly?:true;maxSequence:number;fromAt?:number;toAt?:number;after?:{occurredAt:number;id:string};limit:number}
+export interface BehaviorListInput {authoredOnly?:true;agentId?:string;publicOnly?:boolean;userLogOnly?:true;worldPublicOnly?:true;omitSystemInteractionExpiry?:true;maxSequence:number;fromAt?:number;toAt?:number;after?:{occurredAt:number;id:string};limit:number}
 export const IDLE_BEHAVIOR_INTERVAL_MS=300000;

@@ -1,5 +1,5 @@
 import {BEHAVIOR_REPOSITORY,type BehaviorRepository,type BehaviorReader} from '../../domains/behavior/repository.ts';
-import {IDLE_BEHAVIOR_INTERVAL_MS,USER_LOG_PROCESS_NODES,type BehaviorCoverage,type BehaviorRecord,type BehaviorRecordDraft} from '../../domains/behavior/types.ts';
+import {IDLE_BEHAVIOR_INTERVAL_MS,USER_LOG_PROCESS_NODES,SYSTEM_INTERACTION_EXPIRY_NODES,type BehaviorCoverage,type BehaviorRecord,type BehaviorRecordDraft} from '../../domains/behavior/types.ts';
 import {behaviorRecordId,sameBehavior,validateBehaviorDraft,validateBehaviorEvent} from '../../domains/behavior/records.ts';
 import {WORLD_LOG_PUBLIC_RULES} from '../../domains/behavior/world-public-selection.ts';
 import {RuntimeError} from '../../contracts/runtime-store.ts';
@@ -18,6 +18,8 @@ export function createBehaviorRepository(sql:RuntimeSql):{port:typeof BEHAVIOR_R
   async get(id){const row=(await sql.query('SELECT * FROM behavior.records WHERE id=$1',[text(id)]))[0];return row?record(row):undefined;},
   async list(input){integer(input.limit,1,100);integer(input.maxSequence);const values:unknown[]=[input.maxSequence],where=['sequence<=$1'];const add=(clause:string,value:unknown)=>{values.push(value);where.push(clause.replace('?',`$${values.length}`));};
    if(input.userLogOnly!==undefined&&input.userLogOnly!==true)throw new RuntimeError('invalid_usage','Invalid user-log selection');if(input.userLogOnly)add('node <> ALL(?::text[])',USER_LOG_PROCESS_NODES);
+   if(input.omitSystemInteractionExpiry!==undefined&&input.omitSystemInteractionExpiry!==true)throw new RuntimeError('invalid_usage','Invalid Owner journal selection');
+   if(input.omitSystemInteractionExpiry)add("NOT (source_domain='interaction' AND node=ANY(?::text[]) AND initiator_kind='system' AND executor_kind='system' AND origin='rules')",SYSTEM_INTERACTION_EXPIRY_NODES);
    if(input.worldPublicOnly!==undefined&&input.worldPublicOnly!==true)throw new RuntimeError('invalid_usage','Invalid public-world selection');
    if(input.worldPublicOnly){const rules=WORLD_LOG_PUBLIC_RULES.map(rule=>{values.push(rule.sourceDomain,rule.sourceType,rule.nodes);return `(source_domain=$${values.length-2} AND source_type=$${values.length-1} AND node=ANY($${values.length}::text[]) AND ${rule.subject==='agent'?'agent_id IS NOT NULL AND npc_id IS NULL':'agent_id IS NULL AND npc_id IS NOT NULL'})`;});where.push('public_projection IS NOT NULL',`(${rules.join(' OR ')||'FALSE'})`);}
    if(input.authoredOnly!==undefined&&input.authoredOnly!==true)throw new RuntimeError('invalid_usage','Invalid authored statement selection');if(input.authoredOnly)where.push("node='life.journal.authored' AND source_type='life_journal'");
