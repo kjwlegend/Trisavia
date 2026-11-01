@@ -88,7 +88,6 @@ export function createOwnerEmailFlow(hooks){
     accountText($('#email-title'),()=>(reg?(status==='email_proved'?accountMessage("registration.complete"):progress?.target||proposedTarget?accountMessage("email.title.registerAndLink"):accountMessage("registration.createAccount")):exp?accountMessage("email.title.recoveryDemo"):accountMessage("email.title.recoveryEmail")));
     accountText($('#email-intro'),()=>(reg?accountMessage(progress?.target||proposedTarget?'registration.directLinkIntro':'registration.directIntro'):exp?accountMessage("email.intro.recoveryDemo"):accountMessage("email.intro.recoveryEmail")));
     $('#email-mode-notice').hidden=!exp&&!modeMismatch();accountText($('#email-mode-notice'),()=>(modeMismatch()?mismatchMessage():exp?accountMessage("email.mode.demoNotice",{"code":"1234"}):''));
-    accountText($('#email-address-hint'),()=>(reg?accountMessage('registration.directEmailHint'):exp?accountMessage("email.address.demoHint"):accountMessage("form.emailHint")));
     accountText($('#email-code-label'),()=>(exp?accountMessage("email.code.demoLabel"):accountMessage("registration.codeLabel")));$('#email-code').maxLength=codeLength();$('#email-code').pattern=`[0-9]{${codeLength()}}`;
     accountText($('#email-code-help'),()=>(exp?accountMessage("email.code.demoHelp",{"code":"1234"}):accountMessage("email.code.hint",{digits:codeLength()})));
     accountText($('#email-verify'),()=>(exp?accountMessage("email.action.verifyDemo"):accountMessage("registration.verify")));
