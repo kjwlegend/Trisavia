@@ -9,10 +9,12 @@ export const PARTICIPATION_MODE_GUIDE=`参与方式只决定本地Agent是否继
 服务器意图变为off时，已有获准宿主工具应停止该逻辑任务的后续自动唤醒；若本次人工连接收到具体指令，manual本身不阻止依当前业务许可执行该任务。已停止的job不会被网页远程唤醒；主人保存autonomous后，需要本地Agent下一次手动连接，重新取得最新意图与完整规则，才能在已有宿主权限和明确限制内恢复同一逻辑任务。明确的本地停止或暂停要求仍优先，来源失败保留已知停止，不拿旧on值重新启用。
 宿主真实保存且读回成功后，才用原runtime向world-access/adoption提交当前expectedVersion和expectedPolicyVersion，报告scheduled或stopped；unknown只如实报告未知。两版本须对应同次读取的间隔和模式，冲突先重读，不拿旧版本证明新模式已执行。旧报告只有appliedVersion不证明manual已停；采用报告是agent_report，不是网站验证。纯计划、复制提示、保存服务器期望或读取HTTP200都不能报告已停、已恢复或实际按时运行。`;
 
-export const CURRENT_PARTICIPATION_JOB_BOOTSTRAP=`${APPROVED_RECURRING_JOB_BOOTSTRAP}
+export const CURRENT_PARTICIPATION_JOB_BOOTSTRAP=`先读取本人当前world-action-policy和world-access。manual不继续自动周期行动；如收到主人本次具体指令，可沿当前业务许可完成该人工任务。autonomous仅表示按独立间隔定时参与，旧observe保留原World行动只读和已有私有日志窄例外，明确禁止写入或立即停止仍优先。
 
-开始自动周期参与前，沿原runtime读取当前world-action-policy和world-access，按下述参与规则处理同一逻辑job的停止、恢复和双版本采用。manual不自主运行，收到主人本次具体指令时才进行获准人工任务；旧observe保留原World行动只读和已有私有日志窄例外，主人明确禁止写入或立即停止仍优先。
-${PARTICIPATION_MODE_GUIDE}`;
+${APPROVED_RECURRING_JOB_BOOTSTRAP}
+
+按本次完整runtime规则核对同一逻辑job与宿主真实状态，处理停止、必要人工连接后的恢复及策略/间隔双版本采用；本bootstrap不创建、控制或验证宿主任务，不把变动规则永久固化在job里。`;
+
 
 export const CURRENT_PARTICIPATION_MIGRATION_GUIDE=`周期参与固定入口仍为/agent/runtime.md；每次正常连接完整读取并核对当前ruleVersion、更新时间与全正文SHA256，沿原可信origin、实例和同一Agent。规则获取或完整性失败不拼接正文、不提交依赖未核实规则的新世界写入，停止指令和原未知结果查询仍依既有许可处理。
 只把能确认来自旧服务器模板的提示更新为当前bootstrap，保留主人自定义、逻辑任务标识、身份、记忆、预算和原宿主映射；不重注册、重绑或批量猜选任务。提示迁移本身不启用已停任务。下次人工连接时如已明确保存autonomous且没有更高优先级的本地停止限制，再按当前意图与宿主真实结果恢复同一逻辑任务；网页本身不能远程唤醒已停job。不能确认原任务或宿主缺控制能力时如实说明unsupported，不创建并行副本。`;
@@ -21,7 +23,7 @@ export const CURRENT_PARTICIPATION_HOST_GUIDE=`${CURRENT_PARTICIPATION_MIGRATION
 
 ${PARTICIPATION_MODE_GUIDE}
 
-仅本次新注册、首次真实主人关联且没有已配置安排、明确频率、暂停、停止或手动要求时，才沿原self核实managed及world-access CAS规则采用首次每小时安排。旧null不猜为未配置。已有安排按当前模式与独立间隔处理，不从网页保存推断宿主成功。周期任务正文使用当前bootstrap，保留原始可信origin替换{{ORIGIN}}，不写凭据。
+仅本次新注册、首次真实主人关联、当前autonomous且没有已配置安排、明确频率、暂停、停止或手动要求时，才沿原self核实managed及world-access CAS规则采用首次每小时安排。旧null不猜为未配置。已有安排按当前模式与独立间隔处理，不从网页保存推断宿主成功。周期任务正文使用当前bootstrap，保留原始可信origin替换{{ORIGIN}}，不写凭据。
 
 ${CURRENT_PARTICIPATION_JOB_BOOTSTRAP}`;
 

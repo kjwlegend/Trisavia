@@ -1,3 +1,4 @@
+import {CURRENT_PARTICIPATION_JOB_BOOTSTRAP,CURRENT_PARTICIPATION_REGISTRATION_PROMPT,CURRENT_PARTICIPATION_TASK_UPDATE_PROMPT} from '../../apps/platform/application/agent-participation-guide.ts';
 import {runtimeRuleMetadata,runtimeCatalogRevision} from '../../apps/platform/application/agent-runtime-publication.ts';
 import {canonicalGatewayDocument} from '../../apps/platform/application/agent-gateway.ts';
 import {placeProfileWorldGuide} from '../../apps/platform/application/agent-gateway-place-profile-guide.ts';
@@ -19,6 +20,11 @@ const sha=(text:string)=>createHash('sha256').update(text).digest('hex');
 const socialRuntimeAdditions=["在活动转换、到访相关场所或收到真实回应时，留意与自己兴趣、疑问或未完事项有关的人物线索。按当前权限有界了解一个相关对象的公开资料、实际表达或可用服务，分清自己注意到什么、为何想接触以及此刻是否合适；也可以选择独处。若持续遇到相关人物却从未进一步了解，在下一次选择活动时查清原因，不机械绕开人物，也不按轮次或人数指标交友。", "有具体接触理由且条件允许时，选择当前真正支持的招呼、话题、服务、文字交流或好友申请。说明真实意图，给对方拒绝或不回应的空间；没有自由聊天能力时，不用气泡或作品反馈伪装闲聊。依据实际回应续接人物印象与后续打算，有持续联系意愿时再按规则建立好友；先前交流是常见契机，不是硬性前置。看见、阅读资料、发出邀请、收到回应和确认关系分别记录；未回应不冻结其他生活，拒绝或条件不合适不反复追问，不为关系数值刷活动。", "重要的停顿、转向或接触意愿，要让人明白当前的具体原因；原因尚未查明就保留未知，不用“下次继续”“现场变化”代替解释。只讲影响当前选择的理由，不增加固定句式或强造感受。"];
 function withoutSocialAdditions(text:string){for(const paragraph of socialRuntimeAdditions){assert.equal(text.split(paragraph).length,2);text=text.replace("- "+paragraph+"\n","");}return text;}
 
+function originalAuthorization(text:string){
+ const originalSection="## 1. 授权与调度\n\n- 主人的明确限制、暂停、退出、只读和停止要求始终有效。立即停止时先停宿主任务，不因服务器旧状态、新能力、规则或资料更新自行恢复。\n- 行动前读取本人当前行动政策与参与安排；授权读取失败不猜许可。只读模式不领取或推进写入行动。\n- 按加入指南同步既有任务频率和启停；正常唤醒不新增任务、不自行改频率。规则不扩大宿主工具、网络、模型、费用、隐私或历史访问权限。\n- 同一身份串行参与。上一轮未结束则跳过，不覆盖其记录或编造新经历；结束时只释放本轮占用。\n";
+ return text.replace(/## 1\. 授权与调度[\s\S]*?(?=\n## 2\.)/,originalSection);
+}
+
 
 test('approved 01–04 keep every literal character except the trusted-origin placeholder',()=>{
  const originals={registration:APPROVED_REGISTRATION_PROMPT,update:APPROVED_TASK_UPDATE_PROMPT,recurring:APPROVED_RECURRING_JOB_BOOTSTRAP,profile:APPROVED_PROFILE_RULES};
@@ -26,8 +32,8 @@ test('approved 01–04 keep every literal character except the trusted-origin pl
 });
 
 test('seven-group current runtime retains approved 05 and the complete 0100 journal/NPC block',async()=>{
- const runtime=await readAgentRuntimeGuide();assert.equal(runtime.ruleVersion,6);assert(runtime.bytes<=16384);assert.equal(runtime.digest,sha(runtime.text));
- const body=withoutSocialAdditions(runtime.text.slice(runtime.text.indexOf('\n\n')+2)),marker='个人日志能力实际启用后，',approved=body.slice(0,body.indexOf(marker)).trimEnd()+'\n\n<!-- connet:runtime-rule:end -->\n\n';
+ const runtime=await readAgentRuntimeGuide();assert.equal(runtime.ruleVersion,7);assert(runtime.bytes<=16384);assert.equal(runtime.digest,sha(runtime.text));
+ const body=withoutSocialAdditions(originalAuthorization(runtime.text).slice(runtime.text.indexOf('\n\n')+2)),marker='个人日志能力实际启用后，',approved=body.slice(0,body.indexOf(marker)).trimEnd()+'\n\n<!-- connet:runtime-rule:end -->\n\n';
  assert.equal(sha(approved),APPROVED_PROMPT_SOURCE_DIGESTS.runtime);
  const oldBlock=body.slice(body.indexOf(marker),body.indexOf('\n\n当前个人日志的纯文本正文'));
  assert.equal(sha(oldBlock),'1112496eced9e2ee6cdac47fa2239f28939ca6b87215e8e137dda09e8bd3afef');
@@ -50,9 +56,9 @@ test('M2 versioned text copies replace exact approved blocks, preserve unrelated
 test('public blocks, role preparation, recurring body and Owner copy use the exact approved originals',async()=>{
  const load=(name:string)=>readFile(new URL('../../docs/access/v1/'+name,import.meta.url),'utf8'),prompt=await load('prompt.md'),entry=await load('entry.md'),setup=await load('local-setup.md'),origin='https://approved.example:8443';
  const registration=extractOnboardingPrompt(prompt,origin),update=extractRuntimeUpdatePrompt(prompt,origin);
- assert.equal(registration,APPROVED_REGISTRATION_PROMPT.replaceAll('{{ORIGIN}}',origin));assert.equal(update,APPROVED_TASK_UPDATE_PROMPT.replaceAll('{{ORIGIN}}',origin));
+ assert.equal(registration,CURRENT_PARTICIPATION_REGISTRATION_PROMPT.replaceAll('{{ORIGIN}}',origin));assert.equal(update,CURRENT_PARTICIPATION_TASK_UPDATE_PROMPT.replaceAll('{{ORIGIN}}',origin));
  assert.equal(entry.split('## 角色资料与确认\n\n')[1]!.split('\n## 完成接入')[0]!.trim(),APPROVED_PROFILE_RULES);
- assert.equal(entry.split('### 周期任务的每轮bootstrap\n')[1]!.split('```text\n')[1]!.split('\n```')[0],APPROVED_RECURRING_JOB_BOOTSTRAP);
+ assert.equal(entry.split('### 周期任务的每轮bootstrap\n')[1]!.split('```text\n')[1]!.split('\n```')[0],CURRENT_PARTICIPATION_JOB_BOOTSTRAP);
  assert.match(setup,/背景可以包含幻想身世，与真实世界经历分别记录/);assert.match(setup,/主人已授权自主生成或覆盖的字段不逐项重复确认/);
  const syntheticToken='invite_fixture_key.'+'A'.repeat(43),invite=agentInviteGuide(origin,syntheticToken,registration);assert(invite.startsWith(registration+'\n\n'));assert(invite.includes(origin+'/agent/entry.md#invite='+syntheticToken));assert(!invite.includes('/owner'));assert.throws(()=>agentInviteGuide(origin,syntheticToken));
  for(const site of ['https://user:password@approved.example','https://approved.example/path','data:text/plain,no']){assert.throws(()=>extractOnboardingPrompt(prompt,site));assert.throws(()=>extractRuntimeUpdatePrompt(prompt,site));}
@@ -66,7 +72,7 @@ test('Owner copy reads the approved public source without credentials and never 
  Object.defineProperty(globalThis,'location',{configurable:true,value:{origin}});
  globalThis.fetch=async(input,options)=>{calls++;assert.equal(input,'/agent/prompt.md');assert.equal(options?.credentials,'omit');assert.equal(options?.cache,'no-store');assert.equal(options?.redirect,'error');assert.equal(options?.referrerPolicy,'no-referrer');assert.equal(options?.headers,undefined);return new Response(valid?prompt:prompt.replace('copy-prompt:end','copy-prompt:missing'),{status:200});};
  t.after(()=>{globalThis.fetch=originalFetch;if(location)Object.defineProperty(globalThis,'location',location);else delete (globalThis as any).location;});
- await assert.rejects(readOnboardingPrompt,/prompt_unavailable/);assert.equal(calls,1);valid=true;assert.equal(await readOnboardingPrompt(),APPROVED_REGISTRATION_PROMPT.replaceAll('{{ORIGIN}}',origin));assert.equal(calls,2);
+ await assert.rejects(readOnboardingPrompt,/prompt_unavailable/);assert.equal(calls,1);valid=true;assert.equal(await readOnboardingPrompt(),CURRENT_PARTICIPATION_REGISTRATION_PROMPT.replaceAll('{{ORIGIN}}',origin));assert.equal(calls,2);
 });
 
 
@@ -74,7 +80,7 @@ test('legacy rule1–4 and approved rule5 each require their own complete exact 
  const current=await readAgentRuntimeGuide(),legacyBody='# Synthetic legacy rules\n\n### 1. 每次唤醒\n原规则一。\n### 2. 选择行动\n原规则二。\n### 3. 向主人分享\n原规则三。\n\n<!-- connet:runtime-rule:end -->\n';
  const legacy=(version:number)=>'<!-- connet:runtime-rule '+JSON.stringify({ruleVersion:version,updatedAt:'2026-10-27T00:00:00.000Z',changeSummary:'隔离旧格式'})+' -->\n\n'+legacyBody;
  for(const version of [1,2,3,4])assert.equal(parseAgentRuntimeGuide(Buffer.from(legacy(version))).ruleVersion,version);
- assert.throws(()=>parseAgentRuntimeGuide(Buffer.from(legacy(5))));assert.throws(()=>parseAgentRuntimeGuide(Buffer.from(current.text.replace('"ruleVersion":6','"ruleVersion":4'))));
+ assert.throws(()=>parseAgentRuntimeGuide(Buffer.from(legacy(5))));assert.throws(()=>parseAgentRuntimeGuide(Buffer.from(current.text.replace('"ruleVersion":7','"ruleVersion":4'))));
  for(const bad of [legacy(4).replace('### 2. 选择行动','### 缺失'),legacy(4).replace('### 2. 选择行动','### 1. 每次唤醒'),legacy(4).replace('原规则二。',''),legacy(4).replace('### 3. 向主人分享','## 3. 向主人分享')])assert.throws(()=>parseAgentRuntimeGuide(Buffer.from(bad)));
 });
 
@@ -102,7 +108,9 @@ test('published G22 human variants and an already-correct hourly block are exact
 
 
 test('runtime6 adds only the three approved social paragraphs in groups3/4/6 and changes the current stamp',async()=>{
- const runtime=await readAgentRuntimeGuide();assert.equal(runtime.ruleVersion,6);
+ const current=await readAgentRuntimeGuide();assert.equal(current.ruleVersion,7);
+ const text="<!-- connet:runtime-rule {\"ruleVersion\":6,\"updatedAt\":\"2026-10-27T18:55:05.862Z\",\"changeSummary\":\"从真实人物线索选择合适的接触与关系机会，并把重要停顿和转向的具体原因说清楚。\"} -->"+originalAuthorization(current.text).slice(current.text.indexOf('\n'));
+ const runtime=parseAgentRuntimeGuide(Buffer.from(text));assert.equal(runtime.ruleVersion,6);assert.equal(runtime.digest,'04d51261a6159f0cd48b9af12976e50ce1d276f07135302763cd3f53ffeaf604');
  for(const [index,group]of [3,4,6].entries()){const start=runtime.text.indexOf(AGENT_RUNTIME_SECTION_HEADINGS[group-1]!),finish=runtime.text.indexOf(AGENT_RUNTIME_SECTION_HEADINGS[group]!,start);assert(runtime.text.slice(start,finish).includes(socialRuntimeAdditions[index]!));}
  const previousHeader='<!-- connet:runtime-rule {"ruleVersion":5,"updatedAt":"2026-10-27T16:23:12.000Z","changeSummary":"采用七组完整运行规则与已审角色、周期提示，保留私人生活手记及同源NPC发现。"} -->';
  const previous=previousHeader+'\n\n'+withoutSocialAdditions(runtime.text.slice(runtime.text.indexOf('\n\n')+2));assert.equal(sha(previous),'bf4f9a3e591ac92401f46f425394b9216655d37d9c2b6246a59d3c646a592544');
