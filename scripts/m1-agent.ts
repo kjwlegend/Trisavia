@@ -508,7 +508,7 @@ export function planParticipation(target:{origin:string;instanceId:string;agentI
   if(job.control==='unsupported')recommendation='unsupported';
   else if(job.state==='unknown')recommendation='query-original-host-result';
   else if(state==='off')recommendation=job.state==='scheduled'?(job.control==='pause_resume'?'pause-original-job':'delete-original-job'):'keep-stopped';
-  else if(job.state==='scheduled')recommendation=job.intervalSeconds===access.intervalSeconds?'keep-scheduled':'update-original-job-interval';
+  else if(job.state==='scheduled')recommendation=job.intervalSeconds===access.intervalSeconds?'keep-scheduled':job.control==='delete_create'?'delete-original-job':'update-original-job-interval';
   else if(job.state==='paused')recommendation=job.control==='pause_resume'?'resume-original-job':'inspect-original-job';
   else recommendation=job.control==='delete_create'&&job.stopConfirmed?'create-unique-replacement':'query-original-host-result';
  }
@@ -523,6 +523,9 @@ export function participationAdoptionEvidence(plan:Json,receipt:{logicalTaskId:s
  // pause/resume must address the original physical job; a confirmed delete/create
  // recommendation may return a new physical ID under the same logical identity.
  if(['pause-original-job','resume-original-job','update-original-job-interval','keep-scheduled'].includes(String(plan.recommendation))&&receipt.physicalJobId!==plan.physicalJobId)return null;
+ // A delete recommendation is only the first step of a frequency replacement.
+ // A new scheduled ID needs a subsequent plan made after the old stop is confirmed.
+ if(plan.recommendation==='delete-original-job'&&!stopped)return null;
  if(['unsupported','query-original-host-result','inspect-original-job'].includes(String(plan.recommendation)))return null;
  return {expectedVersion:intent.intervalVersion,expectedPolicyVersion:intent.policyVersion,jobState:receipt.state,source:'host_readback',reportSent:false};
 }

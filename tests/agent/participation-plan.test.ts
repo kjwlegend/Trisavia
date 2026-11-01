@@ -21,6 +21,15 @@ test('delete/create controls preserve logical identity and require confirmed old
  assert.equal(planParticipation(target,current,access('autonomous',5),{...stopped,stopConfirmed:false}).recommendation,'query-original-host-result');
  for(const control of ['pause_resume','delete_create'] as const){const unknown=planParticipation(target,current,access('autonomous',5),{...job,control,state:'unknown'});assert.equal(unknown.recommendation,'query-original-host-result');assert.equal(participationAdoptionEvidence(unknown,{...proof,state:'scheduled',policyVersion:5}),null);}
  assert.equal(planParticipation(target,current,access('autonomous',5),{...job,control:'unsupported'}).recommendation,'unsupported');
+ // A delete/create-only host cannot update the old scheduled job in place.
+ const faster=access('autonomous',5,300),deleteBeforeChange=planParticipation(target,current,faster,{...job,control:'delete_create'}),newReadback={...proof,state:'scheduled' as const,physicalJobId:'replacement-300',policyVersion:5,intervalSeconds:300};
+ assert.equal(deleteBeforeChange.recommendation,'delete-original-job');assert.equal(deleteBeforeChange.logicalTaskId,job.logicalTaskId);
+ assert.equal(participationAdoptionEvidence(deleteBeforeChange,newReadback),null,'cannot adopt a replacement before confirming the old stop');
+ const notConfirmed=planParticipation(target,current,faster,{...stopped,stopConfirmed:false});assert.equal(notConfirmed.recommendation,'query-original-host-result');assert.equal(participationAdoptionEvidence(notConfirmed,newReadback),null);
+ const replaceAfterStop=planParticipation(target,current,faster,stopped);assert.equal(replaceAfterStop.recommendation,'create-unique-replacement');assert.equal(replaceAfterStop.logicalTaskId,job.logicalTaskId);
+ assert.deepEqual(participationAdoptionEvidence(replaceAfterStop,newReadback),{expectedVersion:7,expectedPolicyVersion:5,jobState:'scheduled',source:'host_readback',reportSent:false});
+ assert.equal(participationAdoptionEvidence(replaceAfterStop,{...newReadback,logicalTaskId:'another-task'}),null);assert.equal(participationAdoptionEvidence(replaceAfterStop,{...newReadback,intervalSeconds:3600}),null);
+
 });
 test('null interval never resumes a job, legacy observe remains distinct, and inconsistent snapshots are rejected',()=>{
  const off=planParticipation(target,{...policy,mode:'autonomous'},access('autonomous',4,null),job);assert.equal(off.recommendation,'pause-original-job');assert.equal((off.intent as any).effectiveState,'off');
