@@ -491,10 +491,46 @@ async function checkDiscovery(path: string, state: State, capabilities: Json): P
   return { status: 'updated', catalogRevision: bridge.catalogRevision, skillCatalogRevision: bridge.skillCatalogRevision, documents: documents.length, privateDiscoveryFile: cachePath, scheduling: false };
 }
 
+/** Read-only host planning. This module never invokes an automation provider. */
+export type ParticipationJobObservation = {
+ logicalTaskId:string; origin:string; instanceId:string; agentId:string; physicalJobId:string|null;
+ control:'pause_resume'|'delete_create'|'unsupported'; state:'scheduled'|'paused'|'absent'|'unknown';
+ intervalSeconds:number|null; stopConfirmed:boolean;
+};
+export function planParticipation(target:{origin:string;instanceId:string;agentId:string},policy:Json,access:Json,job?:ParticipationJobObservation):Json {
+ const number=(value:unknown,min:number)=>Number.isSafeInteger(value)&&Number(value)>=min;
+ if(origin(target.origin)!==target.origin||!target.instanceId||!target.agentId||policy.agentId!==target.agentId||access.agentId!==target.agentId||policy.source!=='current'||!number(policy.version,0)||(typeof policy.mode!=='string'||!['autonomous','manual','observe'].includes(policy.mode))||!number(access.version,1)||!(access.intervalSeconds===null||number(access.intervalSeconds,1)))throw new AgentError('participation_snapshot_invalid');
+ const scheduling=object(access.scheduling),reason=policy.mode==='manual'?'manual':policy.mode==='observe'?'legacy_observe':access.intervalSeconds===null?'interval_stopped':'autonomous_interval',state=reason==='autonomous_interval'?'on':'off';
+ if(scheduling.version!==1||scheduling.source!=='server_intent'||scheduling.serverControlsJob!==false||scheduling.mode!==policy.mode||scheduling.policyVersion!==policy.version||scheduling.reason!==reason||scheduling.effectiveState!==state)throw new AgentError('participation_snapshot_changed');
+ if(job&&(job.origin!==target.origin||job.instanceId!==target.instanceId||job.agentId!==target.agentId||typeof job.logicalTaskId!=='string'||!job.logicalTaskId||job.logicalTaskId.length>200||!(job.physicalJobId===null||typeof job.physicalJobId==='string'&&job.physicalJobId.length>0&&job.physicalJobId.length<=200)||!['pause_resume','delete_create','unsupported'].includes(job.control)||!['scheduled','paused','absent','unknown'].includes(job.state)||!(job.intervalSeconds===null||number(job.intervalSeconds,1))||typeof job.stopConfirmed!=='boolean'||(['scheduled','paused'].includes(job.state)&&job.physicalJobId===null)))throw new AgentError('host_job_identity_mismatch');
+ let recommendation='inspect-original-job';
+ if(job){
+  if(job.control==='unsupported')recommendation='unsupported';
+  else if(job.state==='unknown')recommendation='query-original-host-result';
+  else if(state==='off')recommendation=job.state==='scheduled'?(job.control==='pause_resume'?'pause-original-job':'delete-original-job'):'keep-stopped';
+  else if(job.state==='scheduled')recommendation=job.intervalSeconds===access.intervalSeconds?'keep-scheduled':'update-original-job-interval';
+  else if(job.state==='paused')recommendation=job.control==='pause_resume'?'resume-original-job':'inspect-original-job';
+  else recommendation=job.control==='delete_create'&&job.stopConfirmed?'create-unique-replacement':'query-original-host-result';
+ }
+ return {version:1,...target,logicalTaskId:job?.logicalTaskId??null,physicalJobId:job?.physicalJobId??null,
+  intent:{mode:policy.mode,policyVersion:policy.version,intervalVersion:access.version,intervalSeconds:access.intervalSeconds,effectiveState:state,source:'server_intent',serverControlsJob:false},
+  recommendation,hostExecution:'not_executed',adoption:'not_reported',worldActionPermission:'unchanged-current-business-guards',requiresCurrentHostAuthority:true};
+}
+/** A successful readback may justify a later report; it never sends that report itself. */
+export function participationAdoptionEvidence(plan:Json,receipt:{logicalTaskId:string;physicalJobId:string|null;outcome:'succeeded'|'unknown'|'unsupported';state:'scheduled'|'stopped'|'unknown';intervalSeconds:number|null;intervalVersion:number;policyVersion:number;readback:boolean}):Json|null {
+ const intent=object(plan.intent),stopped=intent.effectiveState==='off';
+ if(plan.version!==1||plan.hostExecution!=='not_executed'||typeof plan.logicalTaskId!=='string'||receipt.logicalTaskId!==plan.logicalTaskId||receipt.outcome!=='succeeded'||!receipt.readback||receipt.intervalVersion!==intent.intervalVersion||receipt.policyVersion!==intent.policyVersion||receipt.state!==(stopped?'stopped':'scheduled')||(!stopped&&(receipt.intervalSeconds!==intent.intervalSeconds||!receipt.physicalJobId)))return null;
+ // pause/resume must address the original physical job; a confirmed delete/create
+ // recommendation may return a new physical ID under the same logical identity.
+ if(['pause-original-job','resume-original-job','update-original-job-interval','keep-scheduled'].includes(String(plan.recommendation))&&receipt.physicalJobId!==plan.physicalJobId)return null;
+ if(['unsupported','query-original-host-result','inspect-original-job'].includes(String(plan.recommendation)))return null;
+ return {expectedVersion:intent.intervalVersion,expectedPolicyVersion:intent.policyVersion,jobState:receipt.state,source:'host_readback',reportSent:false};
+}
+
 export async function runAgent(args: string[]): Promise<Json> {
   const command = args[0];
   const publicReads = ['avatar-catalog', 'capabilities'], reads = ['profile-read', 'membership-read', 'recovery-request-read'];
-  if (!['onboard', 'status', 'handoff', 'import-runtime', 'check-updates', ...publicReads, ...reads, ...Object.keys(mutations)].includes(command ?? '')) throw new AgentError('invalid_command');
+  if (!['onboard', 'status', 'handoff', 'import-runtime', 'check-updates', 'participation-plan', ...publicReads, ...reads, ...Object.keys(mutations)].includes(command ?? '')) throw new AgentError('invalid_command');
   const options: Record<string, string> = {};
   let declareDelivered = false;
   const allowed = ['--url', '--state', '--name', '--bio', '--color', '--invite-file', '--runtime-file', '--out', '--input-file', '--fields', '--request-id'];
@@ -504,7 +540,7 @@ export async function runAgent(args: string[]): Promise<Json> {
     if (!allowed.includes(key) || options[key] !== undefined || !args[i + 1] || args[i + 1]!.startsWith('--')) throw new AgentError('invalid_arguments');
     options[key] = args[++i]!;
   }
-  if (publicReads.includes(command!) || reads.includes(command!) || command === 'check-updates' || command! in mutations) {
+  if (publicReads.includes(command!) || reads.includes(command!) || ['check-updates','participation-plan'].includes(command!) || command! in mutations) {
     const accepted = ['--url', '--state', ...(command === 'profile-update' ? ['--input-file'] : []), ...(command === 'profile-clear' ? ['--fields'] : []),
       ...(command === 'recovery-request-create' ? ['--out'] : []), ...(['recovery-request-read', 'recovery-request-cancel'].includes(command!) ? ['--request-id'] : [])];
     if (declareDelivered || Object.keys(options).some(key => !accepted.includes(key))) throw new AgentError('invalid_arguments');
@@ -555,6 +591,14 @@ export async function runAgent(args: string[]): Promise<Json> {
     if (capabilities.instanceId !== state.instanceId || capabilities.apiVersion !== 'v1') throw new AgentError('instance_or_identity_mismatch');
     if (publicReads.includes(command!)) return command === 'capabilities' ? capabilities
       : { instanceId: state.instanceId, apiVersion: 'v1', catalog: await http(state.origin, 'GET', '/v1/avatar-catalog') };
+    if(command==='participation-plan'){
+      if(!state.agentId||state.commands.registration?.status!=='committed')throw new AgentError('registration_required');
+      const self=await http(state.origin,'GET','/v1/agent/self',undefined,state.runtimeToken);
+      if(self.instanceId!==state.instanceId||self.agentId!==state.agentId)throw new AgentError('instance_or_identity_mismatch');
+      const policy=await http(state.origin,'GET',`/v1/agents/${state.agentId}/world-action-policy`,undefined,state.runtimeToken);
+      const access=await http(state.origin,'GET',`/v1/agents/${state.agentId}/world-access`,undefined,state.runtimeToken);
+      return planParticipation({origin:state.origin,instanceId:state.instanceId,agentId:state.agentId},policy,access);
+    }
     if (command === 'check-updates') return { instanceId: state.instanceId, agentId: state.agentId ?? null, discovery: await checkDiscovery(path, state, capabilities) };
     if (command === 'import-runtime') {
       if (!options['--runtime-file'] || !state.agentId) throw new AgentError('runtime_file_required');
