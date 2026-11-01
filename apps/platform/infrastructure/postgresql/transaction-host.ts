@@ -32,6 +32,9 @@ export async function verifySchema(client:PoolClient,options:OpenPostgresStoreOp
 
 export async function openPostgresTransactionHost(options:OpenPostgresStoreOptions):Promise<PostgresTransactionHost>{
   identity(options);const poolMax=bounded(options.poolMax??4,1,16),timeout=bounded(options.statementTimeoutMillis??10_000,100,60_000),retries=bounded(options.transactionRetries??3,1,3);
+  // Advisory locks are database-local. Keep the deployment key independent of
+  // recoveryEpoch so old/new-epoch pools cannot form separate writer queues.
+  const admissionKey=createHash('sha256').update('agents-era:writer-admission:v1:'+options.instanceId).digest().readBigInt64BE().toString();
   const pool=new Pool({connectionString:options.connectionString,max:poolMax,connectionTimeoutMillis:bounded(options.connectionTimeoutMillis??5000,100,60_000),statement_timeout:timeout,idle_in_transaction_session_timeout:timeout,application_name:'agents-era-local'});
   pool.on('error',()=>{/* The pool destroys failed idle connections; no private error payload is logged. */});
   const client=await pool.connect().catch(async error=>{await pool.end();throw storageError(error);});
@@ -44,14 +47,20 @@ export async function openPostgresTransactionHost(options:OpenPostgresStoreOptio
     if(typeof work!=='function')throw new StorageError('invalid_usage','A storage callback is required');
     const pending=context.run(true,async()=>{
       for(let attempt=1;attempt<=retries;attempt++){
-        const connection=await pool.connect().catch(error=>{throw storageError(error);});let usable=true,commitSent=false,destroy=false;
+        const connection=await pool.connect().catch(error=>{throw storageError(error);});let usable=true,commitSent=false,destroy=false,admitted=false;
         const connectionError=()=>{destroy=true;};connection.on('error',connectionError);
         try{
+          // Wait outside RR: SELECT ... FOR UPDATE inside RR fixes its snapshot
+          // before waiting and then fails 40001 when the preceding writer commits.
+          // Even an xact advisory SELECT inside RR would take that stale snapshot.
+          // This bounded session lock admits writers across pools/processes; the
+          // original row guard below still fences readers, maintenance and epoch.
+          if(write){try{await connection.query('SELECT pg_advisory_lock($1::bigint)',[admissionKey]);admitted=true;}catch(error){destroy=true;throw error;}}
           await connection.query(`BEGIN ISOLATION LEVEL ${write?'REPEATABLE READ':'READ COMMITTED'}`);
           // Keep this the first read and hold the deployment fence until COMMIT.
           // A reader sees the latest guard after waiting; its SHARE lock then
           // prevents guarded writes from changing authorization or source rows.
-          // Writers retain RR and retry rather than use a preceding snapshot.
+          // Writers retain RR; admission happens before its first snapshot.
           const result=await connection.query(`SELECT instance_id,recovery_epoch,writes_enabled FROM platform.instance_state WHERE singleton=1 FOR ${write?'UPDATE':'SHARE'}`);
           const guard=result.rows[0];if(!guard||guard.instance_id!==options.instanceId||guard.recovery_epoch!==options.recoveryEpoch)throw new StorageError('conflict','PostgreSQL deployment identity changed; reopen the store');
           if(write){if(!guard.writes_enabled)throw new StorageError('unavailable','Business writes are closed');await connection.query('UPDATE platform.instance_state SET write_generation=write_generation+1 WHERE singleton=1');}
@@ -78,7 +87,13 @@ export async function openPostgresTransactionHost(options:OpenPostgresStoreOptio
           if(commitSent&&(!sqlState||sqlState.startsWith('08')||sqlState.startsWith('57'))){destroy=true;throw new StorageError('unknown_commit','Commit result is unknown; recover with the original operation identity',{cause:error});}
           await connection.query('ROLLBACK').catch(()=>{destroy=true;});
           if(!((sqlState==='40001'||sqlState==='40P01')&&attempt<retries))throw storageError(error);
-        }finally{usable=false;connection.removeListener('error',connectionError);connection.release(destroy);}
+        }finally{
+          usable=false;
+          // Session locks survive ROLLBACK. Never return a locked/uncertain
+          // connection to the pool; destruction also releases its admission.
+          if(admitted&&!destroy){try{const unlocked=await connection.query('SELECT pg_advisory_unlock($1::bigint) AS unlocked',[admissionKey]);if(unlocked.rows[0]?.unlocked!==true)destroy=true;}catch{destroy=true;}}
+          connection.removeListener('error',connectionError);connection.release(destroy);
+        }
         // Retry only after releasing the failed transaction and its client.
         // Jitter prevents concurrent scopes from repeatedly rebuilding the
         // same stale RR snapshot in lock-step. At most 200ms + 600ms total.
