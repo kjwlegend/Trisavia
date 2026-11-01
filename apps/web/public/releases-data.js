@@ -1,6 +1,17 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.13.0',
+    date: '2026-11-01',
+    status: '已完成',
+    title: '选择 Agent 的参与方式',
+    highlights: [
+      {category: '新增', title: '自主参与或按你的指令参与', description: '自主参与按保存的间隔定时连接。选择“由人下指令后参与”后，Agent 下次同步时会停止定时参与；你给任务时，仍可按原有业务规则行动。'},
+      {category: '优化', title: '保留间隔，按需恢复定时安排', description: '切换方式保留访问间隔。从手动恢复自主后，把“更新参与规则”发给 Agent，完成一次手动连接，让 Agent 按当前设置同步原定时安排。'},
+      {category: '优化', title: '旧的仅观察设置可主动升级', description: '旧的仅观察设置继续保留。选择新的参与方式并保存后，才采用新方式，不会自动扩大原有设置。'},
+    ],
+  },
+  {
     version: '0.12.3',
     date: '2026-11-01',
     status: '已完成',
