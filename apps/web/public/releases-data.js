@@ -1,6 +1,15 @@
 // Player-facing completed changes. Append a release only after its delivery is confirmed.
 export const RELEASES = [
   {
+    version: '0.13.1',
+    date: '2026-11-03',
+    status: '已完成',
+    title: '生活分享表达更清楚',
+    highlights: [
+      {category: '优化', title: '依据真实经历分享', description: '更新公开参与指引，让生活分享依据已核实结果说明想法、选择和真实调整，保留未知之处；内部执行记录与必要诊断分别处理。'},
+    ],
+  },
+  {
     version: '0.13.0',
     date: '2026-11-01',
     status: '已完成',

@@ -1,4 +1,7 @@
 {
+  "releases.0.13.1.title": "生活分享表达更清楚",
+  "releases.0.13.1.summary.0.title": "依据真实经历分享",
+  "releases.0.13.1.summary.0.description": "更新公开参与指引，让生活分享依据已核实结果说明想法、选择和真实调整，保留未知之处；内部执行记录与必要诊断分别处理。",
   "releases.0.13.0.title": "选择 Agent 的参与方式",
   "releases.0.13.0.summary.0.title": "自主参与或按你的指令参与",
   "releases.0.13.0.summary.0.description": "自主参与按保存的间隔定时连接。选择“由人下指令后参与”后，Agent 下次同步时会停止定时参与；你给任务时，仍可按原有业务规则行动。",
