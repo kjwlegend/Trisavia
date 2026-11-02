@@ -1,3 +1,6 @@
+import Fastify from 'fastify';
+import {registerAgentGatewayRoutes} from '../../apps/platform/transport/http/agent-gateway-routes.ts';
+import {readAgentRuntimeGuide} from '../../apps/platform/application/agent-runtime-guide.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {Ajv} from 'ajv';
@@ -5,6 +8,8 @@ import type {JsonObject} from '../../apps/platform/contracts/store.ts';
 import type {GatewayOperation,GatewayPublicRead} from '../../apps/platform/application/agent-gateway.ts';
 import {createAgentGateway,gatewayOperationSchemas,gatewayPublicReadSchemas} from '../../apps/platform/application/agent-gateway.ts';
 import {hashRuntimeRequest} from '../../apps/platform/domains/runtime/command.ts';
+import {expressionGuidanceGuide} from '../../apps/platform/application/agent-expression-guidance.ts';
+import {CURRENT_PARTICIPATION_JOB_BOOTSTRAP,CURRENT_PARTICIPATION_HOST_GUIDE,PARTICIPATION_VISIBLE_EXPRESSION_GUIDANCE} from '../../apps/platform/application/agent-participation-guide.ts';
 import {manualParticipationGuide,manualParticipationLifeOperations,manualParticipationLifeReads} from '../../apps/platform/application/agent-manual-participation.ts';
 import {placeProfileWorldGuide} from '../../apps/platform/application/agent-gateway-place-profile-guide.ts';
 import {approvedWorldGuide,approvedLifeGuide,APPROVED_LIFE_ACTION_IDS,withApprovedLifeOperations,withApprovedLifeReads} from '../../apps/platform/application/agent-approved-current-guides.ts';
@@ -68,15 +73,38 @@ test('Life action directory references and exact output schemas advance together
  source.actions=[{guideRef:{moduleId:'life',version:5}}];await assert.rejects(operations[0]!.query!(f.context,{} as never,{}),{code:'source_unavailable'});
 });
 
-test('the complete current composition retains all 78 predecessor schemas and enforces both exact registry bounds',()=>{
+test('the complete current composition retains all 82 predecessor schemas and enforces both exact registry bounds',()=>{
  const base=residentDescriptorFixture(),f=coreFixture(),profiles=createPublishedWorldPlaceProfilesService(createWorldService(f.identity),currentNpcIdentity);
  const previousOperations=[...withApprovedLifeOperations(base.operations),...placeProfileGatewayOperations(profiles)],previousReads=[...withApprovedLifeReads(base.reads),...placeProfilePublicReads(profiles)];
  const retained=[...base.retained,...base.operations.filter(o=>APPROVED_LIFE_ACTION_IDS.has(o.id)).flatMap(gatewayOperationSchemas),...base.reads.filter(r=>APPROVED_LIFE_ACTION_IDS.has(r.id)).flatMap(gatewayPublicReadSchemas),...previousOperations.filter(o=>o.id==='life.actions').flatMap(gatewayOperationSchemas),...previousReads.filter(r=>r.id==='life.public_actions').flatMap(gatewayPublicReadSchemas)];
  const operations=manualParticipationLifeOperations(previousOperations,6),publicReads=manualParticipationLifeReads(previousReads,6),guides=[placeProfileWorldGuide,approvedLifeGuide,residentJournalGatewayGuide,residentTownGuide,residentNpcLifeGuide];
- const options={store:f.store,identity:f.identity,operations,publicReads,guides:guides.map(manualParticipationGuide),retainedGuides:[approvedWorldGuide,residentWorldGuide,npcCareLifeGuide,runtimeWorldGuide,placeProfileWorldGuide,approvedLifeGuide],retainedSchemas:retained};
- assert.equal(retained.length,78);const bytes=retained.reduce((n,row)=>n+Buffer.byteLength(JSON.stringify(row.document)),0);assert.equal(bytes,445294);
+ const compiled=guides.map(manualParticipationGuide),currentOperations=manualParticipationLifeOperations(operations,7),currentReads=manualParticipationLifeReads(publicReads,7);
+ retained.push(...operations.filter(o=>o.id==='life.actions').flatMap(gatewayOperationSchemas),...publicReads.filter(r=>r.id==='life.public_actions').flatMap(gatewayPublicReadSchemas));
+ const options={store:f.store,identity:f.identity,operations:currentOperations,publicReads:currentReads,guides:compiled.map(expressionGuidanceGuide),retainedGuides:[approvedWorldGuide,residentWorldGuide,npcCareLifeGuide,runtimeWorldGuide,placeProfileWorldGuide,approvedLifeGuide,...compiled.filter(g=>['world','life'].includes(g.moduleId))],retainedSchemas:retained};
+ assert.equal(retained.length,82);const bytes=retained.reduce((n,row)=>n+Buffer.byteLength(JSON.stringify(row.document)),0);assert.equal(bytes,488720);
  const current=createAgentGateway(options);for(const row of retained)assert.equal(current.schema(row.id,String(row.version)).digest,hashRuntimeRequest(row.document));
  assert.throws(()=>createAgentGateway({...options,retainedSchemas:[...retained,retained[0]!]}),/Too many retained exact schemas/);
- assert.throws(()=>createAgentGateway({...options,retainedSchemas:[{...retained[0]!,document:{...retained[0]!.document,description:'x'.repeat(448*1024)}},...retained.slice(1)]}),/UTF-8 byte budget/);
- console.info(JSON.stringify({purpose:'manual-participation-exact-registry',retainedCount:retained.length,retainedUtf8Bytes:bytes,countLimit:78,byteLimit:448*1024}));
+ const first=retained[0]!,empty={...first,document:{...first.document,description:''}},canonicalBytes=(value:JsonObject)=>Buffer.byteLength(JSON.stringify(value)),padding=478*1024-bytes-(canonicalBytes(empty.document)-canonicalBytes(first.document));
+ const atLimit={...empty,document:{...empty.document,description:'x'.repeat(padding)}};
+ assert.doesNotThrow(()=>createAgentGateway({...options,retainedSchemas:[atLimit,...retained.slice(1)]}));
+ assert.throws(()=>createAgentGateway({...options,retainedSchemas:[{...atLimit,document:{...atLimit.document,description:'x'.repeat(padding+1)}},...retained.slice(1)]}),/UTF-8 byte budget/);
+
+ assert.throws(()=>createAgentGateway({...options,retainedSchemas:[{...retained[0]!,document:{...retained[0]!.document,description:'x'.repeat(478*1024)}},...retained.slice(1)]}),/UTF-8 byte budget/);
+ console.info(JSON.stringify({purpose:'manual-participation-exact-registry',retainedCount:retained.length,retainedUtf8Bytes:bytes,countLimit:82,byteLimit:478*1024}));
+});
+
+const b19Digests=['cffcac3090d089d242b0fa252b76e62e073c65e6d0b14f01302446a698f77cd1','7fae8b5be1a0ac87d400f3ecf804765cba1275c53a6f2291bdde04ce778e9ed2','8399a81f51ef1bee4485e6852c7a58a07ee6716cc71bcdceb246ccf926fc207a','c5b6563128c7b0278b7f674449d6838741fd67611f3ad86896d381bc2123236a','8a15fbc56b2707d4825c222e8bd5746b37aedcd585aa322e1a78d14d49fd1e78'];
+test('expression guidance advances only World and Life while all five b19 exact guides stay byte-identical and readable',async()=>{
+ const f=coreFixture(),compiled=previous.map(manualParticipationGuide),before=structuredClone(compiled),guides=compiled.map(expressionGuidanceGuide);
+ const operations:GatewayOperation[]=compiled.map(g=>({id:g.moduleId+'.expression_read_fixture',moduleId:g.moduleId,schemaVersion:1,kind:'query',actors:['agent'],description:'Read-only exact guide fixture',input:{type:'object'},output:{type:'object'},query:async()=>({})}));
+ const old=createAgentGateway({store:f.store,identity:f.identity,operations,guides:compiled}),current=createAgentGateway({store:f.store,identity:f.identity,operations,guides,retainedGuides:compiled.filter(g=>['world','life'].includes(g.moduleId)),runtimeGuide:readAgentRuntimeGuide});
+ assert.deepEqual(guides.map(g=>[g.moduleId,g.version]),[['world',27],['life',8],['interaction',5],['decision',3],['relationships',6]]);
+ compiled.forEach((g,i)=>{assert.equal(hashRuntimeRequest(g.document),b19Digests[i]);assert.deepEqual(current.guide(g.moduleId,String(g.version)),old.guide(g.moduleId,String(g.version)));});
+ assert.equal(guides[0]!.document.hostParticipation,CURRENT_PARTICIPATION_HOST_GUIDE);assert.equal(guides[1]!.document.recurringBootstrap,CURRENT_PARTICIPATION_JOB_BOOTSTRAP);assert(CURRENT_PARTICIPATION_JOB_BOOTSTRAP.endsWith(PARTICIPATION_VISIBLE_EXPRESSION_GUIDANCE));assert.deepEqual(compiled,before);
+ const app=Fastify({logger:false});registerAgentGatewayRoutes(app,current,{instanceId:f.store.instanceId,now:()=>0});
+ try{
+  for(const [moduleId,version]of [['world',27],['life',8]] as const){const response=await app.inject({method:'GET',url:`/v1/gateway/guides/${moduleId}?version=${version}`});assert.equal(response.statusCode,200);const data=response.json().data;assert.equal(data.version,version);assert.equal(data.digest,hashRuntimeRequest(data.document));assert.equal(data.runtimeRules.ruleVersion,8);assert((moduleId==='world'?data.document.hostParticipation:data.document.recurringBootstrap).endsWith(PARTICIPATION_VISIBLE_EXPRESSION_GUIDANCE));}
+  const retained=await app.inject({method:'GET',url:'/v1/gateway/guides/world?version=26'});assert.equal(retained.statusCode,200);assert.equal(retained.json().data.digest,b19Digests[0]);assert.equal(retained.json().data.canonicalDocument,old.guide('world','26').canonicalDocument);
+  const discovery=await app.inject({method:'GET',url:'/v1/gateway/discovery'});assert.equal(discovery.statusCode,200);assert.equal(discovery.json().data.runtimeRules.ruleVersion,8);assert.deepEqual(discovery.json().data.operations.map((row:any)=>[row.moduleId,row.usageGuide.version]),[['world',27],['life',8],['interaction',5],['decision',3],['relationships',6]]);
+ }finally{await app.close();}
 });

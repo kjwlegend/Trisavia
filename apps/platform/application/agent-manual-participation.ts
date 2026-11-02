@@ -2,7 +2,7 @@ import type {JsonObject} from '../contracts/store.ts';
 import type {GatewayGuide,GatewayOperation,GatewayPublicRead} from './agent-gateway.ts';
 import {WORLD_PARTICIPATION_CONTRACT} from '../domains/access/world-action-policy.ts';
 import {fail} from '../domains/common/errors.ts';
-import {PARTICIPATION_MODE_GUIDE,CURRENT_PARTICIPATION_HOST_GUIDE,CURRENT_PARTICIPATION_JOB_BOOTSTRAP,CURRENT_PARTICIPATION_MIGRATION_GUIDE,PARTICIPATION_LIFE_AUTHORIZATION,PARTICIPATION_LIFE_INTENT_OPENING} from './agent-participation-guide.ts';
+import {PARTICIPATION_MODE_GUIDE,FROZEN_PARTICIPATION_HOST_GUIDE_V0130 as CURRENT_PARTICIPATION_HOST_GUIDE,FROZEN_PARTICIPATION_JOB_BOOTSTRAP_V0130 as CURRENT_PARTICIPATION_JOB_BOOTSTRAP,CURRENT_PARTICIPATION_MIGRATION_GUIDE,PARTICIPATION_LIFE_AUTHORIZATION,PARTICIPATION_LIFE_INTENT_OPENING} from './agent-participation-guide.ts';
 
 const modules=new Set(['world','life','interaction','decision','relationships']);
 /** Clone only final served documents. Every predecessor remains an exact retained object. */

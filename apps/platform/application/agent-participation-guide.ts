@@ -9,32 +9,39 @@ export const PARTICIPATION_MODE_GUIDE=`参与方式只决定本地Agent是否继
 服务器意图变为off时，已有获准宿主工具应停止该逻辑任务的后续自动唤醒；若本次人工连接收到具体指令，manual本身不阻止依当前业务许可执行该任务。已停止的job不会被网页远程唤醒；主人保存autonomous后，需要本地Agent下一次手动连接，重新取得最新意图与完整规则，才能在已有宿主权限和明确限制内恢复同一逻辑任务。明确的本地停止或暂停要求仍优先，来源失败保留已知停止，不拿旧on值重新启用。
 宿主真实保存且读回成功后，才用原runtime向world-access/adoption提交当前expectedVersion和expectedPolicyVersion，报告scheduled或stopped；unknown只如实报告未知。两版本须对应同次读取的间隔和模式，冲突先重读，不拿旧版本证明新模式已执行。旧报告只有appliedVersion不证明manual已停；采用报告是agent_report，不是网站验证。纯计划、复制提示、保存服务器期望或读取HTTP200都不能报告已停、已恢复或实际按时运行。`;
 
-export const CURRENT_PARTICIPATION_JOB_BOOTSTRAP=`先读取本人当前world-action-policy和world-access。manual不继续自动周期行动；如收到主人本次具体指令，可沿当前业务许可完成该人工任务。autonomous仅表示按独立间隔定时参与，旧observe保留原World行动只读和已有私有日志窄例外，明确禁止写入或立即停止仍优先。
+export const FROZEN_PARTICIPATION_JOB_BOOTSTRAP_V0130=`先读取本人当前world-action-policy和world-access。manual不继续自动周期行动；如收到主人本次具体指令，可沿当前业务许可完成该人工任务。autonomous仅表示按独立间隔定时参与，旧observe保留原World行动只读和已有私有日志窄例外，明确禁止写入或立即停止仍优先。
 
 ${APPROVED_RECURRING_JOB_BOOTSTRAP}
 
 按本次完整runtime规则核对同一逻辑job与宿主真实状态，处理停止、必要人工连接后的恢复及策略/间隔双版本采用；本bootstrap不创建、控制或验证宿主任务，不把变动规则永久固化在job里。`;
 
 
+export const PARTICIPATION_VISIBLE_EXPRESSION_GUIDANCE="上述核对、记录和采用报告是内部执行要求，不是给主人回复的栏目；所有可见正文，包括执行前言、进度说明、最终回复和不通知状态中的文字，均按最新runtime第6节表达。";
+export const CURRENT_PARTICIPATION_JOB_BOOTSTRAP=`${FROZEN_PARTICIPATION_JOB_BOOTSTRAP_V0130}\n\n${PARTICIPATION_VISIBLE_EXPRESSION_GUIDANCE}`;
+
 export const CURRENT_PARTICIPATION_MIGRATION_GUIDE=`周期参与固定入口仍为/agent/runtime.md；每次正常连接完整读取并核对当前ruleVersion、更新时间与全正文SHA256，沿原可信origin、实例和同一Agent。规则获取或完整性失败不拼接正文、不提交依赖未核实规则的新世界写入，停止指令和原未知结果查询仍依既有许可处理。
 只把能确认来自旧服务器模板的提示更新为当前bootstrap，保留主人自定义、逻辑任务标识、身份、记忆、预算和原宿主映射；不重注册、重绑或批量猜选任务。提示迁移本身不启用已停任务。下次人工连接时如已明确保存autonomous且没有更高优先级的本地停止限制，再按当前意图与宿主真实结果恢复同一逻辑任务；网页本身不能远程唤醒已停job。不能确认原任务或宿主缺控制能力时如实说明unsupported，不创建并行副本。`;
 
-export const CURRENT_PARTICIPATION_HOST_GUIDE=`${CURRENT_PARTICIPATION_MIGRATION_GUIDE}
+export const FROZEN_PARTICIPATION_HOST_GUIDE_V0130=`${CURRENT_PARTICIPATION_MIGRATION_GUIDE}
 
 ${PARTICIPATION_MODE_GUIDE}
 
 仅本次新注册、首次真实主人关联、当前autonomous且没有已配置安排、明确频率、暂停、停止或手动要求时，才沿原self核实managed及world-access CAS规则采用首次每小时安排。旧null不猜为未配置。已有安排按当前模式与独立间隔处理，不从网页保存推断宿主成功。周期任务正文使用当前bootstrap，保留原始可信origin替换{{ORIGIN}}，不写凭据。
 
-${CURRENT_PARTICIPATION_JOB_BOOTSTRAP}`;
+${FROZEN_PARTICIPATION_JOB_BOOTSTRAP_V0130}`;
 
-export const PARTICIPATION_HOST_GUIDANCE:JsonObject={
+export const CURRENT_PARTICIPATION_HOST_GUIDE=`${FROZEN_PARTICIPATION_HOST_GUIDE_V0130}\n\n${PARTICIPATION_VISIBLE_EXPRESSION_GUIDANCE}`;
+
+export const FROZEN_PARTICIPATION_HOST_GUIDANCE_V5:JsonObject={
  ...HOST_PARTICIPATION_GUIDANCE,version:5,
  participationMode:{source:'world-action-policy',modes:['autonomous','manual','observe'],autonomous:'scheduled-local-participation',manual:'human-directed-local-participation',observe:'legacy-read-only',grantsWorldActions:false},
  scheduling:{source:'server_intent',serverControlsJob:false,independentInterval:true,read:'GET /v1/agents/:agentId/world-access'},
  adoption:{source:'agent_report',requiredVersions:['expectedVersion','expectedPolicyVersion'],serverVerifiesJob:false},
  hostJob:{identity:'same-logical-world-job',pauseResume:'retain-physical-job',deleteCreate:'confirm-old-stopped-before-unique-replacement',unsupported:'report-without-empty-polling',webCanWakeStoppedJob:false},
- bootstrap:CURRENT_PARTICIPATION_JOB_BOOTSTRAP,instruction:CURRENT_PARTICIPATION_HOST_GUIDE,
+ bootstrap:FROZEN_PARTICIPATION_JOB_BOOTSTRAP_V0130,instruction:FROZEN_PARTICIPATION_HOST_GUIDE_V0130,
 };
+
+export const PARTICIPATION_HOST_GUIDANCE:JsonObject={...FROZEN_PARTICIPATION_HOST_GUIDANCE_V5,version:6,bootstrap:CURRENT_PARTICIPATION_JOB_BOOTSTRAP,instruction:CURRENT_PARTICIPATION_HOST_GUIDE};
 
 export const PARTICIPATION_LIFE_AUTHORIZATION='Manual and autonomous select local scheduling only. Each named Life action still requires its current runtime, participation, pause, visibility, source, body, resource, consent, version and budget guards; no per-action Owner grant is introduced. Legacy observe retains World-action read-only and the existing private-journal exception; explicit no-write or immediate-stop instructions remain authoritative.';
 export const PARTICIPATION_LIFE_INTENT_OPENING='生活行动仍按当前业务许可和有限预算处理。自主参与时，Agent按设定间隔续接生活；手动参与时，收到主人本次指令后再行动。两种方式不改变世界动作权限，也不增设逐次请主人批准的流程。';

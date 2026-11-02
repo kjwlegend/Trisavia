@@ -22,7 +22,7 @@ function withoutSocialAdditions(text:string){for(const paragraph of socialRuntim
 
 function originalAuthorization(text:string){
  const originalSection="## 1. 授权与调度\n\n- 主人的明确限制、暂停、退出、只读和停止要求始终有效。立即停止时先停宿主任务，不因服务器旧状态、新能力、规则或资料更新自行恢复。\n- 行动前读取本人当前行动政策与参与安排；授权读取失败不猜许可。只读模式不领取或推进写入行动。\n- 按加入指南同步既有任务频率和启停；正常唤醒不新增任务、不自行改频率。规则不扩大宿主工具、网络、模型、费用、隐私或历史访问权限。\n- 同一身份串行参与。上一轮未结束则跳过，不覆盖其记录或编造新经历；结束时只释放本轮占用。\n";
- return text.replace(/## 1\. 授权与调度[\s\S]*?(?=\n## 2\.)/,originalSection);
+ return text.replace(/## 1\. 授权与调度[\s\S]*?(?=\n## 2\.)/,originalSection).replace(/^- 发送前根据已核实结果重新组织生活分享：[^\n]+$/m,'- 发送前检查事实、因果、重要环节和指代，让主人一遍读懂；受阻后的实际调整也要讲清。');
 }
 
 
@@ -32,7 +32,7 @@ test('approved 01–04 keep every literal character except the trusted-origin pl
 });
 
 test('seven-group current runtime retains approved 05 and the complete 0100 journal/NPC block',async()=>{
- const runtime=await readAgentRuntimeGuide();assert.equal(runtime.ruleVersion,7);assert(runtime.bytes<=16384);assert.equal(runtime.digest,sha(runtime.text));
+ const runtime=await readAgentRuntimeGuide();assert.equal(runtime.ruleVersion,8);assert(runtime.bytes<=16384);assert.equal(runtime.digest,sha(runtime.text));
  const body=withoutSocialAdditions(originalAuthorization(runtime.text).slice(runtime.text.indexOf('\n\n')+2)),marker='个人日志能力实际启用后，',approved=body.slice(0,body.indexOf(marker)).trimEnd()+'\n\n<!-- connet:runtime-rule:end -->\n\n';
  assert.equal(sha(approved),APPROVED_PROMPT_SOURCE_DIGESTS.runtime);
  const oldBlock=body.slice(body.indexOf(marker),body.indexOf('\n\n当前个人日志的纯文本正文'));
@@ -80,7 +80,7 @@ test('legacy rule1–4 and approved rule5 each require their own complete exact 
  const current=await readAgentRuntimeGuide(),legacyBody='# Synthetic legacy rules\n\n### 1. 每次唤醒\n原规则一。\n### 2. 选择行动\n原规则二。\n### 3. 向主人分享\n原规则三。\n\n<!-- connet:runtime-rule:end -->\n';
  const legacy=(version:number)=>'<!-- connet:runtime-rule '+JSON.stringify({ruleVersion:version,updatedAt:'2026-10-27T00:00:00.000Z',changeSummary:'隔离旧格式'})+' -->\n\n'+legacyBody;
  for(const version of [1,2,3,4])assert.equal(parseAgentRuntimeGuide(Buffer.from(legacy(version))).ruleVersion,version);
- assert.throws(()=>parseAgentRuntimeGuide(Buffer.from(legacy(5))));assert.throws(()=>parseAgentRuntimeGuide(Buffer.from(current.text.replace('"ruleVersion":7','"ruleVersion":4'))));
+ assert.throws(()=>parseAgentRuntimeGuide(Buffer.from(legacy(5))));assert.throws(()=>parseAgentRuntimeGuide(Buffer.from(current.text.replace('"ruleVersion":8','"ruleVersion":4'))));
  for(const bad of [legacy(4).replace('### 2. 选择行动','### 缺失'),legacy(4).replace('### 2. 选择行动','### 1. 每次唤醒'),legacy(4).replace('原规则二。',''),legacy(4).replace('### 3. 向主人分享','## 3. 向主人分享')])assert.throws(()=>parseAgentRuntimeGuide(Buffer.from(bad)));
 });
 
@@ -108,7 +108,7 @@ test('published G22 human variants and an already-correct hourly block are exact
 
 
 test('runtime6 adds only the three approved social paragraphs in groups3/4/6 and changes the current stamp',async()=>{
- const current=await readAgentRuntimeGuide();assert.equal(current.ruleVersion,7);
+ const current=await readAgentRuntimeGuide();assert.equal(current.ruleVersion,8);
  const text="<!-- connet:runtime-rule {\"ruleVersion\":6,\"updatedAt\":\"2026-10-27T18:55:05.862Z\",\"changeSummary\":\"从真实人物线索选择合适的接触与关系机会，并把重要停顿和转向的具体原因说清楚。\"} -->"+originalAuthorization(current.text).slice(current.text.indexOf('\n'));
  const runtime=parseAgentRuntimeGuide(Buffer.from(text));assert.equal(runtime.ruleVersion,6);assert.equal(runtime.digest,'04d51261a6159f0cd48b9af12976e50ce1d276f07135302763cd3f53ffeaf604');
  for(const [index,group]of [3,4,6].entries()){const start=runtime.text.indexOf(AGENT_RUNTIME_SECTION_HEADINGS[group-1]!),finish=runtime.text.indexOf(AGENT_RUNTIME_SECTION_HEADINGS[group]!,start);assert(runtime.text.slice(start,finish).includes(socialRuntimeAdditions[index]!));}
